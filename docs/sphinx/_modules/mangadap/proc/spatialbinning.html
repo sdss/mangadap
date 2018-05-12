@@ -1,0 +1,755 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mangadap.proc.spatialbinning &mdash; mangadap 2.2.2 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../search.html"/>
+    <link rel="top" title="mangadap 2.2.2 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> mangadap
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../mangadap.html">mangadap package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">mangadap</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>mangadap.proc.spatialbinning</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for mangadap.proc.spatialbinning</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Licensed under a 3-clause BSD style license - see LICENSE.rst</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">Binning!</span>
+
+<span class="sd">*License*:</span>
+<span class="sd">    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group</span>
+<span class="sd">        Licensed under BSD 3-clause license - see LICENSE.rst</span>
+
+<span class="sd">*Source location*:</span>
+<span class="sd">    $MANGADAP_DIR/python/mangadap/proc/spatialbins.py</span>
+
+<span class="sd">*Imports and python version compliance*:</span>
+<span class="sd">    ::</span>
+
+<span class="sd">        from __future__ import division</span>
+<span class="sd">        from __future__ import print_function</span>
+<span class="sd">        from __future__ import absolute_import</span>
+<span class="sd">        from __future__ import unicode_literals</span>
+
+<span class="sd">        import sys</span>
+<span class="sd">        if sys.version &gt; &#39;3&#39;:</span>
+<span class="sd">            long = int</span>
+
+<span class="sd">        import numpy</span>
+<span class="sd">        from scipy import sparse</span>
+<span class="sd">        from astropy.io import fits</span>
+
+<span class="sd">        from ..par.parset import ParSet</span>
+<span class="sd">        from ..util.geometry import SemiMajorAxisCoo</span>
+<span class="sd">        from ..contrib.voronoi_2d_binning import voronoi_2d_binning</span>
+<span class="sd">        from ..util.covariance import Covariance</span>
+
+<span class="sd">*Class usage examples*:</span>
+<span class="sd">        Add examples</span>
+
+<span class="sd">*Revision history*:</span>
+<span class="sd">    | **01 Apr 2016**: Implementation begun by K. Westfall (KBW)</span>
+
+<span class="sd">.. _numpy.ndarray: http://docs.scipy.org/doc/numpy-1.10.0/reference/generated/numpy.ndarray.html</span>
+<span class="sd">.. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html</span>
+<span class="sd">.. _astropy.io.fits.Header: http://docs.astropy.org/en/stable/io/fits/api/headers.html#header</span>
+<span class="sd">.. _scipy.sparse.spmatrix: http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.spmatrix.html</span>
+
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version</span> <span class="o">&gt;</span> <span class="s1">&#39;3&#39;</span><span class="p">:</span>
+    <span class="n">long</span> <span class="o">=</span> <span class="nb">int</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="k">import</span> <span class="n">sparse</span>
+<span class="kn">from</span> <span class="nn">astropy.io</span> <span class="k">import</span> <span class="n">fits</span>
+
+<span class="kn">from</span> <span class="nn">captools.voronoi_2d_binning</span> <span class="k">import</span> <span class="n">voronoi_2d_binning</span>
+
+<span class="kn">from</span> <span class="nn">..par.parset</span> <span class="k">import</span> <span class="n">ParSet</span>
+<span class="kn">from</span> <span class="nn">..util.geometry</span> <span class="k">import</span> <span class="n">SemiMajorAxisCoo</span>
+<span class="kn">from</span> <span class="nn">..util.covariance</span> <span class="k">import</span> <span class="n">Covariance</span>
+
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="k">import</span> <span class="n">pyplot</span>
+
+<span class="c1"># Add strict versioning</span>
+<span class="c1"># from distutils.version import StrictVersion</span>
+
+
+<span class="c1"># BASE CLASS -----------------------------------------------------------</span>
+
+<div class="viewcode-block" id="SpatialBinning"><a class="viewcode-back" href="../../../mangadap.proc.spatialbinning.html#mangadap.proc.spatialbinning.SpatialBinning">[docs]</a><span class="k">class</span> <span class="nc">SpatialBinning</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Base class for spatially binning data.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bintype</span><span class="p">,</span> <span class="n">par</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bintype</span> <span class="o">=</span> <span class="n">bintype</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">par</span> <span class="o">=</span> <span class="n">par</span></div>
+
+
+<span class="c1"># ----------------------------------------------------------------------</span>
+
+
+<span class="c1"># GLOBAL BINNING -------------------------------------------------------</span>
+
+<div class="viewcode-block" id="GlobalBinning"><a class="viewcode-back" href="../../../mangadap.proc.spatialbinning.html#mangadap.proc.spatialbinning.GlobalBinning">[docs]</a><span class="k">class</span> <span class="nc">GlobalBinning</span><span class="p">(</span><span class="n">SpatialBinning</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class that performs the global binning.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">SpatialBinning</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;global&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="GlobalBinning.bin_index"><a class="viewcode-back" href="../../../mangadap.proc.spatialbinning.html#mangadap.proc.spatialbinning.GlobalBinning.bin_index">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">bin_index</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">par</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span></div></div>
+
+
+<span class="c1"># ----------------------------------------------------------------------</span>
+
+
+<span class="c1"># RADIAL BINNING -------------------------------------------------------</span>
+
+<div class="viewcode-block" id="RadialBinningPar"><a class="viewcode-back" href="../../../mangadap.proc.spatialbinning.html#mangadap.proc.spatialbinning.RadialBinningPar">[docs]</a><span class="k">class</span> <span class="nc">RadialBinningPar</span><span class="p">(</span><span class="n">ParSet</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class with parameters used by the radial binning algorithm.  See</span>
+<span class="sd">    :class:`mangadap.par.parset.ParSet` for attributes.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        center (`numpy.ndarray`_ or list): A two-element array defining</span>
+<span class="sd">            the center to use in the definition of the elliptical bins.</span>
+<span class="sd">            This is defined as a sky-right offset in arcseconds from the</span>
+<span class="sd">            nominal center of the object (OBJRA,OBJDEC).  </span>
+<span class="sd">        pa (float): Sets the position angle, defined from N through E of</span>
+<span class="sd">            the major axis of the isophotal ellipse used to define the</span>
+<span class="sd">            elliptical bins.</span>
+<span class="sd">        ell (float): Sets the ellipticity (1-b/a) of the isophotal</span>
+<span class="sd">            ellipse use to define the elliptical bins.</span>
+<span class="sd">        radius_scale (float): Defines a scale factor to use when</span>
+<span class="sd">            defining the radial bins.  For example, you might want to</span>
+<span class="sd">            scale to the a certain number of effective radii or physical</span>
+<span class="sd">            scale in kpc.  For no scale, use 1.0.</span>
+<span class="sd">        radii (`numpy.ndarray`_ or list): A three-element array defining</span>
+<span class="sd">            the starting and ending radius for the bin edges and the</span>
+<span class="sd">            number of bins to create.  If the starting radius is -1, the</span>
+<span class="sd">            inner-most radius is set to 0 when not using log bins or 0.1</span>
+<span class="sd">            arcsec when using logarithmically spaced bins.  If the</span>
+<span class="sd">            ending radius is -1, the outer-most radius is set by the</span>
+<span class="sd">            spaxel at the largest radius.</span>
+<span class="sd">        log_step (bool): A flag that the radial bins should be a</span>
+<span class="sd">            geometric series.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">center</span><span class="p">,</span> <span class="n">pa</span><span class="p">,</span> <span class="n">ell</span><span class="p">,</span> <span class="n">radius_scale</span><span class="p">,</span> <span class="n">radii</span><span class="p">,</span> <span class="n">log_step</span><span class="p">):</span>
+        <span class="n">in_fl</span> <span class="o">=</span> <span class="p">[</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">float</span> <span class="p">]</span>
+        <span class="n">ar_like</span> <span class="o">=</span> <span class="p">[</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="nb">list</span> <span class="p">]</span>
+        
+        <span class="n">pars</span> <span class="o">=</span>   <span class="p">[</span> <span class="s1">&#39;center&#39;</span><span class="p">,</span>  <span class="s1">&#39;pa&#39;</span><span class="p">,</span> <span class="s1">&#39;ell&#39;</span><span class="p">,</span> <span class="s1">&#39;radius_scale&#39;</span><span class="p">,</span> <span class="s1">&#39;radii&#39;</span><span class="p">,</span> <span class="s1">&#39;log_step&#39;</span> <span class="p">]</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="p">[</span>   <span class="n">center</span><span class="p">,</span>    <span class="n">pa</span><span class="p">,</span>   <span class="n">ell</span><span class="p">,</span>   <span class="n">radius_scale</span><span class="p">,</span>   <span class="n">radii</span><span class="p">,</span>   <span class="n">log_step</span> <span class="p">]</span>
+        <span class="n">dtypes</span> <span class="o">=</span> <span class="p">[</span>  <span class="n">ar_like</span><span class="p">,</span> <span class="n">in_fl</span><span class="p">,</span> <span class="n">in_fl</span><span class="p">,</span>          <span class="n">in_fl</span><span class="p">,</span> <span class="n">ar_like</span><span class="p">,</span>       <span class="nb">bool</span> <span class="p">]</span>
+
+        <span class="n">ParSet</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pars</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="n">values</span><span class="p">,</span> <span class="n">dtypes</span><span class="o">=</span><span class="n">dtypes</span><span class="p">)</span>
+
+    
+<div class="viewcode-block" id="RadialBinningPar.toheader"><a class="viewcode-back" href="../../../mangadap.proc.spatialbinning.html#mangadap.proc.spatialbinning.RadialBinningPar.toheader">[docs]</a>    <span class="k">def</span> <span class="nf">toheader</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hdr</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Copy some of the parameters to a header.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            hdr (`astropy.io.fits.Header`_): Header object to write to.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            `astropy.io.fits.Header`_: Edited header object</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            TypeError: Raised if input is not an</span>
+<span class="sd">                `astropy.io.fits.Header`_ object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">hdr</span><span class="p">,</span> <span class="n">fits</span><span class="o">.</span><span class="n">Header</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Input is not a astropy.io.fits.Header object!&#39;</span><span class="p">)</span>
+
+        <span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;BINCX&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;center&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="s1">&#39;Radial binning on-sky X center&#39;</span><span class="p">)</span>
+        <span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;BINCY&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;center&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> <span class="s1">&#39;Radial binning on-sky Y center&#39;</span><span class="p">)</span>
+        <span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;BINPA&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;pa&#39;</span><span class="p">],</span> <span class="s1">&#39;Radial binning position angle&#39;</span><span class="p">)</span>
+        <span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;BINELL&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;ell&#39;</span><span class="p">],</span> <span class="s1">&#39;Radial binning ellipticity (1-b/a)&#39;</span><span class="p">)</span>
+        <span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;BINSCL&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;radius_scale&#39;</span><span class="p">],</span> <span class="s1">&#39;Radial binning radius scale (arcsec)&#39;</span><span class="p">)</span>
+        <span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;BINRAD&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;radii&#39;</span><span class="p">])),</span> <span class="s1">&#39;Radial binning radius sampling&#39;</span><span class="p">)</span>
+        <span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;BINLGR&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;log_step&#39;</span><span class="p">]),</span> <span class="s1">&#39;Geometric step used by radial binning&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">hdr</span></div>
+
+
+<div class="viewcode-block" id="RadialBinningPar.fromheader"><a class="viewcode-back" href="../../../mangadap.proc.spatialbinning.html#mangadap.proc.spatialbinning.RadialBinningPar.fromheader">[docs]</a>    <span class="k">def</span> <span class="nf">fromheader</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hdr</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Copy the information from the header.</span>
+
+<span class="sd">        hdr (`astropy.io.fits.Header`_): Header object to write to.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">hdr</span><span class="p">,</span> <span class="n">fits</span><span class="o">.</span><span class="n">Header</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Input is not a astropy.io.fits.Header object!&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;center&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span> <span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;BINCX&#39;</span><span class="p">],</span> <span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;BINCY&#39;</span><span class="p">]</span> <span class="p">]</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;pa&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;BINPA&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;ell&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;BINELL&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;radius_scale&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;BINSCL&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;radii&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;BINRAD&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;log_step&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;BINLGR&#39;</span><span class="p">])</span></div></div>
+
+
+<div class="viewcode-block" id="RadialBinning"><a class="viewcode-back" href="../../../mangadap.proc.spatialbinning.html#mangadap.proc.spatialbinning.RadialBinning">[docs]</a><span class="k">class</span> <span class="nc">RadialBinning</span><span class="p">(</span><span class="n">SpatialBinning</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class that performs the radial binning.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">par</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">SpatialBinning</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;radial&#39;</span><span class="p">,</span> <span class="n">par</span><span class="o">=</span><span class="n">par</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sma_coo</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">to_center</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rs</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dr</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+<div class="viewcode-block" id="RadialBinning._r_start_step"><a class="viewcode-back" href="../../../mangadap.proc.spatialbinning.html#mangadap.proc.spatialbinning.RadialBinning._r_start_step">[docs]</a>    <span class="k">def</span> <span class="nf">_r_start_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">r</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Bin starting radii are::</span>
+<span class="sd">            </span>
+<span class="sd">            rs = self.par[&#39;radii&#39;][0]</span>
+<span class="sd">            re = self.par[&#39;radii&#39;][1]</span>
+<span class="sd">            nr = int(self.par[&#39;radii&#39;][2])</span>
+<span class="sd">            starting_radii = numpy.logspace(numpy.log10(rs), numpy.log10(re), num=nr,</span>
+<span class="sd">                                            endpoint=False) if self.par[&#39;log_step&#39;] else \</span>
+<span class="sd">                             numpy.linspace(rs, re, num=nr, endpoint=False)</span>
+
+<span class="sd">        For ending radii, just swap rs and re above</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Set minimum radius, if necessary</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;radii&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">ndec</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">absolute</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="mf">0.5</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;radius_scale&#39;</span><span class="p">]))))</span>
+            <span class="n">ndec</span> <span class="o">=</span> <span class="mi">2</span> <span class="k">if</span> <span class="n">ndec</span> <span class="o">&lt;</span> <span class="mi">2</span> <span class="k">else</span> <span class="n">ndec</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;radii&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">around</span><span class="p">(</span><span class="mf">0.5</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;radius_scale&#39;</span><span class="p">],</span> <span class="n">decimals</span><span class="o">=</span><span class="n">ndec</span><span class="p">)</span> \
+                                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;log_step&#39;</span><span class="p">]</span> <span class="k">else</span> <span class="mf">0.0</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">to_center</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="c1"># Set maximum radius, if necessary</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;radii&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;radii&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">around</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">r</span><span class="p">)</span><span class="o">+</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">decimals</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+        <span class="c1"># Get the logarithmically stepped values</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;log_step&#39;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rs</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;radii&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dr</span> <span class="o">=</span> <span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;radii&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">rs</span><span class="p">)</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;radii&#39;</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span>
+            <span class="k">return</span>
+
+        <span class="c1"># Get the linearly stepped values</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;radii&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dr</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;radii&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">rs</span><span class="p">)</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;radii&#39;</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span></div>
+        
+
+<div class="viewcode-block" id="RadialBinning.bin_index"><a class="viewcode-back" href="../../../mangadap.proc.spatialbinning.html#mangadap.proc.spatialbinning.RadialBinning.bin_index">[docs]</a>    <span class="k">def</span> <span class="nf">bin_index</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">par</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Bin the data and return the indices of the bins.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Check the input</span>
+        <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="n">y</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Dimensionality of x and y coordinates do not match!&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Perform any necessary initialization</span>
+        <span class="k">if</span> <span class="n">par</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">par</span> <span class="o">=</span> <span class="n">par</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sma_coo</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">sma_coo</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">sma_coo</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">par</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Required parameters for RadialBinning have not been defined.&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sma_coo</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sma_coo</span> <span class="o">=</span> <span class="n">SemiMajorAxisCoo</span><span class="p">(</span><span class="n">xc</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;center&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">yc</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;center&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span>
+                                            <span class="n">rot</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">pa</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;pa&#39;</span><span class="p">],</span> <span class="n">ell</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;ell&#39;</span><span class="p">])</span>
+
+        <span class="c1"># Get the radius and azimuth</span>
+        <span class="n">r</span><span class="p">,</span> <span class="n">theta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sma_coo</span><span class="o">.</span><span class="n">polar</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">)</span>
+
+        <span class="c1"># Get the starting radius and step per bin</span>
+        <span class="n">r</span> <span class="o">/=</span> <span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;radius_scale&#39;</span><span class="p">]</span>
+        <span class="n">indx</span> <span class="o">=</span> <span class="n">r</span> <span class="o">&gt;=</span> <span class="mf">0.0</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;log_step&#39;</span><span class="p">]:</span>
+            <span class="n">indx</span> <span class="o">=</span> <span class="n">r</span> <span class="o">&gt;</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_r_start_step</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="n">indx</span><span class="p">])</span>
+
+        <span class="c1"># Determine the bin indices</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;log_step&#39;</span><span class="p">]:</span>
+            <span class="n">r</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="n">indx</span><span class="p">])</span>
+
+        <span class="n">binid</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">floor</span><span class="p">((</span><span class="n">r</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">rs</span><span class="p">)</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">dr</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_center</span><span class="p">:</span>
+            <span class="n">binid</span><span class="p">[(</span><span class="n">binid</span><span class="o">&lt;</span><span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>          <span class="c1"># Go all the way to R=0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">binid</span><span class="p">[</span><span class="n">r</span><span class="o">&lt;</span><span class="bp">self</span><span class="o">.</span><span class="n">rs</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>            <span class="c1"># or not</span>
+        <span class="n">binid</span><span class="p">[</span><span class="n">binid</span> <span class="o">&gt;=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;radii&#39;</span><span class="p">][</span><span class="mi">2</span><span class="p">])]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>  <span class="c1"># Remove any points outside the last bin</span>
+
+<span class="c1">#        print(binid)</span>
+<span class="c1">#        print(numpy.sum(binid &lt; 0))</span>
+<span class="c1">#</span>
+<span class="c1">#        print(self.rs, self.dr, self.to_center, self.par[&#39;log_step&#39;])</span>
+<span class="c1">#        pyplot.scatter(r, theta, marker=&#39;.&#39;, color=&#39;k&#39;, s=40, lw=0, c=binid, cmap=&#39;viridis&#39;)</span>
+<span class="c1">#        for i in range(self.par[&#39;radii&#39;][2]+1):</span>
+<span class="c1">#            rr = self.rs + i*self.dr</span>
+<span class="c1">#            pyplot.plot( [rr, rr], [0,360], color=&#39;r&#39;)</span>
+<span class="c1">#        pyplot.show()</span>
+
+        <span class="k">return</span> <span class="n">binid</span></div>
+
+
+<div class="viewcode-block" id="RadialBinning.bin_area"><a class="viewcode-back" href="../../../mangadap.proc.spatialbinning.html#mangadap.proc.spatialbinning.RadialBinning.bin_area">[docs]</a>    <span class="k">def</span> <span class="nf">bin_area</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the nominal area for each elliptical bin.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">par</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Required parameters not defined.&#39;</span><span class="p">)</span>
+
+        <span class="n">rs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;radii&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">re</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;radii&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">nr</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;radii&#39;</span><span class="p">][</span><span class="mi">2</span><span class="p">])</span>
+        <span class="n">bin_radii</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                        <span class="n">numpy</span><span class="o">.</span><span class="n">logspace</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">rs</span><span class="p">),</span> <span class="n">numpy</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">re</span><span class="p">),</span> <span class="n">num</span><span class="o">=</span><span class="n">nr</span><span class="p">,</span> <span class="n">endpoint</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> \
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;log_step&#39;</span><span class="p">]</span> <span class="k">else</span> <span class="n">numpy</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">rs</span><span class="p">,</span> <span class="n">re</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="n">nr</span><span class="p">,</span> <span class="n">endpoint</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+                        <span class="n">re</span><span class="p">)</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;radius_scale&#39;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;ell&#39;</span><span class="p">])</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">bin_radii</span><span class="p">))</span></div></div>
+
+        
+
+
+<span class="c1"># ----------------------------------------------------------------------</span>
+
+
+<span class="c1"># VORONOI BINNING ------------------------------------------------------</span>
+
+<div class="viewcode-block" id="VoronoiBinningPar"><a class="viewcode-back" href="../../../mangadap.proc.spatialbinning.html#mangadap.proc.spatialbinning.VoronoiBinningPar">[docs]</a><span class="k">class</span> <span class="nc">VoronoiBinningPar</span><span class="p">(</span><span class="n">ParSet</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class with parameters used by the Voronoi binning algorithm.  See</span>
+<span class="sd">    :class:`mangadap.par.parset.ParSet` for attributes.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        key (str): Keyword to distinguish the assessment method.</span>
+<span class="sd">        target_snr (float) : The target S/N for each bin.</span>
+<span class="sd">        signal (array-like) : The array of signal measurements for each</span>
+<span class="sd">            on-sky position to bin.</span>
+<span class="sd">        noise (array-like) : The array of noise measurements for each</span>
+<span class="sd">            on-sky position to bin.  If not provided, *covar* must be</span>
+<span class="sd">            provided and be a full covariance matrix.</span>
+<span class="sd">        covar (float, `numpy.ndarray`_,</span>
+<span class="sd">            :class:`mangadap.util.Covariance`,</span>
+<span class="sd">            `scipy.sparse.spmatrix`_): Covariance matrix or calibration</span>
+<span class="sd">            normalization.  For the latter, the value is used to</span>
+<span class="sd">            renormalize the noise according to the following equation:</span>
+
+<span class="sd">            .. math: </span>
+
+<span class="sd">                n_{\rm calib} = n_{\rm nominal} (1 + \alpha\ \log\</span>
+<span class="sd">                N_{\rm bin})</span>
+
+<span class="sd">            where :math:`N_{\rm bin}` is the number of binned spaxels</span>
+<span class="sd">            and :math:`\alpha` is the value provided.  See</span>
+<span class="sd">            :func:`mangadap.contrib.voronoi_2d_binning._sn_func`.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_snr</span><span class="p">,</span> <span class="n">signal</span><span class="p">,</span> <span class="n">noise</span><span class="p">,</span> <span class="n">covar</span><span class="p">):</span>
+        <span class="n">in_fl</span> <span class="o">=</span> <span class="p">[</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">float</span> <span class="p">]</span>
+        <span class="n">covar_type</span> <span class="o">=</span> <span class="p">[</span> <span class="nb">float</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Covariance</span><span class="p">,</span> <span class="n">sparse</span><span class="o">.</span><span class="n">spmatrix</span> <span class="p">]</span>
+        <span class="n">ar_like</span> <span class="o">=</span> <span class="p">[</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="nb">list</span> <span class="p">]</span>
+        
+        <span class="n">pars</span> <span class="o">=</span>   <span class="p">[</span> <span class="s1">&#39;target_snr&#39;</span><span class="p">,</span> <span class="s1">&#39;signal&#39;</span><span class="p">,</span> <span class="s1">&#39;noise&#39;</span><span class="p">,</span>    <span class="s1">&#39;covar&#39;</span> <span class="p">]</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="p">[</span>   <span class="n">target_snr</span><span class="p">,</span>   <span class="n">signal</span><span class="p">,</span>   <span class="n">noise</span><span class="p">,</span>      <span class="n">covar</span> <span class="p">]</span>
+        <span class="n">dtypes</span> <span class="o">=</span> <span class="p">[</span>        <span class="n">in_fl</span><span class="p">,</span>  <span class="n">ar_like</span><span class="p">,</span> <span class="n">ar_like</span><span class="p">,</span> <span class="n">covar_type</span> <span class="p">]</span>
+
+        <span class="n">ParSet</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pars</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="n">values</span><span class="p">,</span> <span class="n">dtypes</span><span class="o">=</span><span class="n">dtypes</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="VoronoiBinningPar.toheader"><a class="viewcode-back" href="../../../mangadap.proc.spatialbinning.html#mangadap.proc.spatialbinning.VoronoiBinningPar.toheader">[docs]</a>    <span class="k">def</span> <span class="nf">toheader</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hdr</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Copy some of the parameters to a header.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            hdr (`astropy.io.fits.Header`_): Header object to write to.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            `astropy.io.fits.Header`_: Edited header object</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            TypeError: Raised if input is not an</span>
+<span class="sd">                `astropy.io.fits.Header`_ object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">hdr</span><span class="p">,</span> <span class="n">fits</span><span class="o">.</span><span class="n">Header</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Input is not a astropy.io.fits.Header object!&#39;</span><span class="p">)</span>
+
+        <span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;BINSNR&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;target_snr&#39;</span><span class="p">],</span> <span class="s1">&#39;Voronoi binning minimum S/N&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;covar&#39;</span><span class="p">],</span> <span class="nb">float</span><span class="p">):</span>
+            <span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;BINCOV&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;calib&#39;</span><span class="p">,</span> <span class="s1">&#39;Voronoi binning S/N covariance type&#39;</span><span class="p">)</span>
+            <span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;NCALIB&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;covar&#39;</span><span class="p">],</span> <span class="s1">&#39;Noise calibration value&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;covar&#39;</span><span class="p">],</span> <span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Covariance</span><span class="p">,</span> <span class="n">sparse</span><span class="o">.</span><span class="n">spmatrix</span><span class="p">)):</span>
+            <span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;BINCOV&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;full&#39;</span><span class="p">,</span> <span class="s1">&#39;Voronoi binning S/N covariance type&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;BINCOV&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;none&#39;</span><span class="p">,</span> <span class="s1">&#39;Voronoi binning S/N covariance type&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">hdr</span></div>
+
+
+<div class="viewcode-block" id="VoronoiBinningPar.fromheader"><a class="viewcode-back" href="../../../mangadap.proc.spatialbinning.html#mangadap.proc.spatialbinning.VoronoiBinningPar.fromheader">[docs]</a>    <span class="k">def</span> <span class="nf">fromheader</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hdr</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Copy the information from the header.</span>
+
+<span class="sd">        hdr (`astropy.io.fits.Header`_): Header object to write to.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">hdr</span><span class="p">,</span> <span class="n">fits</span><span class="o">.</span><span class="n">Header</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Input is not a astropy.io.fits.Header object!&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;target_snr&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;BINSNR&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;BINCOV&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;calib&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;covar&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;NCALIB&#39;</span><span class="p">]</span></div></div>
+
+
+<div class="viewcode-block" id="VoronoiBinning"><a class="viewcode-back" href="../../../mangadap.proc.spatialbinning.html#mangadap.proc.spatialbinning.VoronoiBinning">[docs]</a><span class="k">class</span> <span class="nc">VoronoiBinning</span><span class="p">(</span><span class="n">SpatialBinning</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class that wraps the contributed voronoi binning code.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">par</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">SpatialBinning</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;voronoi&#39;</span><span class="p">,</span> <span class="n">par</span><span class="o">=</span><span class="n">par</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">covar</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="VoronoiBinning.sn_calculation_no_covariance"><a class="viewcode-back" href="../../../mangadap.proc.spatialbinning.html#mangadap.proc.spatialbinning.VoronoiBinning.sn_calculation_no_covariance">[docs]</a>    <span class="k">def</span> <span class="nf">sn_calculation_no_covariance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">signal</span><span class="p">,</span> <span class="n">noise</span><span class="p">):</span> 
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        S/N calculation built to match the requirements of</span>
+<span class="sd">        :func:`mangadap.contrib.voronoi_2d_binning`.</span>
+
+<span class="sd">        This calculation is identical to the one provided directly by</span>
+<span class="sd">        the code.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span>  <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">signal</span><span class="p">[</span><span class="n">index</span><span class="p">])</span> <span class="o">/</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">noise</span><span class="p">[</span><span class="n">index</span><span class="p">])))</span></div>
+
+
+<div class="viewcode-block" id="VoronoiBinning.sn_calculation_covariance_matrix"><a class="viewcode-back" href="../../../mangadap.proc.spatialbinning.html#mangadap.proc.spatialbinning.VoronoiBinning.sn_calculation_covariance_matrix">[docs]</a>    <span class="k">def</span> <span class="nf">sn_calculation_covariance_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">signal</span><span class="p">,</span> <span class="n">noise</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate the S/N using a full covariance matrix.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">_index</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">size</span><span class="p">)[</span><span class="n">index</span><span class="p">]</span>
+        <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">numpy</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">_index</span><span class="p">,</span> <span class="n">_index</span><span class="p">)</span> <span class="p">)</span>
+        <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">signal</span><span class="p">[</span><span class="n">index</span><span class="p">])</span><span class="o">/</span><span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">covar</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]))</span></div>
+
+
+<div class="viewcode-block" id="VoronoiBinning.sn_calculation_calibrate_noise"><a class="viewcode-back" href="../../../mangadap.proc.spatialbinning.html#mangadap.proc.spatialbinning.VoronoiBinning.sn_calculation_calibrate_noise">[docs]</a>    <span class="k">def</span> <span class="nf">sn_calculation_calibrate_noise</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">signal</span><span class="p">,</span> <span class="n">noise</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate the S/N using a calibration of the S/N following:</span>
+
+<span class="sd">        .. math::</span>
+
+<span class="sd">            N_{\rm calib} = N_{\rm nominal} (1 + \alpha\ \log N_{\rm bin})</span>
+
+<span class="sd">        where :math:`N_{\rm bin}` is the number of binned spaxels and</span>
+<span class="sd">        :math:`\alpha` is an empirically derived constant used to adjust</span>
+<span class="sd">        the noise for the affects of covariance.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">signal</span><span class="p">[</span><span class="n">index</span><span class="p">])</span> \
+                <span class="o">/</span> <span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">noise</span><span class="p">[</span><span class="n">index</span><span class="p">])))</span> \
+                    <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">covar</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">signal</span><span class="p">[</span><span class="n">index</span><span class="p">]))))</span></div>
+
+
+<div class="viewcode-block" id="VoronoiBinning.bin_index"><a class="viewcode-back" href="../../../mangadap.proc.spatialbinning.html#mangadap.proc.spatialbinning.VoronoiBinning.bin_index">[docs]</a>    <span class="k">def</span> <span class="nf">bin_index</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">par</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="c1"># Check the position input</span>
+        <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="n">y</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Dimensionality of x and y coordinates do not match!&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Initialize the parameter object</span>
+        <span class="k">if</span> <span class="n">par</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">par</span> <span class="o">=</span> <span class="n">par</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">par</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Required parameters for Voronoi binning have not been defined.&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Check the signal input</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;signal&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Signal measurements not provided for Voronoi binning!&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;signal&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="n">x</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Dimensionality of signal does not match on-sky coordinates.&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Construct the covariance input if provided</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">covar</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">sn_func</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sn_calculation_no_covariance</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;covar&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;covar&#39;</span><span class="p">],</span> <span class="n">Covariance</span><span class="p">):</span>
+                <span class="c1"># Check dimensionality</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;covar&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Input Covariance object must be two-dimensional&#39;</span><span class="p">)</span>
+                <span class="c1"># Make sure the object is a full covariance matrix</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;covar&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">is_correlation</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;covar&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">revert_correlation</span><span class="p">()</span>
+            <span class="c1"># Fill the full array if necessary</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;covar&#39;</span><span class="p">],</span> <span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span><span class="nb">float</span><span class="p">)):</span>
+<span class="c1">#                self.par[&#39;covar&#39;].show()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">covar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;covar&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">toarray</span><span class="p">()</span>
+                <span class="n">sn_func</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sn_calculation_covariance_matrix</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">covar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;covar&#39;</span><span class="p">]</span>
+                <span class="n">sn_func</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sn_calculation_calibrate_noise</span>
+
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">covar</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+                <span class="c1"># Check that the size matches the input signal array</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">covar</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;signal&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Dimensionality of covariance does not match signal.&#39;</span><span class="p">)</span>
+                <span class="n">_noise</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">covar</span><span class="p">))</span>
+
+        <span class="c1"># Make sure the noise vector is available</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">covar</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">covar</span><span class="p">,</span> <span class="nb">float</span><span class="p">):</span>
+            <span class="n">_noise</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;noise&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">_noise</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Could not construct noise measurements for Voronoi binning.&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">_noise</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;signal&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Dimensionality of noise does not match signal.&#39;</span><span class="p">)</span>
+
+        <span class="c1"># All spaxels have S/N greater than threshold, so return each</span>
+        <span class="c1"># spaxel in its own &quot;bin&quot;</span>
+        <span class="k">if</span> <span class="n">numpy</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;signal&#39;</span><span class="p">]</span><span class="o">/</span><span class="n">_noise</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;target_snr&#39;</span><span class="p">]:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;All pixels have enough S/N. Binning is not needed&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;signal&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+
+        <span class="c1"># Cannot reach the S/N using all spaxels, so return all spaxels</span>
+        <span class="c1"># in a single bin</span>
+        <span class="n">sn_total</span> <span class="o">=</span> <span class="n">sn_func</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;signal&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">size</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;signal&#39;</span><span class="p">],</span> <span class="n">_noise</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">sn_total</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;target_snr&#39;</span><span class="p">]:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Cannot reach target S/N using all data.&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;signal&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+
+        <span class="c1"># Call the contributed code and return the bin index</span>
+<span class="c1">#        pyplot.scatter(x, _noise, s=30, marker=&#39;.&#39;, color=&#39;k&#39;)</span>
+<span class="c1">#        pyplot.show()</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">binid</span><span class="p">,</span> <span class="n">xNode</span><span class="p">,</span> <span class="n">yNode</span><span class="p">,</span> <span class="n">xBar</span><span class="p">,</span> <span class="n">yBar</span><span class="p">,</span> <span class="n">sn</span><span class="p">,</span> <span class="n">area</span><span class="p">,</span> <span class="n">scale</span> <span class="o">=</span> \
+                <span class="n">voronoi_2d_binning</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;signal&#39;</span><span class="p">],</span> <span class="n">_noise</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;target_snr&#39;</span><span class="p">],</span>
+                                   <span class="n">sn_func</span><span class="o">=</span><span class="n">sn_func</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="c1">#quiet=False)</span>
+<span class="c1">#            pyplot.show()</span>
+<span class="c1">#            pyplot.scatter(numpy.sqrt(numpy.square(xBar)+numpy.square(yBar)), sn, marker=&#39;.&#39;,</span>
+                       <span class="c1">#color=&#39;k&#39;, s=40, lw=0)</span>
+<span class="c1">#            pyplot.show()</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Binning algorithm has raised an exception.  Assume this is because &#39;</span>
+                          <span class="s1">&#39;all the spaxels should be in the same bin.&#39;</span><span class="p">)</span>
+            <span class="n">binid</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;signal&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">binid</span></div></div>
+
+
+<span class="c1"># ----------------------------------------------------------------------</span>
+
+
+</pre></div>
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, SDSS-IV/MaNGA Pipeline Group.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'2.2.2',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

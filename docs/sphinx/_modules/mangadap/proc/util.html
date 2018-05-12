@@ -1,0 +1,643 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mangadap.proc.util &mdash; mangadap 2.2.2 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../search.html"/>
+    <link rel="top" title="mangadap 2.2.2 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> mangadap
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../mangadap.html">mangadap package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">mangadap</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>mangadap.proc.util</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for mangadap.proc.util</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Licensed under a 3-clause BSD style license - see LICENSE.rst</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Provides a set of processing utility functions for the MaNGA DAP.</span>
+
+<span class="sd">*License*:</span>
+<span class="sd">    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group</span>
+<span class="sd">        Licensed under BSD 3-clause license - see LICENSE.rst</span>
+
+<span class="sd">*Source location*:</span>
+<span class="sd">    $MANGADAP_DIR/python/mangadap/proc/util.py</span>
+
+<span class="sd">*Imports and python version compliance*:</span>
+<span class="sd">    ::</span>
+
+<span class="sd">        from __future__ import division</span>
+<span class="sd">        from __future__ import print_function</span>
+<span class="sd">        from __future__ import absolute_import</span>
+<span class="sd">        from __future__ import unicode_literals</span>
+
+<span class="sd">        import sys</span>
+<span class="sd">        if sys.version &gt; &#39;3&#39;:</span>
+<span class="sd">            long = int</span>
+
+<span class="sd">        import numpy</span>
+<span class="sd">        import astropy.constants</span>
+
+<span class="sd">*Revision history*:</span>
+<span class="sd">    | **01 Feb 2016**: Original implementation by K. Westfall (KBW)</span>
+
+<span class="sd">.. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version</span> <span class="o">&gt;</span> <span class="s1">&#39;3&#39;</span><span class="p">:</span>
+    <span class="n">long</span> <span class="o">=</span> <span class="nb">int</span>
+
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">import</span> <span class="nn">astropy.constants</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="k">import</span> <span class="n">interpolate</span><span class="p">,</span> <span class="n">spatial</span>
+
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="k">import</span> <span class="n">pyplot</span>
+
+<div class="viewcode-block" id="HDUList_mask_wavelengths"><a class="viewcode-back" href="../../../mangadap.proc.util.html#mangadap.proc.util.HDUList_mask_wavelengths">[docs]</a><span class="k">def</span> <span class="nf">HDUList_mask_wavelengths</span><span class="p">(</span><span class="n">hdu</span><span class="p">,</span> <span class="n">bitmask</span><span class="p">,</span> <span class="n">bitmask_flag</span><span class="p">,</span> <span class="n">wave_limits</span><span class="p">,</span> <span class="n">wave_ext</span><span class="o">=</span><span class="s1">&#39;WAVE&#39;</span><span class="p">,</span> \
+                             <span class="n">mask_ext</span><span class="o">=</span><span class="s1">&#39;MASK&#39;</span><span class="p">,</span> <span class="n">invert</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Mask pixels in a specified wavelength range by turning on the bit</span>
+<span class="sd">    value in the specified extention in a provided HDUList object.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        hdu (`astropy.io.fits.hdu.hdulist.HDUList`_): HDUList to alter</span>
+<span class="sd">        bitmask (class:`BitMask`): Bit mask object used to turn on the</span>
+<span class="sd">            named bit mask.</span>
+<span class="sd">        bitmask_flag (str): Name of the bit to turn on.</span>
+<span class="sd">        wave_limits (list or numpy.ndarray): Two-element array with the</span>
+<span class="sd">            low and high wavelength limits.</span>
+<span class="sd">        wave_ext (str): (Optional) Name of the wavelength extension in</span>
+<span class="sd">            *hdu*.</span>
+<span class="sd">        mask_ext (str): (Optional) Name of the mask extension in *hdu*.</span>
+<span class="sd">        invert (bool): (Optional) Invert the sense of the masking.</span>
+<span class="sd">            Instead of masking pixel in the wavelength interval, mask</span>
+<span class="sd">            all pixels *outside* it.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        `astropy.io.fits.hdu.hdulist.HDUList`_: The modified HDUList</span>
+<span class="sd">        object.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        Exception: Raised if *wave_limits* does not have a length of</span>
+<span class="sd">            two.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">wave_limits</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Wavelength limits must be a two-element vector.&#39;</span><span class="p">)</span>
+
+    <span class="n">indx</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">where</span><span class="p">(</span> <span class="p">(</span><span class="n">hdu</span><span class="p">[</span><span class="n">wave_ext</span><span class="p">]</span><span class="o">.</span><span class="n">data</span> <span class="o">&lt;</span> <span class="n">wave_limits</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> \
+                        <span class="o">|</span> <span class="p">(</span><span class="n">hdu</span><span class="p">[</span><span class="n">wave_ext</span><span class="p">]</span><span class="o">.</span><span class="n">data</span> <span class="o">&gt;</span> <span class="n">wave_limits</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span> <span class="k">if</span> <span class="n">invert</span> <span class="k">else</span> \
+           <span class="n">numpy</span><span class="o">.</span><span class="n">where</span><span class="p">(</span> <span class="p">(</span><span class="n">hdu</span><span class="p">[</span><span class="n">wave_ext</span><span class="p">]</span><span class="o">.</span><span class="n">data</span> <span class="o">&gt;=</span> <span class="n">wave_limits</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> \
+                        <span class="o">&amp;</span> <span class="p">(</span><span class="n">hdu</span><span class="p">[</span><span class="n">wave_ext</span><span class="p">]</span><span class="o">.</span><span class="n">data</span> <span class="o">&lt;=</span> <span class="n">wave_limits</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="n">hdu</span><span class="p">[</span><span class="n">mask_ext</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="n">bitmask</span><span class="o">.</span><span class="n">turn_on</span><span class="p">(</span><span class="n">hdu</span><span class="p">[</span><span class="n">mask_ext</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">indx</span><span class="p">],</span> <span class="n">bitmask_flag</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">hdu</span></div>
+
+
+<div class="viewcode-block" id="select_proc_method"><a class="viewcode-back" href="../../../mangadap.proc.util.html#mangadap.proc.util.select_proc_method">[docs]</a><span class="k">def</span> <span class="nf">select_proc_method</span><span class="p">(</span><span class="n">method_key</span><span class="p">,</span> <span class="n">method_type</span><span class="p">,</span> <span class="n">method_list</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">available_func</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dapsrc</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Select a method from a list.  One of method_list or available_func</span>
+<span class="sd">    must be provided.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        method_key (str): Keyword used to select the method.</span>
+<span class="sd">        method_type (object): Object type to check *method_list*</span>
+<span class="sd">            against.</span>
+<span class="sd">        method_list (list): (**Optional**) List of methods from which to</span>
+<span class="sd">            find the selection keyword.  If none is provided,</span>
+<span class="sd">            *available_func* **must** be provided.</span>
+<span class="sd">        available_func (callable): (**Optional**) Callable function that</span>
+<span class="sd">            returns a list of default methods in place of *method_list*.</span>
+<span class="sd">            For example, see</span>
+<span class="sd">            :func:`mangadap.proc.templatelibrary.available_template_libraries`.</span>
+<span class="sd">        dapsrc (str): (**Optional**) Root path to the DAP source</span>
+<span class="sd">            directory.  If not provided, the default is defined by</span>
+<span class="sd">            :func:`mangadap.config.defaults.default_dap_source`.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        object: An object with base class :class:`mangadap.par.ParSet`,</span>
+<span class="sd">        containing a set of parameters used to define a method or</span>
+<span class="sd">        database.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        KeyError: Raised if the selected keyword is not among the</span>
+<span class="sd">            provided list or if the provided list has more than one</span>
+<span class="sd">            identical keyword.</span>
+<span class="sd">        TypeError: Raised if the input *method_list* object is not a</span>
+<span class="sd">            list or *method_type*, or if available function is not a</span>
+<span class="sd">            callable function.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Get the default methods if no list provided</span>
+    <span class="k">if</span> <span class="n">method_list</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">callable</span><span class="p">(</span><span class="n">available_func</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;If not providing a list, must provide a callable function to &#39;</span> \
+                            <span class="s1">&#39;produce the default list of methods/databases/libraries.&#39;</span><span class="p">)</span>
+        <span class="n">method_list</span> <span class="o">=</span> <span class="n">available_func</span><span class="p">(</span><span class="n">dapsrc</span><span class="o">=</span><span class="n">dapsrc</span><span class="p">)</span>
+
+<span class="c1">#    for m in method_list:</span>
+<span class="c1">#        print(m[&#39;key&#39;])</span>
+
+    <span class="c1"># Make sure the methods have the right type</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">method_list</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="n">method_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">method_list</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">method_list</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="n">method_type</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Input method/database/library must have type </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Find the selected method via its keyword</span>
+    <span class="n">selected_method</span> <span class="o">=</span> <span class="p">[</span> <span class="n">l</span><span class="p">[</span><span class="s1">&#39;key&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">method_key</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">method_list</span> <span class="p">]</span>
+    <span class="k">if</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">selected_method</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1"> is not a valid method/database/library!&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">method_key</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">selected_method</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s1">&#39;Keywords are not all unique!&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Return the method selected via the input keyword</span>
+    <span class="n">indx</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">selected_method</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">method_list</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span></div>
+    
+
+<span class="c1">#def _fill_vector(v, length, missing, value):</span>
+<span class="c1">#    if v.size == length:</span>
+<span class="c1">#        v[missing] = value</span>
+<span class="c1">#        return v</span>
+<span class="c1">#    _v = numpy.full(length, value, dtype=v.dtype)</span>
+<span class="c1">#    _v[ list(set( numpy.arange(length) ) - set(missing)) ] = v</span>
+<span class="c1">#    return _v</span>
+
+
+<div class="viewcode-block" id="flux_to_fnu"><a class="viewcode-back" href="../../../mangadap.proc.util.html#mangadap.proc.util.flux_to_fnu">[docs]</a><span class="k">def</span> <span class="nf">flux_to_fnu</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">flambda</span><span class="p">,</span> <span class="n">unit_norm</span><span class="o">=</span><span class="mf">1e-17</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">    Convert a spectrum with flux per unit wavelength to flux per unit</span>
+<span class="sd">    frequency; i.e., calculate</span>
+<span class="sd">    </span>
+<span class="sd">    .. math::</span>
+<span class="sd">        </span>
+<span class="sd">        F_{\nu} = F_{\lambda} \frac{d\lambda}{d\nu} = F_{\lambda}</span>
+<span class="sd">        \frac{\lambda^2}{c},</span>
+
+<span class="sd">    where the first two arguments of the function are :math:`\lambda`</span>
+<span class="sd">    and :math:`F_{\lambda}`.  The input wavelength units are expected to</span>
+<span class="sd">    be angstroms, and the input flux units are expected to be :math:`n\</span>
+<span class="sd">    {\rm erg\ s}^{-1}\ {\rm cm}^{-2}\ {\rm A}^{-1}`, where :math:`n` is the</span>
+<span class="sd">    value of *unit_norm*.  The output flux units are microjanskys,</span>
+<span class="sd">    :math:`10^{-29} {\rm erg\ s}^{-1}\ {\rm cm}^{-2}\ {\rm Hz}^{-1}`.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        wave (numpy.ndarray, list): The vector with the wavelengths in</span>
+<span class="sd">            angstroms.</span>
+<span class="sd">        flambda (numpy.ndarray, list): The vector with the flux per unit</span>
+<span class="sd">            wavelength (angstroms).</span>
+<span class="sd">        unit_norm (float): (**Optional**) The unit normalization of the</span>
+<span class="sd">            flux.  For example, this is :math:`10^{-17}` when the flux</span>
+<span class="sd">            units are :math:`10^{-17} {\rm erg\ s}^{-1}\ {\rm cm}^{-2}\</span>
+<span class="sd">            {\rm A}^{-1}`.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        float,numpy.ndarray: The flux in units of microjanskys.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: Raised if the arguments do not have the same shape.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_wave</span> <span class="o">=</span> <span class="p">[</span><span class="n">wave</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span> <span class="k">else</span> <span class="n">wave</span>
+    <span class="n">_wave</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">_wave</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">_wave</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="k">else</span> <span class="n">_wave</span>
+    <span class="n">_flambda</span> <span class="o">=</span> <span class="p">[</span><span class="n">flambda</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">flambda</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span> <span class="k">else</span> <span class="n">flambda</span>
+    <span class="n">_flambda</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">_flambda</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">_flambda</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="k">else</span> <span class="n">_flambda</span>
+    <span class="k">if</span> <span class="n">_wave</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">_flambda</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Wavelength and flux arrays must have the same shape.&#39;</span><span class="p">)</span>
+    <span class="n">fnu</span> <span class="o">=</span> <span class="n">_flambda</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">_wave</span><span class="p">)</span><span class="o">*</span><span class="n">unit_norm</span><span class="o">*</span><span class="mf">1e30</span><span class="o">/</span><span class="n">astropy</span><span class="o">.</span><span class="n">constants</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;nm/s&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
+    <span class="k">return</span> <span class="n">fnu</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">flambda</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span> <span class="k">else</span> <span class="n">fnu</span></div>
+
+
+        <span class="c1"># TODO: Requires a spectrum in each bin!</span>
+<span class="c1">#        if any(numpy.diff(bin_indx[srt]) &gt; 1):</span>
+<span class="c1">#            rep = numpy.ones(bin_change.size, dtype=numpy.int)</span>
+<span class="c1">#            i = 1</span>
+<span class="c1">#            while any(numpy.diff(bin_indx[srt]) &gt; i):</span>
+<span class="c1">#                rep[ numpy.where(numpy.diff(bin_indx[srt]) &gt; i)[0]+1 == bin_change ] += 1</span>
+<span class="c1">#                i += 1</span>
+<span class="c1">#            bin_change = numpy.repeat(bin_change, rep)</span>
+
+
+<span class="c1"># OLD VERSION</span>
+<span class="c1">#def residual_growth(resid, growth_samples):</span>
+<span class="c1">#    &quot;&quot;&quot;</span>
+<span class="c1">#    Interpolate the growth curve at distinct fractions, bracketed by the</span>
+<span class="c1">#    minimum and maximum.</span>
+<span class="c1">#    &quot;&quot;&quot;</span>
+<span class="c1">#    np = resid.size</span>
+<span class="c1">#    grw = numpy.arange(np).astype(numpy.float)/np</span>
+<span class="c1">#    resid_sort = numpy.sort(numpy.absolute(resid))</span>
+<span class="c1">#    interp = interpolate.interp1d(grw, resid_sort, fill_value=&#39;extrapolate&#39;)</span>
+<span class="c1">#    return numpy.append(numpy.append(resid_sort[0], interp(growth_samples)), resid_sort[-1])</span>
+
+
+<span class="c1">#def residual_growth(resid, growth_samples):</span>
+<span class="c1">#    &quot;&quot;&quot;</span>
+<span class="c1">#    Sample a set of residuals at specific the growth intervals.  No</span>
+<span class="c1">#    interpolation is performed.</span>
+<span class="c1">#    &quot;&quot;&quot;</span>
+<span class="c1">#    np = resid.size</span>
+<span class="c1">#    resid_sort = numpy.sort(numpy.absolute(resid))</span>
+<span class="c1">#    i = numpy.zeros(len(growth_samples)+2, dtype=float)</span>
+<span class="c1">#    i[1:-1] = np*numpy.asarray(growth_samples)</span>
+<span class="c1">#    i[-1] = np-1</span>
+<span class="c1">#    i[i &lt; 0] = 0</span>
+<span class="c1">#    i[i &gt;= np] = np-1</span>
+<span class="c1">#    return resid_sort[i.astype(int)]</span>
+
+
+<div class="viewcode-block" id="sample_growth"><a class="viewcode-back" href="../../../mangadap.proc.util.html#mangadap.proc.util.sample_growth">[docs]</a><span class="k">def</span> <span class="nf">sample_growth</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">samples</span><span class="p">,</span> <span class="n">default</span><span class="o">=-</span><span class="mf">9999.</span><span class="p">,</span> <span class="n">use_interpolate</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="n">_samples</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">samples</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">numpy</span><span class="o">.</span><span class="n">any</span><span class="p">((</span><span class="n">_samples</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">_samples</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Growth samples must be between 0 and 1.&#39;</span><span class="p">)</span>
+    <span class="n">_a</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">compressed</span><span class="p">()</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">)</span> <span class="k">else</span> <span class="n">numpy</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">a</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+    <span class="n">ns</span> <span class="o">=</span> <span class="n">_samples</span><span class="o">.</span><span class="n">size</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">_a</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">default</span><span class="p">]</span><span class="o">*</span><span class="n">ns</span> <span class="k">if</span> <span class="n">ns</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">default</span>
+    <span class="n">srt</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">_a</span><span class="p">)</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="n">_a</span><span class="o">.</span><span class="n">size</span>
+    <span class="n">grw</span> <span class="o">=</span> <span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="n">n</span>
+    <span class="k">if</span> <span class="n">use_interpolate</span><span class="p">:</span>
+        <span class="n">interpolator</span> <span class="o">=</span> <span class="n">interpolate</span><span class="o">.</span><span class="n">interp1d</span><span class="p">(</span><span class="n">grw</span><span class="p">,</span> <span class="n">_a</span><span class="p">[</span><span class="n">srt</span><span class="p">],</span> <span class="n">fill_value</span><span class="o">=</span><span class="s1">&#39;extrapolate&#39;</span><span class="p">)</span>
+        <span class="n">g</span> <span class="o">=</span> <span class="n">interpolator</span><span class="p">(</span><span class="n">_samples</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">g</span><span class="p">)</span> <span class="k">if</span> <span class="n">ns</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">g</span>
+    <span class="n">i</span> <span class="o">=</span> <span class="p">(</span><span class="n">n</span><span class="o">*</span><span class="n">_samples</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+    <span class="n">i</span><span class="p">[</span><span class="n">i</span> <span class="o">&gt;</span> <span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">n</span><span class="o">-</span><span class="mi">1</span>
+    <span class="k">return</span> <span class="n">_a</span><span class="p">[</span><span class="n">srt</span><span class="p">][</span><span class="n">i</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="growth_lim"><a class="viewcode-back" href="../../../mangadap.proc.util.html#mangadap.proc.util.growth_lim">[docs]</a><span class="k">def</span> <span class="nf">growth_lim</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">lim</span><span class="p">,</span> <span class="n">fac</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">midpoint</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="p">[</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">]):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Set the plots limits of an array based on two growth limits.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        a (array-like): Array for which to determine limits.</span>
+<span class="sd">        lim (float): Percentage of the array values to cover.</span>
+<span class="sd">        fac (float): (**Optional**) Factor to increase the range based</span>
+<span class="sd">            on the growth limits.  Default is no increase.</span>
+<span class="sd">        midpoint (float): (**Optional**) Force the midpoint of the range</span>
+<span class="sd">            to be centered on this value.  Default is to middle of</span>
+<span class="sd">            growth range.</span>
+<span class="sd">        default (list): (**Optional**) Default range to return if `a`</span>
+<span class="sd">            has no data.  Default is 0 to 1.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        list: Lower and upper limits for the range of a plot of the data</span>
+<span class="sd">        in `a`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Get the values to plot</span>
+    <span class="n">_a</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">compressed</span><span class="p">()</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">)</span> <span class="k">else</span> <span class="n">numpy</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">a</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">_a</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="c1"># No data so return the default range</span>
+        <span class="k">return</span> <span class="n">default</span>
+
+    <span class="c1"># Sort the values</span>
+    <span class="n">srt</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">_a</span><span class="p">)</span>
+
+    <span class="c1"># Set the starting and ending values based on a fraction of the</span>
+    <span class="c1"># growth</span>
+    <span class="n">_lim</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="k">if</span> <span class="n">lim</span> <span class="o">&gt;</span> <span class="mf">1.0</span> <span class="k">else</span> <span class="n">lim</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">_a</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span><span class="o">-</span><span class="n">_lim</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">end</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">_a</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">_lim</span> <span class="o">+</span> <span class="p">(</span><span class="mf">1.0</span><span class="o">-</span><span class="n">_lim</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">end</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">_a</span><span class="p">):</span>
+        <span class="n">end</span> <span class="o">-=</span> <span class="mi">1</span>
+
+    <span class="c1"># Set the full range and increase it by the provovided factor</span>
+    <span class="n">Da</span> <span class="o">=</span> <span class="p">(</span><span class="n">_a</span><span class="p">[</span><span class="n">srt</span><span class="p">[</span><span class="n">end</span><span class="p">]]</span> <span class="o">-</span> <span class="n">_a</span><span class="p">[</span><span class="n">srt</span><span class="p">[</span><span class="n">start</span><span class="p">]])</span><span class="o">*</span><span class="n">fac</span>
+
+    <span class="c1"># Set the midpoint if not provided</span>
+    <span class="n">mid</span> <span class="o">=</span> <span class="p">(</span><span class="n">_a</span><span class="p">[</span><span class="n">srt</span><span class="p">[</span><span class="n">start</span><span class="p">]]</span> <span class="o">+</span> <span class="n">_a</span><span class="p">[</span><span class="n">srt</span><span class="p">[</span><span class="n">end</span><span class="p">]])</span><span class="o">/</span><span class="mi">2</span> <span class="k">if</span> <span class="n">midpoint</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">midpoint</span>
+
+    <span class="c1"># Return the range for the plotted data</span>
+    <span class="k">return</span> <span class="p">[</span> <span class="n">mid</span> <span class="o">-</span> <span class="n">Da</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">mid</span> <span class="o">+</span> <span class="n">Da</span><span class="o">/</span><span class="mi">2</span> <span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="optimal_scale"><a class="viewcode-back" href="../../../mangadap.proc.util.html#mangadap.proc.util.optimal_scale">[docs]</a><span class="k">def</span> <span class="nf">optimal_scale</span><span class="p">(</span><span class="n">dat</span><span class="p">,</span> <span class="n">mod</span><span class="p">,</span> <span class="n">wgt</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the optimal scaling of an input model that minimizes the</span>
+<span class="sd">    weighted root-mean-square difference between a set of data and a</span>
+<span class="sd">    model.  When defining the weighted RMS as:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        </span>
+<span class="sd">        {\rm RMS}^2 = \frac{1}{N} \sum_i w_i^2(d_i - f m_i)^2</span>
+<span class="sd">    </span>
+<span class="sd">    The optimal renormalization factor that minimizes the RMS is:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        </span>
+<span class="sd">        f = \frac{\mathbf{d}^\prime \dot</span>
+<span class="sd">            \mathbf{m}^\prime}{||\mathbf{m}^\prime||^2}</span>
+
+<span class="sd">    where :math:`d^\prime_i = w_i d_i` and :math:`m^\prime_i = w_i m_i`.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        dat (array-like): Array of data.</span>
+<span class="sd">        mod (array-like): Model to renormalize.</span>
+<span class="sd">        wgt (array-like): (**Optional**) Array of weights to apply to</span>
+<span class="sd">            each residual.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        float : The optimal scaling that minimizes the weighted</span>
+<span class="sd">        root-mean-square difference betwen the data and the model.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: Raised if the array sizes do not match.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_dat</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">dat</span><span class="p">)</span>
+    <span class="n">_mod</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">mod</span><span class="p">)</span>
+    <span class="n">_wgt</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">_dat</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span> <span class="k">if</span> <span class="n">wgt</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">numpy</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">wgt</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">_mod</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">_dat</span><span class="o">.</span><span class="n">shape</span> <span class="ow">or</span> <span class="p">(</span><span class="n">_wgt</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">_wgt</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">_dat</span><span class="o">.</span><span class="n">shape</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Shapes of all input arrays must match.&#39;</span><span class="p">)</span>
+
+<span class="c1">#    print(len(_dat))</span>
+<span class="c1">#    print(len(_mod))</span>
+<span class="c1">#    print(len(_wgt))</span>
+<span class="c1">#    pyplot.scatter(_dat, _mod, marker=&#39;.&#39;, color=&#39;k&#39;, lw=0)</span>
+<span class="c1">#    pyplot.scatter(_dat, _wgt, marker=&#39;.&#39;, color=&#39;r&#39;, lw=0)</span>
+<span class="c1">#    pyplot.show()</span>
+
+    <span class="n">dp</span> <span class="o">=</span> <span class="n">_dat</span><span class="o">*</span><span class="n">_wgt</span>
+    <span class="n">norm_mp</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">_wgt</span><span class="o">*</span><span class="n">_mod</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">norm_mp</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Scale not determined because model norm is 0.&#39;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="mf">1.0</span> <span class="k">if</span> <span class="n">norm_mp</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">_wgt</span><span class="p">)</span><span class="o">*</span><span class="n">_dat</span><span class="o">*</span><span class="n">_mod</span><span class="p">)</span><span class="o">/</span><span class="n">norm_mp</span></div>
+
+
+<div class="viewcode-block" id="replace_with_data_from_nearest_coo"><a class="viewcode-back" href="../../../mangadap.proc.util.html#mangadap.proc.util.replace_with_data_from_nearest_coo">[docs]</a><span class="k">def</span> <span class="nf">replace_with_data_from_nearest_coo</span><span class="p">(</span><span class="n">coo</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">replace</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Replace data in array with the spatially nearest neighbor.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        coo (numpy.ndarray): A 2D array with the x and y coordinates of</span>
+<span class="sd">            all the data.  Shape must be (NDATA, 2).</span>
+
+<span class="sd">        data (numpy.ndarray): A 1D or 2D array with data to replace.</span>
+<span class="sd">            The length of the first (or only) axis must be NDATA.</span>
+
+<span class="sd">        replace (numpy.ndarray): Boolean array that is True for elements</span>
+<span class="sd">            that should be replaced on output.  Shape must be (NDATA,).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">            numpy.ndarray: The data array with the selected rows</span>
+<span class="sd">            replaced with the nearest data set.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: Raised if the array sizes are inappropriate.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Check the input</span>
+    <span class="n">_coo</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">coo</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">_coo</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Input coordinate array must be two-dimensional.&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">_coo</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Currently only works with two coordinates.&#39;</span><span class="p">)</span>
+    <span class="n">ndata</span> <span class="o">=</span> <span class="n">_coo</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">_data</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">_data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">ndata</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Coordinate and data arrays have a mismatched shape.&#39;</span><span class="p">)</span>
+    <span class="n">oned</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">_data</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
+    <span class="n">_replace</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">replace</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">_replace</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">_replace</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">ndata</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Input replacement selection array has an incorrect shape.&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Nothing flagged to replace, so just return a copy of the input</span>
+    <span class="k">if</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">_replace</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+    <span class="c1"># Use the coordinates to replace to set the KDTree reference grid</span>
+    <span class="n">do_not_replace</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">_replace</span><span class="p">)</span>
+    <span class="n">kd</span> <span class="o">=</span> <span class="n">spatial</span><span class="o">.</span><span class="n">KDTree</span><span class="p">(</span><span class="n">_coo</span><span class="p">[</span><span class="n">do_not_replace</span><span class="p">,:])</span>
+
+    <span class="c1"># Get the indices of the nearest data points</span>
+    <span class="n">dist</span><span class="p">,</span> <span class="n">nearest_bin</span> <span class="o">=</span> <span class="n">kd</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">_coo</span><span class="p">[</span><span class="n">_replace</span><span class="p">,:])</span>
+
+    <span class="c1"># Replace the existing data with the nearest one and return it</span>
+    <span class="n">new_data</span> <span class="o">=</span> <span class="n">_data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">oned</span><span class="p">:</span>
+        <span class="n">new_data</span><span class="p">[</span><span class="n">_replace</span><span class="p">]</span> <span class="o">=</span> <span class="n">_data</span><span class="p">[</span><span class="n">do_not_replace</span><span class="p">][</span><span class="n">nearest_bin</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">new_data</span><span class="p">[</span><span class="n">_replace</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">_data</span><span class="p">[</span><span class="n">do_not_replace</span><span class="p">,:][</span><span class="n">nearest_bin</span><span class="p">,:]</span>
+    <span class="k">return</span> <span class="n">new_data</span></div>
+
+
+</pre></div>
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, SDSS-IV/MaNGA Pipeline Group.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'2.2.2',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

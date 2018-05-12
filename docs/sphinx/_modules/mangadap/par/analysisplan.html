@@ -1,0 +1,378 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mangadap.par.analysisplan &mdash; mangadap 2.2.2 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../search.html"/>
+    <link rel="top" title="mangadap 2.2.2 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> mangadap
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../mangadap.html">mangadap package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">mangadap</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>mangadap.par.analysisplan</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for mangadap.par.analysisplan</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Licensed under a 3-clause BSD style license - see LICENSE.rst</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Classes to handle MaNGA DAP analysis plans.</span>
+
+<span class="sd">*License*:</span>
+<span class="sd">    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group</span>
+<span class="sd">        Licensed under BSD 3-clause license - see LICENSE.rst</span>
+
+<span class="sd">*Source location*:</span>
+<span class="sd">    $MANGADAP_DIR/python/mangadap/par/analysisplan.py</span>
+
+<span class="sd">*Imports and python version compliance*:</span>
+<span class="sd">    ::</span>
+
+<span class="sd">        from __future__ import division</span>
+<span class="sd">        from __future__ import print_function</span>
+<span class="sd">        from __future__ import absolute_import</span>
+<span class="sd">        from __future__ import unicode_literals</span>
+
+<span class="sd">        import sys</span>
+<span class="sd">        if sys.version &gt; &#39;3&#39;:</span>
+<span class="sd">            long = int</span>
+
+<span class="sd">        import numpy</span>
+<span class="sd">        from pydl.pydlutils.yanny import yanny</span>
+
+<span class="sd">        from .parset import ParSet, ParDatabase</span>
+
+<span class="sd">*Class usage examples*:</span>
+<span class="sd">        Add usage comments!</span>
+
+<span class="sd">*Revision history*:</span>
+<span class="sd">    | **11 May 2016**: Original implementation by K. Westfall (KBW)</span>
+<span class="sd">    | **03 Jun 2016**: (KBW) Any key with value &#39;None&#39; is converted to</span>
+<span class="sd">        NoneType</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version</span> <span class="o">&gt;</span> <span class="s1">&#39;3&#39;</span><span class="p">:</span>
+    <span class="n">long</span> <span class="o">=</span> <span class="nb">int</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">from</span> <span class="nn">pydl.pydlutils.yanny</span> <span class="k">import</span> <span class="n">yanny</span>
+
+<span class="kn">from</span> <span class="nn">.parset</span> <span class="k">import</span> <span class="n">ParSet</span><span class="p">,</span> <span class="n">ParDatabase</span>
+
+<div class="viewcode-block" id="AnalysisPlan"><a class="viewcode-back" href="../../../mangadap.par.analysisplan.html#mangadap.par.analysisplan.AnalysisPlan">[docs]</a><span class="k">class</span> <span class="nc">AnalysisPlan</span><span class="p">(</span><span class="n">ParSet</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generic class to handle MaNGA DAP analysis plans.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">drpqa_key</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">drpqa_clobber</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">bin_key</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">bin_clobber</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                 <span class="n">continuum_key</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">continuum_clobber</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">elmom_key</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">elmom_clobber</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                 <span class="n">elfit_key</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">elfit_clobber</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">spindex_key</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">spindex_clobber</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+
+        <span class="c1"># TODO: Include covariance keys that is applied to each/some analyses</span>
+        <span class="n">_drpqa_key</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">drpqa_key</span> <span class="o">==</span> <span class="s1">&#39;None&#39;</span> <span class="ow">or</span> <span class="n">drpqa_key</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">drpqa_key</span>
+        <span class="n">_bin_key</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">bin_key</span> <span class="o">==</span> <span class="s1">&#39;None&#39;</span> <span class="ow">or</span> <span class="n">bin_key</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">bin_key</span>
+        <span class="n">_continuum_key</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">continuum_key</span> <span class="o">==</span> <span class="s1">&#39;None&#39;</span> <span class="ow">or</span> <span class="n">continuum_key</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">continuum_key</span>
+        <span class="n">_elmom_key</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">elmom_key</span> <span class="o">==</span> <span class="s1">&#39;None&#39;</span> <span class="ow">or</span> <span class="n">elmom_key</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">elmom_key</span>
+        <span class="n">_elfit_key</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">elfit_key</span> <span class="o">==</span> <span class="s1">&#39;None&#39;</span> <span class="ow">or</span> <span class="n">elfit_key</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">elfit_key</span>
+        <span class="n">_spindex_key</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">spindex_key</span> <span class="o">==</span> <span class="s1">&#39;None&#39;</span> <span class="ow">or</span> <span class="n">spindex_key</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">spindex_key</span>
+
+        <span class="n">pars</span> <span class="o">=</span>   <span class="p">[</span> <span class="s1">&#39;drpqa_key&#39;</span><span class="p">,</span> <span class="s1">&#39;drpqa_clobber&#39;</span><span class="p">,</span> <span class="s1">&#39;bin_key&#39;</span><span class="p">,</span> <span class="s1">&#39;bin_clobber&#39;</span><span class="p">,</span> <span class="s1">&#39;continuum_key&#39;</span><span class="p">,</span>
+                   <span class="s1">&#39;continuum_clobber&#39;</span><span class="p">,</span> <span class="s1">&#39;elmom_key&#39;</span><span class="p">,</span> <span class="s1">&#39;elmom_clobber&#39;</span><span class="p">,</span> <span class="s1">&#39;elfit_key&#39;</span><span class="p">,</span> <span class="s1">&#39;elfit_clobber&#39;</span><span class="p">,</span>
+                   <span class="s1">&#39;spindex_key&#39;</span><span class="p">,</span> <span class="s1">&#39;spindex_clobber&#39;</span> <span class="p">]</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="p">[</span> <span class="n">_drpqa_key</span><span class="p">,</span> <span class="n">drpqa_clobber</span><span class="p">,</span> <span class="n">_bin_key</span><span class="p">,</span> <span class="n">bin_clobber</span><span class="p">,</span> <span class="n">_continuum_key</span><span class="p">,</span>
+                   <span class="n">continuum_clobber</span><span class="p">,</span> <span class="n">_elmom_key</span><span class="p">,</span> <span class="n">elmom_clobber</span><span class="p">,</span> <span class="n">_elfit_key</span><span class="p">,</span> <span class="n">elfit_clobber</span><span class="p">,</span>
+                   <span class="n">_spindex_key</span><span class="p">,</span> <span class="n">spindex_clobber</span> <span class="p">]</span>
+        <span class="n">dtypes</span> <span class="o">=</span> <span class="p">[</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span> <span class="p">]</span>
+
+        <span class="n">ParSet</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pars</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="n">values</span><span class="p">,</span> <span class="n">dtypes</span><span class="o">=</span><span class="n">dtypes</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="AnalysisPlan._check"><a class="viewcode-back" href="../../../mangadap.par.analysisplan.html#mangadap.par.analysisplan.AnalysisPlan._check">[docs]</a>    <span class="k">def</span> <span class="nf">_check</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check that the plan makes sense:</span>
+<span class="sd">            - To bin, must first assess the DRP data</span>
+<span class="sd">            - To do anythin else, must bin.</span>
+<span class="sd">            - Emission-line moments and profile fits *should* subtract</span>
+<span class="sd">              the best-fitting stellar continuum to account for the</span>
+<span class="sd">              stellar-absorption below the lines, but it&#39;s not</span>
+<span class="sd">              explicitly necessary for the code to run.</span>
+<span class="sd">            - The spectral indices *should* subtract the best-fitting</span>
+<span class="sd">              emission-line model and use the best-fitting stellar</span>
+<span class="sd">              continuum to determine the velocity dispersion</span>
+<span class="sd">              corrections, but neither is explicitly necessary for the</span>
+<span class="sd">              code to run.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;bin_key&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;drpqa_key&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;To bin, must provide key for reduction assessments.&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;continuum_key&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;bin_key&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;To fit the stellar continuum, must provide a binning key.&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;elmom_key&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;bin_key&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;To measure the emission-line moments, must provide a binning key.&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;elfit_key&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;bin_key&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;To measure the emission-line moments, must provide a binning key.&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;spindex_key&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;bin_key&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;To measure the spectral indices, must provide a binning key.&#39;</span><span class="p">)</span></div></div>
+
+        
+<div class="viewcode-block" id="AnalysisPlanSet"><a class="viewcode-back" href="../../../mangadap.par.analysisplan.html#mangadap.par.analysisplan.AnalysisPlanSet">[docs]</a><span class="k">class</span> <span class="nc">AnalysisPlanSet</span><span class="p">(</span><span class="n">ParDatabase</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Container class for a set of analysis plans.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">planlist</span><span class="p">):</span>
+        <span class="n">_planlist</span> <span class="o">=</span> <span class="n">planlist</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">planlist</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="k">else</span> <span class="p">[</span><span class="n">planlist</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nplans</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">planlist</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nplans</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">_planlist</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">AnalysisPlan</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Input must be a single or list of AnalysisPlan objects.&#39;</span><span class="p">)</span>
+
+        <span class="n">ParDatabase</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_planlist</span><span class="p">)</span>
+
+<div class="viewcode-block" id="AnalysisPlanSet.from_par_file"><a class="viewcode-back" href="../../../mangadap.par.analysisplan.html#mangadap.par.analysisplan.AnalysisPlanSet.from_par_file">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_par_file</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">f</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Instantiate the plan set from a par file</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># TODO: The approach here (read using yanny, set to par</span>
+        <span class="c1"># individually, then covert back to record array using</span>
+        <span class="c1"># ParDatabase) is stupid...</span>
+    
+        <span class="n">par</span> <span class="o">=</span> <span class="n">yanny</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">f</span><span class="p">,</span> <span class="n">raw</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;DAPPLAN&#39;</span><span class="p">][</span><span class="s1">&#39;drpqa_key&#39;</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Could not find DAPPLAN entries in </span><span class="si">{0}</span><span class="s1">!&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">f</span><span class="p">))</span>
+
+        <span class="c1"># Setup the array of emission line database parameters</span>
+        <span class="n">nplan</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;DAPPLAN&#39;</span><span class="p">][</span><span class="s1">&#39;drpqa_key&#39;</span><span class="p">])</span>
+        <span class="n">planlist</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nplan</span><span class="p">):</span>
+            <span class="n">planlist</span> <span class="o">+=</span> <span class="p">[</span> <span class="n">AnalysisPlan</span><span class="p">(</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;DAPPLAN&#39;</span><span class="p">][</span><span class="s1">&#39;drpqa_key&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">],</span>
+                                       <span class="nb">bool</span><span class="p">(</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;DAPPLAN&#39;</span><span class="p">][</span><span class="s1">&#39;drpqa_clobber&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]),</span>
+                                       <span class="n">par</span><span class="p">[</span><span class="s1">&#39;DAPPLAN&#39;</span><span class="p">][</span><span class="s1">&#39;bin_key&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">],</span>
+                                       <span class="nb">bool</span><span class="p">(</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;DAPPLAN&#39;</span><span class="p">][</span><span class="s1">&#39;bin_clobber&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]),</span>
+                                       <span class="n">par</span><span class="p">[</span><span class="s1">&#39;DAPPLAN&#39;</span><span class="p">][</span><span class="s1">&#39;continuum_key&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">],</span>
+                                       <span class="nb">bool</span><span class="p">(</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;DAPPLAN&#39;</span><span class="p">][</span><span class="s1">&#39;continuum_clobber&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]),</span>
+                                       <span class="n">par</span><span class="p">[</span><span class="s1">&#39;DAPPLAN&#39;</span><span class="p">][</span><span class="s1">&#39;elmom_key&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">],</span>
+                                       <span class="nb">bool</span><span class="p">(</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;DAPPLAN&#39;</span><span class="p">][</span><span class="s1">&#39;elmom_clobber&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]),</span>
+                                       <span class="n">par</span><span class="p">[</span><span class="s1">&#39;DAPPLAN&#39;</span><span class="p">][</span><span class="s1">&#39;elfit_key&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">],</span>
+                                       <span class="nb">bool</span><span class="p">(</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;DAPPLAN&#39;</span><span class="p">][</span><span class="s1">&#39;elfit_clobber&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]),</span>
+                                       <span class="n">par</span><span class="p">[</span><span class="s1">&#39;DAPPLAN&#39;</span><span class="p">][</span><span class="s1">&#39;spindex_key&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">],</span>
+                                       <span class="nb">bool</span><span class="p">(</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;DAPPLAN&#39;</span><span class="p">][</span><span class="s1">&#39;spindex_clobber&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]))</span> <span class="p">]</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">planlist</span><span class="p">)</span></div></div>
+
+
+</pre></div>
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, SDSS-IV/MaNGA Pipeline Group.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'2.2.2',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

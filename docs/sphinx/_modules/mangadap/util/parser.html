@@ -1,0 +1,511 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mangadap.util.parser &mdash; mangadap 2.2.2 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../search.html"/>
+    <link rel="top" title="mangadap 2.2.2 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> mangadap
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../mangadap.html">mangadap package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">mangadap</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>mangadap.util.parser</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for mangadap.util.parser</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Licensed under a 3-clause BSD style license - see LICENSE.rst</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">Provides a set of parsing utility functions.</span>
+
+<span class="sd">*License*:</span>
+<span class="sd">    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group</span>
+<span class="sd">        Licensed under BSD 3-clause license - see LICENSE.rst</span>
+
+<span class="sd">*Source location*:</span>
+<span class="sd">    $MANGADAP_DIR/python/mangadap/util/parser.py</span>
+
+<span class="sd">*Imports and python version compliance*:</span>
+<span class="sd">    ::</span>
+
+<span class="sd">        from __future__ import division</span>
+<span class="sd">        from __future__ import print_function</span>
+<span class="sd">        from __future__ import absolute_import</span>
+<span class="sd">        from __future__ import unicode_literals</span>
+
+<span class="sd">        import sys</span>
+<span class="sd">        if sys.version &gt; &#39;3&#39;:</span>
+<span class="sd">            long = int</span>
+
+<span class="sd">        from .exception_tools import print_frame</span>
+
+<span class="sd">.. todo::</span>
+<span class="sd">    - Add function that will parse the default MaNGA fits file name (see</span>
+<span class="sd">      :func:`mangadap.config.defaults.default_manga_fits_root`).</span>
+
+<span class="sd">*Revision history*:</span>
+<span class="sd">    | **2015**: Original implementation by K. Westfall (KBW)</span>
+<span class="sd">    | **20 May 2015**: (KBW) Documentation and Sphinx tests</span>
+<span class="sd">    | **04 Jun 2015**: (KBW) Added :func:`parse_drp_file_name`,</span>
+<span class="sd">        :func:`parse_dap_file_name`</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version</span> <span class="o">&gt;</span> <span class="s1">&#39;3&#39;</span><span class="p">:</span>
+    <span class="n">long</span> <span class="o">=</span> <span class="nb">int</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">from</span> <span class="nn">configparser</span> <span class="k">import</span> <span class="n">ConfigParser</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Unable to import configparser!  Beware!&#39;</span><span class="p">,</span> <span class="ne">ImportWarning</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">from</span> <span class="nn">configparser</span> <span class="k">import</span> <span class="n">ExtendedInterpolation</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Unable to import ExtendedInterpolation!  Some configurations will fail!&#39;</span><span class="p">,</span>
+                      <span class="ne">ImportWarning</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">from</span> <span class="nn">ConfigParser</span> <span class="k">import</span> <span class="n">ConfigParser</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Unable to import ConfigParser!  Beware!&#39;</span><span class="p">,</span> <span class="ne">ImportWarning</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">from</span> <span class="nn">ConfigParser</span> <span class="k">import</span> <span class="n">ExtendedInterpolation</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Unable to import ExtendedInterpolation!  Some configurations will fail!&#39;</span><span class="p">,</span>
+                      <span class="ne">ImportWarning</span><span class="p">)</span>
+
+<span class="kn">from</span> <span class="nn">.exception_tools</span> <span class="k">import</span> <span class="n">print_frame</span>
+
+<div class="viewcode-block" id="arginp_to_list"><a class="viewcode-back" href="../../../mangadap.util.parser.html#mangadap.util.parser.arginp_to_list">[docs]</a><span class="k">def</span> <span class="nf">arginp_to_list</span><span class="p">(</span><span class="n">inp</span><span class="p">,</span> <span class="n">evaluate</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">quiet</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Separate a list of comma-separated values in the input string to a</span>
+<span class="sd">    *list* object.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        inp (str or list): Input string with a list of comma-separated values</span>
+<span class="sd">        evaluate (bool): (Optional) Attempt to evaluate the elements in</span>
+<span class="sd">            the list using :func:`eval`.</span>
+<span class="sd">        quiet (bool): (Optional) Suppress terminal output</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        list: The list of the comma-separated values</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">inp</span>
+
+<span class="c1">#    print(&#39;INP type: {0}&#39;.format(type(inp)))</span>
+
+    <span class="c1"># Simply return a None value</span>
+    <span class="k">if</span> <span class="n">out</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">out</span>
+
+<span class="c1">#    print(out)</span>
+
+    <span class="c1"># If the input value is a string, convert it to a list of strings</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">out</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;[&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">out</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;]&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">out</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">out</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)</span>
+
+<span class="c1">#    print(out)</span>
+
+    <span class="c1"># If the input is still not a list, make it one</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="p">[</span><span class="n">out</span><span class="p">]</span>
+
+<span class="c1">#    print(out)</span>
+
+    <span class="c1"># Evaluate each string, if requested</span>
+    <span class="k">if</span> <span class="n">evaluate</span><span class="p">:</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">n</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">tmp</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="k">except</span> <span class="p">(</span><span class="ne">NameError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">):</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">quiet</span><span class="p">:</span>
+                    <span class="n">print_frame</span><span class="p">(</span><span class="s1">&#39;NameError/TypeError&#39;</span><span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Could not evaluate value </span><span class="si">{0}</span><span class="s1">. Skipping.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">out</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">tmp</span>
+
+<span class="c1">#    print(out)</span>
+<span class="c1">#    print(&#39;OUT type: {0}&#39;.format(type(out)))</span>
+    <span class="k">return</span> <span class="n">out</span></div>
+
+
+<span class="c1">#def funcarg_to_list(*arg):</span>
+<span class="c1">##   print(len(arg))</span>
+<span class="c1">#    return arg[1:]</span>
+
+
+<div class="viewcode-block" id="list_to_csl_string"><a class="viewcode-back" href="../../../mangadap.util.parser.html#mangadap.util.parser.list_to_csl_string">[docs]</a><span class="k">def</span> <span class="nf">list_to_csl_string</span><span class="p">(</span><span class="n">flist</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert a list to a comma-separated string; i.e. perform the inverse</span>
+<span class="sd">    of :func:`arginp_to_list`.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        flist (list): List to convert to a comma-separated string</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        str: String with the values in the input list converted to</span>
+<span class="sd">        string, using :func:`str`, separated by commas</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">flist</span><span class="p">)</span>
+    <span class="n">out</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">flist</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">n</span><span class="p">):</span>
+        <span class="n">out</span> <span class="o">+=</span> <span class="s1">&#39;, &#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">flist</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">out</span></div>
+
+
+<div class="viewcode-block" id="parse_drp_file_name"><a class="viewcode-back" href="../../../mangadap.util.parser.html#mangadap.util.parser.parse_drp_file_name">[docs]</a><span class="k">def</span> <span class="nf">parse_drp_file_name</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Parse the name of a DRP file to provide the plate, ifudesign, and</span>
+<span class="sd">    mode.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        name (str): Name of the DRP file.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        int, int, str: The plate, ifudesign, and mode (&#39;RSS&#39; or &#39;CUBE&#39;)</span>
+<span class="sd">        of the DRP file pulled from the file name.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        TypeError: Raised if *name* is not a string.</span>
+<span class="sd">        ValueError: Raised if if the file name does not look like a DRP</span>
+<span class="sd">            file because it does not include &#39;manga-&#39;, &#39;-LOG&#39;, or</span>
+<span class="sd">            &#39;.fits.gz&#39;.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;File name must be a string.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nb">str</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s1">&#39;manga-&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span> <span class="ow">or</span> <span class="nb">str</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s1">&#39;-LOG&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span> <span class="ow">or</span> 
+        <span class="nb">str</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s1">&#39;.fits.gz&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;String does not look like a DRP fits file name.&quot;</span><span class="p">)</span>
+
+    <span class="n">plate_start</span> <span class="o">=</span> <span class="nb">str</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s1">&#39;-&#39;</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span>
+    <span class="n">plate_end</span> <span class="o">=</span> <span class="nb">str</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="s1">&#39;-&#39;</span><span class="p">,</span><span class="n">plate_start</span><span class="p">)</span>
+    <span class="n">plate</span> <span class="o">=</span> <span class="n">long</span><span class="p">(</span><span class="n">name</span><span class="p">[</span><span class="n">plate_start</span><span class="p">:</span><span class="n">plate_end</span><span class="p">])</span>
+
+    <span class="n">ifudesign_end</span> <span class="o">=</span> <span class="nb">str</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="s1">&#39;-&#39;</span><span class="p">,</span><span class="n">plate_end</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">ifudesign</span> <span class="o">=</span> <span class="n">long</span><span class="p">(</span><span class="n">name</span><span class="p">[</span><span class="n">plate_end</span><span class="o">+</span><span class="mi">1</span><span class="p">:</span><span class="n">ifudesign_end</span><span class="p">])</span>
+
+    <span class="n">mode_start</span> <span class="o">=</span> <span class="nb">str</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="s1">&#39;LOG&#39;</span><span class="p">)</span><span class="o">+</span><span class="mi">3</span>
+    <span class="n">mode</span> <span class="o">=</span> <span class="n">name</span><span class="p">[</span><span class="n">mode_start</span><span class="p">:</span><span class="nb">str</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="s1">&#39;.fits.gz&#39;</span><span class="p">)]</span>
+
+    <span class="k">return</span> <span class="n">plate</span><span class="p">,</span> <span class="n">ifudesign</span><span class="p">,</span> <span class="n">mode</span></div>
+
+
+<div class="viewcode-block" id="parse_dap_file_name"><a class="viewcode-back" href="../../../mangadap.util.parser.html#mangadap.util.parser.parse_dap_file_name">[docs]</a><span class="k">def</span> <span class="nf">parse_dap_file_name</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Parse the name of a DAP file and return the plate, ifudesign, mode,</span>
+<span class="sd">    binning type, and iteration number.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        name (str): Name of the DAP file.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        int, int, str, str, int : The plate, ifudesign, mode (&#39;RSS&#39; or</span>
+<span class="sd">        &#39;CUBE&#39;), bin type, and iteration number of the DAP file, pulled</span>
+<span class="sd">        from the name of the file.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        TypeError: Raised if *name* is not a string.</span>
+<span class="sd">        ValueError: Raised if if the file name does not look like a DRP</span>
+<span class="sd">            file because it does not include &#39;manga-&#39;, &#39;-BIN&#39;, or</span>
+<span class="sd">            &#39;.fits&#39;.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;File name must be a string.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nb">str</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s1">&#39;manga-&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span> <span class="ow">or</span> <span class="nb">str</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s1">&#39;-LOG&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="ow">or</span> <span class="nb">str</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s1">&#39;BIN-&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span> <span class="ow">or</span> <span class="nb">str</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s1">&#39;.fits&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;String does not look like a DAP fits file name.&quot;</span><span class="p">)</span>
+
+    <span class="n">plate_start</span> <span class="o">=</span> <span class="nb">str</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s1">&#39;-&#39;</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span>
+    <span class="n">plate_end</span> <span class="o">=</span> <span class="nb">str</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="s1">&#39;-&#39;</span><span class="p">,</span><span class="n">plate_start</span><span class="p">)</span>
+    <span class="n">plate</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">name</span><span class="p">[</span><span class="n">plate_start</span><span class="p">:</span><span class="n">plate_end</span><span class="p">])</span>
+
+    <span class="n">ifudesign_end</span> <span class="o">=</span> <span class="nb">str</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="s1">&#39;-&#39;</span><span class="p">,</span><span class="n">plate_end</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">ifudesign</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">name</span><span class="p">[</span><span class="n">plate_end</span><span class="o">+</span><span class="mi">1</span><span class="p">:</span><span class="n">ifudesign_end</span><span class="p">])</span>
+
+    <span class="n">mode_start</span> <span class="o">=</span> <span class="nb">str</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="s1">&#39;LOG&#39;</span><span class="p">)</span><span class="o">+</span><span class="mi">3</span>
+    <span class="n">mode_end</span> <span class="o">=</span> <span class="nb">str</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="s1">&#39;_BIN-&#39;</span><span class="p">)</span>
+    <span class="n">mode</span> <span class="o">=</span> <span class="n">name</span><span class="p">[</span><span class="n">mode_start</span><span class="p">:</span><span class="n">mode_end</span><span class="p">]</span>
+
+    <span class="n">bintype_end</span> <span class="o">=</span> <span class="nb">str</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="s1">&#39;-&#39;</span><span class="p">,</span><span class="n">mode_end</span><span class="o">+</span><span class="mi">5</span><span class="p">)</span>
+    <span class="n">bintype</span> <span class="o">=</span> <span class="n">name</span><span class="p">[</span><span class="n">mode_end</span><span class="o">+</span><span class="mi">5</span><span class="p">:</span><span class="n">bintype_end</span><span class="p">]</span>
+
+    <span class="n">niter_end</span> <span class="o">=</span> <span class="nb">str</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="s1">&#39;.fits&#39;</span><span class="p">,</span><span class="n">bintype_end</span><span class="p">)</span>
+    <span class="n">niter</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">name</span><span class="p">[</span><span class="n">bintype_end</span><span class="o">+</span><span class="mi">1</span><span class="p">:</span><span class="n">niter_end</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">plate</span><span class="p">,</span> <span class="n">ifudesign</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">bintype</span><span class="p">,</span> <span class="n">niter</span></div>
+
+    
+<div class="viewcode-block" id="DefaultConfig"><a class="viewcode-back" href="../../../mangadap.util.parser.html#mangadap.util.parser.DefaultConfig">[docs]</a><span class="k">class</span> <span class="nc">DefaultConfig</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A wrapper for the ConfigParser class that handles None values and</span>
+<span class="sd">    provides some convenience functions.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">interpolate</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cnfg</span> <span class="o">=</span> <span class="n">ConfigParser</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">,</span> <span class="n">allow_no_value</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                 <span class="n">interpolation</span><span class="o">=</span><span class="n">ExtendedInterpolation</span><span class="p">())</span> \
+                        <span class="k">if</span> <span class="n">interpolate</span> <span class="k">else</span> <span class="n">ConfigParser</span><span class="p">(</span><span class="n">allow_no_value</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">f</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cnfg</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cnfg</span><span class="p">[</span><span class="s1">&#39;default&#39;</span><span class="p">][</span><span class="n">key</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cnfg</span><span class="o">.</span><span class="n">options</span><span class="p">(</span><span class="s1">&#39;default&#39;</span><span class="p">)</span><span class="o">.</span><span class="fm">__iter__</span><span class="p">()</span>
+
+<div class="viewcode-block" id="DefaultConfig.read"><a class="viewcode-back" href="../../../mangadap.util.parser.html#mangadap.util.parser.DefaultConfig.read">[docs]</a>    <span class="k">def</span> <span class="nf">read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cnfg</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">f</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DefaultConfig.keyword_specified"><a class="viewcode-back" href="../../../mangadap.util.parser.html#mangadap.util.parser.DefaultConfig.keyword_specified">[docs]</a>    <span class="k">def</span> <span class="nf">keyword_specified</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span> <span class="ow">and</span> <span class="bp">self</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="DefaultConfig.all_required"><a class="viewcode-back" href="../../../mangadap.util.parser.html#mangadap.util.parser.DefaultConfig.all_required">[docs]</a>    <span class="k">def</span> <span class="nf">all_required</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">keys</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span> <span class="ow">or</span> <span class="bp">self</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+<div class="viewcode-block" id="DefaultConfig.get"><a class="viewcode-back" href="../../../mangadap.util.parser.html#mangadap.util.parser.DefaultConfig.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">default</span> <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">cnfg</span><span class="p">[</span><span class="s1">&#39;default&#39;</span><span class="p">][</span><span class="n">key</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span> \
+                        <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">cnfg</span><span class="p">[</span><span class="s1">&#39;default&#39;</span><span class="p">][</span><span class="n">key</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="DefaultConfig.getint"><a class="viewcode-back" href="../../../mangadap.util.parser.html#mangadap.util.parser.DefaultConfig.getint">[docs]</a>    <span class="k">def</span> <span class="nf">getint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">default</span> <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">cnfg</span><span class="p">[</span><span class="s1">&#39;default&#39;</span><span class="p">][</span><span class="n">key</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span> \
+                        <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">cnfg</span><span class="p">[</span><span class="s1">&#39;default&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getint</span><span class="p">(</span><span class="n">key</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DefaultConfig.getbool"><a class="viewcode-back" href="../../../mangadap.util.parser.html#mangadap.util.parser.DefaultConfig.getbool">[docs]</a>    <span class="k">def</span> <span class="nf">getbool</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">default</span> <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">cnfg</span><span class="p">[</span><span class="s1">&#39;default&#39;</span><span class="p">][</span><span class="n">key</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span> \
+                        <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">cnfg</span><span class="p">[</span><span class="s1">&#39;default&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getboolean</span><span class="p">(</span><span class="n">key</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DefaultConfig.getfloat"><a class="viewcode-back" href="../../../mangadap.util.parser.html#mangadap.util.parser.DefaultConfig.getfloat">[docs]</a>    <span class="k">def</span> <span class="nf">getfloat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">default</span> <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">cnfg</span><span class="p">[</span><span class="s1">&#39;default&#39;</span><span class="p">][</span><span class="n">key</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span> \
+                        <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">cnfg</span><span class="p">[</span><span class="s1">&#39;default&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">getfloat</span><span class="p">(</span><span class="n">key</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DefaultConfig.getlist"><a class="viewcode-back" href="../../../mangadap.util.parser.html#mangadap.util.parser.DefaultConfig.getlist">[docs]</a>    <span class="k">def</span> <span class="nf">getlist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">evaluate</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">cnfg</span><span class="p">[</span><span class="s1">&#39;default&#39;</span><span class="p">][</span><span class="n">key</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">default</span>
+        <span class="k">return</span> <span class="p">[</span> <span class="nb">eval</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span> <span class="k">if</span> <span class="n">evaluate</span> <span class="k">else</span> <span class="n">e</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> \
+                    <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cnfg</span><span class="p">[</span><span class="s1">&#39;default&#39;</span><span class="p">][</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)</span> <span class="p">]</span></div></div>
+
+
+
+</pre></div>
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, SDSS-IV/MaNGA Pipeline Group.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'2.2.2',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

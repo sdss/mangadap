@@ -1,0 +1,848 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mangadap.util.bitmask &mdash; mangadap 2.2.2 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../search.html"/>
+    <link rel="top" title="mangadap 2.2.2 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> mangadap
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../mangadap.html">mangadap package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">mangadap</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>mangadap.util.bitmask</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for mangadap.util.bitmask</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Licensed under a 3-clause BSD style license - see LICENSE.rst</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Base class for handling bit masks by the DAP.</span>
+
+<span class="sd">*License*:</span>
+<span class="sd">    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group</span>
+<span class="sd">        Licensed under BSD 3-clause license - see LICENSE.rst</span>
+
+<span class="sd">*Source location*:</span>
+<span class="sd">    $MANGADAP_DIR/python/mangadap/util/bitmask.py</span>
+
+<span class="sd">*Imports and python version compliance*:</span>
+<span class="sd">    ::</span>
+
+<span class="sd">        from __future__ import division</span>
+<span class="sd">        from __future__ import print_function</span>
+<span class="sd">        from __future__ import absolute_import</span>
+<span class="sd">        from __future__ import unicode_literals</span>
+
+<span class="sd">        import sys</span>
+<span class="sd">        if sys.version &gt; &#39;3&#39;:</span>
+<span class="sd">            long = int</span>
+<span class="sd">            try:</span>
+<span class="sd">                from configparser import ConfigParser</span>
+<span class="sd">            except ImportError:</span>
+<span class="sd">                print(&#39;WARNING: Unable to import configparser!  Beware!&#39;)</span>
+<span class="sd">        else:</span>
+<span class="sd">            try:</span>
+<span class="sd">                from ConfigParser import ConfigParser</span>
+<span class="sd">            except ImportError:</span>
+<span class="sd">                print(&#39;WARNING: Unable to import ConfigParser!  Beware!&#39;)</span>
+
+<span class="sd">        import numpy</span>
+<span class="sd">        import os</span>
+<span class="sd">        import textwrap</span>
+<span class="sd">        from pydl.pydlutils.yanny import yanny</span>
+
+<span class="sd">*Class usage examples*:</span>
+<span class="sd">    Here is an example of reading/creating a TemplateLibrary, then</span>
+<span class="sd">    creating a plot that shows the full spectrum (blue) and the unmasked</span>
+<span class="sd">    spectrum (green)::</span>
+
+<span class="sd">        # Imports</span>
+<span class="sd">        import numpy</span>
+<span class="sd">        from mangadap.drpfits import DRPFits</span>
+<span class="sd">        from mangadap.proc.TemplateLibrary import TemplateLibrary, TemplateLibraryBitMask</span>
+<span class="sd">        from matplotlib import pyplot</span>
+
+<span class="sd">        # Define the DRP file</span>
+<span class="sd">        drpf = DRPFits(7495, 12703, &#39;CUBE&#39;)</span>
+
+<span class="sd">        # Build the template library</span>
+<span class="sd">        tpl_lib = TemplateLibrary(&#39;M11-MILES&#39;, drpf=drpf, directory_path=&#39;.&#39;)</span>
+<span class="sd">        # Writes: ./manga-7495-12703-LOGCUBE_M11-MILES.fits</span>
+
+<span class="sd">        # Initialize the mask object</span>
+<span class="sd">        tplbm = TemplateLibraryBitMask()</span>
+
+<span class="sd">        # Refactor the mask for the first template spectrum using the bitmask</span>
+<span class="sd">        unmasked = numpy.invert(tplbm.flagged(tpl_lib.hdu[&#39;MASK&#39;].data[0,:]))</span>
+
+<span class="sd">        # Plot the full spectrum (blue)</span>
+<span class="sd">        pyplot.plot(tpl_lib.hdu[&#39;WAVE&#39;].data, tpl_lib.hdu[&#39;FLUX&#39;].data[0,:])</span>
+<span class="sd">        # Plot the unmasked pixels (green; points are connected even if there are gaps</span>
+<span class="sd">        pyplot.plot(tpl_lib.hdu[&#39;WAVE&#39;].data[unmasked], tpl_lib.hdu[&#39;FLUX&#39;].data[0,unmasked])</span>
+<span class="sd">        # Show the plot</span>
+<span class="sd">        pyplot.show()</span>
+
+
+<span class="sd">*Revision history*:</span>
+<span class="sd">    | **01 Jun 2015**: Original implementation by K. Westfall (KBW)</span>
+<span class="sd">    | **07 Oct 2015**: (KBW) Added a usage case</span>
+<span class="sd">    | **29 Jan 2016**: (KBW) Changed attributes of :class:`BitMask` and</span>
+<span class="sd">        added functionality to print a description of the bits.  Convert</span>
+<span class="sd">        :class:`mangadap.proc.templatelibrary.TemplateLibraryBitMask` to</span>
+<span class="sd">        new format where the bits are read from a configuration file.</span>
+<span class="sd">    | **17 Feb 2016**: (KBW) Minor edit to documentation</span>
+<span class="sd">    | **16 Mar 2016**: (KBW) Moved TemplateLibraryBitMask to</span>
+<span class="sd">        :class:`mangadap.proc.templatelibrary.TemplateLibraryBitMask`;</span>
+<span class="sd">        moved HDUList_mask_wavelengths to</span>
+<span class="sd">        :func:`mangadap.proc.util.HDUList_mask_wavelengths`.</span>
+<span class="sd">    | **27 Mar 2016**: (KBW) Added :func:`BitMask.from_ini_file` and</span>
+<span class="sd">        :func:`BitMask.from_par_file` class methods.  Added</span>
+<span class="sd">        :func:`BitMask._fill_sequence` static method.  This allows for</span>
+<span class="sd">        :class:`BitMask` objects to be declared directly from the files,</span>
+<span class="sd">        and allows the bit values to take on any number.</span>
+<span class="sd">    | **05 Apr 2016**: (KBW) Added parameters to initialization of</span>
+<span class="sd">        :class:`BitMask` objects to clean up some of the derived class</span>
+<span class="sd">        initialization.</span>
+<span class="sd">    | **11 May 2016**: (KBW) Switch to using `pydl.pydlutils.yanny`_</span>
+<span class="sd">        instead of internal yanny reader</span>
+<span class="sd">    | **29 Jul 2016**: (KBW) Change asarray to atleast_1d</span>
+
+<span class="sd">.. _pydl.pydlutils.yanny: http://pydl.readthedocs.io/en/stable/api/pydl.pydlutils.yanny.yanny.html</span>
+<span class="sd">.. _SDSS-style parameter file: http://www.sdss.org/dr12/software/par/</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version</span> <span class="o">&gt;</span> <span class="s1">&#39;3&#39;</span><span class="p">:</span>
+    <span class="n">long</span> <span class="o">=</span> <span class="nb">int</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">from</span> <span class="nn">configparser</span> <span class="k">import</span> <span class="n">ConfigParser</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;WARNING: Unable to import configparser!  Beware!&#39;</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">from</span> <span class="nn">ConfigParser</span> <span class="k">import</span> <span class="n">ConfigParser</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;WARNING: Unable to import ConfigParser!  Beware!&#39;</span><span class="p">)</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">textwrap</span>
+<span class="kn">from</span> <span class="nn">pydl.pydlutils.yanny</span> <span class="k">import</span> <span class="n">yanny</span>
+
+<div class="viewcode-block" id="BitMask"><a class="viewcode-back" href="../../../mangadap.util.bitmask.html#mangadap.util.bitmask.BitMask">[docs]</a><span class="k">class</span> <span class="nc">BitMask</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generic class to handle and manipulate bitmasks.  The input list of</span>
+<span class="sd">    bit names (keys) must be unique, except that values of &#39;NULL&#39; are</span>
+<span class="sd">    ignored.  The index in the input keys determines the bit value;</span>
+<span class="sd">    &#39;NULL&#39; keys are included in the count.  For example::</span>
+
+<span class="sd">        &gt;&gt;&gt; from mangadap.util.bitmask import BitMask</span>
+<span class="sd">        &gt;&gt;&gt; keys = [ &#39;key1&#39;, &#39;key2&#39;, &#39;NULL&#39;, &#39;NULL&#39;, &#39;key3&#39; ]</span>
+<span class="sd">        &gt;&gt;&gt; bm = BitMask(keys)</span>
+<span class="sd">        &gt;&gt;&gt; bm.info()</span>
+<span class="sd">                 Bit: key1 = 0</span>
+
+<span class="sd">                 Bit: key2 = 1</span>
+
+<span class="sd">                 Bit: key3 = 4</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        keys (str, list, numpy.ndarray): (**Optional**) List of keys (or</span>
+<span class="sd">            single key) to use as the bit name.  Each key is given a bit</span>
+<span class="sd">            number ranging from 0..N-1.  If **not** provided, one of</span>
+<span class="sd">            either *ini_file* or *par_file* must be provided.</span>
+<span class="sd">        descr (str, list, numpy.ndarray): (**Optional**) List of</span>
+<span class="sd">            descriptions (or single discription) provided by</span>
+<span class="sd">            :func:`info` for each bit.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: Raised if more than 64 bits are provided.</span>
+<span class="sd">        TypeError: Raised if the provided `keys` do not have the correct</span>
+<span class="sd">            type.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        nbits (int): Number of bits</span>
+<span class="sd">        bits (dict): A dictionary with the bit name and value</span>
+<span class="sd">        descr (numpy.ndarray) : List of bit descriptions</span>
+<span class="sd">        max_value (int): The maximum valid bitmask value given the</span>
+<span class="sd">            number of bits.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">keys</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">descr</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ini_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">par_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">par_grp</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="n">keys</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">ini_file</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">par_file</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;BitMask undefined!&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">par_file</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">par_grp</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;If reading from par file, must provide bit group flag.&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Allow for file-based initialization</span>
+        <span class="n">_self</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">ini_file</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">_self</span> <span class="o">=</span> <span class="n">BitMask</span><span class="o">.</span><span class="n">from_ini_file</span><span class="p">(</span><span class="n">ini_file</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">par_file</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="p">:</span>
+            <span class="n">_self</span> <span class="o">=</span> <span class="n">BitMask</span><span class="o">.</span><span class="n">from_par_file</span><span class="p">(</span><span class="n">par_file</span><span class="p">,</span> <span class="n">par_grp</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">_self</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">nbits</span> <span class="o">=</span> <span class="n">_self</span><span class="o">.</span><span class="n">nbits</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">bits</span> <span class="o">=</span> <span class="n">_self</span><span class="o">.</span><span class="n">bits</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">descr</span> <span class="o">=</span> <span class="n">_self</span><span class="o">.</span><span class="n">descr</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">max_value</span> <span class="o">=</span> <span class="n">_self</span><span class="o">.</span><span class="n">max_value</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Input argument </span><span class="se">\&#39;</span><span class="s1">keys</span><span class="se">\&#39;</span><span class="s1"> incorrect type.&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">([</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">]):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Input keys must have string type.&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">keys</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">keys</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">keys</span><span class="p">])</span>
+
+        <span class="c1"># Do not allow for more that 64 bits</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">64</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Can only define up to 64 bits!&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Allow for multiple NULL keys; but check the rest for</span>
+        <span class="c1"># uniqueness</span>
+        <span class="n">diff</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">([</span><span class="s1">&#39;NULL&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">diff</span><span class="p">)</span> <span class="o">!=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">keys</span><span class="p">[</span> <span class="n">keys</span> <span class="o">!=</span> <span class="s1">&#39;NULL&#39;</span> <span class="p">])</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;All input keys must be unique.&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">nbits</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bits</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">([</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">k</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span> <span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_value</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">nbits</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">descr</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">descr</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">descr</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Input argument </span><span class="se">\&#39;</span><span class="s1">descr</span><span class="se">\&#39;</span><span class="s1"> incorrect type.&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">([</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">descr</span><span class="p">]):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Input keys must have string type.&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">descr</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">descr</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">descr</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">descr</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">descr</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">descr</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">descr</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nbits</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Number of listed descriptions not the same as number of keys.&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">descr</span> <span class="o">=</span> <span class="n">descr</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="BitMask.from_ini_file"><a class="viewcode-back" href="../../../mangadap.util.bitmask.html#mangadap.util.bitmask.BitMask.from_ini_file">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_ini_file</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">f</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Define the object using a ini configuration file.  The sections</span>
+<span class="sd">        of the configuration file define the keys, and each section is</span>
+<span class="sd">        expected to have `value` and `descr` components that define the</span>
+<span class="sd">        bit value and provided a description of the bit.  An example ini</span>
+<span class="sd">        file might look like this::</span>
+
+<span class="sd">            [NO_DATA]</span>
+<span class="sd">             value = 0</span>
+<span class="sd">             descr = Pixel has no data</span>
+
+<span class="sd">            [INVALID_DATA]</span>
+<span class="sd">             value = 1</span>
+<span class="sd">             descr = Pixel value is invalid</span>
+<span class="sd">    </span>
+<span class="sd">        See</span>
+<span class="sd">        :class:`mangadap.proc.templatelibrary.TemplateLibraryBitMask`</span>
+<span class="sd">        for an example that uses this function.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            f (str) : File name to use for defining the</span>
+<span class="sd">                :class:`BitMask`.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            :class:`BitMask`: Object with bitmasks defined by the ini</span>
+<span class="sd">            file.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            FileNotFoundError: Raised if the input file does not exist.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Check if the file exists</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="s1">&#39;Could not find ini file: </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">f</span><span class="p">))</span>
+        <span class="c1"># Define the parser and read the file</span>
+        <span class="n">cnfg</span> <span class="o">=</span> <span class="n">ConfigParser</span><span class="p">()</span>
+        <span class="n">cnfg</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+
+        <span class="c1"># Read the keys, values, and descriptions</span>
+        <span class="n">keys</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">cnfg</span><span class="o">.</span><span class="n">sections</span><span class="p">())</span>
+        <span class="n">vals</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span> <span class="n">keys</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">int</span> <span class="p">)</span>
+        <span class="n">descr</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span> <span class="n">keys</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">object</span> <span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">k</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">keys</span><span class="p">):</span>
+            <span class="n">vals</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">cnfg</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="s1">&#39;value&#39;</span><span class="p">]</span>
+            <span class="n">descr</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">cnfg</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="s1">&#39;descr&#39;</span><span class="p">]</span>
+
+        <span class="c1"># Slot in NULLs where necessary and return the object instance</span>
+        <span class="n">keys</span><span class="p">,</span> <span class="n">vals</span><span class="p">,</span> <span class="n">descr</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_fill_sequence</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">vals</span><span class="p">,</span> <span class="n">descr</span><span class="p">)</span>
+        <span class="n">srt</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">vals</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">keys</span><span class="p">[</span><span class="n">srt</span><span class="p">],</span> <span class="n">descr</span><span class="o">=</span><span class="n">descr</span><span class="p">[</span><span class="n">srt</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="BitMask.from_par_file"><a class="viewcode-back" href="../../../mangadap.util.bitmask.html#mangadap.util.bitmask.BitMask.from_par_file">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_par_file</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Define the object using an `SDSS-style parameter file`_.  This</span>
+<span class="sd">        has been tailored to work with the sdssMaskbits.par file in</span>
+<span class="sd">        IDLUTILS; however, it can work with other like files.</span>
+<span class="sd">        </span>
+<span class="sd">        See :class:`mangadap.drpfits.DRPFitsBitMask` for an example that</span>
+<span class="sd">        uses this function.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            f (str) : File name to use for defining the</span>
+<span class="sd">                :class:`BitMask`.</span>
+<span class="sd">            name (str) : The designation of the bits to assign.  For</span>
+<span class="sd">                example, in :class:`mangadap.drpfits.DRPFitsBitMask`</span>
+<span class="sd">                this is `&#39;MANGA_DRP3PIXMASK&#39;`.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            :class:`BitMask`: Object with bitmasks defined by the</span>
+<span class="sd">            parameter file.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            FileNotFoundError: Raised if the input file does not exist.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Check the file exists</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="s1">&#39;Could not find ini file: </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">f</span><span class="p">))</span>
+
+        <span class="c1"># Read the full yanny file and only select the maskbits typedef</span>
+<span class="c1">#        bits = yanny(f)[&#39;MASKBITS&#39;]</span>
+        <span class="n">bits</span> <span class="o">=</span> <span class="n">yanny</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">f</span><span class="p">,</span> <span class="n">raw</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="s1">&#39;MASKBITS&#39;</span><span class="p">]</span>
+
+        <span class="c1"># Find the bits with the correct designation</span>
+        <span class="n">indx</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">bits</span><span class="p">[</span><span class="s1">&#39;flag&#39;</span><span class="p">])</span> <span class="o">==</span> <span class="n">name</span>
+        <span class="n">keys</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">bits</span><span class="p">[</span><span class="s1">&#39;label&#39;</span><span class="p">])[</span><span class="n">indx</span><span class="p">]</span>
+        <span class="n">vals</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">bits</span><span class="p">[</span><span class="s1">&#39;bit&#39;</span><span class="p">])[</span><span class="n">indx</span><span class="p">]</span>
+        <span class="n">descr</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">bits</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">])[</span><span class="n">indx</span><span class="p">]</span>
+
+        <span class="c1"># Slot in NULLs where necessary and return the object instance</span>
+        <span class="n">keys</span><span class="p">,</span> <span class="n">vals</span><span class="p">,</span> <span class="n">descr</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_fill_sequence</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">vals</span><span class="p">,</span> <span class="n">descr</span><span class="p">)</span>
+        <span class="n">srt</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">vals</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">keys</span><span class="p">[</span><span class="n">srt</span><span class="p">],</span> <span class="n">descr</span><span class="o">=</span><span class="n">descr</span><span class="p">[</span><span class="n">srt</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="BitMask._fill_sequence"><a class="viewcode-back" href="../../../mangadap.util.bitmask.html#mangadap.util.bitmask.BitMask._fill_sequence">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_fill_sequence</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">vals</span><span class="p">,</span> <span class="n">descr</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The instantiation of :class:`BitMask` does not include the value</span>
+<span class="sd">        of the bit, it just assumes that the bits should be in sequence</span>
+<span class="sd">        such that the first key has a value of 0, and the last key has a</span>
+<span class="sd">        value of N-1.  Unfortunately, not all the bits the DAP follow a</span>
+<span class="sd">        sequence.  This function finds the range of the bits and then</span>
+<span class="sd">        slots in NULL keywords and empty descriptions where necessary to</span>
+<span class="sd">        fill in the full complement of bits.  NULL keywords are ignored</span>
+<span class="sd">        by the :class:`BitMask` object.</span>
+
+<span class="sd">        This is a static method because it doesn&#39;t depend on any of the</span>
+<span class="sd">        attributes of :class:`BitMask`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            keys (list or str): Bit names</span>
+<span class="sd">            vals (list or int): Bit values</span>
+<span class="sd">            descr (list or str): Description of each bit</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            numpy.ndarray: Three arrays with the filled keys, values,</span>
+<span class="sd">            and descriptions.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: Raised if a bit value is less than 0.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Make sure the input is treated as an array</span>
+<span class="c1">#        keys = numpy.asarray(keys)</span>
+<span class="c1">#        vals = numpy.asarray(vals)</span>
+<span class="c1">#        descr = numpy.asarray(descr)</span>
+        <span class="n">keys</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span>
+        <span class="n">vals</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">vals</span><span class="p">)</span>
+        <span class="n">descr</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">descr</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">numpy</span><span class="o">.</span><span class="n">amin</span><span class="p">(</span><span class="n">vals</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;No bit cannot be less than 0!&#39;</span><span class="p">)</span>
+        <span class="n">minv</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">amin</span><span class="p">(</span><span class="n">vals</span><span class="p">)</span>
+        <span class="n">maxv</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">vals</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">minv</span> <span class="o">!=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">maxv</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">vals</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="n">diff</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">maxv</span><span class="p">))</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">vals</span><span class="p">))</span>
+            <span class="n">vals</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">vals</span><span class="p">,</span> <span class="n">diff</span><span class="p">)</span>
+            <span class="n">keys</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="s1">&#39;NULL&#39;</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">diff</span><span class="p">)))</span>
+            <span class="n">descr</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">descr</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="s1">&#39;&#39;</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">diff</span><span class="p">)))</span>
+
+        <span class="k">return</span> <span class="n">keys</span><span class="p">,</span> <span class="n">vals</span><span class="p">,</span> <span class="n">descr</span></div>
+
+<span class="c1">#        if numpy.amin(vals) != 0:</span>
+<span class="c1">#            raise ValueError(&#39;Bit values must start from 0.&#39;)</span>
+<span class="c1">#        if numpy.amax(vals) != keys.size-1:</span>
+<span class="c1">#            raise ValueError(&#39;Bit values must be sequential starting from 0.&#39;)</span>
+
+        
+<div class="viewcode-block" id="BitMask.keys"><a class="viewcode-back" href="../../../mangadap.util.bitmask.html#mangadap.util.bitmask.BitMask.keys">[docs]</a>    <span class="k">def</span> <span class="nf">keys</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a list of the bits; &#39;NULL&#39; keywords are ignored.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            list: List of bit keywords.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bits</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="o">-</span><span class="nb">set</span><span class="p">([</span><span class="s1">&#39;NULL&#39;</span><span class="p">]))</span></div>
+
+
+<span class="c1">#    def nbits(self):</span>
+<span class="c1">#        &quot;&quot;&quot;</span>
+<span class="c1">#        Return the number of bits.</span>
+<span class="c1">#</span>
+<span class="c1">#        Returns:</span>
+<span class="c1">#            int : Number of bits</span>
+<span class="c1">#        &quot;&quot;&quot;</span>
+<span class="c1">#        return len(self.bits)</span>
+
+
+<div class="viewcode-block" id="BitMask.info"><a class="viewcode-back" href="../../../mangadap.util.bitmask.html#mangadap.util.bitmask.BitMask.info">[docs]</a>    <span class="k">def</span> <span class="nf">info</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Print the list of bits and, if available, their descriptions.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">tr</span><span class="p">,</span> <span class="n">tcols</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">popen</span><span class="p">(</span><span class="s1">&#39;stty size&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">())</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+            <span class="n">tcols</span> <span class="o">-=</span> <span class="nb">int</span><span class="p">(</span><span class="n">tcols</span><span class="o">*</span><span class="mf">0.1</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">tr</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">tcols</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bits</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:(</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">])):</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="s1">&#39;NULL&#39;</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;         Bit: </span><span class="si">{0}</span><span class="s1"> = </span><span class="si">{1}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="n">v</span><span class="p">))</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">descr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">tcols</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="n">textwrap</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="s1">&#39; Description: </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">descr</span><span class="p">[</span><span class="n">v</span><span class="p">]),</span> <span class="n">tcols</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39; Description: </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">descr</span><span class="p">[</span><span class="n">v</span><span class="p">]))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BitMask.minimum_dtype"><a class="viewcode-back" href="../../../mangadap.util.bitmask.html#mangadap.util.bitmask.BitMask.minimum_dtype">[docs]</a>    <span class="k">def</span> <span class="nf">minimum_dtype</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">asuint</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the smallest int datatype that is needed to contain all</span>
+<span class="sd">        the bits in the mask.  Output as an unsigned int if requested.</span>
+
+<span class="sd">        .. warning::</span>
+<span class="sd">            uses int16 if the number of bits is less than 8 and</span>
+<span class="sd">            asuint=False because of issue astropy.io.fits has writing</span>
+<span class="sd">            int8 values.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nbits</span> <span class="o">&lt;</span> <span class="mi">8</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">uint8</span> <span class="k">if</span> <span class="n">asuint</span> <span class="k">else</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int16</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nbits</span> <span class="o">&lt;</span> <span class="mi">16</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">uint16</span> <span class="k">if</span> <span class="n">asuint</span> <span class="k">else</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int16</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nbits</span> <span class="o">&lt;</span> <span class="mi">32</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">uint32</span> <span class="k">if</span> <span class="n">asuint</span> <span class="k">else</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int32</span>
+        <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">uint64</span> <span class="k">if</span> <span class="n">asuint</span> <span class="k">else</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int64</span></div>
+
+
+<div class="viewcode-block" id="BitMask.flagged"><a class="viewcode-back" href="../../../mangadap.util.bitmask.html#mangadap.util.bitmask.BitMask.flagged">[docs]</a>    <span class="k">def</span> <span class="nf">flagged</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">flag</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Determine if a bit is on in the provided bitmask value.  The</span>
+<span class="sd">        function can be used to determine if any individual bit is on or</span>
+<span class="sd">        any one of many bits is on.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            value (uint, int, array): Bitmask value.  It should be less</span>
+<span class="sd">                than or equal to :attr:`max_value`; however, that is not</span>
+<span class="sd">                checked.</span>
+<span class="sd">            flag (string, array): (**Optional**) Bit names to check.  If</span>
+<span class="sd">                None, then it checks if any bit is on.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            bool: Boolean flags that the provided flags (or any flag)</span>
+<span class="sd">            is on for the provided bitmask value.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            KeyError: Raised by the dict data type if the input *flag*</span>
+<span class="sd">                is not one of the valid :attr:`flags`.</span>
+<span class="sd">            TypeError: Raised if the provided *flag* does not contain</span>
+<span class="sd">                one or more strings.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">numpy</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">flag</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;NULL&#39;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Flag name NULL is not allowed.&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">flag</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">flag</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">flag</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">value</span> <span class="o">&amp;</span> <span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">bits</span><span class="p">[</span><span class="n">flag</span><span class="p">])</span> <span class="o">!=</span> <span class="mi">0</span>
+
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">flag</span><span class="p">,</span> <span class="s2">&quot;__iter__&quot;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">([</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">flag</span> <span class="p">]):</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Provided bit names must be strings!&#39;</span><span class="p">)</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">value</span> <span class="o">&amp;</span> <span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">bits</span><span class="p">[</span><span class="n">flag</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span> <span class="o">!=</span> <span class="mi">0</span>
+            <span class="n">nn</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">flag</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">nn</span><span class="p">):</span>
+                <span class="n">out</span> <span class="o">|=</span> <span class="p">(</span><span class="n">value</span> <span class="o">&amp;</span> <span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">bits</span><span class="p">[</span><span class="n">flag</span><span class="p">[</span><span class="n">i</span><span class="p">]])</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">out</span>
+
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Provided bit name must be a string or an iterable of strings!&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BitMask.flagged_bits"><a class="viewcode-back" href="../../../mangadap.util.bitmask.html#mangadap.util.bitmask.BitMask.flagged_bits">[docs]</a>    <span class="k">def</span> <span class="nf">flagged_bits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the list of flagged bit names for a single bit value.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            value (int, uint): Bitmask value.  It should be less than or</span>
+<span class="sd">                equal to :attr:`max_value`; however, that is not</span>
+<span class="sd">                checked.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            list: List of flagged bit value keywords.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            KeyError: Raised by the dict data type if the input *flag*</span>
+<span class="sd">                is not one of the valid :attr:`flags`.</span>
+<span class="sd">            TypeError: Raised if the provided *flag* does not contain</span>
+<span class="sd">                one or more strings.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">integer</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Input must be a single integer.&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[]</span>
+        <span class="n">keys</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="n">indx</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span> <span class="mi">1</span><span class="o">&lt;&lt;</span><span class="bp">self</span><span class="o">.</span><span class="n">bits</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">&amp;</span> <span class="n">value</span> <span class="o">!=</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">])</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">keys</span><span class="p">[</span><span class="n">indx</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="BitMask.toggle"><a class="viewcode-back" href="../../../mangadap.util.bitmask.html#mangadap.util.bitmask.BitMask.toggle">[docs]</a>    <span class="k">def</span> <span class="nf">toggle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">flag</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Toggle a bit in the provided bitmask value.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            value (uint, int, array): Bitmask value.  It should be less</span>
+<span class="sd">                than or equal to :attr:`max_value`; however, that is not</span>
+<span class="sd">                checked.</span>
+<span class="sd">            flag (list, numpy.ndarray, or str): Bit name(s) to toggle.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            uint: New bitmask value after toggling the selected bit.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            KeyError: Raised by the dict data type if the input *flag*</span>
+<span class="sd">                is not one of the valid :attr:`flags`.</span>
+<span class="sd">            Exception: Raised if the provided *flag* is not a string.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">flag</span> <span class="o">==</span> <span class="s1">&#39;NULL&#39;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Flag name NULL is invalid!&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">flag</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
+            <span class="n">_value</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">flag</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Provided bit name must be a string!&#39;</span><span class="p">)</span>
+                <span class="n">_value</span> <span class="o">^=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">bits</span><span class="p">[</span><span class="n">f</span><span class="p">])</span>
+            <span class="k">return</span> <span class="n">_value</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">flag</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Provided bit name must be a list or string!&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">value</span> <span class="o">^</span> <span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">bits</span><span class="p">[</span><span class="n">flag</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="BitMask.turn_on"><a class="viewcode-back" href="../../../mangadap.util.bitmask.html#mangadap.util.bitmask.BitMask.turn_on">[docs]</a>    <span class="k">def</span> <span class="nf">turn_on</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">flag</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Ensure that a bit is turned on in the provided bitmask value.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            value (uint or array): Bitmask value.  It should be less</span>
+<span class="sd">                than or equal to :attr:`max_value`; however, that is not</span>
+<span class="sd">                checked.</span>
+<span class="sd">            flag (list, numpy.ndarray, or str): Bit name(s) to turn on.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            uint: New bitmask value after turning on the selected bit.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            KeyError: Raised by the dict data type if the input *flag*</span>
+<span class="sd">                is not one of the valid :attr:`flags`.</span>
+<span class="sd">            Exception: Raised if the provided *flag* is not a string.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">flag</span> <span class="o">==</span> <span class="s1">&#39;NULL&#39;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Flag name NULL is invalid!&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">flag</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
+            <span class="n">_value</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">flag</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Provided bit name must be a string!&#39;</span><span class="p">)</span>
+                <span class="n">_value</span> <span class="o">|=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">bits</span><span class="p">[</span><span class="n">f</span><span class="p">])</span>
+            <span class="k">return</span> <span class="n">_value</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">flag</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Provided bit name must be a string!&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">value</span> <span class="o">|</span> <span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">bits</span><span class="p">[</span><span class="n">flag</span><span class="p">])</span></div>
+
+<span class="c1">#        if flag == &#39;NULL&#39;:</span>
+<span class="c1">#            raise ValueError(&#39;Flag name NULL is invalid!&#39;)</span>
+<span class="c1">#        if not isinstance(flag, str):</span>
+<span class="c1">#            raise Exception(&#39;Provided bit name must be a string!&#39;)</span>
+<span class="c1">#        return value | (1 &lt;&lt; self.bits[flag])</span>
+
+
+<div class="viewcode-block" id="BitMask.turn_off"><a class="viewcode-back" href="../../../mangadap.util.bitmask.html#mangadap.util.bitmask.BitMask.turn_off">[docs]</a>    <span class="k">def</span> <span class="nf">turn_off</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">flag</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Ensure that a bit is turned off in the provided bitmask value.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            value (uint or array): Bitmask value.  It should be less</span>
+<span class="sd">                than or equal to :attr:`max_value`; however, that is not</span>
+<span class="sd">                checked.</span>
+<span class="sd">            flag (list, numpy.ndarray, or str): Bit name(s) to turn off.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            uint: New bitmask value after turning off the selected bit.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            KeyError: Raised by the dict data type if the input *flag*</span>
+<span class="sd">                is not one of the valid :attr:`flags`.</span>
+<span class="sd">            Exception: Raised if the provided *flag* is not a string.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">flag</span> <span class="o">==</span> <span class="s1">&#39;NULL&#39;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Flag name NULL is invalid!&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">flag</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
+            <span class="n">_value</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">flag</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Provided bit name must be a string!&#39;</span><span class="p">)</span>
+                <span class="n">_value</span> <span class="o">&amp;=</span> <span class="o">~</span><span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">bits</span><span class="p">[</span><span class="n">f</span><span class="p">])</span>
+            <span class="k">return</span> <span class="n">_value</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">flag</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Provided bit name must be a string!&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">value</span> <span class="o">&amp;</span> <span class="o">~</span><span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">bits</span><span class="p">[</span><span class="n">flag</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="BitMask.consolidate"><a class="viewcode-back" href="../../../mangadap.util.bitmask.html#mangadap.util.bitmask.BitMask.consolidate">[docs]</a>    <span class="k">def</span> <span class="nf">consolidate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">flag_set</span><span class="p">,</span> <span class="n">consolidated_flag</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Consolidate a set of flags into a single flag.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">indx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">flagged</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">flag</span><span class="o">=</span><span class="n">flag_set</span><span class="p">)</span>
+        <span class="n">value</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">turn_on</span><span class="p">(</span><span class="n">value</span><span class="p">[</span><span class="n">indx</span><span class="p">],</span> <span class="n">consolidated_flag</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">value</span></div></div>
+
+
+
+
+</pre></div>
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, SDSS-IV/MaNGA Pipeline Group.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'2.2.2',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

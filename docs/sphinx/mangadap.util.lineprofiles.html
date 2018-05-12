@@ -1,0 +1,782 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mangadap.util.lineprofiles module &mdash; mangadap 2.2.2 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="mangadap 2.2.2 documentation" href="index.html"/>
+        <link rel="up" title="mangadap.util package" href="mangadap.util.html"/>
+        <link rel="next" title="mangadap.util.log module" href="mangadap.util.log.html"/>
+        <link rel="prev" title="mangadap.util.instrument module" href="mangadap.util.instrument.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> mangadap
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="mangadap.html">mangadap package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="mangadap.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="mangadap.config.html">mangadap.config package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.contrib.html">mangadap.contrib package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.par.html">mangadap.par package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.proc.html">mangadap.proc package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.survey.html">mangadap.survey package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.test.html">mangadap.test package</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="mangadap.util.html">mangadap.util package</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="mangadap.util.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="mangadap.util.html#module-mangadap.util">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="mangadap.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mangadap.html#module-mangadap">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">mangadap</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="mangadap.html">mangadap package</a> &raquo;</li>
+        
+          <li><a href="mangadap.util.html">mangadap.util package</a> &raquo;</li>
+        
+      <li>mangadap.util.lineprofiles module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/mangadap.util.lineprofiles.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-mangadap.util.lineprofiles">
+<span id="mangadap-util-lineprofiles-module"></span><h1>mangadap.util.lineprofiles module<a class="headerlink" href="#module-mangadap.util.lineprofiles" title="Permalink to this headline">¶</a></h1>
+<p>Implements a set of line profile parameterizations.</p>
+<dl class="docutils">
+<dt><em>License</em>:</dt>
+<dd><dl class="first last docutils">
+<dt>Copyright (c) 2017, SDSS-IV/MaNGA Pipeline Group</dt>
+<dd>Licensed under BSD 3-clause license - see LICENSE.rst</dd>
+</dl>
+</dd>
+<dt><em>Source location</em>:</dt>
+<dd>$MANGADAP_DIR/python/mangadap/util/lineprofiles.py</dd>
+<dt><em>Imports and python version compliance</em>:</dt>
+<dd><div class="first last highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version</span> <span class="o">&gt;</span> <span class="s1">&#39;3&#39;</span><span class="p">:</span>
+    <span class="n">long</span> <span class="o">=</span> <span class="nb">int</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="k">import</span> <span class="n">special</span><span class="p">,</span> <span class="n">fftpack</span>
+<span class="kn">from</span> <span class="nn">astropy.modeling</span> <span class="k">import</span> <span class="n">FittableModel</span><span class="p">,</span> <span class="n">Parameter</span>
+</pre></div>
+</div>
+</dd>
+<dt><em>Class usage examples</em>:</dt>
+<dd>Add usage</dd>
+<dt><em>Revision history</em>:</dt>
+<dd><div class="first last line-block">
+<div class="line"><strong>25 May 2017</strong>: Original implementation by K. Westfall (KBW)</div>
+</div>
+</dd>
+</dl>
+<dl class="class">
+<dt id="mangadap.util.lineprofiles.FFTGaussianLSF">
+<em class="property">class </em><code class="descclassname">mangadap.util.lineprofiles.</code><code class="descname">FFTGaussianLSF</code><span class="sig-paren">(</span><em>p=None</em>, <em>dx=None</em>, <em>pixel=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#FFTGaussianLSF"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.FFTGaussianLSF" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#mangadap.util.lineprofiles.GaussianLSF" title="mangadap.util.lineprofiles.GaussianLSF"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.lineprofiles.GaussianLSF</span></code></a></p>
+<p>Define a Gaussian line profile by first constructing the analytic
+FFT of the profile and then returning the inverse real FFT.  See
+<code class="xref py py-func docutils literal"><span class="pre">mangadap.contrib.ppxf_util.emline()</span></code> by M. Cappellari.  The
+sampling <em>must</em> be uniform in <span class="math">\(x\)</span>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>p</strong> (<em>array-like</em>) – (<strong>Optional</strong>) Input parameters ordered as the
+total integral of the profile, the profile center, and the
+profile standard deviation.  Assumed to be (1.0, 0.0, 1.0)
+by default.</li>
+<li><strong>dx</strong> (<em>float</em>) – (<strong>Optional</strong>) Sampling width.  Default is 1.</li>
+<li><strong>pixel</strong> (<em>bool</em>) – (<strong>Optional</strong>) Flag to produce profile integrated
+over the sampling width.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="mangadap.util.lineprofiles.FFTGaussianLSF.p">
+<code class="descname">p</code><a class="headerlink" href="#mangadap.util.lineprofiles.FFTGaussianLSF.p" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>numpy.ndarray</em> – Most recently used parameters</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.util.lineprofiles.FFTGaussianLSF.dx">
+<code class="descname">dx</code><a class="headerlink" href="#mangadap.util.lineprofiles.FFTGaussianLSF.dx" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float</em> – Assumed sampling.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.util.lineprofiles.FFTGaussianLSF.pixel">
+<code class="descname">pixel</code><a class="headerlink" href="#mangadap.util.lineprofiles.FFTGaussianLSF.pixel" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>bool</em> – Flag to produce profile integrated over the
+sampling width.</p>
+</dd></dl>
+
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if the provided parameter vector is not 3
+elements long.</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="mangadap.util.lineprofiles.FFTGaussianLSF.sample">
+<code class="descname">sample</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#FFTGaussianLSF.sample"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.FFTGaussianLSF.sample" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sample the profile.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Does <strong>not</strong> check if the provided <span class="math">\(x\)</span> values are
+sampled at <a class="reference internal" href="#mangadap.util.lineprofiles.FFTGaussianLSF.dx" title="mangadap.util.lineprofiles.FFTGaussianLSF.dx"><code class="xref py py-attr docutils literal"><span class="pre">dx</span></code></a>.</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong> (<em>array-like</em>) – Independent variable.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="mangadap.util.lineprofiles.GaussianLSF">
+<em class="property">class </em><code class="descclassname">mangadap.util.lineprofiles.</code><code class="descname">GaussianLSF</code><span class="sig-paren">(</span><em>p=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#GaussianLSF"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.GaussianLSF" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Define a Gaussian line profile, <em>sampled</em> over the width of the
+sampling step, parameterized by its integral (<span class="math">\(F\)</span>), center
+(<span class="math">\(\mu\)</span>), and standard deviation (<span class="math">\(\sigma\)</span>). I.e:</p>
+<div class="math">
+\[\mathcal{N}(x|f,\mu,\sigma) = \frac{f}{\sqrt{2\pi}\sigma}
+\exp\left(\frac{-\Delta^2}{2\sigma^2}\right)\]</div>
+<p>where <span class="math">\(\Delta = x-\mu\)</span>.  The coordinate vector <span class="math">\(x\)</span> does
+not need to be uniformly sampled.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>p</strong> (<em>array-like</em>) – (<strong>Optional</strong>) Input parameters ordered as the
+total integral of the profile, the profile center, and the
+profile standard deviation.  Assumed to be (1.0, 0.0, 1.0)
+by default.</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="mangadap.util.lineprofiles.GaussianLSF.p">
+<code class="descname">p</code><a class="headerlink" href="#mangadap.util.lineprofiles.GaussianLSF.p" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>numpy.ndarray</em> – Most recently used parameters</p>
+</dd></dl>
+
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if the provided parameter vector is not 3
+elements long.</td>
+</tr>
+</tbody>
+</table>
+<dl class="staticmethod">
+<dt id="mangadap.util.lineprofiles.GaussianLSF.npar">
+<em class="property">static </em><code class="descname">npar</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#GaussianLSF.npar"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.GaussianLSF.npar" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.lineprofiles.GaussianLSF.parameters_from_moments">
+<code class="descname">parameters_from_moments</code><span class="sig-paren">(</span><em>mom0</em>, <em>mom1</em>, <em>mom2</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#GaussianLSF.parameters_from_moments"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.GaussianLSF.parameters_from_moments" title="Permalink to this definition">¶</a></dt>
+<dd><p>Provided the 0th, 1st, and 2nd moments, produce a set of
+parameters for the profile.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.lineprofiles.GaussianLSF.sample">
+<code class="descname">sample</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#GaussianLSF.sample"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.GaussianLSF.sample" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sample the profile.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong> (<em>array-like</em>) – Independent variable.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.lineprofiles.GaussianLSF.set_par">
+<code class="descname">set_par</code><span class="sig-paren">(</span><em>p</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#GaussianLSF.set_par"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.GaussianLSF.set_par" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the internal parameters to the provided set.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>p</strong> (<em>array-like</em>) – LSF parameters.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if the provided parameter vector is not 3
+elements long.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="mangadap.util.lineprofiles.GaussianLineProfile">
+<em class="property">class </em><code class="descclassname">mangadap.util.lineprofiles.</code><code class="descname">GaussianLineProfile</code><span class="sig-paren">(</span><em>zmom=1.0</em>, <em>mean=0.0</em>, <em>sigma=1.0</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#GaussianLineProfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.GaussianLineProfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">astropy.modeling.core.FittableModel</span></code></p>
+<p>Define a Gaussian line profile as parameterized by its zeroth
+moment, mean, and standard deviation:</p>
+<div class="math">
+\[\mathcal{N}(x|f,\mu,\sigma) = \frac{f}{\sqrt{2\pi}\sigma}
+\exp\left(\frac{-(x-\mu)^2}{2\sigma^2}\right)\]</div>
+<p>The base class is <a class="reference external" href="http://docs.astropy.org/en/stable/api/astropy.modeling.FittableModel.html">astropy.modeling.FittableModel</a>, which
+facilitates its use in combining multiple components and other
+models in the <a class="reference external" href="http://docs.astropy.org/en/stable/modeling/index.html">astropy.modeling</a> suite.</p>
+<dl class="attribute">
+<dt id="mangadap.util.lineprofiles.GaussianLineProfile._abc_cache">
+<code class="descname">_abc_cache</code><em class="property"> = &lt;_weakrefset.WeakSet object&gt;</em><a class="headerlink" href="#mangadap.util.lineprofiles.GaussianLineProfile._abc_cache" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.util.lineprofiles.GaussianLineProfile._abc_negative_cache">
+<code class="descname">_abc_negative_cache</code><em class="property"> = &lt;_weakrefset.WeakSet object&gt;</em><a class="headerlink" href="#mangadap.util.lineprofiles.GaussianLineProfile._abc_negative_cache" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.util.lineprofiles.GaussianLineProfile._abc_negative_cache_version">
+<code class="descname">_abc_negative_cache_version</code><em class="property"> = 52</em><a class="headerlink" href="#mangadap.util.lineprofiles.GaussianLineProfile._abc_negative_cache_version" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.util.lineprofiles.GaussianLineProfile._abc_registry">
+<code class="descname">_abc_registry</code><em class="property"> = &lt;_weakrefset.WeakSet object&gt;</em><a class="headerlink" href="#mangadap.util.lineprofiles.GaussianLineProfile._abc_registry" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.util.lineprofiles.GaussianLineProfile._is_dynamic">
+<code class="descname">_is_dynamic</code><em class="property"> = False</em><a class="headerlink" href="#mangadap.util.lineprofiles.GaussianLineProfile._is_dynamic" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.util.lineprofiles.GaussianLineProfile._parameters_">
+<code class="descname">_parameters_</code><em class="property"> = OrderedDict([('zmom', Parameter('zmom', default=1.0)), ('mean', Parameter('mean', default=0.0)), ('sigma', Parameter('sigma', default=1.0))])</em><a class="headerlink" href="#mangadap.util.lineprofiles.GaussianLineProfile._parameters_" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.util.lineprofiles.GaussianLineProfile.evaluate">
+<em class="property">static </em><code class="descname">evaluate</code><span class="sig-paren">(</span><em>x</em>, <em>zmom</em>, <em>mean</em>, <em>sigma</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#GaussianLineProfile.evaluate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.GaussianLineProfile.evaluate" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.util.lineprofiles.GaussianLineProfile.fit_deriv">
+<em class="property">static </em><code class="descname">fit_deriv</code><span class="sig-paren">(</span><em>x</em>, <em>zmom</em>, <em>mean</em>, <em>sigma</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#GaussianLineProfile.fit_deriv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.GaussianLineProfile.fit_deriv" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.util.lineprofiles.GaussianLineProfile.fix_flux">
+<em class="property">static </em><code class="descname">fix_flux</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#GaussianLineProfile.fix_flux"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.GaussianLineProfile.fix_flux" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.util.lineprofiles.GaussianLineProfile.fix_mean">
+<em class="property">static </em><code class="descname">fix_mean</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#GaussianLineProfile.fix_mean"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.GaussianLineProfile.fix_mean" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.util.lineprofiles.GaussianLineProfile.fix_stddev">
+<em class="property">static </em><code class="descname">fix_stddev</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#GaussianLineProfile.fix_stddev"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.GaussianLineProfile.fix_stddev" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.util.lineprofiles.GaussianLineProfile.flux">
+<em class="property">static </em><code class="descname">flux</code><span class="sig-paren">(</span><em>zmom</em>, <em>mean</em>, <em>sigma</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#GaussianLineProfile.flux"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.GaussianLineProfile.flux" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.util.lineprofiles.GaussianLineProfile.flux_err">
+<em class="property">static </em><code class="descname">flux_err</code><span class="sig-paren">(</span><em>zmom</em>, <em>mean</em>, <em>sigma</em>, <em>zmome</em>, <em>meane</em>, <em>sigmae</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#GaussianLineProfile.flux_err"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.GaussianLineProfile.flux_err" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.util.lineprofiles.GaussianLineProfile.inputs">
+<code class="descname">inputs</code><em class="property"> = ('x',)</em><a class="headerlink" href="#mangadap.util.lineprofiles.GaussianLineProfile.inputs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.util.lineprofiles.GaussianLineProfile.integral">
+<em class="property">static </em><code class="descname">integral</code><span class="sig-paren">(</span><em>zmom</em>, <em>mean</em>, <em>sigma</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#GaussianLineProfile.integral"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.GaussianLineProfile.integral" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.util.lineprofiles.GaussianLineProfile.mean">
+<code class="descname">mean</code><a class="headerlink" href="#mangadap.util.lineprofiles.GaussianLineProfile.mean" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.util.lineprofiles.GaussianLineProfile.mean_indx">
+<em class="property">static </em><code class="descname">mean_indx</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#GaussianLineProfile.mean_indx"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.GaussianLineProfile.mean_indx" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.util.lineprofiles.GaussianLineProfile.moment">
+<em class="property">static </em><code class="descname">moment</code><span class="sig-paren">(</span><em>order</em>, <em>zmom</em>, <em>mean</em>, <em>sigma</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#GaussianLineProfile.moment"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.GaussianLineProfile.moment" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.util.lineprofiles.GaussianLineProfile.moment_err">
+<em class="property">static </em><code class="descname">moment_err</code><span class="sig-paren">(</span><em>order</em>, <em>zmom</em>, <em>mean</em>, <em>sigma</em>, <em>zmome</em>, <em>meane</em>, <em>sigmae</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#GaussianLineProfile.moment_err"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.GaussianLineProfile.moment_err" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.util.lineprofiles.GaussianLineProfile.outputs">
+<code class="descname">outputs</code><em class="property"> = ('y',)</em><a class="headerlink" href="#mangadap.util.lineprofiles.GaussianLineProfile.outputs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.util.lineprofiles.GaussianLineProfile.param_names">
+<code class="descname">param_names</code><em class="property"> = ('zmom', 'mean', 'sigma')</em><a class="headerlink" href="#mangadap.util.lineprofiles.GaussianLineProfile.param_names" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.util.lineprofiles.GaussianLineProfile.scale_flux">
+<em class="property">static </em><code class="descname">scale_flux</code><span class="sig-paren">(</span><em>zmom</em>, <em>mean</em>, <em>sigma</em>, <em>fac</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#GaussianLineProfile.scale_flux"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.GaussianLineProfile.scale_flux" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.util.lineprofiles.GaussianLineProfile.scale_stddev">
+<em class="property">static </em><code class="descname">scale_stddev</code><span class="sig-paren">(</span><em>zmom</em>, <em>mean</em>, <em>sigma</em>, <em>fac</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#GaussianLineProfile.scale_stddev"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.GaussianLineProfile.scale_stddev" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.util.lineprofiles.GaussianLineProfile.shift_mean">
+<em class="property">static </em><code class="descname">shift_mean</code><span class="sig-paren">(</span><em>zmom</em>, <em>mean</em>, <em>sigma</em>, <em>shift</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#GaussianLineProfile.shift_mean"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.GaussianLineProfile.shift_mean" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.util.lineprofiles.GaussianLineProfile.sigma">
+<code class="descname">sigma</code><a class="headerlink" href="#mangadap.util.lineprofiles.GaussianLineProfile.sigma" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.util.lineprofiles.GaussianLineProfile.zmom">
+<code class="descname">zmom</code><a class="headerlink" href="#mangadap.util.lineprofiles.GaussianLineProfile.zmom" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="mangadap.util.lineprofiles.IntegratedGaussianLSF">
+<em class="property">class </em><code class="descclassname">mangadap.util.lineprofiles.</code><code class="descname">IntegratedGaussianLSF</code><span class="sig-paren">(</span><em>p=None</em>, <em>dx=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#IntegratedGaussianLSF"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.IntegratedGaussianLSF" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#mangadap.util.lineprofiles.GaussianLSF" title="mangadap.util.lineprofiles.GaussianLSF"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.lineprofiles.GaussianLSF</span></code></a></p>
+<p>Define a Gaussian line profile, <em>integrated</em> over the width of the
+sampling step, parameterized by its integral (<span class="math">\(F\)</span>), center
+(<span class="math">\(\mu\)</span>), and standard deviation (<span class="math">\(\sigma\)</span>). I.e:</p>
+<div class="math">
+\[\mathcal{N}(x|F,\mu,\sigma) = \frac{F}{2} \left[
+{\rm erf}\left(\frac{\Delta+\delta_x/2}{\sqrt{2}\sigma}\right) -
+{\rm erf}\left(\frac{\Delta-\delta_x/2}{\sqrt{2}\sigma}\right)\right]\]</div>
+<p>where <span class="math">\({\rm erf}(x)\)</span> is the error function, <span class="math">\(\Delta =
+x-\mu\)</span>, and <span class="math">\(\delta_x\)</span> is the sampling step.  The sampling
+<em>must</em> be uniform in <span class="math">\(x\)</span>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>p</strong> (<em>array-like</em>) – (<strong>Optional</strong>) Input parameters ordered as the
+total integral of the profile, the profile center, and the
+profile standard deviation.  Assumed to be (1.0, 0.0, 1.0)
+by default.</li>
+<li><strong>dx</strong> (<em>float</em>) – (<strong>Optional</strong>) Sampling width.  Default is 1.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="mangadap.util.lineprofiles.IntegratedGaussianLSF.p">
+<code class="descname">p</code><a class="headerlink" href="#mangadap.util.lineprofiles.IntegratedGaussianLSF.p" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>numpy.ndarray</em> – Most recently used parameters</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.util.lineprofiles.IntegratedGaussianLSF.dx">
+<code class="descname">dx</code><a class="headerlink" href="#mangadap.util.lineprofiles.IntegratedGaussianLSF.dx" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float</em> – Assumed sampling.</p>
+</dd></dl>
+
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if the provided parameter vector is not 3
+elements long.</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="mangadap.util.lineprofiles.IntegratedGaussianLSF.sample">
+<code class="descname">sample</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#IntegratedGaussianLSF.sample"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.IntegratedGaussianLSF.sample" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sample the profile.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Does <strong>not</strong> check if the provided <span class="math">\(x\)</span> values are
+sampled at <a class="reference internal" href="#mangadap.util.lineprofiles.IntegratedGaussianLSF.dx" title="mangadap.util.lineprofiles.IntegratedGaussianLSF.dx"><code class="xref py py-attr docutils literal"><span class="pre">dx</span></code></a>.</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong> (<em>array-like</em>) – Independent variable.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="mangadap.util.lineprofiles.NCompLineProfile">
+<em class="property">class </em><code class="descclassname">mangadap.util.lineprofiles.</code><code class="descname">NCompLineProfile</code><span class="sig-paren">(</span><em>ncomp</em>, <em>par=None</em>, <em>err=None</em>, <em>profile=&lt;class 'mangadap.util.lineprofiles.GaussianLineProfile'&gt; Name: GaussianLineProfile Inputs: ('x'</em>, <em>) Outputs: ('y'</em>, <em>) Fittable parameters: ('zmom'</em>, <em>'mean'</em>, <em>'sigma')</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#NCompLineProfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.NCompLineProfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Construct a single line profile from many components with the same
+profile parameterization.</p>
+<dl class="method">
+<dt id="mangadap.util.lineprofiles.NCompLineProfile._mom1_integrand">
+<code class="descname">_mom1_integrand</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#NCompLineProfile._mom1_integrand"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.NCompLineProfile._mom1_integrand" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.lineprofiles.NCompLineProfile._mom2_integrand">
+<code class="descname">_mom2_integrand</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#NCompLineProfile._mom2_integrand"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.NCompLineProfile._mom2_integrand" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.lineprofiles.NCompLineProfile._quick_sample">
+<code class="descname">_quick_sample</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#NCompLineProfile._quick_sample"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.NCompLineProfile._quick_sample" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sample without providing/checking new input parameters.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.lineprofiles.NCompLineProfile.assign_err">
+<code class="descname">assign_err</code><span class="sig-paren">(</span><em>err</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#NCompLineProfile.assign_err"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.NCompLineProfile.assign_err" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.lineprofiles.NCompLineProfile.assign_par">
+<code class="descname">assign_par</code><span class="sig-paren">(</span><em>par</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#NCompLineProfile.assign_par"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.NCompLineProfile.assign_par" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.lineprofiles.NCompLineProfile.fix_flux">
+<code class="descname">fix_flux</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#NCompLineProfile.fix_flux"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.NCompLineProfile.fix_flux" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.lineprofiles.NCompLineProfile.fix_mean">
+<code class="descname">fix_mean</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#NCompLineProfile.fix_mean"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.NCompLineProfile.fix_mean" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.lineprofiles.NCompLineProfile.fix_stddev">
+<code class="descname">fix_stddev</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#NCompLineProfile.fix_stddev"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.NCompLineProfile.fix_stddev" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.lineprofiles.NCompLineProfile.flux">
+<code class="descname">flux</code><span class="sig-paren">(</span><em>par=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#NCompLineProfile.flux"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.NCompLineProfile.flux" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.lineprofiles.NCompLineProfile.flux_err">
+<code class="descname">flux_err</code><span class="sig-paren">(</span><em>par=None</em>, <em>err=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#NCompLineProfile.flux_err"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.NCompLineProfile.flux_err" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.lineprofiles.NCompLineProfile.mean_indx">
+<code class="descname">mean_indx</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#NCompLineProfile.mean_indx"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.NCompLineProfile.mean_indx" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.lineprofiles.NCompLineProfile.moment">
+<code class="descname">moment</code><span class="sig-paren">(</span><em>order=0</em>, <em>par=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#NCompLineProfile.moment"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.NCompLineProfile.moment" title="Permalink to this definition">¶</a></dt>
+<dd><div class="admonition-todo admonition" id="index-0">
+<p class="first admonition-title">Todo</p>
+<p class="last">impose some reasonable limits for the integrals</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.lineprofiles.NCompLineProfile.moment_err">
+<code class="descname">moment_err</code><span class="sig-paren">(</span><em>order=0</em>, <em>par=None</em>, <em>err=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#NCompLineProfile.moment_err"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.NCompLineProfile.moment_err" title="Permalink to this definition">¶</a></dt>
+<dd><div class="admonition-todo admonition" id="index-1">
+<p class="first admonition-title">Todo</p>
+<p class="last">impose some reasonable limits for the integrals</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.lineprofiles.NCompLineProfile.sample">
+<code class="descname">sample</code><span class="sig-paren">(</span><em>x</em>, <em>par=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#NCompLineProfile.sample"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.NCompLineProfile.sample" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.lineprofiles.NCompLineProfile.scale_flux">
+<code class="descname">scale_flux</code><span class="sig-paren">(</span><em>fac</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#NCompLineProfile.scale_flux"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.NCompLineProfile.scale_flux" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.lineprofiles.NCompLineProfile.scale_stddev">
+<code class="descname">scale_stddev</code><span class="sig-paren">(</span><em>fac</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#NCompLineProfile.scale_stddev"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.NCompLineProfile.scale_stddev" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.lineprofiles.NCompLineProfile.set_flux">
+<code class="descname">set_flux</code><span class="sig-paren">(</span><em>flx</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#NCompLineProfile.set_flux"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.NCompLineProfile.set_flux" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.lineprofiles.NCompLineProfile.set_mean">
+<code class="descname">set_mean</code><span class="sig-paren">(</span><em>mean</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#NCompLineProfile.set_mean"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.NCompLineProfile.set_mean" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.lineprofiles.NCompLineProfile.set_stddev">
+<code class="descname">set_stddev</code><span class="sig-paren">(</span><em>stddev</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#NCompLineProfile.set_stddev"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.NCompLineProfile.set_stddev" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.lineprofiles.NCompLineProfile.shift_mean">
+<code class="descname">shift_mean</code><span class="sig-paren">(</span><em>shift</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#NCompLineProfile.shift_mean"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.NCompLineProfile.shift_mean" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="mangadap.util.log.html" class="btn btn-neutral float-right" title="mangadap.util.log module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="mangadap.util.instrument.html" class="btn btn-neutral" title="mangadap.util.instrument module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, SDSS-IV/MaNGA Pipeline Group.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'2.2.2',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

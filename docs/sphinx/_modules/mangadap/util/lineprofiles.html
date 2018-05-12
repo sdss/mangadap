@@ -1,0 +1,772 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mangadap.util.lineprofiles &mdash; mangadap 2.2.2 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../search.html"/>
+    <link rel="top" title="mangadap 2.2.2 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> mangadap
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../mangadap.html">mangadap package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">mangadap</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>mangadap.util.lineprofiles</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for mangadap.util.lineprofiles</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Licensed under a 3-clause BSD style license - see LICENSE.rst</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Implements a set of line profile parameterizations.</span>
+
+<span class="sd">*License*:</span>
+<span class="sd">    Copyright (c) 2017, SDSS-IV/MaNGA Pipeline Group</span>
+<span class="sd">        Licensed under BSD 3-clause license - see LICENSE.rst</span>
+
+<span class="sd">*Source location*:</span>
+<span class="sd">    $MANGADAP_DIR/python/mangadap/util/lineprofiles.py</span>
+
+<span class="sd">*Imports and python version compliance*:</span>
+<span class="sd">    ::</span>
+
+<span class="sd">        from __future__ import division</span>
+<span class="sd">        from __future__ import print_function</span>
+<span class="sd">        from __future__ import absolute_import</span>
+<span class="sd">        from __future__ import unicode_literals</span>
+
+<span class="sd">        import sys</span>
+<span class="sd">        if sys.version &gt; &#39;3&#39;:</span>
+<span class="sd">            long = int</span>
+
+<span class="sd">        import numpy</span>
+<span class="sd">        from scipy import special, fftpack</span>
+<span class="sd">        from astropy.modeling import FittableModel, Parameter</span>
+
+<span class="sd">*Class usage examples*:</span>
+<span class="sd">    Add usage</span>
+
+<span class="sd">*Revision history*:</span>
+<span class="sd">    | **25 May 2017**: Original implementation by K. Westfall (KBW)</span>
+
+<span class="sd">.. _astropy.modeling: http://docs.astropy.org/en/stable/modeling/index.html</span>
+<span class="sd">.. _astropy.modeling.FittableModel: http://docs.astropy.org/en/stable/api/astropy.modeling.FittableModel.html</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version</span> <span class="o">&gt;</span> <span class="s1">&#39;3&#39;</span><span class="p">:</span>
+    <span class="n">long</span> <span class="o">=</span> <span class="nb">int</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="k">import</span> <span class="n">special</span><span class="p">,</span> <span class="n">fftpack</span>
+<span class="kn">from</span> <span class="nn">astropy.modeling</span> <span class="k">import</span> <span class="n">FittableModel</span><span class="p">,</span> <span class="n">Parameter</span>
+
+<span class="c1">#-----------------------------------------------------------------------</span>
+<div class="viewcode-block" id="GaussianLineProfile"><a class="viewcode-back" href="../../../mangadap.util.lineprofiles.html#mangadap.util.lineprofiles.GaussianLineProfile">[docs]</a><span class="k">class</span> <span class="nc">GaussianLineProfile</span><span class="p">(</span><span class="n">FittableModel</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Define a Gaussian line profile as parameterized by its zeroth</span>
+<span class="sd">    moment, mean, and standard deviation:</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        \mathcal{N}(x|f,\mu,\sigma) = \frac{f}{\sqrt{2\pi}\sigma}</span>
+<span class="sd">        \exp\left(\frac{-(x-\mu)^2}{2\sigma^2}\right)</span>
+
+<span class="sd">    The base class is `astropy.modeling.FittableModel`_, which</span>
+<span class="sd">    facilitates its use in combining multiple components and other</span>
+<span class="sd">    models in the `astropy.modeling`_ suite.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Inputs the x positions</span>
+    <span class="n">inputs</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">,)</span>
+    <span class="c1"># Returns the renormalized Gaussian PDF at each x position</span>
+    <span class="n">outputs</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">,)</span>
+
+    <span class="c1"># Parameters are the peak value of the profile, the profile mean,</span>
+    <span class="c1"># and the profile standard deviation (sigma)</span>
+    <span class="n">zmom</span><span class="o">=</span><span class="n">Parameter</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+    <span class="n">mean</span><span class="o">=</span><span class="n">Parameter</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
+    <span class="n">sigma</span><span class="o">=</span><span class="n">Parameter</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+
+    
+<div class="viewcode-block" id="GaussianLineProfile.evaluate"><a class="viewcode-back" href="../../../mangadap.util.lineprofiles.html#mangadap.util.lineprofiles.GaussianLineProfile.evaluate">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">zmom</span><span class="p">,</span> <span class="n">mean</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
+        <span class="c1"># Discrete samples</span>
+        <span class="k">return</span> <span class="n">zmom</span> <span class="o">*</span> <span class="n">numpy</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">((</span><span class="n">x</span> <span class="o">-</span> <span class="n">mean</span><span class="p">)</span><span class="o">/</span><span class="n">sigma</span><span class="p">))</span> <span class="o">/</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span><span class="o">/</span><span class="n">sigma</span></div>
+<span class="c1">#        # Integrated over a pixel</span>
+<span class="c1">#        diff = (x-mean)/pixelscale</span>
+<span class="c1">#        denom = numpy.sqrt(2.0)*sigma/pixelscale</span>
+<span class="c1">#        return zmom * (erf((diff+0.5)/denom) - erf((diff-0.5)/denom))/2.</span>
+
+
+<div class="viewcode-block" id="GaussianLineProfile.fit_deriv"><a class="viewcode-back" href="../../../mangadap.util.lineprofiles.html#mangadap.util.lineprofiles.GaussianLineProfile.fit_deriv">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">fit_deriv</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">zmom</span><span class="p">,</span> <span class="n">mean</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">GaussianLineProfile</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">zmom</span><span class="p">,</span><span class="n">mean</span><span class="p">,</span><span class="n">sigma</span><span class="p">)</span>
+        <span class="n">d_zmom</span> <span class="o">=</span> <span class="n">y</span><span class="o">/</span><span class="n">zmom</span>
+        <span class="n">d_mean</span> <span class="o">=</span> <span class="n">y</span><span class="o">*</span><span class="p">(</span><span class="n">x</span><span class="o">-</span><span class="n">mean</span><span class="p">)</span><span class="o">/</span><span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">sigma</span><span class="p">)</span>
+        <span class="n">d_sigma</span> <span class="o">=</span> <span class="n">y</span><span class="o">*</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">x</span><span class="o">-</span><span class="n">mean</span><span class="p">)</span><span class="o">/</span><span class="n">numpy</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">sigma</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span> <span class="o">-</span> <span class="mf">1.0</span><span class="o">/</span><span class="n">sigma</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">d_zmom</span><span class="p">,</span> <span class="n">d_mean</span><span class="p">,</span> <span class="n">d_sigma</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="GaussianLineProfile.flux"><a class="viewcode-back" href="../../../mangadap.util.lineprofiles.html#mangadap.util.lineprofiles.GaussianLineProfile.flux">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">flux</span><span class="p">(</span><span class="n">zmom</span><span class="p">,</span> <span class="n">mean</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">zmom</span></div>
+
+
+<div class="viewcode-block" id="GaussianLineProfile.flux_err"><a class="viewcode-back" href="../../../mangadap.util.lineprofiles.html#mangadap.util.lineprofiles.GaussianLineProfile.flux_err">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">flux_err</span><span class="p">(</span><span class="n">zmom</span><span class="p">,</span> <span class="n">mean</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">zmome</span><span class="p">,</span> <span class="n">meane</span><span class="p">,</span> <span class="n">sigmae</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">zmome</span></div>
+
+
+<div class="viewcode-block" id="GaussianLineProfile.moment"><a class="viewcode-back" href="../../../mangadap.util.lineprofiles.html#mangadap.util.lineprofiles.GaussianLineProfile.moment">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">moment</span><span class="p">(</span><span class="n">order</span><span class="p">,</span> <span class="n">zmom</span><span class="p">,</span> <span class="n">mean</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">order</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">zmom</span>
+        <span class="k">if</span> <span class="n">order</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">mean</span>
+        <span class="k">if</span> <span class="n">order</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">sigma</span></div>
+
+
+<div class="viewcode-block" id="GaussianLineProfile.moment_err"><a class="viewcode-back" href="../../../mangadap.util.lineprofiles.html#mangadap.util.lineprofiles.GaussianLineProfile.moment_err">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">moment_err</span><span class="p">(</span><span class="n">order</span><span class="p">,</span> <span class="n">zmom</span><span class="p">,</span> <span class="n">mean</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">zmome</span><span class="p">,</span> <span class="n">meane</span><span class="p">,</span> <span class="n">sigmae</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">order</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">zmome</span>
+        <span class="k">if</span> <span class="n">order</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">meane</span>
+        <span class="k">if</span> <span class="n">order</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">sigmae</span></div>
+
+
+<div class="viewcode-block" id="GaussianLineProfile.integral"><a class="viewcode-back" href="../../../mangadap.util.lineprofiles.html#mangadap.util.lineprofiles.GaussianLineProfile.integral">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">integral</span><span class="p">(</span><span class="n">zmom</span><span class="p">,</span> <span class="n">mean</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">integrate</span><span class="o">.</span><span class="n">quad</span><span class="p">(</span> <span class="n">GaussianLineProfile</span><span class="o">.</span><span class="n">evaluate</span><span class="p">,</span> <span class="o">-</span><span class="n">sigma</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">zmom</span><span class="p">,</span><span class="n">mean</span><span class="p">,</span><span class="n">sigma</span><span class="p">))</span></div>
+
+    
+<div class="viewcode-block" id="GaussianLineProfile.scale_flux"><a class="viewcode-back" href="../../../mangadap.util.lineprofiles.html#mangadap.util.lineprofiles.GaussianLineProfile.scale_flux">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">scale_flux</span><span class="p">(</span><span class="n">zmom</span><span class="p">,</span> <span class="n">mean</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">fac</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">zmom</span><span class="o">*</span><span class="n">fac</span><span class="p">,</span> <span class="n">mean</span><span class="p">,</span> <span class="n">sigma</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="GaussianLineProfile.fix_flux"><a class="viewcode-back" href="../../../mangadap.util.lineprofiles.html#mangadap.util.lineprofiles.GaussianLineProfile.fix_flux">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">fix_flux</span><span class="p">():</span>
+        <span class="k">return</span> <span class="p">[</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">False</span> <span class="p">]</span></div>
+
+    
+<div class="viewcode-block" id="GaussianLineProfile.mean_indx"><a class="viewcode-back" href="../../../mangadap.util.lineprofiles.html#mangadap.util.lineprofiles.GaussianLineProfile.mean_indx">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">mean_indx</span><span class="p">():</span>
+        <span class="k">return</span> <span class="mi">1</span></div>
+
+    
+<div class="viewcode-block" id="GaussianLineProfile.shift_mean"><a class="viewcode-back" href="../../../mangadap.util.lineprofiles.html#mangadap.util.lineprofiles.GaussianLineProfile.shift_mean">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">shift_mean</span><span class="p">(</span><span class="n">zmom</span><span class="p">,</span> <span class="n">mean</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">shift</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">zmom</span><span class="p">,</span> <span class="n">mean</span><span class="o">+</span><span class="n">shift</span><span class="p">,</span> <span class="n">sigma</span> <span class="p">]</span></div>
+
+    
+<div class="viewcode-block" id="GaussianLineProfile.fix_mean"><a class="viewcode-back" href="../../../mangadap.util.lineprofiles.html#mangadap.util.lineprofiles.GaussianLineProfile.fix_mean">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">fix_mean</span><span class="p">():</span>
+        <span class="k">return</span> <span class="p">[</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">False</span> <span class="p">]</span></div>
+
+    
+<div class="viewcode-block" id="GaussianLineProfile.scale_stddev"><a class="viewcode-back" href="../../../mangadap.util.lineprofiles.html#mangadap.util.lineprofiles.GaussianLineProfile.scale_stddev">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">scale_stddev</span><span class="p">(</span><span class="n">zmom</span><span class="p">,</span> <span class="n">mean</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">fac</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">zmom</span><span class="p">,</span> <span class="n">mean</span><span class="p">,</span> <span class="n">sigma</span><span class="o">*</span><span class="n">fac</span> <span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="GaussianLineProfile.fix_stddev"><a class="viewcode-back" href="../../../mangadap.util.lineprofiles.html#mangadap.util.lineprofiles.GaussianLineProfile.fix_stddev">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">fix_stddev</span><span class="p">():</span>
+        <span class="k">return</span> <span class="p">[</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">True</span> <span class="p">]</span></div></div>
+
+
+<div class="viewcode-block" id="GaussianLSF"><a class="viewcode-back" href="../../../mangadap.util.lineprofiles.html#mangadap.util.lineprofiles.GaussianLSF">[docs]</a><span class="k">class</span> <span class="nc">GaussianLSF</span><span class="p">:</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Define a Gaussian line profile, *sampled* over the width of the</span>
+<span class="sd">    sampling step, parameterized by its integral (:math:`F`), center</span>
+<span class="sd">    (:math:`\mu`), and standard deviation (:math:`\sigma`). I.e:</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        \mathcal{N}(x|f,\mu,\sigma) = \frac{f}{\sqrt{2\pi}\sigma}</span>
+<span class="sd">        \exp\left(\frac{-\Delta^2}{2\sigma^2}\right)</span>
+
+<span class="sd">    where :math:`\Delta = x-\mu`.  The coordinate vector :math:`x` does</span>
+<span class="sd">    not need to be uniformly sampled.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        p (array-like): (**Optional**) Input parameters ordered as the</span>
+<span class="sd">            total integral of the profile, the profile center, and the</span>
+<span class="sd">            profile standard deviation.  Assumed to be (1.0, 0.0, 1.0)</span>
+<span class="sd">            by default.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        p (numpy.ndarray): Most recently used parameters</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: Raised if the provided parameter vector is not 3</span>
+<span class="sd">            elements long.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_par</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+
+
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">p</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Calculate the profile.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x (array-like): Independent variable.</span>
+<span class="sd">            p (array-like): LSF parameters.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_par</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="GaussianLSF.npar"><a class="viewcode-back" href="../../../mangadap.util.lineprofiles.html#mangadap.util.lineprofiles.GaussianLSF.npar">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">npar</span><span class="p">():</span>
+        <span class="k">return</span> <span class="mi">3</span></div>
+
+
+<div class="viewcode-block" id="GaussianLSF.set_par"><a class="viewcode-back" href="../../../mangadap.util.lineprofiles.html#mangadap.util.lineprofiles.GaussianLSF.set_par">[docs]</a>    <span class="k">def</span> <span class="nf">set_par</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the internal parameters to the provided set.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            p (array-like): LSF parameters.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: Raised if the provided parameter vector is not 3</span>
+<span class="sd">                elements long.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">p</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">p</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">])</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="o">!=</span> <span class="n">GaussianLSF</span><span class="o">.</span><span class="n">npar</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Must provide </span><span class="si">{0}</span><span class="s1"> parameters.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">GaussianLSF</span><span class="o">.</span><span class="n">npar</span><span class="p">()))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">p</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="GaussianLSF.sample"><a class="viewcode-back" href="../../../mangadap.util.lineprofiles.html#mangadap.util.lineprofiles.GaussianLSF.sample">[docs]</a>    <span class="k">def</span> <span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sample the profile.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x (array-like): Independent variable.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">numpy</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">((</span><span class="n">x</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span><span class="o">/</span><span class="mf">2.</span><span class="p">)</span> \
+                    <span class="o">/</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">2.0</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="GaussianLSF.parameters_from_moments"><a class="viewcode-back" href="../../../mangadap.util.lineprofiles.html#mangadap.util.lineprofiles.GaussianLSF.parameters_from_moments">[docs]</a>    <span class="k">def</span> <span class="nf">parameters_from_moments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mom0</span><span class="p">,</span> <span class="n">mom1</span><span class="p">,</span> <span class="n">mom2</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Provided the 0th, 1st, and 2nd moments, produce a set of</span>
+<span class="sd">        parameters for the profile.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">mom0</span><span class="p">,</span> <span class="n">mom1</span><span class="p">,</span> <span class="n">mom2</span><span class="p">])</span></div></div>
+
+
+<div class="viewcode-block" id="IntegratedGaussianLSF"><a class="viewcode-back" href="../../../mangadap.util.lineprofiles.html#mangadap.util.lineprofiles.IntegratedGaussianLSF">[docs]</a><span class="k">class</span> <span class="nc">IntegratedGaussianLSF</span><span class="p">(</span><span class="n">GaussianLSF</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Define a Gaussian line profile, *integrated* over the width of the</span>
+<span class="sd">    sampling step, parameterized by its integral (:math:`F`), center</span>
+<span class="sd">    (:math:`\mu`), and standard deviation (:math:`\sigma`). I.e:</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        \mathcal{N}(x|F,\mu,\sigma) = \frac{F}{2} \left[</span>
+<span class="sd">        {\rm erf}\left(\frac{\Delta+\delta_x/2}{\sqrt{2}\sigma}\right) - </span>
+<span class="sd">        {\rm erf}\left(\frac{\Delta-\delta_x/2}{\sqrt{2}\sigma}\right)\right]</span>
+
+<span class="sd">    where :math:`{\rm erf}(x)` is the error function, :math:`\Delta =</span>
+<span class="sd">    x-\mu`, and :math:`\delta_x` is the sampling step.  The sampling</span>
+<span class="sd">    *must* be uniform in :math:`x`.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        p (array-like): (**Optional**) Input parameters ordered as the</span>
+<span class="sd">            total integral of the profile, the profile center, and the</span>
+<span class="sd">            profile standard deviation.  Assumed to be (1.0, 0.0, 1.0)</span>
+<span class="sd">            by default.</span>
+<span class="sd">        dx (float): (**Optional**) Sampling width.  Default is 1.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        p (numpy.ndarray): Most recently used parameters</span>
+<span class="sd">        dx (float): Assumed sampling.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: Raised if the provided parameter vector is not 3</span>
+<span class="sd">            elements long.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dx</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_par</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dx</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="k">if</span> <span class="n">dx</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">dx</span>
+
+
+<div class="viewcode-block" id="IntegratedGaussianLSF.sample"><a class="viewcode-back" href="../../../mangadap.util.lineprofiles.html#mangadap.util.lineprofiles.IntegratedGaussianLSF.sample">[docs]</a>    <span class="k">def</span> <span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sample the profile.</span>
+
+<span class="sd">        .. warning::</span>
+<span class="sd">            Does **not** check if the provided :math:`x` values are</span>
+<span class="sd">            sampled at :attr:`dx`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x (array-like): Independent variable.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">2.</span><span class="p">)</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">special</span><span class="o">.</span><span class="n">erf</span><span class="p">((</span><span class="n">d</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">dx</span><span class="o">/</span><span class="mf">2.</span><span class="p">)</span><span class="o">/</span><span class="n">n</span><span class="p">)</span> <span class="o">-</span> <span class="n">special</span><span class="o">.</span><span class="n">erf</span><span class="p">((</span><span class="n">d</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">dx</span><span class="o">/</span><span class="mf">2.</span><span class="p">)</span><span class="o">/</span><span class="n">n</span><span class="p">))</span><span class="o">/</span><span class="mf">2.</span></div></div>
+
+
+   
+<div class="viewcode-block" id="FFTGaussianLSF"><a class="viewcode-back" href="../../../mangadap.util.lineprofiles.html#mangadap.util.lineprofiles.FFTGaussianLSF">[docs]</a><span class="k">class</span> <span class="nc">FFTGaussianLSF</span><span class="p">(</span><span class="n">GaussianLSF</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">    Define a Gaussian line profile by first constructing the analytic</span>
+<span class="sd">    FFT of the profile and then returning the inverse real FFT.  See</span>
+<span class="sd">    :func:`mangadap.contrib.ppxf_util.emline` by M. Cappellari.  The</span>
+<span class="sd">    sampling *must* be uniform in :math:`x`.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        p (array-like): (**Optional**) Input parameters ordered as the</span>
+<span class="sd">            total integral of the profile, the profile center, and the</span>
+<span class="sd">            profile standard deviation.  Assumed to be (1.0, 0.0, 1.0)</span>
+<span class="sd">            by default.</span>
+<span class="sd">        dx (float): (**Optional**) Sampling width.  Default is 1.</span>
+<span class="sd">        pixel (bool): (**Optional**) Flag to produce profile integrated</span>
+<span class="sd">            over the sampling width.</span>
+<span class="sd">        </span>
+<span class="sd">    Attributes:</span>
+<span class="sd">        p (numpy.ndarray): Most recently used parameters</span>
+<span class="sd">        dx (float): Assumed sampling.</span>
+<span class="sd">        pixel (bool): Flag to produce profile integrated over the</span>
+<span class="sd">            sampling width.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: Raised if the provided parameter vector is not 3</span>
+<span class="sd">            elements long.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dx</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">pixel</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_par</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dx</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="k">if</span> <span class="n">dx</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">dx</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pixel</span> <span class="o">=</span> <span class="n">pixel</span>
+
+
+<div class="viewcode-block" id="FFTGaussianLSF.sample"><a class="viewcode-back" href="../../../mangadap.util.lineprofiles.html#mangadap.util.lineprofiles.FFTGaussianLSF.sample">[docs]</a>    <span class="k">def</span> <span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sample the profile.</span>
+
+<span class="sd">        .. warning::</span>
+<span class="sd">            Does **not** check if the provided :math:`x` values are</span>
+<span class="sd">            sampled at :attr:`dx`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x (array-like): Independent variable.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">xsig</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">dx</span>
+        <span class="n">x0</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">dx</span>
+        <span class="n">npad</span> <span class="o">=</span> <span class="n">fftpack</span><span class="o">.</span><span class="n">next_fast_len</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">numpy</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span><span class="n">npad</span><span class="o">//</span><span class="mi">2</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">rfft</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">w</span><span class="o">*</span><span class="n">xsig</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="n">j</span><span class="o">*</span><span class="n">w</span><span class="o">*</span><span class="n">x0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pixel</span><span class="p">:</span>
+            <span class="n">rfft</span> <span class="o">*=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sinc</span><span class="p">(</span><span class="n">w</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">pi</span><span class="p">))</span>
+        <span class="n">lsf</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">irfft</span><span class="p">(</span><span class="n">rfft</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">npad</span><span class="p">)[:</span><span class="n">x</span><span class="o">.</span><span class="n">size</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">lsf</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pixel</span> <span class="k">else</span> <span class="n">lsf</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">dx</span></div></div>
+
+
+<span class="c1">#-----------------------------------------------------------------------</span>
+<div class="viewcode-block" id="NCompLineProfile"><a class="viewcode-back" href="../../../mangadap.util.lineprofiles.html#mangadap.util.lineprofiles.NCompLineProfile">[docs]</a><span class="k">class</span> <span class="nc">NCompLineProfile</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Construct a single line profile from many components with the same</span>
+<span class="sd">    profile parameterization.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ncomp</span><span class="p">,</span> <span class="n">par</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">err</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">profile</span><span class="o">=</span><span class="n">GaussianLineProfile</span><span class="p">):</span>
+        <span class="c1"># Check the type of the profile to use</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">profile</span><span class="p">,</span> <span class="n">FittableModel</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Profile must be a subclass of FittableModel.&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">profile_class</span> <span class="o">=</span> <span class="n">profile</span>
+
+        <span class="c1"># Ensure that the profile can be defined</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">ncomp</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Number of input components must be 1 or higher!&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Calculate and save the number of parameters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ncomp</span> <span class="o">=</span> <span class="n">ncomp</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">npar_per_component</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">profile_class</span><span class="o">.</span><span class="n">param_names</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">npar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ncomp</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">npar_per_component</span>
+
+        <span class="c1"># Check the parameter vector, if provided</span>
+        <span class="k">if</span> <span class="n">par</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">par</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Input parameter array should only be one or two dimensional.&#39;</span><span class="p">)</span>
+        <span class="n">_par</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">par</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">par</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">_par</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">_par</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">npar</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Incorrect number of parameters provided&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">par</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">_par</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_par</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ncomp</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+
+        <span class="c1"># Check the parameter vector, if provided</span>
+        <span class="k">if</span> <span class="n">err</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">err</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Input parameter error array should only be one or two dimensional.&#39;</span><span class="p">)</span>
+        <span class="n">_err</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">err</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">err</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">_err</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">_err</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">npar</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Incorrect number of parameter errors provided&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">err</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">_err</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_err</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ncomp</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+
+        <span class="c1"># Build the profile function</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">profile</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">profile_class</span><span class="p">()</span> \
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">par</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">profile_class</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">ncomp</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">profile</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">profile_class</span><span class="p">()</span> \
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">par</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">profile_class</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">par</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">par</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="NCompLineProfile._quick_sample"><a class="viewcode-back" href="../../../mangadap.util.lineprofiles.html#mangadap.util.lineprofiles.NCompLineProfile._quick_sample">[docs]</a>    <span class="k">def</span> <span class="nf">_quick_sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sample without providing/checking new input parameters.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">profile</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="o">.</span><span class="n">ravel</span><span class="p">())</span></div>
+
+
+<div class="viewcode-block" id="NCompLineProfile._mom1_integrand"><a class="viewcode-back" href="../../../mangadap.util.lineprofiles.html#mangadap.util.lineprofiles.NCompLineProfile._mom1_integrand">[docs]</a>    <span class="k">def</span> <span class="nf">_mom1_integrand</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">x</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_quick_sample</span><span class="p">(</span><span class="n">x</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NCompLineProfile._mom2_integrand"><a class="viewcode-back" href="../../../mangadap.util.lineprofiles.html#mangadap.util.lineprofiles.NCompLineProfile._mom2_integrand">[docs]</a>    <span class="k">def</span> <span class="nf">_mom2_integrand</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">x</span><span class="o">*</span><span class="n">x</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_quick_sample</span><span class="p">(</span><span class="n">x</span><span class="p">)</span></div>
+    
+
+<div class="viewcode-block" id="NCompLineProfile.assign_par"><a class="viewcode-back" href="../../../mangadap.util.lineprofiles.html#mangadap.util.lineprofiles.NCompLineProfile.assign_par">[docs]</a>    <span class="k">def</span> <span class="nf">assign_par</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">par</span><span class="p">):</span>
+        <span class="n">_par</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">par</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span> <span class="k">else</span> <span class="n">par</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">_par</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">npar</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Incorrect number of parameters provided&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">par</span> <span class="o">=</span> <span class="n">_par</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ncomp</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NCompLineProfile.assign_err"><a class="viewcode-back" href="../../../mangadap.util.lineprofiles.html#mangadap.util.lineprofiles.NCompLineProfile.assign_err">[docs]</a>    <span class="k">def</span> <span class="nf">assign_err</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">err</span><span class="p">):</span>
+        <span class="n">_err</span> <span class="o">=</span> <span class="n">err</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">err</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span> <span class="k">else</span> <span class="n">err</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">_err</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">npar</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Incorrect number of parameters provided&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">err</span> <span class="o">=</span> <span class="n">_err</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ncomp</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NCompLineProfile.sample"><a class="viewcode-back" href="../../../mangadap.util.lineprofiles.html#mangadap.util.lineprofiles.NCompLineProfile.sample">[docs]</a>    <span class="k">def</span> <span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">par</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">par</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">assign_par</span><span class="p">(</span><span class="n">par</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_quick_sample</span><span class="p">(</span><span class="n">x</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NCompLineProfile.flux"><a class="viewcode-back" href="../../../mangadap.util.lineprofiles.html#mangadap.util.lineprofiles.NCompLineProfile.flux">[docs]</a>    <span class="k">def</span> <span class="nf">flux</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">par</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">par</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">assign_par</span><span class="p">(</span><span class="n">par</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span> <span class="p">[</span> <span class="bp">self</span><span class="o">.</span><span class="n">profile_class</span><span class="o">.</span><span class="n">flux</span><span class="p">(</span><span class="o">*</span><span class="n">p</span><span class="p">)</span> \
+                            <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">numpy</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">,</span><span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ncomp</span><span class="p">),</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="p">]</span> <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NCompLineProfile.flux_err"><a class="viewcode-back" href="../../../mangadap.util.lineprofiles.html#mangadap.util.lineprofiles.NCompLineProfile.flux_err">[docs]</a>    <span class="k">def</span> <span class="nf">flux_err</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">par</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">err</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">par</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">assign_par</span><span class="p">(</span><span class="n">par</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">err</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">assign_err</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">([</span> <span class="bp">self</span><span class="o">.</span><span class="n">profile_class</span><span class="o">.</span><span class="n">flux_err</span><span class="p">(</span><span class="o">*</span><span class="n">p</span><span class="p">,</span> <span class="o">*</span><span class="n">e</span><span class="p">)</span> \
+                           <span class="k">for</span> <span class="n">p</span><span class="p">,</span><span class="n">e</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">,</span><span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ncomp</span><span class="p">),</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span>
+                                          <span class="n">numpy</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">err</span><span class="p">,</span><span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ncomp</span><span class="p">),</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span> <span class="p">]</span> <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NCompLineProfile.moment"><a class="viewcode-back" href="../../../mangadap.util.lineprofiles.html#mangadap.util.lineprofiles.NCompLineProfile.moment">[docs]</a>    <span class="k">def</span> <span class="nf">moment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">par</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        .. todo::</span>
+<span class="sd">            impose some reasonable limits for the integrals</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">par</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">assign_par</span><span class="p">(</span><span class="n">par</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ncomp</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">profile_class</span><span class="o">.</span><span class="n">moment</span><span class="p">(</span><span class="n">order</span><span class="p">,</span> <span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="mi">0</span><span class="p">,:])</span>
+
+        <span class="n">flux</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">flux</span><span class="p">(</span><span class="n">par</span><span class="o">=</span><span class="n">par</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">order</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">flux</span>
+
+        <span class="n">mom1</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">integrate</span><span class="o">.</span><span class="n">quad</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_mom1_integrand</span><span class="p">,</span> <span class="o">-</span><span class="n">numpy</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">order</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">mom1</span><span class="o">/</span><span class="n">flux</span>
+        <span class="n">mom2</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">integrate</span><span class="o">.</span><span class="n">quad</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_mom2_integrand</span><span class="p">,</span> <span class="o">-</span><span class="n">numpy</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">mom2</span><span class="o">/</span><span class="n">flux</span><span class="o">-</span><span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">mom1</span><span class="o">/</span><span class="n">flux</span><span class="p">))</span></div>
+
+    
+<div class="viewcode-block" id="NCompLineProfile.moment_err"><a class="viewcode-back" href="../../../mangadap.util.lineprofiles.html#mangadap.util.lineprofiles.NCompLineProfile.moment_err">[docs]</a>    <span class="k">def</span> <span class="nf">moment_err</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">par</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">err</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        .. todo::</span>
+<span class="sd">            impose some reasonable limits for the integrals</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">err</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">err</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mf">0.0</span>
+
+        <span class="k">if</span> <span class="n">par</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">assign_par</span><span class="p">(</span><span class="n">par</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">err</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">assign_err</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ncomp</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">profile_class</span><span class="o">.</span><span class="n">moment_err</span><span class="p">(</span><span class="n">order</span><span class="p">,</span> <span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="mi">0</span><span class="p">,:],</span> <span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">err</span><span class="p">[</span><span class="mi">0</span><span class="p">,:])</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;Unable to calculate error for multiple components.&#39;</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="NCompLineProfile.scale_flux"><a class="viewcode-back" href="../../../mangadap.util.lineprofiles.html#mangadap.util.lineprofiles.NCompLineProfile.scale_flux">[docs]</a>    <span class="k">def</span> <span class="nf">scale_flux</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fac</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ncomp</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">profile_class</span><span class="o">.</span><span class="n">scale_flux</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="n">i</span><span class="p">,:],</span> <span class="n">fac</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NCompLineProfile.set_flux"><a class="viewcode-back" href="../../../mangadap.util.lineprofiles.html#mangadap.util.lineprofiles.NCompLineProfile.set_flux">[docs]</a>    <span class="k">def</span> <span class="nf">set_flux</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flx</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scale_flux</span><span class="p">(</span> <span class="n">flx</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">flux</span><span class="p">()</span> <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NCompLineProfile.fix_flux"><a class="viewcode-back" href="../../../mangadap.util.lineprofiles.html#mangadap.util.lineprofiles.NCompLineProfile.fix_flux">[docs]</a>    <span class="k">def</span> <span class="nf">fix_flux</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">profile_class</span><span class="o">.</span><span class="n">fix_flux</span><span class="p">()</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">ncomp</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NCompLineProfile.mean_indx"><a class="viewcode-back" href="../../../mangadap.util.lineprofiles.html#mangadap.util.lineprofiles.NCompLineProfile.mean_indx">[docs]</a>    <span class="k">def</span> <span class="nf">mean_indx</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span> <span class="bp">self</span><span class="o">.</span><span class="n">profile_class</span><span class="o">.</span><span class="n">mean_indx</span><span class="p">()</span><span class="o">+</span><span class="n">i</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">ncomp</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ncomp</span><span class="p">)</span> <span class="p">]</span></div>
+            
+
+<div class="viewcode-block" id="NCompLineProfile.shift_mean"><a class="viewcode-back" href="../../../mangadap.util.lineprofiles.html#mangadap.util.lineprofiles.NCompLineProfile.shift_mean">[docs]</a>    <span class="k">def</span> <span class="nf">shift_mean</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">shift</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ncomp</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">profile_class</span><span class="o">.</span><span class="n">shift_mean</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="n">i</span><span class="p">,:],</span> <span class="n">shift</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="NCompLineProfile.set_mean"><a class="viewcode-back" href="../../../mangadap.util.lineprofiles.html#mangadap.util.lineprofiles.NCompLineProfile.set_mean">[docs]</a>    <span class="k">def</span> <span class="nf">set_mean</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mean</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shift_mean</span><span class="p">(</span> <span class="n">mean</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">moment</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="NCompLineProfile.fix_mean"><a class="viewcode-back" href="../../../mangadap.util.lineprofiles.html#mangadap.util.lineprofiles.NCompLineProfile.fix_mean">[docs]</a>    <span class="k">def</span> <span class="nf">fix_mean</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">profile_class</span><span class="o">.</span><span class="n">fix_mean</span><span class="p">()</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">ncomp</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NCompLineProfile.scale_stddev"><a class="viewcode-back" href="../../../mangadap.util.lineprofiles.html#mangadap.util.lineprofiles.NCompLineProfile.scale_stddev">[docs]</a>    <span class="k">def</span> <span class="nf">scale_stddev</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fac</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ncomp</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;Cannot scale the standard deviation of multi-component profiles.&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="mi">0</span><span class="p">,:]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">profile_class</span><span class="o">.</span><span class="n">scale_stddev</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="mi">0</span><span class="p">,:],</span> <span class="n">fac</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NCompLineProfile.set_stddev"><a class="viewcode-back" href="../../../mangadap.util.lineprofiles.html#mangadap.util.lineprofiles.NCompLineProfile.set_stddev">[docs]</a>    <span class="k">def</span> <span class="nf">set_stddev</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stddev</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scale_stddev</span><span class="p">(</span> <span class="n">stddev</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">moment</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span> <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NCompLineProfile.fix_stddev"><a class="viewcode-back" href="../../../mangadap.util.lineprofiles.html#mangadap.util.lineprofiles.NCompLineProfile.fix_stddev">[docs]</a>    <span class="k">def</span> <span class="nf">fix_stddev</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ncomp</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;Cannot fix the standard deviation of multi-component profiles.&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">profile_class</span><span class="o">.</span><span class="n">fix_stddev</span><span class="p">()</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">ncomp</span><span class="p">)</span></div></div>
+
+
+</pre></div>
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, SDSS-IV/MaNGA Pipeline Group.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'2.2.2',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

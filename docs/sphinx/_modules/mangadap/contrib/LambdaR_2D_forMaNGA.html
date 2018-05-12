@@ -1,0 +1,1087 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mangadap.contrib.LambdaR_2D_forMaNGA &mdash; mangadap 2.2.2 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../search.html"/>
+    <link rel="top" title="mangadap 2.2.2 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> mangadap
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../mangadap.html">mangadap package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">mangadap</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>mangadap.contrib.LambdaR_2D_forMaNGA</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for mangadap.contrib.LambdaR_2D_forMaNGA</h1><div class="highlight"><pre>
+<span></span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Eric EMSELLEM - ESO / CRAL</span>
+<span class="sd">eric.emsellem@eso.org</span>
+
+<span class="sd">The main goal of this script is to derive :math:`\lambda_R` and</span>
+<span class="sd">:math:`V/\sigma` radial profiles, given a set of coordinates</span>
+<span class="sd">:math:`(x,y)` and kinematic measurements (:math:`V`, :math:`\sigma`, but</span>
+<span class="sd">also associated flux, :math:`F`)</span>
+
+<span class="sd">The standard formulae for :math:`\lambda_R` comes from Emsellem et al.</span>
+<span class="sd">2007, MNRAS 379, 401 and Emsellem et al. 2011, MNRAS 414, 888, while the</span>
+<span class="sd">formulae for :math:`V/\sigma` done in the proper way with IFU come from</span>
+<span class="sd">Binney 2005, 363, 937.</span>
+
+<span class="sd">.. math::</span>
+
+<span class="sd">    \lambda_R = \frac{\sum F\ |V|}{\sum F\ (V^2 + \sigma^2)^{1/2}}</span>
+
+<span class="sd">and</span>
+
+<span class="sd">.. math::</span>
+
+<span class="sd">    V / \sigma = \left( \frac{\sum F\ V^2}{\sum F\ \sigma^2}</span>
+<span class="sd">    \right)^{1/2}</span>
+
+<span class="sd">The main difference between :math:`\lambda_R` and :math:`V/\sigma` is</span>
+<span class="sd">that :math:`\lambda_R` is providing a radius-biased view of the</span>
+<span class="sd">dynamical status and can be used as a proxy for apparent specific</span>
+<span class="sd">stellar angular momentum, while :math:`V/\sigma` is flux-biased and more</span>
+<span class="sd">prone to changes due to small central structures.  There is, however, a</span>
+<span class="sd">nice relation between the two (see the above- mentioned papers) which</span>
+<span class="sd">holds for regular kinematics.</span>
+
+<span class="sd">Both quantities are derived within a given aperture (selected set of</span>
+<span class="sd">spaxels) and are therefore &quot;cumulative&quot; in the sense that they should</span>
+<span class="sd">include all spaxels within a certain &quot;radius&quot;.  The advised selection is</span>
+<span class="sd">to follow the moment ellipticity of the system: the derivation of</span>
+<span class="sd">:math:`\lambda_R` and :math:`V/\sigma` thus require values for the</span>
+<span class="sd">ellipticity (Eps; :math:`\epsilon`) and position angle (PA;</span>
+<span class="sd">:math:`\phi_0`).</span>
+
+<span class="sd">*Source location*:</span>
+<span class="sd">    $MANGADAP_DIR/python/mangadap/contrib/LambdaR_2D_forMaNGA.py</span>
+
+<span class="sd">*Python2/3 compliance*::</span>
+
+<span class="sd">    from __future__ import division</span>
+<span class="sd">    from __future__ import print_function</span>
+<span class="sd">    from __future__ import absolute_import</span>
+<span class="sd">    </span>
+<span class="sd">    import sys</span>
+<span class="sd">    if sys.version &gt; &#39;3&#39;:</span>
+<span class="sd">        long = int</span>
+<span class="sd">        xrange = range</span>
+
+<span class="sd">*Imports*::</span>
+
+<span class="sd">    import numpy as np</span>
+<span class="sd">    from numpy import cos, sin, sum, sqrt</span>
+<span class="sd">    import scipy</span>
+<span class="sd">    from scipy import interpolate</span>
+<span class="sd">    import copy</span>
+
+<span class="sd">*Revision history*:</span>
+
+<span class="sd">    | version 1.1.1 - June 15, 2015: K. Westfall - inclusion in MaNGA</span>
+<span class="sd">        DAP, minor modifications to docstrings, python 2/3 compliance.</span>
+<span class="sd">    | version 1.1.0 - March 30, 2015: transformed for MaNGA usage</span>
+<span class="sd">    | version 1.0.3 - August 20, 2014: added SigmaR</span>
+<span class="sd">    | version 1.0.2 - August 19, 2014</span>
+<span class="sd">    | version 1.0.1 - April 23, 2014</span>
+<span class="sd">    | version 1.0.0 - August 12, 2011 : creation after 2006 module</span>
+
+<span class="sd">.. _scipy.interpolate.interp1d: http://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.interp1d.html#scipy.interpolate.interp1d</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version</span> <span class="o">&gt;</span> <span class="s1">&#39;3&#39;</span><span class="p">:</span>
+    <span class="n">long</span> <span class="o">=</span> <span class="nb">int</span>
+    <span class="n">xrange</span> <span class="o">=</span> <span class="nb">range</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">numpy</span> <span class="k">import</span> <span class="n">cos</span><span class="p">,</span> <span class="n">sin</span><span class="p">,</span> <span class="nb">sum</span><span class="p">,</span> <span class="n">sqrt</span>
+<span class="kn">import</span> <span class="nn">scipy</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="k">import</span> <span class="n">interpolate</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+
+<div class="viewcode-block" id="dist2"><a class="viewcode-back" href="../../../mangadap.contrib.LambdaR_2D_forMaNGA.html#mangadap.contrib.LambdaR_2D_forMaNGA.dist2">[docs]</a><span class="k">def</span> <span class="nf">dist2</span><span class="p">(</span><span class="n">x1</span><span class="p">,</span><span class="n">y1</span><span class="p">,</span><span class="n">x2</span><span class="p">,</span><span class="n">y2</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span> <span class="p">:</span>
+    <span class="k">return</span> <span class="p">((</span><span class="n">x1</span><span class="o">-</span><span class="n">x2</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">y1</span><span class="o">-</span><span class="n">y2</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">/</span><span class="n">scale</span><span class="o">**</span><span class="mi">2</span></div>
+
+<div class="viewcode-block" id="guess_regular_grid"><a class="viewcode-back" href="../../../mangadap.contrib.LambdaR_2D_forMaNGA.html#mangadap.contrib.LambdaR_2D_forMaNGA.guess_regular_grid">[docs]</a><span class="k">def</span> <span class="nf">guess_regular_grid</span><span class="p">(</span><span class="n">xnodes</span><span class="p">,</span> <span class="n">ynodes</span><span class="p">,</span> <span class="n">pixelsize</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return a regular grid guessed on an irregular one (Voronoi).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        xnodes (numpy.array): arrays of Voronoi bin x positions</span>
+<span class="sd">        ynodes (numpy.array): arrays of Voronoi bin y positions</span>
+
+<span class="sd">    Return:</span>
+<span class="sd">        numpy.ndarray : (xunb, yunb) regular grid for x and y (unbinned)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1">## First deriving a pixel size</span>
+    <span class="n">xn_rav</span><span class="p">,</span> <span class="n">yn_rav</span> <span class="o">=</span> <span class="n">xnodes</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">ynodes</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">pixelsize</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">:</span>
+        <span class="n">pixelsize</span> <span class="o">=</span> <span class="n">derive_pixelsize</span><span class="p">(</span><span class="n">xnodes</span><span class="p">,</span> <span class="n">ynodes</span><span class="p">)</span>
+    <span class="n">minxn</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">xn_rav</span><span class="p">)</span> <span class="o">/</span> <span class="n">pixelsize</span><span class="p">)</span> <span class="o">*</span> <span class="n">pixelsize</span>
+    <span class="n">minyn</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">yn_rav</span><span class="p">)</span> <span class="o">/</span> <span class="n">pixelsize</span><span class="p">)</span> <span class="o">*</span> <span class="n">pixelsize</span>
+    <span class="n">xunb</span><span class="p">,</span> <span class="n">yunb</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">minxn</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">xn_rav</span><span class="p">)</span><span class="o">+</span><span class="n">pixelsize</span><span class="p">,</span> <span class="n">pixelsize</span><span class="p">),</span>
+                           <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">minyn</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">yn_rav</span><span class="p">)</span><span class="o">+</span><span class="n">pixelsize</span><span class="p">,</span> <span class="n">pixelsize</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">xunb</span><span class="p">,</span> <span class="n">yunb</span></div>
+
+<div class="viewcode-block" id="derive_unbinned_field"><a class="viewcode-back" href="../../../mangadap.contrib.LambdaR_2D_forMaNGA.html#mangadap.contrib.LambdaR_2D_forMaNGA.derive_unbinned_field">[docs]</a><span class="k">def</span> <span class="nf">derive_unbinned_field</span><span class="p">(</span><span class="n">xnodes</span><span class="p">,</span> <span class="n">ynodes</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">xunb</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">yunb</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mask_array</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Provide an array of the same shape as the input xunb, and yunb with</span>
+<span class="sd">    the values derived from the Voronoi binned data</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        xnodes (numpy.array): arrays of Voronoi bin x positions</span>
+<span class="sd">        ynodes (numpy.array): arrays of Voronoi bin y positions</span>
+<span class="sd">        data (numpy.array): values for each node</span>
+<span class="sd">        xunb (numpy.array): x coordinates of the unbinned data if not</span>
+<span class="sd">            provided (default) they will be guessed from the nodes</span>
+<span class="sd">        yunb (numpy.array): y coordinates of the unbinned data if not</span>
+<span class="sd">            provided (default) they will be guessed from the nodes</span>
+<span class="sd">        mask_array (numpy.ndarray): array with the same shape than xunb</span>
+<span class="sd">            providing mask values for positions to ignore</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        numpy.ndarray : (xunb, yunb, unbinned_data) arrays with the same</span>
+<span class="sd">            shape as xunb,</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">xunb</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">:</span>
+        <span class="n">xunb</span><span class="p">,</span> <span class="n">yunb</span> <span class="o">=</span> <span class="n">guess_regular_grid</span><span class="p">(</span><span class="n">xnodes</span><span class="p">,</span> <span class="n">ynodes</span><span class="p">)</span>
+
+    <span class="n">x_rav</span><span class="p">,</span> <span class="n">y_rav</span> <span class="o">=</span> <span class="n">xunb</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">yunb</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+    <span class="n">xnodes_rav</span><span class="p">,</span> <span class="n">ynodes_rav</span> <span class="o">=</span> <span class="n">xnodes</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">ynodes</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+    <span class="n">data_rav</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+    <span class="n">unbinned_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">x_rav</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">data_rav</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x_rav</span><span class="p">))</span> <span class="p">:</span>
+        <span class="n">indclosestBin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">dist2</span><span class="p">(</span><span class="n">x_rav</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">y_rav</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">xnodes_rav</span><span class="p">,</span> <span class="n">ynodes_rav</span><span class="p">))</span>
+        <span class="n">unbinned_data</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">data_rav</span><span class="p">[</span><span class="n">indclosestBin</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">xunb</span><span class="p">,</span> <span class="n">yunb</span><span class="p">,</span> <span class="n">unbinned_data</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">xunb</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span></div>
+
+<span class="c1">###################################################################</span>
+<span class="c1"># Derive V / Sigma and LambdaR profiles from a set </span>
+<span class="c1"># of X, Y, I, V and S</span>
+<span class="c1"># =================================================================</span>
+<div class="viewcode-block" id="Derive_LR_VS_Profiles"><a class="viewcode-back" href="../../../mangadap.contrib.LambdaR_2D_forMaNGA.html#mangadap.contrib.LambdaR_2D_forMaNGA.Derive_LR_VS_Profiles">[docs]</a><span class="k">def</span> <span class="nf">Derive_LR_VS_Profiles</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">F</span><span class="p">,</span> <span class="n">V</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">Rprofile</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">R_EpsPA</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">Eps</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">PA</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                          <span class="n">maskDic</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">maskName</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="p">:</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute the :math:`\lambda_R` and :math:`V/\sigma` parameters from a</span>
+<span class="sd">    set of :math:`(x,y)` (positions) and :math:`V`, :math:`\sigma`</span>
+<span class="sd">    (stellar kinematics).</span>
+
+<span class="sd">    If an ellipticity profile is provided, it is used to select the</span>
+<span class="sd">    points within growing apertures.  Otherwise it uses a default</span>
+<span class="sd">    ellipse value, constant over the full field.</span>
+
+<span class="sd">    Same with the position angle (in degrees), which can vary with</span>
+<span class="sd">    radius or be constant.</span>
+
+<span class="sd">    Rprofile and R_EpsPA are the effective (Geometric) radius.</span>
+
+<span class="sd">    .. todo::</span>
+
+<span class="sd">        - Documentation out of date.  E.g., not all kwargs listed.</span>
+<span class="sd">        - Convert result to a true class</span>
+<span class="sd">        - raise exceptions instead of writing errors and returning</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        X, Y (numpy.ndarray) : Cartesian coordinates. Units can be</span>
+<span class="sd">            arbitrary as :math:`\lambda_R` and :math:`V/\sigma` are</span>
+<span class="sd">            dimensionless (but should be linear, so not RA, DEC) *X*,</span>
+<span class="sd">            and *Y* should be associated with square spaxels but do not</span>
+<span class="sd">            need to fill in a full rectangular grid.  No default. </span>
+<span class="sd">        F, V, S (numpy.ndarray): flux, stellar velocity and velocity</span>
+<span class="sd">            dispersion measured at *X*, *Y* positions.  Units are</span>
+<span class="sd">            arbitrary as for *X*, *Y* (since the final result will be</span>
+<span class="sd">            dimensionless) No default.</span>
+<span class="sd">        Rprofile (numpy.ndarray): (Optional) Radius sampling imposed by</span>
+<span class="sd">            the user.  These are the radii where the profiles will be</span>
+<span class="sd">            derived. Default to None, means that Rsampling will be</span>
+<span class="sd">            automatically set up.</span>
+<span class="sd">        R_EpsPA, Eps, PA (numpy.ndarray): ellipticity and Position Angle</span>
+<span class="sd">            profiles, given as radii (R_EpsPA), ellipticity values (Eps)</span>
+<span class="sd">            and position angle (degrees). If given (default to None),</span>
+<span class="sd">            this profile will be used to derive the apertures.</span>
+<span class="sd">        maskDic (?): (Optional) ?</span>
+<span class="sd">        maskName (?): (Optional) ?</span>
+<span class="sd">        verbose (bool): (Optional) Print some additional information if</span>
+<span class="sd">            relevant.</span>
+<span class="sd">        Symmetrize (bool): (via kwargs: default is True) to specify</span>
+<span class="sd">            whether or not the fields should be symmetrized.</span>
+<span class="sd">        Re (float): (via kwargs: default is 1) effective radius (in</span>
+<span class="sd">            units of input X, Y)</span>
+<span class="sd">        Estimate_Vsys (bool): (via kwargs: default is True) If True,</span>
+<span class="sd">            estimate the systemic velocity (Systemic_Velocity is then</span>
+<span class="sd">            overwritten). If False, value of Systemic_Velocity will be</span>
+<span class="sd">            used.</span>
+<span class="sd">        Systemic_Velocity (float): (via kwargs: default is 0.) Systemic</span>
+<span class="sd">            Velocity to subtract from V.</span>
+<span class="sd">        Vaperture (float): (via kwargs: default is 3.) Radius (in units</span>
+<span class="sd">            of input X, Y) within which V will be summed to estimate the</span>
+<span class="sd">            systemic velocity.</span>
+<span class="sd">        Maximum_Velocity (float): (via kwargs: default is 400.)</span>
+<span class="sd">            Threshold to select out stellar velocities.</span>
+<span class="sd">        Maximum_Dispersion (float): (via kwargs: default is 500.)</span>
+<span class="sd">            Threshold to select out stellar velocity dispersion.</span>
+<span class="sd">        Threshold_Cover (float): (via kwargs: default is 1.25) Fraction</span>
+<span class="sd">            of pixels which should be covered within an ellipse. Default</span>
+<span class="sd">            to 1.25, meaning that if more than values for more than 20%</span>
+<span class="sd">            of the pixels within the ellipse are missing, we stop the</span>
+<span class="sd">            calculation (as it means that there are not enough points).</span>
+<span class="sd">        Threshold_Radius (float): (via kwargs: default is 1.15) Same as</span>
+<span class="sd">            Threshold_Cover but this time in terms of the ratio between</span>
+<span class="sd">            the actual effective radius, and the effective radius of the</span>
+<span class="sd">            corresponding ellipse. </span>
+<span class="sd">        Min_Radius (float): (via kwargs: default is 1) Minimum radius to</span>
+<span class="sd">            be considered in the profile.</span>
+<span class="sd">        Max_Radius (float): (via kwargs: default is 50) Maximum radius</span>
+<span class="sd">            to be considered in the profile.</span>
+<span class="sd">        N_Radius (int): (via kwargs: default is 100) Number of points</span>
+<span class="sd">            within the radius range.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Result : A class that contains the results of the computation.</span>
+<span class="sd">            May return None if errors occur.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1">## Defining the Result Class ================================</span>
+    <span class="k">class</span> <span class="nc">Result</span> <span class="p">:</span>
+       <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+          <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="s2">&quot;LambdaR Computation&quot;</span>
+    <span class="c1">## ===========================================================</span>
+
+    <span class="c1">## Here is the result structure which will be filled in at the end</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">Result</span><span class="p">()</span>
+    <span class="c1">## ===========================================================</span>
+
+    <span class="c1">## Default setup =============================================</span>
+    <span class="n">result</span><span class="o">.</span><span class="n">Symmetrize</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;Symmetrize&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+    <span class="n">result</span><span class="o">.</span><span class="n">ExtraCoverageCriterion</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ExtraCoverageCriterion&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+
+    <span class="n">result</span><span class="o">.</span><span class="n">Re</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;Re&#39;</span><span class="p">,</span> <span class="mf">1.</span><span class="p">))</span>
+
+    <span class="n">result</span><span class="o">.</span><span class="n">Estimate_Vsys</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;Estimate_Vsys&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+    <span class="n">result</span><span class="o">.</span><span class="n">Systemic_Velocity</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;Systemic_Velocity&#39;</span><span class="p">,</span> <span class="mf">0.</span><span class="p">))</span>
+    <span class="n">result</span><span class="o">.</span><span class="n">Vaperture</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;Vaperture&#39;</span><span class="p">,</span> <span class="mf">3.</span><span class="p">))</span>
+
+    <span class="n">result</span><span class="o">.</span><span class="n">Maximum_Velocity</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;Maximum_Velocity&#39;</span><span class="p">,</span> <span class="mf">500.</span><span class="p">))</span>
+    <span class="n">result</span><span class="o">.</span><span class="n">Maximum_Dispersion</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;Maximum_Dispersion&#39;</span><span class="p">,</span> <span class="mf">500.</span><span class="p">))</span>
+
+    <span class="n">result</span><span class="o">.</span><span class="n">Threshold_Cover</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;Threshold_Cover&#39;</span><span class="p">,</span> <span class="mf">1.25</span><span class="p">))</span>
+    <span class="n">result</span><span class="o">.</span><span class="n">Threshold_Radius</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;Threshold_Radius&#39;</span><span class="p">,</span> <span class="mf">1.15</span><span class="p">))</span>
+
+    <span class="n">result</span><span class="o">.</span><span class="n">Min_Radius</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;Min_Radius&#39;</span><span class="p">,</span> <span class="mf">1.</span><span class="p">))</span>
+    <span class="n">result</span><span class="o">.</span><span class="n">Max_Radius</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;Max_Radius&#39;</span><span class="p">,</span> <span class="mf">50.</span><span class="p">))</span>
+    <span class="n">result</span><span class="o">.</span><span class="n">N_Radius</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;N_Radius&#39;</span><span class="p">,</span> <span class="mi">100</span><span class="p">))</span>
+    <span class="c1">## ===========================================================</span>
+
+    <span class="c1">## Checking array ============================================</span>
+    <span class="n">ref_ShapeX</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span>
+    <span class="n">Shapes</span> <span class="o">=</span> <span class="n">Y</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">F</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">V</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">S</span><span class="o">.</span><span class="n">shape</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">s</span> <span class="o">==</span> <span class="n">ref_ShapeX</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">Shapes</span><span class="p">)</span> <span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;ERROR: input arrays (X, Y, F, V, S) are not all of the same size&#39;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;ERROR: please check the shapes/sizes of these data.&#39;</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="k">if</span> <span class="n">R_EpsPA</span> <span class="o">!=</span> <span class="kc">None</span> <span class="p">:</span>
+        <span class="n">ref_ShapeEps</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">R_EpsPA</span><span class="p">)</span>
+        <span class="n">Shapes</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">Eps</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">PA</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">s</span> <span class="o">==</span> <span class="n">ref_ShapeEps</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">Shapes</span><span class="p">)</span> <span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;ERROR: input arrays (REps, Eps, PA) are not all of the same size&#39;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;ERROR: please check the shapes/sizes of these data.&#39;</span><span class="p">)</span>
+            <span class="k">return</span>
+    <span class="c1">## ===========================================================</span>
+
+    <span class="c1">## Select the right spaxels</span>
+    <span class="c1">## All pixels with positive flux, all pixels with positive velocity and dispersion, </span>
+    <span class="c1">## all pixels with velocities lower (amplitude) than the set up Maximum velocity</span>
+    <span class="c1">## all pixels with dispersion lower than the set up Maximum dispersion</span>
+
+    <span class="c1">## selFlux is the frst selection to just get an idea of the systemic V</span>
+    <span class="n">First_selFlux</span> <span class="o">=</span> <span class="p">(</span><span class="n">F</span> <span class="o">&gt;</span> <span class="mf">0.</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">S</span> <span class="o">&gt;=</span> <span class="mf">0.</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">S</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">result</span><span class="o">.</span><span class="n">Maximum_Dispersion</span><span class="p">)</span>
+    <span class="c1">## Finally getting the min and max of the velocity and the systemic value from an aperture median</span>
+    <span class="n">AperV</span><span class="p">,</span> <span class="n">minV</span><span class="p">,</span> <span class="n">maxV</span> <span class="o">=</span> <span class="n">find_centerodd</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">First_selFlux</span><span class="p">],</span><span class="n">Y</span><span class="p">[</span><span class="n">First_selFlux</span><span class="p">],</span><span class="n">V</span><span class="p">[</span><span class="n">First_selFlux</span><span class="p">],</span> <span class="n">Radius</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">Vaperture</span><span class="p">)</span>
+
+    <span class="c1">## selFlux is the final selection for the spaxels</span>
+    <span class="n">selFlux</span> <span class="o">=</span> <span class="p">(</span><span class="n">F</span> <span class="o">&gt;</span> <span class="mf">0.</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">S</span> <span class="o">&gt;=</span> <span class="mf">0.</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">V</span> <span class="o">-</span> <span class="n">AperV</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">result</span><span class="o">.</span><span class="n">Maximum_Velocity</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">S</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">result</span><span class="o">.</span><span class="n">Maximum_Dispersion</span><span class="p">)</span>
+    <span class="c1">## We combine this with the Masks which may be defined for that galaxy</span>
+    <span class="n">mask</span> <span class="o">=</span> <span class="n">select_spaxels</span><span class="p">(</span><span class="n">maskDic</span><span class="p">,</span> <span class="n">maskName</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">)</span> <span class="o">*</span> <span class="n">selFlux</span>
+
+    <span class="c1">## Now reducing the arrays to the selected ones</span>
+    <span class="c1">## These are the arrays we will use for the calculation</span>
+    <span class="n">sX</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">compress</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">sY</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">compress</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">sF</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">compress</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="n">F</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">sV</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">compress</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="n">V</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">sS</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">compress</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="c1">## Getting the central values and normalising V with Vsys</span>
+    <span class="c1">## Finally getting the min and max of the velocity and the systemic value from an aperture median</span>
+    <span class="n">AperV</span><span class="p">,</span> <span class="n">minV</span><span class="p">,</span> <span class="n">maxV</span> <span class="o">=</span> <span class="n">find_centerodd</span><span class="p">(</span><span class="n">sX</span><span class="p">,</span> <span class="n">sY</span><span class="p">,</span> <span class="n">sV</span><span class="p">,</span> <span class="n">Radius</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">Vaperture</span><span class="p">)</span>
+    <span class="c1">## Same for the dispersion (just min and max values)</span>
+    <span class="n">minS</span><span class="p">,</span> <span class="n">maxS</span> <span class="o">=</span> <span class="n">find_centereven</span><span class="p">(</span><span class="n">sX</span><span class="p">,</span><span class="n">sY</span><span class="p">,</span><span class="n">sS</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">Estimate_Vsys</span> <span class="p">:</span> 
+        <span class="c1">## Use the estimate aperture value</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">Systemic_Velocity</span> <span class="o">=</span> <span class="n">AperV</span>
+        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Central velocity measured is : </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">AperV</span><span class="p">))</span>
+    <span class="k">else</span> <span class="p">:</span> 
+        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Systemic Velocity value use is : </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">Systemic_Velocity</span><span class="p">))</span>
+
+    <span class="c1"># Return the symmetrised points if Symmetrize is true</span>
+    <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">Symmetrize</span> <span class="p">:</span>
+        <span class="k">if</span> <span class="n">verbose</span> <span class="p">:</span> 
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Symmetrizing the points&#39;</span><span class="p">)</span>
+        <span class="n">nsV</span> <span class="o">=</span> <span class="n">SymmetrizeField</span><span class="p">(</span><span class="n">sX</span><span class="p">,</span> <span class="n">sY</span><span class="p">,</span> <span class="n">sV</span> <span class="o">-</span> <span class="n">result</span><span class="o">.</span><span class="n">Systemic_Velocity</span><span class="p">,</span> <span class="n">odd</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">nsS</span> <span class="o">=</span> <span class="n">SymmetrizeField</span><span class="p">(</span><span class="n">sX</span><span class="p">,</span> <span class="n">sY</span><span class="p">,</span> <span class="n">sS</span><span class="p">,</span> <span class="n">odd</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">else</span> <span class="p">:</span>
+        <span class="n">nsV</span> <span class="o">=</span> <span class="n">sV</span> <span class="o">-</span> <span class="n">result</span><span class="o">.</span><span class="n">Systemic_Velocity</span>
+        <span class="n">nsS</span> <span class="o">=</span> <span class="n">sS</span>
+
+    <span class="c1">## Define the Radii to be used for the profile</span>
+    <span class="c1">## If not provided by Rprofile, then build one using Min/Max_Radius and N_Radius</span>
+    <span class="k">if</span> <span class="n">Rprofile</span> <span class="o">==</span> <span class="kc">None</span> <span class="p">:</span>
+       <span class="n">Rprofile</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">Min_Radius</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">Max_Radius</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">N_Radius</span><span class="p">)</span>
+
+    <span class="c1">## Creation of a big grid of step</span>
+    <span class="n">dist</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">((</span><span class="n">X</span> <span class="o">-</span> <span class="n">X</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">Y</span> <span class="o">-</span> <span class="n">Y</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+    <span class="c1">## looking for the minimum radius (which is not zero) which should be the Size of the smallest Spaxel</span>
+    <span class="n">binstep</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">dist</span><span class="p">[</span><span class="n">dist</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span> 
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;BINSTEP is </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">binstep</span><span class="p">))</span>
+
+    <span class="c1">## Computing the Map Grid Corners (after masking)</span>
+    <span class="n">X1</span><span class="p">,</span> <span class="n">X2</span><span class="p">,</span> <span class="n">Y1</span><span class="p">,</span> <span class="n">Y2</span> <span class="o">=</span> <span class="n">Get_CornersArray</span><span class="p">(</span><span class="n">sX</span><span class="p">,</span> <span class="n">sY</span><span class="p">,</span> <span class="n">binstep</span><span class="p">)</span>
+
+    <span class="c1">## And computing the large rectangular grid containing the full set of spaxels</span>
+    <span class="n">Nspaxels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">([</span><span class="n">X</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="o">/</span><span class="n">binstep</span><span class="p">,</span> <span class="n">X</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">/</span><span class="n">binstep</span><span class="p">,</span> <span class="n">Y</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="o">/</span><span class="n">binstep</span><span class="p">,</span> <span class="n">Y</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">/</span><span class="n">binstep</span><span class="p">])</span>
+    <span class="n">XYsample</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="n">Nspaxels</span><span class="o">*</span><span class="n">binstep</span><span class="p">,</span> <span class="p">(</span><span class="n">Nspaxels</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">binstep</span><span class="p">,</span> <span class="n">binstep</span><span class="p">)</span>
+    <span class="n">GX</span><span class="p">,</span> <span class="n">GY</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">XYsample</span><span class="p">,</span> <span class="n">XYsample</span><span class="p">)</span>
+    <span class="c1">## Now computing the Full grid corners</span>
+    <span class="n">GX1</span><span class="p">,</span> <span class="n">GX2</span><span class="p">,</span> <span class="n">GY1</span><span class="p">,</span> <span class="n">GY2</span> <span class="o">=</span> <span class="n">Get_CornersArray</span><span class="p">(</span><span class="n">GX</span><span class="p">,</span> <span class="n">GY</span><span class="p">,</span> <span class="n">binstep</span><span class="p">)</span>
+
+    <span class="c1">## Define the ellipticity profiles to be used ================</span>
+    <span class="k">if</span> <span class="n">R_EpsPA</span> <span class="o">==</span> <span class="kc">None</span> <span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">Eps</span> <span class="o">==</span> <span class="kc">None</span><span class="p">)</span>  <span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Error: no Ellipticity provided&#39;</span><span class="p">)</span>
+            <span class="k">return</span> 
+        <span class="k">elif</span> <span class="p">(</span><span class="n">PA</span> <span class="o">==</span> <span class="kc">None</span><span class="p">)</span> <span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Error: no Position Angle provided&#39;</span><span class="p">)</span>
+            <span class="k">return</span> 
+        <span class="k">else</span> <span class="p">:</span>
+            <span class="n">R_EpsPA</span> <span class="o">=</span> <span class="n">Rprofile</span>
+            <span class="n">Eps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">Rprofile</span><span class="p">)</span> <span class="o">+</span> <span class="n">Eps</span>
+            <span class="n">PA</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">Rprofile</span><span class="p">)</span> <span class="o">+</span> <span class="n">PA</span>
+
+    <span class="c1">## Defining the function to interpolate Eps and PA</span>
+    <span class="n">profEps</span> <span class="o">=</span> <span class="n">interpolate</span><span class="o">.</span><span class="n">interp1d</span><span class="p">(</span><span class="n">R_EpsPA</span><span class="p">,</span> <span class="n">Eps</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">&quot;linear&quot;</span><span class="p">)</span>
+    <span class="n">profPA</span> <span class="o">=</span> <span class="n">interpolate</span><span class="o">.</span><span class="n">interp1d</span><span class="p">(</span><span class="n">R_EpsPA</span><span class="p">,</span> <span class="n">PA</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">&quot;linear&quot;</span><span class="p">)</span>
+    <span class="c1">## ===========================================================</span>
+
+    <span class="c1">## Contracting Rprofile with the input R_EpsPA ==================</span>
+    <span class="n">compactRprofile</span> <span class="o">=</span> <span class="n">Rprofile</span><span class="p">[(</span><span class="n">Rprofile</span> <span class="o">&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">R_EpsPA</span><span class="p">))</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">Rprofile</span> <span class="o">&lt;</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">R_EpsPA</span><span class="p">))]</span>
+
+    <span class="c1">## Start the Loop ============================================</span>
+    <span class="n">Npoints</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">compactRprofile</span><span class="p">)</span>
+
+    <span class="n">LambdaR</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">Npoints</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">FlagRadius</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">Npoints</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+    <span class="n">VS</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">LambdaR</span><span class="p">)</span>
+    <span class="n">sumF</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">LambdaR</span><span class="p">)</span>
+    <span class="n">FV2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">LambdaR</span><span class="p">)</span>
+    <span class="n">FS2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">LambdaR</span><span class="p">)</span>
+    <span class="n">FMU2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">LambdaR</span><span class="p">)</span>
+    <span class="n">RFV</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">LambdaR</span><span class="p">)</span>
+    <span class="n">RFMU</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">LambdaR</span><span class="p">)</span>
+    <span class="n">SemiMajorRadius</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">LambdaR</span><span class="p">)</span>
+    <span class="n">EffRadius</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">LambdaR</span><span class="p">)</span>
+    <span class="n">GEffRadius</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">LambdaR</span><span class="p">)</span>
+
+    <span class="c1">## Starting the actual loop on the profile radii</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">Npoints</span><span class="p">)</span> <span class="p">:</span>
+       <span class="n">locRadius</span> <span class="o">=</span> <span class="n">compactRprofile</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>    <span class="c1">## This is the geometric radius</span>
+       <span class="n">Eps_Here</span> <span class="o">=</span> <span class="n">profEps</span><span class="p">(</span><span class="n">locRadius</span><span class="p">)</span>     <span class="c1">## THe ellipticity at that radius</span>
+       <span class="k">if</span> <span class="n">Eps_Here</span> <span class="o">&gt;=</span> <span class="mf">1.</span> <span class="p">:</span>
+          <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Error: we get an ellipticity of 1 at radius </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">locRadius</span><span class="p">))</span>
+          <span class="k">continue</span>
+
+       <span class="n">PA_Here</span> <span class="o">=</span> <span class="n">profPA</span><span class="p">(</span><span class="n">locRadius</span><span class="p">)</span>       <span class="c1">## The PA at that radius</span>
+       <span class="n">SemiMajorRadius</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">locRadius</span> <span class="o">/</span> <span class="n">sqrt</span><span class="p">(</span><span class="mf">1.</span> <span class="o">-</span> <span class="n">Eps_Here</span><span class="p">)</span>  <span class="c1">## Semi major axis radius</span>
+
+       <span class="c1">## Rotating the axis to have it aligned</span>
+       <span class="n">rsX</span><span class="p">,</span> <span class="n">rsY</span> <span class="o">=</span> <span class="n">rotPA</span><span class="p">(</span><span class="n">sX</span><span class="p">,</span><span class="n">sY</span><span class="p">,</span> <span class="n">PA_Here</span><span class="p">)</span>
+       <span class="n">rellipse</span> <span class="o">=</span> <span class="n">XY_toSemiMajor</span><span class="p">(</span><span class="n">rsX</span><span class="p">,</span> <span class="n">rsY</span><span class="p">,</span> <span class="n">Eps_Here</span><span class="p">)</span> <span class="c1">## SEMI MAJOR AXIS</span>
+
+       <span class="c1">## Rotating the Grid in the same way</span>
+       <span class="n">rGX</span><span class="p">,</span> <span class="n">rGY</span> <span class="o">=</span> <span class="n">rotPA</span><span class="p">(</span><span class="n">GX</span><span class="p">,</span><span class="n">GY</span><span class="p">,</span> <span class="n">PA_Here</span><span class="p">)</span>
+       <span class="n">rGellipse</span> <span class="o">=</span> <span class="n">XY_toSemiMajor</span><span class="p">(</span><span class="n">rGX</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">rGY</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">Eps_Here</span><span class="p">)</span> <span class="c1">## SEMI MAJOR AXIS</span>
+
+       <span class="c1">## Selection for the present Radius</span>
+       <span class="n">selection</span> <span class="o">=</span> <span class="p">(</span><span class="n">rellipse</span> <span class="o">&lt;=</span> <span class="n">SemiMajorRadius</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> 
+       <span class="n">Gselection</span> <span class="o">=</span> <span class="p">(</span><span class="n">rGellipse</span> <span class="o">&lt;=</span> <span class="n">SemiMajorRadius</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> 
+
+       <span class="c1">## Rotating the Corners</span>
+       <span class="n">rXa</span><span class="p">,</span> <span class="n">rXb</span><span class="p">,</span> <span class="n">rXc</span><span class="p">,</span> <span class="n">rXd</span><span class="p">,</span> <span class="n">rYa</span><span class="p">,</span> <span class="n">rYb</span><span class="p">,</span> <span class="n">rYc</span><span class="p">,</span> <span class="n">rYd</span> <span class="o">=</span> <span class="n">Rotate_Corners</span><span class="p">(</span><span class="n">X1</span><span class="p">,</span> <span class="n">X2</span><span class="p">,</span> <span class="n">Y1</span><span class="p">,</span> <span class="n">Y2</span><span class="p">,</span> <span class="n">PA_Here</span><span class="p">)</span>
+       <span class="c1">## Deriving the corresponding Major-Axis radius</span>
+       <span class="n">rElla</span> <span class="o">=</span> <span class="n">XY_toSemiMajor</span><span class="p">(</span><span class="n">rXa</span><span class="p">,</span> <span class="n">rYa</span><span class="p">,</span> <span class="n">Eps_Here</span><span class="p">)</span> 
+       <span class="n">rEllb</span> <span class="o">=</span> <span class="n">XY_toSemiMajor</span><span class="p">(</span><span class="n">rXb</span><span class="p">,</span> <span class="n">rYb</span><span class="p">,</span> <span class="n">Eps_Here</span><span class="p">)</span> 
+       <span class="n">rEllc</span> <span class="o">=</span> <span class="n">XY_toSemiMajor</span><span class="p">(</span><span class="n">rXc</span><span class="p">,</span> <span class="n">rYc</span><span class="p">,</span> <span class="n">Eps_Here</span><span class="p">)</span> 
+       <span class="n">rElld</span> <span class="o">=</span> <span class="n">XY_toSemiMajor</span><span class="p">(</span><span class="n">rXd</span><span class="p">,</span> <span class="n">rYd</span><span class="p">,</span> <span class="n">Eps_Here</span><span class="p">)</span> 
+       <span class="c1">## Also just the radius</span>
+       <span class="n">ra</span> <span class="o">=</span> <span class="n">XY_toSemiMajor</span><span class="p">(</span><span class="n">rXa</span><span class="p">,</span> <span class="n">rYa</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span> 
+       <span class="n">rb</span> <span class="o">=</span> <span class="n">XY_toSemiMajor</span><span class="p">(</span><span class="n">rXb</span><span class="p">,</span> <span class="n">rYb</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span> 
+       <span class="n">rc</span> <span class="o">=</span> <span class="n">XY_toSemiMajor</span><span class="p">(</span><span class="n">rXc</span><span class="p">,</span> <span class="n">rYc</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span> 
+       <span class="n">rd</span> <span class="o">=</span> <span class="n">XY_toSemiMajor</span><span class="p">(</span><span class="n">rXd</span><span class="p">,</span> <span class="n">rYd</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span> 
+
+       <span class="c1">## Same with the Full Grid</span>
+       <span class="n">rGXa</span><span class="p">,</span> <span class="n">rGXb</span><span class="p">,</span> <span class="n">rGXc</span><span class="p">,</span> <span class="n">rGXd</span><span class="p">,</span> <span class="n">rGYa</span><span class="p">,</span> <span class="n">rGYb</span><span class="p">,</span> <span class="n">rGYc</span><span class="p">,</span> <span class="n">rGYd</span> <span class="o">=</span> <span class="n">Rotate_Corners</span><span class="p">(</span><span class="n">GX1</span><span class="p">,</span> <span class="n">GX2</span><span class="p">,</span> <span class="n">GY1</span><span class="p">,</span> <span class="n">GY2</span><span class="p">,</span> <span class="n">PA_Here</span><span class="p">)</span>
+       <span class="n">rGElla</span> <span class="o">=</span> <span class="n">XY_toSemiMajor</span><span class="p">(</span><span class="n">rGXa</span><span class="p">,</span> <span class="n">rGYa</span><span class="p">,</span> <span class="n">Eps_Here</span><span class="p">)</span> 
+       <span class="n">rGEllb</span> <span class="o">=</span> <span class="n">XY_toSemiMajor</span><span class="p">(</span><span class="n">rGXb</span><span class="p">,</span> <span class="n">rGYb</span><span class="p">,</span> <span class="n">Eps_Here</span><span class="p">)</span> 
+       <span class="n">rGEllc</span> <span class="o">=</span> <span class="n">XY_toSemiMajor</span><span class="p">(</span><span class="n">rGXc</span><span class="p">,</span> <span class="n">rGYc</span><span class="p">,</span> <span class="n">Eps_Here</span><span class="p">)</span> 
+       <span class="n">rGElld</span> <span class="o">=</span> <span class="n">XY_toSemiMajor</span><span class="p">(</span><span class="n">rGXd</span><span class="p">,</span> <span class="n">rGYd</span><span class="p">,</span> <span class="n">Eps_Here</span><span class="p">)</span> 
+
+       <span class="n">Allr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">ra</span><span class="p">,</span><span class="n">rb</span><span class="p">,</span><span class="n">rc</span><span class="p">,</span><span class="n">rd</span><span class="p">))</span>
+       <span class="n">AllEllr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">rElla</span><span class="p">,</span><span class="n">rEllb</span><span class="p">,</span><span class="n">rEllc</span><span class="p">,</span><span class="n">rElld</span><span class="p">))</span>
+       <span class="n">AllGEllr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">rGElla</span><span class="p">,</span><span class="n">rGEllb</span><span class="p">,</span><span class="n">rGEllc</span><span class="p">,</span><span class="n">rGElld</span><span class="p">))</span>
+       <span class="n">MaxR</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">Allr</span><span class="p">)</span>
+
+       <span class="c1">## Selecting the coordinates within this region</span>
+       <span class="n">srsX</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">compress</span><span class="p">(</span><span class="n">selection</span><span class="p">,</span> <span class="n">rsX</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+       <span class="n">srsY</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">compress</span><span class="p">(</span><span class="n">selection</span><span class="p">,</span> <span class="n">rsY</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+       <span class="n">ssX</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">compress</span><span class="p">(</span><span class="n">selection</span><span class="p">,</span> <span class="n">sX</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> 
+       <span class="n">ssY</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">compress</span><span class="p">(</span><span class="n">selection</span><span class="p">,</span> <span class="n">sY</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> 
+       <span class="n">ssR</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">ssX</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">ssY</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+       <span class="n">ssF</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">compress</span><span class="p">(</span><span class="n">selection</span><span class="p">,</span> <span class="n">sF</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+       <span class="n">ssV</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">compress</span><span class="p">(</span><span class="n">selection</span><span class="p">,</span> <span class="n">nsV</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+       <span class="n">ssS</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">compress</span><span class="p">(</span><span class="n">selection</span><span class="p">,</span> <span class="n">nsS</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+       <span class="c1">## Calculate the full Area on the full Grid</span>
+       <span class="n">ssGX</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">compress</span><span class="p">(</span><span class="n">Gselection</span><span class="p">,</span> <span class="n">GX</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+       <span class="c1">## The effective radius is then just the SQRT of the AREA</span>
+       <span class="n">GEffRadius</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ssGX</span><span class="p">)</span> <span class="o">*</span> <span class="n">binstep</span> <span class="o">*</span> <span class="n">binstep</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+
+       <span class="c1">## Calculate the effective radius for the selection on Input Data</span>
+       <span class="n">EffRadius</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ssF</span><span class="p">)</span> <span class="o">*</span> <span class="n">binstep</span> <span class="o">*</span> <span class="n">binstep</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+
+       <span class="c1">## For V/S calculate I * V^2 and I * S^2 as in Binney 2005</span>
+       <span class="n">FV2</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">ssF</span> <span class="o">*</span> <span class="n">ssV</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+       <span class="n">FS2</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">ssF</span> <span class="o">*</span> <span class="n">ssS</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+       <span class="c1">## For Sigma_e</span>
+       <span class="n">FMU2</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">FV2</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">FS2</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+       <span class="n">sumF</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">ssF</span><span class="p">)</span>
+
+       <span class="c1">## For LambdaR, derive R * I * ABS(V)</span>
+       <span class="c1">## and R * I * (V^2 +  S^2)</span>
+       <span class="n">RFV</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">ssF</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">ssV</span><span class="p">)</span> <span class="o">*</span> <span class="n">ssR</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+       <span class="n">RFMU</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">ssF</span> <span class="o">*</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">ssV</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">ssS</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="n">ssR</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+       <span class="c1">#  Lp, Lm, momEps, momPA = Flux_Inertia(ssX, ssY, ssF)</span>
+
+       <span class="c1">## Check if the Effective radius passes the Threshold</span>
+       <span class="c1">## If not, Flag the point to 0</span>
+       <span class="k">if</span> <span class="p">(</span><span class="n">GEffRadius</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">/</span> <span class="n">EffRadius</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">result</span><span class="o">.</span><span class="n">Threshold_Radius</span><span class="p">)</span> <span class="p">:</span>
+          <span class="n">FlagRadius</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.</span>
+
+       <span class="c1">## Now check other criteria by looking at how many pixels are intersecting</span>
+       <span class="c1">## This criterion should in principle be ignored</span>
+       <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">ExtraCoverageCriterion</span> <span class="p">:</span>
+          <span class="n">nPixEll</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">sX</span><span class="p">[</span><span class="n">check_cross_pixel</span><span class="p">(</span><span class="n">AllEllr</span><span class="p">,</span><span class="n">SemiMajorRadius</span><span class="p">[</span><span class="n">i</span><span class="p">])])</span>
+          <span class="n">nPixGEll</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">GX</span><span class="p">[</span><span class="n">check_cross_pixel</span><span class="p">(</span><span class="n">AllGEllr</span><span class="p">,</span><span class="n">SemiMajorRadius</span><span class="p">[</span><span class="n">i</span><span class="p">])])</span>
+          <span class="k">if</span> <span class="n">nPixEll</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">:</span>
+             <span class="n">FlagRadius</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+          <span class="k">elif</span> <span class="p">(((</span><span class="n">nGPixEll</span><span class="o">*</span><span class="mf">1.00</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">nPixEll</span><span class="o">*</span><span class="mf">1.00</span><span class="p">))</span> <span class="o">&gt;</span> <span class="n">result</span><span class="o">.</span><span class="n">Threshold_Cover</span><span class="p">)</span> <span class="p">:</span>
+             <span class="n">FlagRadius</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="c1">## Finalising the calculation</span>
+    <span class="c1">## V / Sigma</span>
+    <span class="n">VS</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">FV2</span> <span class="o">/</span> <span class="n">FS2</span><span class="p">)</span>
+    <span class="c1">## LambdaR</span>
+    <span class="n">LambdaR</span> <span class="o">=</span> <span class="n">RFV</span> <span class="o">/</span> <span class="n">RFMU</span>
+    <span class="c1">## Aperture Sigma</span>
+    <span class="n">SigmaR</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">FMU2</span> <span class="o">/</span> <span class="n">sumF</span><span class="p">)</span>
+
+    <span class="c1">## Interpolation at Various Radii : Re/2, Re </span>
+    <span class="n">selRadius</span> <span class="o">=</span> <span class="p">(</span><span class="n">FlagRadius</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">EffRadiusN</span> <span class="o">=</span> <span class="n">EffRadius</span> <span class="o">/</span> <span class="n">result</span><span class="o">.</span><span class="n">Re</span>
+    <span class="n">MaxEffRadius</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">EffRadius</span><span class="p">[</span><span class="n">selRadius</span><span class="p">])</span>
+    <span class="n">MaxEffRadiusN</span> <span class="o">=</span> <span class="n">MaxEffRadius</span> <span class="o">/</span> <span class="n">result</span><span class="o">.</span><span class="n">Re</span>
+
+    <span class="c1">## Calculation at 0.5, 1 and 2 Re</span>
+    <span class="n">RadiusN_for_re</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span>  <span class="n">MaxEffRadiusN</span><span class="p">)</span>
+    <span class="n">RadiusN_for_2re</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="mf">2.0</span><span class="p">,</span>  <span class="n">MaxEffRadiusN</span><span class="p">)</span>
+    <span class="n">RadiusN_for_re2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span>  <span class="n">MaxEffRadiusN</span><span class="p">)</span>
+
+    <span class="n">VSre2</span> <span class="o">=</span> <span class="n">interp_value_fromR</span><span class="p">(</span><span class="n">EffRadiusN</span><span class="p">,</span> <span class="n">VS</span><span class="p">,</span> <span class="n">RadiusN_for_re2</span><span class="p">)</span>
+    <span class="n">LambdaRre2</span> <span class="o">=</span> <span class="n">interp_value_fromR</span><span class="p">(</span><span class="n">EffRadiusN</span><span class="p">,</span> <span class="n">LambdaR</span><span class="p">,</span> <span class="n">RadiusN_for_re2</span><span class="p">)</span>
+    <span class="n">Sigmare2</span> <span class="o">=</span> <span class="n">interp_value_fromR</span><span class="p">(</span><span class="n">EffRadiusN</span><span class="p">,</span> <span class="n">SigmaR</span><span class="p">,</span> <span class="n">RadiusN_for_re2</span><span class="p">)</span>
+    <span class="n">VSre</span> <span class="o">=</span> <span class="n">interp_value_fromR</span><span class="p">(</span><span class="n">EffRadiusN</span><span class="p">,</span> <span class="n">VS</span><span class="p">,</span> <span class="n">RadiusN_for_re</span><span class="p">)</span>
+    <span class="n">LambdaRre</span> <span class="o">=</span> <span class="n">interp_value_fromR</span><span class="p">(</span><span class="n">EffRadiusN</span><span class="p">,</span> <span class="n">LambdaR</span><span class="p">,</span> <span class="n">RadiusN_for_re</span><span class="p">)</span>
+    <span class="n">Sigmare</span> <span class="o">=</span> <span class="n">interp_value_fromR</span><span class="p">(</span><span class="n">EffRadiusN</span><span class="p">,</span> <span class="n">SigmaR</span><span class="p">,</span> <span class="n">RadiusN_for_re</span><span class="p">)</span>
+    <span class="n">VS2re</span> <span class="o">=</span> <span class="n">interp_value_fromR</span><span class="p">(</span><span class="n">EffRadiusN</span><span class="p">,</span> <span class="n">VS</span><span class="p">,</span> <span class="n">RadiusN_for_2re</span><span class="p">)</span>
+    <span class="n">LambdaR2re</span> <span class="o">=</span> <span class="n">interp_value_fromR</span><span class="p">(</span><span class="n">EffRadiusN</span><span class="p">,</span> <span class="n">LambdaR</span><span class="p">,</span> <span class="n">RadiusN_for_2re</span><span class="p">)</span>
+    <span class="n">Sigma2re</span> <span class="o">=</span> <span class="n">interp_value_fromR</span><span class="p">(</span><span class="n">EffRadiusN</span><span class="p">,</span> <span class="n">SigmaR</span><span class="p">,</span> <span class="n">RadiusN_for_2re</span><span class="p">)</span>
+
+    <span class="c1">## Just adding all the relevant arrays into the structure</span>
+    <span class="n">result</span><span class="o">.</span><span class="n">LambdaR</span> <span class="o">=</span> <span class="n">LambdaR</span>
+    <span class="n">result</span><span class="o">.</span><span class="n">VS</span> <span class="o">=</span> <span class="n">VS</span>
+    <span class="n">result</span><span class="o">.</span><span class="n">GEffRadius</span> <span class="o">=</span> <span class="n">GEffRadius</span>
+    <span class="n">result</span><span class="o">.</span><span class="n">EffRadius</span> <span class="o">=</span> <span class="n">EffRadius</span>
+    <span class="n">result</span><span class="o">.</span><span class="n">EffRadiusN</span> <span class="o">=</span> <span class="n">EffRadiusN</span>
+    <span class="n">result</span><span class="o">.</span><span class="n">FlagRadius</span> <span class="o">=</span> <span class="n">FlagRadius</span>
+    <span class="n">result</span><span class="o">.</span><span class="n">MaxEffRadius</span> <span class="o">=</span> <span class="n">MaxEffRadius</span>
+    <span class="n">result</span><span class="o">.</span><span class="n">LambdaR_re</span> <span class="o">=</span> <span class="n">LambdaRre</span>
+    <span class="n">result</span><span class="o">.</span><span class="n">LambdaR_re2</span> <span class="o">=</span> <span class="n">LambdaRre2</span>
+    <span class="n">result</span><span class="o">.</span><span class="n">LambdaR_2re</span> <span class="o">=</span> <span class="n">LambdaR2re</span>
+    <span class="n">result</span><span class="o">.</span><span class="n">RadiusN_for_re</span> <span class="o">=</span> <span class="n">RadiusN_for_re</span>
+    <span class="n">result</span><span class="o">.</span><span class="n">RadiusN_for_2re</span> <span class="o">=</span> <span class="n">RadiusN_for_2re</span>
+    <span class="n">result</span><span class="o">.</span><span class="n">RadiusN_for_re2</span> <span class="o">=</span> <span class="n">RadiusN_for_re2</span>
+    <span class="n">result</span><span class="o">.</span><span class="n">Sigma_re</span> <span class="o">=</span> <span class="n">Sigmare</span>
+    <span class="n">result</span><span class="o">.</span><span class="n">Sigma_re2</span> <span class="o">=</span> <span class="n">Sigmare2</span>
+    <span class="n">result</span><span class="o">.</span><span class="n">Sigma_2re</span> <span class="o">=</span> <span class="n">Sigma2re</span>
+    <span class="n">result</span><span class="o">.</span><span class="n">VS_re</span> <span class="o">=</span> <span class="n">VSre</span>
+    <span class="n">result</span><span class="o">.</span><span class="n">VS_re2</span> <span class="o">=</span> <span class="n">VSre2</span>
+    <span class="n">result</span><span class="o">.</span><span class="n">VS_2re</span> <span class="o">=</span> <span class="n">VS2re</span>
+    <span class="n">result</span><span class="o">.</span><span class="n">binstep</span> <span class="o">=</span> <span class="n">binstep</span>
+    <span class="n">result</span><span class="o">.</span><span class="n">R_EpsPA</span> <span class="o">=</span> <span class="n">R_EpsPA</span>
+    <span class="n">result</span><span class="o">.</span><span class="n">Eps</span> <span class="o">=</span> <span class="n">Eps</span>
+    <span class="n">result</span><span class="o">.</span><span class="n">PA</span> <span class="o">=</span> <span class="n">PA</span>
+    <span class="n">result</span><span class="o">.</span><span class="n">SemiMajorRadius</span> <span class="o">=</span> <span class="n">SemiMajorRadius</span>
+    <span class="k">return</span> <span class="n">result</span></div>
+<span class="c1"># ===============================================================</span>
+<span class="c1">###################################################################</span>
+<div class="viewcode-block" id="interp_value_fromR"><a class="viewcode-back" href="../../../mangadap.contrib.LambdaR_2D_forMaNGA.html#mangadap.contrib.LambdaR_2D_forMaNGA.interp_value_fromR">[docs]</a><span class="k">def</span> <span class="nf">interp_value_fromR</span><span class="p">(</span><span class="n">R</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">val</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Interpolation of a profile at a certain radius.  Check if the radius</span>
+<span class="sd">    is really within the given input range</span>
+
+<span class="sd">    If radius out of range, return the closest (in radius) value. This</span>
+<span class="sd">    is thus different from the option of bounds_error of</span>
+<span class="sd">    `scipy.interpolate.interp1d`_ which is used here.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        R (numpy.ndarray): (Optional) Input radii</span>
+<span class="sd">        val (numpy.ndarray): (Optional) Input values. Should have the</span>
+<span class="sd">            same size as R.</span>
+<span class="sd">        radius (float): (Optional) Radius at which to interpolate</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        float : Value interpolated from the input data.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">radius</span> <span class="o">&lt;</span> <span class="n">R</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="p">:</span>
+        <span class="k">return</span> <span class="n">val</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="k">elif</span> <span class="p">(</span><span class="n">radius</span> <span class="o">&gt;</span> <span class="n">R</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="p">:</span>
+        <span class="k">return</span> <span class="n">val</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="k">else</span> <span class="p">:</span>
+        <span class="n">fval</span> <span class="o">=</span> <span class="n">interpolate</span><span class="o">.</span><span class="n">interp1d</span><span class="p">(</span><span class="n">R</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">&quot;linear&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">fval</span><span class="p">([</span><span class="n">radius</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span></div>
+<span class="c1"># =================================================================</span>
+<span class="c1">####################################################################</span>
+<span class="c1"># def Flux_Inertia(X, Y, Flux) :</span>
+<span class="c1">#     &quot;&quot;&quot;</span>
+<span class="c1">#     Derive the moment of inertia from a flux map</span>
+<span class="c1">#     Given X, Y and Flux values</span>
+<span class="c1"># </span>
+<span class="c1">#     Return minor, major, ellipticity, and PA in degrees</span>
+<span class="c1">#     &quot;&quot;&quot;</span>
+<span class="c1">#     momI = sum(Flux, axis=0)</span>
+<span class="c1">#     if momI == 0. :</span>
+<span class="c1">#         return 0., 0., 1., 0.</span>
+<span class="c1">#     momIX = sum(Flux * X, axis=0) / momI</span>
+<span class="c1">#     momIY = sum(Flux * Y, axis=0) / momI</span>
+<span class="c1">#     a = sum(Flux * X * X, axis=0) / momI - momIX**2</span>
+<span class="c1">#     b = sum(Flux * Y * Y, axis=0) / momI - momIY**2</span>
+<span class="c1">#     c = sum(Flux * X * Y, axis=0) / momI - momIX * momIY</span>
+<span class="c1">#     if c == 0 :</span>
+<span class="c1">#         if a == 0. :</span>
+<span class="c1">#             return b, a, 0., 0.</span>
+<span class="c1">#         if b &gt; a :</span>
+<span class="c1">#             return b, a, 1. - sqrt(a / b), 0.</span>
+<span class="c1">#         else :</span>
+<span class="c1">#             if b == 0.:</span>
+<span class="c1">#                 return a,b,0.,0.</span>
+<span class="c1">#             else :</span>
+<span class="c1">#                 return a, b, 1. - sqrt(b/a), 90.</span>
+<span class="c1"># </span>
+<span class="c1">#     delta = (a - b)**2. + 4 * c * c </span>
+<span class="c1">#     Lp2 = ((a + b) + sqrt(delta)) / 2.</span>
+<span class="c1">#     Lm2 = ((a + b) - sqrt(delta)) / 2.</span>
+<span class="c1">#     Lp = sqrt(np.maximum(Lp2, 0.))</span>
+<span class="c1">#     Lm = sqrt(np.maximum(Lm2, 0.))</span>
+<span class="c1">#     eps = (Lp - Lm) / Lp</span>
+<span class="c1">#     PA = np.rad2deg((np.arctan((b - Lp2) / c))</span>
+<span class="c1">#     return Lp, Lm, eps, PA</span>
+<span class="c1"># ==================================================================</span>
+
+<span class="c1">####################################################################</span>
+<span class="c1"># Function to see if the ellipse is basically </span>
+<span class="c1">#          in or out or intersects the spaxel</span>
+<span class="c1">####################################################################</span>
+<div class="viewcode-block" id="check_cross_pixel"><a class="viewcode-back" href="../../../mangadap.contrib.LambdaR_2D_forMaNGA.html#mangadap.contrib.LambdaR_2D_forMaNGA.check_cross_pixel">[docs]</a><span class="k">def</span> <span class="nf">check_cross_pixel</span><span class="p">(</span><span class="n">rpixels</span><span class="p">,</span> <span class="n">rlimit</span><span class="p">)</span> <span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check whether the ellipse is going THROUGH the pixel or not.  Return</span>
+<span class="sd">    an array of True (intersecting) or False (Not intersecting).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">signC</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">rpixels</span> <span class="o">-</span> <span class="n">rlimit</span><span class="p">)</span>
+    <span class="c1"># True means the pixel has the circle intersecting it</span>
+    <span class="c1"># False means the ellipse is in or out</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">signC</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span> <span class="o">&lt;</span> <span class="mf">4.0</span></div>
+<span class="c1"># ==================================================================</span>
+
+<span class="c1">####################################################################</span>
+<span class="c1"># Define the central value of a map</span>
+<span class="c1"># Case of an odd symmetry</span>
+<div class="viewcode-block" id="find_centerodd"><a class="viewcode-back" href="../../../mangadap.contrib.LambdaR_2D_forMaNGA.html#mangadap.contrib.LambdaR_2D_forMaNGA.find_centerodd">[docs]</a><span class="k">def</span> <span class="nf">find_centerodd</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">Radius</span><span class="o">=</span><span class="mf">3.0</span><span class="p">)</span> <span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Find central value for an odd sided field.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        X (numpy.ndarray): x coordinates</span>
+<span class="sd">        Y (numpy.ndarray): y coordinates</span>
+<span class="sd">        Z (numpy.ndarray): values</span>
+<span class="sd">        Radius (float): (Optional) Radius within which to derive the</span>
+<span class="sd">            central value.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        float: The central value and some amplitude value (range about</span>
+<span class="sd">            that value?).</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># First select the points which are non-zero and compress</span>
+    <span class="n">ravZ</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ravel</span><span class="p">(</span><span class="n">Z</span><span class="p">)</span>
+    <span class="n">sel</span> <span class="o">=</span> <span class="p">(</span><span class="n">ravZ</span> <span class="o">!=</span> <span class="mf">0.</span><span class="p">)</span>
+    <span class="n">selz</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">compress</span><span class="p">(</span><span class="n">sel</span><span class="p">,</span><span class="n">ravZ</span><span class="p">)</span>
+
+    <span class="c1">## Select the central points for the central value</span>
+    <span class="n">selxy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ravel</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">X</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">Radius</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">Y</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">Radius</span><span class="p">))</span> <span class="o">&amp;</span> <span class="n">sel</span>
+    <span class="n">selzxy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">compress</span><span class="p">(</span><span class="n">selxy</span><span class="p">,</span> <span class="n">ravZ</span><span class="p">)</span>
+    <span class="n">cval</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">selzxy</span><span class="p">)</span>
+
+    <span class="n">sig</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">selz</span><span class="p">)</span>
+    <span class="n">sselz</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">compress</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">selz</span> <span class="o">-</span> <span class="n">cval</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">3</span> <span class="o">*</span> <span class="n">sig</span><span class="p">,</span> <span class="n">selz</span> <span class="o">-</span> <span class="n">cval</span><span class="p">)</span>
+    <span class="n">ampl</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">sselz</span><span class="p">))</span> <span class="o">/</span> <span class="mf">1.1</span>
+    <span class="k">return</span> <span class="n">cval</span><span class="p">,</span> <span class="n">cval</span> <span class="o">-</span> <span class="n">ampl</span><span class="p">,</span> <span class="n">cval</span> <span class="o">+</span> <span class="n">ampl</span></div>
+<span class="c1"># ==================================================================</span>
+
+<span class="c1">####################################################################</span>
+<span class="c1"># Define the central value of a map</span>
+<span class="c1"># Case of an even symmetry</span>
+<div class="viewcode-block" id="find_centereven"><a class="viewcode-back" href="../../../mangadap.contrib.LambdaR_2D_forMaNGA.html#mangadap.contrib.LambdaR_2D_forMaNGA.find_centereven">[docs]</a><span class="k">def</span> <span class="nf">find_centereven</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">Radius</span><span class="o">=</span><span class="mf">3.0</span><span class="p">,</span> <span class="n">sel0</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Find the central value for an even sided field.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        X (numpy.ndarray): x coordinates</span>
+<span class="sd">        Y (numpy.ndarray): y coordinates</span>
+<span class="sd">        Z (numpy.ndarray): values</span>
+<span class="sd">        Radius (float): (Optional) Radius within which to derive the</span>
+<span class="sd">            central value.</span>
+<span class="sd">        sel0 (bool): (Optional) ?</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        float : The minimum and maximum value.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ravZ</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ravel</span><span class="p">(</span><span class="n">Z</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">sel0</span> <span class="p">:</span> <span class="n">sel</span> <span class="o">=</span> <span class="p">(</span><span class="n">ravZ</span> <span class="o">!=</span> <span class="mf">0.</span><span class="p">)</span>
+    <span class="k">else</span> <span class="p">:</span> <span class="n">sel</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">ravZ</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mf">0.</span><span class="p">)</span>
+    <span class="n">sel</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ravel</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">X</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">Radius</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">Y</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">Radius</span><span class="p">))</span> <span class="o">&amp;</span> <span class="n">sel</span>
+    <span class="n">selz</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">compress</span><span class="p">(</span><span class="n">sel</span><span class="p">,</span> <span class="n">ravZ</span><span class="p">)</span>
+    <span class="n">maxz</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">selz</span><span class="p">)</span>
+    <span class="n">minz</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">selz</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">minz</span><span class="p">,</span> <span class="n">maxz</span></div>
+<span class="c1"># ==================================================================</span>
+
+<span class="c1">########## point symmetrization of the points #####################</span>
+<span class="c1"># Use a simple symmetry since pixels are centred</span>
+<span class="c1"># So reading the opposite pixel</span>
+<span class="c1">###################################################################</span>
+<div class="viewcode-block" id="SymmetrizeField"><a class="viewcode-back" href="../../../mangadap.contrib.LambdaR_2D_forMaNGA.html#mangadap.contrib.LambdaR_2D_forMaNGA.SymmetrizeField">[docs]</a><span class="k">def</span> <span class="nf">SymmetrizeField</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">odd</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">maskDic</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">maskName</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Symmetrize a field. Only works when spaxels are located around a</span>
+<span class="sd">    central spaxel.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        X (numpy.ndarray): x coordinates</span>
+<span class="sd">        Y (numpy.ndarray): y coordinates</span>
+<span class="sd">        Z (numpy.ndarray): input values</span>
+<span class="sd">        odd (bool): (Optional) True if it is odd w.r.t. centre</span>
+<span class="sd">            (X=0,Y=0). False if even.</span>
+<span class="sd">        maskDic, maskName: (Optional) Dictionary and name of masks</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        numpy.ndarray : The symmetrized array (symmetrized Z values)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">newz</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">Z</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">odd</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">weight</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.</span>
+    <span class="k">else</span> <span class="p">:</span>
+        <span class="n">weight</span> <span class="o">=</span> <span class="mf">1.</span>
+
+    <span class="c1">## Interpolation</span>
+    <span class="n">xp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">yp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">Z</span><span class="p">))</span> <span class="p">:</span>
+        <span class="c1">## Look for the symmetric point (w.r.t centre)</span>
+        <span class="n">xp</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">X</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">yp</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">Y</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="c1">## Only one spaxel to test</span>
+        <span class="n">selmask</span> <span class="o">=</span> <span class="n">select_spaxels</span><span class="p">(</span><span class="n">maskDic</span><span class="p">,</span> <span class="n">maskName</span><span class="p">,</span> <span class="n">xp</span><span class="p">,</span> <span class="n">yp</span><span class="p">)</span> <span class="c1"># Mask the bad regions</span>
+        <span class="c1">## If the symmetric spaxel is not good then I just use the value within the masked region</span>
+        <span class="c1">## Otherwise I average neighbouring spaxels</span>
+        <span class="k">if</span> <span class="n">selmask</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span>  <span class="kc">True</span> <span class="p">:</span>
+            <span class="n">nz</span> <span class="o">=</span> <span class="n">Z</span><span class="p">[(</span><span class="nb">abs</span><span class="p">(</span><span class="n">X</span> <span class="o">-</span> <span class="n">xp</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="nb">abs</span><span class="p">(</span><span class="n">Y</span> <span class="o">-</span> <span class="n">yp</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span> <span class="o">&lt;</span> <span class="mf">1.e-3</span><span class="p">]</span>
+            <span class="c1">## If found some spaxels, average the values</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">nz</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="p">:</span>
+                <span class="n">newz</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">nz</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">weight</span> <span class="o">+</span> <span class="n">Z</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="o">/</span> <span class="mf">2.0</span>
+
+    <span class="k">return</span> <span class="n">newz</span></div>
+<span class="c1"># ===============================================================</span>
+<span class="c1">###################################################################</span>
+<div class="viewcode-block" id="Get_CornersArray"><a class="viewcode-back" href="../../../mangadap.contrib.LambdaR_2D_forMaNGA.html#mangadap.contrib.LambdaR_2D_forMaNGA.Get_CornersArray">[docs]</a><span class="k">def</span> <span class="nf">Get_CornersArray</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">binstep</span><span class="p">)</span> <span class="p">:</span>
+     <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">     Return corners given a set of X and Y and a fixed binstep.</span>
+<span class="sd">     &quot;&quot;&quot;</span>
+     <span class="n">X1</span><span class="p">,</span> <span class="n">X2</span> <span class="o">=</span> <span class="n">X</span> <span class="o">+</span> <span class="n">binstep</span><span class="o">/</span><span class="mf">2.</span><span class="p">,</span> <span class="n">X</span> <span class="o">-</span> <span class="n">binstep</span><span class="o">/</span><span class="mf">2.</span>
+     <span class="n">Y1</span><span class="p">,</span> <span class="n">Y2</span> <span class="o">=</span> <span class="n">Y</span> <span class="o">+</span> <span class="n">binstep</span><span class="o">/</span><span class="mf">2.</span><span class="p">,</span> <span class="n">Y</span> <span class="o">-</span> <span class="n">binstep</span><span class="o">/</span><span class="mf">2.</span>
+     <span class="k">return</span> <span class="n">X1</span><span class="p">,</span> <span class="n">X2</span><span class="p">,</span> <span class="n">Y1</span><span class="p">,</span> <span class="n">Y2</span></div>
+<span class="c1"># ===============================================================</span>
+<span class="c1">####################################################################</span>
+<span class="c1">## Rotating coordinates, this includes a 90 degrees rot to</span>
+<span class="c1">## have the major axis along the Y axis transformed in X</span>
+<span class="c1">## So rotangle is the POSITION ANGLE from Top, counter-clockwise</span>
+<div class="viewcode-block" id="rotPA"><a class="viewcode-back" href="../../../mangadap.contrib.LambdaR_2D_forMaNGA.html#mangadap.contrib.LambdaR_2D_forMaNGA.rotPA">[docs]</a><span class="k">def</span> <span class="nf">rotPA</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">Y</span><span class="p">,</span> <span class="n">PA</span><span class="p">)</span> <span class="p">:</span>
+     <span class="sd">&quot;&quot;&quot; Rotation of X and Y</span>
+<span class="sd">         PA in degrees</span>
+<span class="sd">     &quot;&quot;&quot;</span> 
+     <span class="n">PA_rad</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">(</span><span class="n">PA</span><span class="p">)</span>
+     <span class="n">Xr</span> <span class="o">=</span> <span class="o">-</span> <span class="n">X</span> <span class="o">*</span> <span class="n">sin</span><span class="p">(</span><span class="n">PA_rad</span><span class="p">)</span> <span class="o">+</span> <span class="n">Y</span> <span class="o">*</span> <span class="n">cos</span><span class="p">(</span><span class="n">PA_rad</span><span class="p">)</span>
+     <span class="n">Yr</span> <span class="o">=</span> <span class="o">-</span> <span class="n">X</span> <span class="o">*</span> <span class="n">cos</span><span class="p">(</span><span class="n">PA_rad</span><span class="p">)</span> <span class="o">-</span> <span class="n">Y</span> <span class="o">*</span> <span class="n">sin</span><span class="p">(</span><span class="n">PA_rad</span><span class="p">)</span>
+     <span class="k">return</span> <span class="n">Xr</span><span class="p">,</span> <span class="n">Yr</span></div>
+<span class="c1"># ==================================================================</span>
+<span class="c1">###################################################################</span>
+<div class="viewcode-block" id="Rotate_Corners"><a class="viewcode-back" href="../../../mangadap.contrib.LambdaR_2D_forMaNGA.html#mangadap.contrib.LambdaR_2D_forMaNGA.Rotate_Corners">[docs]</a><span class="k">def</span> <span class="nf">Rotate_Corners</span><span class="p">(</span><span class="n">X1</span><span class="p">,</span> <span class="n">X2</span><span class="p">,</span> <span class="n">Y1</span><span class="p">,</span> <span class="n">Y2</span><span class="p">,</span> <span class="n">PA</span><span class="p">)</span> <span class="p">:</span>
+     <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">     Rotate corners of a grid and return all corners</span>
+<span class="sd">     Using a PA in degrees</span>
+<span class="sd">     &quot;&quot;&quot;</span>
+     <span class="n">rXa</span><span class="p">,</span> <span class="n">rYa</span> <span class="o">=</span> <span class="n">rotPA</span><span class="p">(</span><span class="n">X1</span><span class="p">,</span> <span class="n">Y1</span><span class="p">,</span> <span class="n">PA</span><span class="p">)</span>
+     <span class="n">rXb</span><span class="p">,</span> <span class="n">rYb</span> <span class="o">=</span> <span class="n">rotPA</span><span class="p">(</span><span class="n">X2</span><span class="p">,</span> <span class="n">Y2</span><span class="p">,</span> <span class="n">PA</span><span class="p">)</span>
+     <span class="n">rXc</span><span class="p">,</span> <span class="n">rYc</span> <span class="o">=</span> <span class="n">rotPA</span><span class="p">(</span><span class="n">X1</span><span class="p">,</span> <span class="n">Y2</span><span class="p">,</span> <span class="n">PA</span><span class="p">)</span>
+     <span class="n">rXd</span><span class="p">,</span> <span class="n">rYd</span> <span class="o">=</span> <span class="n">rotPA</span><span class="p">(</span><span class="n">X2</span><span class="p">,</span> <span class="n">Y1</span><span class="p">,</span> <span class="n">PA</span><span class="p">)</span>
+     <span class="k">return</span> <span class="n">rXa</span><span class="p">,</span> <span class="n">rXb</span><span class="p">,</span> <span class="n">rXc</span><span class="p">,</span> <span class="n">rXd</span><span class="p">,</span> <span class="n">rYa</span><span class="p">,</span> <span class="n">rYb</span><span class="p">,</span> <span class="n">rYc</span><span class="p">,</span> <span class="n">rYd</span></div>
+<span class="c1"># ===============================================================</span>
+<span class="c1">###################################################################</span>
+<div class="viewcode-block" id="XY_toSemiMajor"><a class="viewcode-back" href="../../../mangadap.contrib.LambdaR_2D_forMaNGA.html#mangadap.contrib.LambdaR_2D_forMaNGA.XY_toSemiMajor">[docs]</a><span class="k">def</span> <span class="nf">XY_toSemiMajor</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">Eps</span><span class="p">)</span> <span class="p">:</span>
+     <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">     Transform X, Y into Semi-Major axis radii using a given ellipticity</span>
+<span class="sd">     Input are:</span>
+<span class="sd">        X : array of X coordinate</span>
+<span class="sd">        Y : array of Y coordinate</span>
+<span class="sd">        Eps: float value for the ellipticity.</span>
+<span class="sd">     &quot;&quot;&quot;</span>
+     <span class="k">return</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">X</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">Y</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="p">(</span><span class="mf">1.</span> <span class="o">-</span> <span class="n">Eps</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span></div>
+<span class="c1"># ===============================================================</span>
+
+<span class="c1">####################################################################</span>
+<span class="c1"># Function to select (Mask) good values from a map</span>
+<span class="c1"># Using both Rectangle and Circular Zones from the Selection_Zone class</span>
+<span class="c1">#</span>
+<span class="c1"># Input is name of galaxy, and coordinates</span>
+<span class="c1">####################################################################</span>
+<div class="viewcode-block" id="select_spaxels"><a class="viewcode-back" href="../../../mangadap.contrib.LambdaR_2D_forMaNGA.html#mangadap.contrib.LambdaR_2D_forMaNGA.select_spaxels">[docs]</a><span class="k">def</span> <span class="nf">select_spaxels</span><span class="p">(</span><span class="n">maskDic</span><span class="p">,</span> <span class="n">maskName</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">)</span> <span class="p">:</span>
+   <span class="c1">## All spaxels are set to GOOD (True) first</span>
+   <span class="n">selgood</span> <span class="o">=</span> <span class="p">(</span><span class="n">X</span><span class="o">**</span><span class="mi">2</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">)</span>
+
+   <span class="c1">## If no Mask is provided, we just return the full set of input X, Y</span>
+   <span class="k">if</span> <span class="n">maskDic</span> <span class="o">==</span> <span class="kc">None</span> <span class="p">:</span>
+      <span class="k">return</span> <span class="n">selgood</span>
+
+   <span class="c1">## We first check if the maskName is in the list of the defined Masks</span>
+   <span class="c1">## If the galaxy is not in the list, then the selection is all True</span>
+   <span class="k">if</span> <span class="p">(</span><span class="n">maskDic</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="n">maskName</span><span class="p">))</span> <span class="p">:</span>
+      <span class="c1">## The mask is defined, so Get the list of Regions</span>
+      <span class="c1">## From the defined dictionary</span>
+      <span class="n">listRegions</span> <span class="o">=</span> <span class="n">maskDic</span><span class="p">[</span><span class="n">maskName</span><span class="p">]</span>
+      <span class="c1">## For each region, select the good spaxels</span>
+      <span class="k">for</span> <span class="n">region</span> <span class="ow">in</span>  <span class="n">listRegions</span> <span class="p">:</span>
+         <span class="n">selgood</span> <span class="o">=</span> <span class="n">selgood</span> <span class="o">&amp;</span> <span class="n">region</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">)</span>
+
+   <span class="k">return</span> <span class="n">selgood</span></div>
+<span class="c1">#=================================================================</span>
+<span class="c1">####################################################################</span>
+<span class="c1"># Parent class for the various types of Zones</span>
+<span class="c1">####################################################################</span>
+<div class="viewcode-block" id="Selection_Zone"><a class="viewcode-back" href="../../../mangadap.contrib.LambdaR_2D_forMaNGA.html#mangadap.contrib.LambdaR_2D_forMaNGA.Selection_Zone">[docs]</a><span class="k">class</span> <span class="nc">Selection_Zone</span> <span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Parent class for Rectangle_Zone and Circle_Zone</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="n">params</span></div>
+
+<span class="c1">#=================================================================</span>
+<span class="c1">####################################################################</span>
+<div class="viewcode-block" id="Rectangle_Zone"><a class="viewcode-back" href="../../../mangadap.contrib.LambdaR_2D_forMaNGA.html#mangadap.contrib.LambdaR_2D_forMaNGA.Rectangle_Zone">[docs]</a><span class="k">class</span> <span class="nc">Rectangle_Zone</span><span class="p">(</span><span class="n">Selection_Zone</span><span class="p">)</span> <span class="p">:</span>
+    <span class="nb">type</span> <span class="o">=</span> <span class="s2">&quot;Rectangle&quot;</span>
+<div class="viewcode-block" id="Rectangle_Zone.select"><a class="viewcode-back" href="../../../mangadap.contrib.LambdaR_2D_forMaNGA.html#mangadap.contrib.LambdaR_2D_forMaNGA.Rectangle_Zone.select">[docs]</a>    <span class="k">def</span> <span class="nf">select</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xin</span><span class="p">,</span> <span class="n">yin</span><span class="p">)</span> <span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot; Define a selection within a rectangle</span>
+<span class="sd">            It can be rotated by an angle theta (in degrees) &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span> <span class="o">==</span> <span class="kc">None</span> <span class="p">:</span>
+           <span class="k">return</span> <span class="p">(</span><span class="n">xin</span><span class="o">**</span><span class="mi">2</span> <span class="o">&gt;=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="p">[</span><span class="n">x0</span><span class="p">,</span><span class="n">y0</span><span class="p">,</span><span class="n">length</span><span class="p">,</span><span class="n">width</span><span class="p">,</span><span class="n">theta</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span>
+        <span class="n">dx</span> <span class="o">=</span> <span class="n">xin</span> <span class="o">-</span> <span class="n">x0</span>
+        <span class="n">dy</span> <span class="o">=</span> <span class="n">yin</span> <span class="o">-</span> <span class="n">y0</span>
+        <span class="n">thetarad</span> <span class="o">=</span> <span class="n">theta</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mf">180.</span>
+        <span class="n">nx</span> <span class="o">=</span>   <span class="n">dx</span> <span class="o">*</span> <span class="n">cos</span><span class="p">(</span><span class="n">thetarad</span><span class="p">)</span> <span class="o">+</span> <span class="n">dy</span> <span class="o">*</span> <span class="n">sin</span><span class="p">(</span><span class="n">thetarad</span><span class="p">)</span> 
+        <span class="n">ny</span> <span class="o">=</span> <span class="o">-</span> <span class="n">dx</span> <span class="o">*</span> <span class="n">sin</span><span class="p">(</span><span class="n">thetarad</span><span class="p">)</span> <span class="o">+</span> <span class="n">dy</span> <span class="o">*</span> <span class="n">cos</span><span class="p">(</span><span class="n">thetarad</span><span class="p">)</span> 
+        <span class="n">selgood</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">ny</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">width</span><span class="o">/</span><span class="mf">2.</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">nx</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">length</span><span class="o">/</span><span class="mf">2.</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">selgood</span></div></div>
+<span class="c1">#=================================================================</span>
+<span class="c1">####################################################################</span>
+<div class="viewcode-block" id="Circle_Zone"><a class="viewcode-back" href="../../../mangadap.contrib.LambdaR_2D_forMaNGA.html#mangadap.contrib.LambdaR_2D_forMaNGA.Circle_Zone">[docs]</a><span class="k">class</span> <span class="nc">Circle_Zone</span><span class="p">(</span><span class="n">Selection_Zone</span><span class="p">)</span> <span class="p">:</span>
+    <span class="nb">type</span> <span class="o">=</span> <span class="s2">&quot;Circle&quot;</span>
+<div class="viewcode-block" id="Circle_Zone.select"><a class="viewcode-back" href="../../../mangadap.contrib.LambdaR_2D_forMaNGA.html#mangadap.contrib.LambdaR_2D_forMaNGA.Circle_Zone.select">[docs]</a>    <span class="k">def</span> <span class="nf">select</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xin</span><span class="p">,</span> <span class="n">yin</span><span class="p">)</span> <span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot; Define a selection within a circle &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span> <span class="o">==</span> <span class="kc">None</span> <span class="p">:</span>
+           <span class="k">return</span> <span class="p">(</span><span class="n">xin</span><span class="o">**</span><span class="mi">2</span> <span class="o">&gt;=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="p">[</span><span class="n">x0</span><span class="p">,</span><span class="n">y0</span><span class="p">,</span><span class="n">radius</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">params</span>
+        <span class="n">selgood</span> <span class="o">=</span> <span class="p">(</span><span class="n">sqrt</span><span class="p">((</span><span class="n">xin</span> <span class="o">-</span> <span class="n">x0</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">yin</span> <span class="o">-</span> <span class="n">y0</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">radius</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">selgood</span></div></div>
+<span class="c1">#=================================================================</span>
+
+<span class="c1">####################################################################</span>
+<span class="c1">## Example of Selection Zone for a set of galaxies</span>
+<span class="c1">## A3DMask = {&#39;IC0598&#39;      : [Circle_Zone([-13.6, +7.9, 2.6])],</span>
+<span class="c1">##   &#39;IC0676&#39;    : [Circle_Zone([+10.5, +18.2, 6.2])]</span>
+<span class="c1">## , &#39;NGC0448&#39;   : [Circle_Zone([+19.0, -5.6, 2.2])]</span>
+<span class="c1">## , &#39;NGC0509&#39;   : [Circle_Zone([-19.1, -8.0, 3.0]), Circle_Zone([-0.9, +11.1, 3.0])]</span>
+<span class="c1">## , &#39;NGC0661&#39;   : [Circle_Zone([+11.9, -19.1, 4.2])]</span>
+<span class="c1">## , &#39;NGC4486&#39;   : [Rectangle_Zone([0.0,0.0,2.0]),Rectangle_Zone([12.0,4.8,12.0,4.0,23])]</span>
+<span class="c1">## , &#39;NGC4486A&#39;  : [Circle_Zone([+1.0, -2.3, 3.5]), Circle_Zone([+1.4, -9.8, 2.4]), Circle_Zone([-4.1, -13.3, 2.4]), Circle_Zone([+7.6, -14.1, 2.4])]</span>
+<span class="c1">####################################################################</span>
+</pre></div>
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, SDSS-IV/MaNGA Pipeline Group.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'2.2.2',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

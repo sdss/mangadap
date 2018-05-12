@@ -1,0 +1,542 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mangadap.proc.bandpassfilter module &mdash; mangadap 2.2.2 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="mangadap 2.2.2 documentation" href="index.html"/>
+        <link rel="up" title="mangadap.proc package" href="mangadap.proc.html"/>
+        <link rel="next" title="mangadap.proc.elric module" href="mangadap.proc.elric.html"/>
+        <link rel="prev" title="mangadap.proc package" href="mangadap.proc.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> mangadap
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="mangadap.html">mangadap package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="mangadap.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="mangadap.config.html">mangadap.config package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.contrib.html">mangadap.contrib package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.par.html">mangadap.par package</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="mangadap.proc.html">mangadap.proc package</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="mangadap.proc.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="mangadap.proc.html#module-mangadap.proc">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.survey.html">mangadap.survey package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.test.html">mangadap.test package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.util.html">mangadap.util package</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="mangadap.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mangadap.html#module-mangadap">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">mangadap</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="mangadap.html">mangadap package</a> &raquo;</li>
+        
+          <li><a href="mangadap.proc.html">mangadap.proc package</a> &raquo;</li>
+        
+      <li>mangadap.proc.bandpassfilter module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/mangadap.proc.bandpassfilter.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-mangadap.proc.bandpassfilter">
+<span id="mangadap-proc-bandpassfilter-module"></span><h1>mangadap.proc.bandpassfilter module<a class="headerlink" href="#module-mangadap.proc.bandpassfilter" title="Permalink to this headline">¶</a></h1>
+<p>Container class that defines a bandpass filter.</p>
+<dl class="docutils">
+<dt><em>License</em>:</dt>
+<dd><dl class="first last docutils">
+<dt>Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group</dt>
+<dd>Licensed under BSD 3-clause license - see LICENSE.rst</dd>
+</dl>
+</dd>
+<dt><em>Source location</em>:</dt>
+<dd>$MANGADAP_DIR/python/mangadap/par/bandpassfilter.py</dd>
+<dt><em>Imports and python version compliance</em>:</dt>
+<dd><div class="first last highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version</span> <span class="o">&gt;</span> <span class="s1">&#39;3&#39;</span><span class="p">:</span>
+    <span class="n">long</span> <span class="o">=</span> <span class="nb">int</span>
+
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">from</span> <span class="nn">.parset</span> <span class="k">import</span> <span class="n">ParSet</span>
+</pre></div>
+</div>
+</dd>
+<dt><em>Class usage examples</em>:</dt>
+<dd><p class="first">To define an bandpass filter:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">mangadap.par.bandpassfilter</span> <span class="k">import</span> <span class="n">BandPassFilterPar</span>
+<span class="n">p</span> <span class="o">=</span> <span class="n">BandPassFilterPar</span><span class="p">(</span><span class="mi">44</span><span class="p">,</span> <span class="s1">&#39;Ha&#39;</span><span class="p">,</span> <span class="p">[</span><span class="mf">6483.0</span><span class="p">,</span><span class="mf">6513.0</span><span class="p">],</span>
+                     <span class="p">[</span><span class="mf">6623.0</span><span class="p">,</span><span class="mf">6653.0</span><span class="p">],</span> <span class="n">restwave</span><span class="o">=</span><span class="mf">6564.632</span><span class="p">,</span>
+                     <span class="n">primary</span><span class="o">=</span><span class="p">[</span><span class="mf">6557.6</span><span class="p">,</span><span class="mf">6571.6</span><span class="p">])</span>
+</pre></div>
+</div>
+<p class="last">However, this class is mostly to provide a base class used by
+<a class="reference internal" href="mangadap.par.emissionmomentsdb.html#mangadap.par.emissionmomentsdb.EmissionMomentsDB" title="mangadap.par.emissionmomentsdb.EmissionMomentsDB"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.emissionmomentsdb.EmissionMomentsDB</span></code></a>,
+<a class="reference internal" href="mangadap.par.absorptionindexdb.html#mangadap.par.absorptionindexdb.AbsorptionIndexDB" title="mangadap.par.absorptionindexdb.AbsorptionIndexDB"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.absorptionindexdb.AbsorptionIndexDB</span></code></a>, and
+<a class="reference internal" href="mangadap.par.bandheadindexdb.html#mangadap.par.bandheadindexdb.BandheadIndexDB" title="mangadap.par.bandheadindexdb.BandheadIndexDB"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.bandheadindexdb.BandheadIndexDB</span></code></a>; it is not
+really meant to be used as given above.</p>
+</dd>
+<dt><em>Revision history</em>:</dt>
+<dd><div class="first last line-block">
+<div class="line"><strong>18 Mar 2016</strong>: Original implementation by K. Westfall (KBW)</div>
+<div class="line"><strong>20 Apr 2016</strong>: (KBW) Include measurements</div>
+<div class="line"><strong>29 Jul 2016</strong>: (KBW) Convert some calls to asarray to atleast_1d</div>
+<div class="line"><strong>15 Mar 2018</strong>: (KBW) Allow the redshift in the equivalent width
+measurement to be specific to each bandpass.</div>
+</div>
+</dd>
+</dl>
+<dl class="class">
+<dt id="mangadap.proc.bandpassfilter.BandPassFilterPar">
+<em class="property">class </em><code class="descclassname">mangadap.proc.bandpassfilter.</code><code class="descname">BandPassFilterPar</code><span class="sig-paren">(</span><em>index</em>, <em>name</em>, <em>blueside</em>, <em>redside</em>, <em>restwave=None</em>, <em>primary=None</em>, <em>units=None</em>, <em>component=None</em>, <em>integrand=None</em>, <em>order=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/bandpassfilter.html#BandPassFilterPar"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.bandpassfilter.BandPassFilterPar" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet" title="mangadap.par.parset.ParSet"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.parset.ParSet</span></code></a></p>
+<p>Parameter object that defines a set of band-pass filters.  This is a
+base class for similar objects used calculating fluxes and flux
+moments of emission lines
+(<a class="reference internal" href="mangadap.par.emissionmomentsdb.html#mangadap.par.emissionmomentsdb.EmissionMomentsDB" title="mangadap.par.emissionmomentsdb.EmissionMomentsDB"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.emissionmomentsdb.EmissionMomentsDB</span></code></a>),
+absorption line indices
+(<a class="reference internal" href="mangadap.par.absorptionindexdb.html#mangadap.par.absorptionindexdb.AbsorptionIndexDB" title="mangadap.par.absorptionindexdb.AbsorptionIndexDB"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.absorptionindexdb.AbsorptionIndexDB</span></code></a>), and
+spectral continuum bandheads
+(<a class="reference internal" href="mangadap.par.bandheadindexdb.html#mangadap.par.bandheadindexdb.BandheadIndexDB" title="mangadap.par.bandheadindexdb.BandheadIndexDB"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.bandheadindexdb.BandheadIndexDB</span></code></a>) in the DAP.</p>
+<p>All wavelengths are expected to be IN VACUUM, to match the expected
+application of this filter to SDSS MaNGA spectra.</p>
+<p>See <a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet" title="mangadap.par.parset.ParSet"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.parset.ParSet</span></code></a> for attributes and raised
+exceptions.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>index</strong> (<em>int</em>) – An index used to refer to the bandpass filter.</li>
+<li><strong>name</strong> (<em>str</em>) – A name for the bandpass filter.</li>
+<li><strong>blueside</strong> (<em>numpy.ndarray</em><em>, </em><em>list</em>) – A two-element vector with the
+starting and ending wavelength (angstroms in VACUUM) for a
+passband to the blue of the primary spectral feature.</li>
+<li><strong>redside</strong> (<em>numpy.ndarray</em><em>, </em><em>list</em>) – A two-element vector with the
+starting and ending wavelength (angstroms in VACUUM) for a
+passband to the red of the primary spectral feature.</li>
+<li><strong>restwave</strong> (<em>float</em>) – (Optional) The rest wavelength of the line in
+the primary passband in angstroms <em>in vacuum</em>.  This is used
+to convert the first and second moments to velocity (km/s)
+for emission lines.</li>
+<li><strong>primary</strong> (<em>numpy.ndarray</em><em>, </em><em>list</em>) – (Optional) A two-element vector
+with the starting and ending wavelength (angstroms in
+VACUUM) for the primary passband surrounding the spectral
+feature of interest.  This is used by
+<a class="reference internal" href="mangadap.par.emissionmomentsdb.html#mangadap.par.emissionmomentsdb.EmissionMomentsDB" title="mangadap.par.emissionmomentsdb.EmissionMomentsDB"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.emissionmomentsdb.EmissionMomentsDB</span></code></a>
+and
+<a class="reference internal" href="mangadap.par.absorptionindexdb.html#mangadap.par.absorptionindexdb.AbsorptionIndexDB" title="mangadap.par.absorptionindexdb.AbsorptionIndexDB"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.absorptionindexdb.AbsorptionIndexDB</span></code></a>,
+but it is irrelevant for
+<a class="reference internal" href="mangadap.par.bandheadindexdb.html#mangadap.par.bandheadindexdb.BandheadIndexDB" title="mangadap.par.bandheadindexdb.BandheadIndexDB"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.bandheadindexdb.BandheadIndexDB</span></code></a>.</li>
+<li><strong>units</strong> (<em>str</em>) – (Optional) Define the unit for the spectral index
+as either angstroms (‘ang’) or magnitudes (‘mag’).
+Currently only used by
+<a class="reference internal" href="mangadap.par.absorptionindexdb.html#mangadap.par.absorptionindexdb.AbsorptionIndexDB" title="mangadap.par.absorptionindexdb.AbsorptionIndexDB"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.absorptionindexdb.AbsorptionIndexDB</span></code></a>.</li>
+<li><strong>component</strong> (<em>bool</em>) – (Optional) Flag that the bandpass definition
+is a component of a larger set of bandpass filters.  This is
+currently only used by
+<a class="reference internal" href="mangadap.par.absorptionindexdb.html#mangadap.par.absorptionindexdb.AbsorptionIndexDB" title="mangadap.par.absorptionindexdb.AbsorptionIndexDB"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.absorptionindexdb.AbsorptionIndexDB</span></code></a>
+to combine index measurements into a single index.  If True,
+all components with the same <em>name</em> are summed to form the
+composite index.</li>
+<li><strong>integrand</strong> (<em>str</em>) – (Optional) Currently only used by
+<a class="reference internal" href="mangadap.par.bandheadindexdb.html#mangadap.par.bandheadindexdb.BandheadIndexDB" title="mangadap.par.bandheadindexdb.BandheadIndexDB"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.bandheadindexdb.BandheadIndexDB</span></code></a>.
+Define the integrand over the passband used to construct and
+index as either flux per unit frequency (<code class="docutils literal"><span class="pre">'fnu'</span></code>),
+<span class="math">\(F_\nu\)</span>, or flux per unit wavelength (<code class="docutils literal"><span class="pre">'flambda'</span></code>),
+<span class="math">\(F_\lambda\)</span>.</li>
+<li><strong>order</strong> (<em>str</em>) – (Optional) Currently only used by
+<a class="reference internal" href="mangadap.par.bandheadindexdb.html#mangadap.par.bandheadindexdb.BandheadIndexDB" title="mangadap.par.bandheadindexdb.BandheadIndexDB"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.bandheadindexdb.BandheadIndexDB</span></code></a>.
+Define the order to use when constructing the index.  The
+options are either a ratio of red-to-blue or blue-to-red,
+which are respectively selected using <code class="docutils literal"><span class="pre">'r_b'</span></code> or
+<code class="docutils literal"><span class="pre">'b_r'</span></code>.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="mangadap.proc.bandpassfilter.BandPassFilterPar._check">
+<code class="descname">_check</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/bandpassfilter.html#BandPassFilterPar._check"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.bandpassfilter.BandPassFilterPar._check" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check the parameter list:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Make sure arrays only have two elements.</li>
+</ul>
+</div></blockquote>
+<div class="admonition-todo admonition" id="index-0">
+<p class="first admonition-title">Todo</p>
+<ul class="last simple">
+<li>Add check to __setitem__()?</li>
+</ul>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if one of the conditions above are not
+met.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="mangadap.proc.bandpassfilter.emission_line_equivalent_width">
+<code class="descclassname">mangadap.proc.bandpassfilter.</code><code class="descname">emission_line_equivalent_width</code><span class="sig-paren">(</span><em>wave</em>, <em>flux</em>, <em>bluebands</em>, <em>redbands</em>, <em>line_centroid</em>, <em>line_flux</em>, <em>ivar=None</em>, <em>mask=None</em>, <em>log=True</em>, <em>redshift=None</em>, <em>line_flux_err=None</em>, <em>include_band=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/bandpassfilter.html#emission_line_equivalent_width"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.bandpassfilter.emission_line_equivalent_width" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the equivalent width for emission lines provided the
+spectra and the previously measured line flux.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>wave</strong> (<em>numpy.ndarray</em>) – Vector (1D array) with the observed
+wavelength of each spectrum in angstroms.</li>
+<li><strong>flux</strong> (<em>numpy.ndarray</em>) – 1 or 2D array with the observed flux
+density (units in per angstrom) with size Nspec x Nwave.</li>
+<li><strong>blueside</strong> (<em>numpy.ndarray</em>) – Wavelength limits for the blue
+sidebands in angstroms, with size Nbands x 2.</li>
+<li><strong>redside</strong> (<em>numpy.ndarray</em>) – Wavelength limits for the red sidebands
+in angstroms, with size Nbands x 2.</li>
+<li><strong>line_centroid</strong> (<em>numpy.ndarray</em>) – Wavelengths at which to sample
+the continuum for the equivalent width measurement.  Can be
+anything, but should typically be the <em>observed</em> wavelength
+of line center in angstroms, with size Nspec x Nband.</li>
+<li><strong>line_flux</strong> (<em>numpy.ndarray</em>) – Integrated flux of the emission
+feature with size Nspec x Nband.</li>
+<li><strong>ivar</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) Inverse variance in the
+observed flux, with shape that matches flux.  Default
+ignores error calculation.  <strong>Currently the equivalent width
+errors do not account for errors in the continuum
+characterization beneath the line.  So this ivar array is
+ignored!</strong></li>
+<li><strong>mask</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) Boolean bad-pixel mask:
+True values are considered to be bad pixels.  Default
+assumes all pixels are good.</li>
+<li><strong>log</strong> (<em>bool</em>) – (<strong>Optional</strong>) Boolean that the spectra are
+logarithmically sampled in wavelength.  Default is True.</li>
+<li><strong>redshift</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) Redshift of each
+spectrum and each bandpass.  If a single vector is provided,
+the length must match the number of provided spectra; if an
+array is provided, the shape must be (Nspec,Nband).  By
+default, all measurements are done assuming the redshift is
+0 (i.e., that the observed and rest frames are identical).</li>
+<li><strong>line_flux_err</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) Errors in the line
+flux, with size Nspec x Nband.  Default is to ignore the
+error propagation.</li>
+<li><strong>include_band</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) Boolean array with
+size Nspec x Nband used to select which bands to use in the
+calculation for each spectrum.  Default is to include all
+bands for all spectra.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><dl class="docutils">
+<dt>Six arrays all with size Nspec x Nbands:</dt>
+<dd><ul class="first last simple">
+<li>the passband median in the blue and red sidebands</li>
+<li>a boolean array if the sideband medians were measured and
+have positive values</li>
+<li>The continuum value used to calculate the equivalent width</li>
+<li>The equivalent with measurements and their errors; the
+errors are 0 if no line flux errors were provided</li>
+</ul>
+</dd>
+</dl>
+</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">numpy.ndarray</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if the shapes of the input arrays are not
+correct.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="mangadap.proc.bandpassfilter.passband_integral">
+<code class="descclassname">mangadap.proc.bandpassfilter.</code><code class="descname">passband_integral</code><span class="sig-paren">(</span><em>x</em>, <em>y</em>, <em>passband=None</em>, <em>borders=False</em>, <em>log=False</em>, <em>base=10.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/bandpassfilter.html#passband_integral"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.bandpassfilter.passband_integral" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine the integral of a discrete set of data over a passband
+accounting for fractional pixels.</p>
+<p>If borders = True, the x values are the borders of the interval over
+which y is measured.  These can be non-uniform.  In this case, the
+number of x values must be N+1 for N y values.</p>
+<p>Otherwise, the x values are expected to be uniformly sampled either
+linearly or geometrically.  In this case, x can be either a two
+element vector giving the (geometric) centers of the first and last
+sample interval or a vector with the N samples.  In either case,
+<a class="reference internal" href="mangadap.util.instrument.html#mangadap.util.instrument._pixel_borders" title="mangadap.util.instrument._pixel_borders"><code class="xref py py-func docutils literal"><span class="pre">mangadap.util.instrument._pixel_borders()</span></code></a> is used to determine
+the borders of the sample intervals.</p>
+<p>If the passband is None, the integral is determined across all data.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mangadap.proc.bandpassfilter.passband_integrated_mean">
+<code class="descclassname">mangadap.proc.bandpassfilter.</code><code class="descname">passband_integrated_mean</code><span class="sig-paren">(</span><em>x</em>, <em>y</em>, <em>passband=None</em>, <em>err=None</em>, <em>log=False</em>, <em>base=10.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/bandpassfilter.html#passband_integrated_mean"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.bandpassfilter.passband_integrated_mean" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine the integrated mean over a (set of) passband(s).  Nominal
+errors are returned if err is provided.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mangadap.proc.bandpassfilter.passband_integrated_width">
+<code class="descclassname">mangadap.proc.bandpassfilter.</code><code class="descname">passband_integrated_width</code><span class="sig-paren">(</span><em>x</em>, <em>y</em>, <em>passband=None</em>, <em>log=False</em>, <em>base=10.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/bandpassfilter.html#passband_integrated_width"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.bandpassfilter.passband_integrated_width" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine the integrated width of the passband, accounting for masked pixels.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mangadap.proc.bandpassfilter.passband_median">
+<code class="descclassname">mangadap.proc.bandpassfilter.</code><code class="descname">passband_median</code><span class="sig-paren">(</span><em>x</em>, <em>y</em>, <em>passband=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/bandpassfilter.html#passband_median"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.bandpassfilter.passband_median" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine the median of the y values within the passband</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mangadap.proc.bandpassfilter.passband_weighted_mean">
+<code class="descclassname">mangadap.proc.bandpassfilter.</code><code class="descname">passband_weighted_mean</code><span class="sig-paren">(</span><em>x</em>, <em>y</em>, <em>z</em>, <em>passband=None</em>, <em>yerr=None</em>, <em>zerr=None</em>, <em>log=False</em>, <em>base=10.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/bandpassfilter.html#passband_weighted_mean"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.bandpassfilter.passband_weighted_mean" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine the y-weighted integral of z over the passband; i.e.,</p>
+<div class="math">
+\[\frac{\int_{x_1}^{x_2} y z dx}{\int_{x_1}_{x_2} y dx}.\]</div>
+<p>Nominal errors are returned if err is provided.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mangadap.proc.bandpassfilter.pixel_fraction_in_passband">
+<code class="descclassname">mangadap.proc.bandpassfilter.</code><code class="descname">pixel_fraction_in_passband</code><span class="sig-paren">(</span><em>x</em>, <em>passband</em>, <em>dx</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/bandpassfilter.html#pixel_fraction_in_passband"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.bandpassfilter.pixel_fraction_in_passband" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the width of each x interval to include in the passband
+integral.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mangadap.proc.bandpassfilter.pseudocontinuum">
+<code class="descclassname">mangadap.proc.bandpassfilter.</code><code class="descname">pseudocontinuum</code><span class="sig-paren">(</span><em>x</em>, <em>y</em>, <em>passband=None</em>, <em>err=None</em>, <em>log=True</em>, <em>weighted_center=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/bandpassfilter.html#pseudocontinuum"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.bandpassfilter.pseudocontinuum" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the pseudocontinua in a set of passbands for a single vector (y)</p>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="mangadap.proc.elric.html" class="btn btn-neutral float-right" title="mangadap.proc.elric module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="mangadap.proc.html" class="btn btn-neutral" title="mangadap.proc package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, SDSS-IV/MaNGA Pipeline Group.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'2.2.2',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

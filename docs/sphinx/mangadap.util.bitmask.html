@@ -1,0 +1,744 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mangadap.util.bitmask module &mdash; mangadap 2.2.2 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="mangadap 2.2.2 documentation" href="index.html"/>
+        <link rel="up" title="mangadap.util package" href="mangadap.util.html"/>
+        <link rel="next" title="mangadap.util.constants module" href="mangadap.util.constants.html"/>
+        <link rel="prev" title="mangadap.util package" href="mangadap.util.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> mangadap
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="mangadap.html">mangadap package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="mangadap.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="mangadap.config.html">mangadap.config package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.contrib.html">mangadap.contrib package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.par.html">mangadap.par package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.proc.html">mangadap.proc package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.survey.html">mangadap.survey package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.test.html">mangadap.test package</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="mangadap.util.html">mangadap.util package</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="mangadap.util.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="mangadap.util.html#module-mangadap.util">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="mangadap.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mangadap.html#module-mangadap">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">mangadap</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="mangadap.html">mangadap package</a> &raquo;</li>
+        
+          <li><a href="mangadap.util.html">mangadap.util package</a> &raquo;</li>
+        
+      <li>mangadap.util.bitmask module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/mangadap.util.bitmask.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-mangadap.util.bitmask">
+<span id="mangadap-util-bitmask-module"></span><h1>mangadap.util.bitmask module<a class="headerlink" href="#module-mangadap.util.bitmask" title="Permalink to this headline">¶</a></h1>
+<p>Base class for handling bit masks by the DAP.</p>
+<dl class="docutils">
+<dt><em>License</em>:</dt>
+<dd><dl class="first last docutils">
+<dt>Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group</dt>
+<dd>Licensed under BSD 3-clause license - see LICENSE.rst</dd>
+</dl>
+</dd>
+<dt><em>Source location</em>:</dt>
+<dd>$MANGADAP_DIR/python/mangadap/util/bitmask.py</dd>
+<dt><em>Imports and python version compliance</em>:</dt>
+<dd><div class="first last highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version</span> <span class="o">&gt;</span> <span class="s1">&#39;3&#39;</span><span class="p">:</span>
+    <span class="n">long</span> <span class="o">=</span> <span class="nb">int</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">from</span> <span class="nn">configparser</span> <span class="k">import</span> <span class="n">ConfigParser</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;WARNING: Unable to import configparser!  Beware!&#39;</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">from</span> <span class="nn">ConfigParser</span> <span class="k">import</span> <span class="n">ConfigParser</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;WARNING: Unable to import ConfigParser!  Beware!&#39;</span><span class="p">)</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">textwrap</span>
+<span class="kn">from</span> <span class="nn">pydl.pydlutils.yanny</span> <span class="k">import</span> <span class="n">yanny</span>
+</pre></div>
+</div>
+</dd>
+<dt><em>Class usage examples</em>:</dt>
+<dd><p class="first">Here is an example of reading/creating a TemplateLibrary, then
+creating a plot that shows the full spectrum (blue) and the unmasked
+spectrum (green):</p>
+<div class="last highlight-default"><div class="highlight"><pre><span></span><span class="c1"># Imports</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">from</span> <span class="nn">mangadap.drpfits</span> <span class="k">import</span> <span class="n">DRPFits</span>
+<span class="kn">from</span> <span class="nn">mangadap.proc.TemplateLibrary</span> <span class="k">import</span> <span class="n">TemplateLibrary</span><span class="p">,</span> <span class="n">TemplateLibraryBitMask</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="k">import</span> <span class="n">pyplot</span>
+
+<span class="c1"># Define the DRP file</span>
+<span class="n">drpf</span> <span class="o">=</span> <span class="n">DRPFits</span><span class="p">(</span><span class="mi">7495</span><span class="p">,</span> <span class="mi">12703</span><span class="p">,</span> <span class="s1">&#39;CUBE&#39;</span><span class="p">)</span>
+
+<span class="c1"># Build the template library</span>
+<span class="n">tpl_lib</span> <span class="o">=</span> <span class="n">TemplateLibrary</span><span class="p">(</span><span class="s1">&#39;M11-MILES&#39;</span><span class="p">,</span> <span class="n">drpf</span><span class="o">=</span><span class="n">drpf</span><span class="p">,</span> <span class="n">directory_path</span><span class="o">=</span><span class="s1">&#39;.&#39;</span><span class="p">)</span>
+<span class="c1"># Writes: ./manga-7495-12703-LOGCUBE_M11-MILES.fits</span>
+
+<span class="c1"># Initialize the mask object</span>
+<span class="n">tplbm</span> <span class="o">=</span> <span class="n">TemplateLibraryBitMask</span><span class="p">()</span>
+
+<span class="c1"># Refactor the mask for the first template spectrum using the bitmask</span>
+<span class="n">unmasked</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">tplbm</span><span class="o">.</span><span class="n">flagged</span><span class="p">(</span><span class="n">tpl_lib</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;MASK&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">,:]))</span>
+
+<span class="c1"># Plot the full spectrum (blue)</span>
+<span class="n">pyplot</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">tpl_lib</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;WAVE&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">tpl_lib</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;FLUX&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">,:])</span>
+<span class="c1"># Plot the unmasked pixels (green; points are connected even if there are gaps</span>
+<span class="n">pyplot</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">tpl_lib</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;WAVE&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">unmasked</span><span class="p">],</span> <span class="n">tpl_lib</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;FLUX&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">unmasked</span><span class="p">])</span>
+<span class="c1"># Show the plot</span>
+<span class="n">pyplot</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</dd>
+<dt><em>Revision history</em>:</dt>
+<dd><div class="first last line-block">
+<div class="line"><strong>01 Jun 2015</strong>: Original implementation by K. Westfall (KBW)</div>
+<div class="line"><strong>07 Oct 2015</strong>: (KBW) Added a usage case</div>
+<div class="line"><strong>29 Jan 2016</strong>: (KBW) Changed attributes of <a class="reference internal" href="#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal"><span class="pre">BitMask</span></code></a> and
+added functionality to print a description of the bits.  Convert
+<a class="reference internal" href="mangadap.proc.templatelibrary.html#mangadap.proc.templatelibrary.TemplateLibraryBitMask" title="mangadap.proc.templatelibrary.TemplateLibraryBitMask"><code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.templatelibrary.TemplateLibraryBitMask</span></code></a> to
+new format where the bits are read from a configuration file.</div>
+<div class="line"><strong>17 Feb 2016</strong>: (KBW) Minor edit to documentation</div>
+<div class="line"><strong>16 Mar 2016</strong>: (KBW) Moved TemplateLibraryBitMask to
+<a class="reference internal" href="mangadap.proc.templatelibrary.html#mangadap.proc.templatelibrary.TemplateLibraryBitMask" title="mangadap.proc.templatelibrary.TemplateLibraryBitMask"><code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.templatelibrary.TemplateLibraryBitMask</span></code></a>;
+moved HDUList_mask_wavelengths to
+<a class="reference internal" href="mangadap.proc.util.html#mangadap.proc.util.HDUList_mask_wavelengths" title="mangadap.proc.util.HDUList_mask_wavelengths"><code class="xref py py-func docutils literal"><span class="pre">mangadap.proc.util.HDUList_mask_wavelengths()</span></code></a>.</div>
+<div class="line"><strong>27 Mar 2016</strong>: (KBW) Added <a class="reference internal" href="#mangadap.util.bitmask.BitMask.from_ini_file" title="mangadap.util.bitmask.BitMask.from_ini_file"><code class="xref py py-func docutils literal"><span class="pre">BitMask.from_ini_file()</span></code></a> and
+<a class="reference internal" href="#mangadap.util.bitmask.BitMask.from_par_file" title="mangadap.util.bitmask.BitMask.from_par_file"><code class="xref py py-func docutils literal"><span class="pre">BitMask.from_par_file()</span></code></a> class methods.  Added
+<a class="reference internal" href="#mangadap.util.bitmask.BitMask._fill_sequence" title="mangadap.util.bitmask.BitMask._fill_sequence"><code class="xref py py-func docutils literal"><span class="pre">BitMask._fill_sequence()</span></code></a> static method.  This allows for
+<a class="reference internal" href="#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal"><span class="pre">BitMask</span></code></a> objects to be declared directly from the files,
+and allows the bit values to take on any number.</div>
+<div class="line"><strong>05 Apr 2016</strong>: (KBW) Added parameters to initialization of
+<a class="reference internal" href="#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal"><span class="pre">BitMask</span></code></a> objects to clean up some of the derived class
+initialization.</div>
+<div class="line"><strong>11 May 2016</strong>: (KBW) Switch to using <a class="reference external" href="http://pydl.readthedocs.io/en/stable/api/pydl.pydlutils.yanny.yanny.html">pydl.pydlutils.yanny</a>
+instead of internal yanny reader</div>
+<div class="line"><strong>29 Jul 2016</strong>: (KBW) Change asarray to atleast_1d</div>
+</div>
+</dd>
+</dl>
+<dl class="class">
+<dt id="mangadap.util.bitmask.BitMask">
+<em class="property">class </em><code class="descclassname">mangadap.util.bitmask.</code><code class="descname">BitMask</code><span class="sig-paren">(</span><em>keys=None</em>, <em>descr=None</em>, <em>ini_file=None</em>, <em>par_file=None</em>, <em>par_grp=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/bitmask.html#BitMask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.bitmask.BitMask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Generic class to handle and manipulate bitmasks.  The input list of
+bit names (keys) must be unique, except that values of ‘NULL’ are
+ignored.  The index in the input keys determines the bit value;
+‘NULL’ keys are included in the count.  For example:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">mangadap.util.bitmask</span> <span class="k">import</span> <span class="n">BitMask</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">keys</span> <span class="o">=</span> <span class="p">[</span> <span class="s1">&#39;key1&#39;</span><span class="p">,</span> <span class="s1">&#39;key2&#39;</span><span class="p">,</span> <span class="s1">&#39;NULL&#39;</span><span class="p">,</span> <span class="s1">&#39;NULL&#39;</span><span class="p">,</span> <span class="s1">&#39;key3&#39;</span> <span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bm</span> <span class="o">=</span> <span class="n">BitMask</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bm</span><span class="o">.</span><span class="n">info</span><span class="p">()</span>
+<span class="go">         Bit: key1 = 0</span>
+
+<span class="go">         Bit: key2 = 1</span>
+
+<span class="go">         Bit: key3 = 4</span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>keys</strong> (<em>str</em><em>, </em><em>list</em><em>, </em><em>numpy.ndarray</em>) – (<strong>Optional</strong>) List of keys (or
+single key) to use as the bit name.  Each key is given a bit
+number ranging from 0..N-1.  If <strong>not</strong> provided, one of
+either <em>ini_file</em> or <em>par_file</em> must be provided.</li>
+<li><strong>descr</strong> (<em>str</em><em>, </em><em>list</em><em>, </em><em>numpy.ndarray</em>) – (<strong>Optional</strong>) List of
+descriptions (or single discription) provided by
+<a class="reference internal" href="#mangadap.util.bitmask.BitMask.info" title="mangadap.util.bitmask.BitMask.info"><code class="xref py py-func docutils literal"><span class="pre">info()</span></code></a> for each bit.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
+<li><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if more than 64 bits are provided.</li>
+<li><code class="xref py py-exc docutils literal"><span class="pre">TypeError</span></code> – Raised if the provided <cite>keys</cite> do not have the correct
+type.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="mangadap.util.bitmask.BitMask.nbits">
+<code class="descname">nbits</code><a class="headerlink" href="#mangadap.util.bitmask.BitMask.nbits" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>int</em> – Number of bits</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.util.bitmask.BitMask.bits">
+<code class="descname">bits</code><a class="headerlink" href="#mangadap.util.bitmask.BitMask.bits" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>dict</em> – A dictionary with the bit name and value</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.util.bitmask.BitMask.descr">
+<code class="descname">descr</code><a class="headerlink" href="#mangadap.util.bitmask.BitMask.descr" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>numpy.ndarray</em> – List of bit descriptions</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.util.bitmask.BitMask.max_value">
+<code class="descname">max_value</code><a class="headerlink" href="#mangadap.util.bitmask.BitMask.max_value" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>int</em> – The maximum valid bitmask value given the
+number of bits.</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.util.bitmask.BitMask._fill_sequence">
+<em class="property">static </em><code class="descname">_fill_sequence</code><span class="sig-paren">(</span><em>keys</em>, <em>vals</em>, <em>descr</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/bitmask.html#BitMask._fill_sequence"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.bitmask.BitMask._fill_sequence" title="Permalink to this definition">¶</a></dt>
+<dd><p>The instantiation of <a class="reference internal" href="#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal"><span class="pre">BitMask</span></code></a> does not include the value
+of the bit, it just assumes that the bits should be in sequence
+such that the first key has a value of 0, and the last key has a
+value of N-1.  Unfortunately, not all the bits the DAP follow a
+sequence.  This function finds the range of the bits and then
+slots in NULL keywords and empty descriptions where necessary to
+fill in the full complement of bits.  NULL keywords are ignored
+by the <a class="reference internal" href="#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal"><span class="pre">BitMask</span></code></a> object.</p>
+<p>This is a static method because it doesn’t depend on any of the
+attributes of <a class="reference internal" href="#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal"><span class="pre">BitMask</span></code></a>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>keys</strong> (<em>list</em><em> or </em><em>str</em>) – Bit names</li>
+<li><strong>vals</strong> (<em>list</em><em> or </em><em>int</em>) – Bit values</li>
+<li><strong>descr</strong> (<em>list</em><em> or </em><em>str</em>) – Description of each bit</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Three arrays with the filled keys, values,
+and descriptions.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">numpy.ndarray</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if a bit value is less than 0.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.bitmask.BitMask.consolidate">
+<code class="descname">consolidate</code><span class="sig-paren">(</span><em>value</em>, <em>flag_set</em>, <em>consolidated_flag</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/bitmask.html#BitMask.consolidate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.bitmask.BitMask.consolidate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Consolidate a set of flags into a single flag.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.bitmask.BitMask.flagged">
+<code class="descname">flagged</code><span class="sig-paren">(</span><em>value</em>, <em>flag=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/bitmask.html#BitMask.flagged"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.bitmask.BitMask.flagged" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine if a bit is on in the provided bitmask value.  The
+function can be used to determine if any individual bit is on or
+any one of many bits is on.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>value</strong> (<em>uint</em><em>, </em><em>int</em><em>, </em><em>array</em>) – Bitmask value.  It should be less
+than or equal to <a class="reference internal" href="#mangadap.util.bitmask.BitMask.max_value" title="mangadap.util.bitmask.BitMask.max_value"><code class="xref py py-attr docutils literal"><span class="pre">max_value</span></code></a>; however, that is not
+checked.</li>
+<li><strong>flag</strong> (<em>string</em><em>, </em><em>array</em>) – (<strong>Optional</strong>) Bit names to check.  If
+None, then it checks if any bit is on.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Boolean flags that the provided flags (or any flag)
+is on for the provided bitmask value.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">bool</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
+<li><code class="xref py py-exc docutils literal"><span class="pre">KeyError</span></code> – Raised by the dict data type if the input <em>flag</em>
+is not one of the valid <code class="xref py py-attr docutils literal"><span class="pre">flags</span></code>.</li>
+<li><code class="xref py py-exc docutils literal"><span class="pre">TypeError</span></code> – Raised if the provided <em>flag</em> does not contain
+one or more strings.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.bitmask.BitMask.flagged_bits">
+<code class="descname">flagged_bits</code><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/bitmask.html#BitMask.flagged_bits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.bitmask.BitMask.flagged_bits" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the list of flagged bit names for a single bit value.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>value</strong> (<em>int</em><em>, </em><em>uint</em>) – Bitmask value.  It should be less than or
+equal to <a class="reference internal" href="#mangadap.util.bitmask.BitMask.max_value" title="mangadap.util.bitmask.BitMask.max_value"><code class="xref py py-attr docutils literal"><span class="pre">max_value</span></code></a>; however, that is not
+checked.</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">List of flagged bit value keywords.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">list</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
+<li><code class="xref py py-exc docutils literal"><span class="pre">KeyError</span></code> – Raised by the dict data type if the input <em>flag</em>
+is not one of the valid <code class="xref py py-attr docutils literal"><span class="pre">flags</span></code>.</li>
+<li><code class="xref py py-exc docutils literal"><span class="pre">TypeError</span></code> – Raised if the provided <em>flag</em> does not contain
+one or more strings.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="mangadap.util.bitmask.BitMask.from_ini_file">
+<em class="property">classmethod </em><code class="descname">from_ini_file</code><span class="sig-paren">(</span><em>f</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/bitmask.html#BitMask.from_ini_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.bitmask.BitMask.from_ini_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Define the object using a ini configuration file.  The sections
+of the configuration file define the keys, and each section is
+expected to have <cite>value</cite> and <cite>descr</cite> components that define the
+bit value and provided a description of the bit.  An example ini
+file might look like this:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">NO_DATA</span><span class="p">]</span>
+ <span class="n">value</span> <span class="o">=</span> <span class="mi">0</span>
+ <span class="n">descr</span> <span class="o">=</span> <span class="n">Pixel</span> <span class="n">has</span> <span class="n">no</span> <span class="n">data</span>
+
+<span class="p">[</span><span class="n">INVALID_DATA</span><span class="p">]</span>
+ <span class="n">value</span> <span class="o">=</span> <span class="mi">1</span>
+ <span class="n">descr</span> <span class="o">=</span> <span class="n">Pixel</span> <span class="n">value</span> <span class="ow">is</span> <span class="n">invalid</span>
+</pre></div>
+</div>
+<p>See
+<a class="reference internal" href="mangadap.proc.templatelibrary.html#mangadap.proc.templatelibrary.TemplateLibraryBitMask" title="mangadap.proc.templatelibrary.TemplateLibraryBitMask"><code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.templatelibrary.TemplateLibraryBitMask</span></code></a>
+for an example that uses this function.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>f</strong> (<em>str</em>) – File name to use for defining the
+<a class="reference internal" href="#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal"><span class="pre">BitMask</span></code></a>.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Object with bitmasks defined by the ini
+file.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal"><span class="pre">BitMask</span></code></a></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal"><span class="pre">FileNotFoundError</span></code> – Raised if the input file does not exist.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="mangadap.util.bitmask.BitMask.from_par_file">
+<em class="property">classmethod </em><code class="descname">from_par_file</code><span class="sig-paren">(</span><em>f</em>, <em>name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/bitmask.html#BitMask.from_par_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.bitmask.BitMask.from_par_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Define the object using an <a class="reference external" href="http://www.sdss.org/dr12/software/par/">SDSS-style parameter file</a>.  This
+has been tailored to work with the sdssMaskbits.par file in
+IDLUTILS; however, it can work with other like files.</p>
+<p>See <a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFitsBitMask" title="mangadap.drpfits.DRPFitsBitMask"><code class="xref py py-class docutils literal"><span class="pre">mangadap.drpfits.DRPFitsBitMask</span></code></a> for an example that
+uses this function.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>f</strong> (<em>str</em>) – File name to use for defining the
+<a class="reference internal" href="#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal"><span class="pre">BitMask</span></code></a>.</li>
+<li><strong>name</strong> (<em>str</em>) – The designation of the bits to assign.  For
+example, in <a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFitsBitMask" title="mangadap.drpfits.DRPFitsBitMask"><code class="xref py py-class docutils literal"><span class="pre">mangadap.drpfits.DRPFitsBitMask</span></code></a>
+this is <cite>‘MANGA_DRP3PIXMASK’</cite>.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Object with bitmasks defined by the
+parameter file.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first"><a class="reference internal" href="#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal"><span class="pre">BitMask</span></code></a></p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">FileNotFoundError</span></code> – Raised if the input file does not exist.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.bitmask.BitMask.info">
+<code class="descname">info</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/bitmask.html#BitMask.info"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.bitmask.BitMask.info" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print the list of bits and, if available, their descriptions.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.bitmask.BitMask.keys">
+<code class="descname">keys</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/bitmask.html#BitMask.keys"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.bitmask.BitMask.keys" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a list of the bits; ‘NULL’ keywords are ignored.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">List of bit keywords.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">list</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.bitmask.BitMask.minimum_dtype">
+<code class="descname">minimum_dtype</code><span class="sig-paren">(</span><em>asuint=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/bitmask.html#BitMask.minimum_dtype"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.bitmask.BitMask.minimum_dtype" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the smallest int datatype that is needed to contain all
+the bits in the mask.  Output as an unsigned int if requested.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">uses int16 if the number of bits is less than 8 and
+asuint=False because of issue astropy.io.fits has writing
+int8 values.</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.bitmask.BitMask.toggle">
+<code class="descname">toggle</code><span class="sig-paren">(</span><em>value</em>, <em>flag</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/bitmask.html#BitMask.toggle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.bitmask.BitMask.toggle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Toggle a bit in the provided bitmask value.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>value</strong> (<em>uint</em><em>, </em><em>int</em><em>, </em><em>array</em>) – Bitmask value.  It should be less
+than or equal to <a class="reference internal" href="#mangadap.util.bitmask.BitMask.max_value" title="mangadap.util.bitmask.BitMask.max_value"><code class="xref py py-attr docutils literal"><span class="pre">max_value</span></code></a>; however, that is not
+checked.</li>
+<li><strong>flag</strong> (<em>list</em><em>, </em><em>numpy.ndarray</em><em>, or </em><em>str</em>) – Bit name(s) to toggle.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">New bitmask value after toggling the selected bit.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">uint</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
+<li><code class="xref py py-exc docutils literal"><span class="pre">KeyError</span></code> – Raised by the dict data type if the input <em>flag</em>
+is not one of the valid <code class="xref py py-attr docutils literal"><span class="pre">flags</span></code>.</li>
+<li><code class="xref py py-exc docutils literal"><span class="pre">Exception</span></code> – Raised if the provided <em>flag</em> is not a string.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.bitmask.BitMask.turn_off">
+<code class="descname">turn_off</code><span class="sig-paren">(</span><em>value</em>, <em>flag</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/bitmask.html#BitMask.turn_off"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.bitmask.BitMask.turn_off" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ensure that a bit is turned off in the provided bitmask value.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>value</strong> (<em>uint</em><em> or </em><em>array</em>) – Bitmask value.  It should be less
+than or equal to <a class="reference internal" href="#mangadap.util.bitmask.BitMask.max_value" title="mangadap.util.bitmask.BitMask.max_value"><code class="xref py py-attr docutils literal"><span class="pre">max_value</span></code></a>; however, that is not
+checked.</li>
+<li><strong>flag</strong> (<em>list</em><em>, </em><em>numpy.ndarray</em><em>, or </em><em>str</em>) – Bit name(s) to turn off.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">New bitmask value after turning off the selected bit.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">uint</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
+<li><code class="xref py py-exc docutils literal"><span class="pre">KeyError</span></code> – Raised by the dict data type if the input <em>flag</em>
+is not one of the valid <code class="xref py py-attr docutils literal"><span class="pre">flags</span></code>.</li>
+<li><code class="xref py py-exc docutils literal"><span class="pre">Exception</span></code> – Raised if the provided <em>flag</em> is not a string.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.bitmask.BitMask.turn_on">
+<code class="descname">turn_on</code><span class="sig-paren">(</span><em>value</em>, <em>flag</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/bitmask.html#BitMask.turn_on"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.bitmask.BitMask.turn_on" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ensure that a bit is turned on in the provided bitmask value.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>value</strong> (<em>uint</em><em> or </em><em>array</em>) – Bitmask value.  It should be less
+than or equal to <a class="reference internal" href="#mangadap.util.bitmask.BitMask.max_value" title="mangadap.util.bitmask.BitMask.max_value"><code class="xref py py-attr docutils literal"><span class="pre">max_value</span></code></a>; however, that is not
+checked.</li>
+<li><strong>flag</strong> (<em>list</em><em>, </em><em>numpy.ndarray</em><em>, or </em><em>str</em>) – Bit name(s) to turn on.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">New bitmask value after turning on the selected bit.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">uint</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
+<li><code class="xref py py-exc docutils literal"><span class="pre">KeyError</span></code> – Raised by the dict data type if the input <em>flag</em>
+is not one of the valid <code class="xref py py-attr docutils literal"><span class="pre">flags</span></code>.</li>
+<li><code class="xref py py-exc docutils literal"><span class="pre">Exception</span></code> – Raised if the provided <em>flag</em> is not a string.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="mangadap.util.constants.html" class="btn btn-neutral float-right" title="mangadap.util.constants module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="mangadap.util.html" class="btn btn-neutral" title="mangadap.util package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, SDSS-IV/MaNGA Pipeline Group.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'2.2.2',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

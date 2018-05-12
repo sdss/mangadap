@@ -1,0 +1,1045 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mangadap.util.covariance module &mdash; mangadap 2.2.2 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="mangadap 2.2.2 documentation" href="index.html"/>
+        <link rel="up" title="mangadap.util package" href="mangadap.util.html"/>
+        <link rel="next" title="mangadap.util.exception_tools module" href="mangadap.util.exception_tools.html"/>
+        <link rel="prev" title="mangadap.util.constants module" href="mangadap.util.constants.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> mangadap
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="mangadap.html">mangadap package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="mangadap.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="mangadap.config.html">mangadap.config package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.contrib.html">mangadap.contrib package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.par.html">mangadap.par package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.proc.html">mangadap.proc package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.survey.html">mangadap.survey package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.test.html">mangadap.test package</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="mangadap.util.html">mangadap.util package</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="mangadap.util.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="mangadap.util.html#module-mangadap.util">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="mangadap.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mangadap.html#module-mangadap">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">mangadap</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="mangadap.html">mangadap package</a> &raquo;</li>
+        
+          <li><a href="mangadap.util.html">mangadap.util package</a> &raquo;</li>
+        
+      <li>mangadap.util.covariance module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/mangadap.util.covariance.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-mangadap.util.covariance">
+<span id="mangadap-util-covariance-module"></span><h1>mangadap.util.covariance module<a class="headerlink" href="#module-mangadap.util.covariance" title="Permalink to this headline">¶</a></h1>
+<p>Defines a class used to store and interface with covariance matrices.</p>
+<dl class="docutils">
+<dt><em>License</em>:</dt>
+<dd><dl class="first last docutils">
+<dt>Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group</dt>
+<dd>Licensed under BSD 3-clause license - see LICENSE.rst</dd>
+</dl>
+</dd>
+<dt><em>Source location</em>:</dt>
+<dd>$MANGADAP_DIR/python/mangadap/util/covariance.py</dd>
+<dt><em>Imports and python version compliance</em>:</dt>
+<dd><div class="first last highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version</span> <span class="o">&gt;</span> <span class="s1">&#39;3&#39;</span><span class="p">:</span>
+    <span class="n">long</span> <span class="o">=</span> <span class="nb">int</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="k">import</span> <span class="n">sparse</span>
+<span class="kn">from</span> <span class="nn">astropy.io</span> <span class="k">import</span> <span class="n">fits</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="k">import</span> <span class="n">pyplot</span>
+</pre></div>
+</div>
+</dd>
+<dt><em>Usage examples</em>:</dt>
+<dd><p class="first">You can calculate the covariance matrix for a given wavelength
+channel in a <a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal"><span class="pre">mangadap.drpfits.DRPFits</span></code></a> object:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="c1"># Access the DRP RSS file</span>
+<span class="kn">from</span> <span class="nn">mangadap.drpfits</span> <span class="k">import</span> <span class="n">DRPFits</span>
+<span class="n">drpf</span> <span class="o">=</span> <span class="n">DRPFits</span><span class="p">(</span><span class="mi">7495</span><span class="p">,</span> <span class="mi">12703</span><span class="p">,</span> <span class="s1">&#39;RSS&#39;</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="c1"># Calculate a single covariance matrix</span>
+<span class="n">C</span> <span class="o">=</span> <span class="n">drpf</span><span class="o">.</span><span class="n">covariance_matrix</span><span class="p">(</span><span class="mi">2281</span><span class="p">)</span>
+
+<span class="c1"># Show the result in an image</span>
+<span class="n">C</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+<span class="c1"># Access specific elements</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">C</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+
+<span class="c1"># Convert to a &#39;dense&#39; array</span>
+<span class="n">dense_C</span> <span class="o">=</span> <span class="n">C</span><span class="o">.</span><span class="n">toarray</span><span class="p">()</span>
+
+<span class="c1"># Get the triplets of the non-zero elements</span>
+<span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">v</span> <span class="o">=</span> <span class="n">C</span><span class="o">.</span><span class="n">find</span><span class="p">()</span>
+
+<span class="c1"># Write it to disk (clobber existing file)</span>
+<span class="n">C</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;test_covariance.fits&#39;</span><span class="p">,</span> <span class="n">clobber</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The covariance matrix is stored in “coordinate” format in a fits
+binary table.  Since the covariance matrix is symmetric by
+definition, only those non-zero elements in the upper triangle
+(<span class="math">\(C_{ij}\)</span> where <span class="math">\(i\leq j\)</span>) are saved (in memory or on
+disk).  You can read an existing covariance matrix fits file:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">mangadap.util.covariance</span> <span class="k">import</span> <span class="n">Covariance</span>
+<span class="n">C</span> <span class="o">=</span> <span class="n">Covariance</span><span class="p">(</span><span class="n">ifile</span><span class="o">=</span><span class="s1">&#39;test_covariance.fits&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>You can calculate a set of covariance matrices or the full
+covariance cube:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="c1"># Access the DRP RSS file</span>
+<span class="kn">from</span> <span class="nn">mangadap.drpfits</span> <span class="k">import</span> <span class="n">DRPFits</span>
+<span class="n">drpf</span> <span class="o">=</span> <span class="n">DRPFits</span><span class="p">(</span><span class="mi">7495</span><span class="p">,</span> <span class="mi">12703</span><span class="p">,</span> <span class="s1">&#39;RSS&#39;</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="c1"># Calculate the full cube</span>
+<span class="n">CC</span> <span class="o">=</span> <span class="n">drpf</span><span class="o">.</span><span class="n">covariance_cube</span><span class="p">()</span>             <span class="c1"># BEWARE: This may require a LOT of memory</span>
+
+<span class="c1"># Calculate fewer but many covariance matrices</span>
+<span class="n">channels</span> <span class="o">=</span> <span class="p">[</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1000</span><span class="p">,</span> <span class="mi">2000</span><span class="p">,</span> <span class="mi">3000</span><span class="p">,</span> <span class="mi">4000</span> <span class="p">]</span>
+<span class="n">C</span> <span class="o">=</span> <span class="n">drpf</span><span class="o">.</span><span class="n">covariance_cube</span><span class="p">(</span><span class="n">channels</span><span class="o">=</span><span class="n">channels</span><span class="p">)</span>
+
+<span class="c1"># Access individual elements</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">C</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">C</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1000</span><span class="p">])</span>
+
+<span class="c1"># Write the full cube, or set of channels</span>
+<span class="n">CC</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;full_covariance_cube.fits&#39;</span><span class="p">)</span>   <span class="c1"># BEWARE: This will be a BIG file</span>
+<span class="n">C</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;covariance_channel_set.fits&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Although you can access the data in the covariance matrix as
+explained above, this is generally inefficient because the
+<code class="xref py py-func docutils literal"><span class="pre">Covariance.__getitem__()</span></code> function currently cannot handle
+slices.  If you need to perform operations with the covariance
+matrix, you’re better off working with the <a class="reference internal" href="#mangadap.util.covariance.Covariance.cov" title="mangadap.util.covariance.Covariance.cov"><code class="xref py py-attr docutils literal"><span class="pre">Covariance.cov</span></code></a>
+attribute directly.  To do this, you won’t be able to use the
+aliasing of the channel indices for 3D covariance matrices.</p>
+<p>The <a class="reference internal" href="#mangadap.util.covariance.Covariance" title="mangadap.util.covariance.Covariance"><code class="xref py py-class docutils literal"><span class="pre">Covariance</span></code></a> class also allows you to toggle between
+accessing the matrix as a true covariance matrix, or by splitting
+the matrix into its variance and correlation components.  For
+example,:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="c1"># Get the covariance matrix for a single wavelength channel</span>
+<span class="kn">from</span> <span class="nn">mangadap.drpfits</span> <span class="k">import</span> <span class="n">DRPFits</span>
+<span class="n">drpf</span> <span class="o">=</span> <span class="n">DRPFits</span><span class="p">(</span><span class="mi">7495</span><span class="p">,</span> <span class="mi">12703</span><span class="p">,</span> <span class="s1">&#39;RSS&#39;</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">C</span> <span class="o">=</span> <span class="n">drpf</span><span class="o">.</span><span class="n">covariance_matrix</span><span class="p">(</span><span class="mi">2281</span><span class="p">)</span>
+
+<span class="c1"># Show the covariance matrix before and after changing it to a</span>
+<span class="c1"># correlation matrix</span>
+<span class="n">C</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<span class="n">C</span><span class="o">.</span><span class="n">to_correlation</span><span class="p">()</span>
+<span class="n">C</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">C</span><span class="o">.</span><span class="n">is_correlation</span><span class="p">)</span>
+<span class="n">C</span><span class="o">.</span><span class="n">revert_correlation</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Covariance matrices that have been converted to correlation matrices
+can be written and read in without issue.  See
+<a class="reference internal" href="#mangadap.util.covariance.Covariance.write" title="mangadap.util.covariance.Covariance.write"><code class="xref py py-func docutils literal"><span class="pre">Covariance.write()</span></code></a> and <code class="xref py py-func docutils literal"><span class="pre">Covariance.read()</span></code>.  For example:</p>
+<div class="last highlight-default"><div class="highlight"><pre><span></span><span class="c1"># Get the covariance matrix for a single wavelength channel</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">from</span> <span class="nn">mangadap.util.covariance</span> <span class="k">import</span> <span class="n">Covariance</span>
+<span class="kn">from</span> <span class="nn">mangadap.drpfits</span> <span class="k">import</span> <span class="n">DRPFits</span>
+
+<span class="n">drpf</span> <span class="o">=</span> <span class="n">DRPFits</span><span class="p">(</span><span class="mi">7495</span><span class="p">,</span> <span class="mi">12703</span><span class="p">,</span> <span class="s1">&#39;RSS&#39;</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">channels</span> <span class="o">=</span> <span class="p">[</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1000</span><span class="p">,</span> <span class="mi">2000</span><span class="p">,</span> <span class="mi">3000</span><span class="p">,</span> <span class="mi">4000</span> <span class="p">]</span>
+<span class="n">Cov</span> <span class="o">=</span> <span class="n">drpf</span><span class="o">.</span><span class="n">covariance_cube</span><span class="p">(</span><span class="n">channels</span><span class="o">=</span><span class="n">channels</span><span class="p">)</span>
+
+<span class="n">Cov</span><span class="o">.</span><span class="n">to_correlation</span><span class="p">()</span>
+<span class="n">Cov</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="mi">2000</span><span class="p">)</span>
+<span class="n">Cov</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;correlation_matrix.fits&#39;</span><span class="p">,</span> <span class="n">clobber</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">Cov</span><span class="o">.</span><span class="n">revert_correlation</span><span class="p">()</span>
+
+<span class="n">Corr</span> <span class="o">=</span> <span class="n">Covariance</span><span class="p">(</span><span class="n">ifile</span><span class="o">=</span><span class="s1">&#39;correlation_matrix.fits&#39;</span><span class="p">)</span>
+<span class="n">Corr</span><span class="o">.</span><span class="n">revert_correlation</span><span class="p">()</span>
+
+<span class="k">assert</span> <span class="ow">not</span> <span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">Cov</span><span class="o">.</span><span class="n">toarray</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="mi">2000</span><span class="p">)</span>
+                    <span class="o">-</span> <span class="n">Corr</span><span class="o">.</span><span class="n">toarray</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="mi">2000</span><span class="p">)))</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+<dt><em>Revision history</em>:</dt>
+<dd><div class="first last line-block">
+<div class="line"><strong>23 Feb 2015</strong>: Original Implementation by K. Westfall (KBW)</div>
+<div class="line"><strong>04 Aug 2015</strong>: (KBW) Sphinx documentation and minor edits.</div>
+<div class="line"><strong>29 Mar 2016</strong>: (KBW) Allow the object to flip between a true
+covariance matrix or a correlation matrix with saved variances.
+Allow for a function that only returns the
+<a class="reference external" href="http://docs.astropy.org/en/stable/io/fits/api/tables.html#astropy.io.fits.BinTableHDU">astropy.io.fits.BinTableHDU</a> object with the coordinate-format
+covariance data.</div>
+<div class="line"><strong>06 Apr 2016</strong>: (KBW) Allow <code class="xref py py-func docutils literal"><span class="pre">Covariance.read()</span></code> to read from
+a file or an <a class="reference external" href="http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html">astropy.io.fits.hdu.hdulist.HDUList</a> object, and
+allow the specification of the extensions to read the header,
+covariance, and plane data.</div>
+<div class="line"><strong>23 Feb 2017</strong>: (KBW) Major revisions: Use DAPFitsUtil to
+read/write the HDUList.  Output is always a correlation matrix.
+Rearrange ordering of 3D covariance matrices to reflect the
+ordering in the DRPFits cube and the DAP Maps channels.  Change
+<em>plane</em> keyword to <em>channel</em>.  Change the format of the
+covariance matrices when written/read from a file to match what
+is done by the DRP.  Change read method to <code class="xref py py-func docutils literal"><span class="pre">from_fits()</span></code>
+class method.  Include <code class="xref py py-func docutils literal"><span class="pre">from_samples()</span></code> class method.</div>
+</div>
+</dd>
+</dl>
+<div class="admonition-todo admonition" id="index-0">
+<p class="first admonition-title">Todo</p>
+<ul class="last simple">
+<li>Allow for calculation of the inverse of the covariance matrix.</li>
+<li>Instead of 3D covariance cubes being an array of sparse objects,
+make the whole thing a sparse array.</li>
+</ul>
+</div>
+<dl class="class">
+<dt id="mangadap.util.covariance.Covariance">
+<em class="property">class </em><code class="descclassname">mangadap.util.covariance.</code><code class="descname">Covariance</code><span class="sig-paren">(</span><em>inp</em>, <em>input_indx=None</em>, <em>impose_triu=False</em>, <em>correlation=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/covariance.html#Covariance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.covariance.Covariance" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>A general utility for storing, manipulating, and file I/O of large
+but sparse covariance matrices.</p>
+<p>Works under the assumption that covariance matrices are symmetric by
+definition.</p>
+<div class="admonition-todo admonition" id="index-1">
+<p class="first admonition-title">Todo</p>
+<ul class="last simple">
+<li>Can create empty object.  Does this make sense?</li>
+</ul>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>inp</strong> (<a class="reference external" href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html">scipy.sparse.csr_matrix</a> or numpy.ndarray) – Covariance matrix to store.  Input <strong>must</strong> be coviariance
+data, not correlation data.  Data type can be either a
+single <a class="reference external" href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html">scipy.sparse.csr_matrix</a> object or a 1-D array of
+them.  Assumes all sparse matrices in the input ndarray have
+the same size.  If None, the covariance object is
+instantiated empty.</li>
+<li><strong>input_indx</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) If <em>inp</em> is an array of
+<a class="reference external" href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html">scipy.sparse.csr_matrix</a> objects, this is an integer
+array specifying a pseudo-set of indices to use instead of
+the direct index in the array.  I.e., if <em>inp</em> is an array
+with 5 elements, one can provide a 5-element array for
+<a class="reference internal" href="#mangadap.util.covariance.Covariance.input_indx" title="mangadap.util.covariance.Covariance.input_indx"><code class="xref py py-attr docutils literal"><span class="pre">input_indx</span></code></a> that are used instead as the designated
+index for the covariance matrices.  See:
+<code class="xref py py-func docutils literal"><span class="pre">__getitem__()</span></code>, <a class="reference internal" href="#mangadap.util.covariance.Covariance._grab_true_index" title="mangadap.util.covariance.Covariance._grab_true_index"><code class="xref py py-func docutils literal"><span class="pre">_grab_true_index()</span></code></a>.</li>
+<li><strong>impose_triu</strong> (<em>bool</em>) – (<strong>Optional</strong>) Flag to force the
+<a class="reference external" href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html">scipy.sparse.csr_matrix</a> object to only be the upper
+triangle of the covariance matrix.  The covariance matrix is
+symmetric such that C_ij = C_ji, so it’s not necessary to
+keep both values.  This flag will force a call to
+<a class="reference external" href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.triu.html">scipy.sparse.triu</a> when setting the covariance matrix.
+Otherwise, the input matrix is <strong>assumed</strong> to only have the
+upper triangle of numbers.</li>
+<li><strong>correlation</strong> (<em>bool</em>) – (<strong>Optional</strong>) Convert the input to a
+correlation matix.  The input <strong>must</strong> be the covariance
+matrix.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
+<li><code class="xref py py-exc docutils literal"><span class="pre">TypeError</span></code> – Raised if the input array is not one-dimensional or
+the input covariance matrix are not
+<a class="reference external" href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html">scipy.sparse.csr_matrix</a> objects.</li>
+<li><code class="xref py py-exc docutils literal"><span class="pre">Exception</span></code> – Raised if the <a class="reference internal" href="#mangadap.util.covariance.Covariance.input_indx" title="mangadap.util.covariance.Covariance.input_indx"><code class="xref py py-attr docutils literal"><span class="pre">input_indx</span></code></a> either does not have
+the correct size or is not required due to the covariance
+object being a single matrix.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="mangadap.util.covariance.Covariance.cov">
+<code class="descname">cov</code><a class="headerlink" href="#mangadap.util.covariance.Covariance.cov" title="Permalink to this definition">¶</a></dt>
+<dd><p><a class="reference external" href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html">scipy.sparse.csr_matrix</a> or numpy.ndarray – The
+covariance matrix stored in sparse format.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.util.covariance.Covariance.shape">
+<code class="descname">shape</code><a class="headerlink" href="#mangadap.util.covariance.Covariance.shape" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>tuple</em> – Shape of the full array.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.util.covariance.Covariance.dim">
+<code class="descname">dim</code><a class="headerlink" href="#mangadap.util.covariance.Covariance.dim" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>int</em> – The number of dimensions in the covariance matrix.
+This can either be 2 (a single covariance matrix) or 3
+(multiple covariance matrices).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.util.covariance.Covariance.nnz">
+<code class="descname">nnz</code><a class="headerlink" href="#mangadap.util.covariance.Covariance.nnz" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>int</em> – The number of non-zero covariance matrix elements.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.util.covariance.Covariance.input_indx">
+<code class="descname">input_indx</code><a class="headerlink" href="#mangadap.util.covariance.Covariance.input_indx" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>numpy.ndarray</em> – If <a class="reference internal" href="#mangadap.util.covariance.Covariance.cov" title="mangadap.util.covariance.Covariance.cov"><code class="xref py py-attr docutils literal"><span class="pre">cov</span></code></a> is an array of
+<a class="reference external" href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html">scipy.sparse.csr_matrix</a> objects, this is an integer
+array specifying a pseudo-set of indices to use instead of
+the direct index in the array.  I.e., if <a class="reference internal" href="#mangadap.util.covariance.Covariance.cov" title="mangadap.util.covariance.Covariance.cov"><code class="xref py py-attr docutils literal"><span class="pre">cov</span></code></a> is an
+array with 5 elements, one can provide a 5-element array for
+<a class="reference internal" href="#mangadap.util.covariance.Covariance.input_indx" title="mangadap.util.covariance.Covariance.input_indx"><code class="xref py py-attr docutils literal"><span class="pre">input_indx</span></code></a> that are used instead as the designated
+index for the covariance matrices.  See:
+<code class="xref py py-func docutils literal"><span class="pre">__getitem__()</span></code>, <a class="reference internal" href="#mangadap.util.covariance.Covariance._grab_true_index" title="mangadap.util.covariance.Covariance._grab_true_index"><code class="xref py py-func docutils literal"><span class="pre">_grab_true_index()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.util.covariance.Covariance.inv">
+<code class="descname">inv</code><a class="headerlink" href="#mangadap.util.covariance.Covariance.inv" title="Permalink to this definition">¶</a></dt>
+<dd><p><a class="reference external" href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html">scipy.sparse.csr_matrix</a> or numpy.ndarray – The inverse
+of the covariance matrix.  <strong>This is not currently
+calculated!</strong></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.util.covariance.Covariance.var">
+<code class="descname">var</code><a class="headerlink" href="#mangadap.util.covariance.Covariance.var" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>numpy.ndarray</em> – Array with the variance provided by the
+diagonal of the/each covariance matrix.  This is only
+populated if necessary, either by being requested
+(<a class="reference internal" href="#mangadap.util.covariance.Covariance.variance" title="mangadap.util.covariance.Covariance.variance"><code class="xref py py-func docutils literal"><span class="pre">variance()</span></code></a>) or if needed to convert between
+covariance and correlation matrices.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.util.covariance.Covariance.is_correlation">
+<code class="descname">is_correlation</code><a class="headerlink" href="#mangadap.util.covariance.Covariance.is_correlation" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>bool</em> – Flag that the covariance matrix has been
+saved as a variance vector and a correlation matrix.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.covariance.Covariance._grab_true_index">
+<code class="descname">_grab_true_index</code><span class="sig-paren">(</span><em>inp</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/covariance.html#Covariance._grab_true_index"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.covariance.Covariance._grab_true_index" title="Permalink to this definition">¶</a></dt>
+<dd><p>In the case of a 3D array, return the true array-element index
+given the pseudo index.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>inp</strong> (<em>int</em>) – Requested index to convert to the real index in
+the stored array of covariance matrices.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The index in the stored array of the requested
+covariance matrix.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">int</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition-todo admonition" id="index-2">
+<p class="first admonition-title">Todo</p>
+<p class="last">Search operation is inefficient.  Apparently a better option
+is a feature request for numpy 2.0</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.covariance.Covariance._impose_upper_triangle">
+<code class="descname">_impose_upper_triangle</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/covariance.html#Covariance._impose_upper_triangle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.covariance.Covariance._impose_upper_triangle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Force <a class="reference internal" href="#mangadap.util.covariance.Covariance.cov" title="mangadap.util.covariance.Covariance.cov"><code class="xref py py-attr docutils literal"><span class="pre">cov</span></code></a> to only contain non-zero elements in its upper
+triangle.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.covariance.Covariance._set_shape">
+<code class="descname">_set_shape</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/covariance.html#Covariance._set_shape"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.covariance.Covariance._set_shape" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the 2D or 3D shape of the covariance matrix.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.covariance.Covariance._with_lower_triangle">
+<code class="descname">_with_lower_triangle</code><span class="sig-paren">(</span><em>channel=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/covariance.html#Covariance._with_lower_triangle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.covariance.Covariance._with_lower_triangle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a <a class="reference external" href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html">scipy.sparse.csr_matrix</a> object with both its
+upper and lower triangle filled, ensuring that they are
+symmetric.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>channel</strong> (<em>int</em>) – (<strong>Optional</strong>) The pseudo-index of the
+covariance matrix to return.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The sparse matrix with both the
+upper and lower triangles filled (with symmetric
+information).</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html">scipy.sparse.csr_matrix</a></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if the object is 3D and <em>channel</em> is not
+provided.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.covariance.Covariance.apply_new_variance">
+<code class="descname">apply_new_variance</code><span class="sig-paren">(</span><em>var</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/covariance.html#Covariance.apply_new_variance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.covariance.Covariance.apply_new_variance" title="Permalink to this definition">¶</a></dt>
+<dd><p>Using the correlation matrix defined by self, use the provided
+variance data to construct a new covariance matrix.</p>
+<p>The input variance must be of the correct shape.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.covariance.Covariance.bin_to_spaxel_covariance">
+<code class="descname">bin_to_spaxel_covariance</code><span class="sig-paren">(</span><em>bin_indx</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/covariance.html#Covariance.bin_to_spaxel_covariance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.covariance.Covariance.bin_to_spaxel_covariance" title="Permalink to this definition">¶</a></dt>
+<dd><p>Propagate the covariance matrix data for the stacked spectra
+into the full cube.</p>
+<p>This (self) should be the covariance/correlation matrix for the
+binned spectra.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>bin_indx</strong> (<em>numpy.ndarray</em>) – The integer vector with the bin
+associated with each spectrum in the DRP cube.  This is
+the flattened BINID array.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><cite>mangadap.util.covariance.Covariance</cite>:
+Covariance/Correlation matrix for the spaxelized binned
+data.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">class</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition-todo admonition" id="index-3">
+<p class="first admonition-title">Todo</p>
+<ul class="last simple">
+<li>This needs to be tested.</li>
+</ul>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.covariance.Covariance.copy">
+<code class="descname">copy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/covariance.html#Covariance.copy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.covariance.Covariance.copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a copy of this Covariance object, not a reference to it,
+by returning a new Covariance instance with the same data.  Only
+sticking point is making sure to keep track of whether the
+object was saved as a covariance matrix or as a correlation
+matrix with a variance vector.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.covariance.Covariance.find">
+<code class="descname">find</code><span class="sig-paren">(</span><em>channel=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/covariance.html#Covariance.find"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.covariance.Covariance.find" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find the non-zero values in the <strong>full</strong> covariance matrix (not
+just the upper triangle).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>channel</strong> (<em>int</em>) – (<strong>Optional</strong>) The pseudo-index of the
+covariance matrix to plot.  Required if the covariance
+object is 3D.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A tuple of arrays <em>i</em>, <em>j</em>, and <em>c</em>.  The arrays <em>i</em>
+and <em>j</em> contain the index coordinates of the non-zero
+values, and <em>c</em> contains the values themselves.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">tuple</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="mangadap.util.covariance.Covariance.from_fits">
+<em class="property">classmethod </em><code class="descname">from_fits</code><span class="sig-paren">(</span><em>source</em>, <em>ivar_ext='IVAR'</em>, <em>covar_ext='CORREL'</em>, <em>row_major=False</em>, <em>impose_triu=False</em>, <em>correlation=False</em>, <em>quiet=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/covariance.html#Covariance.from_fits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.covariance.Covariance.from_fits" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read an existing covariance object previously written to disk;
+see <a class="reference internal" href="#mangadap.util.covariance.Covariance.write" title="mangadap.util.covariance.Covariance.write"><code class="xref py py-func docutils literal"><span class="pre">write()</span></code></a>.  The class can read covariance data written
+by other programs <em>as long as they have a commensurate format</em>.</p>
+<p>If the extension names and column names are correct,
+<a class="reference internal" href="#mangadap.util.covariance.Covariance" title="mangadap.util.covariance.Covariance"><code class="xref py py-class docutils literal"><span class="pre">Covariance</span></code></a> can read fits files that were not
+necessarily produced by the class itself.  This is useful for
+MaNGA DAP products that include the covariance data in among
+other output products.  Because of this, <a class="reference internal" href="#mangadap.util.covariance.Covariance.output_hdus" title="mangadap.util.covariance.Covariance.output_hdus"><code class="xref py py-func docutils literal"><span class="pre">output_hdus()</span></code></a> and
+<a class="reference internal" href="#mangadap.util.covariance.Covariance.output_fits_data" title="mangadap.util.covariance.Covariance.output_fits_data"><code class="xref py py-func docutils literal"><span class="pre">output_fits_data()</span></code></a> are provided to produce the data that
+can be placed in any fits file.</p>
+<p>The function determines if the output data were reordered by
+checking the number of binary columns.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>source</strong> (str or <a class="reference external" href="http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html">astropy.io.fits.hdu.hdulist.HDUList</a>) – Initialize the object using an
+<a class="reference external" href="http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html">astropy.io.fits.hdu.hdulist.HDUList</a> object or path to
+a fits file.</li>
+<li><strong>ivar_ext</strong> (<em>str</em>) – (<strong>Optional</strong>) If reading the data from
+<em>source</em>, this is the name of the extension with the
+inverse variance data.  Default is ‘IVAR’.  If None,
+the variance is taken as unity.</li>
+<li><strong>covar_ext</strong> (<em>str</em>) – (<strong>Optional</strong>) If reading the data from
+<em>source</em>, this is the name of the extension with
+covariance data.  Default is ‘CORREL’.</li>
+<li><strong>row_major</strong> (<em>bool</em>) – (<strong>Optional</strong>) If reading the data from an
+HDUList, this sets if the data arrays have been
+rearranged into a python-native (row-major) structure.
+See
+<a class="reference internal" href="mangadap.util.fitsutil.html#mangadap.util.fitsutil.DAPFitsUtil.transpose_image_data" title="mangadap.util.fitsutil.DAPFitsUtil.transpose_image_data"><code class="xref py py-func docutils literal"><span class="pre">mangadap.util.fitsutil.DAPFitsUtil.transpose_image_data()</span></code></a>.
+Default is False.</li>
+<li><strong>impose_triu</strong> (<em>bool</em>) – (<strong>Optional</strong>) Flag to force the
+<a class="reference external" href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html">scipy.sparse.csr_matrix</a> object to only be the upper
+triangle of the covariance matrix.  The covariance
+matrix is symmetric such that C_ij = C_ji, so it’s not
+necessary to keep both values.  This flag will force a
+call to <a class="reference external" href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.triu.html">scipy.sparse.triu</a> when setting the covariance
+matrix.  Otherwise, the input matrix is <strong>assumed</strong> to
+only have the upper triangle of numbers.</li>
+<li><strong>correlation</strong> (<em>bool</em>) – (<strong>Optional</strong>) Return the matrix as a
+correlation matrix.  Default (False) is to use the data
+(always saved in correlation format; see <a class="reference internal" href="#mangadap.util.covariance.Covariance.write" title="mangadap.util.covariance.Covariance.write"><code class="xref py py-func docutils literal"><span class="pre">write()</span></code></a>)
+to construct the covariance matrix.</li>
+<li><strong>quiet</strong> (<em>bool</em>) – (<strong>Optional</strong>) Suppress terminal output.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="mangadap.util.covariance.Covariance.from_matrix_multiplication">
+<em class="property">classmethod </em><code class="descname">from_matrix_multiplication</code><span class="sig-paren">(</span><em>T</em>, <em>Sigma</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/covariance.html#Covariance.from_matrix_multiplication"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.covariance.Covariance.from_matrix_multiplication" title="Permalink to this definition">¶</a></dt>
+<dd><p>Construct the covariance matrix that results from a matrix multiplication.</p>
+<p>The matrix multiplication should be of the form:</p>
+<div class="math">
+\[{\mathbf T} \times {\mathbf X} = {\mathbf Y}\]</div>
+<p>where <span class="math">\({\mathbf T}\)</span> is a transfer matrix of size
+<span class="math">\(N_y\times N_x\)</span>, <span class="math">\({\mathbf X}\)</span> is a vector of size
+<span class="math">\(N_x\)</span>, and <span class="math">\({\mathbf Y}\)</span> is the vector of length
+<span class="math">\({N_y}\)</span> that results from the multiplication.</p>
+<p>The covariance matrix is then</p>
+<div class="math">
+\[{\mathbf C} = {\mathbf T} \times {\mathbf \Sigma} \times
+{\mathbf T}^{\rm T},\]</div>
+<p>where <span class="math">\({\mathbf \Sigma}\)</span> is the covariance matrix for the
+elements of <span class="math">\({\mathbf X}\)</span>.  If <cite>Sigma</cite> is provided as a
+vector of length <span class="math">\(N_x\)</span>, it is assumed that the elements of
+<span class="math">\({\mathbf X}\)</span> are independent and the provided vector
+gives the variance in each element; i.e., the provided data
+represent the diagonal of <span class="math">\({\mathbf \Sigma}\)</span>.</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="mangadap.util.covariance.Covariance.from_samples">
+<em class="property">classmethod </em><code class="descname">from_samples</code><span class="sig-paren">(</span><em>samples</em>, <em>cov_tol=None</em>, <em>rho_tol=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/covariance.html#Covariance.from_samples"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.covariance.Covariance.from_samples" title="Permalink to this definition">¶</a></dt>
+<dd><p>Define a covariance object using descrete samples from an
+N-dimensional parameter space using the numpy covariance
+function.  The shape of the input array must be <span class="math">\(N_{\rm
+par}\times N_{\rm samples}\)</span>.</p>
+<p>Any correlation coefficent less than tol is forced to zero, if
+tol is provided.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.covariance.Covariance.output_fits_data">
+<code class="descname">output_fits_data</code><span class="sig-paren">(</span><em>reshape=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/covariance.html#Covariance.output_fits_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.covariance.Covariance.output_fits_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Construct the data arrays to write to a fits file, providing the
+covariance matrix/matrices in coordinate format.</p>
+<p>Regardless of whether or not the current internal data is a
+covariance matrix or a correlation matrix, the data is always
+returned as a correlation matrix.</p>
+<p>If the covariance matrix is 2 dimensional, four columns are
+output:</p>
+<blockquote>
+<div><p>i, j:  The i,j indices of the covariance matrix.</p>
+<p>rho_ij: The correlation coefficient between pixels i and j.</p>
+<dl class="docutils">
+<dt>variance: The variance in each pixel; i.e., the value of</dt>
+<dd><span class="math">\(C_{ii} \forall i\)</span>.  If reshape is True, this will
+be output as a two-dimenional array.</dd>
+</dl>
+</div></blockquote>
+<p>If the covariance matrix is 3-dimensional, one additional column
+is output:</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>k:  The k indices of the channels associated with each</dt>
+<dd>covariance matrix.  This is either just the index of the
+covariance matrix or the provided pseudo-indices of each
+channel.</dd>
+</dl>
+</div></blockquote>
+<p>If using the reshape option, the i and j indices are converted
+to two columns each providing the indices in the associated
+reshaped array with coordinates c1,c2.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>reshape</strong> (<em>bool</em>) – (<strong>Optional</strong>) Reshape the output in the
+case when <em>i</em> and <em>j</em> are actually pixels in a
+two-dimensional image.  The shape of the image is
+expected to be square, such that the shape of the
+covariance matrix is <span class="math">\(N_x\times N_y\)</span>, where
+<span class="math">\(N_x = N_y\)</span>.  Each of the I and J output columns
+are then split into two columns according to associate
+coordinates, such that there are 8 output columns.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Either 6 or 8 output arrays depending on if
+the data has been reshaped into an image.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">numpy.ndarray</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.covariance.Covariance.output_hdus">
+<code class="descname">output_hdus</code><span class="sig-paren">(</span><em>reshape=False</em>, <em>hdr=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/covariance.html#Covariance.output_hdus"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.covariance.Covariance.output_hdus" title="Permalink to this definition">¶</a></dt>
+<dd><p>Construct the output HDUs and header that contain the covariance
+data.</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.util.covariance.Covariance.ravel_indices">
+<em class="property">static </em><code class="descname">ravel_indices</code><span class="sig-paren">(</span><em>size</em>, <em>i</em>, <em>j</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/covariance.html#Covariance.ravel_indices"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.covariance.Covariance.ravel_indices" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the indices in the 1D vector that results from flattening
+a <code class="docutils literal"><span class="pre">size</span></code>-by-<code class="docutils literal"><span class="pre">size</span></code> square array.</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.util.covariance.Covariance.reshape_indices">
+<em class="property">static </em><code class="descname">reshape_indices</code><span class="sig-paren">(</span><em>size</em>, <em>i</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/covariance.html#Covariance.reshape_indices"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.covariance.Covariance.reshape_indices" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the indices in the 2D array that results from reshaping a
+vector of length size into a square 2D array.  The indices of
+interest in the vector are give by i.</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.util.covariance.Covariance.reshape_size">
+<em class="property">static </em><code class="descname">reshape_size</code><span class="sig-paren">(</span><em>size</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/covariance.html#Covariance.reshape_size"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.covariance.Covariance.reshape_size" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.covariance.Covariance.revert_correlation">
+<code class="descname">revert_correlation</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/covariance.html#Covariance.revert_correlation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.covariance.Covariance.revert_correlation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Revert the object from a correlation matrix back to a full
+covariance matrix.</p>
+<div class="admonition-todo admonition" id="index-4">
+<p class="first admonition-title">Todo</p>
+<p class="last">Allow this function to take in a new set of variances to
+use.</p>
+</div>
+<p>This function does nothing if the correlation flag has not been
+flipped.  The variances must have already been calculated!</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.covariance.Covariance.show">
+<code class="descname">show</code><span class="sig-paren">(</span><em>channel=None</em>, <em>zoom=None</em>, <em>ofile=None</em>, <em>log10=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/covariance.html#Covariance.show"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.covariance.Covariance.show" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert the (selected) covariance matrix to a filled array and
+plot the array using <a class="reference external" href="http://matplotlib.org/api/pyplot_api.html#matplotlib.pyplot.imshow">matplotlib.pyplot.imshow</a>.  If an output
+file is provided, the image is redirected to the designated
+output file; otherwise, the image is plotted to the screen.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>channel</strong> (<em>int</em>) – (<strong>Optional</strong>) The pseudo-index of the
+covariance matrix to plot.  Required if the covariance
+object is 3D.</li>
+<li><strong>zoom</strong> (<em>float</em>) – (<strong>Optional</strong>) Factor by which to zoom in on
+the center of the image by <em>removing the other regions
+of the array</em>.  E.g. <em>zoom=2</em> will show only the central
+quarter of the covariance matrix.</li>
+<li><strong>ofile</strong> (<em>str</em>) – (<strong>Optional</strong>) If provided, the array is output
+to this file instead of being plotted to the screen.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.covariance.Covariance.spaxel_to_bin_covariance">
+<code class="descname">spaxel_to_bin_covariance</code><span class="sig-paren">(</span><em>bin_indx</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/covariance.html#Covariance.spaxel_to_bin_covariance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.covariance.Covariance.spaxel_to_bin_covariance" title="Permalink to this definition">¶</a></dt>
+<dd><p>Opposite of <a class="reference internal" href="#mangadap.util.covariance.Covariance.bin_to_spaxel_covariance" title="mangadap.util.covariance.Covariance.bin_to_spaxel_covariance"><code class="xref py py-func docutils literal"><span class="pre">bin_to_spaxel_covariance()</span></code></a>: Revert the covariance
+matrix to the covariance between the unique binned spectra.</p>
+<p>This (self) should be the covariance/correlation matrix for the
+binned spectra redistributed to the size of the original spaxels
+map.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last"><strong>This does NOT propagate the covariance between the spaxels
+into the covariance in the binned data.</strong> That operation is
+done by, e.g.,
+<a class="reference internal" href="mangadap.proc.spectralstack.html#mangadap.proc.spectralstack.SpectralStack._stack_with_covariance" title="mangadap.proc.spectralstack.SpectralStack._stack_with_covariance"><code class="xref py py-func docutils literal"><span class="pre">mangadap.proc.spectralstack.SpectralStack._stack_with_covariance()</span></code></a>.
+This <strong>only</strong> performs the inverse operation of
+<a class="reference internal" href="#mangadap.util.covariance.Covariance.bin_to_spaxel_covariance" title="mangadap.util.covariance.Covariance.bin_to_spaxel_covariance"><code class="xref py py-func docutils literal"><span class="pre">bin_to_spaxel_covariance()</span></code></a>.</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>bin_indx</strong> (<em>numpy.ndarray</em>) – The integer vector with the bin
+associated with each spectrum in the DRP cube.  This is
+the flattened BINID array.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><cite>mangadap.util.covariance.Covariance</cite>:
+Covariance/Correlation matrix for the stacked spectra.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">class</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition-todo admonition" id="index-5">
+<p class="first admonition-title">Todo</p>
+<ul class="last simple">
+<li>This needs to be tested.</li>
+</ul>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.covariance.Covariance.to_correlation">
+<code class="descname">to_correlation</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/covariance.html#Covariance.to_correlation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.covariance.Covariance.to_correlation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert the covariance matrix into a correlation matrix by
+dividing each element by the variances.</p>
+<p>If the matrix is a correlation matrix already (see
+<a class="reference internal" href="#mangadap.util.covariance.Covariance.is_correlation" title="mangadap.util.covariance.Covariance.is_correlation"><code class="xref py py-attr docutils literal"><span class="pre">is_correlation</span></code></a>), no operations are performed.
+Otherwise, the variance vectors are computed, if necessary, and
+used to normalize the covariance values.</p>
+<p>A <a class="reference internal" href="#mangadap.util.covariance.Covariance" title="mangadap.util.covariance.Covariance"><code class="xref py py-class docutils literal"><span class="pre">Covariance</span></code></a> object can be reverted from a correlation
+matrix; see <a class="reference internal" href="#mangadap.util.covariance.Covariance.revert_correlation" title="mangadap.util.covariance.Covariance.revert_correlation"><code class="xref py py-func docutils literal"><span class="pre">revert_correlation()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.covariance.Covariance.toarray">
+<code class="descname">toarray</code><span class="sig-paren">(</span><em>channel=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/covariance.html#Covariance.toarray"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.covariance.Covariance.toarray" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert the covariance to a full array, filled with zeros when
+appropriate.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>channel</strong> (<em>int</em>) – (<strong>Optional</strong>) The pseudo-index of the
+covariance matrix to plot.  Required if the covariance
+object is 3D.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Dense array with the full covariance matrix.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">numpy.ndarray</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.covariance.Covariance.variance">
+<code class="descname">variance</code><span class="sig-paren">(</span><em>copy=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/covariance.html#Covariance.variance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.covariance.Covariance.variance" title="Permalink to this definition">¶</a></dt>
+<dd><p>If not already done, grab the variances along the diagonal of
+the covariance matrix.  The function returns the variance for
+all channels if more than one exists.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.covariance.Covariance.write">
+<code class="descname">write</code><span class="sig-paren">(</span><em>ofile</em>, <em>reshape=False</em>, <em>hdr=None</em>, <em>clobber=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/covariance.html#Covariance.write"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.covariance.Covariance.write" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write the covariance object to a fits file such that it can be
+read for later use; see <a class="reference internal" href="#mangadap.util.covariance.Covariance.from_fits" title="mangadap.util.covariance.Covariance.from_fits"><code class="xref py py-func docutils literal"><span class="pre">from_fits()</span></code></a>.  The covariance
+matrix (matrices) are stored in “coordinate” format using fits
+binary tables; see <a class="reference external" href="http://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.sparse.coo_matrix.html">scipy.sparse.coo_matrix</a>.  The matrix is
+also <strong>always</strong> stored as a correlation matix, even if the
+object is currently in the state holding the covariance data.</p>
+<p>Independent of the dimensionality of the covariance matrix, the
+written file has a <code class="docutils literal"><span class="pre">PRIMARY</span></code> extension with the keyword
+<code class="docutils literal"><span class="pre">COVSHAPE</span></code> that specifies the original dimensions of the
+covariance matrix; see <a class="reference internal" href="#mangadap.util.covariance.Covariance.shape" title="mangadap.util.covariance.Covariance.shape"><code class="xref py py-attr docutils literal"><span class="pre">shape</span></code></a>.</p>
+<p>The correlation data are written to the <code class="docutils literal"><span class="pre">CORREL</span></code> extension.
+The number of columns in this extension depends on the provided
+keywords; see <a class="reference internal" href="#mangadap.util.covariance.Covariance.output_fits_data" title="mangadap.util.covariance.Covariance.output_fits_data"><code class="xref py py-func docutils literal"><span class="pre">output_fits_data()</span></code></a>.  The column names are:</p>
+<blockquote>
+<div><ul class="simple">
+<li><code class="docutils literal"><span class="pre">INDXI</span></code>, <code class="docutils literal"><span class="pre">INDXJ</span></code>, <code class="docutils literal"><span class="pre">INDXK</span></code>: indices in the covariance
+matrix.  The last index is provided only if the object is
+3D.  <code class="docutils literal"><span class="pre">INDXI</span></code> and <code class="docutils literal"><span class="pre">INDXJ</span></code> are separated into two
+columns if the output is reshaped; these columns are
+<code class="docutils literal"><span class="pre">INDXI_C1</span></code>, <code class="docutils literal"><span class="pre">INDXI_C2</span></code>, <code class="docutils literal"><span class="pre">INDXJ_C1</span></code>, <code class="docutils literal"><span class="pre">INDXJ_C2</span></code>.</li>
+<li><code class="docutils literal"><span class="pre">RHOIJ</span></code>: The non-zero correlation coefficients located
+the specified coordinates</li>
+</ul>
+</div></blockquote>
+<p>The inverse of the variance along the diagonal of the covariance
+matrix is output in an ImageHDU in extension <code class="docutils literal"><span class="pre">IVAR</span></code>.</p>
+<p>For 3D matrices, if pseudo-indices have been provided, these are
+used in the <code class="docutils literal"><span class="pre">INDXK</span></code> column; however, the <code class="docutils literal"><span class="pre">COVSHAPE</span></code> header
+keyword only gives the shape of the unique indices of the
+covariance channels.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>ofile</strong> (<em>str</em>) – File name for the output.</li>
+<li><strong>reshape</strong> (<em>bool</em>) – (<strong>Optional</strong>) Reshape the output in the
+case when <em>i</em> and <em>j</em> are actually pixels in a
+two-dimensional image.  The shape of the image is
+expected to be square, such that the shape of the
+covariance matrix is <span class="math">\(N_x\times N_y\)</span>, where
+<span class="math">\(N_x = N_y\)</span>.  Each of the I and J output columns
+are then split into two columns according to associate
+coordinates.</li>
+<li><strong>hdr</strong> (<a class="reference external" href="http://docs.astropy.org/en/stable/io/fits/api/headers.html#header">astropy.io.fits.Header</a>) – (<strong>Optional</strong>) A header
+object to include in the PRIMARY extension.  The SHAPE
+keyword will be added/overwritten.</li>
+<li><strong>clobber</strong> (<em>bool</em>) – (<strong>Optional</strong>) Overwrite any existing file.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">TypeError</span></code> – Raise if the input <em>hdr</em> does not have the
+correct type.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="mangadap.util.exception_tools.html" class="btn btn-neutral float-right" title="mangadap.util.exception_tools module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="mangadap.util.constants.html" class="btn btn-neutral" title="mangadap.util.constants module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, SDSS-IV/MaNGA Pipeline Group.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'2.2.2',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

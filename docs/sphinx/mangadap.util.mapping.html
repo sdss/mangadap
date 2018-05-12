@@ -1,0 +1,496 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mangadap.util.mapping module &mdash; mangadap 2.2.2 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="mangadap 2.2.2 documentation" href="index.html"/>
+        <link rel="up" title="mangadap.util package" href="mangadap.util.html"/>
+        <link rel="next" title="mangadap.util.misc module" href="mangadap.util.misc.html"/>
+        <link rel="prev" title="mangadap.util.log module" href="mangadap.util.log.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> mangadap
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="mangadap.html">mangadap package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="mangadap.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="mangadap.config.html">mangadap.config package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.contrib.html">mangadap.contrib package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.par.html">mangadap.par package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.proc.html">mangadap.proc package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.survey.html">mangadap.survey package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.test.html">mangadap.test package</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="mangadap.util.html">mangadap.util package</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="mangadap.util.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="mangadap.util.html#module-mangadap.util">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="mangadap.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mangadap.html#module-mangadap">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">mangadap</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="mangadap.html">mangadap package</a> &raquo;</li>
+        
+          <li><a href="mangadap.util.html">mangadap.util package</a> &raquo;</li>
+        
+      <li>mangadap.util.mapping module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/mangadap.util.mapping.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-mangadap.util.mapping">
+<span id="mangadap-util-mapping-module"></span><h1>mangadap.util.mapping module<a class="headerlink" href="#module-mangadap.util.mapping" title="Permalink to this headline">¶</a></h1>
+<p>Defines some utility routines used to map a provided set of quantities.</p>
+<dl class="docutils">
+<dt><em>License</em>:</dt>
+<dd><dl class="first last docutils">
+<dt>Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group</dt>
+<dd>Licensed under BSD 3-clause license - see LICENSE.rst</dd>
+</dl>
+</dd>
+<dt><em>Source location</em>:</dt>
+<dd>$MANGADAP_DIR/python/mangadap/util/mapping.py</dd>
+<dt><em>Imports and python version compliance</em>:</dt>
+<dd><div class="first last highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version</span> <span class="o">&gt;</span> <span class="s1">&#39;3&#39;</span><span class="p">:</span>
+    <span class="n">long</span> <span class="o">=</span> <span class="nb">int</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="k">import</span> <span class="n">pyplot</span>
+<span class="kn">from</span> <span class="nn">mpl_toolkits.axes_grid1</span> <span class="k">import</span> <span class="n">make_axes_locatable</span>
+<span class="kn">from</span> <span class="nn">matplotlib.ticker</span> <span class="k">import</span> <span class="n">MaxNLocator</span>
+</pre></div>
+</div>
+</dd>
+<dt><em>Revision history</em>:</dt>
+<dd><div class="first last line-block">
+<div class="line"><strong>10 Jun 2015</strong>: Pulled out functions by Michele Cappellari into a
+utility file (K. Westfall; KBW)</div>
+<div class="line"><strong>07 Jul 2017</strong>: (KBW) Added map matching functions</div>
+</div>
+</dd>
+</dl>
+<dl class="function">
+<dt id="mangadap.util.mapping._match_map_arrays_integer_pixel_shift">
+<code class="descclassname">mangadap.util.mapping.</code><code class="descname">_match_map_arrays_integer_pixel_shift</code><span class="sig-paren">(</span><em>arr1</em>, <em>ext1</em>, <em>arr2</em>, <em>ext2</em>, <em>dx</em>, <em>dy</em>, <em>swap=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/mapping.html#_match_map_arrays_integer_pixel_shift"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.mapping._match_map_arrays_integer_pixel_shift" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="mangadap.util.mapping._match_map_arrays_sub_pixel_shift">
+<code class="descclassname">mangadap.util.mapping.</code><code class="descname">_match_map_arrays_sub_pixel_shift</code><span class="sig-paren">(</span><em>arr1</em>, <em>ext1</em>, <em>arr2</em>, <em>ext2</em>, <em>dx</em>, <em>dy</em>, <em>swap=False</em>, <em>truncate=False</em>, <em>pixelscale=0.5</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/mapping.html#_match_map_arrays_sub_pixel_shift"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.mapping._match_map_arrays_sub_pixel_shift" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="mangadap.util.mapping.map_beam_patch">
+<code class="descclassname">mangadap.util.mapping.</code><code class="descname">map_beam_patch</code><span class="sig-paren">(</span><em>extent</em>, <em>ax</em>, <em>pos=(0.1</em>, <em>0.1)</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/mapping.html#map_beam_patch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.mapping.map_beam_patch" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="mangadap.util.mapping.map_center_pixel_offset">
+<code class="descclassname">mangadap.util.mapping.</code><code class="descname">map_center_pixel_offset</code><span class="sig-paren">(</span><em>hdu_1</em>, <em>hdu_2</em>, <em>ext</em>, <em>quiet=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/mapping.html#map_center_pixel_offset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.mapping.map_center_pixel_offset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine the offset in pixels between the object center in two the
+maps of two fits files.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>hdu_1</strong> (<a class="reference external" href="http://docs.astropy.org/en/stable/io/fits/api/hdulists.html">astropy.io.fits.hdu.hdulist.HDUList</a>) – Fits HDU list
+for the reference map.</li>
+<li><strong>hdu_2</strong> (<a class="reference external" href="http://docs.astropy.org/en/stable/io/fits/api/hdulists.html">astropy.io.fits.hdu.hdulist.HDUList</a>) – Fits HDU list
+for the comparison map.</li>
+<li><strong>ext</strong> (<em>str</em>) – Extension <em>in both files</em> with the maps.</li>
+<li><strong>quiet</strong> (<em>bool</em>) – (<strong>Optional</strong>)  Suppress terminal output.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Two floats with the offset in x and y between the two maps.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">float</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="mangadap.util.mapping.map_extent">
+<code class="descclassname">mangadap.util.mapping.</code><code class="descname">map_extent</code><span class="sig-paren">(</span><em>hdu</em>, <em>ext</em>, <em>offset=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/mapping.html#map_extent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.mapping.map_extent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the on-sky extent of a map using the provided WCS coordinates.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>hdu</strong> (<a class="reference external" href="http://docs.astropy.org/en/stable/io/fits/api/hdulists.html">astropy.io.fits.hdu.hdulist.HDUList</a>) – Fits HDU list.</li>
+<li><strong>ext</strong> (<em>str</em>) – Extension of the file with the map.</li>
+<li><strong>offset</strong> (<em>bool</em>) – (<strong>Optional</strong>)  Return the extent as the offset
+from the coordinates of the object in arcseconds.  The WCS
+is assumed to provide RA and declination in units of
+degrees, and the header must contain the coordinates of the
+object with keywords <cite>OBJRA</cite> and <cite>OBJDEC</cite>.  If offset is
+True and these keywords do not exist, the function will
+throw a warning and proceed <em>without</em> applying any offset.
+Default is just to return the extent of the WCS coordinates.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">List of four floats: minimum and maximum x and minimum and
+maximum y.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">list</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="mangadap.util.mapping.map_quantity">
+<code class="descclassname">mangadap.util.mapping.</code><code class="descname">map_quantity</code><span class="sig-paren">(</span><em>x</em>, <em>y</em>, <em>z</em>, <em>zmin=None</em>, <em>zmax=None</em>, <em>ncolors=64</em>, <em>dots=False</em>, <em>cmap='coolwarm'</em>, <em>colorbar=False</em>, <em>nticks=7</em>, <em>clabel=None</em>, <em>flux=None</em>, <em>fixpdf=False</em>, <em>xlim=None</em>, <em>xlabel=None</em>, <em>ylim=None</em>, <em>ylabel=None</em>, <em>pixelscale=None</em>, <em>fill_value=0.0</em>, <em>contour_levels=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/mapping.html#map_quantity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.mapping.map_quantity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Copyright (C) 2013-2014, Michele Cappellari
+E-mail: cappellari_at_astro.ox.ac.uk
+<a class="reference external" href="http://purl.org/cappellari/software">http://purl.org/cappellari/software</a></p>
+<dl class="docutils">
+<dt><em>Revision history</em>:</dt>
+<dd><div class="first last line-block">
+<div class="line">V1.0: Michele Cappellari, Paranal, 11 November 2013</div>
+<div class="line">V1.0.1: Clip values before contouring. MC, Oxford, 26 February
+2014</div>
+<div class="line">V1.0.2: Include SAURON colormap. MC, Oxford, 29 January 2014</div>
+<div class="line">V1.0.3: Call set_aspect(1). MC, Oxford, 22 February 2014</div>
+<div class="line">V1.0.4: Call autoscale_view(tight=True). Overplot small dots
+by default.  MC, Oxford, 25 February 2014</div>
+<div class="line">V1.0.5: Use axis(‘image’). MC, Oxford, 29 March 2014</div>
+<div class="line">V1.0.6: Allow changing colormap. MC, Oxford, 29 July 2014</div>
+<div class="line">V1.0.7: Added optional fixpdf keyword to remove PDF artifacts
+like <a class="reference external" href="http://stackoverflow.com/questions/15822159/aliasing-when-saving-matplotlib-filled-contour-plot-to-pdf-or-eps">stackoverflow_15822159</a> .  Make nice tick levels for
+colorbar. Added nticks keyword for colorbar.  MC, Oxford, 16
+October 2014</div>
+</div>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="mangadap.util.mapping.masked_pixelized_image">
+<code class="descclassname">mangadap.util.mapping.</code><code class="descname">masked_pixelized_image</code><span class="sig-paren">(</span><em>x</em>, <em>y</em>, <em>z</em>, <em>pixelscale=1.0</em>, <em>zmin=None</em>, <em>zmax=None</em>, <em>imshow_prep=False</em>, <em>fill_value=0.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/mapping.html#masked_pixelized_image"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.mapping.masked_pixelized_image" title="Permalink to this definition">¶</a></dt>
+<dd><p>Provided a set of pixelized data, return a masked image with a type
+<a class="reference external" href="http://docs.scipy.org/doc/numpy/reference/maskedarray.baseclass.html#numpy.ma.MaskedArray">numpy.ma.MaskedArray</a>.  The <span class="math">\(x\)</span> coordinates are organized
+along rows and the <span class="math">\(y\)</span> coordinates are organized along
+columns.  I.e., i.e., img[0,1] = <span class="math">\(z(x_0,y_1)\)</span>, unless
+<em>imshow_prep</em> is requested (see below).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>x</strong> (<em>numpy.ndarray</em>) – X coordinates of the pixels</li>
+<li><strong>y</strong> (<em>numpy.ndarray</em>) – Y coordinates of the pixels</li>
+<li><strong>z</strong> (<em>numpy.ndarray</em>) – Image values at <span class="math">\(x,y\)</span>.</li>
+<li><strong>pixelscale</strong> (<em>float</em>) – (Optional) Pixelscale of the image in
+arcsec/pixel.</li>
+<li><strong>zmin</strong> (<em>float</em>) – (Optional) Minimum z value to include in the
+output image.  Default is to allow all pixel values.</li>
+<li><strong>zmax</strong> (<em>float</em>) – (Optional) Maximum z value to include in the
+output image.  Default is to allow all pixel values.</li>
+<li><strong>imshow_prep</strong> (<em>bool</em>) – <p>(Optional) Prepare the matrix for use with
+<a class="reference external" href="http://matplotlib.org/api/pyplot_api.html#matplotlib.pyplot.imshow">pyplot.imshow</a>.  If <em>imshow_prep</em> is True, before output,
+the matrix is reordered such that increasing <span class="math">\(x\)</span>
+values are along columns and increasing <span class="math">\(y\)</span> values are
+along rows; i.e., the output is the transpose of the default
+behavior.  The appropriate call to imshow that will then put
+increasing x values along the abcissa and increasing y
+values along the ordinate is, e.g.:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">ext</span><span class="p">,</span> <span class="n">img</span> <span class="o">=</span> <span class="n">masked_pixelized_image</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">imshow_prep</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">pyplot</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">,</span> <span class="n">extent</span><span class="o">=</span><span class="n">ext</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Note that origin <strong>must</strong> be “lower” when calling
+<a class="reference external" href="http://matplotlib.org/api/pyplot_api.html#matplotlib.pyplot.imshow">pyplot.imshow</a> on the array produced by this routine for
+the <span class="math">\(x,y\)</span> ordering to be as expected!</p>
+</li>
+<li><strong>fill_value</strong> (<em>float</em>) – (Optional) The default value to use for
+pixels without any data.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The first object
+returned is a four-element array with the extent of the image
+from the bottom edge to the top edge of the x and y pixels,
+respectively.  The second object returned is the image data and
+associated (boolean) mask.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">numpy.ndarray, <a class="reference external" href="http://docs.scipy.org/doc/numpy/reference/maskedarray.baseclass.html#numpy.ma.MaskedArray">numpy.ma.MaskedArray</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="mangadap.util.mapping.match_map_arrays">
+<code class="descclassname">mangadap.util.mapping.</code><code class="descname">match_map_arrays</code><span class="sig-paren">(</span><em>arr1</em>, <em>ext1</em>, <em>arr2</em>, <em>ext2</em>, <em>dx</em>, <em>dy</em>, <em>tol=1e-06</em>, <em>truncate=True</em>, <em>pixelscale=0.5</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/mapping.html#match_map_arrays"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.mapping.match_map_arrays" title="Permalink to this definition">¶</a></dt>
+<dd><p>Match the centers and extent of two map arrays by applying the
+previously calculated pixel offsets.  See
+<a class="reference internal" href="#mangadap.util.mapping.map_center_pixel_offset" title="mangadap.util.mapping.map_center_pixel_offset"><code class="xref py py-func docutils literal"><span class="pre">map_center_pixel_offset()</span></code></a>.</p>
+<p>This is just a wrapper for the two supporting functions below.</p>
+<p>Both maps <em>must</em> be two dimensional; i.e., a single map, not a set
+of maps arranged in different channels.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>arr1</strong> (<a class="reference external" href="http://docs.scipy.org/doc/numpy/reference/maskedarray.baseclass.html#numpy.ma.MaskedArray">numpy.ma.MaskedArray</a>) – Reference map data array.</li>
+<li><strong>ext1</strong> (<em>list</em>) – Reference map extent in arcseconds.</li>
+<li><strong>arr2</strong> (<a class="reference external" href="http://docs.scipy.org/doc/numpy/reference/maskedarray.baseclass.html#numpy.ma.MaskedArray">numpy.ma.MaskedArray</a>) – Comparison map data array.</li>
+<li><strong>ext1</strong> – Comparison map extent in arcseconds.</li>
+<li><strong>dx</strong> (<em>float</em>) – <strong>Pixel</strong> offset in the <em>first</em> dimension (x).</li>
+<li><strong>dy</strong> (<em>float</em>) – <strong>Pixel</strong> offset in the <em>second</em> dimension (y).</li>
+<li><strong>tol</strong> (<em>float</em>) – (<strong>Optional</strong>) Tolerance for non-integer pixel
+shifts.</li>
+<li><strong>truncate</strong> (<em>float</em>) – (<strong>Optional</strong>) Truncate the shape of the
+shifted array to match the unshifted array.  If False, the
+unshifted array is padded to match the shifted array.</li>
+<li><strong>pixelscale</strong> (<em>float</em>) – (<strong>Optional</strong>) The pixel scale (extent units
+per array pixel) that <em>must be</em> common to both input arrays.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The two matched arrays and the
+extent that is common to both.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">numpy.ma.MaskedArray, list</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="mangadap.util.misc.html" class="btn btn-neutral float-right" title="mangadap.util.misc module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="mangadap.util.log.html" class="btn btn-neutral" title="mangadap.util.log module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, SDSS-IV/MaNGA Pipeline Group.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'2.2.2',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

@@ -1,0 +1,785 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mangadap.proc.bandpassfilter &mdash; mangadap 2.2.2 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../search.html"/>
+    <link rel="top" title="mangadap 2.2.2 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> mangadap
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../mangadap.html">mangadap package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">mangadap</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>mangadap.proc.bandpassfilter</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for mangadap.proc.bandpassfilter</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Licensed under a 3-clause BSD style license - see LICENSE.rst</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Container class that defines a bandpass filter.</span>
+
+<span class="sd">*License*:</span>
+<span class="sd">    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group</span>
+<span class="sd">        Licensed under BSD 3-clause license - see LICENSE.rst</span>
+
+<span class="sd">*Source location*:</span>
+<span class="sd">    $MANGADAP_DIR/python/mangadap/par/bandpassfilter.py</span>
+
+<span class="sd">*Imports and python version compliance*:</span>
+<span class="sd">    ::</span>
+
+<span class="sd">        from __future__ import division</span>
+<span class="sd">        from __future__ import print_function</span>
+<span class="sd">        from __future__ import absolute_import</span>
+<span class="sd">        from __future__ import unicode_literals</span>
+<span class="sd">    </span>
+<span class="sd">        import sys</span>
+<span class="sd">        if sys.version &gt; &#39;3&#39;:</span>
+<span class="sd">            long = int</span>
+
+<span class="sd">        import warnings</span>
+<span class="sd">        import numpy</span>
+<span class="sd">        from .parset import ParSet</span>
+
+<span class="sd">*Class usage examples*:</span>
+<span class="sd">    To define an bandpass filter::</span>
+
+<span class="sd">        from mangadap.par.bandpassfilter import BandPassFilterPar</span>
+<span class="sd">        p = BandPassFilterPar(44, &#39;Ha&#39;, [6483.0,6513.0],</span>
+<span class="sd">                             [6623.0,6653.0], restwave=6564.632,</span>
+<span class="sd">                             primary=[6557.6,6571.6]) </span>
+
+<span class="sd">    However, this class is mostly to provide a base class used by</span>
+<span class="sd">    :class:`mangadap.par.emissionmomentsdb.EmissionMomentsDB`,</span>
+<span class="sd">    :class:`mangadap.par.absorptionindexdb.AbsorptionIndexDB`, and</span>
+<span class="sd">    :class:`mangadap.par.bandheadindexdb.BandheadIndexDB`; it is not</span>
+<span class="sd">    really meant to be used as given above.</span>
+
+<span class="sd">*Revision history*:</span>
+<span class="sd">    | **18 Mar 2016**: Original implementation by K. Westfall (KBW)</span>
+<span class="sd">    | **20 Apr 2016**: (KBW) Include measurements</span>
+<span class="sd">    | **29 Jul 2016**: (KBW) Convert some calls to asarray to atleast_1d</span>
+<span class="sd">    | **15 Mar 2018**: (KBW) Allow the redshift in the equivalent width</span>
+<span class="sd">        measurement to be specific to each bandpass.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version</span> <span class="o">&gt;</span> <span class="s1">&#39;3&#39;</span><span class="p">:</span>
+    <span class="n">long</span> <span class="o">=</span> <span class="nb">int</span>
+
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">from</span> <span class="nn">..par.parset</span> <span class="k">import</span> <span class="n">ParSet</span>
+<span class="kn">from</span> <span class="nn">..util.instrument</span> <span class="k">import</span> <span class="n">_pixel_borders</span>
+
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="k">import</span> <span class="n">pyplot</span>
+
+<span class="c1"># Add strict versioning</span>
+<span class="c1"># from distutils.version import StrictVersion</span>
+
+<div class="viewcode-block" id="BandPassFilterPar"><a class="viewcode-back" href="../../../mangadap.proc.bandpassfilter.html#mangadap.proc.bandpassfilter.BandPassFilterPar">[docs]</a><span class="k">class</span> <span class="nc">BandPassFilterPar</span><span class="p">(</span><span class="n">ParSet</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">    Parameter object that defines a set of band-pass filters.  This is a</span>
+<span class="sd">    base class for similar objects used calculating fluxes and flux</span>
+<span class="sd">    moments of emission lines</span>
+<span class="sd">    (:class:`mangadap.par.emissionmomentsdb.EmissionMomentsDB`),</span>
+<span class="sd">    absorption line indices</span>
+<span class="sd">    (:class:`mangadap.par.absorptionindexdb.AbsorptionIndexDB`), and</span>
+<span class="sd">    spectral continuum bandheads</span>
+<span class="sd">    (:class:`mangadap.par.bandheadindexdb.BandheadIndexDB`) in the DAP.</span>
+
+<span class="sd">    All wavelengths are expected to be IN VACUUM, to match the expected</span>
+<span class="sd">    application of this filter to SDSS MaNGA spectra.</span>
+
+<span class="sd">    See :class:`mangadap.par.parset.ParSet` for attributes and raised</span>
+<span class="sd">    exceptions.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        index (int) : An index used to refer to the bandpass filter.</span>
+<span class="sd">        name (str) : A name for the bandpass filter.</span>
+<span class="sd">        blueside (numpy.ndarray, list) : A two-element vector with the</span>
+<span class="sd">            starting and ending wavelength (angstroms in VACUUM) for a</span>
+<span class="sd">            passband to the blue of the primary spectral feature.</span>
+<span class="sd">        redside (numpy.ndarray, list): A two-element vector with the</span>
+<span class="sd">            starting and ending wavelength (angstroms in VACUUM) for a</span>
+<span class="sd">            passband to the red of the primary spectral feature.</span>
+<span class="sd">        restwave (float) : (Optional) The rest wavelength of the line in</span>
+<span class="sd">            the primary passband in angstroms *in vacuum*.  This is used</span>
+<span class="sd">            to convert the first and second moments to velocity (km/s)</span>
+<span class="sd">            for emission lines.</span>
+<span class="sd">        primary (numpy.ndarray, list) : (Optional) A two-element vector</span>
+<span class="sd">            with the starting and ending wavelength (angstroms in</span>
+<span class="sd">            VACUUM) for the primary passband surrounding the spectral</span>
+<span class="sd">            feature of interest.  This is used by</span>
+<span class="sd">            :class:`mangadap.par.emissionmomentsdb.EmissionMomentsDB`</span>
+<span class="sd">            and</span>
+<span class="sd">            :class:`mangadap.par.absorptionindexdb.AbsorptionIndexDB`,</span>
+<span class="sd">            but it is irrelevant for</span>
+<span class="sd">            :class:`mangadap.par.bandheadindexdb.BandheadIndexDB`.</span>
+<span class="sd">        units (str) : (Optional) Define the unit for the spectral index</span>
+<span class="sd">            as either angstroms (&#39;ang&#39;) or magnitudes (&#39;mag&#39;).</span>
+<span class="sd">            Currently only used by</span>
+<span class="sd">            :class:`mangadap.par.absorptionindexdb.AbsorptionIndexDB`.</span>
+<span class="sd">        component (bool) : (Optional) Flag that the bandpass definition</span>
+<span class="sd">            is a component of a larger set of bandpass filters.  This is</span>
+<span class="sd">            currently only used by</span>
+<span class="sd">            :class:`mangadap.par.absorptionindexdb.AbsorptionIndexDB`</span>
+<span class="sd">            to combine index measurements into a single index.  If True,</span>
+<span class="sd">            all components with the same *name* are summed to form the</span>
+<span class="sd">            composite index.</span>
+<span class="sd">        integrand (str) : (Optional) Currently only used by</span>
+<span class="sd">            :class:`mangadap.par.bandheadindexdb.BandheadIndexDB`.</span>
+<span class="sd">            Define the integrand over the passband used to construct and</span>
+<span class="sd">            index as either flux per unit frequency (``&#39;fnu&#39;``),</span>
+<span class="sd">            :math:`F_\nu`, or flux per unit wavelength (``&#39;flambda&#39;``),</span>
+<span class="sd">            :math:`F_\lambda`.</span>
+<span class="sd">        order (str): (Optional) Currently only used by</span>
+<span class="sd">            :class:`mangadap.par.bandheadindexdb.BandheadIndexDB`.</span>
+<span class="sd">            Define the order to use when constructing the index.  The</span>
+<span class="sd">            options are either a ratio of red-to-blue or blue-to-red,</span>
+<span class="sd">            which are respectively selected using ``&#39;r_b&#39;`` or</span>
+<span class="sd">            ``&#39;b_r&#39;``.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">blueside</span><span class="p">,</span> <span class="n">redside</span><span class="p">,</span> <span class="n">restwave</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">primary</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">component</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">integrand</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        
+        <span class="n">in_fl</span> <span class="o">=</span> <span class="p">[</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">float</span> <span class="p">]</span>
+        <span class="n">ar_like</span> <span class="o">=</span> <span class="p">[</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="nb">list</span> <span class="p">]</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="n">unit_opts</span> <span class="o">=</span> <span class="p">[</span> <span class="s1">&#39;ang&#39;</span><span class="p">,</span> <span class="s1">&#39;mag&#39;</span> <span class="p">]</span>
+        <span class="n">integ_opts</span> <span class="o">=</span> <span class="p">[</span> <span class="s1">&#39;flambda&#39;</span><span class="p">,</span> <span class="s1">&#39;fnu&#39;</span> <span class="p">]</span>
+        <span class="n">order_opts</span> <span class="o">=</span> <span class="p">[</span> <span class="s1">&#39;b_r&#39;</span><span class="p">,</span> <span class="s1">&#39;r_b&#39;</span> <span class="p">]</span>
+        
+        <span class="n">pars</span>  <span class="o">=</span>    <span class="p">[</span> <span class="s1">&#39;index&#39;</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="s1">&#39;restwave&#39;</span><span class="p">,</span> <span class="s1">&#39;primary&#39;</span><span class="p">,</span> <span class="s1">&#39;blueside&#39;</span><span class="p">,</span> <span class="s1">&#39;redside&#39;</span><span class="p">,</span>   <span class="s1">&#39;units&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;component&#39;</span><span class="p">,</span> <span class="s1">&#39;integrand&#39;</span><span class="p">,</span>    <span class="s1">&#39;order&#39;</span> <span class="p">]</span>
+        <span class="n">values</span>  <span class="o">=</span>  <span class="p">[</span>   <span class="n">index</span><span class="p">,</span>      <span class="n">n</span><span class="p">,</span>   <span class="n">restwave</span><span class="p">,</span>   <span class="n">primary</span><span class="p">,</span>   <span class="n">blueside</span><span class="p">,</span>   <span class="n">redside</span><span class="p">,</span>     <span class="n">units</span><span class="p">,</span>
+                       <span class="n">component</span><span class="p">,</span>   <span class="n">integrand</span><span class="p">,</span>      <span class="n">order</span> <span class="p">]</span>
+        <span class="n">options</span>  <span class="o">=</span> <span class="p">[</span>    <span class="kc">None</span><span class="p">,</span>   <span class="kc">None</span><span class="p">,</span>       <span class="kc">None</span><span class="p">,</span>      <span class="kc">None</span><span class="p">,</span>       <span class="kc">None</span><span class="p">,</span>      <span class="kc">None</span><span class="p">,</span> <span class="n">unit_opts</span><span class="p">,</span>
+                            <span class="kc">None</span><span class="p">,</span>  <span class="n">integ_opts</span><span class="p">,</span> <span class="n">order_opts</span> <span class="p">]</span>
+        <span class="n">dtypes</span>  <span class="o">=</span>  <span class="p">[</span>     <span class="nb">int</span><span class="p">,</span>    <span class="nb">str</span><span class="p">,</span>      <span class="n">in_fl</span><span class="p">,</span>   <span class="n">ar_like</span><span class="p">,</span>    <span class="n">ar_like</span><span class="p">,</span>   <span class="n">ar_like</span><span class="p">,</span>       <span class="nb">str</span><span class="p">,</span>
+                            <span class="nb">bool</span><span class="p">,</span>         <span class="nb">str</span><span class="p">,</span>        <span class="nb">str</span> <span class="p">]</span>
+
+        <span class="n">ParSet</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pars</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="n">values</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="n">options</span><span class="p">,</span> <span class="n">dtypes</span><span class="o">=</span><span class="n">dtypes</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check</span><span class="p">()</span>
+
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a string representation of the bandpass filter.&quot;&quot;&quot;</span>
+        <span class="n">summary</span> <span class="o">=</span> <span class="s1">&#39;index     : </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;index&#39;</span><span class="p">])</span>
+        <span class="n">summary</span> <span class="o">+=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">name      : </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;restwave&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">summary</span> <span class="o">+=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">restwave  : </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;restwave&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;primary&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">summary</span> <span class="o">+=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">primary   : </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;primary&#39;</span><span class="p">])</span>
+        <span class="n">summary</span> <span class="o">+=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">blueside  : </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;blueside&#39;</span><span class="p">])</span>
+        <span class="n">summary</span> <span class="o">+=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">redside   : </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;redside&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">summary</span> <span class="o">+=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">units     : </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;component&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">summary</span> <span class="o">+=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">component : </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;component&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;integrand&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">summary</span> <span class="o">+=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">integrand : </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;integrand&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;order&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">summary</span> <span class="o">+=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">order     : </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;order&#39;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">summary</span>
+
+
+<div class="viewcode-block" id="BandPassFilterPar._check"><a class="viewcode-back" href="../../../mangadap.proc.bandpassfilter.html#mangadap.proc.bandpassfilter.BandPassFilterPar._check">[docs]</a>    <span class="k">def</span> <span class="nf">_check</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check the parameter list:</span>
+<span class="sd">            </span>
+<span class="sd">            - Make sure arrays only have two elements.</span>
+
+<span class="sd">        .. todo::</span>
+<span class="sd">            - Add check to __setitem__()?</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: Raised if one of the conditions above are not</span>
+<span class="sd">                met.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;primary&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;primary&#39;</span><span class="p">])</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Primary passband must have two and only two elements.&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;blueside&#39;</span><span class="p">])</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Blue sideband must have two and only two elements.&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;redside&#39;</span><span class="p">])</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Red sideband must have two and only two elements.&#39;</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="passband_median"><a class="viewcode-back" href="../../../mangadap.proc.bandpassfilter.html#mangadap.proc.bandpassfilter.passband_median">[docs]</a><span class="k">def</span> <span class="nf">passband_median</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Determine the median of the y values within the passband</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Ensure that y is a numpy array and compress it if it&#39;s a masked</span>
+    <span class="c1"># array</span>
+    <span class="n">_x</span> <span class="o">=</span> <span class="n">x</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">)</span> <span class="k">else</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">_y</span> <span class="o">=</span> <span class="n">y</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">)</span> <span class="k">else</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">_x</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">_y</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Can only provide one-dimensional vectors.&#39;</span><span class="p">)</span>
+    <span class="n">mask</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">getmaskarray</span><span class="p">(</span><span class="n">_x</span><span class="p">)</span> <span class="o">|</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">getmaskarray</span><span class="p">(</span><span class="n">_y</span><span class="p">)</span>
+    <span class="n">_y</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">masked</span>
+    <span class="n">_y</span> <span class="o">=</span> <span class="n">_y</span><span class="o">.</span><span class="n">compressed</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">_y</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;No elements remain in the passband.&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="mf">0.0</span>
+
+    <span class="k">if</span> <span class="n">passband</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">_y</span><span class="p">)</span>
+
+    <span class="n">_x</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">masked</span>
+    <span class="n">_x</span> <span class="o">=</span> <span class="n">_x</span><span class="o">.</span><span class="n">compressed</span><span class="p">()</span>
+
+    <span class="n">indx</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span> <span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">_x</span><span class="o">.</span><span class="n">size</span><span class="p">)[</span><span class="n">numpy</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">_x</span> <span class="o">&gt;</span> <span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">_x</span> <span class="o">&lt;</span> <span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">])]</span>
+                                <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">passband</span> <span class="p">])</span>
+    <span class="n">nonzero</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span> <span class="nb">len</span><span class="p">(</span><span class="n">ii</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">ii</span> <span class="ow">in</span> <span class="n">indx</span> <span class="p">])</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">numpy</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">nonzero</span><span class="p">):</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Returning empty passbands with median values of 0!&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span> <span class="mf">0.0</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ii</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">numpy</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">_y</span><span class="p">[</span><span class="n">ii</span><span class="p">])</span> <span class="k">for</span> <span class="n">ii</span> <span class="ow">in</span> <span class="n">indx</span> <span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="pixel_fraction_in_passband"><a class="viewcode-back" href="../../../mangadap.proc.bandpassfilter.html#mangadap.proc.bandpassfilter.pixel_fraction_in_passband">[docs]</a><span class="k">def</span> <span class="nf">pixel_fraction_in_passband</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">passband</span><span class="p">,</span> <span class="n">dx</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get the width of each x interval to include in the passband</span>
+<span class="sd">    integral.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">((</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span><span class="o">-</span><span class="n">passband</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">/</span><span class="n">dx</span><span class="p">)</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="p">((</span><span class="n">passband</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">x</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="n">dx</span><span class="p">)</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="mf">1.0</span></div>
+
+
+<div class="viewcode-block" id="passband_integral"><a class="viewcode-back" href="../../../mangadap.proc.bandpassfilter.html#mangadap.proc.bandpassfilter.passband_integral">[docs]</a><span class="k">def</span> <span class="nf">passband_integral</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">borders</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="mf">10.0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Determine the integral of a discrete set of data over a passband</span>
+<span class="sd">    accounting for fractional pixels.</span>
+
+<span class="sd">    If borders = True, the x values are the borders of the interval over</span>
+<span class="sd">    which y is measured.  These can be non-uniform.  In this case, the</span>
+<span class="sd">    number of x values must be N+1 for N y values.</span>
+<span class="sd">    </span>
+<span class="sd">    Otherwise, the x values are expected to be uniformly sampled either</span>
+<span class="sd">    linearly or geometrically.  In this case, x can be either a two</span>
+<span class="sd">    element vector giving the (geometric) centers of the first and last</span>
+<span class="sd">    sample interval or a vector with the N samples.  In either case,</span>
+<span class="sd">    :func:`mangadap.util.instrument._pixel_borders` is used to determine</span>
+<span class="sd">    the borders of the sample intervals.</span>
+
+<span class="sd">    If the passband is None, the integral is determined across all data.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Ensure that y is a numpy array, fill any masked values with 0s,</span>
+    <span class="c1"># and check its shape</span>
+    <span class="n">_y</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">filled</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">)</span> <span class="k">else</span> <span class="n">numpy</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> 
+    <span class="n">_x</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">_x</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">_y</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Can only provide one-dimensional vectors.&#39;</span><span class="p">)</span>
+    <span class="c1"># Check the input and calculate the pixel borders</span>
+    <span class="k">if</span> <span class="n">borders</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">_x</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">_y</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Must provide N+1 borders for N samples.&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">borders</span><span class="p">:</span>
+        <span class="n">_x</span><span class="p">,</span> <span class="n">dx</span> <span class="o">=</span> <span class="n">_pixel_borders</span><span class="p">(</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">x</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]),</span> <span class="n">_y</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="n">log</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">passband</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">_y</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">_x</span><span class="p">))</span>
+    <span class="n">_passband</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">passband</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">_passband</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Can only handle passband arrays of 1 or 2 dimensions.&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">_passband</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Passband(s) must have shape N_bands x 2.&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Interval for each sample</span>
+    <span class="n">dx</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">_x</span><span class="p">)</span>
+
+    <span class="c1"># Get the integral over a single passband</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">_passband</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">inband_dx</span> <span class="o">=</span> <span class="n">pixel_fraction_in_passband</span><span class="p">(</span><span class="n">_x</span><span class="p">,</span> <span class="n">_passband</span><span class="p">,</span> <span class="n">dx</span><span class="p">)</span><span class="o">*</span><span class="n">dx</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># Get the integral over all passbands</span>
+        <span class="n">inband_dx</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">_passband</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">y</span><span class="o">.</span><span class="n">size</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">pb</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">_passband</span><span class="p">):</span>
+            <span class="n">inband_dx</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">pixel_fraction_in_passband</span><span class="p">(</span><span class="n">_x</span><span class="p">,</span> <span class="n">pb</span><span class="p">,</span> <span class="n">dx</span><span class="p">)</span><span class="o">*</span><span class="n">dx</span>
+    <span class="c1"># Sum of y*dx</span>
+    <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">_y</span><span class="p">,</span> <span class="n">inband_dx</span><span class="o">.</span><span class="n">T</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="passband_integrated_width"><a class="viewcode-back" href="../../../mangadap.proc.bandpassfilter.html#mangadap.proc.bandpassfilter.passband_integrated_width">[docs]</a><span class="k">def</span> <span class="nf">passband_integrated_width</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="mf">10.0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Determine the integrated width of the passband, accounting for masked pixels.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">unity</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">unity</span><span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">getmaskarray</span><span class="p">(</span><span class="n">y</span><span class="p">))]</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="k">return</span> <span class="n">passband_integral</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">unity</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="n">passband</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="n">log</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="passband_integrated_mean"><a class="viewcode-back" href="../../../mangadap.proc.bandpassfilter.html#mangadap.proc.bandpassfilter.passband_integrated_mean">[docs]</a><span class="k">def</span> <span class="nf">passband_integrated_mean</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">err</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="mf">10.0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Determine the integrated mean over a (set of) passband(s).  Nominal</span>
+<span class="sd">    errors are returned if err is provided.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Get the passband interval, accounting for masked pixels</span>
+    <span class="n">interval</span> <span class="o">=</span> <span class="n">passband_integrated_width</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="n">passband</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="n">log</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">)</span>
+    <span class="n">interval</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">(</span><span class="n">interval</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">absolute</span><span class="p">(</span><span class="n">interval</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">))</span>
+
+    <span class="c1"># Get the integral of y over the passband</span>
+    <span class="n">integral</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">(</span><span class="n">passband_integral</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="n">passband</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="n">log</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">))</span>
+    
+    <span class="c1"># Return the integrated mean, and the error if possible</span>
+    <span class="k">if</span> <span class="n">err</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">integral</span><span class="o">/</span><span class="n">interval</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="n">err_integral</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">(</span><span class="n">passband_integral</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">err</span><span class="p">),</span> <span class="n">passband</span><span class="o">=</span><span class="n">passband</span><span class="p">,</span>
+                                        <span class="n">log</span><span class="o">=</span><span class="n">log</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">integral</span><span class="o">/</span><span class="n">interval</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">err_integral</span><span class="p">)</span><span class="o">/</span><span class="n">interval</span></div>
+
+
+<div class="viewcode-block" id="passband_weighted_mean"><a class="viewcode-back" href="../../../mangadap.proc.bandpassfilter.html#mangadap.proc.bandpassfilter.passband_weighted_mean">[docs]</a><span class="k">def</span> <span class="nf">passband_weighted_mean</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">yerr</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">zerr</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="mf">10.0</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Determine the y-weighted integral of z over the passband; i.e.,</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        \frac{\int_{x_1}^{x_2} y z dx}{\int_{x_1}_{x_2} y dx}.</span>
+<span class="sd">    </span>
+<span class="sd">    Nominal errors are returned if err is provided.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Get the passband interval, accounting for masked pixels</span>
+    <span class="n">weighted_integral</span> <span class="o">=</span> <span class="n">passband_integral</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">z</span><span class="o">*</span><span class="n">y</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="n">passband</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="n">log</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">)</span>
+    <span class="n">integral</span> <span class="o">=</span> <span class="n">passband_integral</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="n">passband</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="n">log</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">)</span>
+    <span class="n">integral</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">(</span><span class="n">integral</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">absolute</span><span class="p">(</span><span class="n">integral</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">yerr</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">zerr</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">weighted_integral</span><span class="o">/</span><span class="n">integral</span><span class="p">,</span> <span class="kc">None</span>
+
+    <span class="n">weighted_integral</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">(</span><span class="n">weighted_integral</span><span class="p">,</span>
+                                        <span class="n">mask</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">absolute</span><span class="p">(</span><span class="n">weighted_integral</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">))</span>
+
+    <span class="n">werr</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">z</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">yerr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">werr</span> <span class="o">+=</span> <span class="n">z</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">yerr</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">zerr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">werr</span> <span class="o">+=</span> <span class="n">y</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">zerr</span><span class="p">)</span>
+    <span class="n">weighted_integral_err</span> <span class="o">=</span> <span class="n">passband_integral</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">werr</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="n">passband</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="n">log</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">)</span>
+
+    <span class="n">integral_err</span> <span class="o">=</span> <span class="mi">0</span> <span class="k">if</span> <span class="n">yerr</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">passband_integral</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">yerr</span><span class="p">),</span>
+                                                            <span class="n">passband</span><span class="o">=</span><span class="n">passband</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="n">log</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">)</span>
+    <span class="n">weighted_mean</span> <span class="o">=</span> <span class="n">weighted_integral</span><span class="o">/</span><span class="n">integral</span>
+    <span class="n">weighted_mean_err</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span>
+                            <span class="n">weighted_integral_err</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">weighted_mean</span><span class="o">/</span><span class="n">weighted_integral</span><span class="p">)</span> \
+                                    <span class="o">+</span> <span class="n">integral_err</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">weighted_mean</span><span class="o">/</span><span class="n">integral</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">weighted_mean</span><span class="p">,</span> <span class="n">weighted_mean_err</span></div>
+
+
+<div class="viewcode-block" id="pseudocontinuum"><a class="viewcode-back" href="../../../mangadap.proc.bandpassfilter.html#mangadap.proc.bandpassfilter.pseudocontinuum">[docs]</a><span class="k">def</span> <span class="nf">pseudocontinuum</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">err</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">weighted_center</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get the pseudocontinua in a set of passbands for a single vector (y)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Calculate the pseudo-continua in the sidebands</span>
+    <span class="n">continuum</span><span class="p">,</span> <span class="n">continuum_error</span> <span class="o">=</span> <span class="n">passband_integrated_mean</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="n">passband</span><span class="p">,</span> <span class="n">err</span><span class="o">=</span><span class="n">err</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="n">log</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">weighted_center</span><span class="p">:</span>
+        <span class="n">band_center</span><span class="p">,</span> <span class="n">_wc_err</span> <span class="o">=</span> <span class="n">passband_weighted_mean</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="n">passband</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="n">log</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">band_center</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">if</span> <span class="n">passband</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">numpy</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">passband</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># Calculate the fraction of the band that is covered by unmasked</span>
+    <span class="c1"># pixels</span>
+    <span class="n">interval_frac</span> <span class="o">=</span> <span class="n">passband_integrated_width</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="n">passband</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="n">log</span><span class="p">)</span> \
+                            <span class="o">/</span> <span class="n">numpy</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">passband</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+
+<span class="c1">#    pyplot.step(x, y, where=&#39;mid&#39;, color=&#39;k&#39;, lw=0.5, zorder=1)</span>
+<span class="c1">#    pyplot.scatter(band_center, continuum, marker=&#39;.&#39;, s=50,</span>
+<span class="c1">#                   color=&#39;b&#39;, lw=0, zorder=3)</span>
+<span class="c1">#    pyplot.show()</span>
+
+    <span class="k">return</span> <span class="n">band_center</span><span class="p">,</span> <span class="n">continuum</span><span class="p">,</span> <span class="n">continuum_error</span><span class="p">,</span> <span class="n">interval_frac</span> <span class="o">&lt;</span> <span class="mf">1.0</span><span class="p">,</span> \
+                <span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">interval_frac</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="emission_line_equivalent_width"><a class="viewcode-back" href="../../../mangadap.proc.bandpassfilter.html#mangadap.proc.bandpassfilter.emission_line_equivalent_width">[docs]</a><span class="k">def</span> <span class="nf">emission_line_equivalent_width</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">bluebands</span><span class="p">,</span> <span class="n">redbands</span><span class="p">,</span> <span class="n">line_centroid</span><span class="p">,</span> <span class="n">line_flux</span><span class="p">,</span>
+                                   <span class="n">ivar</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">redshift</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                   <span class="n">line_flux_err</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">include_band</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute the equivalent width for emission lines provided the</span>
+<span class="sd">    spectra and the previously measured line flux.</span>
+
+<span class="sd">    Args:</span>
+
+<span class="sd">        wave (numpy.ndarray): Vector (1D array) with the observed</span>
+<span class="sd">            wavelength of each spectrum in angstroms.</span>
+<span class="sd">        flux (numpy.ndarray): 1 or 2D array with the observed flux</span>
+<span class="sd">            density (units in per angstrom) with size Nspec x Nwave.</span>
+<span class="sd">        blueside (numpy.ndarray): Wavelength limits for the blue</span>
+<span class="sd">            sidebands in angstroms, with size Nbands x 2.</span>
+<span class="sd">        redside (numpy.ndarray): Wavelength limits for the red sidebands</span>
+<span class="sd">            in angstroms, with size Nbands x 2.</span>
+<span class="sd">        line_centroid (numpy.ndarray): Wavelengths at which to sample</span>
+<span class="sd">            the continuum for the equivalent width measurement.  Can be</span>
+<span class="sd">            anything, but should typically be the *observed* wavelength</span>
+<span class="sd">            of line center in angstroms, with size Nspec x Nband.</span>
+<span class="sd">        line_flux (numpy.ndarray): Integrated flux of the emission</span>
+<span class="sd">            feature with size Nspec x Nband.</span>
+<span class="sd">        ivar (numpy.ndarray): (**Optional**) Inverse variance in the</span>
+<span class="sd">            observed flux, with shape that matches flux.  Default</span>
+<span class="sd">            ignores error calculation.  **Currently the equivalent width</span>
+<span class="sd">            errors do not account for errors in the continuum</span>
+<span class="sd">            characterization beneath the line.  So this ivar array is</span>
+<span class="sd">            ignored!**</span>
+<span class="sd">        mask (numpy.ndarray): (**Optional**) Boolean bad-pixel mask:</span>
+<span class="sd">            True values are considered to be bad pixels.  Default</span>
+<span class="sd">            assumes all pixels are good.</span>
+<span class="sd">        log (bool): (**Optional**) Boolean that the spectra are</span>
+<span class="sd">            logarithmically sampled in wavelength.  Default is True.</span>
+<span class="sd">        redshift (numpy.ndarray): (**Optional**) Redshift of each</span>
+<span class="sd">            spectrum and each bandpass.  If a single vector is provided,</span>
+<span class="sd">            the length must match the number of provided spectra; if an</span>
+<span class="sd">            array is provided, the shape must be (Nspec,Nband).  By</span>
+<span class="sd">            default, all measurements are done assuming the redshift is</span>
+<span class="sd">            0 (i.e., that the observed and rest frames are identical).</span>
+<span class="sd">        line_flux_err (numpy.ndarray): (**Optional**) Errors in the line</span>
+<span class="sd">            flux, with size Nspec x Nband.  Default is to ignore the</span>
+<span class="sd">            error propagation.</span>
+<span class="sd">        include_band (numpy.ndarray): (**Optional**) Boolean array with</span>
+<span class="sd">            size Nspec x Nband used to select which bands to use in the</span>
+<span class="sd">            calculation for each spectrum.  Default is to include all</span>
+<span class="sd">            bands for all spectra. </span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        numpy.ndarray: Six arrays all with size Nspec x Nbands:</span>
+<span class="sd">            - the passband median in the blue and red sidebands</span>
+<span class="sd">            - a boolean array if the sideband medians were measured and</span>
+<span class="sd">              have positive values</span>
+<span class="sd">            - The continuum value used to calculate the equivalent width</span>
+<span class="sd">            - The equivalent with measurements and their errors; the</span>
+<span class="sd">              errors are 0 if no line flux errors were provided</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: Raised if the shapes of the input arrays are not</span>
+<span class="sd">            correct.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Errors in the flux are currently not</span>
+    <span class="k">if</span> <span class="n">ivar</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Equivalent width does not propagate error from continuum measurement.&#39;</span><span class="p">)</span>
+    <span class="n">noise</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1"># Convert the flux to a masked array, if necessary</span>
+    <span class="k">if</span> <span class="n">mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">mask</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">flux</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Input mask must have the same shape as the flux array.&#39;</span><span class="p">)</span>
+    <span class="n">_flux</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">atleast_2d</span><span class="p">(</span><span class="n">flux</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">flux</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">)</span> \
+                                        <span class="k">else</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">(</span><span class="n">flux</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">))</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">wave</span><span class="p">)</span> <span class="o">!=</span> <span class="n">_flux</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Wavelength vector does not match shape of the flux array.&#39;</span><span class="p">)</span>
+
+<span class="c1">#    # Convert the ivar to 1-sigma error, if available</span>
+<span class="c1">#    if ivar is None:</span>
+<span class="c1">#        noise = None</span>
+<span class="c1">#    else:</span>
+<span class="c1">#        if ivar.shape != _flux.shape:</span>
+<span class="c1">#            raise ValueError(&#39;Input ivar array must be the same shape as the flux array.&#39;)</span>
+<span class="c1">#        _ivar = ivar if isinstance(ivar, numpy.ma.MaskedArray) else \</span>
+<span class="c1">#                    numpy.ma.MaskedArray(ivar, mask=numpy.ma.getmaskarray(_flux))</span>
+<span class="c1">#        noise = numpy.ma.sqrt(1.0 /_ivar)</span>
+
+    <span class="c1"># Check band definitions</span>
+    <span class="k">if</span> <span class="n">bluebands</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Input bands must have shape Nband x 2.&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">bluebands</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">redbands</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Input side bands do not have the same shape.&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Check the shapes</span>
+    <span class="n">nspec</span> <span class="o">=</span> <span class="n">flux</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">nbands</span> <span class="o">=</span> <span class="n">bluebands</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">expected_shape</span> <span class="o">=</span> <span class="p">(</span><span class="n">nspec</span><span class="p">,</span> <span class="n">nbands</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">line_centroid</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">expected_shape</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Line centroid array must have shape: </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">expected_shape</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">line_flux</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">expected_shape</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Line flux array must have shape: </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">expected_shape</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">line_flux_err</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">line_flux_err</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">expected_shape</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Line flux error array must have shape: </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">expected_shape</span><span class="p">))</span>
+
+    <span class="c1"># Check the input band flags</span>
+    <span class="n">_include_band</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">expected_shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">bool</span><span class="p">)</span> \
+                        <span class="k">if</span> <span class="n">include_band</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">include_band</span>
+    <span class="k">if</span> <span class="n">_include_band</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">expected_shape</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Bands flags array must have shape: </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">expected_shape</span><span class="p">))</span>
+
+    <span class="c1"># Check the input redshifts</span>
+    <span class="n">_redshift</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">expected_shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">)</span> <span class="k">if</span> <span class="n">redshift</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">redshift</span>
+    <span class="k">if</span> <span class="n">_redshift</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">_redshift</span><span class="p">)</span> <span class="o">!=</span> <span class="n">nspec</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Must provide at least one redshift per input spectrum.&#39;</span><span class="p">)</span>
+        <span class="n">_redshift</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">_redshift</span><span class="p">]</span><span class="o">*</span><span class="n">nbands</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+    <span class="k">if</span> <span class="n">_redshift</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="n">_redshift</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">expected_shape</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Provided redshift array does not match the number of spectra and bands.&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Initialize the output data</span>
+    <span class="n">bmed</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">expected_shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">rmed</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">expected_shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">pos</span> <span class="o">=</span> <span class="n">_include_band</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">ewcont</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">expected_shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">ew</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">expected_shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">ewerr</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">expected_shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+
+    <span class="c1"># Measure the pseudo-continuum in the sidebands</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nspec</span><span class="p">):</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Measuring emission-line equivalent widths in spectrum: </span><span class="si">{0}</span><span class="s1">/</span><span class="si">{1}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="n">nspec</span><span class="p">),</span>
+              <span class="n">end</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\r</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Spectra to use</span>
+        <span class="n">spec</span> <span class="o">=</span> <span class="n">_flux</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span>
+        <span class="n">_noise</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">noise</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">noise</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span>
+
+        <span class="c1"># Bands to use</span>
+        <span class="n">indx</span> <span class="o">=</span> <span class="n">_include_band</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span>
+
+        <span class="c1"># Shift the bands to the appropriate redshift</span>
+        <span class="n">_bluebands</span> <span class="o">=</span> <span class="n">bluebands</span><span class="p">[</span><span class="n">indx</span><span class="p">,:]</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span><span class="o">+</span><span class="n">_redshift</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">indx</span><span class="p">,</span><span class="kc">None</span><span class="p">])</span>
+        <span class="n">_redbands</span> <span class="o">=</span> <span class="n">redbands</span><span class="p">[</span><span class="n">indx</span><span class="p">,:]</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span><span class="o">+</span><span class="n">_redshift</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">indx</span><span class="p">,</span><span class="kc">None</span><span class="p">])</span>
+
+        <span class="c1"># Center of each band (for all bands!)</span>
+        <span class="n">bcen</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">bluebands</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span><span class="o">+</span><span class="n">_redshift</span><span class="p">[</span><span class="n">i</span><span class="p">,:,</span><span class="kc">None</span><span class="p">]),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">rcen</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">redbands</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span><span class="o">+</span><span class="n">_redshift</span><span class="p">[</span><span class="n">i</span><span class="p">,:,</span><span class="kc">None</span><span class="p">]),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># Median of each band</span>
+        <span class="n">bmed</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="n">passband_median</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">_flux</span><span class="p">[</span><span class="n">i</span><span class="p">,:],</span> <span class="n">passband</span><span class="o">=</span><span class="n">_bluebands</span><span class="p">)</span>
+        <span class="n">rmed</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="n">passband_median</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">_flux</span><span class="p">[</span><span class="n">i</span><span class="p">,:],</span> <span class="n">passband</span><span class="o">=</span><span class="n">_redbands</span><span class="p">)</span>
+
+        <span class="c1"># Construct the continuum level at the center of the main</span>
+        <span class="c1"># band</span>
+        <span class="n">pos</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">indx</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">bmed</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">rmed</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+
+        <span class="c1"># Continuum at line centroid</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="p">(</span><span class="n">rmed</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">pos</span><span class="p">[</span><span class="n">i</span><span class="p">,:]]</span> <span class="o">-</span> <span class="n">bmed</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">pos</span><span class="p">[</span><span class="n">i</span><span class="p">,:]])</span><span class="o">/</span><span class="p">(</span><span class="n">rcen</span><span class="p">[</span><span class="n">pos</span><span class="p">[</span><span class="n">i</span><span class="p">,:]]</span> <span class="o">-</span> <span class="n">bcen</span><span class="p">[</span><span class="n">pos</span><span class="p">[</span><span class="n">i</span><span class="p">,:]])</span>
+        <span class="n">ewcont</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">pos</span><span class="p">[</span><span class="n">i</span><span class="p">,:]]</span> <span class="o">=</span> <span class="n">m</span><span class="o">*</span><span class="p">(</span><span class="n">line_centroid</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">pos</span><span class="p">[</span><span class="n">i</span><span class="p">,:]]</span> <span class="o">-</span> <span class="n">bcen</span><span class="p">[</span><span class="n">pos</span><span class="p">[</span><span class="n">i</span><span class="p">,:]])</span> <span class="o">+</span> <span class="n">bmed</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">pos</span><span class="p">[</span><span class="n">i</span><span class="p">,:]]</span>
+
+        <span class="c1"># Compute the equivalent width</span>
+        <span class="n">ew</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">pos</span><span class="p">[</span><span class="n">i</span><span class="p">,:]]</span> <span class="o">=</span> <span class="n">line_flux</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">pos</span><span class="p">[</span><span class="n">i</span><span class="p">,:]]</span> <span class="o">/</span> <span class="n">ewcont</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">pos</span><span class="p">[</span><span class="n">i</span><span class="p">,:]]</span>
+        <span class="n">ewerr</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">pos</span><span class="p">[</span><span class="n">i</span><span class="p">,:]]</span> <span class="o">=</span> <span class="mf">0.0</span> <span class="k">if</span> <span class="n">line_flux_err</span> <span class="ow">is</span> <span class="kc">None</span> \
+                                <span class="k">else</span> <span class="n">line_flux_err</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">pos</span><span class="p">[</span><span class="n">i</span><span class="p">,:]]</span> <span class="o">/</span> <span class="n">ewcont</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">pos</span><span class="p">[</span><span class="n">i</span><span class="p">,:]]</span>
+
+        <span class="c1"># Correct for the redshift</span>
+        <span class="n">ew</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">pos</span><span class="p">[</span><span class="n">i</span><span class="p">,:]]</span> <span class="o">/=</span> <span class="p">(</span><span class="mf">1.0</span><span class="o">+</span><span class="n">_redshift</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">pos</span><span class="p">[</span><span class="n">i</span><span class="p">,:]])</span>
+        <span class="n">ewerr</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">pos</span><span class="p">[</span><span class="n">i</span><span class="p">,:]]</span> <span class="o">/=</span> <span class="p">(</span><span class="mf">1.0</span><span class="o">+</span><span class="n">_redshift</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">pos</span><span class="p">[</span><span class="n">i</span><span class="p">,:]])</span>
+
+<span class="c1">#        pyplot.step(wave, _flux[i,:], where=&#39;mid&#39;, color=&#39;k&#39;, lw=0.5, zorder=1)</span>
+<span class="c1">#        pyplot.scatter(bcen[indx], bmed[i,indx], marker=&#39;.&#39;, s=50, color=&#39;b&#39;, lw=0, zorder=3)</span>
+<span class="c1">#        pyplot.scatter(rcen[indx], rmed[i,indx], marker=&#39;.&#39;, s=50, color=&#39;r&#39;, lw=0, zorder=3)</span>
+<span class="c1">#        pyplot.scatter(line_centroid[i,indx], ewcont[i,indx], marker=&#39;.&#39;, s=50, color=&#39;g&#39;,</span>
+<span class="c1">#                       lw=0, zorder=3)</span>
+<span class="c1">#        pyplot.show()</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Measuring emission-line equivalent widths in spectrum: </span><span class="si">{0}</span><span class="s1">/</span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">nspec</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">bmed</span><span class="p">,</span> <span class="n">rmed</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">ewcont</span><span class="p">,</span> <span class="n">ew</span><span class="p">,</span> <span class="n">ewerr</span></div>
+
+
+</pre></div>
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, SDSS-IV/MaNGA Pipeline Group.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'2.2.2',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

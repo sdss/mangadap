@@ -1,0 +1,1609 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mangadap.util.covariance &mdash; mangadap 2.2.2 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../search.html"/>
+    <link rel="top" title="mangadap 2.2.2 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> mangadap
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../mangadap.html">mangadap package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">mangadap</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>mangadap.util.covariance</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for mangadap.util.covariance</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Licensed under a 3-clause BSD style license - see LICENSE.rst</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Defines a class used to store and interface with covariance matrices.</span>
+
+<span class="sd">*License*:</span>
+<span class="sd">    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group</span>
+<span class="sd">        Licensed under BSD 3-clause license - see LICENSE.rst</span>
+
+<span class="sd">*Source location*:</span>
+<span class="sd">    $MANGADAP_DIR/python/mangadap/util/covariance.py</span>
+
+<span class="sd">*Imports and python version compliance*:</span>
+<span class="sd">    ::</span>
+
+<span class="sd">        from __future__ import division</span>
+<span class="sd">        from __future__ import print_function</span>
+<span class="sd">        from __future__ import absolute_import</span>
+<span class="sd">        from __future__ import unicode_literals</span>
+<span class="sd">    </span>
+<span class="sd">        import sys</span>
+<span class="sd">        if sys.version &gt; &#39;3&#39;:</span>
+<span class="sd">            long = int</span>
+<span class="sd">    </span>
+<span class="sd">        import numpy</span>
+<span class="sd">        from scipy import sparse</span>
+<span class="sd">        from astropy.io import fits</span>
+<span class="sd">        from matplotlib import pyplot</span>
+
+<span class="sd">*Usage examples*:</span>
+<span class="sd">    You can calculate the covariance matrix for a given wavelength</span>
+<span class="sd">    channel in a :class:`mangadap.drpfits.DRPFits` object::</span>
+
+<span class="sd">        # Access the DRP RSS file</span>
+<span class="sd">        from mangadap.drpfits import DRPFits</span>
+<span class="sd">        drpf = DRPFits(7495, 12703, &#39;RSS&#39;, read=True)</span>
+
+<span class="sd">        # Calculate a single covariance matrix</span>
+<span class="sd">        C = drpf.covariance_matrix(2281)</span>
+
+<span class="sd">        # Show the result in an image</span>
+<span class="sd">        C.show()</span>
+
+<span class="sd">        # Access specific elements</span>
+<span class="sd">        print(C[0,0])</span>
+
+<span class="sd">        # Convert to a &#39;dense&#39; array</span>
+<span class="sd">        dense_C = C.toarray()</span>
+
+<span class="sd">        # Get the triplets of the non-zero elements</span>
+<span class="sd">        i, j, v = C.find()</span>
+
+<span class="sd">        # Write it to disk (clobber existing file)</span>
+<span class="sd">        C.write(&#39;test_covariance.fits&#39;, clobber=True)</span>
+
+<span class="sd">    The covariance matrix is stored in &quot;coordinate&quot; format in a fits</span>
+<span class="sd">    binary table.  Since the covariance matrix is symmetric by</span>
+<span class="sd">    definition, only those non-zero elements in the upper triangle</span>
+<span class="sd">    (:math:`C_{ij}` where :math:`i\leq j`) are saved (in memory or on</span>
+<span class="sd">    disk).  You can read an existing covariance matrix fits file::</span>
+
+<span class="sd">        from mangadap.util.covariance import Covariance</span>
+<span class="sd">        C = Covariance(ifile=&#39;test_covariance.fits&#39;)</span>
+
+<span class="sd">    You can calculate a set of covariance matrices or the full</span>
+<span class="sd">    covariance cube::</span>
+
+<span class="sd">        # Access the DRP RSS file</span>
+<span class="sd">        from mangadap.drpfits import DRPFits</span>
+<span class="sd">        drpf = DRPFits(7495, 12703, &#39;RSS&#39;, read=True)</span>
+
+<span class="sd">        # Calculate the full cube</span>
+<span class="sd">        CC = drpf.covariance_cube()             # BEWARE: This may require a LOT of memory</span>
+
+<span class="sd">        # Calculate fewer but many covariance matrices</span>
+<span class="sd">        channels = [ 0, 1000, 2000, 3000, 4000 ]</span>
+<span class="sd">        C = drpf.covariance_cube(channels=channels)</span>
+
+<span class="sd">        # Access individual elements</span>
+<span class="sd">        print(C[0,0,0])</span>
+<span class="sd">        print(C[0,0,1000])</span>
+
+<span class="sd">        # Write the full cube, or set of channels</span>
+<span class="sd">        CC.write(&#39;full_covariance_cube.fits&#39;)   # BEWARE: This will be a BIG file</span>
+<span class="sd">        C.write(&#39;covariance_channel_set.fits&#39;)</span>
+
+<span class="sd">    Although you can access the data in the covariance matrix as</span>
+<span class="sd">    explained above, this is generally inefficient because the</span>
+<span class="sd">    :func:`Covariance.__getitem__` function currently cannot handle</span>
+<span class="sd">    slices.  If you need to perform operations with the covariance</span>
+<span class="sd">    matrix, you&#39;re better off working with the :attr:`Covariance.cov`</span>
+<span class="sd">    attribute directly.  To do this, you won&#39;t be able to use the</span>
+<span class="sd">    aliasing of the channel indices for 3D covariance matrices.</span>
+
+<span class="sd">    The :class:`Covariance` class also allows you to toggle between</span>
+<span class="sd">    accessing the matrix as a true covariance matrix, or by splitting</span>
+<span class="sd">    the matrix into its variance and correlation components.  For</span>
+<span class="sd">    example,::</span>
+
+<span class="sd">        # Get the covariance matrix for a single wavelength channel</span>
+<span class="sd">        from mangadap.drpfits import DRPFits</span>
+<span class="sd">        drpf = DRPFits(7495, 12703, &#39;RSS&#39;, read=True)</span>
+<span class="sd">        C = drpf.covariance_matrix(2281)</span>
+
+<span class="sd">        # Show the covariance matrix before and after changing it to a</span>
+<span class="sd">        # correlation matrix</span>
+<span class="sd">        C.show()</span>
+<span class="sd">        C.to_correlation()</span>
+<span class="sd">        C.show()</span>
+<span class="sd">        print(C.is_correlation)</span>
+<span class="sd">        C.revert_correlation()</span>
+
+<span class="sd">    Covariance matrices that have been converted to correlation matrices</span>
+<span class="sd">    can be written and read in without issue.  See</span>
+<span class="sd">    :func:`Covariance.write` and :func:`Covariance.read`.  For example::</span>
+
+<span class="sd">        # Get the covariance matrix for a single wavelength channel</span>
+<span class="sd">        import numpy</span>
+<span class="sd">        from mangadap.util.covariance import Covariance</span>
+<span class="sd">        from mangadap.drpfits import DRPFits</span>
+
+<span class="sd">        drpf = DRPFits(7495, 12703, &#39;RSS&#39;, read=True)</span>
+<span class="sd">        channels = [ 0, 1000, 2000, 3000, 4000 ]</span>
+<span class="sd">        Cov = drpf.covariance_cube(channels=channels)</span>
+
+<span class="sd">        Cov.to_correlation()</span>
+<span class="sd">        Cov.show(channel=2000)</span>
+<span class="sd">        Cov.write(&#39;correlation_matrix.fits&#39;, clobber=True)</span>
+<span class="sd">        Cov.revert_correlation()</span>
+
+<span class="sd">        Corr = Covariance(ifile=&#39;correlation_matrix.fits&#39;)</span>
+<span class="sd">        Corr.revert_correlation()</span>
+
+<span class="sd">        assert not (numpy.abs(numpy.sum(Cov.toarray(channel=2000) </span>
+<span class="sd">                            - Corr.toarray(channel=2000))) &gt; 0.0)</span>
+
+<span class="sd">*Revision history*:</span>
+<span class="sd">    | **23 Feb 2015**: Original Implementation by K. Westfall (KBW)</span>
+<span class="sd">    | **04 Aug 2015**: (KBW) Sphinx documentation and minor edits.</span>
+<span class="sd">    | **29 Mar 2016**: (KBW) Allow the object to flip between a true</span>
+<span class="sd">        covariance matrix or a correlation matrix with saved variances.</span>
+<span class="sd">        Allow for a function that only returns the</span>
+<span class="sd">        `astropy.io.fits.BinTableHDU`_ object with the coordinate-format</span>
+<span class="sd">        covariance data.</span>
+<span class="sd">    | **06 Apr 2016**: (KBW) Allow :func:`Covariance.read` to read from</span>
+<span class="sd">        a file or an `astropy.io.fits.hdu.hdulist.HDUList`_ object, and</span>
+<span class="sd">        allow the specification of the extensions to read the header,</span>
+<span class="sd">        covariance, and plane data.</span>
+<span class="sd">    | **23 Feb 2017**: (KBW) Major revisions: Use DAPFitsUtil to</span>
+<span class="sd">        read/write the HDUList.  Output is always a correlation matrix.</span>
+<span class="sd">        Rearrange ordering of 3D covariance matrices to reflect the</span>
+<span class="sd">        ordering in the DRPFits cube and the DAP Maps channels.  Change</span>
+<span class="sd">        *plane* keyword to *channel*.  Change the format of the</span>
+<span class="sd">        covariance matrices when written/read from a file to match what</span>
+<span class="sd">        is done by the DRP.  Change read method to :func:`from_fits`</span>
+<span class="sd">        class method.  Include :func:`from_samples` class method.</span>
+
+<span class="sd">.. todo::</span>
+<span class="sd">    - Allow for calculation of the inverse of the covariance matrix.</span>
+<span class="sd">    - Instead of 3D covariance cubes being an array of sparse objects,</span>
+<span class="sd">      make the whole thing a sparse array.</span>
+
+<span class="sd">.. _scipy.sparse.csr_matrix: http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html</span>
+<span class="sd">.. _scipy.sparse.coo_matrix: http://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.sparse.coo_matrix.html</span>
+<span class="sd">.. _scipy.sparse.triu: http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.triu.html</span>
+<span class="sd">.. _matplotlib.pyplot.imshow: http://matplotlib.org/api/pyplot_api.html#matplotlib.pyplot.imshow</span>
+<span class="sd">.. _astropy.io.fits.Header: http://docs.astropy.org/en/stable/io/fits/api/headers.html#header</span>
+<span class="sd">.. _astropy.io.fits.BinTableHDU: http://docs.astropy.org/en/stable/io/fits/api/tables.html#astropy.io.fits.BinTableHDU</span>
+<span class="sd">.. _astropy.io.fits.Column: http://docs.astropy.org/en/stable/io/fits/api/tables.html#astropy.io.fits.Column</span>
+<span class="sd">.. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html</span>
+
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version</span> <span class="o">&gt;</span> <span class="s1">&#39;3&#39;</span><span class="p">:</span>
+    <span class="n">long</span> <span class="o">=</span> <span class="nb">int</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="k">import</span> <span class="n">sparse</span>
+<span class="kn">from</span> <span class="nn">astropy.io</span> <span class="k">import</span> <span class="n">fits</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="k">import</span> <span class="n">pyplot</span>
+
+<span class="kn">from</span> <span class="nn">.fitsutil</span> <span class="k">import</span> <span class="n">DAPFitsUtil</span>
+
+<div class="viewcode-block" id="Covariance"><a class="viewcode-back" href="../../../mangadap.util.covariance.html#mangadap.util.covariance.Covariance">[docs]</a><span class="k">class</span> <span class="nc">Covariance</span><span class="p">:</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A general utility for storing, manipulating, and file I/O of large</span>
+<span class="sd">    but sparse covariance matrices.</span>
+
+<span class="sd">    Works under the assumption that covariance matrices are symmetric by</span>
+<span class="sd">    definition.</span>
+
+<span class="sd">    .. todo::</span>
+<span class="sd">        - Can create empty object.  Does this make sense?</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        inp (`scipy.sparse.csr_matrix`_ or numpy.ndarray):</span>
+<span class="sd">            Covariance matrix to store.  Input **must** be coviariance</span>
+<span class="sd">            data, not correlation data.  Data type can be either a</span>
+<span class="sd">            single `scipy.sparse.csr_matrix`_ object or a 1-D array of</span>
+<span class="sd">            them.  Assumes all sparse matrices in the input ndarray have</span>
+<span class="sd">            the same size.  If None, the covariance object is</span>
+<span class="sd">            instantiated empty.</span>
+<span class="sd">        input_indx (numpy.ndarray): (**Optional**) If *inp* is an array of</span>
+<span class="sd">            `scipy.sparse.csr_matrix`_ objects, this is an integer</span>
+<span class="sd">            array specifying a pseudo-set of indices to use instead of</span>
+<span class="sd">            the direct index in the array.  I.e., if *inp* is an array</span>
+<span class="sd">            with 5 elements, one can provide a 5-element array for</span>
+<span class="sd">            :attr:`input_indx` that are used instead as the designated</span>
+<span class="sd">            index for the covariance matrices.  See:</span>
+<span class="sd">            :func:`__getitem__`, :func:`_grab_true_index`.</span>
+<span class="sd">        impose_triu (bool): (**Optional**) Flag to force the</span>
+<span class="sd">            `scipy.sparse.csr_matrix`_ object to only be the upper</span>
+<span class="sd">            triangle of the covariance matrix.  The covariance matrix is</span>
+<span class="sd">            symmetric such that C_ij = C_ji, so it&#39;s not necessary to</span>
+<span class="sd">            keep both values.  This flag will force a call to</span>
+<span class="sd">            `scipy.sparse.triu`_ when setting the covariance matrix.</span>
+<span class="sd">            Otherwise, the input matrix is **assumed** to only have the</span>
+<span class="sd">            upper triangle of numbers.</span>
+<span class="sd">        correlation (bool): (**Optional**) Convert the input to a</span>
+<span class="sd">            correlation matix.  The input **must** be the covariance</span>
+<span class="sd">            matrix.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        TypeError: Raised if the input array is not one-dimensional or</span>
+<span class="sd">            the input covariance matrix are not</span>
+<span class="sd">            `scipy.sparse.csr_matrix`_ objects.</span>
+<span class="sd">        Exception: Raised if the :attr:`input_indx` either does not have</span>
+<span class="sd">            the correct size or is not required due to the covariance</span>
+<span class="sd">            object being a single matrix.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        cov (`scipy.sparse.csr_matrix`_ or numpy.ndarray): The</span>
+<span class="sd">            covariance matrix stored in sparse format.</span>
+<span class="sd">        shape (tuple): Shape of the full array.</span>
+<span class="sd">        dim (int): The number of dimensions in the covariance matrix.</span>
+<span class="sd">            This can either be 2 (a single covariance matrix) or 3</span>
+<span class="sd">            (multiple covariance matrices).</span>
+<span class="sd">        nnz (int): The number of non-zero covariance matrix elements.</span>
+<span class="sd">        input_indx (numpy.ndarray): If :attr:`cov` is an array of</span>
+<span class="sd">            `scipy.sparse.csr_matrix`_ objects, this is an integer</span>
+<span class="sd">            array specifying a pseudo-set of indices to use instead of</span>
+<span class="sd">            the direct index in the array.  I.e., if :attr:`cov` is an</span>
+<span class="sd">            array with 5 elements, one can provide a 5-element array for</span>
+<span class="sd">            :attr:`input_indx` that are used instead as the designated</span>
+<span class="sd">            index for the covariance matrices.  See:</span>
+<span class="sd">            :func:`__getitem__`, :func:`_grab_true_index`.</span>
+<span class="sd">        inv (`scipy.sparse.csr_matrix`_ or numpy.ndarray): The inverse</span>
+<span class="sd">            of the covariance matrix.  **This is not currently</span>
+<span class="sd">            calculated!**</span>
+<span class="sd">        var (numpy.ndarray): Array with the variance provided by the</span>
+<span class="sd">            diagonal of the/each covariance matrix.  This is only</span>
+<span class="sd">            populated if necessary, either by being requested</span>
+<span class="sd">            (:func:`variance`) or if needed to convert between</span>
+<span class="sd">            covariance and correlation matrices.</span>
+<span class="sd">        is_correlation (bool): Flag that the covariance matrix has been</span>
+<span class="sd">            saved as a variance vector and a correlation matrix.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inp</span><span class="p">,</span> <span class="n">input_indx</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">impose_triu</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">correlation</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">cov</span> <span class="o">=</span> <span class="n">inp</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shape</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nnz</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_indx</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inv</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">var</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_correlation</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="c1"># Return empty object</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cov</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="c1"># Set the dimensionality, check that each element of the array</span>
+        <span class="c1"># has the correct type, count the number of non-zero covariance</span>
+        <span class="c1"># values, and (if necessary) initialize the indices for each</span>
+        <span class="c1"># covariance matrix</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cov</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cov</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Input ndarray can only be one-dimensional&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">=</span> <span class="mi">3</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">nnz</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">for</span> <span class="n">cov</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cov</span><span class="p">:</span>
+<span class="c1">#                print(type(cov))</span>
+<span class="c1">#                print(sparse.isspmatrix_csr(cov))</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">sparse</span><span class="o">.</span><span class="n">isspmatrix_csr</span><span class="p">(</span><span class="n">cov</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Input covariance matrix (or elements) must be csr_matrices.&#39;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">nnz</span> <span class="o">+=</span> <span class="n">cov</span><span class="o">.</span><span class="n">nnz</span>
+
+            <span class="k">if</span> <span class="n">input_indx</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">input_indx</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cov</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Input array and input index array must be the same size.&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">numpy</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">input_indx</span><span class="p">)</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="n">input_indx</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Input list of indices must all be unique!&#39;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">input_indx</span> <span class="o">=</span> <span class="n">input_indx</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">input_indx</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cov</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">=</span> <span class="mi">2</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">sparse</span><span class="o">.</span><span class="n">isspmatrix_csr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cov</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Input covariance matrix (or elements) must be csr matrices.&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">nnz</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cov</span><span class="o">.</span><span class="n">nnz</span>
+            <span class="k">if</span> <span class="n">input_indx</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Input indices only allowed when allocating multiple matrices.&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Set the shape of the full matrix/cube</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_shape</span><span class="p">()</span>
+
+        <span class="c1"># If requested, impose that the input matrix only have values in</span>
+        <span class="c1"># its upper triangle.</span>
+        <span class="k">if</span> <span class="n">impose_triu</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_impose_upper_triangle</span><span class="p">()</span>
+
+        <span class="c1"># Set the inverse of the covariance matrix</span>
+        <span class="c1"># **NOT IMPLEMENTED YET**</span>
+
+        <span class="c1"># Set the variance array and the correlation matrix flag</span>
+        <span class="k">if</span> <span class="n">correlation</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">to_correlation</span><span class="p">()</span>
+
+    
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the covariance value at a provided 2D or 3D position.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            *args (pointer): 2 or 3 integers designating the covariance</span>
+<span class="sd">                value to return.  Number of values must match the</span>
+<span class="sd">                dimensionality of the object.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            float: The value of the covariance matrix at the designated</span>
+<span class="sd">            index.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            IndexError: Raised if the number of arguments does not match</span>
+<span class="sd">                the dimensionality of the object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">indx</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">indx</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">IndexError</span><span class="p">(</span><span class="s1">&#39;Incorrect number of dimensions!&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cov</span><span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">indx</span><span class="p">))]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cov</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_grab_true_index</span><span class="p">(</span><span class="n">indx</span><span class="p">[</span><span class="mi">2</span><span class="p">])][</span><span class="nb">tuple</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">indx</span><span class="p">[:</span><span class="mi">2</span><span class="p">]))]</span>
+
+
+<div class="viewcode-block" id="Covariance.from_samples"><a class="viewcode-back" href="../../../mangadap.util.covariance.html#mangadap.util.covariance.Covariance.from_samples">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_samples</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">samples</span><span class="p">,</span> <span class="n">cov_tol</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rho_tol</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        Define a covariance object using descrete samples from an</span>
+<span class="sd">        N-dimensional parameter space using the numpy covariance</span>
+<span class="sd">        function.  The shape of the input array must be :math:`N_{\rm</span>
+<span class="sd">        par}\times N_{\rm samples}`.</span>
+
+<span class="sd">        Any correlation coefficent less than tol is forced to zero, if</span>
+<span class="sd">        tol is provided.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">samples</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Input samples for covariance matrix must be a 2D array!&#39;</span><span class="p">)</span>
+
+        <span class="n">npar</span> <span class="o">=</span> <span class="n">samples</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">covariance</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">cov</span><span class="p">(</span><span class="n">samples</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">rho_tol</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">variance</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">covariance</span><span class="p">)</span>
+            <span class="n">correlation</span> <span class="o">=</span> <span class="n">covariance</span> <span class="o">/</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">variance</span><span class="p">[:,</span><span class="kc">None</span><span class="p">]</span><span class="o">*</span><span class="n">variance</span><span class="p">[</span><span class="kc">None</span><span class="p">,:])</span>
+            <span class="n">correlation</span><span class="p">[</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">absolute</span><span class="p">(</span><span class="n">correlation</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">rho_tol</span> <span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+            <span class="n">covariance</span> <span class="o">=</span> <span class="n">correlation</span><span class="o">.</span><span class="n">filled</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span> \
+                            <span class="o">*</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">variance</span><span class="p">[:,</span><span class="kc">None</span><span class="p">]</span><span class="o">*</span><span class="n">variance</span><span class="p">[</span><span class="kc">None</span><span class="p">,:])</span><span class="o">.</span><span class="n">filled</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">cov_tol</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">covariance</span><span class="p">[</span> <span class="n">covariance</span> <span class="o">&lt;</span> <span class="n">cov_tol</span> <span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+        <span class="n">indx</span> <span class="o">=</span> <span class="n">covariance</span> <span class="o">&gt;</span> <span class="mf">0.0</span>
+        <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">npar</span><span class="p">),</span> <span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">npar</span><span class="p">),</span> <span class="n">indexing</span><span class="o">=</span><span class="s1">&#39;ij&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">sparse</span><span class="o">.</span><span class="n">coo_matrix</span><span class="p">((</span><span class="n">covariance</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span>
+                                        <span class="p">(</span><span class="n">i</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">j</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span><span class="o">.</span><span class="n">ravel</span><span class="p">())),</span>
+                                     <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">npar</span><span class="p">,</span><span class="n">npar</span><span class="p">))</span><span class="o">.</span><span class="n">tocsr</span><span class="p">(),</span> <span class="n">impose_triu</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Covariance.from_fits"><a class="viewcode-back" href="../../../mangadap.util.covariance.html#mangadap.util.covariance.Covariance.from_fits">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_fits</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">ivar_ext</span><span class="o">=</span><span class="s1">&#39;IVAR&#39;</span><span class="p">,</span> <span class="n">covar_ext</span><span class="o">=</span><span class="s1">&#39;CORREL&#39;</span><span class="p">,</span> <span class="n">row_major</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                  <span class="n">impose_triu</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">correlation</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">quiet</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Read an existing covariance object previously written to disk;</span>
+<span class="sd">        see :func:`write`.  The class can read covariance data written</span>
+<span class="sd">        by other programs *as long as they have a commensurate format*.</span>
+<span class="sd">        </span>
+<span class="sd">        If the extension names and column names are correct,</span>
+<span class="sd">        :class:`Covariance` can read fits files that were not</span>
+<span class="sd">        necessarily produced by the class itself.  This is useful for</span>
+<span class="sd">        MaNGA DAP products that include the covariance data in among</span>
+<span class="sd">        other output products.  Because of this, :func:`output_hdus` and</span>
+<span class="sd">        :func:`output_fits_data` are provided to produce the data that</span>
+<span class="sd">        can be placed in any fits file.</span>
+
+<span class="sd">        The function determines if the output data were reordered by</span>
+<span class="sd">        checking the number of binary columns.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            source (str or `astropy.io.fits.hdu.hdulist.HDUList`_):</span>
+<span class="sd">                Initialize the object using an</span>
+<span class="sd">                `astropy.io.fits.hdu.hdulist.HDUList`_ object or path to</span>
+<span class="sd">                a fits file.</span>
+<span class="sd">            ivar_ext (str): (**Optional**) If reading the data from</span>
+<span class="sd">                *source*, this is the name of the extension with the</span>
+<span class="sd">                inverse variance data.  Default is &#39;IVAR&#39;.  If None,</span>
+<span class="sd">                the variance is taken as unity.</span>
+<span class="sd">            covar_ext (str): (**Optional**) If reading the data from</span>
+<span class="sd">                *source*, this is the name of the extension with</span>
+<span class="sd">                covariance data.  Default is &#39;CORREL&#39;.</span>
+<span class="sd">            row_major (bool): (**Optional**) If reading the data from an</span>
+<span class="sd">                HDUList, this sets if the data arrays have been</span>
+<span class="sd">                rearranged into a python-native (row-major) structure.</span>
+<span class="sd">                See</span>
+<span class="sd">                :func:`mangadap.util.fitsutil.DAPFitsUtil.transpose_image_data`.</span>
+<span class="sd">                Default is False.</span>
+<span class="sd">            impose_triu (bool): (**Optional**) Flag to force the</span>
+<span class="sd">                `scipy.sparse.csr_matrix`_ object to only be the upper</span>
+<span class="sd">                triangle of the covariance matrix.  The covariance</span>
+<span class="sd">                matrix is symmetric such that C_ij = C_ji, so it&#39;s not</span>
+<span class="sd">                necessary to keep both values.  This flag will force a</span>
+<span class="sd">                call to `scipy.sparse.triu`_ when setting the covariance</span>
+<span class="sd">                matrix.  Otherwise, the input matrix is **assumed** to</span>
+<span class="sd">                only have the upper triangle of numbers.</span>
+<span class="sd">            correlation (bool): (**Optional**) Return the matrix as a</span>
+<span class="sd">                correlation matrix.  Default (False) is to use the data</span>
+<span class="sd">                (always saved in correlation format; see :func:`write`)</span>
+<span class="sd">                to construct the covariance matrix.</span>
+<span class="sd">            quiet (bool): (**Optional**) Suppress terminal output.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">fits</span><span class="o">.</span><span class="n">HDUList</span><span class="p">):</span>
+            <span class="n">hdu</span> <span class="o">=</span> <span class="n">source</span> <span class="k">if</span> <span class="n">row_major</span> <span class="k">else</span> <span class="n">DAPFitsUtil</span><span class="o">.</span><span class="n">transpose_image_data</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+<span class="c1">#                hdu = fits.open(source)</span>
+                <span class="n">hdu</span> <span class="o">=</span> <span class="n">DAPFitsUtil</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Problem reading covariance from file.&#39;</span><span class="p">)</span>
+                <span class="k">return</span>
+
+        <span class="c1"># Read a coordinate data</span>
+        <span class="n">shape</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">hdu</span><span class="p">[</span><span class="n">covar_ext</span><span class="p">]</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;COVSHAPE&#39;</span><span class="p">])</span>
+        <span class="n">dim</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span>
+        <span class="n">reshape</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">hdu</span><span class="p">[</span><span class="n">covar_ext</span><span class="p">]</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">names</span><span class="p">)</span> <span class="ow">in</span> <span class="p">[</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span> <span class="p">]</span>
+        <span class="k">if</span> <span class="n">reshape</span><span class="p">:</span>
+            <span class="n">i_c1</span><span class="p">,</span> <span class="n">i_c2</span><span class="p">,</span> <span class="n">j_c1</span><span class="p">,</span> <span class="n">j_c2</span><span class="p">,</span> <span class="n">rhoij</span> <span class="o">=</span> <span class="p">[</span> <span class="n">hdu</span><span class="p">[</span><span class="n">covar_ext</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">ext</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="k">for</span> <span class="n">ext</span> <span class="ow">in</span>
+                                                <span class="p">[</span> <span class="s1">&#39;INDXI_C1&#39;</span><span class="p">,</span> <span class="s1">&#39;INDXI_C2&#39;</span><span class="p">,</span> <span class="s1">&#39;INDXJ_C1&#39;</span><span class="p">,</span> <span class="s1">&#39;INDXJ_C2&#39;</span><span class="p">,</span>
+                                                  <span class="s1">&#39;RHOIJ&#39;</span> <span class="p">]</span> <span class="p">]</span>
+            <span class="n">n</span> <span class="o">=</span> <span class="n">Covariance</span><span class="o">.</span><span class="n">reshape_size</span><span class="p">(</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">i</span> <span class="o">=</span> <span class="n">Covariance</span><span class="o">.</span><span class="n">ravel_indices</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">i_c1</span><span class="p">,</span> <span class="n">i_c2</span><span class="p">)</span>
+            <span class="n">j</span> <span class="o">=</span> <span class="n">Covariance</span><span class="o">.</span><span class="n">ravel_indices</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">j_c1</span><span class="p">,</span> <span class="n">j_c2</span><span class="p">)</span>
+<span class="c1">#            for k in range(len(i_c1)):</span>
+<span class="c1">#                print(&#39;{0:&gt;3} {1:&gt;3} {2:&gt;3} {3:&gt;3}&#39;.format(i_c1[k], i_c2[k], j_c1[k], j_c2[k]))</span>
+<span class="c1">#            for k in range(len(i)):</span>
+<span class="c1">#                print(&#39;{0:&gt;3} {1:&gt;3}&#39;.format(i[k], j[k]))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">rhoij</span> <span class="o">=</span> <span class="p">[</span> <span class="n">hdu</span><span class="p">[</span><span class="n">covar_ext</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">ext</span><span class="p">]</span> <span class="k">for</span> <span class="n">ext</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;INDXI&#39;</span><span class="p">,</span> <span class="s1">&#39;INDXJ&#39;</span><span class="p">,</span> <span class="s1">&#39;RHOIJ&#39;</span><span class="p">]</span> <span class="p">]</span>
+
+        <span class="c1"># Number of non-zero elements</span>
+        <span class="n">nnz</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">rhoij</span><span class="p">)</span>
+
+        <span class="c1"># Set correlation data</span>
+        <span class="k">if</span> <span class="n">dim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">var</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span> <span class="k">if</span> <span class="n">ivar_ext</span> <span class="ow">is</span> <span class="kc">None</span> \
+                    <span class="k">else</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">hdu</span><span class="p">[</span><span class="n">ivar_ext</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">filled</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span>
+            <span class="n">cij</span> <span class="o">=</span> <span class="n">rhoij</span> <span class="o">*</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span> <span class="n">var</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">var</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="p">)</span>
+            <span class="n">cov</span> <span class="o">=</span> <span class="n">sparse</span><span class="o">.</span><span class="n">coo_matrix</span><span class="p">(</span> <span class="p">(</span><span class="n">cij</span><span class="p">,</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)),</span> <span class="n">shape</span><span class="o">=</span><span class="n">shape</span><span class="p">)</span><span class="o">.</span><span class="n">tocsr</span><span class="p">()</span>
+            <span class="n">input_indx</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">k</span> <span class="o">=</span> <span class="n">hdu</span><span class="p">[</span><span class="n">covar_ext</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;INDXK&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">input_indx</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">input_indx</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Number of unique channel indices is greater than provided shape.&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">input_indx</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Fewer unique channels than all available.&#39;</span><span class="p">)</span>
+
+            <span class="n">var</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span> <span class="k">if</span> <span class="n">ivar_ext</span> <span class="ow">is</span> <span class="kc">None</span> \
+                    <span class="k">else</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">hdu</span><span class="p">[</span><span class="n">ivar_ext</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">filled</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span>
+            <span class="n">cov</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">sparse</span><span class="o">.</span><span class="n">csr</span><span class="o">.</span><span class="n">csr_matrix</span><span class="p">)</span>
+<span class="c1">#            print(cov.shape)</span>
+<span class="c1">#            xx = 0</span>
+            <span class="k">for</span> <span class="n">ii</span><span class="p">,</span> <span class="n">uk</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">input_indx</span><span class="p">):</span>
+                <span class="n">indx</span> <span class="o">=</span> <span class="n">k</span> <span class="o">==</span> <span class="n">uk</span>
+                <span class="n">cij</span> <span class="o">=</span> <span class="n">rhoij</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">*</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span> <span class="n">var</span><span class="p">[</span><span class="n">i</span><span class="p">[</span><span class="n">indx</span><span class="p">],</span><span class="n">ii</span><span class="p">]</span><span class="o">*</span><span class="n">var</span><span class="p">[</span><span class="n">j</span><span class="p">[</span><span class="n">indx</span><span class="p">],</span><span class="n">ii</span><span class="p">]</span> <span class="p">)</span>
+                <span class="n">cov</span><span class="p">[</span><span class="n">ii</span><span class="p">]</span> <span class="o">=</span> <span class="n">sparse</span><span class="o">.</span><span class="n">coo_matrix</span><span class="p">((</span><span class="n">cij</span><span class="p">,</span> <span class="p">(</span><span class="n">i</span><span class="p">[</span><span class="n">indx</span><span class="p">],</span> <span class="n">j</span><span class="p">[</span><span class="n">indx</span><span class="p">])),</span> <span class="n">shape</span><span class="o">=</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">tocsr</span><span class="p">()</span>
+<span class="c1">#                xx += 1</span>
+<span class="c1">#            print(xx)</span>
+
+        <span class="c1"># Report</span>
+        <span class="c1"># TODO: Convert report to use logging</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">quiet</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Read covariance cube:&#39;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;       output type: </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s1">&#39;Correlation&#39;</span> \
+                                                    <span class="k">if</span> <span class="n">correlation</span> <span class="k">else</span> <span class="s1">&#39;Covariance&#39;</span><span class="p">))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;        dimensions: </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dim</span><span class="p">))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;             shape: </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">shape</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">dim</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;    pseudo-indices: &#39;</span><span class="p">,</span> <span class="n">input_indx</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;   non-zero values: </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">nnz</span><span class="p">))</span>
+
+<span class="c1">#        print(type(cov))</span>
+<span class="c1">#        if dim == 3:</span>
+<span class="c1">#            print(type(cov[0]))</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">cov</span><span class="p">,</span> <span class="n">input_indx</span><span class="o">=</span><span class="n">input_indx</span><span class="p">,</span> <span class="n">correlation</span><span class="o">=</span><span class="n">correlation</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Covariance.from_matrix_multiplication"><a class="viewcode-back" href="../../../mangadap.util.covariance.html#mangadap.util.covariance.Covariance.from_matrix_multiplication">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_matrix_multiplication</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">Sigma</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Construct the covariance matrix that results from a matrix multiplication.</span>
+<span class="sd">        </span>
+<span class="sd">        The matrix multiplication should be of the form:</span>
+
+<span class="sd">        .. math::</span>
+<span class="sd">        </span>
+<span class="sd">            {\mathbf T} \times {\mathbf X} = {\mathbf Y}</span>
+
+<span class="sd">        where :math:`{\mathbf T}` is a transfer matrix of size</span>
+<span class="sd">        :math:`N_y\times N_x`, :math:`{\mathbf X}` is a vector of size</span>
+<span class="sd">        :math:`N_x`, and :math:`{\mathbf Y}` is the vector of length</span>
+<span class="sd">        :math:`{N_y}` that results from the multiplication.</span>
+
+<span class="sd">        The covariance matrix is then</span>
+<span class="sd">        </span>
+<span class="sd">        .. math::</span>
+
+<span class="sd">             {\mathbf C} = {\mathbf T} \times {\mathbf \Sigma} \times</span>
+<span class="sd">             {\mathbf T}^{\rm T},</span>
+<span class="sd">        </span>
+<span class="sd">        where :math:`{\mathbf \Sigma}` is the covariance matrix for the</span>
+<span class="sd">        elements of :math:`{\mathbf X}`.  If `Sigma` is provided as a</span>
+<span class="sd">        vector of length :math:`N_x`, it is assumed that the elements of</span>
+<span class="sd">        :math:`{\mathbf X}` are independent and the provided vector</span>
+<span class="sd">        gives the variance in each element; i.e., the provided data</span>
+<span class="sd">        represent the diagonal of :math:`{\mathbf \Sigma}`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Input transfer matrix must be two-dimensional.&#39;</span><span class="p">)</span>
+        <span class="n">nx</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">Sigma</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="n">nx</span><span class="p">,</span><span class="n">nx</span><span class="p">)</span> <span class="ow">and</span> <span class="n">Sigma</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="n">nx</span><span class="p">,):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Shape of input variance matrix must be either &#39;</span>
+                             <span class="s1">&#39;(</span><span class="si">{0}</span><span class="s1">,</span><span class="si">{0}</span><span class="s1">) or (</span><span class="si">{0}</span><span class="s1">,).&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">nx</span><span class="p">))</span>
+        <span class="c1"># If it isn&#39;t already, convert T to a csr_matrix</span>
+        <span class="n">_T</span> <span class="o">=</span> <span class="n">T</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">sparse</span><span class="o">.</span><span class="n">csr</span><span class="o">.</span><span class="n">csr_matrix</span><span class="p">)</span> <span class="k">else</span> <span class="n">sparse</span><span class="o">.</span><span class="n">csr_matrix</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+        <span class="c1"># Set the covariance matrix in X</span>
+        <span class="n">_Sigma</span> <span class="o">=</span> <span class="n">sparse</span><span class="o">.</span><span class="n">coo_matrix</span><span class="p">(</span> <span class="p">(</span><span class="n">Sigma</span><span class="p">,</span> <span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">nx</span><span class="p">),</span><span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">nx</span><span class="p">))),</span>
+                                   <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">nx</span><span class="p">,</span><span class="n">nx</span><span class="p">))</span><span class="o">.</span><span class="n">tocsr</span><span class="p">()</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">Sigma</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> \
+                    <span class="k">else</span> <span class="p">(</span><span class="n">Sigma</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">Sigma</span><span class="p">,</span> <span class="n">sparse</span><span class="o">.</span><span class="n">csr</span><span class="o">.</span><span class="n">csr_matrix</span><span class="p">)</span> \
+                                <span class="k">else</span> <span class="n">sparse</span><span class="o">.</span><span class="n">csr_matrix</span><span class="p">(</span><span class="n">Sigma</span><span class="p">))</span>
+        <span class="c1"># Construct the covariance matrix</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span> <span class="n">sparse</span><span class="o">.</span><span class="n">triu</span><span class="p">(</span><span class="n">_T</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">_Sigma</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">_T</span><span class="o">.</span><span class="n">transpose</span><span class="p">())))</span><span class="o">.</span><span class="n">tocsr</span><span class="p">()</span> <span class="p">)</span></div>
+
+        
+<div class="viewcode-block" id="Covariance._grab_true_index"><a class="viewcode-back" href="../../../mangadap.util.covariance.html#mangadap.util.covariance.Covariance._grab_true_index">[docs]</a>    <span class="k">def</span> <span class="nf">_grab_true_index</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inp</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        In the case of a 3D array, return the true array-element index</span>
+<span class="sd">        given the pseudo index.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            inp (int): Requested index to convert to the real index in</span>
+<span class="sd">                the stored array of covariance matrices.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            int: The index in the stored array of the requested</span>
+<span class="sd">            covariance matrix.</span>
+
+<span class="sd">        .. todo::</span>
+<span class="sd">            Search operation is inefficient.  Apparently a better option</span>
+<span class="sd">            is a feature request for numpy 2.0</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_indx</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">i</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_indx</span> <span class="o">==</span> <span class="n">inp</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">i</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">IndexError</span><span class="p">(</span><span class="s1">&#39;Invalid index: </span><span class="si">{0}</span><span class="s1">!&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">inp</span><span class="p">))</span>
+            <span class="k">return</span> <span class="n">i</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">inp</span></div>
+
+
+<div class="viewcode-block" id="Covariance._set_shape"><a class="viewcode-back" href="../../../mangadap.util.covariance.html#mangadap.util.covariance.Covariance._set_shape">[docs]</a>    <span class="k">def</span> <span class="nf">_set_shape</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set the 2D or 3D shape of the covariance matrix.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shape</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cov</span><span class="o">.</span><span class="n">shape</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shape</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cov</span><span class="o">.</span><span class="n">ravel</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">shape</span></div>
+
+
+<div class="viewcode-block" id="Covariance._impose_upper_triangle"><a class="viewcode-back" href="../../../mangadap.util.covariance.html#mangadap.util.covariance.Covariance._impose_upper_triangle">[docs]</a>    <span class="k">def</span> <span class="nf">_impose_upper_triangle</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Force :attr:`cov` to only contain non-zero elements in its upper</span>
+<span class="sd">        triangle.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cov</span> <span class="o">=</span> <span class="n">sparse</span><span class="o">.</span><span class="n">triu</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cov</span><span class="p">)</span><span class="o">.</span><span class="n">tocsr</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">nnz</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cov</span><span class="o">.</span><span class="n">nnz</span>
+            <span class="k">return</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">nnz</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cov</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">sparse</span><span class="o">.</span><span class="n">triu</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cov</span><span class="p">[</span><span class="n">i</span><span class="p">])</span><span class="o">.</span><span class="n">tocsr</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">nnz</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cov</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">nnz</span></div>
+
+
+<div class="viewcode-block" id="Covariance._with_lower_triangle"><a class="viewcode-back" href="../../../mangadap.util.covariance.html#mangadap.util.covariance.Covariance._with_lower_triangle">[docs]</a>    <span class="k">def</span> <span class="nf">_with_lower_triangle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">channel</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a `scipy.sparse.csr_matrix`_ object with both its</span>
+<span class="sd">        upper and lower triangle filled, ensuring that they are</span>
+<span class="sd">        symmetric.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            channel (int): (**Optional**) The pseudo-index of the</span>
+<span class="sd">                covariance matrix to return.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            `scipy.sparse.csr_matrix`_: The sparse matrix with both the</span>
+<span class="sd">            upper and lower triangles filled (with symmetric</span>
+<span class="sd">            information).</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: Raised if the object is 3D and *channel* is not</span>
+<span class="sd">                provided.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">a</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cov</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">channel</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Must define channel!  Use channel=...&#39;</span><span class="p">)</span>
+            <span class="n">a</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cov</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_grab_true_index</span><span class="p">(</span><span class="n">channel</span><span class="p">)]</span>
+
+        <span class="k">return</span> <span class="p">(</span><span class="n">sparse</span><span class="o">.</span><span class="n">triu</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="o">+</span> <span class="n">sparse</span><span class="o">.</span><span class="n">triu</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Covariance.reshape_size"><a class="viewcode-back" href="../../../mangadap.util.covariance.html#mangadap.util.covariance.Covariance.reshape_size">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">reshape_size</span><span class="p">(</span><span class="n">size</span><span class="p">):</span>
+        <span class="c1"># Get the size of the square image (and make sure it&#39;s square)</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">size</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">n</span><span class="o">*</span><span class="n">n</span> <span class="o">!=</span> <span class="n">size</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1"> is not the square of an integer!&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">size</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">n</span></div>
+
+
+<div class="viewcode-block" id="Covariance.reshape_indices"><a class="viewcode-back" href="../../../mangadap.util.covariance.html#mangadap.util.covariance.Covariance.reshape_indices">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">reshape_indices</span><span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the indices in the 2D array that results from reshaping a</span>
+<span class="sd">        vector of length size into a square 2D array.  The indices of</span>
+<span class="sd">        interest in the vector are give by i.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="n">Covariance</span><span class="o">.</span><span class="n">reshape_size</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
+        <span class="n">ii</span> <span class="o">=</span> <span class="n">i</span><span class="o">//</span><span class="n">n</span>
+        <span class="k">return</span> <span class="n">ii</span><span class="p">,</span> <span class="n">i</span><span class="o">-</span><span class="n">ii</span><span class="o">*</span><span class="n">n</span></div>
+        
+
+<div class="viewcode-block" id="Covariance.ravel_indices"><a class="viewcode-back" href="../../../mangadap.util.covariance.html#mangadap.util.covariance.Covariance.ravel_indices">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">ravel_indices</span><span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the indices in the 1D vector that results from flattening</span>
+<span class="sd">        a ``size``-by-``size`` square array.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">i</span><span class="o">*</span><span class="n">size</span> <span class="o">+</span> <span class="n">j</span></div>
+
+
+<div class="viewcode-block" id="Covariance.apply_new_variance"><a class="viewcode-back" href="../../../mangadap.util.covariance.html#mangadap.util.covariance.Covariance.apply_new_variance">[docs]</a>    <span class="k">def</span> <span class="nf">apply_new_variance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Using the correlation matrix defined by self, use the provided</span>
+<span class="sd">        variance data to construct a new covariance matrix.</span>
+
+<span class="sd">        The input variance must be of the correct shape.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">var</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Provided variance has incorrect shape.&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Convert to a correlation matrix, if needed</span>
+        <span class="n">is_correlation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_correlation</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">is_correlation</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">to_correlation</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">c</span> <span class="o">=</span> <span class="n">sparse</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cov</span><span class="p">)</span>
+            <span class="n">new_cov</span> <span class="o">=</span> <span class="n">sparse</span><span class="o">.</span><span class="n">coo_matrix</span><span class="p">(</span> <span class="p">(</span><span class="n">c</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">var</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">var</span><span class="p">[</span><span class="n">j</span><span class="p">]),</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">)),</span>
+                                           <span class="n">shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="o">.</span><span class="n">tocsr</span><span class="p">()</span>
+<span class="c1">#            print(type(new_cov))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">new_cov</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">sparse</span><span class="o">.</span><span class="n">csr</span><span class="o">.</span><span class="n">csr_matrix</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
+                <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">c</span> <span class="o">=</span> <span class="n">sparse</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cov</span><span class="p">[</span><span class="n">p</span><span class="p">])</span>
+                <span class="n">new_cov</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="o">=</span> <span class="n">sparse</span><span class="o">.</span><span class="n">coo_matrix</span><span class="p">((</span><span class="n">c</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">var</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">p</span><span class="p">]</span><span class="o">*</span><span class="n">var</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">p</span><span class="p">]),</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">)),</span>
+                                               <span class="n">shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">tocsr</span><span class="p">()</span>
+<span class="c1">#            print(type(new_cov))</span>
+<span class="c1">#            print(type(new_cov[0]))</span>
+
+        <span class="c1"># Revert to covariance matrix, if needed</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">is_correlation</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">revert_correlation</span><span class="p">()</span>
+
+        <span class="c1"># Return a new covariance matrix</span>
+<span class="c1">#        print(&#39;applying new variance&#39;)</span>
+        <span class="k">return</span> <span class="n">Covariance</span><span class="p">(</span><span class="n">new_cov</span><span class="p">,</span> <span class="n">input_indx</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">input_indx</span><span class="p">,</span> <span class="n">correlation</span><span class="o">=</span><span class="n">is_correlation</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Covariance.copy"><a class="viewcode-back" href="../../../mangadap.util.covariance.html#mangadap.util.covariance.Covariance.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a copy of this Covariance object, not a reference to it,</span>
+<span class="sd">        by returning a new Covariance instance with the same data.  Only</span>
+<span class="sd">        sticking point is making sure to keep track of whether the</span>
+<span class="sd">        object was saved as a covariance matrix or as a correlation</span>
+<span class="sd">        matrix with a variance vector.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># If the data is saved as a correlation matrix, first revert to</span>
+        <span class="c1"># a covariance matrix</span>
+        <span class="n">is_correlation</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">is_correlation</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_correlation</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">revert_correlation</span><span class="p">()</span>
+
+        <span class="c1"># Create the new Covariance instance with a copy of the data</span>
+        <span class="n">cp</span> <span class="o">=</span> <span class="n">Covariance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cov</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">input_indx</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">input_indx</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
+
+        <span class="c1"># If necessary, convert the data to a correlation matrix</span>
+        <span class="k">if</span> <span class="n">is_correlation</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">to_correlation</span><span class="p">()</span>
+            <span class="n">cp</span><span class="o">.</span><span class="n">to_correlation</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">cp</span></div>
+
+
+<div class="viewcode-block" id="Covariance.toarray"><a class="viewcode-back" href="../../../mangadap.util.covariance.html#mangadap.util.covariance.Covariance.toarray">[docs]</a>    <span class="k">def</span> <span class="nf">toarray</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">channel</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Convert the covariance to a full array, filled with zeros when</span>
+<span class="sd">        appropriate.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            channel (int): (**Optional**) The pseudo-index of the</span>
+<span class="sd">                covariance matrix to plot.  Required if the covariance</span>
+<span class="sd">                object is 3D.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            numpy.ndarray: Dense array with the full covariance matrix.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">or</span> <span class="n">channel</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_with_lower_triangle</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="n">channel</span><span class="p">))</span><span class="o">.</span><span class="n">toarray</span><span class="p">()</span>
+        
+        <span class="n">arr</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="n">indx</span> <span class="o">=</span> <span class="n">k</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_indx</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_indx</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+            <span class="n">arr</span><span class="p">[:,:,</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_with_lower_triangle</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="n">indx</span><span class="p">))</span><span class="o">.</span><span class="n">toarray</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">arr</span></div>
+        
+
+<div class="viewcode-block" id="Covariance.show"><a class="viewcode-back" href="../../../mangadap.util.covariance.html#mangadap.util.covariance.Covariance.show">[docs]</a>    <span class="k">def</span> <span class="nf">show</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">channel</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">zoom</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ofile</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">log10</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Convert the (selected) covariance matrix to a filled array and</span>
+<span class="sd">        plot the array using `matplotlib.pyplot.imshow`_.  If an output</span>
+<span class="sd">        file is provided, the image is redirected to the designated</span>
+<span class="sd">        output file; otherwise, the image is plotted to the screen.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            channel (int): (**Optional**) The pseudo-index of the</span>
+<span class="sd">                covariance matrix to plot.  Required if the covariance</span>
+<span class="sd">                object is 3D.</span>
+<span class="sd">            zoom (float): (**Optional**) Factor by which to zoom in on</span>
+<span class="sd">                the center of the image by *removing the other regions</span>
+<span class="sd">                of the array*.  E.g. *zoom=2* will show only the central</span>
+<span class="sd">                quarter of the covariance matrix.</span>
+<span class="sd">            ofile (str): (**Optional**) If provided, the array is output</span>
+<span class="sd">                to this file instead of being plotted to the screen.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Convert the covariance matrix to an array</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">toarray</span><span class="p">(</span><span class="n">channel</span><span class="p">)</span>
+
+        <span class="c1"># Remove some fraction of the array to effectively zoom in on</span>
+        <span class="c1"># the center of the covariance matrix</span>
+        <span class="k">if</span> <span class="n">zoom</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">xs</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="o">/</span><span class="n">zoom</span><span class="p">)</span>
+            <span class="n">xe</span> <span class="o">=</span> <span class="n">xs</span> <span class="o">+</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span><span class="o">/</span><span class="n">zoom</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="n">ys</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="o">/</span><span class="n">zoom</span><span class="p">)</span>
+            <span class="n">ye</span> <span class="o">=</span> <span class="n">ys</span> <span class="o">+</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="n">zoom</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="n">a</span> <span class="o">=</span> <span class="n">a</span><span class="p">[</span><span class="n">xs</span><span class="p">:</span><span class="n">xe</span><span class="p">,</span><span class="n">ys</span><span class="p">:</span><span class="n">ye</span><span class="p">]</span>
+
+        <span class="c1"># Print the plot to the screen if no output file is provided.</span>
+        <span class="k">if</span> <span class="n">ofile</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">im</span> <span class="o">=</span> <span class="n">pyplot</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="k">if</span> <span class="n">log10</span> <span class="k">else</span> <span class="n">a</span><span class="p">,</span>
+                               <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">)</span>
+            <span class="n">pyplot</span><span class="o">.</span><span class="n">colorbar</span><span class="p">()</span>
+            <span class="n">pyplot</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+            <span class="k">return</span>
+
+        <span class="c1"># Print the plot to the designated output file</span>
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">pyplot</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">im</span> <span class="o">=</span> <span class="n">pyplot</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="k">if</span> <span class="n">log10</span> <span class="k">else</span> <span class="n">a</span><span class="p">,</span>
+                           <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">)</span>
+        <span class="n">pyplot</span><span class="o">.</span><span class="n">colorbar</span><span class="p">()</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">print_figure</span><span class="p">(</span><span class="n">ofile</span><span class="p">)</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span></div>
+        
+
+<div class="viewcode-block" id="Covariance.find"><a class="viewcode-back" href="../../../mangadap.util.covariance.html#mangadap.util.covariance.Covariance.find">[docs]</a>    <span class="k">def</span> <span class="nf">find</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">channel</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Find the non-zero values in the **full** covariance matrix (not</span>
+<span class="sd">        just the upper triangle).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            channel (int): (**Optional**) The pseudo-index of the</span>
+<span class="sd">                covariance matrix to plot.  Required if the covariance</span>
+<span class="sd">                object is 3D.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            tuple: A tuple of arrays *i*, *j*, and *c*.  The arrays *i*</span>
+<span class="sd">            and *j* contain the index coordinates of the non-zero</span>
+<span class="sd">            values, and *c* contains the values themselves.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">sparse</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_with_lower_triangle</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="n">channel</span><span class="p">))</span></div>
+
+
+<span class="c1">#    def issingular(self):</span>
+<span class="c1">#        if self.dim &gt; 2:</span>
+<span class="c1">#            nsingular = 0</span>
+<span class="c1">#            for cov in self.cov.ravel():</span>
+<span class="c1">#                print(numpy.linalg.cond(sparse.triu(cov).toarray()+sparse.triu(cov,1).T.toarray()))</span>
+<span class="c1">#                print(1/sys.float_info.epsilon)</span>
+<span class="c1">#        else:</span>
+<span class="c1">#            print(numpy.linalg.cond(sparse.triu(self.cov).toarray()+sparse.triu(self.cov,1).T.toarray()))</span>
+<span class="c1">#            print(1/sys.float_info.epsilon)</span>
+
+
+<span class="c1">#   def inverse(self, redo=False):</span>
+
+<span class="c1">#       if self.inv is not None and not redo:</span>
+<span class="c1">#           return self.inv</span>
+
+<span class="c1">#       if self.dim &gt; 2:</span>
+<span class="c1">#           self.inv = numpy.empty(self.shape[:self.dim-2], dtype=sparse.csr.csr_matrix)</span>
+<span class="c1">#           print(self.inv.shape)</span>
+<span class="c1">#           print(type(self.inv[0]))</span>
+<span class="c1">#           for cov, inv in zip(self.cov.ravel(), self.inv.ravel()):</span>
+<span class="c1">#               try:</span>
+<span class="c1">#                   inv = sparse.triu(sparse.csr_matrix( \</span>
+<span class="c1">#                                                   scipy.linalg.inv(sparse.triu(cov).toarray() \</span>
+<span class="c1">#                                                   + sparse.triu(cov,1).T.toarray()))).tocsr()</span>
+<span class="c1">#               except numpy.linalg.linalg.LinAlgError as e:</span>
+<span class="c1">#                   print(&#39;Caught error: {0}&#39;.format(e))</span>
+<span class="c1">#           </span>
+<span class="c1">#       else:</span>
+<span class="c1">#           print(self.cov.nnz)</span>
+<span class="c1">#           try:</span>
+<span class="c1">#               self.inv = sparse.triu(sparse.csr_matrix( \</span>
+<span class="c1">#                                               scipy.linalg.inv(sparse.triu(self.cov).toarray() \</span>
+<span class="c1">#                                               + sparse.triu(self.cov,1).T.toarray()))).tocsr()</span>
+<span class="c1">#           except numpy.linalg.linalg.LinAlgError as e:</span>
+<span class="c1">#               print(&#39;Caught error: {0}&#39;.format(e))</span>
+<span class="c1">#           </span>
+<span class="c1">#       return self.inv</span>
+
+
+<div class="viewcode-block" id="Covariance.output_fits_data"><a class="viewcode-back" href="../../../mangadap.util.covariance.html#mangadap.util.covariance.Covariance.output_fits_data">[docs]</a>    <span class="k">def</span> <span class="nf">output_fits_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reshape</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Construct the data arrays to write to a fits file, providing the</span>
+<span class="sd">        covariance matrix/matrices in coordinate format.</span>
+<span class="sd">        </span>
+<span class="sd">        Regardless of whether or not the current internal data is a</span>
+<span class="sd">        covariance matrix or a correlation matrix, the data is always</span>
+<span class="sd">        returned as a correlation matrix.</span>
+
+<span class="sd">        If the covariance matrix is 2 dimensional, four columns are</span>
+<span class="sd">        output:</span>
+
+<span class="sd">            i, j:  The i,j indices of the covariance matrix.</span>
+
+<span class="sd">            rho_ij: The correlation coefficient between pixels i and j.</span>
+
+<span class="sd">            variance: The variance in each pixel; i.e., the value of</span>
+<span class="sd">                :math:`C_{ii} \forall i`.  If reshape is True, this will</span>
+<span class="sd">                be output as a two-dimenional array.</span>
+
+<span class="sd">        If the covariance matrix is 3-dimensional, one additional column</span>
+<span class="sd">        is output:</span>
+
+<span class="sd">            k:  The k indices of the channels associated with each</span>
+<span class="sd">                covariance matrix.  This is either just the index of the</span>
+<span class="sd">                covariance matrix or the provided pseudo-indices of each</span>
+<span class="sd">                channel.</span>
+
+<span class="sd">        If using the reshape option, the i and j indices are converted</span>
+<span class="sd">        to two columns each providing the indices in the associated</span>
+<span class="sd">        reshaped array with coordinates c1,c2.</span>
+<span class="sd">            </span>
+<span class="sd">        Args:</span>
+<span class="sd">            reshape (bool): (**Optional**) Reshape the output in the</span>
+<span class="sd">                case when *i* and *j* are actually pixels in a</span>
+<span class="sd">                two-dimensional image.  The shape of the image is</span>
+<span class="sd">                expected to be square, such that the shape of the</span>
+<span class="sd">                covariance matrix is :math:`N_x\times N_y`, where</span>
+<span class="sd">                :math:`N_x = N_y`.  Each of the I and J output columns</span>
+<span class="sd">                are then split into two columns according to associate</span>
+<span class="sd">                coordinates, such that there are 8 output columns.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            numpy.ndarray : Either 6 or 8 output arrays depending on if</span>
+<span class="sd">            the data has been reshaped into an image.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Only ever print correlation matrices</span>
+        <span class="n">is_correlation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_correlation</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">is_correlation</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">to_correlation</span><span class="p">()</span>
+
+        <span class="c1"># Get the square size if reshaping</span>
+        <span class="n">reshape_n</span> <span class="o">=</span> <span class="n">Covariance</span><span class="o">.</span><span class="n">reshape_size</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="k">if</span> <span class="n">reshape</span> <span class="k">else</span> <span class="kc">None</span>
+
+        <span class="c1"># Only one covariance matrix</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="c1"># Get the data</span>
+            <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">rhoij</span> <span class="o">=</span> <span class="n">sparse</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cov</span><span class="p">)</span>
+
+            <span class="c1"># If object was originally a covariance matrix, revert it back</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">is_correlation</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">revert_correlation</span><span class="p">()</span>
+
+            <span class="c1"># Return the data</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">reshape</span><span class="p">:</span>
+                <span class="c1"># Returns four arrays</span>
+                <span class="k">return</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">rhoij</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">var</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+            <span class="c1"># Returns six arrays</span>
+            <span class="n">i_c1</span><span class="p">,</span> <span class="n">i_c2</span> <span class="o">=</span> <span class="n">Covariance</span><span class="o">.</span><span class="n">reshape_indices</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">i</span><span class="p">)</span>
+            <span class="n">j_c1</span><span class="p">,</span> <span class="n">j_c2</span> <span class="o">=</span> <span class="n">Covariance</span><span class="o">.</span><span class="n">reshape_indices</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">j</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">i_c1</span><span class="p">,</span> <span class="n">i_c2</span><span class="p">,</span> <span class="n">j_c1</span><span class="p">,</span> <span class="n">j_c2</span><span class="p">,</span> <span class="n">rhoij</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">var</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">reshape_n</span><span class="p">,</span> <span class="n">reshape_n</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="c1"># More than one covariance matrix</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nnz</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+        <span class="n">j</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nnz</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+        <span class="n">k</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nnz</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+        <span class="n">rhoij</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nnz</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="n">ii</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">kk</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="n">nnz</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cov</span><span class="p">[</span><span class="n">kk</span><span class="p">]</span><span class="o">.</span><span class="n">nnz</span>
+            <span class="n">k</span><span class="p">[</span><span class="n">ii</span><span class="p">:</span><span class="n">ii</span><span class="o">+</span><span class="n">nnz</span><span class="p">]</span> <span class="o">=</span> <span class="n">kk</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_indx</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_indx</span><span class="p">[</span><span class="n">kk</span><span class="p">]</span>
+            <span class="n">i</span><span class="p">[</span><span class="n">ii</span><span class="p">:</span><span class="n">ii</span><span class="o">+</span><span class="n">nnz</span><span class="p">],</span> <span class="n">j</span><span class="p">[</span><span class="n">ii</span><span class="p">:</span><span class="n">ii</span><span class="o">+</span><span class="n">nnz</span><span class="p">],</span> <span class="n">rhoij</span><span class="p">[</span><span class="n">ii</span><span class="p">:</span><span class="n">ii</span><span class="o">+</span><span class="n">nnz</span><span class="p">]</span> <span class="o">=</span> <span class="n">sparse</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cov</span><span class="p">[</span><span class="n">kk</span><span class="p">])</span>
+            <span class="n">ii</span> <span class="o">+=</span> <span class="n">nnz</span>
+        
+        <span class="c1"># If object was originally a covariance matrix, revert it back</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">is_correlation</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">revert_correlation</span><span class="p">()</span>
+
+        <span class="c1"># Return the data</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">reshape</span><span class="p">:</span>
+            <span class="c1"># Returns five arrays</span>
+            <span class="k">return</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">rhoij</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">var</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="c1"># Returns seven arrays</span>
+        <span class="n">i_c1</span><span class="p">,</span> <span class="n">i_c2</span> <span class="o">=</span> <span class="n">Covariance</span><span class="o">.</span><span class="n">reshape_indices</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">i</span><span class="p">)</span>
+        <span class="n">j_c1</span><span class="p">,</span> <span class="n">j_c2</span> <span class="o">=</span> <span class="n">Covariance</span><span class="o">.</span><span class="n">reshape_indices</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">j</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">i_c1</span><span class="p">,</span> <span class="n">i_c2</span><span class="p">,</span> <span class="n">j_c1</span><span class="p">,</span> <span class="n">j_c2</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">rhoij</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">var</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">reshape_n</span><span class="p">,</span> <span class="n">reshape_n</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span></div>
+
+
+<span class="c1">#    def binary_columns(self, hdr=None):</span>
+<span class="c1">#        r&quot;&quot;&quot;</span>
+<span class="c1">#        Construct the binary columns for the output fits file.</span>
+<span class="c1">#</span>
+<span class="c1">#        The four columns are ``INDX``, ``COVAR``, ``VARIANCE``, and</span>
+<span class="c1">#        ``INP_INDX``; see :func:`write`.</span>
+<span class="c1">#</span>
+<span class="c1">#        Args:</span>
+<span class="c1">#            hdr (`astropy.io.fits.Header`_) : (**Optional**) A header</span>
+<span class="c1">#                object that, if provided, will have the keywords</span>
+<span class="c1">#                ``COVSHAPE`` and ``COVTYPE`` added based on,</span>
+<span class="c1">#                respectively, the values of :attr:`shape` and</span>
+<span class="c1">#                :attr:`is_correlation`.</span>
+<span class="c1">#</span>
+<span class="c1">#        Returns:</span>
+<span class="c1">#            `astropy.io.fits.Column`_: Up to four</span>
+<span class="c1">#            `astropy.io.fits.Column`_ objects with the column data, in</span>
+<span class="c1">#            the sequence listed above.  If the data is not in the form</span>
+<span class="c1">#            of a correlation matrix, the ``VARIANCE`` column is returned</span>
+<span class="c1">#            as None.  If the covariance matrix is only two-dimensional,</span>
+<span class="c1">#            the ``INP_INDX`` column is returned as None.</span>
+<span class="c1">#        &quot;&quot;&quot;</span>
+<span class="c1">#        # Add the shape to the header</span>
+<span class="c1">#        if hdr is not None:</span>
+<span class="c1">#            hdr[&#39;COVSHAPE&#39;] = (str(self.shape), &#39;Shape of the covariance matrix&#39;)</span>
+<span class="c1">#            hdr[&#39;COVTYPE&#39;] = (&#39;Correlation&#39; if self.is_correlation else &#39;Covariance&#39;,</span>
+<span class="c1">#                              &#39;Type of covariance data storage&#39;)</span>
+<span class="c1">#</span>
+<span class="c1">#        # Create the binary table data</span>
+<span class="c1">#        coo = numpy.empty((self.nnz, self.dim), dtype=numpy.int32)</span>
+<span class="c1">#        coo_form = str(self.dim)+&#39;J&#39;</span>
+<span class="c1">#        if self.dim == 2:</span>
+<span class="c1">#            ii, jj, covar_value = sparse.find(self.cov)</span>
+<span class="c1">#            coo[:,0] = ii</span>
+<span class="c1">#            coo[:,1] = jj</span>
+<span class="c1">#            if self.is_correlation:</span>
+<span class="c1">#                var_value = numpy.zeros(self.nnz, dtype=numpy.float64)</span>
+<span class="c1">#                indx = ii==jj</span>
+<span class="c1">#                var_value[indx] = self.var[ii[indx]]</span>
+<span class="c1">#        else:</span>
+<span class="c1">#            covar_value = numpy.empty(self.nnz, dtype=numpy.float64)</span>
+<span class="c1">#            var_value = numpy.zeros(self.nnz, dtype=numpy.float64)</span>
+<span class="c1">#            i = 0</span>
+<span class="c1">#            j = 0</span>
+<span class="c1">#            for cov in self.cov:</span>
+<span class="c1">#                kk = numpy.arange(cov.nnz)+j</span>
+<span class="c1">#                coo[kk,0] = i</span>
+<span class="c1">#                ii, jj, vv = sparse.find(cov)</span>
+<span class="c1">#                coo[kk,1] = ii</span>
+<span class="c1">#                coo[kk,2] = jj</span>
+<span class="c1">#                covar_value[kk] = vv</span>
+<span class="c1">#                if self.is_correlation:</span>
+<span class="c1">#                    indx = ii==jj</span>
+<span class="c1">#                    var_value[kk[indx]] = self.var[i,ii[indx]]</span>
+<span class="c1">#                j += cov.nnz</span>
+<span class="c1">#                i += 1</span>
+<span class="c1">#</span>
+<span class="c1">#        return fits.Column(name=&#39;INDX&#39;, format=coo_form, array=coo), \</span>
+<span class="c1">#               fits.Column(name=&#39;COVAR&#39;, format=&#39;1D&#39;, array=covar_value), \</span>
+<span class="c1">#               (fits.Column(name=&#39;VARIANCE&#39;, format=&#39;1D&#39;, array=var_value) \</span>
+<span class="c1">#                    if self.is_correlation else None), \</span>
+<span class="c1">#               (None if self.input_indx is None else \</span>
+<span class="c1">#                    fits.Column(name=&#39;INP_INDX&#39;, format=&#39;1J&#39;, array=self.input_indx))</span>
+
+        
+<div class="viewcode-block" id="Covariance.output_hdus"><a class="viewcode-back" href="../../../mangadap.util.covariance.html#mangadap.util.covariance.Covariance.output_hdus">[docs]</a>    <span class="k">def</span> <span class="nf">output_hdus</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reshape</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">hdr</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Construct the output HDUs and header that contain the covariance</span>
+<span class="sd">        data.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Use input header or create a minimal one</span>
+        <span class="n">_hdr</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">Header</span><span class="p">()</span> <span class="k">if</span> <span class="n">hdr</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">hdr</span>
+        <span class="c1"># Ensure the input header has the correct type</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">_hdr</span><span class="p">,</span> <span class="n">fits</span><span class="o">.</span><span class="n">Header</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Input header must have type astropy.io.fits.Header.&#39;</span><span class="p">)</span>
+        <span class="n">_hdr</span><span class="p">[</span><span class="s1">&#39;COVSHAPE&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">),</span> <span class="s1">&#39;Shape of the correlation matrix&#39;</span><span class="p">)</span>
+
+        <span class="n">tbl_hdr</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">Header</span><span class="p">()</span>
+        <span class="n">tbl_hdr</span><span class="p">[</span><span class="s1">&#39;COVSHAPE&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">),</span> <span class="s1">&#39;Shape of the correlation matrix&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Construct the correlation binary table HDU</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">reshape</span><span class="p">:</span>
+                <span class="n">i_c1</span><span class="p">,</span> <span class="n">i_c2</span><span class="p">,</span> <span class="n">j_c1</span><span class="p">,</span> <span class="n">j_c2</span><span class="p">,</span> <span class="n">rhoij</span><span class="p">,</span> <span class="n">var</span> \
+                            <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_fits_data</span><span class="p">(</span><span class="n">reshape</span><span class="o">=</span><span class="n">reshape</span><span class="p">)</span>
+                <span class="n">covar_hdu</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">BinTableHDU</span><span class="o">.</span><span class="n">from_columns</span><span class="p">([</span>
+                                <span class="n">fits</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;INDXI_C1&#39;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;1J&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">i_c1</span><span class="p">),</span>
+                                <span class="n">fits</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;INDXI_C2&#39;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;1J&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">i_c2</span><span class="p">),</span>
+                                <span class="n">fits</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;INDXJ_C1&#39;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;1J&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">j_c1</span><span class="p">),</span>
+                                <span class="n">fits</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;INDXJ_C2&#39;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;1J&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">j_c2</span><span class="p">),</span>
+                                <span class="n">fits</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;RHOIJ&#39;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;1D&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">rhoij</span><span class="p">)</span>
+                                                          <span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;CORREL&#39;</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="n">tbl_hdr</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">rhoij</span><span class="p">,</span> <span class="n">var</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_fits_data</span><span class="p">(</span><span class="n">reshape</span><span class="o">=</span><span class="n">reshape</span><span class="p">)</span>
+                <span class="n">covar_hdu</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">BinTableHDU</span><span class="o">.</span><span class="n">from_columns</span><span class="p">([</span>
+                                <span class="n">fits</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;INDXI&#39;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;1J&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">i</span><span class="p">),</span>
+                                <span class="n">fits</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;INDXJ&#39;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;1J&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">j</span><span class="p">),</span>
+                                <span class="n">fits</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;RHOIJ&#39;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;1D&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">rhoij</span><span class="p">)</span>
+                                                          <span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;CORREL&#39;</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="n">tbl_hdr</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">reshape</span><span class="p">:</span>
+                <span class="n">i_c1</span><span class="p">,</span> <span class="n">i_c2</span><span class="p">,</span> <span class="n">j_c1</span><span class="p">,</span> <span class="n">j_c2</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">rhoij</span><span class="p">,</span> <span class="n">var</span> \
+                            <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_fits_data</span><span class="p">(</span><span class="n">reshape</span><span class="o">=</span><span class="n">reshape</span><span class="p">)</span>
+                <span class="n">covar_hdu</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">BinTableHDU</span><span class="o">.</span><span class="n">from_columns</span><span class="p">([</span>
+                                <span class="n">fits</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;INDXI_C1&#39;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;1J&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">i_c1</span><span class="p">),</span>
+                                <span class="n">fits</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;INDXI_C2&#39;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;1J&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">i_c2</span><span class="p">),</span>
+                                <span class="n">fits</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;INDXJ_C1&#39;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;1J&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">j_c1</span><span class="p">),</span>
+                                <span class="n">fits</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;INDXJ_C2&#39;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;1J&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">j_c2</span><span class="p">),</span>
+                                <span class="n">fits</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;INDXK&#39;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;1J&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">k</span><span class="p">),</span>
+                                <span class="n">fits</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;RHOIJ&#39;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;1D&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">rhoij</span><span class="p">)</span>
+                                                          <span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;CORREL&#39;</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="n">tbl_hdr</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">rhoij</span><span class="p">,</span> <span class="n">var</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_fits_data</span><span class="p">(</span><span class="n">reshape</span><span class="o">=</span><span class="n">reshape</span><span class="p">)</span>
+                <span class="n">covar_hdu</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">BinTableHDU</span><span class="o">.</span><span class="n">from_columns</span><span class="p">([</span>
+                                <span class="n">fits</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;INDXI&#39;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;1J&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">i</span><span class="p">),</span>
+                                <span class="n">fits</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;INDXJ&#39;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;1J&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">j</span><span class="p">),</span>
+                                <span class="n">fits</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;INDXK&#39;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;1J&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">k</span><span class="p">),</span>
+                                <span class="n">fits</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;RHOIJ&#39;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;1D&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">rhoij</span><span class="p">)</span>
+                                                          <span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;CORREL&#39;</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="n">tbl_hdr</span><span class="p">)</span>
+
+        <span class="n">ivar_hdu</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">ImageHDU</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">var</span><span class="p">,</span><span class="o">-</span><span class="mf">1.</span><span class="p">)</span><span class="o">.</span><span class="n">filled</span><span class="p">(</span><span class="mf">0.0</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;IVAR&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">_hdr</span><span class="p">,</span> <span class="n">ivar_hdu</span><span class="p">,</span> <span class="n">covar_hdu</span></div>
+
+
+<div class="viewcode-block" id="Covariance.write"><a class="viewcode-back" href="../../../mangadap.util.covariance.html#mangadap.util.covariance.Covariance.write">[docs]</a>    <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ofile</span><span class="p">,</span> <span class="n">reshape</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">hdr</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">clobber</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Write the covariance object to a fits file such that it can be</span>
+<span class="sd">        read for later use; see :func:`from_fits`.  The covariance</span>
+<span class="sd">        matrix (matrices) are stored in &quot;coordinate&quot; format using fits</span>
+<span class="sd">        binary tables; see `scipy.sparse.coo_matrix`_.  The matrix is</span>
+<span class="sd">        also **always** stored as a correlation matix, even if the</span>
+<span class="sd">        object is currently in the state holding the covariance data.</span>
+
+<span class="sd">        Independent of the dimensionality of the covariance matrix, the</span>
+<span class="sd">        written file has a ``PRIMARY`` extension with the keyword</span>
+<span class="sd">        ``COVSHAPE`` that specifies the original dimensions of the</span>
+<span class="sd">        covariance matrix; see :attr:`shape`.</span>
+<span class="sd">            </span>
+<span class="sd">        The correlation data are written to the ``CORREL`` extension.</span>
+<span class="sd">        The number of columns in this extension depends on the provided</span>
+<span class="sd">        keywords; see :func:`output_fits_data`.  The column names are:</span>
+<span class="sd">            </span>
+<span class="sd">            - ``INDXI``, ``INDXJ``, ``INDXK``: indices in the covariance</span>
+<span class="sd">              matrix.  The last index is provided only if the object is</span>
+<span class="sd">              3D.  ``INDXI`` and ``INDXJ`` are separated into two</span>
+<span class="sd">              columns if the output is reshaped; these columns are</span>
+<span class="sd">              ``INDXI_C1``, ``INDXI_C2``, ``INDXJ_C1``, ``INDXJ_C2``.</span>
+
+<span class="sd">            - ``RHOIJ``: The non-zero correlation coefficients located</span>
+<span class="sd">              the specified coordinates</span>
+
+<span class="sd">        The inverse of the variance along the diagonal of the covariance</span>
+<span class="sd">        matrix is output in an ImageHDU in extension ``IVAR``.</span>
+
+<span class="sd">        For 3D matrices, if pseudo-indices have been provided, these are</span>
+<span class="sd">        used in the ``INDXK`` column; however, the ``COVSHAPE`` header</span>
+<span class="sd">        keyword only gives the shape of the unique indices of the</span>
+<span class="sd">        covariance channels.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            ofile (str): File name for the output.</span>
+<span class="sd">            reshape (bool): (**Optional**) Reshape the output in the</span>
+<span class="sd">                case when *i* and *j* are actually pixels in a</span>
+<span class="sd">                two-dimensional image.  The shape of the image is</span>
+<span class="sd">                expected to be square, such that the shape of the</span>
+<span class="sd">                covariance matrix is :math:`N_x\times N_y`, where</span>
+<span class="sd">                :math:`N_x = N_y`.  Each of the I and J output columns</span>
+<span class="sd">                are then split into two columns according to associate</span>
+<span class="sd">                coordinates.</span>
+<span class="sd">            hdr (`astropy.io.fits.Header`_): (**Optional**) A header</span>
+<span class="sd">                object to include in the PRIMARY extension.  The SHAPE</span>
+<span class="sd">                keyword will be added/overwritten.</span>
+<span class="sd">            clobber (bool): (**Optional**) Overwrite any existing file.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            TypeError: Raise if the input *hdr* does not have the</span>
+<span class="sd">                correct type.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">ofile</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">clobber</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">FileExistsError</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1"> exists!  Use </span><span class="se">\&#39;</span><span class="s1">clobber=True</span><span class="se">\&#39;</span><span class="s1"> to overwrite.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ofile</span><span class="p">))</span>
+
+        <span class="c1"># Construct HDUList and write the fits file</span>
+        <span class="n">_hdr</span><span class="p">,</span> <span class="n">ivar_hdu</span><span class="p">,</span> <span class="n">covar_hdu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_hdus</span><span class="p">(</span><span class="n">reshape</span><span class="o">=</span><span class="n">reshape</span><span class="p">,</span> <span class="n">hdr</span><span class="o">=</span><span class="n">hdr</span><span class="p">)</span>
+        <span class="n">DAPFitsUtil</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">fits</span><span class="o">.</span><span class="n">HDUList</span><span class="p">([</span> <span class="n">fits</span><span class="o">.</span><span class="n">PrimaryHDU</span><span class="p">(</span><span class="n">header</span><span class="o">=</span><span class="n">_hdr</span><span class="p">),</span> <span class="n">ivar_hdu</span><span class="p">,</span> <span class="n">covar_hdu</span> <span class="p">]),</span>
+                          <span class="n">ofile</span><span class="p">,</span> <span class="n">clobber</span><span class="o">=</span><span class="n">clobber</span><span class="p">,</span> <span class="n">checksum</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Covariance.variance"><a class="viewcode-back" href="../../../mangadap.util.covariance.html#mangadap.util.covariance.Covariance.variance">[docs]</a>    <span class="k">def</span> <span class="nf">variance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        If not already done, grab the variances along the diagonal of</span>
+<span class="sd">        the covariance matrix.  The function returns the variance for</span>
+<span class="sd">        all channels if more than one exists.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">var</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">var</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">var</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cov</span><span class="o">.</span><span class="n">toarray</span><span class="p">())</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">var</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">var</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">var</span><span class="p">[:,</span><span class="n">p</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cov</span><span class="p">[</span><span class="n">p</span><span class="p">]</span><span class="o">.</span><span class="n">toarray</span><span class="p">())</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">var</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="k">if</span> <span class="n">copy</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">var</span></div>
+
+
+<div class="viewcode-block" id="Covariance.to_correlation"><a class="viewcode-back" href="../../../mangadap.util.covariance.html#mangadap.util.covariance.Covariance.to_correlation">[docs]</a>    <span class="k">def</span> <span class="nf">to_correlation</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Convert the covariance matrix into a correlation matrix by</span>
+<span class="sd">        dividing each element by the variances.</span>
+<span class="sd">        </span>
+<span class="sd">        If the matrix is a correlation matrix already (see</span>
+<span class="sd">        :attr:`is_correlation`), no operations are performed.</span>
+<span class="sd">        Otherwise, the variance vectors are computed, if necessary, and</span>
+<span class="sd">        used to normalize the covariance values.</span>
+
+<span class="sd">        A :class:`Covariance` object can be reverted from a correlation</span>
+<span class="sd">        matrix; see :func:`revert_correlation`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Object is already a correlation matrix</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_correlation</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="c1"># Ensure that the variance has been calculated</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">variance</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_correlation</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">c</span> <span class="o">=</span> <span class="n">sparse</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cov</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cov</span> <span class="o">=</span> <span class="n">sparse</span><span class="o">.</span><span class="n">coo_matrix</span><span class="p">(</span> <span class="p">(</span><span class="n">c</span><span class="o">/</span><span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">var</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">var</span><span class="p">[</span><span class="n">j</span><span class="p">]),</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">)),</span>
+                                          <span class="n">shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="o">.</span><span class="n">tocsr</span><span class="p">()</span>
+            <span class="k">return</span>
+       
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">c</span> <span class="o">=</span> <span class="n">sparse</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cov</span><span class="p">[</span><span class="n">p</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cov</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="o">=</span> <span class="n">sparse</span><span class="o">.</span><span class="n">coo_matrix</span><span class="p">(</span> <span class="p">(</span><span class="n">c</span><span class="o">/</span><span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">var</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">p</span><span class="p">]</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">var</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">p</span><span class="p">]),</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">)),</span>
+                                             <span class="n">shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">tocsr</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="Covariance.revert_correlation"><a class="viewcode-back" href="../../../mangadap.util.covariance.html#mangadap.util.covariance.Covariance.revert_correlation">[docs]</a>    <span class="k">def</span> <span class="nf">revert_correlation</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Revert the object from a correlation matrix back to a full</span>
+<span class="sd">        covariance matrix.</span>
+
+<span class="sd">        .. todo::</span>
+<span class="sd">            Allow this function to take in a new set of variances to</span>
+<span class="sd">            use.</span>
+
+<span class="sd">        This function does nothing if the correlation flag has not been</span>
+<span class="sd">        flipped.  The variances must have already been calculated!</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_correlation</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">c</span> <span class="o">=</span> <span class="n">sparse</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cov</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cov</span> <span class="o">=</span> <span class="n">sparse</span><span class="o">.</span><span class="n">coo_matrix</span><span class="p">(</span> <span class="p">(</span><span class="n">c</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">var</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">var</span><span class="p">[</span><span class="n">j</span><span class="p">]),</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">)),</span>
+                                           <span class="n">shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="o">.</span><span class="n">tocsr</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">is_correlation</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">return</span>
+       
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">c</span> <span class="o">=</span> <span class="n">sparse</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cov</span><span class="p">[</span><span class="n">p</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cov</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="o">=</span> <span class="n">sparse</span><span class="o">.</span><span class="n">coo_matrix</span><span class="p">(</span> <span class="p">(</span><span class="n">c</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">var</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">p</span><span class="p">]</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">var</span><span class="p">[</span><span class="n">j</span><span class="p">,</span><span class="n">p</span><span class="p">]),</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">)),</span>
+                                             <span class="n">shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">tocsr</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_correlation</span> <span class="o">=</span> <span class="kc">False</span></div>
+
+    <span class="c1">####################################################################</span>
+    <span class="c1"># TODO: Generalize these to fill and thin or something</span>
+<div class="viewcode-block" id="Covariance.bin_to_spaxel_covariance"><a class="viewcode-back" href="../../../mangadap.util.covariance.html#mangadap.util.covariance.Covariance.bin_to_spaxel_covariance">[docs]</a>    <span class="k">def</span> <span class="nf">bin_to_spaxel_covariance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bin_indx</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Propagate the covariance matrix data for the stacked spectra</span>
+<span class="sd">        into the full cube.</span>
+
+<span class="sd">        This (self) should be the covariance/correlation matrix for the</span>
+<span class="sd">        binned spectra.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            bin_indx (numpy.ndarray): The integer vector with the bin</span>
+<span class="sd">                associated with each spectrum in the DRP cube.  This is</span>
+<span class="sd">                the flattened BINID array.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            class:`mangadap.util.covariance.Covariance`:</span>
+<span class="sd">            Covariance/Correlation matrix for the spaxelized binned</span>
+<span class="sd">            data.</span>
+
+<span class="sd">        .. todo::</span>
+<span class="sd">            - This needs to be tested.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Total number of spectra</span>
+        <span class="n">nspec</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">bin_indx</span><span class="p">)</span>
+
+        <span class="c1"># Get the unique bins and how to reconstruct the bins from the</span>
+        <span class="c1"># unique set</span>
+        <span class="n">unique_bins</span><span class="p">,</span> <span class="n">reconstruct</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">bin_indx</span><span class="p">,</span> <span class="n">return_inverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># Need to handle missing bins</span>
+        <span class="k">if</span> <span class="n">unique_bins</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="n">unique_bins</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">2</span> \
+                <span class="ow">or</span> <span class="n">numpy</span><span class="o">.</span><span class="n">any</span><span class="p">((</span><span class="n">unique_bins</span> <span class="o">-</span> <span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">unique_bins</span><span class="o">.</span><span class="n">size</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">):</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Bin numbers and indices do not match.  Spectra are expected &#39;</span>
+                          <span class="s1">&#39;to be sorted by their bin number.&#39;</span><span class="p">)</span>
+            <span class="n">unique_bins</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">unique_bins</span><span class="o">.</span><span class="n">size</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># Get the valid bins</span>
+        <span class="n">indx</span> <span class="o">=</span> <span class="n">bin_indx</span> <span class="o">&gt;</span> <span class="o">-</span><span class="mi">1</span>
+
+        <span class="c1"># Expand the covariance matrix by repeating the full matrix</span>
+        <span class="c1"># elements for repeated bin values in different spaxels</span>
+        <span class="n">nchan</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">spaxel_covar</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">nchan</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">sparse</span><span class="o">.</span><span class="n">csr</span><span class="o">.</span><span class="n">csr_matrix</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nchan</span><span class="p">):</span>
+            <span class="n">j</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_indx</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+<span class="c1">#            self.show(channel=j)</span>
+
+            <span class="c1"># Input bin and covariance indices</span>
+            <span class="n">ii</span> <span class="o">=</span> <span class="n">unique_bins</span><span class="p">[</span><span class="n">reconstruct</span><span class="p">[</span><span class="n">indx</span><span class="p">]]</span>
+            <span class="n">ii_i</span><span class="p">,</span> <span class="n">ii_j</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">numpy</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">ii</span><span class="p">,</span> <span class="n">ii</span><span class="p">)</span> <span class="p">)</span>
+
+            <span class="c1"># Output spaxel and covariance indices</span>
+            <span class="n">oi</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">nspec</span><span class="p">)[</span><span class="n">indx</span><span class="p">]</span>
+            <span class="n">oi_i</span><span class="p">,</span> <span class="n">oi_j</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">numpy</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">oi</span><span class="p">,</span> <span class="n">oi</span><span class="p">)</span> <span class="p">)</span>
+
+            <span class="n">_covar</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nspec</span><span class="p">,</span> <span class="n">nspec</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+            <span class="n">_covar</span><span class="p">[</span><span class="n">oi_i</span><span class="p">,</span> <span class="n">oi_j</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">toarray</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="n">j</span><span class="p">)[</span><span class="n">ii_i</span><span class="p">,</span><span class="n">ii_j</span><span class="p">]</span>
+<span class="c1">#            pyplot.imshow(_covar, origin=&#39;lower&#39;, interpolation=&#39;nearest&#39;)</span>
+<span class="c1">#            pyplot.colorbar()</span>
+<span class="c1">#            pyplot.show()</span>
+            <span class="n">spaxel_covar</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">sparse</span><span class="o">.</span><span class="n">triu</span><span class="p">(</span><span class="n">_covar</span><span class="p">)</span><span class="o">.</span><span class="n">tocsr</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">Covariance</span><span class="p">(</span><span class="n">spaxel_covar</span><span class="p">,</span> <span class="n">input_indx</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">input_indx</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Covariance.spaxel_to_bin_covariance"><a class="viewcode-back" href="../../../mangadap.util.covariance.html#mangadap.util.covariance.Covariance.spaxel_to_bin_covariance">[docs]</a>    <span class="k">def</span> <span class="nf">spaxel_to_bin_covariance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bin_indx</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Opposite of :func:`bin_to_spaxel_covariance`: Revert the covariance</span>
+<span class="sd">        matrix to the covariance between the unique binned spectra.</span>
+
+<span class="sd">        This (self) should be the covariance/correlation matrix for the</span>
+<span class="sd">        binned spectra redistributed to the size of the original spaxels</span>
+<span class="sd">        map.</span>
+
+<span class="sd">        .. warning::</span>
+
+<span class="sd">            **This does NOT propagate the covariance between the spaxels</span>
+<span class="sd">            into the covariance in the binned data.** That operation is</span>
+<span class="sd">            done by, e.g.,</span>
+<span class="sd">            :func:`mangadap.proc.spectralstack.SpectralStack._stack_with_covariance`.</span>
+<span class="sd">            This **only** performs the inverse operation of</span>
+<span class="sd">            :func:`bin_to_spaxel_covariance`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            bin_indx (numpy.ndarray): The integer vector with the bin</span>
+<span class="sd">                associated with each spectrum in the DRP cube.  This is</span>
+<span class="sd">                the flattened BINID array.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            class:`mangadap.util.covariance.Covariance`:</span>
+<span class="sd">            Covariance/Correlation matrix for the stacked spectra.</span>
+
+<span class="sd">        .. todo::</span>
+<span class="sd">            - This needs to be tested.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Get the unique bins and their first occurrence in the bin list</span>
+        <span class="n">unique_bins</span><span class="p">,</span> <span class="n">unique_indx</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">bin_indx</span><span class="p">,</span> <span class="n">return_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># Need to handle missing bins</span>
+        <span class="k">if</span> <span class="n">unique_bins</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="n">unique_bins</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">2</span> \
+                <span class="ow">or</span> <span class="n">numpy</span><span class="o">.</span><span class="n">any</span><span class="p">((</span><span class="n">unique_bins</span> <span class="o">-</span> <span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">unique_bins</span><span class="o">.</span><span class="n">size</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">):</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Bin numbers and indices do not match.  Spectra are expected &#39;</span>
+                          <span class="s1">&#39;to be sorted by their bin number.&#39;</span><span class="p">)</span>
+            <span class="n">unique_bins</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">unique_bins</span><span class="o">.</span><span class="n">size</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># Total number of bins</span>
+        <span class="n">nbins</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">unique_bins</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span>
+
+        <span class="n">nchan</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">bin_covar</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">nchan</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">sparse</span><span class="o">.</span><span class="n">csr</span><span class="o">.</span><span class="n">csr_matrix</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nchan</span><span class="p">):</span>
+            <span class="n">j</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_indx</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+<span class="c1">#            self.covariance.show(channel=j)</span>
+
+            <span class="c1"># Input spectrum and covariance indices</span>
+            <span class="n">ii</span> <span class="o">=</span> <span class="n">unique_indx</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+            <span class="n">ii_i</span><span class="p">,</span> <span class="n">ii_j</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">numpy</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">ii</span><span class="p">,</span> <span class="n">ii</span><span class="p">)</span> <span class="p">)</span>
+
+            <span class="c1"># Output spectrum and covariance indices</span>
+            <span class="n">oi</span> <span class="o">=</span> <span class="n">unique_bins</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+            <span class="n">oi_i</span><span class="p">,</span> <span class="n">oi_j</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">numpy</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">oi</span><span class="p">,</span> <span class="n">oi</span><span class="p">)</span> <span class="p">)</span>
+
+            <span class="n">_covar</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nbins</span><span class="p">,</span> <span class="n">nbins</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+            <span class="n">_covar</span><span class="p">[</span><span class="n">oi_i</span><span class="p">,</span> <span class="n">oi_j</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">toarray</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="n">j</span><span class="p">)[</span><span class="n">ii_i</span><span class="p">,</span><span class="n">ii_j</span><span class="p">]</span>
+<span class="c1">#            pyplot.imshow(_covar, origin=&#39;lower&#39;, interpolation=&#39;nearest&#39;)</span>
+<span class="c1">#            pyplot.colorbar()</span>
+<span class="c1">#            pyplot.show()</span>
+            <span class="n">bin_covar</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">sparse</span><span class="o">.</span><span class="n">triu</span><span class="p">(</span><span class="n">_covar</span><span class="p">)</span><span class="o">.</span><span class="n">tocsr</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">Covariance</span><span class="p">(</span><span class="n">bin_covar</span><span class="p">,</span> <span class="n">input_indx</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">input_indx</span><span class="p">)</span></div></div>
+
+
+    <span class="c1">####################################################################</span>
+
+
+<span class="c1">#            order (str): (**Optional**) If reshaping the output</span>
+<span class="c1">#                covariance matrix, this defines the order in which the</span>
+<span class="c1">#                image data was flattened in memory for the covariance</span>
+<span class="c1">#                calculation.  The default (like the numpy.ndarray</span>
+<span class="c1">#                default) is &#39;C&#39; for C-like (row-major) ordering.  The</span>
+<span class="c1">#                only other option is &#39;F&#39; for Fortran-like (column-major)</span>
+<span class="c1">#                ordering.</span>
+
+
+
+
+
+</pre></div>
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, SDSS-IV/MaNGA Pipeline Group.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'2.2.2',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

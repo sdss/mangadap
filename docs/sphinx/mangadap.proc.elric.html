@@ -1,0 +1,806 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mangadap.proc.elric module &mdash; mangadap 2.2.2 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="mangadap 2.2.2 documentation" href="index.html"/>
+        <link rel="up" title="mangadap.proc package" href="mangadap.proc.html"/>
+        <link rel="next" title="mangadap.proc.emissionlinemodel module" href="mangadap.proc.emissionlinemodel.html"/>
+        <link rel="prev" title="mangadap.proc.bandpassfilter module" href="mangadap.proc.bandpassfilter.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> mangadap
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="mangadap.html">mangadap package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="mangadap.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="mangadap.config.html">mangadap.config package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.contrib.html">mangadap.contrib package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.par.html">mangadap.par package</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="mangadap.proc.html">mangadap.proc package</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="mangadap.proc.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="mangadap.proc.html#module-mangadap.proc">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.survey.html">mangadap.survey package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.test.html">mangadap.test package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.util.html">mangadap.util package</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="mangadap.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mangadap.html#module-mangadap">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">mangadap</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="mangadap.html">mangadap package</a> &raquo;</li>
+        
+          <li><a href="mangadap.proc.html">mangadap.proc package</a> &raquo;</li>
+        
+      <li>mangadap.proc.elric module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/mangadap.proc.elric.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-mangadap.proc.elric">
+<span id="mangadap-proc-elric-module"></span><h1>mangadap.proc.elric module<a class="headerlink" href="#module-mangadap.proc.elric" title="Permalink to this headline">¶</a></h1>
+<p>Implements an emission-line profile fitting class.</p>
+<dl class="docutils">
+<dt><em>License</em>:</dt>
+<dd><dl class="first last docutils">
+<dt>Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group</dt>
+<dd>Licensed under BSD 3-clause license - see LICENSE.rst</dd>
+</dl>
+</dd>
+<dt><em>Source location</em>:</dt>
+<dd>$MANGADAP_DIR/python/mangadap/proc/elric.py</dd>
+<dt><em>Imports and python version compliance</em>:</dt>
+<dd><div class="first last highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version</span> <span class="o">&gt;</span> <span class="s1">&#39;3&#39;</span><span class="p">:</span>
+    <span class="n">long</span> <span class="o">=</span> <span class="nb">int</span>
+
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="k">import</span> <span class="n">interpolate</span><span class="p">,</span> <span class="n">integrate</span><span class="p">,</span> <span class="n">optimize</span>
+<span class="kn">from</span> <span class="nn">scipy.special</span> <span class="k">import</span> <span class="n">erf</span>
+<span class="kn">import</span> <span class="nn">astropy.constants</span>
+<span class="kn">from</span> <span class="nn">astropy.modeling</span> <span class="k">import</span> <span class="n">FittableModel</span><span class="p">,</span> <span class="n">Parameter</span>
+
+<span class="kn">from</span> <span class="nn">..par.parset</span> <span class="k">import</span> <span class="n">ParSet</span>
+<span class="kn">from</span> <span class="nn">..par.emissionlinedb</span> <span class="k">import</span> <span class="n">EmissionLineDB</span>
+<span class="kn">from</span> <span class="nn">..util.fileio</span> <span class="k">import</span> <span class="n">init_record_array</span>
+<span class="kn">from</span> <span class="nn">..util.log</span> <span class="k">import</span> <span class="n">log_output</span>
+<span class="kn">from</span> <span class="nn">..util.pixelmask</span> <span class="k">import</span> <span class="n">SpectralPixelMask</span>
+<span class="kn">from</span> <span class="nn">.spatiallybinnedspectra</span> <span class="k">import</span> <span class="n">SpatiallyBinnedSpectra</span>
+<span class="kn">from</span> <span class="nn">.stellarcontinuummodel</span> <span class="k">import</span> <span class="n">StellarContinuumModel</span>
+<span class="kn">from</span> <span class="nn">.spectralfitting</span> <span class="k">import</span> <span class="n">EmissionLineFit</span>
+<span class="kn">from</span> <span class="nn">.util</span> <span class="k">import</span> <span class="n">sample_growth</span>
+</pre></div>
+</div>
+</dd>
+<dt><em>Class usage examples</em>:</dt>
+<dd>Add examples</dd>
+<dt><em>Revision history</em>:</dt>
+<dd><div class="first last line-block">
+<div class="line"><strong>26 Apr 2016</strong>: Original implementation by K. Westfall (KBW)</div>
+<div class="line"><strong>13 Jul 2016</strong>: (KBW) Include log_bounds determining whether or
+not a returned parameters is near its boundary.</div>
+<div class="line"><strong>19 Jul 2016</strong>: (KBW) Changed file name</div>
+<div class="line"><strong>19 Oct 2016</strong>: (KBW) Added
+<code class="xref py py-func docutils literal"><span class="pre">Elric.reset_continuum_mask_window()</span></code> function to deal with
+the subtraction of the continuum over the fully viable spectral
+range, and ignoring small spectral regions ignored during the
+stellar continuum fit.  Changed the initial creation of the
+continuum mask to include the emission line regions to avoid any
+polynomial extrapolation errors, in case the emission line
+happens to fall exactly at the edge of the valid spectral range.</div>
+<div class="line"><strong>08 Nov 2016</strong>: (KBW) Moved the
+<code class="xref py py-func docutils literal"><span class="pre">StellarContinuumModel.reset_continuum_mask_window()</span></code>
+function from <a class="reference internal" href="#mangadap.proc.elric.Elric" title="mangadap.proc.elric.Elric"><code class="xref py py-class docutils literal"><span class="pre">Elric</span></code></a> to be a member of
+<code class="xref py py-class docutils literal"><span class="pre">StellarContinuumModel</span></code>.</div>
+<div class="line"><strong>24 May 2017</strong>: (KBW) Moved _check_db to
+<a class="reference internal" href="mangadap.proc.spectralfitting.html#mangadap.proc.spectralfitting.EmissionLineFit.check_emission_line_database" title="mangadap.proc.spectralfitting.EmissionLineFit.check_emission_line_database"><code class="xref py py-func docutils literal"><span class="pre">mangadap.proc.spectralfitting.EmissionLineFit.check_emission_line_database()</span></code></a>
+and moved fill_equivalent_width to
+<a class="reference internal" href="mangadap.proc.spectralfitting.html#mangadap.proc.spectralfitting.EmissionLineFit.measure_equivalent_width" title="mangadap.proc.spectralfitting.EmissionLineFit.measure_equivalent_width"><code class="xref py py-func docutils literal"><span class="pre">mangadap.proc.spectralfitting.EmissionLineFit.measure_equivalent_width()</span></code></a>.
+Moved _per_fitting_window_dtype from EmissionLineFit to
+<a class="reference internal" href="#mangadap.proc.elric.Elric" title="mangadap.proc.elric.Elric"><code class="xref py py-class docutils literal"><span class="pre">Elric</span></code></a>.</div>
+<div class="line"><strong>24 Aug 2017</strong>: (KBW) Use new
+<a class="reference internal" href="mangadap.proc.util.html#mangadap.proc.util.sample_growth" title="mangadap.proc.util.sample_growth"><code class="xref py py-func docutils literal"><span class="pre">mangadap.proc.util.sample_growth()</span></code></a> instead of old
+residual_growth function.</div>
+<div class="line"><strong>02 Feb 2018</strong>: (KBW) Adjust for change to
+<a class="reference internal" href="mangadap.proc.stellarcontinuummodel.html#mangadap.proc.stellarcontinuummodel.StellarContinuumModel.fill_to_match" title="mangadap.proc.stellarcontinuummodel.StellarContinuumModel.fill_to_match"><code class="xref py py-func docutils literal"><span class="pre">mangadap.proc.stellarcontinuummodel.StellarContinuumModel.fill_to_match()</span></code></a>.</div>
+</div>
+</dd>
+</dl>
+<dl class="class">
+<dt id="mangadap.proc.elric.Elric">
+<em class="property">class </em><code class="descclassname">mangadap.proc.elric.</code><code class="descname">Elric</code><span class="sig-paren">(</span><em>bitmask</em>, <em>wave=None</em>, <em>flux=None</em>, <em>emission_lines=None</em>, <em>error=None</em>, <em>mask=None</em>, <em>stellar_continuum=None</em>, <em>base_order=-1</em>, <em>window_buffer=25</em>, <em>guess_redshift=None</em>, <em>guess_dispersion=None</em>, <em>default_dispersion=20.0</em>, <em>run_fit=False</em>, <em>loggers=None</em>, <em>quiet=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/elric.html#Elric"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.elric.Elric" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="mangadap.proc.spectralfitting.html#mangadap.proc.spectralfitting.EmissionLineFit" title="mangadap.proc.spectralfitting.EmissionLineFit"><code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.spectralfitting.EmissionLineFit</span></code></a></p>
+<p>ELRIC: Emission-Line Regression and Inference Class</p>
+<p><a class="reference external" href="https://en.wikipedia.org/wiki/Edward_Elric">https://en.wikipedia.org/wiki/Edward_Elric</a></p>
+<p>Use LineProfileFit to fit the emission-line properties in a set of
+spectra.</p>
+<div class="admonition-todo admonition" id="index-0">
+<p class="first admonition-title">Todo</p>
+<ul class="last simple">
+<li>Implement some scheme to penalize multicomponent fits at low S/N</li>
+</ul>
+</div>
+<dl class="method">
+<dt id="mangadap.proc.elric.Elric._assess_and_save_fit">
+<code class="descname">_assess_and_save_fit</code><span class="sig-paren">(</span><em>i</em>, <em>j</em>, <em>model_fit_par</em>, <em>model_eml_par</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/elric.html#Elric._assess_and_save_fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.elric.Elric._assess_and_save_fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Assess the result of the LineProfileFit results.</p>
+<blockquote>
+<div><ul class="simple">
+<li>(DONE) Check the success failure</li>
+<li>(DONE) Calculate the chi2, rchi2, rms, fractional_rms,
+residuals, fractional_residuals</li>
+<li>(DONE) Compare the fit parameters to the bounds</li>
+<li>Check the chi-square and residuals?</li>
+<li>Check the velocity offset wrt the input</li>
+<li>For multiple lines, check the order of the lines matches
+the guess parameters</li>
+<li>For multiple component lines, check the ordering of the
+subcomponents</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.proc.elric.Elric._correct_subeml_par">
+<em class="property">static </em><code class="descname">_correct_subeml_par</code><span class="sig-paren">(</span><em>restwave_0</em>, <em>restwave_k</em>, <em>par</em>, <em>err=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/elric.html#Elric._correct_subeml_par"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.elric.Elric._correct_subeml_par" title="Permalink to this definition">¶</a></dt>
+<dd><p>Correct the parameters fit assuming a rest wavelength of
+restwave_0, when it’s actually restwave_k.  Input parameters are
+expected to be flux, velocity, velocity dispersion.</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.proc.elric.Elric._find_tied_index">
+<em class="property">static </em><code class="descname">_find_tied_index</code><span class="sig-paren">(</span><em>index</em>, <em>emission_lines</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/elric.html#Elric._find_tied_index"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.elric.Elric._find_tied_index" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.proc.elric.Elric._fit_masks">
+<em class="property">static </em><code class="descname">_fit_masks</code><span class="sig-paren">(</span><em>wave</em>, <em>fitting_window</em>, <em>redshift</em>, <em>window_buffer</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/elric.html#Elric._fit_masks"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.elric.Elric._fit_masks" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.proc.elric.Elric._is_near_bound">
+<em class="property">static </em><code class="descname">_is_near_bound</code><span class="sig-paren">(</span><em>par</em>, <em>lbnd</em>, <em>ubnd</em>, <em>logbounded</em>, <em>rtol=0.01</em>, <em>atol=0.0001</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/elric.html#Elric._is_near_bound"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.elric.Elric._is_near_bound" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine of any of the parameters within start and start+npar
+are “near” an imposed boundary.</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.proc.elric.Elric._line_velocity_offset">
+<em class="property">static </em><code class="descname">_line_velocity_offset</code><span class="sig-paren">(</span><em>restwave</em>, <em>restwave_primary</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/elric.html#Elric._line_velocity_offset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.elric.Elric._line_velocity_offset" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.proc.elric.Elric._parse_emission_line_models">
+<code class="descname">_parse_emission_line_models</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/elric.html#Elric._parse_emission_line_models"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.elric.Elric._parse_emission_line_models" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse the input emission-line file into a set of windows — the
+number of windows is <span class="math">\(N_{\rm win}\)</span>) — that are fit for
+each spectrum.</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.proc.elric.Elric._per_fitting_window_dtype">
+<em class="property">static </em><code class="descname">_per_fitting_window_dtype</code><span class="sig-paren">(</span><em>nwin</em>, <em>max_npar</em>, <em>mask_dtype</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/elric.html#Elric._per_fitting_window_dtype"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.elric.Elric._per_fitting_window_dtype" title="Permalink to this definition">¶</a></dt>
+<dd><p>Construct the record array data type for the output fits
+extension.</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.proc.elric.Elric._set_profile_ties">
+<em class="property">static </em><code class="descname">_set_profile_ties</code><span class="sig-paren">(</span><em>base_profiles</em>, <em>base_restwave</em>, <em>base_fixed_par</em>, <em>tied_profiles</em>, <em>tied_restwave</em>, <em>tied_fixed_par</em>, <em>mode</em>, <em>flux</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/elric.html#Elric._set_profile_ties"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.elric.Elric._set_profile_ties" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.proc.elric.Elric._velocity_vectors">
+<em class="property">static </em><code class="descname">_velocity_vectors</code><span class="sig-paren">(</span><em>wave</em>, <em>fitting_window</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/elric.html#Elric._velocity_vectors"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.elric.Elric._velocity_vectors" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.proc.elric.Elric.fit">
+<code class="descname">fit</code><span class="sig-paren">(</span><em>wave</em>, <em>flux</em>, <em>emission_lines</em>, <em>ivar=None</em>, <em>mask=None</em>, <em>sres=None</em>, <em>continuum=None</em>, <em>base_order=-1</em>, <em>window_buffer=25</em>, <em>guess_redshift=None</em>, <em>guess_dispersion=None</em>, <em>loggers=None</em>, <em>quiet=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/elric.html#Elric.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.elric.Elric.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>The flux array is expected to have size Nspec x Nwave.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if the length of the spectra, errors, or
+mask does not match the length of the wavelength array;
+raised if the wavelength, redshift, or dispersion arrays
+are not 1D vectors; and raised if the number of
+redshifts or dispersions is not a single value or the
+same as the number of input spectra.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.proc.elric.Elric.fit_SpatiallyBinnedSpectra">
+<code class="descname">fit_SpatiallyBinnedSpectra</code><span class="sig-paren">(</span><em>binned_spectra</em>, <em>par=None</em>, <em>loggers=None</em>, <em>quiet=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/elric.html#Elric.fit_SpatiallyBinnedSpectra"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.elric.Elric.fit_SpatiallyBinnedSpectra" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a basic interface that is geared for the DAP that
+interacts with the rest of the, more general, parts of the
+class.</p>
+<p>This should not declare anything to self!</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="mangadap.proc.elric.ElricFittingWindow">
+<em class="property">class </em><code class="descclassname">mangadap.proc.elric.</code><code class="descname">ElricFittingWindow</code><span class="sig-paren">(</span><em>nlines=None</em>, <em>db_indx=None</em>, <em>line_index=None</em>, <em>restwave=None</em>, <em>profile_set=None</em>, <em>fixed_par=None</em>, <em>bounds=None</em>, <em>log_bounds=None</em>, <em>output_model=None</em>, <em>tied_pairs=None</em>, <em>tied_funcs=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/elric.html#ElricFittingWindow"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.elric.ElricFittingWindow" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>A utility class for the fitting windows used by Elric</p>
+<p>The class can be instantiated as fully None.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>nlines</strong> (<em>int</em>) – (<strong>Optional</strong>) The number of lines to be fit
+simultaneously.</li>
+<li><strong>db_indx</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) An array with the
+database index (0-based) of each line to be fit.</li>
+<li><strong>line_index</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) An array with the
+index numbers, read from the database, of each line to be
+fit.</li>
+<li><strong>restwave</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) An array with the rest
+wavelengths of each line to be fit.</li>
+<li><strong>profile_set</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) An array with the
+profile objects that define the functional form of each
+line.</li>
+<li><strong>fixed_par</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) An array with the
+fixed parameters for <em>all</em> parameters in the model to be
+fit.</li>
+<li><strong>bounds</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) A two-column array with
+the lower (first column) and upper (second column) bounds
+for the fit parameters.</li>
+<li><strong>log_bounds</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) The range of the
+boundary should be considered as logarithmic when testing if
+a parameter is near its boundary.</li>
+<li><strong>output_model</strong> (<em>bool</em>) – (<strong>Optional</strong>) Include the best-fitting
+model in the composite emission-line model for each
+spectrum.  This is only flagged as true if ALL the emission
+lines in the fitting window are to be included according to
+the emission-line database.</li>
+<li><strong>tied_pairs</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) The series of
+tied profiles (<a class="reference internal" href="#mangadap.proc.elric.TiedLineProfile" title="mangadap.proc.elric.TiedLineProfile"><code class="xref py py-class docutils literal"><span class="pre">TiedLineProfile</span></code></a> objects) that are
+used to tie parameters of the model.</li>
+<li><strong>tied_funcs</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) The member functions
+of the <a class="reference internal" href="#mangadap.proc.elric.TiedLineProfile" title="mangadap.proc.elric.TiedLineProfile"><code class="xref py py-class docutils literal"><span class="pre">TiedLineProfile</span></code></a> objects that should be
+called <em>sequentially</em> to tie model parameters.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="mangadap.proc.elric.ElricFittingWindow.append">
+<code class="descname">append</code><span class="sig-paren">(</span><em>db_indx</em>, <em>line_index</em>, <em>restwave</em>, <em>profile</em>, <em>fixed_par</em>, <em>bounds</em>, <em>log_bounds</em>, <em>output_model</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/elric.html#ElricFittingWindow.append"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.elric.ElricFittingWindow.append" title="Permalink to this definition">¶</a></dt>
+<dd><p>Append another line to the fitting window.  Must be a single line!</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.proc.elric.ElricFittingWindow.reinit_profiles">
+<code class="descname">reinit_profiles</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/elric.html#ElricFittingWindow.reinit_profiles"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.elric.ElricFittingWindow.reinit_profiles" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.proc.elric.ElricFittingWindow.reset_init_mean">
+<code class="descname">reset_init_mean</code><span class="sig-paren">(</span><em>indx</em>, <em>newmean</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/elric.html#ElricFittingWindow.reset_init_mean"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.elric.ElricFittingWindow.reset_init_mean" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="mangadap.proc.elric.ElricPar">
+<em class="property">class </em><code class="descclassname">mangadap.proc.elric.</code><code class="descname">ElricPar</code><span class="sig-paren">(</span><em>emission_lines</em>, <em>base_order</em>, <em>window_buffer</em>, <em>guess_redshift</em>, <em>guess_dispersion</em>, <em>minimum_snr=None</em>, <em>pixelmask=None</em>, <em>stellar_continuum=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/elric.html#ElricPar"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.elric.ElricPar" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet" title="mangadap.par.parset.ParSet"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.parset.ParSet</span></code></a></p>
+<dl class="method">
+<dt id="mangadap.proc.elric.ElricPar.fromheader">
+<code class="descname">fromheader</code><span class="sig-paren">(</span><em>hdr</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/elric.html#ElricPar.fromheader"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.elric.ElricPar.fromheader" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.proc.elric.ElricPar.toheader">
+<code class="descname">toheader</code><span class="sig-paren">(</span><em>hdr</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/elric.html#ElricPar.toheader"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.elric.ElricPar.toheader" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="mangadap.proc.elric.LineProfileFit">
+<em class="property">class </em><code class="descclassname">mangadap.proc.elric.</code><code class="descname">LineProfileFit</code><span class="sig-paren">(</span><em>x</em>, <em>y</em>, <em>profile_list</em>, <em>base_order=None</em>, <em>error=None</em>, <em>mask=None</em>, <em>par=None</em>, <em>fixed=None</em>, <em>bounds=None</em>, <em>run_fit=True</em>, <em>construct_covariance=True</em>, <em>verbose=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/elric.html#LineProfileFit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.elric.LineProfileFit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Simultaneously fit multiple line profiles.  Currently only allows
+one to fit using an NCompLineProfile object.  The fitting algorithm
+used is <a class="reference external" href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.least_squares.html">scipy.optimize.least_squares</a> with fitting method ‘trf’ to
+allow for bounds.</p>
+<div class="admonition-todo admonition" id="index-1">
+<p class="first admonition-title">Todo</p>
+<p class="last">For multicomponent lines, set the first normalization to be the
+normalization for the sum of all components, then force the
+normalization of the subcomponents to be ordered from highest to
+lowest and bounded from 0 to 1.</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>x</strong> (<em>1D array</em>) – Independent variable</li>
+<li><strong>y</strong> (<em>1D array</em>) – Dependent variable</li>
+<li><strong>profile_list</strong> (list of or individual <code class="xref py py-class docutils literal"><span class="pre">NCompLineProfile</span></code>) – The profile(s) to fit to the dependent variable.</li>
+<li><strong>base_order</strong> (<em>int</em>) – (<strong>Optional</strong>) The order of the Legendre
+polynomial to include in the model for the baseline trend in
+y below the fitted line profile(s).</li>
+<li><strong>error</strong> (<em>1D array</em>) – (<strong>Optional</strong>) Error in the dependent
+variables.  If not provided, no error weighting is peformed
+during the fitting process, and the covariance <em>will not</em> be
+constructed.</li>
+<li><strong>mask</strong> (<em>1D array</em>) – (<strong>Optional</strong>) Boolean array used to ignore
+values in <cite>y</cite> during the fit.</li>
+<li><strong>par</strong> (<em>1D array</em>) – (<strong>Optional</strong>) Initial guess for model
+parameters.  The number of parameters much match the
+expectation based on the provided list of profiles and the
+order of the baseline polynomial.  If not provided, the
+parameters are initialized to 0.</li>
+<li><strong>fixed</strong> (<em>1D array</em>) – (<strong>Optional</strong>) Flags used to fix parameters
+during the fit.  The number of parameters much match the
+expectation based on the provided list of profiles and the
+order of the baseline polynomial.  If not provided, all
+parameters are freely fit.</li>
+<li><strong>bounds</strong> (<em>2-tuple</em>) – (<strong>Optional</strong>) Tuple with two array-like
+elements giving the upper and lower bound for each
+parameter.  The length of each array element must match the
+number of parameters.  For an unbounded problem, set
+<code class="docutils literal"><span class="pre">bounds=None</span></code>, or use numpy.inf with an appropriate sign
+to disable bounds on all or some variables.</li>
+<li><strong>run_fit</strong> (<em>bool</em>) – (<strong>Optional</strong>) Flag to run the fit upon
+instantiation of the object, which defaults to True.  If set
+to False, the object is initialized but the fit is not
+executed, and can be executed later using <a class="reference internal" href="#mangadap.proc.elric.LineProfileFit.fit" title="mangadap.proc.elric.LineProfileFit.fit"><code class="xref py py-func docutils literal"><span class="pre">fit()</span></code></a>.</li>
+<li><strong>construct_covariance</strong> (<em>bool</em>) – (<strong>Optional</strong>) Flag to construct
+the covariance matrix based on the result object provided by
+<a class="reference external" href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.least_squares.html">scipy.optimize.least_squares</a>, which defaults to True.  If
+set to False, the covariance matrix is set to None.</li>
+<li><strong>verbose</strong> (<em>int</em>) – (<strong>Optional</strong>) Verbosity level for
+<a class="reference external" href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.least_squares.html">scipy.optimize.least_squares</a>; default is 0.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="mangadap.proc.elric.LineProfileFit.x">
+<code class="descname">x</code><a class="headerlink" href="#mangadap.proc.elric.LineProfileFit.x" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>numpy.ndarray</em> – Independent variable of length <span class="math">\(M\)</span>.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.elric.LineProfileFit.y">
+<code class="descname">y</code><a class="headerlink" href="#mangadap.proc.elric.LineProfileFit.y" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>numpy.ndarray</em> – Dependent variable to be fit of length
+<span class="math">\(M\)</span>.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.elric.LineProfileFit.err">
+<code class="descname">err</code><a class="headerlink" href="#mangadap.proc.elric.LineProfileFit.err" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>numpy.ndarray</em> – Error, <span class="math">\(\sigma\)</span>, in the dependent
+variable of length <span class="math">\(M\)</span>.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.elric.LineProfileFit.mask">
+<code class="descname">mask</code><a class="headerlink" href="#mangadap.proc.elric.LineProfileFit.mask" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>numpy.ndarray</em> – Flag to fit dependent variables of length
+<span class="math">\(M\)</span>.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.elric.LineProfileFit.nlines">
+<code class="descname">nlines</code><a class="headerlink" href="#mangadap.proc.elric.LineProfileFit.nlines" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>int</em> – Number of lines being fit.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.elric.LineProfileFit.base_order">
+<code class="descname">base_order</code><a class="headerlink" href="#mangadap.proc.elric.LineProfileFit.base_order" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>int</em> – The order of the Legendre polynomial include
+in the model; see <a class="reference external" href="http://docs.astropy.org/en/stable/api/astropy.modeling.polynomial.Legendre1D.html">astropy.modeling.polynomial.Legendre1D</a>.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.elric.LineProfileFit.model">
+<code class="descname">model</code><a class="headerlink" href="#mangadap.proc.elric.LineProfileFit.model" title="Permalink to this definition">¶</a></dt>
+<dd><p><a class="reference external" href="http://docs.astropy.org/en/stable/modeling/compound-models.html">astropy.modeling.models.CompoundModel</a> – The compound
+model being fit composed of the line profiles and the
+baseline (if a baseline is being fit).  That is, this
+defines the function <span class="math">\(f(\mathbf{x}|\mathbf{\theta})\)</span>,
+where <span class="math">\(\mathbf{x}\)</span> is the dependent variable and
+<span class="math">\(\mathbf{\theta}\)</span> is the list of variables.  The
+fitting algorithm minimizes the (error-weighted) residuals
+to approximate <span class="math">\(y=f(\mathbf{x}|\mathbf{\theta})\)</span>.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.elric.LineProfileFit.npar">
+<code class="descname">npar</code><a class="headerlink" href="#mangadap.proc.elric.LineProfileFit.npar" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>int</em> – Total number of parameters in the model.  The is the
+number of parameters per line and the number of parameters
+included in the baseline.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.elric.LineProfileFit.nfitpar">
+<code class="descname">nfitpar</code><a class="headerlink" href="#mangadap.proc.elric.LineProfileFit.nfitpar" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>int</em> – Number of <em>free</em> parameters, defined as
+<span class="math">\(N\)</span>.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.elric.LineProfileFit.par">
+<code class="descname">par</code><a class="headerlink" href="#mangadap.proc.elric.LineProfileFit.par" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>numpy.ndarray</em> – Full list of model parameters, including
+those parameters that have been fixed.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.elric.LineProfileFit.fixed">
+<code class="descname">fixed</code><a class="headerlink" href="#mangadap.proc.elric.LineProfileFit.fixed" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>numpy.ndarray</em> – Flags to fit (False) or fix (True) a
+given parameter.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.elric.LineProfileFit.bounds">
+<code class="descname">bounds</code><a class="headerlink" href="#mangadap.proc.elric.LineProfileFit.bounds" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>2-tuple</em> – Tuple with two array-like
+elements giving the upper and lower bound for each
+parameter.  For an unbounded problem, this is set to
+<code class="docutils literal"><span class="pre">bounds=(-numpy.inf,numpy.inf)</span></code>.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.elric.LineProfileFit.result">
+<code class="descname">result</code><a class="headerlink" href="#mangadap.proc.elric.LineProfileFit.result" title="Permalink to this definition">¶</a></dt>
+<dd><p><a class="reference external" href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.OptimizeResult.html">scipy.optimize.OptimizeResult</a> – Object with the
+results from <a class="reference external" href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.least_squares.html">scipy.optimize.least_squares</a>.  The
+best-fitting parameters, <span class="math">\(\mathbf{\theta}\)</span>, is
+returned as <code class="docutils literal"><span class="pre">result.x</span></code>.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.elric.LineProfileFit.cov">
+<code class="descname">cov</code><a class="headerlink" href="#mangadap.proc.elric.LineProfileFit.cov" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>numpy.ndarray</em> – The formal covariance matrix for the fit.
+The <a class="reference external" href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.OptimizeResult.html">scipy.optimize.OptimizeResult</a> object provides the
+Jacobian of the model, an <span class="math">\(M \times N\)</span> array with
+elements</p>
+<div class="math">
+\[J_{ij} = \left.\frac{\partial f_i}{\partial
+\theta_j}\right|_{\mathbf{\theta}}\]</div>
+<p>at location in parameter space of the best-fitting model.
+This is used to construct the covariance matrix by taking
+the inverse of the curvature matrix:</p>
+<div class="math">
+\[\mathbf{\alpha}_{kl} = \left[\frac{1}{\sigma_{i}}
+J_{ik}\right]^{\rm T} \left[\frac{1}{\sigma_{i}}
+J_{il}\right].\]</div>
+<p>That is, <span class="math">\(\mathbf{C} = \mathbf{\alpha}^{-1}\)</span>.</p>
+</dd></dl>
+
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
+<li><code class="xref py py-exc docutils literal"><span class="pre">TypeError</span></code> – Raised if the provided profile objects are not
+instances of <code class="xref py py-class docutils literal"><span class="pre">NCompLineProfile</span></code>.</li>
+<li><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if any of the provided parameter arrays (par,
+fixed) are not one-dimensional or the number of parameters
+is not as expected based on the number of profile and
+baseline parameters.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition-todo admonition" id="index-2">
+<p class="first admonition-title">Todo</p>
+<ul class="last simple">
+<li>Provide a better initialization for the parameters.</li>
+<li>Need to provide the best-fitting parameters and errors as full
+vectors, including the fixed parameters.</li>
+</ul>
+</div>
+<dl class="method">
+<dt id="mangadap.proc.elric.LineProfileFit._assign_par">
+<code class="descname">_assign_par</code><span class="sig-paren">(</span><em>par</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/elric.html#LineProfileFit._assign_par"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.elric.LineProfileFit._assign_par" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fixed parameters are ignored!</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.proc.elric.LineProfileFit._calculate_covariance_matrix">
+<code class="descname">_calculate_covariance_matrix</code><span class="sig-paren">(</span><em>verbose=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/elric.html#LineProfileFit._calculate_covariance_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.elric.LineProfileFit._calculate_covariance_matrix" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.proc.elric.LineProfileFit._chi">
+<code class="descname">_chi</code><span class="sig-paren">(</span><em>par</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/elric.html#LineProfileFit._chi"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.elric.LineProfileFit._chi" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.proc.elric.LineProfileFit._quick_sample">
+<code class="descname">_quick_sample</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/elric.html#LineProfileFit._quick_sample"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.elric.LineProfileFit._quick_sample" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sample without providing/checking new input parameters.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.proc.elric.LineProfileFit._resid">
+<code class="descname">_resid</code><span class="sig-paren">(</span><em>par</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/elric.html#LineProfileFit._resid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.elric.LineProfileFit._resid" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.proc.elric.LineProfileFit.fit">
+<code class="descname">fit</code><span class="sig-paren">(</span><em>x</em>, <em>y</em>, <em>error=None</em>, <em>mask=None</em>, <em>construct_covariance=True</em>, <em>verbose=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/elric.html#LineProfileFit.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.elric.LineProfileFit.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fit the line profiles provided upon initialization to the data
+using <a class="reference external" href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.least_squares.html">scipy.optimize.least_squares</a>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.proc.elric.LineProfileFit.sample">
+<code class="descname">sample</code><span class="sig-paren">(</span><em>x</em>, <em>par=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/elric.html#LineProfileFit.sample"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.elric.LineProfileFit.sample" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="mangadap.proc.elric.TiedLineProfile">
+<em class="property">class </em><code class="descclassname">mangadap.proc.elric.</code><code class="descname">TiedLineProfile</code><span class="sig-paren">(</span><em>profile</em>, <em>base_profile</em>, <em>relative_flux=None</em>, <em>mean_separation=None</em>, <em>relative_stddev=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/elric.html#TiedLineProfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.elric.TiedLineProfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="mangadap.proc.elric.TiedLineProfile.tie_flux">
+<code class="descname">tie_flux</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/elric.html#TiedLineProfile.tie_flux"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.elric.TiedLineProfile.tie_flux" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.proc.elric.TiedLineProfile.tie_mean">
+<code class="descname">tie_mean</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/elric.html#TiedLineProfile.tie_mean"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.elric.TiedLineProfile.tie_mean" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.proc.elric.TiedLineProfile.tie_stddev">
+<code class="descname">tie_stddev</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/elric.html#TiedLineProfile.tie_stddev"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.elric.TiedLineProfile.tie_stddev" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="mangadap.proc.emissionlinemodel.html" class="btn btn-neutral float-right" title="mangadap.proc.emissionlinemodel module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="mangadap.proc.bandpassfilter.html" class="btn btn-neutral" title="mangadap.proc.bandpassfilter module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, SDSS-IV/MaNGA Pipeline Group.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'2.2.2',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
