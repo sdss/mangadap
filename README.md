@@ -27,3 +27,14 @@ future releases on a best-effort basis.
 
 ## Citation
 
+## Cloning the full repo
+
+This repo has submodules linked to Overleaf; see docs/README.md.  Of
+course, this documentation is not needed to run the code.  However, to
+pull across all the submodule files as well as the main repo files, use
+the `--recursive` option:
+
+`git clone --recursive https://github.com/sdss/mangadap.git`
+
+
+
