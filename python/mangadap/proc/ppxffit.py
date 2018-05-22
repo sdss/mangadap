@@ -32,7 +32,6 @@ Implements a wrapper class for pPXF.
         from ..util.bitmask import BitMask
         from ..util.fileio import init_record_array
         from ..util.instrument import spectrum_velocity_scale, resample1d, SpectralResolution
-        from ..contrib.ppxf import ppxf
         from .spatiallybinnedspectra import SpatiallyBinnedSpectra
         from .templatelibrary import TemplateLibrary
         from .pixelmask import PixelMask
@@ -68,6 +67,7 @@ Implements a wrapper class for pPXF.
         :func:`mangadap.util.instrument.resample_vector` to
         :func:`mangadap.util.instrument.resample1d`.
     | **05 Feb 2018**: (KBW) Added :class:`PPXFModel`.
+    | **22 May 2018**: (KBW) Change import to ppxf package.
 
 .. todo::
 
@@ -99,7 +99,7 @@ import numpy
 from scipy import interpolate, fftpack
 import astropy.constants
 
-from captools import ppxf, capfit
+from ppxf import ppxf, capfit
 
 from ..par.parset import ParSet
 from ..util.bitmask import BitMask

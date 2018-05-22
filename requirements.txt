@@ -6,5 +6,5 @@ matplotlib>=2.1.0
 astropy>=2.0.2
 pydl>=0.6.0
 ppxf==6.7.7
-vorbin==3.1.2
+vorbin==3.1.3
 
