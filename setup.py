@@ -9,7 +9,7 @@ import glob
 from setuptools import setup, find_packages
 
 
-_VERSION = '2.2.2dev'
+_VERSION = '2.2.3dev'
 _RELEASE = 'dev' not in _VERSION
 _MINIMUM_PYTHON_VERSION = '3.5'
 
