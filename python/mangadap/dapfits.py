@@ -106,6 +106,7 @@ from .util.bitmask import BitMask
 from .util.log import log_output
 from .util.fileio import channel_dictionary
 from .util.exception_tools import print_frame
+from .util.geometry import SemiMajorAxisCoo
 from .par.obsinput import ObsInputPar
 from .config.defaults import default_drp_version, default_dap_source, default_dap_version
 from .config.defaults import default_dap_par_file, default_analysis_path

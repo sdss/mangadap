@@ -1,6 +1,6 @@
 # !usr/bin/env python
 # -*- coding: utf-8 -*-
-# K. Westfall, 12 May 2018
+# K. Westfall, 22 May 2018
 #   Adapted from Marvin's setup.py file
 
 # Imports
@@ -8,7 +8,7 @@ import os
 import glob
 from setuptools import setup, find_packages
 
-# Define globally; why?
+
 _VERSION = '2.2.2dev'
 _RELEASE = 'dev' not in _VERSION
 _MINIMUM_PYTHON_VERSION = '3.5'
