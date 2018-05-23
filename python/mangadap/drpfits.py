@@ -936,12 +936,13 @@ class DRPFits:
 
         #Get the distances
         dij = numpy.zeros( (nim,nim), dtype=numpy.float64)
-        dij[jj>=ii] = numpy.sqrt( (j_i[jj>=ii]-i_i[jj>=ii])**2 + (j_j[jj>=ii]-i_j[jj>=ii])**2 )
+        dij[jj>=ii] = numpy.sqrt( numpy.square(j_i[jj>=ii]-i_i[jj>=ii]) 
+                                    + numpy.square(j_j[jj>=ii]-i_j[jj>=ii]) )
         dij[dij > 2*rlim/pixelscale] = 0.0
 
         #Set rho_ij
         rho_ij = numpy.zeros( (nim,nim), dtype=numpy.float64)
-        rho_ij[dij > 0] = numpy.exp(-0.5*(dij[dij > 0]/sigma_rho)**2)
+        rho_ij[dij > 0] = numpy.exp(-0.5*numpy.square(dij[dij > 0]/sigma_rho))
         rho_ij[ii==jj] = 1.0
 
         # Set the sparse rho matrix and save the parameters used to

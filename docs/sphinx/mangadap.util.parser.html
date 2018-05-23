@@ -1,0 +1,459 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mangadap.util.parser module &mdash; mangadap 2.2.2 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="mangadap 2.2.2 documentation" href="index.html"/>
+        <link rel="up" title="mangadap.util package" href="mangadap.util.html"/>
+        <link rel="next" title="mangadap.util.pixelmask module" href="mangadap.util.pixelmask.html"/>
+        <link rel="prev" title="mangadap.util.misc module" href="mangadap.util.misc.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> mangadap
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="mangadap.html">mangadap package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="mangadap.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="mangadap.config.html">mangadap.config package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.contrib.html">mangadap.contrib package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.par.html">mangadap.par package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.proc.html">mangadap.proc package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.survey.html">mangadap.survey package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.test.html">mangadap.test package</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="mangadap.util.html">mangadap.util package</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="mangadap.util.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="mangadap.util.html#module-mangadap.util">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="mangadap.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mangadap.html#module-mangadap">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">mangadap</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="mangadap.html">mangadap package</a> &raquo;</li>
+        
+          <li><a href="mangadap.util.html">mangadap.util package</a> &raquo;</li>
+        
+      <li>mangadap.util.parser module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/mangadap.util.parser.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-mangadap.util.parser">
+<span id="mangadap-util-parser-module"></span><h1>mangadap.util.parser module<a class="headerlink" href="#module-mangadap.util.parser" title="Permalink to this headline">¶</a></h1>
+<p>Provides a set of parsing utility functions.</p>
+<dl class="docutils">
+<dt><em>License</em>:</dt>
+<dd><dl class="first last docutils">
+<dt>Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group</dt>
+<dd>Licensed under BSD 3-clause license - see LICENSE.rst</dd>
+</dl>
+</dd>
+<dt><em>Source location</em>:</dt>
+<dd>$MANGADAP_DIR/python/mangadap/util/parser.py</dd>
+<dt><em>Imports and python version compliance</em>:</dt>
+<dd><div class="first last highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version</span> <span class="o">&gt;</span> <span class="s1">&#39;3&#39;</span><span class="p">:</span>
+    <span class="n">long</span> <span class="o">=</span> <span class="nb">int</span>
+
+<span class="kn">from</span> <span class="nn">.exception_tools</span> <span class="k">import</span> <span class="n">print_frame</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+<div class="admonition-todo admonition" id="index-0">
+<p class="first admonition-title">Todo</p>
+<ul class="last simple">
+<li>Add function that will parse the default MaNGA fits file name (see
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_manga_fits_root" title="mangadap.config.defaults.default_manga_fits_root"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_manga_fits_root()</span></code></a>).</li>
+</ul>
+</div>
+<dl class="docutils">
+<dt><em>Revision history</em>:</dt>
+<dd><div class="first last line-block">
+<div class="line"><strong>2015</strong>: Original implementation by K. Westfall (KBW)</div>
+<div class="line"><strong>20 May 2015</strong>: (KBW) Documentation and Sphinx tests</div>
+<div class="line"><strong>04 Jun 2015</strong>: (KBW) Added <a class="reference internal" href="#mangadap.util.parser.parse_drp_file_name" title="mangadap.util.parser.parse_drp_file_name"><code class="xref py py-func docutils literal"><span class="pre">parse_drp_file_name()</span></code></a>,
+<a class="reference internal" href="#mangadap.util.parser.parse_dap_file_name" title="mangadap.util.parser.parse_dap_file_name"><code class="xref py py-func docutils literal"><span class="pre">parse_dap_file_name()</span></code></a></div>
+</div>
+</dd>
+</dl>
+<dl class="class">
+<dt id="mangadap.util.parser.DefaultConfig">
+<em class="property">class </em><code class="descclassname">mangadap.util.parser.</code><code class="descname">DefaultConfig</code><span class="sig-paren">(</span><em>f=None</em>, <em>interpolate=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/parser.html#DefaultConfig"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.parser.DefaultConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>A wrapper for the ConfigParser class that handles None values and
+provides some convenience functions.</p>
+<dl class="method">
+<dt id="mangadap.util.parser.DefaultConfig.all_required">
+<code class="descname">all_required</code><span class="sig-paren">(</span><em>keys</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/parser.html#DefaultConfig.all_required"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.parser.DefaultConfig.all_required" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.parser.DefaultConfig.get">
+<code class="descname">get</code><span class="sig-paren">(</span><em>key</em>, <em>default=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/parser.html#DefaultConfig.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.parser.DefaultConfig.get" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.parser.DefaultConfig.getbool">
+<code class="descname">getbool</code><span class="sig-paren">(</span><em>key</em>, <em>default=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/parser.html#DefaultConfig.getbool"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.parser.DefaultConfig.getbool" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.parser.DefaultConfig.getfloat">
+<code class="descname">getfloat</code><span class="sig-paren">(</span><em>key</em>, <em>default=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/parser.html#DefaultConfig.getfloat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.parser.DefaultConfig.getfloat" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.parser.DefaultConfig.getint">
+<code class="descname">getint</code><span class="sig-paren">(</span><em>key</em>, <em>default=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/parser.html#DefaultConfig.getint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.parser.DefaultConfig.getint" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.parser.DefaultConfig.getlist">
+<code class="descname">getlist</code><span class="sig-paren">(</span><em>key</em>, <em>evaluate=False</em>, <em>default=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/parser.html#DefaultConfig.getlist"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.parser.DefaultConfig.getlist" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.parser.DefaultConfig.keyword_specified">
+<code class="descname">keyword_specified</code><span class="sig-paren">(</span><em>key</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/parser.html#DefaultConfig.keyword_specified"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.parser.DefaultConfig.keyword_specified" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.parser.DefaultConfig.read">
+<code class="descname">read</code><span class="sig-paren">(</span><em>f</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/parser.html#DefaultConfig.read"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.parser.DefaultConfig.read" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="mangadap.util.parser.arginp_to_list">
+<code class="descclassname">mangadap.util.parser.</code><code class="descname">arginp_to_list</code><span class="sig-paren">(</span><em>inp</em>, <em>evaluate=False</em>, <em>quiet=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/parser.html#arginp_to_list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.parser.arginp_to_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>Separate a list of comma-separated values in the input string to a
+<em>list</em> object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>inp</strong> (<em>str</em><em> or </em><em>list</em>) – Input string with a list of comma-separated values</li>
+<li><strong>evaluate</strong> (<em>bool</em>) – (Optional) Attempt to evaluate the elements in
+the list using <code class="xref py py-func docutils literal"><span class="pre">eval()</span></code>.</li>
+<li><strong>quiet</strong> (<em>bool</em>) – (Optional) Suppress terminal output</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The list of the comma-separated values</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">list</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="mangadap.util.parser.list_to_csl_string">
+<code class="descclassname">mangadap.util.parser.</code><code class="descname">list_to_csl_string</code><span class="sig-paren">(</span><em>flist</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/parser.html#list_to_csl_string"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.parser.list_to_csl_string" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a list to a comma-separated string; i.e. perform the inverse
+of <a class="reference internal" href="#mangadap.util.parser.arginp_to_list" title="mangadap.util.parser.arginp_to_list"><code class="xref py py-func docutils literal"><span class="pre">arginp_to_list()</span></code></a>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>flist</strong> (<em>list</em>) – List to convert to a comma-separated string</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">String with the values in the input list converted to
+string, using <code class="xref py py-func docutils literal"><span class="pre">str()</span></code>, separated by commas</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">str</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="mangadap.util.parser.parse_dap_file_name">
+<code class="descclassname">mangadap.util.parser.</code><code class="descname">parse_dap_file_name</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/parser.html#parse_dap_file_name"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.parser.parse_dap_file_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse the name of a DAP file and return the plate, ifudesign, mode,
+binning type, and iteration number.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>name</strong> (<em>str</em>) – Name of the DAP file.</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The plate, ifudesign, mode (‘RSS’ or
+‘CUBE’), bin type, and iteration number of the DAP file, pulled
+from the name of the file.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">int, int, str, str, int</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
+<li><code class="xref py py-exc docutils literal"><span class="pre">TypeError</span></code> – Raised if <em>name</em> is not a string.</li>
+<li><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if if the file name does not look like a DRP
+file because it does not include ‘manga-‘, ‘-BIN’, or
+‘.fits’.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="mangadap.util.parser.parse_drp_file_name">
+<code class="descclassname">mangadap.util.parser.</code><code class="descname">parse_drp_file_name</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/parser.html#parse_drp_file_name"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.parser.parse_drp_file_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse the name of a DRP file to provide the plate, ifudesign, and
+mode.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>name</strong> (<em>str</em>) – Name of the DRP file.</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The plate, ifudesign, and mode (‘RSS’ or ‘CUBE’)
+of the DRP file pulled from the file name.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">int, int, str</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
+<li><code class="xref py py-exc docutils literal"><span class="pre">TypeError</span></code> – Raised if <em>name</em> is not a string.</li>
+<li><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if if the file name does not look like a DRP
+file because it does not include ‘manga-‘, ‘-LOG’, or
+‘.fits.gz’.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="mangadap.util.pixelmask.html" class="btn btn-neutral float-right" title="mangadap.util.pixelmask module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="mangadap.util.misc.html" class="btn btn-neutral" title="mangadap.util.misc module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, SDSS-IV/MaNGA Pipeline Group.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'2.2.2',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

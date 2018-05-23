@@ -1,0 +1,545 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mangadap.par.parset module &mdash; mangadap 2.2.2 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="mangadap 2.2.2 documentation" href="index.html"/>
+        <link rel="up" title="mangadap.par package" href="mangadap.par.html"/>
+        <link rel="next" title="mangadap.par.spectralfeaturedb module" href="mangadap.par.spectralfeaturedb.html"/>
+        <link rel="prev" title="mangadap.par.obsinput module" href="mangadap.par.obsinput.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> mangadap
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="mangadap.html">mangadap package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="mangadap.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="mangadap.config.html">mangadap.config package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.contrib.html">mangadap.contrib package</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="mangadap.par.html">mangadap.par package</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="mangadap.par.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="mangadap.par.html#module-mangadap.par">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.proc.html">mangadap.proc package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.survey.html">mangadap.survey package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.test.html">mangadap.test package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.util.html">mangadap.util package</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="mangadap.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mangadap.html#module-mangadap">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">mangadap</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="mangadap.html">mangadap package</a> &raquo;</li>
+        
+          <li><a href="mangadap.par.html">mangadap.par package</a> &raquo;</li>
+        
+      <li>mangadap.par.parset module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/mangadap.par.parset.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-mangadap.par.parset">
+<span id="mangadap-par-parset-module"></span><h1>mangadap.par.parset module<a class="headerlink" href="#module-mangadap.par.parset" title="Permalink to this headline">¶</a></h1>
+<p>Define a utility base class used to hold parameters.</p>
+<dl class="docutils">
+<dt><em>License</em>:</dt>
+<dd><dl class="first last docutils">
+<dt>Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group</dt>
+<dd>Licensed under BSD 3-clause license - see LICENSE.rst</dd>
+</dl>
+</dd>
+<dt><em>Class usage examples</em>:</dt>
+<dd>to be added</dd>
+</dl>
+<div class="admonition-todo admonition" id="index-0">
+<p class="first admonition-title">Todo</p>
+<ul class="last simple">
+<li>Add range and length parameters allowing one to define the range
+allowed for the parameter values and number of elements required
+(if the parameter is an array)</li>
+<li>Allow for a from_par_file classmethod to initialize the parameter
+set based on a yanny parameter file.</li>
+<li>Save the defaults and allow for a revert_to_default function.</li>
+<li>Write an __add__ function that will all you to add multiple
+parameter sets.</li>
+</ul>
+</div>
+<dl class="docutils">
+<dt><em>Revision history</em>:</dt>
+<dd><div class="first last line-block">
+<div class="line"><strong>16 Jun 2015</strong>: Original implementation by K. Westfall (KBW)</div>
+<div class="line"><strong>18 Mar 2016</strong>: (KBW) Change dtype checking</div>
+<div class="line"><strong>23 Mar 2016</strong>: (KBW) Changed initialization type checking of
+lists to use <a class="reference external" href="https://docs.python.org/2/library/functions.html#isinstance">isinstance</a>.</div>
+<div class="line"><strong>02 Apr 2016</strong>: (KBW) Allow input parameters to be callable
+functions.</div>
+<div class="line"><strong>05 Apr 2018</strong>: (KBW) Added to pypit repo</div>
+<div class="line"><strong>18 Apr 2018</strong>: (KBW) Add parameter descriptions; keep default
+values as attributes</div>
+<div class="line"><strong>19 Apr 2018</strong>: (KBW) Spruce up the __repr__ function and add the
+info function.  Add to_config function to write to a
+configuration file.</div>
+</div>
+</dd>
+</dl>
+<dl class="class">
+<dt id="mangadap.par.parset.ParDatabase">
+<em class="property">class </em><code class="descclassname">mangadap.par.parset.</code><code class="descname">ParDatabase</code><span class="sig-paren">(</span><em>inp</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/par/parset.html#ParDatabase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.par.parset.ParDatabase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Class used as a list of ParSets in a glorified structured numpy
+array.</p>
+<p>Very similar to yanny when converted to a numpy array.</p>
+<p>Can be initialized using a list of ParSet objects, or an SDSS
+parameter file.</p>
+<div class="admonition-todo admonition" id="index-1">
+<p class="first admonition-title">Todo</p>
+<ul class="last simple">
+<li>Check that the data types are the same for all ParSet objects
+in the list</li>
+<li>Better handle the NaN values when converting None to a float
+type</li>
+<li>Add from_par_file classmethod?</li>
+</ul>
+</div>
+<dl class="staticmethod">
+<dt id="mangadap.par.parset.ParDatabase._set_dtypes">
+<em class="property">static </em><code class="descname">_set_dtypes</code><span class="sig-paren">(</span><em>inp</em>, <em>i</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/par/parset.html#ParDatabase._set_dtypes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.par.parset.ParDatabase._set_dtypes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.par.parset.ParDatabase.append">
+<code class="descname">append</code><span class="sig-paren">(</span><em>pdb</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/par/parset.html#ParDatabase.append"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.par.parset.ParDatabase.append" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="mangadap.par.parset.ParSet">
+<em class="property">class </em><code class="descclassname">mangadap.par.parset.</code><code class="descname">ParSet</code><span class="sig-paren">(</span><em>pars</em>, <em>values=None</em>, <em>defaults=None</em>, <em>options=None</em>, <em>dtypes=None</em>, <em>can_call=None</em>, <em>descr=None</em>, <em>cfg_section=None</em>, <em>cfg_comment=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/par/parset.html#ParSet"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.par.parset.ParSet" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Generic base class to handle and manipulate a list of operational
+parameters.  A glorified dictionary that constrains and types its
+components.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>pars</strong> (<em>list</em>) – A list of keywords for a list of parameter values.</li>
+<li><strong>values</strong> (<code class="xref py py-obj docutils literal"><span class="pre">list</span></code>, optional) – Initialize the parameters to these values.  If not provided,
+all parameters are initialized to <cite>None</cite> or the provided
+default.</li>
+<li><strong>defaults</strong> (<code class="xref py py-obj docutils literal"><span class="pre">list</span></code>, optional) – For any parameters not provided in the <em>values</em> list, use
+these default values.  If not provided, no defaults are
+assumed.</li>
+<li><strong>options</strong> (<code class="xref py py-obj docutils literal"><span class="pre">list</span></code>, optional) – Force the parameters to be one of a list of options.  Each
+element in the list can be a list itself.  If not provided,
+all parameters are allowed to take on any value within the
+allowed data type.</li>
+<li><strong>dtypes</strong> (<code class="xref py py-obj docutils literal"><span class="pre">list</span></code>, optional) – Force the parameter to be one of a list of data types.  Each
+element in the list can be a list itself.  If not provided,
+all parameters are allowed to have any data type.</li>
+<li><strong>can_call</strong> (<code class="xref py py-obj docutils literal"><span class="pre">list</span></code>, optional) – Flag that the parameters are
+callable operations.  Default is False.</li>
+<li><strong>descr</strong> (<code class="xref py py-obj docutils literal"><span class="pre">list</span></code>, optional) – A list of parameter descriptions.  Empty strings by default.</li>
+<li><strong>cfg_section</strong> (<code class="xref py py-obj docutils literal"><span class="pre">str</span></code>, optional) – The top-level designation for a configuration section
+written based on the contents of this parameter set.</li>
+<li><strong>cfg_comment</strong> (<code class="xref py py-obj docutils literal"><span class="pre">str</span></code>, optional) – Comment to be placed at the top-level of the configuration
+section written based on the contents of this parameter set.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
+<li><code class="xref py py-exc docutils literal"><span class="pre">TypeError</span></code> – Raised if the input parameters are not lists or if the input
+keys are not strings.</li>
+<li><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if any of the optional arguments do not have the same
+length as the input list of parameter keys.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="mangadap.par.parset.ParSet.npar">
+<code class="descname">npar</code><a class="headerlink" href="#mangadap.par.parset.ParSet.npar" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>int</em> – Number of parameters</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.par.parset.ParSet.data">
+<code class="descname">data</code><a class="headerlink" href="#mangadap.par.parset.ParSet.data" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>dict</em> – Dictionary with the parameter values</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.par.parset.ParSet.default">
+<code class="descname">default</code><a class="headerlink" href="#mangadap.par.parset.ParSet.default" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>dict</em> – Dictionary with the default values</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.par.parset.ParSet.options">
+<code class="descname">options</code><a class="headerlink" href="#mangadap.par.parset.ParSet.options" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>dict</em> – Dictionary with the allowed options for the parameter values</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.par.parset.ParSet.dtype">
+<code class="descname">dtype</code><a class="headerlink" href="#mangadap.par.parset.ParSet.dtype" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>dict</em> – Dictionary with the allowed data types for the parameters</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.par.parset.ParSet.can_call">
+<code class="descname">can_call</code><a class="headerlink" href="#mangadap.par.parset.ParSet.can_call" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>dict</em> – Dictionary with the callable flags</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.par.parset.ParSet.descr">
+<code class="descname">descr</code><a class="headerlink" href="#mangadap.par.parset.ParSet.descr" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>dict</em> – Dictionary with the description of each parameter.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.par.parset.ParSet.cfg_section">
+<code class="descname">cfg_section</code><a class="headerlink" href="#mangadap.par.parset.ParSet.cfg_section" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>str</em> – The top-level designation for a configuration section
+written based on the contents of this parameter set.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.par.parset.ParSet.cfg_comment">
+<code class="descname">cfg_comment</code><a class="headerlink" href="#mangadap.par.parset.ParSet.cfg_comment" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>str</em> – Comment to be placed at the top-level of the configuration
+section written based on the contents of this parameter set.</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.par.parset.ParSet._config_comment">
+<em class="property">static </em><code class="descname">_config_comment</code><span class="sig-paren">(</span><em>comment</em>, <em>indent</em>, <em>full_width=72</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/par/parset.html#ParSet._config_comment"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.par.parset.ParSet._config_comment" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.par.parset.ParSet._config_lines">
+<code class="descname">_config_lines</code><span class="sig-paren">(</span><em>section_name=None</em>, <em>section_comment=None</em>, <em>section_level=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/par/parset.html#ParSet._config_lines"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.par.parset.ParSet._config_lines" title="Permalink to this definition">¶</a></dt>
+<dd><p>Recursively generate the lines of a configuration file based on
+this ParSet and its ParSet members.</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.par.parset.ParSet._data_string">
+<em class="property">static </em><code class="descname">_data_string</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/par/parset.html#ParSet._data_string"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.par.parset.ParSet._data_string" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.par.parset.ParSet._data_table_string">
+<em class="property">static </em><code class="descname">_data_table_string</code><span class="sig-paren">(</span><em>data_table</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/par/parset.html#ParSet._data_table_string"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.par.parset.ParSet._data_table_string" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.par.parset.ParSet._output_string">
+<code class="descname">_output_string</code><span class="sig-paren">(</span><em>header=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/par/parset.html#ParSet._output_string"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.par.parset.ParSet._output_string" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.par.parset.ParSet._types_list">
+<code class="descname">_types_list</code><span class="sig-paren">(</span><em>key</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/par/parset.html#ParSet._types_list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.par.parset.ParSet._types_list" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.par.parset.ParSet._wrap_print">
+<code class="descname">_wrap_print</code><span class="sig-paren">(</span><em>head</em>, <em>output</em>, <em>tcols</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/par/parset.html#ParSet._wrap_print"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.par.parset.ParSet._wrap_print" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.par.parset.ParSet.add">
+<code class="descname">add</code><span class="sig-paren">(</span><em>key</em>, <em>value</em>, <em>default=None</em>, <em>options=None</em>, <em>dtype=None</em>, <em>can_call=None</em>, <em>descr=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/par/parset.html#ParSet.add"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.par.parset.ParSet.add" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a new parameter.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>key</strong> (<code class="xref py py-obj docutils literal"><span class="pre">str</span></code>) – Key for new parameter</li>
+<li><strong>value</strong> (<a class="reference internal" href="#mangadap.par.parset.ParSet.dtype" title="mangadap.par.parset.ParSet.dtype"><code class="xref py py-obj docutils literal"><span class="pre">dtype</span></code></a>) – Parameter value, must have a type in the list provided
+by <a href="#id1"><span class="problematic" id="id2">:arg:`dtype`</span></a>, if the list is provided</li>
+<li><strong>default</strong> (<a class="reference internal" href="#mangadap.par.parset.ParSet.dtype" title="mangadap.par.parset.ParSet.dtype"><code class="xref py py-obj docutils literal"><span class="pre">dtype</span></code></a>, optional) – Define a default value for the parameter, must have a
+type in the list provided by <a href="#id3"><span class="problematic" id="id4">:arg:`dtype`</span></a>, if the list
+is provided.  No default if not provided.</li>
+<li><strong>options</strong> (<code class="xref py py-obj docutils literal"><span class="pre">list</span></code>, optional) – List of discrete values that the parameter is allowed to
+have.  Allowed to be anything if not provided.</li>
+<li><strong>dtype</strong> (<code class="xref py py-obj docutils literal"><span class="pre">list</span></code>, optional) – List of allowed data types that the parameter can have.
+Allowed to be anything if not provided.</li>
+<li><strong>can_call</strong> (<code class="xref py py-obj docutils literal"><span class="pre">bool</span></code>, optional) – Flag that the parameters are callable operations.
+Default is False.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.par.parset.ParSet.info">
+<code class="descname">info</code><span class="sig-paren">(</span><em>basekey=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/par/parset.html#ParSet.info"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.par.parset.ParSet.info" title="Permalink to this definition">¶</a></dt>
+<dd><p>A long-form version of __repr__ that includes the parameter descriptions.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.par.parset.ParSet.keys">
+<code class="descname">keys</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/par/parset.html#ParSet.keys"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.par.parset.ParSet.keys" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.par.parset.ParSet.to_config">
+<code class="descname">to_config</code><span class="sig-paren">(</span><em>cfg_file</em>, <em>section_name=None</em>, <em>section_comment=None</em>, <em>section_level=0</em>, <em>append=False</em>, <em>quiet=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/par/parset.html#ParSet.to_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.par.parset.ParSet.to_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write/Append the parameter set to a configuration file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>cfg_file</strong> (<em>str</em>) – The name of the file to write/append to.</li>
+<li><strong>section_name</strong> (<code class="xref py py-obj docutils literal"><span class="pre">str</span></code>, optional) – The top-level name for the config section.  This must be
+provided if <a class="reference internal" href="#mangadap.par.parset.ParSet.cfg_section" title="mangadap.par.parset.ParSet.cfg_section"><code class="xref py py-attr docutils literal"><span class="pre">cfg_section</span></code></a> is None or any of the
+parameters are not also ParSet instances themselves.</li>
+<li><strong>section_comment</strong> (<code class="xref py py-obj docutils literal"><span class="pre">str</span></code>, optional) – The top-level comment for the config section based on
+this ParSet.</li>
+<li><strong>section_level</strong> (<code class="xref py py-obj docutils literal"><span class="pre">int</span></code>, optional) – The top level of this ParSet.  Used for recursive output
+of nested ParSets.</li>
+<li><strong>append</strong> (<code class="xref py py-obj docutils literal"><span class="pre">bool</span></code>, optional) – Append this configuration output of this ParSet to the
+file.  False by default.  If not appending and the file
+exists, the file is automatically overwritten.</li>
+<li><strong>quiet</strong> (<code class="xref py py-obj docutils literal"><span class="pre">bool</span></code>, optional) – Suppress all standard output from the function.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if there are types other than ParSet in the
+parameter list, <a class="reference internal" href="#mangadap.par.parset.ParSet.cfg_section" title="mangadap.par.parset.ParSet.cfg_section"><code class="xref py py-attr docutils literal"><span class="pre">cfg_section</span></code></a> is None, and no
+section_name argument was provided.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="mangadap.par.spectralfeaturedb.html" class="btn btn-neutral float-right" title="mangadap.par.spectralfeaturedb module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="mangadap.par.obsinput.html" class="btn btn-neutral" title="mangadap.par.obsinput module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, SDSS-IV/MaNGA Pipeline Group.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'2.2.2',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

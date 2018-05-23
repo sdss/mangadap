@@ -1,0 +1,544 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mangadap.survey.mangampl module &mdash; mangadap 2.2.2 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="mangadap 2.2.2 documentation" href="index.html"/>
+        <link rel="up" title="mangadap.survey package" href="mangadap.survey.html"/>
+        <link rel="next" title="mangadap.survey.rundap module" href="mangadap.survey.rundap.html"/>
+        <link rel="prev" title="mangadap.survey.manga_dap module" href="mangadap.survey.manga_dap.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> mangadap
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="mangadap.html">mangadap package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="mangadap.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="mangadap.config.html">mangadap.config package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.contrib.html">mangadap.contrib package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.par.html">mangadap.par package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.proc.html">mangadap.proc package</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="mangadap.survey.html">mangadap.survey package</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="mangadap.survey.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="mangadap.survey.html#module-mangadap.survey">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.test.html">mangadap.test package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.util.html">mangadap.util package</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="mangadap.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mangadap.html#module-mangadap">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">mangadap</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="mangadap.html">mangadap package</a> &raquo;</li>
+        
+          <li><a href="mangadap.survey.html">mangadap.survey package</a> &raquo;</li>
+        
+      <li>mangadap.survey.mangampl module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/mangadap.survey.mangampl.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-mangadap.survey.mangampl">
+<span id="mangadap-survey-mangampl-module"></span><h1>mangadap.survey.mangampl module<a class="headerlink" href="#module-mangadap.survey.mangampl" title="Permalink to this headline">¶</a></h1>
+<p>Defines a class to keep track of MaNGA MPL dependencies and versioning.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This class was created for the survey-level execution of the DAP.
+The dependencies will necessarily grow, and will be handled using
+module files.  So, even as it is, this class has little utility.</p>
+</div>
+<dl class="docutils">
+<dt><em>License</em>:</dt>
+<dd><dl class="first last docutils">
+<dt>Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group</dt>
+<dd>Licensed under BSD 3-clause license - see LICENSE.rst</dd>
+</dl>
+</dd>
+<dt><em>Source location</em>:</dt>
+<dd>$MANGADAP_DIR/python/mangadap/mangampl.py</dd>
+<dt><em>Imports and python version compliance</em>:</dt>
+<dd><div class="first last highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version</span> <span class="o">&gt;</span> <span class="s1">&#39;3&#39;</span><span class="p">:</span>
+    <span class="n">long</span> <span class="o">=</span> <span class="nb">int</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">distutils.version</span> <span class="k">import</span> <span class="n">StrictVersion</span>
+
+<span class="c1"># For version checking</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">import</span> <span class="nn">scipy</span>
+<span class="kn">import</span> <span class="nn">matplotlib</span>
+<span class="kn">import</span> <span class="nn">astropy</span>
+<span class="kn">import</span> <span class="nn">pydl</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+<p><em>Class usage examples</em>:</p>
+<blockquote>
+<div><div class="admonition-todo admonition" id="index-0">
+<p class="first admonition-title">Todo</p>
+<p class="last">Add some usage comments here!</p>
+</div>
+</div></blockquote>
+<dl class="docutils">
+<dt><em>Revision history</em>:</dt>
+<dd><div class="first last line-block">
+<div class="line"><strong>2015</strong>: Original Implementation by K. Westfall (KBW)</div>
+<div class="line"><strong>Apr 2015</strong>: (KBW) Added MPL-3</div>
+<div class="line"><strong>20 May 2015</strong>: (KBW) Documentation and Sphinx tests. Change
+default to MPL-3</div>
+<div class="line"><strong>27 Aug 2015</strong>: (KBW) Added (temporary) MPL-4 dependencies</div>
+<div class="line"><strong>06 Oct 2015</strong>: (KBW) Changed DRP version for MPL-4 to v1_5_0</div>
+<div class="line"><strong>22 Oct 2015</strong>: (KBW) Changed DRP version for MPL-4 to v1_5_1.  Added
+version dependency for mangacore and sdss_access.</div>
+<div class="line"><strong>13 May 2016</strong>: (KBW) Added MPL-5 (for now trunk).</div>
+<div class="line"><strong>10 Oct 2016</strong>: (KBW) Updated for MPL-6 (DAP is trunk
+temporarily).</div>
+<div class="line"><strong>11 Oct 2016</strong>: (KBW) Moved version checking to here (previously
+in rundap.py).</div>
+<div class="line"><strong>11 May 2017</strong>: (KBW) Update MPL-6 dependencies; remove
+module_file function</div>
+</div>
+</dd>
+</dl>
+<dl class="class">
+<dt id="mangadap.survey.mangampl.MaNGAMPL">
+<em class="property">class </em><code class="descclassname">mangadap.survey.mangampl.</code><code class="descname">MaNGAMPL</code><span class="sig-paren">(</span><em>version=None</em>, <em>strictver=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/survey/mangampl.html#MaNGAMPL"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.survey.mangampl.MaNGAMPL" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Create an object that keeps track of IDLUTILS, SDSS_ACCESS, MANGACORE, and
+MANGADRP dependencies for a given MPL and other intermediate analyses.
+Dependencies are selected by the “MPL” version as provided in the
+following table:</p>
+<p><strong>SDSS dependencies</strong>
++——–+————-+————+——–+——–+——–+
+|  MPL   | SDSS_ACCESS |  IDLUTILS  |   CORE |   DRP  |   DAP  |
++========+=============+============+========+========+========+
+| MPL-1  |        None |    v5_5_16 | v1_0_0 | v1_0_0 |   None |
++——–+————-+————+——–+——–+——–+
+| MPL-2  |        None |    v5_5_17 | v1_0_0 | v1_1_2 |   None |
++——–+————-+————+——–+——–+——–+
+| v1_2_0 |        None |    v5_5_19 | v1_1_0 | v1_2_0 |   None |
++——–+————-+————+——–+——–+——–+
+| MPL-3  |        None |    v5_5_22 | v1_1_0 | v1_3_3 | v1_0_0 |
++——–+————-+————+——–+——–+——–+
+| MPL-4  |       0.0.0 |    v5_5_23 | v1_2_0 | v1_5_1 |  1.1.1 |
++——–+————-+————+——–+——–+——–+
+| MPL-5  |       0.2.0 |    v5_5_26 | v1_3_1 | v2_0_1 |  2.0.2 |
++——–+————-+————+——–+——–+——–+
+| MPL-6  |        None |    v5_5_30 | v1_6_0 | v2_3_1 |  2.1.3 |
++——–+————-+————+——–+——–+——–+
+| MPL-7  |        None |    v5_5_32 | v1_6_2 | v2_4_3 |  2.2.1 |
++——–+————-+————+——–+——–+——–+</p>
+<p><strong>Python versions</strong>
++——–+——–+——–+——–+————+———+——-+—————-+
+| MPL    | python | numpy  |  scipy | matplotlib | astropy |  pydl | Fwd compatible |
++========+========+========+========+============+=========+=======+================+
+| MPL-5  |  3.5.1 | 1.11.0 | 0.17.1 |       None |   1.1.2 | 0.5.0 |            yes |
++——–+——–+——–+——–+————+———+——-+—————-+
+| MPL-6  |  3.6.3 | 1.13.3 |  1.0.0 |       None |   2.0.2 | 0.6.0 |            N/A |
++——–+——–+——–+——–+————+———+——-+—————-+
+| MPL-7  |  3.6.3 | 1.13.3 |  1.0.0 |       None |   2.0.2 | 0.6.0 |            N/A |
++——–+——–+——–+——–+————+———+——-+—————-+</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<ul class="last simple">
+<li>“Fwd compatible” means that you can run this version of the
+DAP with the most recent version without needed to revert the
+python packages to their previous versions.</li>
+<li>Only the survey-level routines are dependent on MANGACORE; the
+core DAP processing software only depends on the listed python
+packages.</li>
+</ul>
+</div>
+<div class="admonition-todo admonition" id="index-1">
+<p class="first admonition-title">Todo</p>
+<ul class="last simple">
+<li>Change python dependencies to “minimum” versions?</li>
+</ul>
+</div>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<ul class="last simple">
+<li>SDSS_ACCESS dependencies are only because of the plotting
+package that has since moved into Marvin.</li>
+<li>For MPL-1, the MANGACORE version was set to trunk.  Here it
+defaults to v1_0_0.</li>
+<li>Explicit dependence on matplotlib was introduced in MPL-6.</li>
+</ul>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>version</strong> (<em>str</em>) – (<strong>Optional</strong>) Version as selected via matching
+to the “MPL” string in the table listed above. Default:
+MPL-6.</li>
+<li><strong>strictver</strong> (<em>bool</em>) – (<strong>Optional</strong>) Strictly check the version
+requirements for this version of the dap.  Default is True,
+meaning the code will raise an exception if the expected
+version are not the same as the environment.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if the provided <em>version</em> is not one of the
+MPL values in the above table.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="mangadap.survey.mangampl.MaNGAMPL.mplver">
+<code class="descname">mplver</code><a class="headerlink" href="#mangadap.survey.mangampl.MaNGAMPL.mplver" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>str</em> – Version as selected via matching to the “MPL”
+string in the table listed above. Default: MPL-5.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.survey.mangampl.MaNGAMPL.accessver">
+<code class="descname">accessver</code><a class="headerlink" href="#mangadap.survey.mangampl.MaNGAMPL.accessver" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>str</em> – SDSS_ACCESS version.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.survey.mangampl.MaNGAMPL.idlver">
+<code class="descname">idlver</code><a class="headerlink" href="#mangadap.survey.mangampl.MaNGAMPL.idlver" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>str</em> – IDLUTILS version.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.survey.mangampl.MaNGAMPL.corever">
+<code class="descname">corever</code><a class="headerlink" href="#mangadap.survey.mangampl.MaNGAMPL.corever" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>str</em> – MANGACORE version.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.survey.mangampl.MaNGAMPL.drpver">
+<code class="descname">drpver</code><a class="headerlink" href="#mangadap.survey.mangampl.MaNGAMPL.drpver" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>str</em> – MANGADRP version.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.survey.mangampl.MaNGAMPL.dapver">
+<code class="descname">dapver</code><a class="headerlink" href="#mangadap.survey.mangampl.MaNGAMPL.dapver" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>str</em> – MANGADAP version.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.survey.mangampl.MaNGAMPL.pythonver">
+<code class="descname">pythonver</code><a class="headerlink" href="#mangadap.survey.mangampl.MaNGAMPL.pythonver" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>str</em> – Python version</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.survey.mangampl.MaNGAMPL.numpyver">
+<code class="descname">numpyver</code><a class="headerlink" href="#mangadap.survey.mangampl.MaNGAMPL.numpyver" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>str</em> – Numpy version</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.survey.mangampl.MaNGAMPL.scipyver">
+<code class="descname">scipyver</code><a class="headerlink" href="#mangadap.survey.mangampl.MaNGAMPL.scipyver" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>str</em> – Scipy version</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.survey.mangampl.MaNGAMPL.matplotlibver">
+<code class="descname">matplotlibver</code><a class="headerlink" href="#mangadap.survey.mangampl.MaNGAMPL.matplotlibver" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>str</em> – Matplotlib version</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.survey.mangampl.MaNGAMPL.astropyver">
+<code class="descname">astropyver</code><a class="headerlink" href="#mangadap.survey.mangampl.MaNGAMPL.astropyver" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>str</em> – Astropy version</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.survey.mangampl.MaNGAMPL.pydlver">
+<code class="descname">pydlver</code><a class="headerlink" href="#mangadap.survey.mangampl.MaNGAMPL.pydlver" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>str</em> – Pydl version</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.survey.mangampl.MaNGAMPL.strictver">
+<code class="descname">strictver</code><a class="headerlink" href="#mangadap.survey.mangampl.MaNGAMPL.strictver" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>bool</em> – Strictly check the version requirements for
+this version of the dap.  If True, an exception is raised if
+the expected version are not the same as the environment.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.survey.mangampl.MaNGAMPL._available_mpls">
+<code class="descname">_available_mpls</code><span class="sig-paren">(</span><em>write=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/survey/mangampl.html#MaNGAMPL._available_mpls"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.survey.mangampl.MaNGAMPL._available_mpls" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a list of the available MPLs to analyze, and printing it if requested.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>write</strong> (<em>bool</em>) – Write the list of available MPLs to the</li>
+<li><strong>stdout.</strong> – </li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A string array with the MPL dependencies</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">numpy.array</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.survey.mangampl.MaNGAMPL._version_mismatch">
+<code class="descname">_version_mismatch</code><span class="sig-paren">(</span><em>package</em>, <em>required_ver</em>, <em>environment_ver</em>, <em>quiet=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/survey/mangampl.html#MaNGAMPL._version_mismatch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.survey.mangampl.MaNGAMPL._version_mismatch" title="Permalink to this definition">¶</a></dt>
+<dd><p>A version mismatch was detected.  Handle based on
+<a class="reference internal" href="#mangadap.survey.mangampl.MaNGAMPL.strictver" title="mangadap.survey.mangampl.MaNGAMPL.strictver"><code class="xref py py-attr docutils literal"><span class="pre">strictver</span></code></a>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.survey.mangampl.MaNGAMPL.get_environment_versions">
+<code class="descname">get_environment_versions</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/survey/mangampl.html#MaNGAMPL.get_environment_versions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.survey.mangampl.MaNGAMPL.get_environment_versions" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.survey.mangampl.MaNGAMPL.show">
+<code class="descname">show</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/survey/mangampl.html#MaNGAMPL.show"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.survey.mangampl.MaNGAMPL.show" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print the available MPL versions to stdout.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.survey.mangampl.MaNGAMPL.verify_versions">
+<code class="descname">verify_versions</code><span class="sig-paren">(</span><em>quiet=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/survey/mangampl.html#MaNGAMPL.verify_versions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.survey.mangampl.MaNGAMPL.verify_versions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Verify that the defined MPL versions are consistent with the
+system where the DAP is being run.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="mangadap.survey.rundap.html" class="btn btn-neutral float-right" title="mangadap.survey.rundap module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="mangadap.survey.manga_dap.html" class="btn btn-neutral" title="mangadap.survey.manga_dap module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, SDSS-IV/MaNGA Pipeline Group.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'2.2.2',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

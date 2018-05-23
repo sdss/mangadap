@@ -1,0 +1,1418 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mangadap.proc.sasuke module &mdash; mangadap 2.2.2 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="mangadap 2.2.2 documentation" href="index.html"/>
+        <link rel="up" title="mangadap.proc package" href="mangadap.proc.html"/>
+        <link rel="next" title="mangadap.proc.spatialbinning module" href="mangadap.proc.spatialbinning.html"/>
+        <link rel="prev" title="mangadap.proc.reductionassessments module" href="mangadap.proc.reductionassessments.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> mangadap
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="mangadap.html">mangadap package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="mangadap.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="mangadap.config.html">mangadap.config package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.contrib.html">mangadap.contrib package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.par.html">mangadap.par package</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="mangadap.proc.html">mangadap.proc package</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="mangadap.proc.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="mangadap.proc.html#module-mangadap.proc">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.survey.html">mangadap.survey package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.test.html">mangadap.test package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.util.html">mangadap.util package</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="mangadap.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mangadap.html#module-mangadap">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">mangadap</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="mangadap.html">mangadap package</a> &raquo;</li>
+        
+          <li><a href="mangadap.proc.html">mangadap.proc package</a> &raquo;</li>
+        
+      <li>mangadap.proc.sasuke module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/mangadap.proc.sasuke.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-mangadap.proc.sasuke">
+<span id="mangadap-proc-sasuke-module"></span><h1>mangadap.proc.sasuke module<a class="headerlink" href="#module-mangadap.proc.sasuke" title="Permalink to this headline">¶</a></h1>
+<p>Implements an emission-line fitting class that largely wraps pPXF.</p>
+<dl class="docutils">
+<dt><em>License</em>:</dt>
+<dd><dl class="first last docutils">
+<dt>Copyright (c) 2017, SDSS-IV/MaNGA Pipeline Group</dt>
+<dd>Licensed under BSD 3-clause license - see LICENSE.rst</dd>
+</dl>
+</dd>
+<dt><em>Source location</em>:</dt>
+<dd>$MANGADAP_DIR/python/mangadap/proc/sasuke.py</dd>
+<dt><em>Imports and python version compliance</em>:</dt>
+<dd><div class="first last highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version</span> <span class="o">&gt;</span> <span class="s1">&#39;3&#39;</span><span class="p">:</span>
+    <span class="n">long</span> <span class="o">=</span> <span class="nb">int</span>
+
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="k">import</span> <span class="n">interpolate</span><span class="p">,</span> <span class="n">fftpack</span>
+<span class="kn">import</span> <span class="nn">astropy.constants</span>
+
+<span class="kn">from</span> <span class="nn">..par.parset</span> <span class="k">import</span> <span class="n">ParSet</span>
+<span class="kn">from</span> <span class="nn">..par.emissionlinedb</span> <span class="k">import</span> <span class="n">EmissionLineDB</span>
+<span class="kn">from</span> <span class="nn">..util.fileio</span> <span class="k">import</span> <span class="n">init_record_array</span>
+<span class="kn">from</span> <span class="nn">..util.log</span> <span class="k">import</span> <span class="n">log_output</span>
+<span class="kn">from</span> <span class="nn">..util.pixelmask</span> <span class="k">import</span> <span class="n">SpectralPixelMask</span>
+<span class="kn">from</span> <span class="nn">.spatiallybinnedspectra</span> <span class="k">import</span> <span class="n">SpatiallyBinnedSpectra</span>
+<span class="kn">from</span> <span class="nn">.stellarcontinuummodel</span> <span class="k">import</span> <span class="n">StellarContinuumModel</span>
+<span class="kn">from</span> <span class="nn">.spectralfitting</span> <span class="k">import</span> <span class="n">EmissionLineFit</span>
+<span class="kn">from</span> <span class="nn">.util</span> <span class="k">import</span> <span class="n">sample_growth</span>
+</pre></div>
+</div>
+</dd>
+<dt><em>Class usage examples</em>:</dt>
+<dd>Add examples</dd>
+<dt><em>Revision history</em>:</dt>
+<dd><div class="first last line-block">
+<div class="line"><strong>24 May 2017</strong>: Original implementation started by K. Westfall (KBW)</div>
+<div class="line"><strong>23 Jun 2017</strong>: (KBW) Documentation; fix error in
+<a class="reference internal" href="#mangadap.proc.sasuke.Sasuke._save_results" title="mangadap.proc.sasuke.Sasuke._save_results"><code class="xref py py-func docutils literal"><span class="pre">Sasuke._save_results()</span></code></a></div>
+<div class="line"><strong>08 Sep 2017</strong>: (KBW) Move emission-line template construction to
+<a class="reference internal" href="mangadap.proc.emissionlinetemplates.html#module-mangadap.proc.emissionlinetemplates" title="mangadap.proc.emissionlinetemplates"><code class="xref py py-mod docutils literal"><span class="pre">mangadap.proc.emissionlinetemplates</span></code></a>. Add
+<cite>deconstruct_bins</cite> flag to parameters.</div>
+<div class="line"><strong>25 Oct 2017</strong>: (KBW) Allow to use reddening fit from pPXF</div>
+<div class="line"><strong>02 Feb 2018</strong>: (KBW) Use
+<a class="reference internal" href="mangadap.proc.spectralfitting.html#mangadap.proc.spectralfitting.EmissionLineFit.select_binned_spectra_to_fit" title="mangadap.proc.spectralfitting.EmissionLineFit.select_binned_spectra_to_fit"><code class="xref py py-func docutils literal"><span class="pre">mangadap.proc.spectralfitting.EmissionLineFit.select_binned_spectra_to_fit()</span></code></a>.
+Adjust for change to
+<a class="reference internal" href="mangadap.proc.stellarcontinuummodel.html#mangadap.proc.stellarcontinuummodel.StellarContinuumModel.fill_to_match" title="mangadap.proc.stellarcontinuummodel.StellarContinuumModel.fill_to_match"><code class="xref py py-func docutils literal"><span class="pre">mangadap.proc.stellarcontinuummodel.StellarContinuumModel.fill_to_match()</span></code></a>.</div>
+<div class="line"><strong>24 Feb 2018</strong>: (KBW) Allow for a new template library to be
+used, different from the one used during the stellar continuum
+fit.</div>
+<div class="line"><strong>20 Mar 2018</strong>: (KBW) Corrected flux calculation and inclusion
+of provided pixel mask.</div>
+</div>
+</dd>
+</dl>
+<dl class="class">
+<dt id="mangadap.proc.sasuke.Sasuke">
+<em class="property">class </em><code class="descclassname">mangadap.proc.sasuke.</code><code class="descname">Sasuke</code><span class="sig-paren">(</span><em>bitmask</em>, <em>loggers=None</em>, <em>quiet=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/sasuke.html#Sasuke"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="mangadap.proc.spectralfitting.html#mangadap.proc.spectralfitting.EmissionLineFit" title="mangadap.proc.spectralfitting.EmissionLineFit"><code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.spectralfitting.EmissionLineFit</span></code></a></p>
+<p>Use ninja skills and pPXF to fit emission lines.</p>
+<p><a class="reference external" href="https://en.wikipedia.org/wiki/Sasuke_Uchiha">https://en.wikipedia.org/wiki/Sasuke_Uchiha</a></p>
+<p>Effectively, <strong>nothing</strong> happens during the instantiation of this
+object.  Instead, a typical usage of the class when fitting a set of
+emission lines would be:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="c1"># Read the emission-line database</span>
+<span class="n">emldb</span> <span class="o">=</span> <span class="n">EmissionLineDB</span><span class="p">(</span><span class="s1">&#39;ELPMILES&#39;</span><span class="p">)</span>
+<span class="c1"># Instantiate the emission-line fitter</span>
+<span class="n">el_fitter</span> <span class="o">=</span> <span class="n">Sasuke</span><span class="p">(</span><span class="n">EmissionLineModelBitMask</span><span class="p">())</span>
+<span class="c1"># Fit the spectra</span>
+<span class="n">model_wave</span><span class="p">,</span> <span class="n">model_flux</span><span class="p">,</span> <span class="n">model_eml_flux</span><span class="p">,</span> <span class="n">model_mask</span><span class="p">,</span> <span class="n">model_fit_par</span><span class="p">,</span> \
+    <span class="n">model_eml_par</span> <span class="o">=</span> <span class="n">el_fitter</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>See <a class="reference internal" href="#mangadap.proc.sasuke.Sasuke.fit" title="mangadap.proc.sasuke.Sasuke.fit"><code class="xref py py-func docutils literal"><span class="pre">fit()</span></code></a> for the arguments to the main fitting function.</p>
+<p>The class inherits attributes from
+<a class="reference internal" href="mangadap.proc.spectralfitting.html#mangadap.proc.spectralfitting.EmissionLineFit" title="mangadap.proc.spectralfitting.EmissionLineFit"><code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.spectralfitting.EmissionLineFit</span></code></a> (<cite>fit_type</cite>,
+<cite>bitmask</cite>, <cite>par</cite>, <cite>fit_method</cite>).  Other attributes are defined upon
+instantiation and set to None.  This isn’t necessary (attributes can
+be defined elsewhere in the class methods), but it provides a
+collation of the class attributes for reference.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>bitmask</strong> (<code class="xref py py-class docutils literal"><span class="pre">BitMask</span></code>) – BitMask object use to flag fit
+results.  This <em>must</em> be provided and should typically be an
+instantiation of <code class="xref py py-class docutils literal"><span class="pre">EmissionLineModelBitMask</span></code>; however,
+it can be any object with <code class="xref py py-class docutils literal"><span class="pre">BitMask</span></code> as its base
+class.  The flags set within the main fitting function
+(<a class="reference internal" href="#mangadap.proc.sasuke.Sasuke.fit" title="mangadap.proc.sasuke.Sasuke.fit"><code class="xref py py-func docutils literal"><span class="pre">Sasuke.fit()</span></code></a>) are: DIDNOTUSE, INSUFFICIENT_DATA,
+FIT_FAILED, NEAR_BOUND, NO_FIT,
+<a class="reference internal" href="mangadap.proc.ppxffit.html#mangadap.proc.ppxffit.PPXFFit.rej_flag" title="mangadap.proc.ppxffit.PPXFFit.rej_flag"><code class="xref py py-attr docutils literal"><span class="pre">mangadap.proc.ppxffit.PPXFFit.rej_flag</span></code></a>
+(PPXF_REJECT), MIN_SIGMA, BAD_SIGMA, and MAXITER.  Also the
+DAP-specific calling function
+(<a class="reference internal" href="#mangadap.proc.sasuke.Sasuke.fit_SpatiallyBinnedSpectra" title="mangadap.proc.sasuke.Sasuke.fit_SpatiallyBinnedSpectra"><code class="xref py py-func docutils literal"><span class="pre">Sasuke.fit_SpatiallyBinnedSpectra()</span></code></a>) will also assign
+bits NON_POSITIVE_CONTINUUM during the equivalent width
+measurements (see
+<code class="xref py py-func docutils literal"><span class="pre">mangadap.spectralfitting.EmissionLineFit.measure_equivalent_width()</span></code>).</li>
+<li><strong>loggers</strong> (<em>list</em>) – (<strong>Optional</strong>) List of <a href="#id17"><span class="problematic" id="id18">`logging.Logger`_</span></a> objects
+to log progress; ignored if quiet=True.  Logging is done
+using <a class="reference internal" href="mangadap.util.log.html#mangadap.util.log.log_output" title="mangadap.util.log.log_output"><code class="xref py py-func docutils literal"><span class="pre">mangadap.util.log.log_output()</span></code></a>.  Default is no
+logging.  This can be reset in some methods.</li>
+<li><strong>quiet</strong> (<em>bool</em>) – (<strong>Optional</strong>) Suppress all terminal and logging
+output.  Default is False.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="mangadap.proc.sasuke.Sasuke.loggers">
+<code class="descname">loggers</code><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.loggers" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>list</em> – List of <a href="#id19"><span class="problematic" id="id20">`logging.Logger`_</span></a> objects to log
+progress; ignored if quiet=True.  Logging is done using
+<a class="reference internal" href="mangadap.util.log.html#mangadap.util.log.log_output" title="mangadap.util.log.log_output"><code class="xref py py-func docutils literal"><span class="pre">mangadap.util.log.log_output()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.sasuke.Sasuke.quiet">
+<code class="descname">quiet</code><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.quiet" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>bool</em> – Suppress all terminal and logging output.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.sasuke.Sasuke.obj_wave">
+<code class="descname">obj_wave</code><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.obj_wave" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>numpy.ndarray</em> – Wavelength vector for object spectra.
+Shape is (<span class="math">\(N_{\rm pix}\)</span>,).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.sasuke.Sasuke.obj_flux">
+<code class="descname">obj_flux</code><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.obj_flux" title="Permalink to this definition">¶</a></dt>
+<dd><p><a class="reference external" href="https://docs.scipy.org/doc/numpy-1.12.0/reference/maskedarray.baseclass.html">numpy.ma.MaskedArray</a> – Object spectra to fit.
+Shape is (<span class="math">\(N_{\rm spec},N_{\rm pix}\)</span>).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.sasuke.Sasuke.obj_ferr">
+<code class="descname">obj_ferr</code><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.obj_ferr" title="Permalink to this definition">¶</a></dt>
+<dd><p><a class="reference external" href="https://docs.scipy.org/doc/numpy-1.12.0/reference/maskedarray.baseclass.html">numpy.ma.MaskedArray</a> – <span class="math">\(1\sigma\)</span> errors in
+object spectra.  Shape is (<span class="math">\(N_{\rm spec},N_{\rm
+pix}\)</span>).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.sasuke.Sasuke.obj_sres">
+<code class="descname">obj_sres</code><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.obj_sres" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>numpy.ndarray</em> – Spectral resolution array for object
+spectra.  Shape is (<span class="math">\(N_{\rm spec},N_{\rm pix}\)</span>).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.sasuke.Sasuke.nobj">
+<code class="descname">nobj</code><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.nobj" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>int</em> – Number of object spectra (i.e., <span class="math">\(N_{\rm
+spec}\)</span>).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.sasuke.Sasuke.npix_obj">
+<code class="descname">npix_obj</code><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.npix_obj" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>int</em> – Number of pixels in each object spectrum (i.e.,
+<span class="math">\(N_{\rm pix}\)</span>).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.sasuke.Sasuke.input_obj_mask">
+<code class="descname">input_obj_mask</code><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.input_obj_mask" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>numpy.ndarray</em> – A copy of the input mask array
+of the object spectra (boolean array).  Shape is
+(<span class="math">\(N_{\rm spec},N_{\rm pix}\)</span>).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.sasuke.Sasuke.obj_to_fit">
+<code class="descname">obj_to_fit</code><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.obj_to_fit" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>numpy.ndarray</em> – Flag to fit each object spectrum.
+Instantiating by fully masked spectra in
+<a class="reference internal" href="#mangadap.proc.sasuke.Sasuke.input_obj_mask" title="mangadap.proc.sasuke.Sasuke.input_obj_mask"><code class="xref py py-attr docutils literal"><span class="pre">input_obj_mask</span></code></a>.  Shape is (<span class="math">\(N_{\rm spec}\)</span>,).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.sasuke.Sasuke.input_cz">
+<code class="descname">input_cz</code><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.input_cz" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>numpy.ndarray</em> – Input redshifts (in km/s) for each
+spectrum.  Shape is (<span class="math">\(N_{\rm spec}\)</span>,).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.sasuke.Sasuke.velscale">
+<code class="descname">velscale</code><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.velscale" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float</em> – Velocity scale (km/s) of the object spectra.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.sasuke.Sasuke.tpl_wave">
+<code class="descname">tpl_wave</code><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.tpl_wave" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>numpy.ndarray</em> – Wavelength vector for template spectra.
+Shape is (<span class="math">\(N_{\rm pix,t}\)</span>,).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.sasuke.Sasuke.tpl_flux">
+<code class="descname">tpl_flux</code><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.tpl_flux" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>numpy.ndarray</em> – Template spectra to use in fit.
+Shape is (<span class="math">\(N_{\rm tpl},N_{\rm pix,t}\)</span>).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.sasuke.Sasuke.tpl_to_use">
+<code class="descname">tpl_to_use</code><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.tpl_to_use" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>numpy.ndarray</em> – Set of flags used to select the
+templates used to fit each spectrum.  Shape is
+(<span class="math">\(N_{\rm spec},N_{\rm tpl}\)</span>).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.sasuke.Sasuke.nstpl">
+<code class="descname">nstpl</code><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.nstpl" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>int</em> – Number of stellar templates.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.sasuke.Sasuke.ntpl">
+<code class="descname">ntpl</code><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.ntpl" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>int</em> – Total number of templates (gas + stars).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.sasuke.Sasuke.npix_tpl">
+<code class="descname">npix_tpl</code><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.npix_tpl" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>int</em> – Number of pixels in template spectra (i.e.,
+<span class="math">\(N_{\rm pix,t}\)</span>).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.sasuke.Sasuke.tpl_npad">
+<code class="descname">tpl_npad</code><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.tpl_npad" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>int</em> – Nearest length for FFT, <span class="math">\(N_{\rm pad}\)</span></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.sasuke.Sasuke.tpl_rfft">
+<code class="descname">tpl_rfft</code><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.tpl_rfft" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>numpy.ndarray</em> – The complex array with the real FFT of
+the template spectra.  Shape is (<span class="math">\(N_{\rm tpl}, N_{\rm
+pad}/2 + 1\)</span>).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.sasuke.Sasuke.matched_resolution">
+<code class="descname">matched_resolution</code><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.matched_resolution" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>bool</em> – The spectral resolution of the
+templates is matched to that of the galaxy data.  WARNING:
+This functionality needs to be checked in relation to the
+gas templates!</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.sasuke.Sasuke.velscale_ratio">
+<code class="descname">velscale_ratio</code><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.velscale_ratio" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>int</em> – The <strong>integer</strong> ratio between the velocity
+scale of the pixel in the galaxy data to that of the
+template data.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt>
+<code class="descname">emldb (</code></dt>
+<dd><p>class:<cite>mangadap.par.emissionlinedb.EmissionLineDB’):
+Emission-line database that is parsed to construct the
+emission-line templates (see
+:class:`EmissionLineTemplates</cite>).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.sasuke.Sasuke.neml">
+<code class="descname">neml</code><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.neml" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>int</em> – Number of emission lines in the database.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.sasuke.Sasuke.fit_eml">
+<code class="descname">fit_eml</code><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.fit_eml" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>numpy.ndarray</em> – Boolean array setting which emission
+lines are fit.  Shape is (<span class="math">\(N_{\rm eml\)</span>,).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.sasuke.Sasuke.eml_tpli">
+<code class="descname">eml_tpli</code><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.eml_tpli" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>numpy.ndarray</em> – Integer array with the template that
+includes each emission line.  Shape is (<span class="math">\(N_{\rm eml\)</span>,).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.sasuke.Sasuke.eml_compi">
+<code class="descname">eml_compi</code><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.eml_compi" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>numpy.ndarray</em> – Integer array with the kinematic
+component that includes each emission line.  Shape is
+(<span class="math">\(N_{\rm eml\)</span>,).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.sasuke.Sasuke.ncomp">
+<code class="descname">ncomp</code><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.ncomp" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>int</em> – Total number of kinematic components to fit.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.sasuke.Sasuke.tpl_comp">
+<code class="descname">tpl_comp</code><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.tpl_comp" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>numpy.ndarray</em> – The integer kinematic component
+associated with each template.  Shape is (:math:<a href="#id1"><span class="problematic" id="id2">`</span></a>N_{rm
+tpl},).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.sasuke.Sasuke.tpl_vgrp">
+<code class="descname">tpl_vgrp</code><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.tpl_vgrp" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>numpy.ndarray</em> – The integer velocity group associated
+with each template.  Shape is (:math:<a href="#id3"><span class="problematic" id="id4">`</span></a>N_{rm tpl},).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.sasuke.Sasuke.tpl_sgrp">
+<code class="descname">tpl_sgrp</code><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.tpl_sgrp" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>numpy.ndarray</em> – The integer sigma group associated
+with each template.  Shape is (:math:<a href="#id5"><span class="problematic" id="id6">`</span></a>N_{rm tpl},).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.sasuke.Sasuke.comp_moments">
+<code class="descname">comp_moments</code><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.comp_moments" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>numpy.ndarray</em> – Number of moments for each
+component.  Moments with negative numbers have fixed
+kinematics.  Shape is (:math:<a href="#id7"><span class="problematic" id="id8">`</span></a>N_{rm comp},).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.sasuke.Sasuke.comp_start_kin">
+<code class="descname">comp_start_kin</code><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.comp_start_kin" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>numpy.ndarray</em> – Array of lists where each list
+provdes the starting parameters for the kinematics of each
+component.  Shape is (:math:<a href="#id9"><span class="problematic" id="id10">`</span></a>N_{rm comp},).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.sasuke.Sasuke.npar_kin">
+<code class="descname">npar_kin</code><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.npar_kin" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>int</em> – The total number of kinematic parameters, which
+is just the sum of the absolute value of
+<a class="reference internal" href="#mangadap.proc.sasuke.Sasuke.comp_moments" title="mangadap.proc.sasuke.Sasuke.comp_moments"><code class="xref py py-attr docutils literal"><span class="pre">comp_moments</span></code></a>, <span class="math">\(N_{\rm kin}\)</span>.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.sasuke.Sasuke.nfree_kin">
+<code class="descname">nfree_kin</code><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.nfree_kin" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>int</em> – The total number of <em>free</em> kinematic
+parameters.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.sasuke.Sasuke.tied">
+<code class="descname">tied</code><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.tied" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>list</em> – List of lists setting the tied parameters for the
+fit.  See the TIED parameter in ppxf.  Length is
+<span class="math">\(N_{\rm comp}\)</span>.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.sasuke.Sasuke.velocity_limits">
+<code class="descname">velocity_limits</code><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.velocity_limits" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>numpy.ndarray</em> – The upper and lower velocity
+limits imposed by pPXF.  See
+<a class="reference internal" href="mangadap.proc.ppxffit.html#mangadap.proc.ppxffit.PPXFFit.losvd_limits" title="mangadap.proc.ppxffit.PPXFFit.losvd_limits"><code class="xref py py-func docutils literal"><span class="pre">mangadap.proc.ppxffit.PPXFFit.losvd_limits()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.sasuke.Sasuke.sigma_limits">
+<code class="descname">sigma_limits</code><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.sigma_limits" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>numpy.ndarray</em> – The upper and lower velocity
+dispersion limits imposed by pPXF.  See
+<a class="reference internal" href="mangadap.proc.ppxffit.html#mangadap.proc.ppxffit.PPXFFit.losvd_limits" title="mangadap.proc.ppxffit.PPXFFit.losvd_limits"><code class="xref py py-func docutils literal"><span class="pre">mangadap.proc.ppxffit.PPXFFit.losvd_limits()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.sasuke.Sasuke.gh_limits">
+<code class="descname">gh_limits</code><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.gh_limits" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>numpy.ndarray</em> – The upper and lower limits on <em>all</em>
+higher order Gauss-Hermite moments imposed by pPXF.  See
+<a class="reference internal" href="mangadap.proc.ppxffit.html#mangadap.proc.ppxffit.PPXFFit.losvd_limits" title="mangadap.proc.ppxffit.PPXFFit.losvd_limits"><code class="xref py py-func docutils literal"><span class="pre">mangadap.proc.ppxffit.PPXFFit.losvd_limits()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.sasuke.Sasuke.bias">
+<code class="descname">bias</code><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.bias" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float</em> – pPXF bias parameter.  (Currently irrelevant
+because gas is currently always fit with moments=2.)</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.sasuke.Sasuke.degree">
+<code class="descname">degree</code><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.degree" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>int</em> – pPXF degree parameter setting the degree of the
+additive polynomials to use, <span class="math">\(o_{\rm add}\)</span>.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.sasuke.Sasuke.mdegree">
+<code class="descname">mdegree</code><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.mdegree" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>int</em> – pPXF mdegree parameter setting the degree of the
+multiplicative polynomials to use, <span class="math">\(o_{\rm mult}\)</span>.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.sasuke.Sasuke.reddening">
+<code class="descname">reddening</code><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.reddening" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>float</em> – pPXF reddening parameter setting the initial
+<span class="math">\(E(B-V)\)</span> to fit, based on a Calzetti law.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.sasuke.Sasuke.reject_boxcar">
+<code class="descname">reject_boxcar</code><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.reject_boxcar" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>int</em> – Size of the boxcar to use when rejecting
+fit outliers.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.sasuke.Sasuke.spectrum_start">
+<code class="descname">spectrum_start</code><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.spectrum_start" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>numpy.ndarray</em> – Array with the starting index of
+the pixel in the object spectra to fit (inclusive).  Shape
+is (<span class="math">\(N_{\rm spec}\)</span>,).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.sasuke.Sasuke.spectrum_end">
+<code class="descname">spectrum_end</code><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.spectrum_end" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>numpy.ndarray</em> – Array with the ending index of the
+pixel in the object spectra to fit (exclusive).  Shape is
+(<span class="math">\(N_{\rm spec}\)</span>,)</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.sasuke.Sasuke.dof">
+<code class="descname">dof</code><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.dof" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>int</em> – Degrees of freedom in the fit.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.sasuke.Sasuke.base_velocity">
+<code class="descname">base_velocity</code><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.base_velocity" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>numpy.ndarray</em> – The base velocity shift between
+the template and object spectra because of the difference in
+their starting wavelength.  Shape is (<span class="math">\(N_{\rm
+spec}\)</span>,).</p>
+</dd></dl>
+
+<div class="admonition-todo admonition" id="index-0">
+<p class="first admonition-title">Todo</p>
+<ul class="last simple">
+<li><a class="reference internal" href="#mangadap.proc.sasuke.Sasuke.velocity_limits" title="mangadap.proc.sasuke.Sasuke.velocity_limits"><code class="xref py py-attr docutils literal"><span class="pre">velocity_limits</span></code></a>, <a class="reference internal" href="#mangadap.proc.sasuke.Sasuke.sigma_limits" title="mangadap.proc.sasuke.Sasuke.sigma_limits"><code class="xref py py-attr docutils literal"><span class="pre">sigma_limits</span></code></a>, and
+<a class="reference internal" href="#mangadap.proc.sasuke.Sasuke.gh_limits" title="mangadap.proc.sasuke.Sasuke.gh_limits"><code class="xref py py-attr docutils literal"><span class="pre">gh_limits</span></code></a> are <strong>not</strong> passed to ppxf during the fit.
+They are expected to match what’s in the pPXF code.  Should
+change the code so that they <strong>are</strong> passed using pPXF’s BOUND
+keyword.</li>
+</ul>
+</div>
+<dl class="method">
+<dt id="mangadap.proc.sasuke.Sasuke._check_remapping_coordinates">
+<code class="descname">_check_remapping_coordinates</code><span class="sig-paren">(</span><em>obj_skyx</em>, <em>obj_skyy</em>, <em>remap_skyx</em>, <em>remap_skyy</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/sasuke.html#Sasuke._check_remapping_coordinates"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke._check_remapping_coordinates" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.proc.sasuke.Sasuke._is_near_bounds">
+<code class="descname">_is_near_bounds</code><span class="sig-paren">(</span><em>kin</em>, <em>kin_inp</em>, <em>vel_indx</em>, <em>sig_indx</em>, <em>lbound</em>, <em>ubound</em>, <em>tol_frac=0.01</em>, <em>fill_value=-999.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/sasuke.html#Sasuke._is_near_bounds"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke._is_near_bounds" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check if the kinematics were fit and near the imposed limits.</p>
+<p>Any value that is close to <code class="docutils literal"><span class="pre">fill_value</span></code> is flagged as not
+having been fit, presumably because too much/all of the data
+near the emission line is masked.</p>
+<p>The definition of “near” is that the velocity and higher moments
+cannot be closer than the provided fraction of the total width
+to the boundary.  For the velocity dispersion, the fraction is
+done in log space.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>kin</strong> (<em>numpy.ndarray</em>) – Best-fitting kinematic parameters.
+Shape should be <span class="math">\((N_{\rm spec},N_{\rm kin})\)</span>.</li>
+<li><strong>kin_inp</strong> (<em>numpy.ndarray</em>) – The initial guesses for the
+best-fitting kinematics.  This is needed because the
+velocity limits are set relative to the input guess.
+Shape should be <span class="math">\((N_{\rm spec},N_{\rm kin})\)</span>.</li>
+<li><strong>vel_index</strong> (<em>numpy.ndarray</em>) – Boolean array setting if the
+parameter is a velocity.  This is needed because the
+velocity limits are set relative to the input guess.</li>
+<li><strong>sig_index</strong> (<em>numpy.ndarray</em>) – Boolean array setting if the
+parameter is a velocity dispersion.  This is needed
+because the proximity to the bounds is logarithmic for
+the velocity dispersion.</li>
+<li><strong>lbound</strong> (<em>numpy.ndarray</em>) – Lower bound on each parameter.</li>
+<li><strong>ubound</strong> (<em>numpy.ndarray</em>) – Upper bound on each parameter.</li>
+<li><strong>tol_frac</strong> (<em>float</em>) – (<strong>Optional</strong>) The fractional tolerance
+for classifying the returned parameter and near the
+boundary.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Three boolean arrays that flag if (1) the
+parameter is near either boundary, (2) the parameter is near
+the lower boundary, and (3) the parameter is near the
+fill_value.  The second array is important in case the
+fitted parameter is a velocity dispersion and that it’s near
+the lower boundary because it has hit the pixel sampling
+limit.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">numpy.ndarray</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.proc.sasuke.Sasuke._per_fit_dtype">
+<em class="property">static </em><code class="descname">_per_fit_dtype</code><span class="sig-paren">(</span><em>ntpl</em>, <em>nadd</em>, <em>nmult</em>, <em>nkin</em>, <em>mask_dtype</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/sasuke.html#Sasuke._per_fit_dtype"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke._per_fit_dtype" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the data type for the result of each pPXF fit.</p>
+<dl class="docutils">
+<dt>The data are as follows:</dt>
+<dd><ul class="first last simple">
+<li><code class="docutils literal"><span class="pre">BINID</span></code>: Spectrum ID number.</li>
+<li><code class="docutils literal"><span class="pre">BINID_INDEX</span></code>: Index of the spectrum in the list of
+provided spectra.</li>
+<li><code class="docutils literal"><span class="pre">NEAREST_BIN</span></code>: ID of the nearest binned spectrum when
+deconstructing bins.</li>
+<li><code class="docutils literal"><span class="pre">MASK</span></code>: The bitmask value of the fit.  See
+<a class="reference internal" href="#mangadap.proc.sasuke.Sasuke._save_results" title="mangadap.proc.sasuke.Sasuke._save_results"><code class="xref py py-func docutils literal"><span class="pre">_save_results()</span></code></a>.</li>
+<li><code class="docutils literal"><span class="pre">BEGPIX</span></code>: Same as <a class="reference internal" href="#mangadap.proc.sasuke.Sasuke.spectrum_start" title="mangadap.proc.sasuke.Sasuke.spectrum_start"><code class="xref py py-attr docutils literal"><span class="pre">spectrum_start</span></code></a>.</li>
+<li><code class="docutils literal"><span class="pre">ENDPIX</span></code>: Same as <a class="reference internal" href="#mangadap.proc.sasuke.Sasuke.spectrum_end" title="mangadap.proc.sasuke.Sasuke.spectrum_end"><code class="xref py py-attr docutils literal"><span class="pre">spectrum_end</span></code></a>.</li>
+<li><code class="docutils literal"><span class="pre">NPIXTOT</span></code>: Length of spectrum passed to pPXF
+(<code class="docutils literal"><span class="pre">ENDPIX-BEGPIX</span></code>)</li>
+<li><code class="docutils literal"><span class="pre">NPIXFIT</span></code>: Number of pixels included in the fit
+(excluding rejected/masked pixels)</li>
+<li><code class="docutils literal"><span class="pre">KINCMP</span></code>: The kinematic component assigned to each
+template.  Shape is (<span class="math">\(N_{\rm tpl}\)</span>,)</li>
+<li><code class="docutils literal"><span class="pre">VELCMP</span></code>: The velocity group assigned to each template.
+Shape is (<span class="math">\(N_{\rm tpl}\)</span>,)</li>
+<li><code class="docutils literal"><span class="pre">SIGCMP</span></code>: The sigma group assigned to each template.
+Shape is (<span class="math">\(N_{\rm tpl}\)</span>,)</li>
+<li><code class="docutils literal"><span class="pre">USETPL</span></code>: Flag that the template was used during the
+fit.  Shape is (<span class="math">\(N_{\rm tpl}\)</span>,)</li>
+<li><code class="docutils literal"><span class="pre">TPLWGT</span></code>: Optimal weight of each template in the fit.
+Shape is (<span class="math">\(N_{\rm tpl}\)</span>,)</li>
+<li><code class="docutils literal"><span class="pre">ADDCOEF</span></code>: Additive polynomal coefficients.  Shape is
+(<span class="math">\(o_{\rm add}+1\)</span>,)</li>
+<li><code class="docutils literal"><span class="pre">APLYMINMAX</span></code>: Minimum and maximum of additive
+polynomial.  Shape is (2,).</li>
+<li><code class="docutils literal"><span class="pre">MULTCOEF</span></code>: Multiplicative polynomal coefficients.
+Shape is (<span class="math">\(o_{\rm mult}\)</span>,)</li>
+<li><code class="docutils literal"><span class="pre">MPLYMINMAX</span></code>: Minimum and maximum of multiplicative
+polynomial.  Shape is (2,).</li>
+<li><code class="docutils literal"><span class="pre">EBV</span></code>: Fitted E(B-V) from pPXF, if applied.</li>
+<li><code class="docutils literal"><span class="pre">KININP</span></code>: Initial guess kinematics.  Shape is
+(<span class="math">\(N_{\rm kin}\)</span>,)</li>
+<li><code class="docutils literal"><span class="pre">KIN</span></code>: Best-fitting kinematics.  Shape is (<span class="math">\(N_{\rm
+kin}\)</span>,)</li>
+<li><code class="docutils literal"><span class="pre">KINERR</span></code>: Errors in the best-fitting kinematics.  Shape
+is (<span class="math">\(N_{\rm kin}\)</span>,)</li>
+<li><code class="docutils literal"><span class="pre">TIEDKIN</span></code>: Index of the kinematic parameter to which
+each parameter is tied.  I.e., TIEDKIN[3] = 1 means that
+parameter 4 is tied to paramter 2.  Shape is
+(<span class="math">\(N_{\rm kin}\)</span>,)</li>
+<li><code class="docutils literal"><span class="pre">CHI2</span></code>: Chi-square of the fit</li>
+<li><code class="docutils literal"><span class="pre">RCHI2</span></code>: Reduced chi-square (recalculated after pPXF).</li>
+<li><code class="docutils literal"><span class="pre">ROBUST_RCHI2</span></code>: Reduced chi-square (returned by pPXF).</li>
+<li><code class="docutils literal"><span class="pre">RMS</span></code>: RMS of the fit residuals.</li>
+<li><code class="docutils literal"><span class="pre">ABSRESID</span></code>: The minimum, 68%, 95%, and 99% growth, and
+maximum absolute residual.  Shape is (5,).</li>
+<li><code class="docutils literal"><span class="pre">FRMS</span></code>: RMS of the fractional fit residuals, where the
+fractional residuals are (data-model)/model.</li>
+<li><code class="docutils literal"><span class="pre">FABSRESID</span></code>: The minimum, 68%, 95%, and 99% growth, and
+maximum absolute fractional residual.  Shape is (5,).</li>
+</ul>
+</dd>
+</dl>
+<p>In <a class="reference internal" href="#mangadap.proc.sasuke.Sasuke.fit" title="mangadap.proc.sasuke.Sasuke.fit"><code class="xref py py-func docutils literal"><span class="pre">fit()</span></code></a>, <code class="docutils literal"><span class="pre">BINID</span></code> and <code class="docutils literal"><span class="pre">BINID_INDEX</span></code> are the same.
+They are not in <a class="reference internal" href="#mangadap.proc.sasuke.Sasuke.fit_SpatiallyBinnedSpectra" title="mangadap.proc.sasuke.Sasuke.fit_SpatiallyBinnedSpectra"><code class="xref py py-func docutils literal"><span class="pre">fit_SpatiallyBinnedSpectra()</span></code></a>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>ntpl</strong> (<em>int</em>) – Number of templates, <span class="math">\(N_{\rm tpl}\)</span>.</li>
+<li><strong>nadd</strong> (<em>int</em>) – Number of additive polynomial coefficents,
+<span class="math">\(o_{\rm add}+1\)</span>.</li>
+<li><strong>nmult</strong> (<em>int</em>) – Number of multiplicative polynomial
+coefficients, <span class="math">\(o_{\rm mult}\)</span>.</li>
+<li><strong>nkin</strong> (<em>int</em>) – Number of kinematic parameters, <span class="math">\(N_{\rm
+kin}\)</span>.</li>
+<li><strong>mask_dtype</strong> (<a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet.dtype" title="mangadap.par.parset.ParSet.dtype"><em>dtype</em></a>) – Type for the bitmask variable.  See
+<a class="reference internal" href="mangadap.util.bitmask.html#mangadap.util.bitmask.BitMask.minimum_dtype" title="mangadap.util.bitmask.BitMask.minimum_dtype"><code class="xref py py-func docutils literal"><span class="pre">mangadap.util.bitmask.BitMask.minimum_dtype()</span></code></a>.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">List of tuples with the name and type of each element
+in the array.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">list</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.proc.sasuke.Sasuke._reset_to_fill_value">
+<code class="descname">_reset_to_fill_value</code><span class="sig-paren">(</span><em>model_eml_par</em>, <em>fill_value=-999.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/sasuke.html#Sasuke._reset_to_fill_value"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke._reset_to_fill_value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reset all the emission lines masked as having insufficient data
+to fit to the provided fill value.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The error values are currently reset to 0. by
+<code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.emissionlinemodel.EmissionLineModel.</span></code></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.proc.sasuke.Sasuke._save_results">
+<code class="descname">_save_results</code><span class="sig-paren">(</span><em>etpl</em>, <em>start</em>, <em>end</em>, <em>flux</em>, <em>ferr</em>, <em>model_flux</em>, <em>model_eml_flux</em>, <em>model_mask</em>, <em>model_wgts</em>, <em>model_wgts_err</em>, <em>model_addcoef</em>, <em>model_multcoef</em>, <em>model_reddening</em>, <em>model_kin_inp</em>, <em>model_kin</em>, <em>model_kin_err</em>, <em>model_fit_par</em>, <em>model_eml_par</em>, <em>fill_value=-999.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/sasuke.html#Sasuke._save_results"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke._save_results" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save and assess the results of the ppxf fits.</p>
+<p>The results are saved both as the direct output from pPXF and
+after parsing the data into the results for each emission line.
+The function also assesses the data to set any necessary flags.
+Much of this is the same as
+<a class="reference internal" href="mangadap.proc.ppxffit.html#mangadap.proc.ppxffit.PPXFFit._save_results" title="mangadap.proc.ppxffit.PPXFFit._save_results"><code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.ppxffit.PPXFFit._save_results</span></code></a>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>etpl</strong> (<code class="xref py py-class docutils literal"><span class="pre">EmissionLineTemplates</span></code>) – The object used to
+construct and hold the emission-line templates.</li>
+<li><strong>result</strong> (<em>numpy.ndarray</em>) – An array of
+<a class="reference internal" href="mangadap.proc.ppxffit.html#mangadap.proc.ppxffit.PPXFFitResult" title="mangadap.proc.ppxffit.PPXFFitResult"><code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.ppxffit.PPXFFitResult</span></code></a> instances
+with the result of the fits to each object spectrum.</li>
+<li><strong>model_mask</strong> (<em>numpy.ndarray</em>) – The array of bitmask values
+associated with spectral fitting flags.  Shape is
+<span class="math">\((N_{\rm spec}, N_{\rm pix})\)</span>.</li>
+<li><strong>model_fit_par</strong> (<a class="reference external" href="https://docs.scipy.org/doc/numpy/reference/generated/numpy.recarray.html">numpy.recarray</a>) – Record array with the
+dtype as defined by <a class="reference internal" href="#mangadap.proc.sasuke.Sasuke._per_fit_dtype" title="mangadap.proc.sasuke.Sasuke._per_fit_dtype"><code class="xref py py-func docutils literal"><span class="pre">_per_fit_dtype()</span></code></a> that holds
+the ppxf output.</li>
+<li><strong>model_eml_par</strong> (<a class="reference external" href="https://docs.scipy.org/doc/numpy/reference/generated/numpy.recarray.html">numpy.recarray</a>) – Record array with the
+individual emission-line data; see
+<a class="reference internal" href="mangadap.proc.spectralfitting.html#mangadap.proc.spectralfitting.EmissionLineFit._per_emission_line_dtype" title="mangadap.proc.spectralfitting.EmissionLineFit._per_emission_line_dtype"><code class="xref py py-func docutils literal"><span class="pre">mangadap.proc.spectralfitting.EmissionLineFit._per_emission_line_dtype()</span></code></a>.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The function returns: (1) the
+best-fitting model spectra, (2) the best-fitting
+emission-line only spectra, (3) the bitmask values, (4) the
+per spectrum ppxf result, and (5) the per spectrum
+emission-line parameters.   The first 3 returned objects are
+of type numpy.ndarray and have shape <span class="math">\((N_{\rm spec},
+N_{\rm pix})\)</span>; the last two are numpy.recarray instances
+with shape <span class="math">\((N_{\rm spec},)\)</span>.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">numpy.ndarray, numpy.recarray</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.proc.sasuke.Sasuke._validate_dispersions">
+<code class="descname">_validate_dispersions</code><span class="sig-paren">(</span><em>model_eml_par, rng=[0, 400]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/sasuke.html#Sasuke._validate_dispersions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke._validate_dispersions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check that the corrected velocity dispersion are in the provided
+range.</p>
+<p>(FB) More flagging of kinematic paramters. DOES THIS APPLY TO
+EMISSION LINES? (KBW): Yes.  The corrected dispsersion must be
+larger than 0 and less than 400 km/s.  It’s easy to turn this
+off or change the limits.</p>
+<p>(KBW) Currently not called…</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>model_eml_par</strong> (<a class="reference external" href="https://docs.scipy.org/doc/numpy/reference/generated/numpy.recarray.html">numpy.recarray</a>) – Record array with the
+parameters measured for each emission line.  See
+<a class="reference internal" href="mangadap.proc.spectralfitting.html#mangadap.proc.spectralfitting.EmissionLineFit._per_emission_line_dtype" title="mangadap.proc.spectralfitting.EmissionLineFit._per_emission_line_dtype"><code class="xref py py-func docutils literal"><span class="pre">mangadap.proc.spectralfitting.EmissionLineFit._per_emission_line_dtype()</span></code></a>.</li>
+<li><strong>rng</strong> (<em>list</em>) – (<strong>Optional</strong>) Two-element list with the minimum
+and maximum allowed <em>corrected</em> velocity dispersion.
+Measurements outside this range are flagged as
+<code class="docutils literal"><span class="pre">BAD_SIGMA</span></code>.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Returns the input record array with any
+additional flags.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference external" href="https://docs.scipy.org/doc/numpy/reference/generated/numpy.recarray.html">numpy.recarray</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.proc.sasuke.Sasuke.construct_continuum_models">
+<em class="property">static </em><code class="descname">construct_continuum_models</code><span class="sig-paren">(</span><em>emission_lines</em>, <em>stpl_wave</em>, <em>stpl_flux</em>, <em>obj_wave</em>, <em>obj_flux_shape</em>, <em>model_fit_par</em>, <em>select=None</em>, <em>redshift_only=False</em>, <em>deredshift=False</em>, <em>dispersion_corrections=None</em>, <em>dvtol=1e-10</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/sasuke.html#Sasuke.construct_continuum_models"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.construct_continuum_models" title="Permalink to this definition">¶</a></dt>
+<dd><p>Construct the continuum models using the provided set of model
+parameters.</p>
+<p>This is a wrapper for <code class="xref py py-class docutils literal"><span class="pre">PPXFModel</span></code>, and very similar to
+<code class="xref py py-func docutils literal"><span class="pre">mangadap.proc.ppxffit.PPXFFit.contruct_models()</span></code>.</p>
+<p>The input velocities are expected to be cz, not “ppxf”
+(pixelized) velocities.</p>
+<p>If redshift_only is true, the provided dispersion is set to 1e-9
+km/s, which is numerically identical to 0 (i.e., just shifting
+the spectrum) in the tested applications.  However, beware that
+this is a HARDCODED number.</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.proc.sasuke.Sasuke.etpl_line_sigma_options">
+<em class="property">static </em><code class="descname">etpl_line_sigma_options</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/sasuke.html#Sasuke.etpl_line_sigma_options"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.etpl_line_sigma_options" title="Permalink to this definition">¶</a></dt>
+<dd><p>Keyword options for the mode used to set the standard deviation
+of the emission lines the the emission-line templates.  Possible
+modes are:</p>
+<blockquote>
+<div><dl class="docutils">
+<dt><code class="docutils literal"><span class="pre">default</span></code>: In order of precedence:</dt>
+<dd><ul class="first last simple">
+<li>Use the spectral resolution of the observed spectra, or</li>
+<li>use the spectral resolution of the stellar templates, or</li>
+<li>adopt a FWHM of 2 pixels and calculate the resolution
+assuming a Gaussian line profile.</li>
+</ul>
+</dd>
+<dt><code class="docutils literal"><span class="pre">zero</span></code>:  The width of all lines is set to 0.  The function</dt>
+<dd>from <a class="reference internal" href="mangadap.util.lineprofiles.html#module-mangadap.util.lineprofiles" title="mangadap.util.lineprofiles"><code class="xref py py-mod docutils literal"><span class="pre">mangadap.util.lineprofiles</span></code></a> used to construct
+the line <em>must</em> be able to produce the line if the
+standard deviation is 0!</dd>
+<dt><code class="docutils literal"><span class="pre">offset</span></code>: Apply a quadrature offset of the</dt>
+<dd>wavelength-dependent trend of the instrumental
+dispersion resulting from the <code class="docutils literal"><span class="pre">default</span></code> mode such that
+the minimum instrumental dispersion is 0.  Note that the
+minimum dispersion can be set to something other than 0
+using either the <cite>etpl_line_sigma_min</cite> parameter in
+<a class="reference internal" href="#mangadap.proc.sasuke.SasukePar" title="mangadap.proc.sasuke.SasukePar"><code class="xref py py-class docutils literal"><span class="pre">SasukePar</span></code></a> or the keyword argument in
+<a class="reference internal" href="#mangadap.proc.sasuke.Sasuke.fit" title="mangadap.proc.sasuke.Sasuke.fit"><code class="xref py py-func docutils literal"><span class="pre">Sasuke.fit()</span></code></a>.  If the minimum dispersion is 0, the
+function from <a class="reference internal" href="mangadap.util.lineprofiles.html#module-mangadap.util.lineprofiles" title="mangadap.util.lineprofiles"><code class="xref py py-mod docutils literal"><span class="pre">mangadap.util.lineprofiles</span></code></a> used to
+construct the line <em>must</em> be able to produce a line with
+a standard deviation of 0!</dd>
+</dl>
+</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">List of allowed options.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">list</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.proc.sasuke.Sasuke.fit">
+<code class="descname">fit</code><span class="sig-paren">(</span><em>emission_lines</em>, <em>obj_wave</em>, <em>obj_flux</em>, <em>obj_ferr=None</em>, <em>obj_mask=None</em>, <em>obj_sres=None</em>, <em>guess_redshift=None</em>, <em>guess_dispersion=None</em>, <em>reject_boxcar=None</em>, <em>stpl_wave=None</em>, <em>stpl_flux=None</em>, <em>stpl_sres=None</em>, <em>stpl_to_use=None</em>, <em>stellar_kinematics=None</em>, <em>etpl_sinst_mode='default'</em>, <em>etpl_sinst_min=0</em>, <em>remap_flux=None</em>, <em>remap_ferr=None</em>, <em>remap_mask=None</em>, <em>remap_sres=None</em>, <em>remap_skyx=None</em>, <em>remap_skyy=None</em>, <em>obj_skyx=None</em>, <em>obj_skyy=None</em>, <em>velscale_ratio=None</em>, <em>matched_resolution=True</em>, <em>waverange=None</em>, <em>bias=None</em>, <em>degree=-1</em>, <em>mdegree=0</em>, <em>reddening=None</em>, <em>max_velocity_range=400.0</em>, <em>alias_window=None</em>, <em>dvtol=1e-10</em>, <em>loggers=None</em>, <em>quiet=False</em>, <em>plot=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/sasuke.html#Sasuke.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fit a set of emission lines using pPXF to all provided spectra.</p>
+<p>The input flux arrays are expected to be ordered with spectra
+along <strong>rows</strong>. I.e., to plot the first spectrum in the array,
+one would do:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">matplotlib</span> <span class="k">import</span> <span class="n">pyplot</span>
+<span class="n">pyplot</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">obj_wave</span><span class="p">,</span> <span class="n">obj_flux</span><span class="p">[</span><span class="mi">0</span><span class="p">,:])</span>
+<span class="n">pyplot</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The function will fit the spectra with or without any provided
+stellar templates.</p>
+<p>The body of this function mostly deals with checking the input
+and setting up the template and object data for use with pPXF.</p>
+<p>The function is meant to be general, but has only been tested on
+MaNGA spectra.</p>
+<p>If the spectral resolution is not matched between the templates
+and the object spectra, the provided stellar_kinematics is
+expected to include any resolution difference; i.e., it is
+<strong>not</strong> the astrophysical velocity dispersion.</p>
+<div class="admonition-todo admonition" id="index-1">
+<p class="first admonition-title">Todo</p>
+<ul class="last simple">
+<li>guess_redshift and guess_dispersion are not actually
+optional.  The function will fail without them!</li>
+<li>Allow for moments != 2.</li>
+<li>Allow for fixed components to be set from emission-line
+database</li>
+<li>Allow for bounds to be set from emission-line database</li>
+<li>Allow to ignore emission-line database tying and just tie
+all kinematics</li>
+<li>Should probably put the emission-line construction in a
+separate function.</li>
+</ul>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>emission_lines</strong> – (<a class="reference internal" href="mangadap.par.emissionlinedb.html#mangadap.par.emissionlinedb.EmissionLineDB" title="mangadap.par.emissionlinedb.EmissionLineDB"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.emissionlinedb.EmissionLineDB</span></code></a>):
+Emission-line database that is parsed to construct the
+emission-line templates to fit (see
+<code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.emissionelinetemplates.EmissionLineTemplates</span></code>).</li>
+<li><strong>obj_wave</strong> (<em>numpy.ndarray</em>) – Wavelength vector for object
+spectra.  Shape is (<span class="math">\(N_{\rm pix}\)</span>,).</li>
+<li><strong>obj_flux</strong> (<em>numpy.ndarray</em>) – Object spectra to fit.  Can be
+provided as a <a class="reference external" href="https://docs.scipy.org/doc/numpy-1.12.0/reference/maskedarray.baseclass.html">numpy.ma.MaskedArray</a>.  Shape is
+(<span class="math">\(N_{\rm spec},N_{\rm pix}\)</span>).</li>
+<li><strong>obj_ferr</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) <span class="math">\(1\sigma\)</span>
+errors in object spectra.  Can be provided as a
+<a class="reference external" href="https://docs.scipy.org/doc/numpy-1.12.0/reference/maskedarray.baseclass.html">numpy.ma.MaskedArray</a>.  Shape is (<span class="math">\(N_{\rm
+spec},N_{\rm pix}\)</span>).  If None, the quadrature sum of the
+fit residuals is used as the fit metric instead of
+chi-square (all errors are set to unity).</li>
+<li><strong>(</strong><strong>numpy.ndarray or</strong> (<em>remap_mask</em>) – <a class="reference internal" href="mangadap.util.pixelmask.html#mangadap.util.pixelmask.SpectralPixelMask" title="mangadap.util.pixelmask.SpectralPixelMask"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.pixelmask.SpectralPixelMask</span></code></a>):
+(<strong>Optional</strong>) Boolean array or
+<a class="reference internal" href="mangadap.util.pixelmask.html#mangadap.util.pixelmask.SpectralPixelMask" title="mangadap.util.pixelmask.SpectralPixelMask"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.pixelmask.SpectralPixelMask</span></code></a>
+instance used to censor regions of the spectra to ignore
+during fitting.</li>
+<li><strong>obj_sres</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) The spectral
+resolution of the object data.  Can be a single vector
+for all spectra or one vector per object spectrum.</li>
+<li><strong>guess_redshift</strong> (<em>array-like</em>) – (<strong>Optional</strong>) The starting
+redshift guess.  Can provide a single value for all
+spectra or one value per spectrum.</li>
+<li><strong>guess_dispersion</strong> (<em>array-like</em>) – (<strong>Optional</strong>) The starting
+velocity dispersion guess.  Can provide a single value
+for all spectra or one value per spectrum.</li>
+<li><strong>reject_boxcar</strong> (<em>int</em>) – (<strong>Optional</strong>) Size of the boxcar to
+use when rejecting fit outliers.  If None, no rejection
+iteration is performed.</li>
+<li><strong>stpl_wave</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) Wavelength vector
+for stellar template spectra.  Shape is (<span class="math">\(N_{{\rm
+pix},\ast}\)</span>,).</li>
+<li><strong>stpl_flux</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) Stellar template
+spectra to use in fit.  Shape is (<span class="math">\(N_{{\rm
+tpl},\ast},N_{{\rm pix},\ast}\)</span>).</li>
+<li><strong>stpl_sres</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) Spectral
+resolution of the stellar template spectra.  All
+templates are assumed to have the same spectral
+resolution.  Shape is (<span class="math">\(N_{{\rm pix},\ast}\)</span>,).
+This is also used to set the spectral resolution of the
+emission-line templates.  If not provided, the
+emission-line templates are constructed with an LSF that
+has a disperison of 1 pixel.</li>
+<li><strong>stpl_to_use</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) Set of flags
+used to select the stellar templates used to fit each
+spectrum.  Shape is (<span class="math">\(N_{\rm spec},N_{{\rm
+tpl},\ast}\)</span>).</li>
+<li><strong>stellar_kinematics</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) The
+kinematics to use for the stellar component.  If the
+spectral resolution of the templates is different from
+the galaxy data, the provided stellar velocity
+dispersions <em>must</em> include the the (assumed
+wavelength-independent) quadrature difference in the
+template and galaxy instrumental resolutions.  The
+stellar kinematics are <strong>fixed</strong> for all calls made to
+ppxf.  Shape is (<span class="math">\(N_{\rm spec},N_{{\rm
+kin},\ast}\)</span>).  The shape of this array determines the
+number of moments assigned to the stellar component.</li>
+<li><strong>etpl_sinst_mode</strong> (<em>str</em>) – (<strong>Optional</strong>) Mode used to set the
+instrumental dispersion of the emission-line templates;
+see <a class="reference internal" href="#mangadap.proc.sasuke.Sasuke.etpl_line_sigma_options" title="mangadap.proc.sasuke.Sasuke.etpl_line_sigma_options"><code class="xref py py-func docutils literal"><span class="pre">etpl_line_sigma_options()</span></code></a> for the options.
+Default mode is <cite>default</cite>, imagine that.</li>
+<li><strong>etpl_sinst_min</strong> (<em>str</em>) – (<strong>Optional</strong>) Minimum allowed
+instrumental dispersion value.  If the mode of
+constructing the instrumental dispersion of the
+templates results in values that are below this value,
+the whole function is offset in quadrature such that no
+value goes below the minimum.  Default is 0 km/s.</li>
+<li><strong>remap_flux</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) Ultimately the
+spectra to be modeled, if provided.  The nominal usage
+is, e.g., if the object spectra (<cite>obj_flux</cite>) are binned
+spaxels, this can be flux arrays of all the spaxels that
+were used to construct the binned data.  The function
+would then use a first fit to the binned spectra and a
+matching between the on-sky positions (see <cite>remap_skyx</cite>,
+<cite>remap_skyy</cite>, <cite>obj_skyx</cite>, <cite>obj_skyy</cite>) to ultimately fit
+the individual spaxel data.  See
+<a class="reference internal" href="mangadap.contrib.xjmc.html#mangadap.contrib.xjmc.emline_fitter_with_ppxf" title="mangadap.contrib.xjmc.emline_fitter_with_ppxf"><code class="xref py py-func docutils literal"><span class="pre">mangadap.contrib.xjmc.emline_fitter_with_ppxf()</span></code></a>.
+These spectra must be sampled identically to the object
+spectra (<cite>velscale</cite>) and have the same wavelength vector
+(<cite>obj_wave</cite>).  Can be provided as a
+<a class="reference external" href="https://docs.scipy.org/doc/numpy-1.12.0/reference/maskedarray.baseclass.html">numpy.ma.MaskedArray</a>.  Shape is (<span class="math">\(N_{\rm
+remap},N_{\rm pix}\)</span>).</li>
+<li><strong>remap_ferr</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>)  The 1-sigma
+error in <cite>remap_flux</cite>.  Can be provided as a
+<a class="reference external" href="https://docs.scipy.org/doc/numpy-1.12.0/reference/maskedarray.baseclass.html">numpy.ma.MaskedArray</a>.  Shape is (<span class="math">\(N_{\rm
+remap},N_{\rm pix}\)</span>).</li>
+<li><strong>(</strong><strong>numpy.ndarray or</strong> – <a class="reference internal" href="mangadap.util.pixelmask.html#mangadap.util.pixelmask.SpectralPixelMask" title="mangadap.util.pixelmask.SpectralPixelMask"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.pixelmask.SpectralPixelMask</span></code></a>):
+(<strong>Optional</strong>) Boolean array or
+<a class="reference internal" href="mangadap.util.pixelmask.html#mangadap.util.pixelmask.SpectralPixelMask" title="mangadap.util.pixelmask.SpectralPixelMask"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.pixelmask.SpectralPixelMask</span></code></a>
+instance used to censor regions of the remapping spectra
+to ignore during fitting.</li>
+<li><strong>remap_sres</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>)  The spectral
+resolution of the remapping spectra.  Can be a single
+vector for all spectra or one vector per object
+spectrum.</li>
+<li><strong>remap_skyx</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) On-sky x position
+of the remapping spectra.  Shape is (<span class="math">\(N_{\rm
+remap}\)</span>,).</li>
+<li><strong>remap_skyy</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) On-sky y position
+of the remapping spectra.  Shape is (<span class="math">\(N_{\rm
+remap}\)</span>,).</li>
+<li><strong>obj_skyx</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) On-sky x position
+of the object spectra.  Shape is (<span class="math">\(N_{\rm
+spec}\)</span>,).</li>
+<li><strong>obj_skyy</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) On-sky y position
+of the object spectra.  Shape is (<span class="math">\(N_{\rm
+spec}\)</span>,).</li>
+<li><strong>velscale_ratio</strong> (<em>int</em>) – (<strong>Optional</strong>) The <strong>integer</strong> ratio
+between the velocity scale of the pixel in the galaxy
+data to that of the template data.  If None, set to
+unity.</li>
+<li><strong>matched_resolution</strong> (<em>bool</em>) – (<strong>Optional</strong>) The spectral
+resolution of the templates is matched to that of the
+galaxy data.  WARNING: This functionality is never used!</li>
+<li><strong>waverange</strong> (<em>array-like</em>) – (<strong>Optional</strong>) Lower and upper
+wavelength limits to <em>include</em> in the fit.  This can be
+a two-element vector to apply the same limits to all
+spectra, or a N-spec x 2 array with wavelength ranges
+for each spectrum to be fit.  Default is to use as much
+of the spectrum as possible.</li>
+<li><strong>bias</strong> (<em>float</em>) – (<strong>Optional</strong>) pPXF bias parameter.
+(Currently irrelevant because gas is currently always
+fit with moments=2.)</li>
+<li><strong>degree</strong> (<em>int</em>) – (<strong>Optional</strong>) pPXF degree parameter setting
+the degree of the additive polynomials to use,
+<span class="math">\(o_{\rm add}\)</span>.  Default is no polynomial included.</li>
+<li><strong>mdegree</strong> (<em>int</em>) – (<strong>Optional</strong>) pPXF mdegree parameter setting
+the degree of the multiplicative polynomials to use,
+<span class="math">\(o_{\rm mult}\)</span>.  Default is no polynomial
+included.</li>
+<li><strong>reddening</strong> (<em>float</em>) – (<strong>Optional</strong>) pPXF reddening parameter
+used to fit <span class="math">\(E(B-V)\)</span> assuming a Calzetti law.
+Cannot be fit simultaneously with multiplicative
+polynomial.  Must be larger than 0 to start.  Default is
+not fit.</li>
+<li><strong>max_velocity_range</strong> (<em>float</em>) – (<strong>Optional</strong>) Maximum range
+(+/-) expected for the fitted velocities in km/s.
+Default is 400 km/s.</li>
+<li><strong>alias_window</strong> (<em>float</em>) – (<strong>Optional</strong>) The window to mask to
+avoid aliasing near the edges of the spectral range in
+km/s.  Default is six times <em>max_velocity_range</em>.</li>
+<li><strong>dvtol</strong> (<em>float</em>) – (<strong>Optional</strong>) The velocity scale of the
+template spectra and object spectrum must be smaller
+than this tolerance.  Default is 1e-10.</li>
+<li><strong>plot</strong> (<em>bool</em>) – (<strong>Optional</strong>) Show the automatically generated
+pPXF fit plots for each iterations of each spectrum.</li>
+<li><strong>loggers</strong> (<em>list</em>) – (<strong>Optional</strong>) List of <a href="#id21"><span class="problematic" id="id22">`logging.Logger`_</span></a>
+objects to log progress; ignored if quiet=True.  Logging
+is done using <a class="reference internal" href="mangadap.util.log.html#mangadap.util.log.log_output" title="mangadap.util.log.log_output"><code class="xref py py-func docutils literal"><span class="pre">mangadap.util.log.log_output()</span></code></a>.</li>
+<li><strong>quiet</strong> (<em>bool</em>) – (<strong>Optional</strong>) Suppress all terminal and
+logging output.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The function returns: (1) the
+wavelength vector for the model spectra (should be the same
+as obj_wave), (2) the best-fitting model spectra, (3) the
+best-fitting emission-line only spectra, (4) the bitmask
+values, (5) the per spectrum ppxf result, and (6) the per
+spectrum emission-line parameters.  The first object is a
+numpy.ndarray instance with shape <span class="math">\((N_{\rm pix},)\)</span>,
+the next 3 objects are numpy.ndarray instances with shape
+<span class="math">\((N_{\rm spec}, N_{\rm pix})\)</span>, and the last two are
+numpy.recarray instances with shape <span class="math">\((N_{\rm spec},)\)</span>.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">numpy.ndarray, numpy.recarray</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if the length of the spectra, errors, or
+mask does not match the length of the wavelength array;
+raised if the wavelength, redshift, or dispersion arrays
+are not 1D vectors; and raised if the number of
+redshifts or dispersions is not a single value or the
+same as the number of input spectra.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.proc.sasuke.Sasuke.fit_SpatiallyBinnedSpectra">
+<code class="descname">fit_SpatiallyBinnedSpectra</code><span class="sig-paren">(</span><em>binned_spectra</em>, <em>par=None</em>, <em>loggers=None</em>, <em>quiet=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/sasuke.html#Sasuke.fit_SpatiallyBinnedSpectra"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.sasuke.Sasuke.fit_SpatiallyBinnedSpectra" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>This DAP-specific function interprets the DAP-specific classes
+and constructs call(s) to the general <a class="reference internal" href="#mangadap.proc.sasuke.Sasuke.fit" title="mangadap.proc.sasuke.Sasuke.fit"><code class="xref py py-func docutils literal"><span class="pre">fit()</span></code></a> function to
+fit the spectra.</p>
+<p>The format of the calling sequence is dictated by the DAP
+interface: Any emission-line fitter (e.g.
+<a class="reference internal" href="mangadap.proc.elric.html#mangadap.proc.elric.Elric" title="mangadap.proc.elric.Elric"><code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.elric.Elric</span></code></a>) must have the same function
+interface in order to be called within the
+<a class="reference internal" href="mangadap.proc.emissionlinemodel.html#mangadap.proc.emissionlinemodel.EmissionLineModel" title="mangadap.proc.emissionlinemodel.EmissionLineModel"><code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.emissionlinemodel.EmissionLineModel</span></code></a>
+object.  Because this is a DAP-specific function, it should not
+declare anything to self.</p>
+<p>The returned emission-line “baseline” array is set to be the
+difference between the best-fitting stellar continuum (passed to
+this function as par[‘stellar_continuum’]) and the best-fitting
+stellar continuum from the combined emission-line and stellar
+spectra produced by <a class="reference internal" href="#mangadap.proc.sasuke.Sasuke.fit" title="mangadap.proc.sasuke.Sasuke.fit"><code class="xref py py-func docutils literal"><span class="pre">fit()</span></code></a>.  In this way, the best-fitting
+model for each spectrum is:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">best_fit_model</span> <span class="o">=</span> <span class="n">par</span><span class="p">[</span><span class="s1">&#39;stellar_continuum&#39;</span><span class="p">][</span><span class="s1">&#39;FLUX&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>                                 <span class="o">+</span> <span class="n">model_eml_flux</span> <span class="o">+</span> <span class="n">model_eml_base</span>
+</pre></div>
+</div>
+<p>where <cite>model_eml_flux</cite> and <cite>model_eml_base</cite> are the 2nd and 3rd
+returned objects, respectively.  These are written to the output
+DAP model LOGCUBE file in the extensions EMLINE and EMLINE_BASE,
+respectively.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><dl class="first last docutils">
+<dt>binned_spectra</dt>
+<dd>(<a class="reference internal" href="mangadap.proc.spatiallybinnedspectra.html#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra" title="mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra"><code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra</span></code></a>):
+Spectra to fit.</dd>
+<dt>par (<a class="reference internal" href="#mangadap.proc.sasuke.SasukePar" title="mangadap.proc.sasuke.SasukePar"><code class="xref py py-class docutils literal"><span class="pre">SasukePar</span></code></a>): Parameters provided from the DAP</dt>
+<dd>to the general Sasuke fitting algorithm (<a class="reference internal" href="#mangadap.proc.sasuke.Sasuke.fit" title="mangadap.proc.sasuke.Sasuke.fit"><code class="xref py py-func docutils literal"><span class="pre">fit()</span></code></a>).
+Althought technically optional given that it is a
+keyword parameter, the <a class="reference internal" href="#mangadap.proc.sasuke.SasukePar" title="mangadap.proc.sasuke.SasukePar"><code class="xref py py-class docutils literal"><span class="pre">SasukePar</span></code></a> parameter must
+be provided for proper execution of the function.</dd>
+<dt>loggers (list): (<strong>Optional</strong>) List of <a href="#id23"><span class="problematic" id="id24">`logging.Logger`_</span></a> objects</dt>
+<dd>to log progress; ignored if quiet=True.  Logging is done
+using <a class="reference internal" href="mangadap.util.log.html#mangadap.util.log.log_output" title="mangadap.util.log.log_output"><code class="xref py py-func docutils literal"><span class="pre">mangadap.util.log.log_output()</span></code></a>.  Default is
+no logging.</dd>
+<dt>quiet (bool): (<strong>Optional</strong>) Suppress all terminal and</dt>
+<dd>logging output.  Default is False.</dd>
+</dl>
+</dd>
+<dt>Returns:</dt>
+<dd>numpy.ndarray, numpy.recarray: The function returns: (1)
+wavelength vector of the fitted models, which should match
+the binned spectra wavelength vector
+(binned_spectra[‘WAVE’].data), (2) the best-fitting
+emission-line model model spectra, (3) the best-fitting
+emission-line baseline (see the description above), (4) the
+bitmask values, (5) the per spectrum ppxf result, and (6)
+the per spectrum emission-line parameters.   The first
+object is a numpy.ndarray instance with shape :math:<a href="#id11"><span class="problematic" id="id12">`</span></a>(N_{</dd>
+</dl>
+</div></blockquote>
+<dl class="docutils">
+<dt>m</dt>
+<dd>pix},)` , the next 3 objects are numpy.ndarray instances
+with shape :math:<a href="#id13"><span class="problematic" id="id14">`</span></a>(N_{</dd>
+</dl>
+<p>m spec}, N_{
+m pix})`, and the last</p>
+<blockquote>
+<div>two are numpy.recarray instances with shape :math:<a href="#id15"><span class="problematic" id="id16">`</span></a>(N_{</div></blockquote>
+<dl class="docutils">
+<dt>m</dt>
+<dd>spec},)`.</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="mangadap.proc.sasuke.SasukePar">
+<em class="property">class </em><code class="descclassname">mangadap.proc.sasuke.</code><code class="descname">SasukePar</code><span class="sig-paren">(</span><em>stellar_continuum</em>, <em>emission_lines</em>, <em>continuum_templates=None</em>, <em>etpl_line_sigma_mode=None</em>, <em>etpl_line_sigma_min=None</em>, <em>velscale_ratio=None</em>, <em>guess_redshift=None</em>, <em>guess_dispersion=None</em>, <em>minimum_snr=None</em>, <em>deconstruct_bins=None</em>, <em>pixelmask=None</em>, <em>reject_boxcar=None</em>, <em>bias=None</em>, <em>moments=None</em>, <em>degree=None</em>, <em>mdegree=None</em>, <em>reddening=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/sasuke.html#SasukePar"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.sasuke.SasukePar" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet" title="mangadap.par.parset.ParSet"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.parset.ParSet</span></code></a></p>
+<p>A class specific to the DAP’s use of Sasuke.</p>
+<p>This is the object that gets passed to
+<a class="reference internal" href="#mangadap.proc.sasuke.Sasuke.fit_SpatiallyBinnedSpectra" title="mangadap.proc.sasuke.Sasuke.fit_SpatiallyBinnedSpectra"><code class="xref py py-func docutils literal"><span class="pre">Sasuke.fit_SpatiallyBinnedSpectra()</span></code></a>.  In the DAP, it is
+instantiated by
+<a class="reference internal" href="mangadap.proc.emissionlinemodel.html#mangadap.proc.emissionlinemodel.available_emission_line_modeling_methods" title="mangadap.proc.emissionlinemodel.available_emission_line_modeling_methods"><code class="xref py py-func docutils literal"><span class="pre">mangadap.proc.emissionlinemodel.available_emission_line_modeling_methods()</span></code></a>
+and some of its components are filled by
+<code class="xref py py-func docutils literal"><span class="pre">mangdap.proc.emissionlinemodel.EmissionLineModel._fill_method_par()</span></code>.</p>
+<p>The continuum templates can either be the string keyword used to
+construct the template library, or the template library itself.  If
+the former, the fit_SpatiallyBinnedSpectra object will construct the
+template library for later callback.</p>
+<p>When instantiated, the <a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet" title="mangadap.par.parset.ParSet"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.parset.ParSet</span></code></a> objects
+test that the input objects match the provided dtypes.  See
+documentation for <a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet" title="mangadap.par.parset.ParSet"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.parset.ParSet</span></code></a> for the list
+of attributes and exceptions raised.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>stellar_continuum</strong> – (<a class="reference internal" href="mangadap.proc.stellarcontinuummodel.html#mangadap.proc.stellarcontinuummodel.StellarContinuumModel" title="mangadap.proc.stellarcontinuummodel.StellarContinuumModel"><code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.stellarcontinuummodel.StellarContinuumModel</span></code></a>):
+The result of the previous fit to the stellar continuum.</li>
+<li><strong>emission_lines</strong> – (<a class="reference internal" href="mangadap.par.emissionlinedb.html#mangadap.par.emissionlinedb.EmissionLineDB" title="mangadap.par.emissionlinedb.EmissionLineDB"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.emissionlinedb.EmissionLineDB</span></code></a>):
+Emission-line database with the details of the lines to be
+fit.</li>
+<li><strong>continuum_templates</strong> – (str, <a class="reference internal" href="mangadap.proc.templatelibrary.html#mangadap.proc.templatelibrary.TemplateLibrary" title="mangadap.proc.templatelibrary.TemplateLibrary"><code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.templatelibrary.TemplateLibrary</span></code></a>):
+(<strong>Optional</strong>) The new continuum template library to use
+during the emission-line fit.</li>
+<li><strong>etpl_line_sigma_mode</strong> (<em>str</em>) – (<strong>Optional</strong>) Mode used to set the
+instrumental dispersion of the emission-line templates.
+Mode options are explated by
+<a class="reference internal" href="#mangadap.proc.sasuke.Sasuke.etpl_line_sigma_options" title="mangadap.proc.sasuke.Sasuke.etpl_line_sigma_options"><code class="xref py py-func docutils literal"><span class="pre">Sasuke.etpl_line_sigma_options()</span></code></a>.  Default is
+‘default’.</li>
+<li><strong>etpl_line_sigma_min</strong> (<em>int</em><em>,</em><em>float</em>) – (<strong>Optional</strong>) Impose a minimum
+emission-line sigma by offsetting the nominal trend, in
+quadrature, to have this minimum value.  Default is 0.</li>
+<li><strong>guess_redshift</strong> (<em>array-like</em>) – Single or per-spectrum redshift to
+use as the initial velocity guess.</li>
+<li><strong>guess_dispersion</strong> (<em>array-like</em>) – Single or per-spectrum velocity
+dispersion to use as the initial guess.</li>
+<li><strong>minimum_snr</strong> (<em>float</em>) – Minimum S/N of spectrum to fit.</li>
+<li><strong>pixelmask</strong> (<a class="reference internal" href="mangadap.util.pixelmask.html#mangadap.util.pixelmask.SpectralPixelMask" title="mangadap.util.pixelmask.SpectralPixelMask"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.pixelmask.SpectralPixelMask</span></code></a>) – Mask to apply to all spectra being fit.</li>
+<li><strong>reject_boxcar</strong> (<em>int</em>) – Size of the boxcar to use when rejecting
+fit outliers.</li>
+<li><strong>bias</strong> (<em>float</em>) – pPXF bias parameter.  (Irrelevant because gas is
+currently always fit with moments=2.)</li>
+<li><strong>moments</strong> (<em>int</em>) – pPXF moments parameter.  (Irrelevant because gas is
+currently always fit with moments=2.)</li>
+<li><strong>degree</strong> (<em>int</em>) – pPXF degree parameter setting the degree of the
+additive polynomials to use.</li>
+<li><strong>mdegree</strong> (<em>int</em>) – pPXF mdegree parameter setting the degree of the
+multiplicative polynomials to use.</li>
+<li><strong>reddening</strong> (<em>float</em>) – pPXF reddening parameter setting the initial
+<span class="math">\(E(B-V)\)</span> to fit, based on a Calzetti law.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="mangadap.proc.sasuke.SasukePar._check">
+<code class="descname">_check</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/sasuke.html#SasukePar._check"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.sasuke.SasukePar._check" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="mangadap.proc.spatialbinning.html" class="btn btn-neutral float-right" title="mangadap.proc.spatialbinning module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="mangadap.proc.reductionassessments.html" class="btn btn-neutral" title="mangadap.proc.reductionassessments module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, SDSS-IV/MaNGA Pipeline Group.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'2.2.2',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

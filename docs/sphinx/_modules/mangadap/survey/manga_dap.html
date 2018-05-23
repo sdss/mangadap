@@ -1,0 +1,687 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mangadap.survey.manga_dap &mdash; mangadap 2.2.2 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../search.html"/>
+    <link rel="top" title="mangadap 2.2.2 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> mangadap
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../mangadap.html">mangadap package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">mangadap</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>mangadap.survey.manga_dap</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for mangadap.survey.manga_dap</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Licensed under a 3-clause BSD style license - see LICENSE.rst</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Provides the main wrapper function for the MaNGA DAP.</span>
+
+<span class="sd">*License*:</span>
+<span class="sd">    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group</span>
+<span class="sd">        Licensed under BSD 3-clause license - see LICENSE.rst</span>
+
+<span class="sd">*Source location*:</span>
+<span class="sd">    $MANGADAP_DIR/python/mangadap/survey/manga_dap.py</span>
+
+<span class="sd">*Imports and python version compliance*:</span>
+<span class="sd">    ::</span>
+
+<span class="sd">        from __future__ import division</span>
+<span class="sd">        from __future__ import print_function</span>
+<span class="sd">        from __future__ import absolute_import</span>
+<span class="sd">        from __future__ import unicode_literals</span>
+
+<span class="sd">        import sys</span>
+<span class="sd">        if sys.version &gt; &#39;3&#39;:</span>
+<span class="sd">            long = int</span>
+
+<span class="sd">        import logging</span>
+<span class="sd">        import resource</span>
+<span class="sd">        import time</span>
+<span class="sd">        import os</span>
+<span class="sd">        import warnings</span>
+<span class="sd">        import numpy</span>
+
+<span class="sd">        import astropy.constants</span>
+
+<span class="sd">        from ..config.defaults import default_drp_version, default_dap_version</span>
+<span class="sd">        from ..config.defaults import default_analysis_path, default_dap_method</span>
+<span class="sd">        from ..config.defaults import default_dap_method_path</span>
+<span class="sd">        from ..util.log import init_DAP_logging, module_logging, log_output</span>
+<span class="sd">        from ..util.version import __version__</span>
+<span class="sd">        from ..drpfits import DRPFits</span>
+<span class="sd">        from ..par.obsinput import ObsInputPar</span>
+<span class="sd">        from ..par.analysisplan import AnalysisPlanSet</span>
+<span class="sd">        from ..proc.reductionassessments import ReductionAssessment</span>
+<span class="sd">        from ..proc.spatiallybinnedspectra import SpatiallyBinnedSpectra</span>
+<span class="sd">        from ..proc.stellarcontinuummodel import StellarContinuumModel</span>
+<span class="sd">        from ..proc.emissionlinemoments import EmissionLineMoments</span>
+<span class="sd">        from ..proc.emissionlinemodel import EmissionLineModel</span>
+<span class="sd">        from ..proc.spectralindices import SpectralIndices</span>
+<span class="sd">        from ..dapfits import construct_maps_file, construct_cube_file</span>
+<span class="sd">        </span>
+<span class="sd">*Usage*:</span>
+<span class="sd">    Add usage examples</span>
+
+<span class="sd">*Revision history*:</span>
+<span class="sd">    | **21 Mar 2016**: Original implementation by K. Westfall (KBW): started.</span>
+<span class="sd">    | **19 Jul 2016**: (KBW) Always provide the NSA redshift to the modules!</span>
+<span class="sd">    | **05 May 2017**: (KBW) Clean up documentation; use import to get</span>
+<span class="sd">        __version__</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version</span> <span class="o">&gt;</span> <span class="s1">&#39;3&#39;</span><span class="p">:</span>
+    <span class="n">long</span> <span class="o">=</span> <span class="nb">int</span>
+
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">resource</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+
+<span class="kn">import</span> <span class="nn">astropy.constants</span>
+
+<span class="kn">from</span> <span class="nn">..config.defaults</span> <span class="k">import</span> <span class="n">default_drp_version</span><span class="p">,</span> <span class="n">default_dap_version</span>
+<span class="kn">from</span> <span class="nn">..config.defaults</span> <span class="k">import</span> <span class="n">default_analysis_path</span><span class="p">,</span> <span class="n">default_dap_method</span>
+<span class="kn">from</span> <span class="nn">..config.defaults</span> <span class="k">import</span> <span class="n">default_dap_method_path</span>
+<span class="kn">from</span> <span class="nn">..util.log</span> <span class="k">import</span> <span class="n">init_DAP_logging</span><span class="p">,</span> <span class="n">module_logging</span><span class="p">,</span> <span class="n">log_output</span>
+<span class="kn">from</span> <span class="nn">..util.version</span> <span class="k">import</span> <span class="n">__version__</span>
+<span class="kn">from</span> <span class="nn">..drpfits</span> <span class="k">import</span> <span class="n">DRPFits</span>
+<span class="kn">from</span> <span class="nn">..par.obsinput</span> <span class="k">import</span> <span class="n">ObsInputPar</span>
+<span class="kn">from</span> <span class="nn">..par.analysisplan</span> <span class="k">import</span> <span class="n">AnalysisPlanSet</span>
+<span class="kn">from</span> <span class="nn">..proc.reductionassessments</span> <span class="k">import</span> <span class="n">ReductionAssessment</span>
+<span class="kn">from</span> <span class="nn">..proc.spatiallybinnedspectra</span> <span class="k">import</span> <span class="n">SpatiallyBinnedSpectra</span>
+<span class="kn">from</span> <span class="nn">..proc.stellarcontinuummodel</span> <span class="k">import</span> <span class="n">StellarContinuumModel</span>
+<span class="kn">from</span> <span class="nn">..proc.emissionlinemoments</span> <span class="k">import</span> <span class="n">EmissionLineMoments</span>
+<span class="kn">from</span> <span class="nn">..proc.emissionlinemodel</span> <span class="k">import</span> <span class="n">EmissionLineModel</span>
+<span class="kn">from</span> <span class="nn">..proc.spectralindices</span> <span class="k">import</span> <span class="n">SpectralIndices</span>
+<span class="kn">from</span> <span class="nn">..dapfits</span> <span class="k">import</span> <span class="n">construct_maps_file</span><span class="p">,</span> <span class="n">construct_cube_file</span>
+
+<span class="c1"># For testing/debugging</span>
+<span class="kn">from</span> <span class="nn">..util.fitsutil</span> <span class="k">import</span> <span class="n">DAPFitsUtil</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="k">import</span> <span class="n">pyplot</span>
+
+<div class="viewcode-block" id="manga_dap"><a class="viewcode-back" href="../../../mangadap.survey.manga_dap.html#mangadap.survey.manga_dap.manga_dap">[docs]</a><span class="k">def</span> <span class="nf">manga_dap</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">plan</span><span class="p">,</span> <span class="n">dbg</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">drpver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">redux_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+              <span class="n">directory_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dapver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dapsrc</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">analysis_path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Main wrapper function for the MaNGA DAP.</span>
+
+<span class="sd">    This function is designed to be called once per PLATE-IFUDESIGN as</span>
+<span class="sd">    set by the provided :class:`mangadap.par.obsinput.ObsInputPar`</span>
+<span class="sd">    instance.  The :class:`mangadap.par.analysisplan.AnalysisPlanSet`</span>
+<span class="sd">    instance sets the types of analyses to perform on this observation.</span>
+<span class="sd">    Each analysis plan results in a MAPS and model LOGCUBE file.</span>
+
+<span class="sd">    The procedure is as follows:</span>
+<span class="sd">        - Read the DRP fits file specified by `obs`</span>
+<span class="sd">        - For each plan in `plan`:</span>
+<span class="sd">            - Determine basic assessments of the data, including the S/N</span>
+<span class="sd">              and spaxel coordinates.  See</span>
+<span class="sd">              :class:`mangadap.proc.reductionassessments.ReductionAssessment`.</span>
+<span class="sd">            - Bin the spectra.  See</span>
+<span class="sd">              :class:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra`.</span>
+<span class="sd">            - Fit the stellar continuum for stellar kinematics.  See</span>
+<span class="sd">              :class:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel`.</span>
+<span class="sd">            - Measure the emission-line moments.  See</span>
+<span class="sd">              :class:`mangadap.proc.emissionlinemoments.EmissionLineMoments`.</span>
+<span class="sd">            - Fit parameterized line profiles to the emission lines.</span>
+<span class="sd">              See</span>
+<span class="sd">              :class:`mangadap.proc.emissionlinemodel.EmissionLineModel`.</span>
+<span class="sd">            - Subtract the fitted emission-line models and measure the</span>
+<span class="sd">              spectral indices.  See</span>
+<span class="sd">              :class:`mangadap.proc.spectralindices.SpectralIndices`.</span>
+<span class="sd">            - Construct the primary output files based on the plan</span>
+<span class="sd">              results.  See :func:`mangadap.dapfits.construct_maps_file`</span>
+<span class="sd">              and :func:`mangadap.dapfits.construct_cube_file`.</span>
+
+<span class="sd">    Verbose levels (still under development):</span>
+<span class="sd">        0. Nothing but errors.</span>
+<span class="sd">        1. Basic status updates. E.g., start and end of each block,</span>
+<span class="sd">           minor progress within blocks.</span>
+<span class="sd">        2. Block-level and sub-function updates.</span>
+<span class="sd">        3. Same as above, with figures.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        obs (dict, :class:`mangadap.par.obsinput.ObsInputPar`): Object</span>
+<span class="sd">            with the input parameters.</span>
+<span class="sd">        plan (:class:`mangadap.par.analysisplan.AnalysisPlanSet`):</span>
+<span class="sd">            Object with the analysis plans to implement.</span>
+<span class="sd">        dbg (bool) : (**Optional**) Flag to run the DAP in debug mode,</span>
+<span class="sd">            see above; default is False.  Limited use; still under</span>
+<span class="sd">            development.</span>
+<span class="sd">        log (str) : (**Optional**) File name for log output, see above;</span>
+<span class="sd">            no log file is produced by default.</span>
+<span class="sd">        verbose (int) : (**Optional**) Verbosity level, see above;</span>
+<span class="sd">            default is 0.</span>
+<span class="sd">        drpver (str): (**Optional**) DRP version.  Default determined by</span>
+<span class="sd">            :func:`mangadap.config.defaults.default_drp_version`.</span>
+<span class="sd">        redux_path (str) : (**Optional**) Top-level directory with the</span>
+<span class="sd">            DRP products; default is defined by</span>
+<span class="sd">            :func:`mangadap.config.defaults.default_redux_path`.</span>
+<span class="sd">        directory_path (str) : (**Optional**) Direct path to directory</span>
+<span class="sd">            containing the DRP output file; default is defined by</span>
+<span class="sd">            :func:`mangadap.config.defaults.default_drp_directory_path`</span>
+<span class="sd">        dapver (str): (**Optional**) DAP version.  Default determined by</span>
+<span class="sd">            :func:`mangadap.config.defaults.default_dap_version`.</span>
+<span class="sd">        dapsrc (str): (**Optional**) Source directory of the DAP.</span>
+<span class="sd">            Default determined by</span>
+<span class="sd">            :func:`mangadap.config.defaults.default_dap_source`.</span>
+<span class="sd">        analysis_path (str) : (**Optional**) Top-level directory for the DAP</span>
+<span class="sd">            output data; default is defined by</span>
+<span class="sd">            :func:`mangadap.config.defaults.default_analysis_path`.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        int: Status flag (under development; currently always 0)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Check input</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="p">(</span><span class="n">ObsInputPar</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;obs must be of type dict or ObsInputPar&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">AnalysisPlanSet</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;plan must be of type AnalysisPlanSet&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Initialize the logging objects</span>
+    <span class="n">init_DAP_logging</span><span class="p">(</span><span class="n">log</span><span class="p">)</span><span class="c1">#, simple_warnings=False)</span>
+
+    <span class="c1"># Start log</span>
+    <span class="n">loggers</span> <span class="o">=</span> <span class="n">module_logging</span><span class="p">(</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span>
+
+    <span class="n">log_output</span><span class="p">(</span><span class="n">loggers</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="s1">&#39;-&#39;</span><span class="o">*</span><span class="mi">50</span><span class="p">)</span>
+    <span class="n">log_output</span><span class="p">(</span><span class="n">loggers</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">{0:^50}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s1">&#39;MaNGA Data Analysis Pipeline&#39;</span><span class="p">))</span>
+    <span class="n">log_output</span><span class="p">(</span><span class="n">loggers</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="s1">&#39;-&#39;</span><span class="o">*</span><span class="mi">50</span><span class="p">)</span>
+    <span class="n">log_output</span><span class="p">(</span><span class="n">loggers</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="s1">&#39;   VERSION: </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">__version__</span><span class="p">))</span>
+    <span class="n">log_output</span><span class="p">(</span><span class="n">loggers</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="s1">&#39;     START: </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                    <span class="n">time</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%a </span><span class="si">%d</span><span class="s2"> %b %Y %H:%M:%S&quot;</span><span class="p">,</span><span class="n">time</span><span class="o">.</span><span class="n">localtime</span><span class="p">())))</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span>
+    <span class="n">log_output</span><span class="p">(</span><span class="n">loggers</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="s1">&#39;     PLATE: </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">obs</span><span class="p">[</span><span class="s1">&#39;plate&#39;</span><span class="p">]))</span>
+    <span class="n">log_output</span><span class="p">(</span><span class="n">loggers</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="s1">&#39; IFUDESIGN: </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">obs</span><span class="p">[</span><span class="s1">&#39;ifudesign&#39;</span><span class="p">]))</span>
+    <span class="n">log_output</span><span class="p">(</span><span class="n">loggers</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="s1">&#39;   3D MODE: </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">obs</span><span class="p">[</span><span class="s1">&#39;mode&#39;</span><span class="p">]))</span>
+    <span class="n">log_output</span><span class="p">(</span><span class="n">loggers</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="s1">&#39;   N PLANS: </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">plan</span><span class="o">.</span><span class="n">nplans</span><span class="p">))</span>
+    <span class="n">log_output</span><span class="p">(</span><span class="n">loggers</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="s1">&#39;-&#39;</span><span class="o">*</span><span class="mi">50</span><span class="p">)</span>
+
+    <span class="n">status</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">if</span> <span class="n">obs</span><span class="p">[</span><span class="s1">&#39;mode&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;CUBE&#39;</span><span class="p">:</span>
+        <span class="n">status</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;DAP can currently only analyze CUBE files.&#39;</span><span class="p">)</span>
+
+    <span class="c1">#-------------------------------------------------------------------</span>
+    <span class="c1"># Declare the DRP fits file</span>
+    <span class="c1">#-------------------------------------------------------------------</span>
+    <span class="n">_drpver</span> <span class="o">=</span> <span class="n">default_drp_version</span><span class="p">()</span> <span class="k">if</span> <span class="n">drpver</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">drpver</span>
+    <span class="n">_dapver</span> <span class="o">=</span> <span class="n">default_dap_version</span><span class="p">()</span> <span class="k">if</span> <span class="n">dapver</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">dapver</span>
+    <span class="n">drpf</span> <span class="o">=</span> <span class="n">DRPFits</span><span class="p">(</span><span class="n">obs</span><span class="p">[</span><span class="s1">&#39;plate&#39;</span><span class="p">],</span> <span class="n">obs</span><span class="p">[</span><span class="s1">&#39;ifudesign&#39;</span><span class="p">],</span> <span class="n">obs</span><span class="p">[</span><span class="s1">&#39;mode&#39;</span><span class="p">],</span> <span class="n">drpver</span><span class="o">=</span><span class="n">_drpver</span><span class="p">,</span>
+                   <span class="n">redux_path</span><span class="o">=</span><span class="n">redux_path</span><span class="p">,</span> <span class="n">directory_path</span><span class="o">=</span><span class="n">directory_path</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">log_output</span><span class="p">(</span><span class="n">loggers</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="s1">&#39; Opened DRP file: </span><span class="si">{0}</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">drpf</span><span class="o">.</span><span class="n">file_path</span><span class="p">()))</span>
+
+    <span class="c1"># Test if the RSS file exists</span>
+    <span class="n">drpf_rss</span> <span class="o">=</span> <span class="n">DRPFits</span><span class="p">(</span><span class="n">obs</span><span class="p">[</span><span class="s1">&#39;plate&#39;</span><span class="p">],</span> <span class="n">obs</span><span class="p">[</span><span class="s1">&#39;ifudesign&#39;</span><span class="p">],</span> <span class="s1">&#39;RSS&#39;</span><span class="p">,</span> <span class="n">drpver</span><span class="o">=</span><span class="n">_drpver</span><span class="p">,</span>
+                       <span class="n">redux_path</span><span class="o">=</span><span class="n">redux_path</span><span class="p">,</span> <span class="n">directory_path</span><span class="o">=</span><span class="n">directory_path</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">drpf_rss</span><span class="o">.</span><span class="n">file_path</span><span class="p">()):</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;RSS counterpart not available.  Some functionality may be limited!&#39;</span><span class="p">)</span>
+    <span class="k">del</span> <span class="n">drpf_rss</span>
+
+    <span class="c1"># Set the the analysis path and make sure it exists</span>
+    <span class="n">_analysis_path</span> <span class="o">=</span> <span class="n">default_analysis_path</span><span class="p">(</span><span class="n">drpver</span><span class="o">=</span><span class="n">drpver</span><span class="p">,</span> <span class="n">dapver</span><span class="o">=</span><span class="n">dapver</span><span class="p">)</span> \
+                            <span class="k">if</span> <span class="n">analysis_path</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">analysis_path</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">_analysis_path</span><span class="p">):</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">_analysis_path</span><span class="p">)</span>
+
+    <span class="c1"># Set the nsa redshift</span>
+    <span class="n">nsa_redshift</span> <span class="o">=</span> <span class="n">obs</span><span class="p">[</span><span class="s1">&#39;vel&#39;</span><span class="p">]</span><span class="o">/</span><span class="n">astropy</span><span class="o">.</span><span class="n">constants</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;km/s&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
+
+    <span class="c1"># Iterate over plans:</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">plan</span><span class="o">.</span><span class="n">nplans</span><span class="p">):</span>
+
+        <span class="n">method</span> <span class="o">=</span> <span class="n">default_dap_method</span><span class="p">(</span><span class="n">plan</span><span class="o">=</span><span class="n">plan</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+        <span class="n">method_dir</span> <span class="o">=</span> <span class="n">default_dap_method_path</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="n">plate</span><span class="o">=</span><span class="n">obs</span><span class="p">[</span><span class="s1">&#39;plate&#39;</span><span class="p">],</span> <span class="n">ifudesign</span><span class="o">=</span><span class="n">obs</span><span class="p">[</span><span class="s1">&#39;ifudesign&#39;</span><span class="p">],</span>
+                                             <span class="n">drpver</span><span class="o">=</span><span class="n">drpver</span><span class="p">,</span> <span class="n">dapver</span><span class="o">=</span><span class="n">dapver</span><span class="p">,</span>
+                                             <span class="n">analysis_path</span><span class="o">=</span><span class="n">_analysis_path</span><span class="p">)</span>
+        <span class="n">method_ref_dir</span> <span class="o">=</span> <span class="n">default_dap_method_path</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="n">plate</span><span class="o">=</span><span class="n">obs</span><span class="p">[</span><span class="s1">&#39;plate&#39;</span><span class="p">],</span>
+                                                 <span class="n">ifudesign</span><span class="o">=</span><span class="n">obs</span><span class="p">[</span><span class="s1">&#39;ifudesign&#39;</span><span class="p">],</span> <span class="n">ref</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                                 <span class="n">drpver</span><span class="o">=</span><span class="n">drpver</span><span class="p">,</span> <span class="n">dapver</span><span class="o">=</span><span class="n">dapver</span><span class="p">,</span>
+                                                 <span class="n">analysis_path</span><span class="o">=</span><span class="n">_analysis_path</span><span class="p">)</span>
+
+        <span class="n">log_output</span><span class="p">(</span><span class="n">loggers</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="s1">&#39;-&#39;</span><span class="o">*</span><span class="mi">50</span><span class="p">)</span>
+        <span class="n">log_output</span><span class="p">(</span><span class="n">loggers</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">{0:^50}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s1">&#39;Plan </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)))</span>
+        <span class="n">log_output</span><span class="p">(</span><span class="n">loggers</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="s1">&#39;-&#39;</span><span class="o">*</span><span class="mi">50</span><span class="p">)</span>
+        <span class="n">log_output</span><span class="p">(</span><span class="n">loggers</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="s1">&#39;    METHOD: </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">method</span><span class="p">))</span>
+        <span class="n">log_output</span><span class="p">(</span><span class="n">loggers</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="s1">&#39;    OUTPUT: </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">method_dir</span><span class="p">))</span>
+        <span class="n">log_output</span><span class="p">(</span><span class="n">loggers</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="s1">&#39;REF OUTPUT: </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">method_ref_dir</span><span class="p">))</span>
+
+        <span class="c1">#---------------------------------------------------------------</span>
+        <span class="c1"># S/N Assessments</span>
+        <span class="c1">#---------------------------------------------------------------</span>
+        <span class="n">rdxqa</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">plan</span><span class="p">[</span><span class="s1">&#39;drpqa_key&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> \
+                    <span class="n">ReductionAssessment</span><span class="p">(</span><span class="n">plan</span><span class="p">[</span><span class="s1">&#39;drpqa_key&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">],</span> <span class="n">drpf</span><span class="p">,</span> <span class="n">pa</span><span class="o">=</span><span class="n">obs</span><span class="p">[</span><span class="s1">&#39;pa&#39;</span><span class="p">],</span> <span class="n">ell</span><span class="o">=</span><span class="n">obs</span><span class="p">[</span><span class="s1">&#39;ell&#39;</span><span class="p">],</span>
+                                        <span class="n">dapsrc</span><span class="o">=</span><span class="n">dapsrc</span><span class="p">,</span> <span class="n">analysis_path</span><span class="o">=</span><span class="n">_analysis_path</span><span class="p">,</span>
+                                        <span class="n">symlink_dir</span><span class="o">=</span><span class="n">method_ref_dir</span><span class="p">,</span>
+                                        <span class="n">clobber</span><span class="o">=</span><span class="n">plan</span><span class="p">[</span><span class="s1">&#39;drpqa_clobber&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">],</span> <span class="n">loggers</span><span class="o">=</span><span class="n">loggers</span><span class="p">)</span>
+
+        <span class="c1">#---------------------------------------------------------------</span>
+        <span class="c1"># Spatial Binning</span>
+        <span class="c1">#---------------------------------------------------------------</span>
+        <span class="n">binned_spectra</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">plan</span><span class="p">[</span><span class="s1">&#39;bin_key&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> \
+                    <span class="n">SpatiallyBinnedSpectra</span><span class="p">(</span><span class="n">plan</span><span class="p">[</span><span class="s1">&#39;bin_key&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">],</span> <span class="n">drpf</span><span class="p">,</span> <span class="n">rdxqa</span><span class="p">,</span> <span class="n">reff</span><span class="o">=</span><span class="n">obs</span><span class="p">[</span><span class="s1">&#39;reff&#39;</span><span class="p">],</span>
+                                           <span class="n">dapsrc</span><span class="o">=</span><span class="n">dapsrc</span><span class="p">,</span> <span class="n">analysis_path</span><span class="o">=</span><span class="n">_analysis_path</span><span class="p">,</span>
+                                           <span class="n">symlink_dir</span><span class="o">=</span><span class="n">method_ref_dir</span><span class="p">,</span>
+                                           <span class="n">clobber</span><span class="o">=</span><span class="n">plan</span><span class="p">[</span><span class="s1">&#39;bin_clobber&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">],</span> <span class="n">loggers</span><span class="o">=</span><span class="n">loggers</span><span class="p">)</span>
+
+        <span class="c1">#---------------------------------------------------------------</span>
+        <span class="c1"># Stellar Continuum Fit</span>
+        <span class="c1">#---------------------------------------------------------------</span>
+        <span class="n">stellar_continuum</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">plan</span><span class="p">[</span><span class="s1">&#39;continuum_key&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> \
+                    <span class="n">StellarContinuumModel</span><span class="p">(</span><span class="n">plan</span><span class="p">[</span><span class="s1">&#39;continuum_key&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">],</span> <span class="n">binned_spectra</span><span class="p">,</span>
+                                          <span class="n">guess_vel</span><span class="o">=</span><span class="n">obs</span><span class="p">[</span><span class="s1">&#39;vel&#39;</span><span class="p">],</span> <span class="n">guess_sig</span><span class="o">=</span><span class="n">obs</span><span class="p">[</span><span class="s1">&#39;vdisp&#39;</span><span class="p">],</span>
+                                          <span class="n">dapsrc</span><span class="o">=</span><span class="n">dapsrc</span><span class="p">,</span> <span class="n">analysis_path</span><span class="o">=</span><span class="n">_analysis_path</span><span class="p">,</span>
+                                          <span class="n">tpl_symlink_dir</span><span class="o">=</span><span class="n">method_ref_dir</span><span class="p">,</span>
+                                          <span class="n">clobber</span><span class="o">=</span><span class="n">plan</span><span class="p">[</span><span class="s1">&#39;continuum_clobber&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">],</span> <span class="n">loggers</span><span class="o">=</span><span class="n">loggers</span><span class="p">)</span>
+
+        <span class="c1">#---------------------------------------------------------------</span>
+        <span class="c1"># For both the emission-line measurements (moments and model):</span>
+        <span class="c1"># To use the NSA redshift for all moments:</span>
+        <span class="c1">#   - set redshift=nsa_redshift</span>
+        <span class="c1"># To use the stellar kinematics to set the redshift:</span>
+        <span class="c1">#   - set redshift=None</span>
+        <span class="c1">#---------------------------------------------------------------</span>
+        <span class="c1"># Emission-line Moment measurements</span>
+        <span class="c1">#---------------------------------------------------------------</span>
+        <span class="n">emission_line_moments</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">plan</span><span class="p">[</span><span class="s1">&#39;elmom_key&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> \
+                    <span class="n">EmissionLineMoments</span><span class="p">(</span><span class="n">plan</span><span class="p">[</span><span class="s1">&#39;elmom_key&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">],</span> <span class="n">binned_spectra</span><span class="p">,</span>
+                                        <span class="n">stellar_continuum</span><span class="o">=</span><span class="n">stellar_continuum</span><span class="p">,</span> <span class="n">redshift</span><span class="o">=</span><span class="n">nsa_redshift</span><span class="p">,</span>
+                                        <span class="n">dapsrc</span><span class="o">=</span><span class="n">dapsrc</span><span class="p">,</span> <span class="n">analysis_path</span><span class="o">=</span><span class="n">_analysis_path</span><span class="p">,</span>
+                                        <span class="n">clobber</span><span class="o">=</span><span class="n">plan</span><span class="p">[</span><span class="s1">&#39;elmom_clobber&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">],</span> <span class="n">loggers</span><span class="o">=</span><span class="n">loggers</span><span class="p">)</span>
+<span class="c1">#                                        clobber=False, loggers=loggers)</span>
+
+<span class="c1">#        ha_flux = emission_line_moments[&#39;ELMMNTS&#39;].data[&#39;FLUX&#39;][:,18].copy()</span>
+
+        <span class="c1">#---------------------------------------------------------------</span>
+        <span class="c1"># Emission-line Fit</span>
+        <span class="c1">#---------------------------------------------------------------</span>
+        <span class="c1"># To use a fixed velocity dispersion for the initial guess, e.g.:</span>
+        <span class="c1">#   - set dispersion=100.0</span>
+        <span class="c1"># To use the stellar kinematics as the initial guess:</span>
+        <span class="c1">#   - set dispersion=None</span>
+        <span class="c1"># The provided redshift is only the initial guess for the</span>
+        <span class="c1"># emission-line model (it&#39;s FIXED for the moment measurements</span>
+        <span class="c1"># above).</span>
+        <span class="n">emission_line_model</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">plan</span><span class="p">[</span><span class="s1">&#39;elfit_key&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> \
+                   <span class="n">EmissionLineModel</span><span class="p">(</span><span class="n">plan</span><span class="p">[</span><span class="s1">&#39;elfit_key&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">],</span> <span class="n">binned_spectra</span><span class="p">,</span>
+                                     <span class="n">stellar_continuum</span><span class="o">=</span><span class="n">stellar_continuum</span><span class="p">,</span>
+                                     <span class="n">emission_line_moments</span><span class="o">=</span><span class="n">emission_line_moments</span><span class="p">,</span> <span class="n">dispersion</span><span class="o">=</span><span class="mf">100.0</span><span class="p">,</span>
+                                     <span class="n">minimum_error</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">finfo</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span><span class="o">.</span><span class="n">eps</span><span class="p">,</span>
+                                     <span class="n">dapsrc</span><span class="o">=</span><span class="n">dapsrc</span><span class="p">,</span> <span class="n">analysis_path</span><span class="o">=</span><span class="n">_analysis_path</span><span class="p">,</span>
+                                     <span class="n">clobber</span><span class="o">=</span><span class="n">plan</span><span class="p">[</span><span class="s1">&#39;elfit_clobber&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">],</span> <span class="n">loggers</span><span class="o">=</span><span class="n">loggers</span><span class="p">)</span>
+
+<span class="c1">#        cen = drpf.spatial_shape[0]//2</span>
+<span class="c1">#        indx = emission_line_model[&#39;BINID&#39;].data[cen,cen]</span>
+<span class="c1">#        indx = numpy.arange(len(emission_line_model[&#39;EMLDATA&#39;].data[&#39;BINID&#39;]))[emission_line_model[&#39;EMLDATA&#39;].data[&#39;BINID&#39;] == indx][0]</span>
+<span class="c1">#        print(indx)</span>
+<span class="c1">#        pyplot.plot(emission_line_model[&#39;WAVE&#39;].data, emission_line_model[&#39;FLUX&#39;].data[indx,:])</span>
+<span class="c1">#        pyplot.show()</span>
+<span class="c1">#</span>
+<span class="c1">#        el_continuum = emission_line_model.fill_continuum_to_match(</span>
+<span class="c1">#                                            emission_line_model[&#39;BINID&#39;].data,</span>
+<span class="c1">#                                            missing=emission_line_model.missing_models)</span>
+<span class="c1">#        el_continuum_dcnvlv = emission_line_model.fill_continuum_to_match(</span>
+<span class="c1">#                                            emission_line_model[&#39;BINID&#39;].data,</span>
+<span class="c1">#                                            missing=emission_line_model.missing_models,</span>
+<span class="c1">#                                            redshift_only=True)</span>
+<span class="c1">#        el_continuum_dcnvlv_rest = emission_line_model.fill_continuum_to_match(</span>
+<span class="c1">#                                            emission_line_model[&#39;BINID&#39;].data,</span>
+<span class="c1">#                                            missing=emission_line_model.missing_models,</span>
+<span class="c1">#                                            redshift_only=True, deredshift=True)</span>
+<span class="c1">#</span>
+<span class="c1">#        pyplot.imshow(el_continuum, origin=&#39;lower&#39;, interpolation=&#39;nearest&#39;, aspect=&#39;auto&#39;)</span>
+<span class="c1">#        pyplot.colorbar()</span>
+<span class="c1">#        pyplot.show()</span>
+<span class="c1">#</span>
+<span class="c1">#        pyplot.imshow(el_continuum_dcnvlv, origin=&#39;lower&#39;, interpolation=&#39;nearest&#39;, aspect=&#39;auto&#39;)</span>
+<span class="c1">#        pyplot.colorbar()</span>
+<span class="c1">#        pyplot.show()</span>
+<span class="c1">#</span>
+<span class="c1">#        pyplot.imshow(el_continuum_dcnvlv_rest, origin=&#39;lower&#39;, interpolation=&#39;nearest&#39;, aspect=&#39;auto&#39;)</span>
+<span class="c1">#        pyplot.colorbar()</span>
+<span class="c1">#        pyplot.show()</span>
+<span class="c1">#</span>
+<span class="c1">#        pyplot.plot(binned_spectra[&#39;WAVE&#39;].data, el_continuum[indx,:])</span>
+<span class="c1">#        pyplot.plot(binned_spectra[&#39;WAVE&#39;].data, el_continuum_dcnvlv[indx,:])</span>
+<span class="c1">#        pyplot.plot(binned_spectra[&#39;WAVE&#39;].data, el_continuum_dcnvlv_rest[indx,:])</span>
+<span class="c1">#        pyplot.show()</span>
+
+<span class="c1">#        model_flux = emission_line_model[&#39;FLUX&#39;].data</span>
+<span class="c1">#        model_base = emission_line_model[&#39;BASE&#39;].data</span>
+<span class="c1">#        model_mask = emission_line_model[&#39;MASK&#39;].data</span>
+<span class="c1">#        model_eml_par = emission_line_model[&#39;EMLDATA&#39;].data</span>
+<span class="c1">#        model_binid = emission_line_model[&#39;BINID&#39;].data \</span>
+<span class="c1">#                        if emission_line_model.method[&#39;deconstruct_bins&#39;] else None</span>
+<span class="c1">#        test_eml_par = emission_line_model._get_line_fit_metrics(model_flux, model_base,</span>
+<span class="c1">#                                                                 model_mask, model_eml_par,</span>
+<span class="c1">#                                                                 model_binid)</span>
+
+<span class="c1">#        el_continuum = emission_line_model.fill_continuum_to_match(binned_spectra[&#39;BINID&#39;].data,</span>
+<span class="c1">#                                                        missing=binned_spectra.missing_bins)</span>
+<span class="c1">#        sc_continuum = stellar_continuum.fill_to_match(binned_spectra[&#39;BINID&#39;].data,</span>
+<span class="c1">#                                               missing=binned_spectra.missing_bins)</span>
+<span class="c1">#        pyplot.plot(binned_spectra[&#39;WAVE&#39;].data, binned_spectra[&#39;FLUX&#39;].data[0,:])</span>
+<span class="c1">#        pyplot.plot(binned_spectra[&#39;WAVE&#39;].data, el_continuum[0,:])</span>
+<span class="c1">#        pyplot.plot(binned_spectra[&#39;WAVE&#39;].data, sc_continuum[0,:])</span>
+<span class="c1">#        pyplot.show()</span>
+
+        <span class="c1">#---------------------------------------------------------------</span>
+        <span class="c1"># If requested by the emission-line moments method, remeasure</span>
+        <span class="c1"># the moments after the emission-line modeling.  This will</span>
+        <span class="c1"># produce a new reference file that will have a different name</span>
+        <span class="c1"># than the one produced above.</span>
+        <span class="c1">#---------------------------------------------------------------</span>
+        <span class="k">if</span> <span class="n">emission_line_moments</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> \
+                <span class="ow">and</span> <span class="n">emission_line_moments</span><span class="o">.</span><span class="n">database</span><span class="p">[</span><span class="s1">&#39;redo_postmodeling&#39;</span><span class="p">]:</span>
+            <span class="n">emission_line_moments</span><span class="o">.</span><span class="n">measure</span><span class="p">(</span><span class="n">binned_spectra</span><span class="p">,</span> <span class="n">stellar_continuum</span><span class="o">=</span><span class="n">stellar_continuum</span><span class="p">,</span>
+                                          <span class="n">emission_line_model</span><span class="o">=</span><span class="n">emission_line_model</span><span class="p">,</span> <span class="n">dapsrc</span><span class="o">=</span><span class="n">dapsrc</span><span class="p">,</span>
+                                          <span class="n">analysis_path</span><span class="o">=</span><span class="n">_analysis_path</span><span class="p">,</span>
+                                          <span class="n">clobber</span><span class="o">=</span><span class="n">plan</span><span class="p">[</span><span class="s1">&#39;elmom_clobber&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">],</span> <span class="n">loggers</span><span class="o">=</span><span class="n">loggers</span><span class="p">)</span>
+
+<span class="c1">#        print(emission_line_moments[&#39;ELMMNTS&#39;].data[&#39;FLUX&#39;].shape)</span>
+<span class="c1">#</span>
+<span class="c1">#        pyplot.scatter(ha_flux,</span>
+<span class="c1">#                       numpy.ma.divide(emission_line_moments[&#39;ELMMNTS&#39;].data[&#39;FLUX&#39;][:,18],ha_flux),</span>
+<span class="c1">#                       marker=&#39;.&#39;, s=20, lw=0)</span>
+<span class="c1">#        pyplot.show()</span>
+<span class="c1">#</span>
+<span class="c1">#        pyplot.scatter(emission_line_model[&#39;EMLDATA&#39;].data[&#39;FLUX&#39;][:,18],</span>
+<span class="c1">#                       numpy.ma.divide(ha_flux,emission_line_model[&#39;EMLDATA&#39;].data[&#39;FLUX&#39;][:,18]),</span>
+<span class="c1">#                       marker=&#39;.&#39;, s=20, lw=0)</span>
+<span class="c1">#        pyplot.show()</span>
+<span class="c1">#</span>
+<span class="c1">#        pyplot.scatter(emission_line_model[&#39;EMLDATA&#39;].data[&#39;FLUX&#39;][:,18],</span>
+<span class="c1">#                       numpy.ma.divide(emission_line_moments[&#39;ELMMNTS&#39;].data[&#39;FLUX&#39;][:,18],</span>
+<span class="c1">#                                       emission_line_model[&#39;EMLDATA&#39;].data[&#39;FLUX&#39;][:,18]),</span>
+<span class="c1">#                       marker=&#39;.&#39;, s=20, lw=0)</span>
+<span class="c1">#        pyplot.show()</span>
+
+        <span class="c1">#---------------------------------------------------------------</span>
+        <span class="c1"># Spectral-Index Measurements</span>
+        <span class="c1">#---------------------------------------------------------------</span>
+        <span class="n">spectral_indices</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">plan</span><span class="p">[</span><span class="s1">&#39;spindex_key&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> \
+                    <span class="n">SpectralIndices</span><span class="p">(</span><span class="n">plan</span><span class="p">[</span><span class="s1">&#39;spindex_key&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">],</span> <span class="n">binned_spectra</span><span class="p">,</span> <span class="n">redshift</span><span class="o">=</span><span class="n">nsa_redshift</span><span class="p">,</span>
+                                    <span class="n">stellar_continuum</span><span class="o">=</span><span class="n">stellar_continuum</span><span class="p">,</span>
+                                    <span class="n">emission_line_model</span><span class="o">=</span><span class="n">emission_line_model</span><span class="p">,</span> <span class="n">dapsrc</span><span class="o">=</span><span class="n">dapsrc</span><span class="p">,</span>
+                                    <span class="n">analysis_path</span><span class="o">=</span><span class="n">_analysis_path</span><span class="p">,</span> <span class="n">tpl_symlink_dir</span><span class="o">=</span><span class="n">method_ref_dir</span><span class="p">,</span>
+                                    <span class="n">clobber</span><span class="o">=</span><span class="n">plan</span><span class="p">[</span><span class="s1">&#39;spindex_clobber&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">],</span> <span class="n">loggers</span><span class="o">=</span><span class="n">loggers</span><span class="p">)</span>
+
+        <span class="c1">#-------------------------------------------------------------------</span>
+        <span class="c1"># Construct the main output file(s)</span>
+        <span class="c1">#-------------------------------------------------------------------</span>
+        <span class="n">construct_maps_file</span><span class="p">(</span><span class="n">drpf</span><span class="p">,</span> <span class="n">obs</span><span class="o">=</span><span class="n">obs</span><span class="p">,</span> <span class="n">rdxqa</span><span class="o">=</span><span class="n">rdxqa</span><span class="p">,</span> <span class="n">binned_spectra</span><span class="o">=</span><span class="n">binned_spectra</span><span class="p">,</span>
+                            <span class="n">stellar_continuum</span><span class="o">=</span><span class="n">stellar_continuum</span><span class="p">,</span>
+                            <span class="n">emission_line_moments</span><span class="o">=</span><span class="n">emission_line_moments</span><span class="p">,</span>
+                            <span class="n">emission_line_model</span><span class="o">=</span><span class="n">emission_line_model</span><span class="p">,</span>
+                            <span class="n">spectral_indices</span><span class="o">=</span><span class="n">spectral_indices</span><span class="p">,</span> <span class="n">nsa_redshift</span><span class="o">=</span><span class="n">nsa_redshift</span><span class="p">,</span>
+                            <span class="n">dapsrc</span><span class="o">=</span><span class="n">dapsrc</span><span class="p">,</span> <span class="n">analysis_path</span><span class="o">=</span><span class="n">_analysis_path</span><span class="p">,</span> <span class="n">clobber</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                            <span class="n">loggers</span><span class="o">=</span><span class="n">loggers</span><span class="p">,</span> <span class="n">single_precision</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">construct_cube_file</span><span class="p">(</span><span class="n">drpf</span><span class="p">,</span> <span class="n">obs</span><span class="o">=</span><span class="n">obs</span><span class="p">,</span> <span class="n">binned_spectra</span><span class="o">=</span><span class="n">binned_spectra</span><span class="p">,</span>
+                            <span class="n">stellar_continuum</span><span class="o">=</span><span class="n">stellar_continuum</span><span class="p">,</span>
+                            <span class="n">emission_line_model</span><span class="o">=</span><span class="n">emission_line_model</span><span class="p">,</span>
+                            <span class="n">dapsrc</span><span class="o">=</span><span class="n">dapsrc</span><span class="p">,</span> <span class="n">analysis_path</span><span class="o">=</span><span class="n">_analysis_path</span><span class="p">,</span> <span class="n">clobber</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                            <span class="n">loggers</span><span class="o">=</span><span class="n">loggers</span><span class="p">,</span> <span class="n">single_precision</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># Force memory to be freed</span>
+        <span class="k">del</span> <span class="n">spectral_indices</span>
+        <span class="k">del</span> <span class="n">emission_line_model</span>
+        <span class="k">del</span> <span class="n">emission_line_moments</span>
+        <span class="k">del</span> <span class="n">stellar_continuum</span>
+        <span class="k">del</span> <span class="n">binned_spectra</span>
+        <span class="k">del</span> <span class="n">rdxqa</span>
+
+    <span class="c1">#-------------------------------------------------------------------</span>
+    <span class="c1"># End log</span>
+    <span class="c1">#-------------------------------------------------------------------</span>
+    <span class="n">log_output</span><span class="p">(</span><span class="n">loggers</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="s1">&#39;-&#39;</span><span class="o">*</span><span class="mi">50</span><span class="p">)</span>
+    <span class="n">log_output</span><span class="p">(</span><span class="n">loggers</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="s1">&#39;EXECUTION SUMMARY&#39;</span><span class="p">)</span>
+    <span class="n">log_output</span><span class="p">(</span><span class="n">loggers</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="s1">&#39;-&#39;</span><span class="o">*</span><span class="mi">50</span><span class="p">)</span>
+    <span class="n">log_output</span><span class="p">(</span><span class="n">loggers</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="s1">&#39;    FINISH: </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                    <span class="n">time</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%a </span><span class="si">%d</span><span class="s2"> %b %Y %H:%M:%S&quot;</span><span class="p">,</span><span class="n">time</span><span class="o">.</span><span class="n">localtime</span><span class="p">())))</span>
+    <span class="k">if</span> <span class="n">time</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span> <span class="o">-</span> <span class="n">t</span> <span class="o">&lt;</span> <span class="mi">60</span><span class="p">:</span>
+        <span class="n">tstr</span> <span class="o">=</span> <span class="s1">&#39;  DURATION: </span><span class="si">{0:.5f}</span><span class="s1"> sec&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">((</span><span class="n">time</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span> <span class="o">-</span> <span class="n">t</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="n">time</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span> <span class="o">-</span> <span class="n">t</span> <span class="o">&lt;</span> <span class="mi">3600</span><span class="p">:</span>
+        <span class="n">tstr</span> <span class="o">=</span> <span class="s1">&#39;  DURATION: </span><span class="si">{0:.5f}</span><span class="s1"> min&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">((</span><span class="n">time</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span> <span class="o">-</span> <span class="n">t</span><span class="p">)</span><span class="o">/</span><span class="mf">60.</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">tstr</span> <span class="o">=</span> <span class="s1">&#39;  DURATION: </span><span class="si">{0:.5f}</span><span class="s1"> hr&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">((</span><span class="n">time</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span> <span class="o">-</span> <span class="n">t</span><span class="p">)</span><span class="o">/</span><span class="mf">3600.</span><span class="p">)</span>
+    <span class="n">log_output</span><span class="p">(</span><span class="n">loggers</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="n">tstr</span><span class="p">)</span>
+
+
+    <span class="n">mem</span> <span class="o">=</span> <span class="n">resource</span><span class="o">.</span><span class="n">getrusage</span><span class="p">(</span><span class="n">resource</span><span class="o">.</span><span class="n">RUSAGE_SELF</span><span class="p">)</span><span class="o">.</span><span class="n">ru_maxrss</span> \
+            <span class="o">+</span> <span class="n">resource</span><span class="o">.</span><span class="n">getrusage</span><span class="p">(</span><span class="n">resource</span><span class="o">.</span><span class="n">RUSAGE_CHILDREN</span><span class="p">)</span><span class="o">.</span><span class="n">ru_maxrss</span>
+    <span class="k">if</span> <span class="n">mem</span> <span class="o">&lt;</span> <span class="mi">1024</span><span class="p">:</span>
+        <span class="n">mstr</span> <span class="o">=</span> <span class="s1">&#39;MAX MEMORY: </span><span class="si">{0:.4f}</span><span class="s1"> bytes&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mem</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">mem</span> <span class="o">&lt;</span> <span class="mi">1024</span><span class="o">*</span><span class="mi">1024</span><span class="p">:</span>
+        <span class="n">mstr</span> <span class="o">=</span> <span class="s1">&#39;MAX MEMORY: </span><span class="si">{0:.4f}</span><span class="s1"> Kbytes&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mem</span><span class="o">/</span><span class="mi">1024</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">mem</span> <span class="o">&lt;</span> <span class="mi">1024</span><span class="o">*</span><span class="mi">1024</span><span class="o">*</span><span class="mi">1024</span><span class="p">:</span>
+        <span class="n">mstr</span> <span class="o">=</span> <span class="s1">&#39;MAX MEMORY: </span><span class="si">{0:.4f}</span><span class="s1"> Mbytes&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mem</span><span class="o">/</span><span class="mi">1024</span><span class="o">/</span><span class="mi">1024</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">mstr</span> <span class="o">=</span> <span class="s1">&#39;MAX MEMORY: </span><span class="si">{0:.4f}</span><span class="s1"> Gbytes&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mem</span><span class="o">/</span><span class="mi">1024</span><span class="o">/</span><span class="mi">1024</span><span class="o">/</span><span class="mi">1024</span><span class="p">)</span>
+    <span class="n">log_output</span><span class="p">(</span><span class="n">loggers</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="n">mstr</span><span class="p">)</span>
+    <span class="n">log_output</span><span class="p">(</span><span class="n">loggers</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="s1">&#39;-&#39;</span><span class="o">*</span><span class="mi">50</span><span class="p">)</span>
+    <span class="n">log_output</span><span class="p">(</span><span class="n">loggers</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="s1">&#39;-&#39;</span><span class="o">*</span><span class="mi">50</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">status</span></div>
+
+
+</pre></div>
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, SDSS-IV/MaNGA Pipeline Group.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'2.2.2',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

@@ -1,0 +1,864 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mangadap.util.geometry &mdash; mangadap 2.2.2 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../search.html"/>
+    <link rel="top" title="mangadap 2.2.2 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> mangadap
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../mangadap.html">mangadap package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">mangadap</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>mangadap.util.geometry</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for mangadap.util.geometry</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Licensed under a 3-clause BSD style license - see LICENSE.rst</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">Provides a set of utility functions dealing with computational geometry.</span>
+
+<span class="sd">*License*:</span>
+<span class="sd">    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group</span>
+<span class="sd">        Licensed under BSD 3-clause license - see LICENSE.rst</span>
+
+<span class="sd">*Source location*:</span>
+<span class="sd">    $MANGADAP_DIR/python/mangadap/util/geometry.py</span>
+
+<span class="sd">*Imports and python version compliance*:</span>
+<span class="sd">    ::</span>
+
+<span class="sd">        from __future__ import division</span>
+<span class="sd">        from __future__ import print_function</span>
+<span class="sd">        from __future__ import absolute_import</span>
+<span class="sd">        from __future__ import unicode_literals</span>
+
+<span class="sd">        import sys</span>
+<span class="sd">        if sys.version &gt; &#39;3&#39;:</span>
+<span class="sd">            long = int</span>
+
+<span class="sd">        import numpy</span>
+<span class="sd">        from scipy import linalg</span>
+
+<span class="sd">*Class usage examples*:</span>
+<span class="sd">    Add examples</span>
+
+<span class="sd">*Revision history*:</span>
+<span class="sd">    | **2015**: Original implementation by K. Westfall (KBW)</span>
+<span class="sd">    | **20 May 2015**: (KBW) Documentation and Sphinx tests</span>
+<span class="sd">    | **28 Mar 2016**: (KBW) Copied old projected_disk_plane to</span>
+<span class="sd">        :class:`SemiMajorAxisCoo`.  Coordinate projection functions</span>
+<span class="sd">        (e.g., :func:`SemiMajorAxisCoo.polar`) can now take array-like</span>
+<span class="sd">        objects as arguments.</span>
+<span class="sd">    | **08 Sep 2016**: (KBW) Allow :func:`point_inside_polygon` to</span>
+<span class="sd">        accept multiple coordinates.</span>
+
+<span class="sd">.. _scipy.linalg.lu_factor: http://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.lu_factor.html</span>
+<span class="sd">.. _scipy.linalg.lu_solve: https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.lu_solve.html</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version</span> <span class="o">&gt;</span> <span class="s1">&#39;3&#39;</span><span class="p">:</span>
+    <span class="n">long</span> <span class="o">=</span> <span class="nb">int</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="k">import</span> <span class="n">linalg</span>
+
+<div class="viewcode-block" id="polygon_winding_number"><a class="viewcode-back" href="../../../mangadap.util.geometry.html#mangadap.util.geometry.polygon_winding_number">[docs]</a><span class="k">def</span> <span class="nf">polygon_winding_number</span><span class="p">(</span><span class="n">polygon</span><span class="p">,</span> <span class="n">point</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Determine the winding number of a 2D polygon about a point.  The</span>
+<span class="sd">    code does **not** check if the polygon is simple (no interesecting</span>
+<span class="sd">    line segments).  Algorithm taken from Numerical Recipies Section</span>
+<span class="sd">    21.4.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        polygon (numpy.ndarray): An Nx2 array containing the x,y</span>
+<span class="sd">            coordinates of a polygon.  The points should be ordered</span>
+<span class="sd">            either counter-clockwise or clockwise.</span>
+<span class="sd">        point (numpy.ndarray): A 2-element array defining the x,y</span>
+<span class="sd">            position of the point to use as a reference for the winding</span>
+<span class="sd">            number.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        int: Winding number of `polygon` w.r.t. `point`</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: Raised if `polygon` is not 2D, if `polygon` does not</span>
+<span class="sd">            have two columns, or if `point` is not a 2-element array.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Check input shape is for 2D only</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">polygon</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Polygon must be an Nx2 array.&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">polygon</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Polygon must be in two dimensions.&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">point</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Point must contain two elements.&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Get the winding number</span>
+    <span class="n">np</span><span class="o">=</span><span class="n">polygon</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">x0</span> <span class="o">=</span> <span class="n">polygon</span><span class="p">[</span><span class="n">np</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">y0</span> <span class="o">=</span> <span class="n">polygon</span><span class="p">[</span><span class="n">np</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">wind</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">np</span><span class="p">):</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">y0</span> <span class="o">&gt;</span> <span class="n">point</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="k">if</span> <span class="n">polygon</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">point</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">and</span> \
+               <span class="p">(</span><span class="n">x0</span><span class="o">-</span><span class="n">point</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">*</span><span class="p">(</span><span class="n">polygon</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">point</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">-</span> <span class="p">(</span><span class="n">y0</span><span class="o">-</span><span class="n">point</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">*</span><span class="p">(</span><span class="n">polygon</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">point</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">wind</span> <span class="o">-=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">polygon</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">point</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">and</span> \
+               <span class="p">(</span><span class="n">x0</span><span class="o">-</span><span class="n">point</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">*</span><span class="p">(</span><span class="n">polygon</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">point</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">-</span> <span class="p">(</span><span class="n">y0</span><span class="o">-</span><span class="n">point</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">*</span><span class="p">(</span><span class="n">polygon</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">point</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">wind</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">x0</span> <span class="o">=</span> <span class="n">polygon</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">y0</span> <span class="o">=</span> <span class="n">polygon</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">wind</span></div>
+
+
+<div class="viewcode-block" id="point_inside_polygon"><a class="viewcode-back" href="../../../mangadap.util.geometry.html#mangadap.util.geometry.point_inside_polygon">[docs]</a><span class="k">def</span> <span class="nf">point_inside_polygon</span><span class="p">(</span><span class="n">polygon</span><span class="p">,</span> <span class="n">point</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Determine if a point is inside a polygon using the winding number.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        polygon (numpy.ndarray): An Nx2 array containing the x,y</span>
+<span class="sd">            coordinates of a polygon.  The points should be ordered</span>
+<span class="sd">            either counter-clockwise or clockwise.</span>
+<span class="sd">        point (numpy.ndarray): A 2-element array defining the x,y</span>
+<span class="sd">            position of the point to use as a reference for the winding</span>
+<span class="sd">            number.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        bool: True if the point is inside the polygon.</span>
+
+<span class="sd">    .. warning:: </span>
+<span class="sd">        If the point is **on** the polygon (or very close to it w.r.t.</span>
+<span class="sd">        the machine precision), the returned value is `False`.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_point</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">atleast_2d</span><span class="p">(</span><span class="n">point</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">_point</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Provided point must have two elements in last dimension.&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">_point</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">polygon_winding_number</span><span class="p">(</span><span class="n">polygon</span><span class="p">,</span> <span class="n">point</span><span class="p">))</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span> <span class="nb">abs</span><span class="p">(</span><span class="n">polygon_winding_number</span><span class="p">(</span><span class="n">polygon</span><span class="p">,</span> <span class="n">p</span><span class="p">))</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">_point</span> <span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="SemiMajorAxisCoo"><a class="viewcode-back" href="../../../mangadap.util.geometry.html#mangadap.util.geometry.SemiMajorAxisCoo">[docs]</a><span class="k">class</span> <span class="nc">SemiMajorAxisCoo</span><span class="p">:</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the semi-major axis coordinates given a set of input</span>
+<span class="sd">    parameters following :math:`{\mathbf x} = {\mathbf A}^{-1}\ {\mathbf</span>
+<span class="sd">    b}`, where</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        {\mathbf A} = \left[</span>
+<span class="sd">        \begin{array}{rrrrrr}</span>
+<span class="sd">            1 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 \\</span>
+<span class="sd">            0 &amp; 1 &amp; 0 &amp; 0 &amp; 0 &amp; 0 \\</span>
+<span class="sd">            \cos\psi &amp; \sin\psi &amp; -1 &amp; 0 &amp; 0 &amp; 0 \\</span>
+<span class="sd">            -\sin\psi &amp; \cos\psi &amp; 0 &amp; -1 &amp; 0 &amp;  0 \\</span>
+<span class="sd">            0 &amp; 0 &amp; \sin\phi_0 &amp; \cos\phi_0 &amp; -1 &amp; 0 \\</span>
+<span class="sd">            0 &amp; 0 &amp; -\cos\phi_0 &amp; \sin\phi_0 &amp; 0 &amp; \varepsilon-1</span>
+<span class="sd">        \end{array}</span>
+<span class="sd">        \right]</span>
+
+<span class="sd">        {\mathbf b} = \left[</span>
+<span class="sd">        \begin{array}{r}</span>
+<span class="sd">            x_f \\</span>
+<span class="sd">            y_f \\</span>
+<span class="sd">            -x_0 \\</span>
+<span class="sd">            -y_0 \\</span>
+<span class="sd">            0 \\</span>
+<span class="sd">            0 </span>
+<span class="sd">        \end{array}</span>
+<span class="sd">        \right]</span>
+
+<span class="sd">    such that</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        {\mathbf x} = \left[</span>
+<span class="sd">        \begin{array}{r}</span>
+<span class="sd">            x_f \\</span>
+<span class="sd">            y_f \\</span>
+<span class="sd">            x_s \\</span>
+<span class="sd">            y_s \\</span>
+<span class="sd">            x_a \\</span>
+<span class="sd">            y_a </span>
+<span class="sd">        \end{array}</span>
+<span class="sd">        \right]</span>
+
+<span class="sd">    and:</span>
+<span class="sd">        - :math:`\psi` is the Cartesian rotation of the focal-plane</span>
+<span class="sd">          relative to the sky-plane (+x toward East; +y toward North),</span>
+<span class="sd">        - :math:`\phi_0` is the on-sky position angle of the major axis</span>
+<span class="sd">          of the ellipse, defined as the angle from North through East</span>
+<span class="sd">        - :math:`\varepsilon=1-b/a` is the ellipticity based on the the</span>
+<span class="sd">          semi-minor to semi-major axis ratio (:math:`b/a`).</span>
+<span class="sd">        - :math:`(x_f,y_f)` is the sky-right, focal-plane position</span>
+<span class="sd">          relative to a reference on-sky position :math:`(x_0,y_0)`</span>
+<span class="sd">          relative to the center of the ellipse (galaxy center),</span>
+<span class="sd">        - :math:`(x_s,y_s)` is the on-sky position of :math:`(x_f,y_f)`</span>
+<span class="sd">          relative to the center of the ellipse, and</span>
+<span class="sd">        - :math:`(x_a,y_a)` is the Cartesian position of</span>
+<span class="sd">          :math:`(x_f,y_f)` in units of the semi-major axis.</span>
+
+<span class="sd">    This form is used such that :math:`{\mathbf A}` need only be defined</span>
+<span class="sd">    once per class instance.</span>
+
+<span class="sd">    The class also allows for inverse calculations, i.e., calculating</span>
+<span class="sd">    the focal-plane positions provide the semi-major axis coordinates.</span>
+<span class="sd">    In this case,</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        {\mathbf C} = \left[</span>
+<span class="sd">        \begin{array}{rrrr}</span>
+<span class="sd">            \cos\psi &amp; \sin\psi &amp; -1 &amp; 0 \\</span>
+<span class="sd">            -\sin\psi &amp; \cos\psi &amp; 0 &amp; -1  \\</span>
+<span class="sd">            0 &amp; 0 &amp; \sin\phi_0 &amp; \cos\phi_0 \\</span>
+<span class="sd">            0 &amp; 0 &amp; -\cos\phi_0 &amp; \sin\phi_0</span>
+<span class="sd">        \end{array}</span>
+<span class="sd">        \right]</span>
+
+<span class="sd">        {\mathbf d} = \left[</span>
+<span class="sd">        \begin{array}{r}</span>
+<span class="sd">            -x_0 \\</span>
+<span class="sd">            -y_0 \\</span>
+<span class="sd">            x_a \\</span>
+<span class="sd">            y_a (1-\varepsilon)</span>
+<span class="sd">        \end{array}</span>
+<span class="sd">        \right]</span>
+
+<span class="sd">    such that</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        {\mathbf f} = \left[</span>
+<span class="sd">        \begin{array}{r}</span>
+<span class="sd">            x_f \\</span>
+<span class="sd">            y_f \\</span>
+<span class="sd">            x_s \\</span>
+<span class="sd">            y_s</span>
+<span class="sd">        \end{array}</span>
+<span class="sd">        \right]</span>
+
+
+<span class="sd">    and :math:`{\mathbf f} = {\mathbf C}^{-1}\ {\mathbf d}`.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        xc (float): Same as :math:`x_0`, defined above</span>
+<span class="sd">        yc (float): Same as :math:`y_0`, defined above</span>
+<span class="sd">        rot (float): Same as :math:`\psi`, defined above</span>
+<span class="sd">        pa (float): Same as :math:`\phi_0`, defined above</span>
+<span class="sd">        ell (float): Same as :math:`\varepsilon`, defined above</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        xc,yc (float,float): a reference on-sky position relative to the</span>
+<span class="sd">            center of the ellipse (galaxy center); same as</span>
+<span class="sd">            :math:`(x_0,y_0)` defined above</span>
+<span class="sd">        rot (float): Cartesian rotation of the focal-plane relative to</span>
+<span class="sd">            the sky-plane (+x toward East; +y toward North); same as</span>
+<span class="sd">            :math:`\psi` defined above</span>
+<span class="sd">        pa (float): On-sky position angle of the major axis of the</span>
+<span class="sd">            ellipse, defined as the angle from North through East and is</span>
+<span class="sd">            the same as :math:`\phi_0` defined above</span>
+<span class="sd">        ell (float):  Ellipticity define as :math:`\varepsilon=1-b/a`,</span>
+<span class="sd">            based on the semi-minor to semi-major axis ratio</span>
+<span class="sd">            (:math:`b/a`) of the ellipse.</span>
+<span class="sd">        A (numpy.ndarray): The coordinate transformation matrix</span>
+<span class="sd">        Alu (numpy.ndarray): The **lu** array returned by</span>
+<span class="sd">            `scipy.linalg.lu_factor`_, which is used to calculate the LU</span>
+<span class="sd">            decomposition of :math:`{\mathbf A}` </span>
+<span class="sd">        Apiv (numpy.ndarray): The **piv** array returned by</span>
+<span class="sd">            `scipy.linalg.lu_factor`_, which is used to calculate the LU</span>
+<span class="sd">            decomposition of :math:`{\mathbf A}` </span>
+<span class="sd">        B (numpy.ndarray): The vector :math:`{\mathbf b}`, as defined</span>
+<span class="sd">            above, used to calculate :math:`{\mathbf x} = {\mathbf</span>
+<span class="sd">            A}^{-1}\ {\mathbf b}`</span>
+<span class="sd">        C (numpy.ndarray): The coordinate transformation matrix use for</span>
+<span class="sd">            the inverse operations</span>
+<span class="sd">        Clu (numpy.ndarray): The **lu** array returned by</span>
+<span class="sd">            `scipy.linalg.lu_factor`_, which is used to calculate the LU</span>
+<span class="sd">            decomposition of :math:`{\mathbf C}` </span>
+<span class="sd">        Cpiv (numpy.ndarray): The **piv** array returned by</span>
+<span class="sd">            `scipy.linalg.lu_factor`_, which is used to calculate the LU</span>
+<span class="sd">            decomposition of :math:`{\mathbf C}` </span>
+<span class="sd">        D (numpy.ndarray): The vector :math:`{\mathbf d}`, as defined</span>
+<span class="sd">            above, used to calculate :math:`{\mathbf f} = {\mathbf</span>
+<span class="sd">            C}^{-1}\ {\mathbf d}`</span>
+<span class="sd">        </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xc</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">yc</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rot</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">pa</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ell</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">xc</span> <span class="o">=</span> <span class="mf">0.0</span> <span class="k">if</span> <span class="n">xc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">xc</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">yc</span> <span class="o">=</span> <span class="mf">0.0</span> <span class="k">if</span> <span class="n">yc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">yc</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rot</span> <span class="o">=</span> <span class="mf">0.0</span> <span class="k">if</span> <span class="n">rot</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">rot</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pa</span> <span class="o">=</span> <span class="mf">0.0</span> <span class="k">if</span> <span class="n">pa</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">pa</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ell</span> <span class="o">=</span> <span class="mf">0.0</span> <span class="k">if</span> <span class="n">ell</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">ell</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">A</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Alu</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Apiv</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">B</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_setA</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">C</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Clu</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Cpiv</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">D</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_setC</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="SemiMajorAxisCoo._defined"><a class="viewcode-back" href="../../../mangadap.util.geometry.html#mangadap.util.geometry.SemiMajorAxisCoo._defined">[docs]</a>    <span class="k">def</span> <span class="nf">_defined</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Determine if the object is defined such that its methods can be</span>
+<span class="sd">        used to convert between coordinate systems.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">A</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">Alu</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">Apiv</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">C</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">Clu</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">Cpiv</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+    
+
+<div class="viewcode-block" id="SemiMajorAxisCoo._setA"><a class="viewcode-back" href="../../../mangadap.util.geometry.html#mangadap.util.geometry.SemiMajorAxisCoo._setA">[docs]</a>    <span class="k">def</span> <span class="nf">_setA</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the transformation matrix and calculate its LU</span>
+<span class="sd">        decomposition for forward operations.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">cosr</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span> <span class="n">numpy</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rot</span><span class="p">)</span> <span class="p">)</span>
+        <span class="n">sinr</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span> <span class="n">numpy</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rot</span><span class="p">)</span> <span class="p">)</span>
+        <span class="n">cosp</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span> <span class="n">numpy</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pa</span><span class="p">)</span> <span class="p">)</span>
+        <span class="n">sinp</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span> <span class="n">numpy</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pa</span><span class="p">)</span> <span class="p">)</span>
+        <span class="c1">#cosi = numpy.cos( numpy.radians(self.inc) )</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">A</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span> <span class="p">[</span>   <span class="mf">1.0</span><span class="p">,</span>  <span class="mf">0.0</span><span class="p">,</span>   <span class="mf">0.0</span><span class="p">,</span>  <span class="mf">0.0</span><span class="p">,</span>  <span class="mf">0.0</span><span class="p">,</span>   <span class="mf">0.0</span> <span class="p">],</span>
+                               <span class="p">[</span>   <span class="mf">0.0</span><span class="p">,</span>  <span class="mf">1.0</span><span class="p">,</span>   <span class="mf">0.0</span><span class="p">,</span>  <span class="mf">0.0</span><span class="p">,</span>  <span class="mf">0.0</span><span class="p">,</span>   <span class="mf">0.0</span> <span class="p">],</span>
+                               <span class="p">[</span>  <span class="n">cosr</span><span class="p">,</span> <span class="n">sinr</span><span class="p">,</span>  <span class="o">-</span><span class="mf">1.0</span><span class="p">,</span>  <span class="mf">0.0</span><span class="p">,</span>  <span class="mf">0.0</span><span class="p">,</span>   <span class="mf">0.0</span> <span class="p">],</span>
+                               <span class="p">[</span> <span class="o">-</span><span class="n">sinr</span><span class="p">,</span> <span class="n">cosr</span><span class="p">,</span>   <span class="mf">0.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">,</span>  <span class="mf">0.0</span><span class="p">,</span>   <span class="mf">0.0</span> <span class="p">],</span>
+                               <span class="p">[</span>   <span class="mf">0.0</span><span class="p">,</span>  <span class="mf">0.0</span><span class="p">,</span>  <span class="n">sinp</span><span class="p">,</span> <span class="n">cosp</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">,</span>   <span class="mf">0.0</span> <span class="p">],</span>
+                               <span class="p">[</span>   <span class="mf">0.0</span><span class="p">,</span>  <span class="mf">0.0</span><span class="p">,</span> <span class="o">-</span><span class="n">cosp</span><span class="p">,</span> <span class="n">sinp</span><span class="p">,</span>  <span class="mf">0.0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ell</span><span class="o">-</span><span class="mf">1.</span> <span class="p">]</span> <span class="p">])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">Alu</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Apiv</span> <span class="o">=</span> <span class="n">linalg</span><span class="o">.</span><span class="n">lu_factor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="p">)</span></div>
+        
+
+<div class="viewcode-block" id="SemiMajorAxisCoo._setB"><a class="viewcode-back" href="../../../mangadap.util.geometry.html#mangadap.util.geometry.SemiMajorAxisCoo._setB">[docs]</a>    <span class="k">def</span> <span class="nf">_setB</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the on-sky coordinate vector for forward operations.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x, y (float) : Single values for use in calculating the</span>
+<span class="sd">                semi-major-axis coordinates.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">B</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">xc</span><span class="p">,</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">yc</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span> <span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="SemiMajorAxisCoo._setC"><a class="viewcode-back" href="../../../mangadap.util.geometry.html#mangadap.util.geometry.SemiMajorAxisCoo._setC">[docs]</a>    <span class="k">def</span> <span class="nf">_setC</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the transformation matrix and calculate its LU</span>
+<span class="sd">        decomposition for inverse operations.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">cosr</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span> <span class="n">numpy</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rot</span><span class="p">)</span> <span class="p">)</span>
+        <span class="n">sinr</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span> <span class="n">numpy</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rot</span><span class="p">)</span> <span class="p">)</span>
+        <span class="n">cosp</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span> <span class="n">numpy</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pa</span><span class="p">)</span> <span class="p">)</span>
+        <span class="n">sinp</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span> <span class="n">numpy</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pa</span><span class="p">)</span> <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">C</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span> <span class="p">[</span>  <span class="n">cosr</span><span class="p">,</span> <span class="n">sinr</span><span class="p">,</span>  <span class="o">-</span><span class="mf">1.0</span><span class="p">,</span>  <span class="mf">0.0</span> <span class="p">],</span>
+                               <span class="p">[</span> <span class="o">-</span><span class="n">sinr</span><span class="p">,</span> <span class="n">cosr</span><span class="p">,</span>   <span class="mf">0.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.0</span> <span class="p">],</span>
+                               <span class="p">[</span>   <span class="mf">0.0</span><span class="p">,</span>  <span class="mf">0.0</span><span class="p">,</span>  <span class="n">sinp</span><span class="p">,</span> <span class="n">cosp</span> <span class="p">],</span>
+                               <span class="p">[</span>   <span class="mf">0.0</span><span class="p">,</span>  <span class="mf">0.0</span><span class="p">,</span> <span class="o">-</span><span class="n">cosp</span><span class="p">,</span> <span class="n">sinp</span> <span class="p">]</span> <span class="p">])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">Clu</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Cpiv</span> <span class="o">=</span> <span class="n">linalg</span><span class="o">.</span><span class="n">lu_factor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">C</span><span class="p">)</span></div>
+        
+
+<div class="viewcode-block" id="SemiMajorAxisCoo._setD"><a class="viewcode-back" href="../../../mangadap.util.geometry.html#mangadap.util.geometry.SemiMajorAxisCoo._setD">[docs]</a>    <span class="k">def</span> <span class="nf">_setD</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the semi-major-axis coordinate vector for inverse operations.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x, y (float) : Single values for use in calculating the</span>
+<span class="sd">                on-sky focal plane coordinates.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">D</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">xc</span><span class="p">,</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">yc</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">ell</span><span class="p">)</span><span class="o">*</span><span class="n">y</span> <span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="SemiMajorAxisCoo._calculate_polar"><a class="viewcode-back" href="../../../mangadap.util.geometry.html#mangadap.util.geometry.SemiMajorAxisCoo._calculate_polar">[docs]</a>    <span class="k">def</span> <span class="nf">_calculate_polar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate the polar coordinates (radius and azimuth) provided</span>
+<span class="sd">        the Cartesian semi-major-axis coordinates :math:`(x_a,y_a)`</span>
+<span class="sd">        using</span>
+<span class="sd">        </span>
+<span class="sd">        .. math::</span>
+
+<span class="sd">            R &amp;= \sqrt{x_a^2 + y_a^2} \\</span>
+<span class="sd">            \theta &amp;= \tan^{-1}\left(\frac{-y_a}{x_a}\right)</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x,y (array-like): The semi-major-axis Cartesian coordinates</span>
+<span class="sd">                :math:`(x_a,y_a)`.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            numpy.ndarray: The semi-major-axis polar coordinates:</span>
+<span class="sd">            :math:`R, \theta`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+<span class="c1">#        _x = numpy.asarray(x)</span>
+<span class="c1">#        _y = numpy.asarray(y)</span>
+        <span class="n">_x</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">_y</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">_x</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="n">_y</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;X and Y arrays must have the same size&#39;</span><span class="p">)</span>
+        <span class="n">R</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span> <span class="n">_x</span><span class="o">*</span><span class="n">_x</span> <span class="o">+</span> <span class="n">_y</span><span class="o">*</span><span class="n">_y</span><span class="p">)</span>
+        <span class="n">theta</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span> <span class="n">numpy</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="o">-</span><span class="n">_y</span><span class="p">,</span> <span class="n">_x</span><span class="p">)</span> <span class="p">)</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="s1">&#39;__len__&#39;</span><span class="p">):</span>
+            <span class="n">theta</span><span class="p">[</span><span class="n">theta</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">]</span> <span class="o">+=</span> <span class="mf">360.</span>
+        <span class="k">elif</span> <span class="n">theta</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">theta</span> <span class="o">+=</span> <span class="mf">360.</span>
+        <span class="c1"># Returned range in theta is -pi,pi: convert to 0,2pi</span>
+        <span class="k">return</span> <span class="n">R</span><span class="p">,</span> <span class="n">theta</span></div>
+    
+
+<div class="viewcode-block" id="SemiMajorAxisCoo._calculate_cartesian"><a class="viewcode-back" href="../../../mangadap.util.geometry.html#mangadap.util.geometry.SemiMajorAxisCoo._calculate_cartesian">[docs]</a>    <span class="k">def</span> <span class="nf">_calculate_cartesian</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">theta</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Invert the calculation of the semi-major-axis polar coordinates</span>
+<span class="sd">        to calculate the semi-major-axis Cartesian coordinates</span>
+<span class="sd">        :math:`(x_a,y_a)` using</span>
+<span class="sd">        </span>
+<span class="sd">        .. math::</span>
+
+<span class="sd">            x_a &amp;= \pm R / \sqrt{1 + \tan^2\theta}\\</span>
+<span class="sd">            y_a &amp;= -x_a\ \tan\theta</span>
+
+<span class="sd">        where :math:`x_a` is negative when :math:`\pi/2 \leq \theta &lt;</span>
+<span class="sd">        3\pi/2`.</span>
+
+<span class="sd">        Args:</span>
+
+<span class="sd">            r,theta (array-like): The semi-major-axis polar coordinates</span>
+<span class="sd">                :math:`(R,\theta)`.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            numpy.ndarray: The semi-major-axis Cartesian coordinates:</span>
+<span class="sd">            :math:`x_a, y_a`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+<span class="c1">#        _r = numpy.asarray(r)</span>
+<span class="c1">#        _theta = numpy.asarray(theta)</span>
+        <span class="n">_r</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+        <span class="n">_theta</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">_r</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="n">_theta</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;R and THETA arrays must have the same size&#39;</span><span class="p">)</span>
+        <span class="n">tant</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">tan</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">_theta</span><span class="p">))</span>
+        <span class="n">xd</span> <span class="o">=</span> <span class="n">_r</span><span class="o">/</span><span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">tant</span><span class="p">))</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">xd</span><span class="p">,</span> <span class="s1">&#39;__len__&#39;</span><span class="p">):</span>
+            <span class="n">xd</span><span class="p">[(</span><span class="n">_theta</span> <span class="o">&gt;</span> <span class="mi">90</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">_theta</span> <span class="o">&lt;=</span> <span class="mi">270</span><span class="p">)]</span> <span class="o">*=</span> <span class="o">-</span><span class="mf">1.</span>
+        <span class="k">elif</span> <span class="n">_theta</span> <span class="o">&gt;</span> <span class="mi">90</span> <span class="ow">and</span> <span class="n">_theta</span> <span class="o">&lt;=</span> <span class="mi">270</span><span class="p">:</span>
+            <span class="n">xd</span> <span class="o">*=</span> <span class="o">-</span><span class="mf">1.</span>
+        <span class="n">yd</span> <span class="o">=</span> <span class="o">-</span><span class="n">xd</span><span class="o">*</span><span class="n">tant</span>
+        <span class="k">return</span> <span class="n">xd</span><span class="p">,</span> <span class="n">yd</span></div>
+    
+
+<div class="viewcode-block" id="SemiMajorAxisCoo.solve"><a class="viewcode-back" href="../../../mangadap.util.geometry.html#mangadap.util.geometry.SemiMajorAxisCoo.solve">[docs]</a>    <span class="k">def</span> <span class="nf">solve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Use `scipy.linalg.lu_solve`_ to solve :math:`{\mathbf x} =</span>
+<span class="sd">        {\mathbf A}^{-1}\ {\mathbf b}`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x,y (array-like): The coordinates :math:`(x_f,y_f)`, which</span>
+<span class="sd">                are the sky-right, focal-plane Cartesian coordinates</span>
+<span class="sd">                relative to a reference on-sky position</span>
+<span class="sd">                :math:`(x_0,y_0)`, which is relative to the center of</span>
+<span class="sd">                the ellipse (galaxy center).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            numpy.ndarray: The :math:`{\mathbf x}` vectors (separated by</span>
+<span class="sd">            rows) as defined by the solution to :math:`{\mathbf A}^{-1}\</span>
+<span class="sd">            {\mathbf b}`</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: Raised if object was not properly defined or if</span>
+<span class="sd">                the X and Y arrays do not have the same size.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_defined</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;SemiMajorAxisCoo object not fully defined!&#39;</span><span class="p">)</span>
+<span class="c1">#        _x = numpy.asarray(x)</span>
+<span class="c1">#        _y = numpy.asarray(y)</span>
+        <span class="n">_x</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">_y</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">_x</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="n">_y</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;X and Y arrays must have the same size&#39;</span><span class="p">)</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">_x</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">xx</span><span class="p">,</span> <span class="n">yy</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">_x</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span><span class="n">_y</span><span class="o">.</span><span class="n">ravel</span><span class="p">())):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_setB</span><span class="p">(</span><span class="n">xx</span><span class="p">,</span><span class="n">yy</span><span class="p">)</span>
+            <span class="n">out</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">linalg</span><span class="o">.</span><span class="n">lu_solve</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">Alu</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Apiv</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">out</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">_x</span><span class="o">.</span><span class="n">shape</span> <span class="o">+</span> <span class="p">(</span><span class="mi">6</span><span class="p">,))</span></div>
+
+
+<div class="viewcode-block" id="SemiMajorAxisCoo.solve_inverse"><a class="viewcode-back" href="../../../mangadap.util.geometry.html#mangadap.util.geometry.SemiMajorAxisCoo.solve_inverse">[docs]</a>    <span class="k">def</span> <span class="nf">solve_inverse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Use `scipy.linalg.lu_solve`_ to solve :math:`{\mathbf f} =</span>
+<span class="sd">        {\mathbf C}^{-1}\ {\mathbf d}`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x,y (array-like): The semi-major-axis Cartesian coordinates</span>
+<span class="sd">                :math:`(x_a,y_a)`.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            numpy.ndarray: The :math:`{\mathbf f}` vector as defined by</span>
+<span class="sd">            the solution to :math:`{\mathbf C}^{-1}\ {\mathbf d}`</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: Raised if object was not properly defined or if</span>
+<span class="sd">                the X and Y arrays do not have the same size.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_defined</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;SemiMajorAxisCoo object not fully defined!&#39;</span><span class="p">)</span>
+<span class="c1">#        _x = numpy.asarray(x)</span>
+<span class="c1">#        _y = numpy.asarray(y)</span>
+        <span class="n">_x</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">_y</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">_x</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="n">_y</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;X and Y arrays must have the same size&#39;</span><span class="p">)</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">_x</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">xx</span><span class="p">,</span> <span class="n">yy</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">_x</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span><span class="n">_y</span><span class="o">.</span><span class="n">ravel</span><span class="p">())):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_setD</span><span class="p">(</span><span class="n">xx</span><span class="p">,</span><span class="n">yy</span><span class="p">)</span>
+            <span class="n">out</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">linalg</span><span class="o">.</span><span class="n">lu_solve</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">Clu</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Cpiv</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">D</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">out</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">_x</span><span class="o">.</span><span class="n">shape</span> <span class="o">+</span> <span class="p">(</span><span class="mi">4</span><span class="p">,))</span></div>
+
+
+<div class="viewcode-block" id="SemiMajorAxisCoo.coo"><a class="viewcode-back" href="../../../mangadap.util.geometry.html#mangadap.util.geometry.SemiMajorAxisCoo.coo">[docs]</a>    <span class="k">def</span> <span class="nf">coo</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate :math:`{\mathbf x}` using :func:`solve` for the</span>
+<span class="sd">        provided :math:`(x_f,y_f)` and return the semi-major-axis</span>
+<span class="sd">        Cartesian and polar coordinates, :math:`(x_a,y_a)` and</span>
+<span class="sd">        :math:`(R,\theta)`.  This combines the functionality of</span>
+<span class="sd">        :func:`cartesian` and :func:`polar`, and so is more efficient</span>
+<span class="sd">        than using these both separately.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x,y (array-like): The coordinates :math:`(x_f,y_f)`, which</span>
+<span class="sd">                are the sky-right, focal-plane position relative to a</span>
+<span class="sd">                reference on-sky position :math:`(x_0,y_0)` relative to</span>
+<span class="sd">                the center of the ellipse (galaxy center),</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            numpy.ndarray: Four arrays with the semi-major-axis</span>
+<span class="sd">            Cartesian and polar coordinates:  :math:`x_a, y_a, R,</span>
+<span class="sd">            \theta`.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">coo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">coo</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">4</span><span class="p">],</span> <span class="n">coo</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">5</span><span class="p">])</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_polar</span><span class="p">(</span><span class="n">coo</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">4</span><span class="p">],</span> <span class="n">coo</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">5</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="SemiMajorAxisCoo.polar"><a class="viewcode-back" href="../../../mangadap.util.geometry.html#mangadap.util.geometry.SemiMajorAxisCoo.polar">[docs]</a>    <span class="k">def</span> <span class="nf">polar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate :math:`{\mathbf x}` using :func:`solve` for the</span>
+<span class="sd">        provided :math:`(x_f,y_f)` and return the semi-major-axis polar</span>
+<span class="sd">        coordinates, :math:`(R,\theta)`, where</span>
+<span class="sd">        </span>
+<span class="sd">        .. math::</span>
+
+<span class="sd">            R &amp;= \sqrt{x_a^2 + y_a^2} \\</span>
+<span class="sd">            \theta &amp;= \tan^{-1}\left(\frac{-y_a}{x_a}\right)</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x,y (array-like): The coordinate :math:`(x_f,y_f)`, which</span>
+<span class="sd">                is the sky-right, focal-plane position relative to a</span>
+<span class="sd">                reference on-sky position :math:`(x_0,y_0)` relative to</span>
+<span class="sd">                the center of the ellipse (galaxy center),</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            numpy.ndarray: Two arrays with the semi-major-axis polar</span>
+<span class="sd">            coordinates: :math:`R, \theta`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">coo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_polar</span><span class="p">(</span><span class="n">coo</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">4</span><span class="p">],</span> <span class="n">coo</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">5</span><span class="p">])</span></div>
+
+    
+<div class="viewcode-block" id="SemiMajorAxisCoo.polar_invert"><a class="viewcode-back" href="../../../mangadap.util.geometry.html#mangadap.util.geometry.SemiMajorAxisCoo.polar_invert">[docs]</a>    <span class="k">def</span> <span class="nf">polar_invert</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">theta</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate :math:`{\mathbf f}` using :func:`solve` for the</span>
+<span class="sd">        provided :math:`(R,\theta)` and return focal-plane cartesian</span>
+<span class="sd">        coordinates :math:`(x_f,y_f)`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            r,theta (array-like): The semi-major-axis polar coordinates</span>
+<span class="sd">                :math:`(R,\theta)`.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            numpy.ndarray: Two arrays with the focal-plane Cartesian</span>
+<span class="sd">            coordinates :math:`(x_f,y_f)`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">xd</span><span class="p">,</span> <span class="n">yd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_cartesian</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">theta</span><span class="p">)</span>
+        <span class="n">coo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solve_inverse</span><span class="p">(</span><span class="n">xd</span><span class="p">,</span> <span class="n">yd</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">coo</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="n">coo</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="SemiMajorAxisCoo.cartesian"><a class="viewcode-back" href="../../../mangadap.util.geometry.html#mangadap.util.geometry.SemiMajorAxisCoo.cartesian">[docs]</a>    <span class="k">def</span> <span class="nf">cartesian</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate :math:`{\mathbf x}` using :func:`solve` for the</span>
+<span class="sd">        provided :math:`(x_f,y_f)` and return the semi-major-axis</span>
+<span class="sd">        Cartesian and coordinates, :math:`(x_a,y_a)`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x,y (array-like): The coordinate :math:`(x_f,y_f)`, which</span>
+<span class="sd">                is the sky-right, focal-plane position relative to a</span>
+<span class="sd">                reference on-sky position :math:`(x_0,y_0)` relative to</span>
+<span class="sd">                the center of the ellipse (galaxy center),</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            numpy.ndarray: Two arrays with the semi-major-axis Cartesian</span>
+<span class="sd">            coordinates, :math:`x_a, y_a`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">coo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">coo</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">4</span><span class="p">],</span> <span class="n">coo</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">5</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="SemiMajorAxisCoo.cartesian_invert"><a class="viewcode-back" href="../../../mangadap.util.geometry.html#mangadap.util.geometry.SemiMajorAxisCoo.cartesian_invert">[docs]</a>    <span class="k">def</span> <span class="nf">cartesian_invert</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate :math:`{\mathbf f}` using :func:`solve` for the</span>
+<span class="sd">        provided :math:`(x_a,y_a)` and return focal-plane cartesian</span>
+<span class="sd">        coordinates :math:`(x_f,y_f)`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x,y (array-like): The semi-major-axis Cartesian coordinates</span>
+<span class="sd">                :math:`(x_a,y_a)`.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            numpy.ndarray: The focal-plane Cartesian coordinates</span>
+<span class="sd">            :math:`(x_f,y_f)`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">coo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solve_inverse</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">coo</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="n">coo</span><span class="p">[</span><span class="o">...</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span></div></div>
+
+
+    
+
+
+
+</pre></div>
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, SDSS-IV/MaNGA Pipeline Group.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'2.2.2',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

@@ -1,0 +1,700 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mangadap.util.pixelmask &mdash; mangadap 2.2.2 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../search.html"/>
+    <link rel="top" title="mangadap 2.2.2 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> mangadap
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../mangadap.html">mangadap package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">mangadap</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>mangadap.util.pixelmask</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for mangadap.util.pixelmask</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Licensed under a 3-clause BSD style license - see LICENSE.rst</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">A class heirarchy for pixel masks.</span>
+
+<span class="sd">*License*:</span>
+<span class="sd">    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group</span>
+<span class="sd">        Licensed under BSD 3-clause license - see LICENSE.rst</span>
+
+<span class="sd">*Source location*:</span>
+<span class="sd">    $MANGADAP_DIR/python/mangadap/proc/pixelmask.py</span>
+
+<span class="sd">*Imports and python version compliance*:</span>
+<span class="sd">    ::</span>
+
+<span class="sd">        from __future__ import division</span>
+<span class="sd">        from __future__ import print_function</span>
+<span class="sd">        from __future__ import absolute_import</span>
+<span class="sd">        from __future__ import unicode_literals</span>
+
+<span class="sd">        import sys</span>
+<span class="sd">        import warnings</span>
+<span class="sd">        if sys.version &gt; &#39;3&#39;:</span>
+<span class="sd">            long = int</span>
+
+<span class="sd">        import numpy</span>
+<span class="sd">        import astropy.constants</span>
+
+<span class="sd">        from .bitmask import BitMask</span>
+<span class="sd">        from ..par.artifactdb import ArtifactDB</span>
+<span class="sd">        from ..par.emissionlinedb import EmissionLineDB</span>
+
+<span class="sd">*Class usage examples*:</span>
+<span class="sd">        Add examples</span>
+
+<span class="sd">*Revision history*:</span>
+<span class="sd">    | **18 Apr 2016**: Original implementation K. Westfall (KBW)</span>
+<span class="sd">    | **30 Nov 2016**: (KBW) Generalization of :class:`PixelMask` and</span>
+<span class="sd">        minor edits</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version</span> <span class="o">&gt;</span> <span class="s1">&#39;3&#39;</span><span class="p">:</span>
+    <span class="n">long</span> <span class="o">=</span> <span class="nb">int</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">import</span> <span class="nn">astropy.constants</span>
+
+<span class="kn">from</span> <span class="nn">.bitmask</span> <span class="k">import</span> <span class="n">BitMask</span>
+<span class="kn">from</span> <span class="nn">..par.artifactdb</span> <span class="k">import</span> <span class="n">ArtifactDB</span>
+<span class="kn">from</span> <span class="nn">..par.emissionlinedb</span> <span class="k">import</span> <span class="n">EmissionLineDB</span>
+
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="k">import</span> <span class="n">pyplot</span>
+
+<span class="c1"># Add strict versioning</span>
+<span class="c1"># from distutils.version import StrictVersion</span>
+
+
+<div class="viewcode-block" id="PixelMask"><a class="viewcode-back" href="../../../mangadap.util.pixelmask.html#mangadap.util.pixelmask.PixelMask">[docs]</a><span class="k">class</span> <span class="nc">PixelMask</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Base class for a general 1D or 2D pixel mask.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        shape (tuple): Shape of the array for the mask.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shape</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+<div class="viewcode-block" id="PixelMask._set_shape"><a class="viewcode-back" href="../../../mangadap.util.pixelmask.html#mangadap.util.pixelmask.PixelMask._set_shape">[docs]</a>    <span class="k">def</span> <span class="nf">_set_shape</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">ny</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set :attr:`shape` of the object</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x (numpy.ndarray): Vector with the x-coordinates</span>
+<span class="sd">            ny (int): (**Optional**) Size of the second dimension.</span>
+<span class="sd">                Default is that there is no second dimension.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shape</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">),)</span> <span class="k">if</span> <span class="n">ny</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">(</span><span class="n">ny</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="PixelMask._empty_mask"><a class="viewcode-back" href="../../../mangadap.util.pixelmask.html#mangadap.util.pixelmask.PixelMask._empty_mask">[docs]</a>    <span class="k">def</span> <span class="nf">_empty_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">ny</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return an empty mask with the correct shape.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x (numpy.ndarray): Coordinate vector</span>
+<span class="sd">            ny (int): (**Optional**) Size of the second dimension.</span>
+<span class="sd">                Default is that there is only one dimension.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            numpy.ndarray : Boolean mask of the correct shape.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_shape</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">ny</span><span class="o">=</span><span class="n">ny</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">bool</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="PixelMask._mask_coordinate_ranges"><a class="viewcode-back" href="../../../mangadap.util.pixelmask.html#mangadap.util.pixelmask.PixelMask._mask_coordinate_ranges">[docs]</a>    <span class="k">def</span> <span class="nf">_mask_coordinate_ranges</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">rng</span><span class="p">,</span> <span class="n">ny</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Flag any x coordinates between a set of range limits as True.</span>
+<span class="sd">        The mask is repeated in the second dimension, if requested.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x (numpy.ndarray): Coordinate vector</span>
+<span class="sd">            rng (list, numpy.ndarray): (List of) Coordinate ranges that</span>
+<span class="sd">                should be masked.</span>
+<span class="sd">            ny (int): (**Optional**) Size of the second dimension.</span>
+<span class="sd">                Default is that there is only one dimension.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            numpy.ndarray : Boolean mask of the correct shape.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_shape</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">ny</span><span class="o">=</span><span class="n">ny</span><span class="p">)</span>
+        <span class="n">_rng</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">atleast_2d</span><span class="p">(</span><span class="n">rng</span><span class="p">)</span>
+
+        <span class="c1"># Account for any undefined limits</span>
+        <span class="n">_rng</span><span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">equal</span><span class="p">(</span><span class="n">_rng</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span> <span class="kc">None</span><span class="p">),</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span>
+        <span class="n">_rng</span><span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">equal</span><span class="p">(</span><span class="n">_rng</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span> <span class="kc">None</span><span class="p">),</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span>
+
+        <span class="c1"># Generate the mask</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">any</span><span class="p">(</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span> <span class="n">numpy</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">x</span><span class="o">&gt;</span><span class="n">l</span><span class="p">,</span> <span class="n">x</span><span class="o">&lt;</span><span class="n">u</span><span class="p">)</span> \
+                                        <span class="k">for</span> <span class="n">l</span><span class="p">,</span><span class="n">u</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">_rng</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">_rng</span><span class="p">[:,</span><span class="mi">1</span><span class="p">])]),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">mask</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">mask</span><span class="p">]</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span></div></div>
+        
+
+<div class="viewcode-block" id="SpectralPixelMask"><a class="viewcode-back" href="../../../mangadap.util.pixelmask.html#mangadap.util.pixelmask.SpectralPixelMask">[docs]</a><span class="k">class</span> <span class="nc">SpectralPixelMask</span><span class="p">(</span><span class="n">PixelMask</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Container that produces a mask for the stellar continuum based on a</span>
+<span class="sd">    set of emission lines and artifacts.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        artdb (:class:`mangadap.proc.artifactdb.ArtifactDB`):</span>
+<span class="sd">            (**Optional**) Database with the list of artifacts to mask.</span>
+<span class="sd">        emldb (:class:`mangadap.proc.emissionlinedb.EmissionLineDB`):</span>
+<span class="sd">            (**Optional**) Database with the list of emission lines to</span>
+<span class="sd">            mask.</span>
+<span class="sd">        waverange (numpy.ndarray): (**Optional**) Any pixels **outside**</span>
+<span class="sd">            this wavelength range are masked.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        artdb (:class:`mangadap.proc.artifactdb.ArtifactDB`):</span>
+<span class="sd">            Database with the list of artifacts to mask.</span>
+<span class="sd">        emldb (:class:`mangadap.proc.emissionlinedb.EmissionLineDB`):</span>
+<span class="sd">            Database with the list of emission lines to</span>
+<span class="sd">            mask.</span>
+<span class="sd">        waverange (numpy.ndarray): Any pixels **outside**</span>
+<span class="sd">            this wavelength range are masked.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">artdb</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">emldb</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">waverange</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">artdb</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">artdb</span><span class="p">,</span> <span class="n">ArtifactDB</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Must provide EmissionLineDB for emission-lines to mask.&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">artdb</span> <span class="o">=</span> <span class="n">artdb</span>
+
+        <span class="k">if</span> <span class="n">emldb</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">emldb</span><span class="p">,</span> <span class="n">EmissionLineDB</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Must provide EmissionLineDB for emission-lines to mask.&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">emldb</span> <span class="o">=</span> <span class="n">emldb</span>
+
+        <span class="k">if</span> <span class="n">waverange</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">waverange</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Provided wavelength range must have two and only two elements.&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">waverange</span> <span class="o">=</span> <span class="n">waverange</span>
+
+
+<div class="viewcode-block" id="SpectralPixelMask._waverange_mask"><a class="viewcode-back" href="../../../mangadap.util.pixelmask.html#mangadap.util.pixelmask.SpectralPixelMask._waverange_mask">[docs]</a>    <span class="k">def</span> <span class="nf">_waverange_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wave</span><span class="p">,</span> <span class="n">nspec</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Mask the pixels **not** within the selected wavelength range.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            wave (numpy.ndarray): Wavelength coordinate vector</span>
+<span class="sd">            nspec (int): (**Optional**) Number of spectra to mask.</span>
+<span class="sd">                Default is just one.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            numpy.ndarray : Boolean mask of the correct shape.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">waverange</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_empty_mask</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">ny</span><span class="o">=</span><span class="n">nspec</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_mask_coordinate_ranges</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">waverange</span><span class="p">,</span> <span class="n">ny</span><span class="o">=</span><span class="n">nspec</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="SpectralPixelMask._artifact_mask"><a class="viewcode-back" href="../../../mangadap.util.pixelmask.html#mangadap.util.pixelmask.SpectralPixelMask._artifact_mask">[docs]</a>    <span class="k">def</span> <span class="nf">_artifact_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wave</span><span class="p">,</span> <span class="n">nspec</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Mask the pixels in the wavelength range(s) defined by the</span>
+<span class="sd">        artifact database.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            wave (numpy.ndarray): Wavelength coordinate vector</span>
+<span class="sd">            nspec (int): (**Optional**) Number of spectra to mask.</span>
+<span class="sd">                Default is just one.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            numpy.ndarray : Boolean mask of the correct shape.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">artdb</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_empty_mask</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">ny</span><span class="o">=</span><span class="n">nspec</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mask_coordinate_ranges</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">artdb</span><span class="p">[</span><span class="s1">&#39;waverange&#39;</span><span class="p">],</span> <span class="n">ny</span><span class="o">=</span><span class="n">nspec</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SpectralPixelMask._check_eml_kin_argument"><a class="viewcode-back" href="../../../mangadap.util.pixelmask.html#mangadap.util.pixelmask.SpectralPixelMask._check_eml_kin_argument">[docs]</a>    <span class="k">def</span> <span class="nf">_check_eml_kin_argument</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kin</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check and return the correct kinematics vectors.  If a single</span>
+<span class="sd">        number is provided, the function returns the number repeated for</span>
+<span class="sd">        each emission line.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            kin (float, list, numpy.ndarray): An input set of kinematics</span>
+<span class="sd">                to used by the mask.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            numpy.ndarray : A 1D float array of the correct shape with</span>
+<span class="sd">            the kinematics </span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: Raised if the length of the `kin` array is not</span>
+<span class="sd">            the same as the number of emission lines in :attr:`emldb`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">kin</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">kin</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span><span class="nb">float</span><span class="p">)):</span>
+            <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">emldb</span><span class="o">.</span><span class="n">neml</span><span class="p">,</span> <span class="n">kin</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">kin</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">kin</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">emldb</span><span class="o">.</span><span class="n">neml</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Provided vector does not have a matching length.&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">kin</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">)</span></div>
+       
+
+<div class="viewcode-block" id="SpectralPixelMask._get_emission_line_bands"><a class="viewcode-back" href="../../../mangadap.util.pixelmask.html#mangadap.util.pixelmask.SpectralPixelMask._get_emission_line_bands">[docs]</a>    <span class="k">def</span> <span class="nf">_get_emission_line_bands</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">velocity_offsets</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mf">250.0</span><span class="p">,</span> <span class="n">nsigma</span><span class="o">=</span><span class="mf">3.0</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the emission-line masks, using the emission-line parameters</span>
+<span class="sd">        defined by :attr:`emldb` (see</span>
+<span class="sd">        :class:`mangadap.par.emissionlinedb.EmissionLineDB`.</span>
+
+<span class="sd">        All emission lines in the database, except for those marked with</span>
+<span class="sd">        `action==i` are masked.</span>
+<span class="sd">        </span>
+<span class="sd">        The center of the masked region is constructed using</span>
+<span class="sd">        `emldb[&#39;restwave&#39;]` and the provided velocity</span>
+<span class="sd">        (`velocity_offset`).  The velocity of any lines marked as sky</span>
+<span class="sd">        (`action==s`) is always set to 0.</span>
+<span class="sd">        </span>
+<span class="sd">        The width of the mask is set to be :math:`\pm n_\sigma \sigma`</span>
+<span class="sd">        about this center, where both :math:`n_\sigma` and</span>
+<span class="sd">        :math:`\sigma` are parameters (`nsigma`, `sigma`).  If `sigma` is</span>
+<span class="sd">        None, `emldb[&#39;sig&#39;]` is used for each line.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            velocity_offsets (float, numpy.ndarray): (**Optional**) The</span>
+<span class="sd">                velocity offset to apply to each emission-line mask.</span>
+<span class="sd">                Must be either a single number or one number per</span>
+<span class="sd">                emission line.  Assumed to be 0 if set to None.</span>
+<span class="sd">            sigma (float, numpy.ndarray): (**Optional**) Line velocity</span>
+<span class="sd">                dispersions used to set the mask width.  Must be either</span>
+<span class="sd">                a single number or one number per emission line.  If</span>
+<span class="sd">                None, the dispersion provided by the emission-line</span>
+<span class="sd">                database is used (`emldb[&#39;sig&#39;]`).</span>
+<span class="sd">            nsigma (float, numpy.ndarray): (**Optional**) The half-width</span>
+<span class="sd">                of the band in units of the provided velocity</span>
+<span class="sd">                dipsersions.  Must be either a single number or one</span>
+<span class="sd">                number per emission line.  Cannot be None.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            numpy.ndarray : A :math:`N_l \times 2` array with the</span>
+<span class="sd">            wavelength limits of the emission-line bands.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: Raised if `nsigma` is None, or any `nsigma` is</span>
+<span class="sd">                not greater than 0; raised if the half-width of any mask</span>
+<span class="sd">                is not greater than 0.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Mask everything but the lines to ignore</span>
+        <span class="n">indx</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">emldb</span><span class="p">[</span><span class="s1">&#39;action&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;i&#39;</span><span class="p">)</span>
+        <span class="n">nbands</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">indx</span><span class="p">)</span>
+        <span class="c1"># No lines to mask</span>
+        <span class="k">if</span> <span class="n">nbands</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="c1"># Get the number of standard deviations to cover with the mask</span>
+        <span class="n">_nsigma</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_eml_kin_argument</span><span class="p">(</span><span class="n">nsigma</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">_nsigma</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Must provide the number of sigma to cover with the mask.&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">numpy</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">_nsigma</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Must provide a non-zero number of sigma for mask hal-fwidth.&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Get the mask centers</span>
+        <span class="n">_velocity_offsets</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_eml_kin_argument</span><span class="p">(</span><span class="n">velocity_offsets</span><span class="p">)</span>
+        <span class="n">_velocity_offsets</span><span class="p">[</span> <span class="bp">self</span><span class="o">.</span><span class="n">emldb</span><span class="p">[</span><span class="s1">&#39;action&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;s&#39;</span> <span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="n">center</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">emldb</span><span class="p">[</span><span class="s1">&#39;restwave&#39;</span><span class="p">][</span><span class="n">indx</span><span class="p">]</span> <span class="k">if</span> <span class="n">_velocity_offsets</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> \
+                    <span class="bp">self</span><span class="o">.</span><span class="n">emldb</span><span class="p">[</span><span class="s1">&#39;restwave&#39;</span><span class="p">][</span><span class="n">indx</span><span class="p">]</span> \
+                        <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">_velocity_offsets</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span><span class="o">/</span><span class="n">astropy</span><span class="o">.</span><span class="n">constants</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;km/s&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+        
+        <span class="c1"># Get the mask widths</span>
+        <span class="n">_sigma</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_eml_kin_argument</span><span class="p">(</span><span class="n">sigma</span><span class="p">)</span>
+        <span class="n">halfwidth</span> <span class="o">=</span> <span class="n">_nsigma</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">emldb</span><span class="p">[</span><span class="s1">&#39;sig&#39;</span><span class="p">][</span><span class="n">indx</span><span class="p">]</span> <span class="k">if</span> <span class="n">_sigma</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_sigma</span><span class="p">[</span><span class="n">indx</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">numpy</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">halfwidth</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;All emission-line mask half-widths must be larger than 0.&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span> <span class="n">center</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span><span class="o">-</span><span class="n">halfwidth</span><span class="o">/</span><span class="n">astropy</span><span class="o">.</span><span class="n">constants</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;km/s&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">),</span>
+                             <span class="n">center</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span><span class="o">+</span><span class="n">halfwidth</span><span class="o">/</span><span class="n">astropy</span><span class="o">.</span><span class="n">constants</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;km/s&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">)</span> <span class="p">])</span><span class="o">.</span><span class="n">T</span></div>
+
+
+<div class="viewcode-block" id="SpectralPixelMask._emission_line_mask"><a class="viewcode-back" href="../../../mangadap.util.pixelmask.html#mangadap.util.pixelmask.SpectralPixelMask._emission_line_mask">[docs]</a>    <span class="k">def</span> <span class="nf">_emission_line_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wave</span><span class="p">,</span> <span class="n">nspec</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">velocity_offsets</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mf">250.0</span><span class="p">,</span> <span class="n">nsigma</span><span class="o">=</span><span class="mf">3.0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Mask the pixels in the wavelength range(s) defined by the</span>
+<span class="sd">        emission-line database that has been adjusted by a set of</span>
+<span class="sd">        velocities and dispersions.</span>
+<span class="sd">        </span>
+<span class="sd">        Currently, the velocity offsets are applied to all lines for</span>
+<span class="sd">        each spectrum, whereas sigma and nsigma are applied to all</span>
+<span class="sd">        spectra for each line.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            wave (numpy.ndarray): Wavelength coordinate vector</span>
+<span class="sd">            nspec (int): (**Optional**) Number of spectra to mask.</span>
+<span class="sd">                Default is just one.</span>
+<span class="sd">            velocity_offsets (float, numpy.ndarray): (**Optional**) One</span>
+<span class="sd">                or more velocity offsets to apply to the emission-line</span>
+<span class="sd">                bands on a spectrum-by-spectrum basis. Default is to</span>
+<span class="sd">                apply no velocity offset.</span>
+<span class="sd">            sigma (float, numpy.ndarray): (**Optional**) One or more</span>
+<span class="sd">                velocity dispersions to use for setting the width of the</span>
+<span class="sd">                emission-line band on a line-by-line basis.  Default is</span>
+<span class="sd">                a width based on a dispersion of 250 km/s.</span>
+<span class="sd">            nsigma (float, numpy.ndarray): (**Optional**) One or more</span>
+<span class="sd">                numbers that sets the width of the band in units of the</span>
+<span class="sd">                provided velocity dipsersions band on a line-by-line</span>
+<span class="sd">                basis.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            numpy.ndarray : Boolean mask of the correct shape.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">emldb</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_empty_mask</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">ny</span><span class="o">=</span><span class="n">nspec</span><span class="p">)</span>
+
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">velocity_offsets</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">))</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">velocity_offsets</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span> 
+            <span class="n">_velocity_offsets</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">velocity_offsets</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">_velocity_offsets</span><span class="p">)</span> <span class="o">!=</span> <span class="n">nspec</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Velocity offsets do not match the number of spectra.&#39;</span><span class="p">)</span>
+             
+            <span class="n">mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_empty_mask</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">ny</span><span class="o">=</span><span class="n">nspec</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">_velocity_offsets</span><span class="p">)):</span>
+                <span class="n">waverange</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_emission_line_bands</span><span class="p">(</span><span class="n">velocity_offsets</span><span class="o">=</span><span class="n">_velocity_offsets</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                                                          <span class="n">sigma</span><span class="o">=</span><span class="n">sigma</span><span class="p">,</span> <span class="n">nsigma</span><span class="o">=</span><span class="n">nsigma</span><span class="p">)</span>
+                <span class="n">mask</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mask_coordinate_ranges</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">waverange</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">mask</span>
+
+        <span class="n">_velocity_offsets</span> <span class="o">=</span> <span class="n">velocity_offsets</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> \
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">velocity_offsets</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">))</span> \
+                        <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">velocity_offsets</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">velocity_offsets</span>
+        
+        <span class="n">waverange</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_emission_line_bands</span><span class="p">(</span><span class="n">velocity_offsets</span><span class="o">=</span><span class="n">_velocity_offsets</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="n">sigma</span><span class="p">,</span>
+                                                  <span class="n">nsigma</span><span class="o">=</span><span class="n">nsigma</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mask_coordinate_ranges</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">waverange</span><span class="p">,</span> <span class="n">ny</span><span class="o">=</span><span class="n">nspec</span><span class="p">)</span></div>
+        
+
+
+<div class="viewcode-block" id="SpectralPixelMask.boolean"><a class="viewcode-back" href="../../../mangadap.util.pixelmask.html#mangadap.util.pixelmask.SpectralPixelMask.boolean">[docs]</a>    <span class="k">def</span> <span class="nf">boolean</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wave</span><span class="p">,</span> <span class="n">nspec</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">velocity_offsets</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mf">250.0</span><span class="p">,</span> <span class="n">nsigma</span><span class="o">=</span><span class="mf">3.0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Construct the full boolean mask that includes the desired</span>
+<span class="sd">        wavelength range, omitting artifacts, and omitting emission</span>
+<span class="sd">        lines.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            wave (numpy.ndarray): Wavelength coordinate vector</span>
+<span class="sd">            nspec (int): (**Optional**) Number of spectra to mask.</span>
+<span class="sd">                Default is just one.</span>
+<span class="sd">            velocity_offsets (float, numpy.ndarray): (**Optional**) One</span>
+<span class="sd">                or more velocity offsets to apply to the emission-line</span>
+<span class="sd">                bands on a spectrum-by-spectrum basis. Default is to</span>
+<span class="sd">                apply no velocity offset.</span>
+<span class="sd">            sigma (float, numpy.ndarray): (**Optional**) One or more</span>
+<span class="sd">                velocity dispersions to use for setting the width of the</span>
+<span class="sd">                emission-line band on a line-by-line basis.  Default is</span>
+<span class="sd">                a width based on a dispersion of 250 km/s.</span>
+<span class="sd">            nsigma (float, numpy.ndarray): (**Optional**) One or more</span>
+<span class="sd">                numbers that sets the width of the band in units of the</span>
+<span class="sd">                provided velocity dipsersions band on a line-by-line</span>
+<span class="sd">                basis.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            numpy.ndarray : Boolean mask of the correct shape.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">nspec</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">nspec</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Number of spectra must be larger than 0!&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_waverange_mask</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">nspec</span><span class="o">=</span><span class="n">nspec</span><span class="p">)</span> <span class="o">|</span> <span class="bp">self</span><span class="o">.</span><span class="n">_artifact_mask</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">nspec</span><span class="o">=</span><span class="n">nspec</span><span class="p">)</span> \
+                <span class="o">|</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emission_line_mask</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">nspec</span><span class="o">=</span><span class="n">nspec</span><span class="p">,</span> <span class="n">velocity_offsets</span><span class="o">=</span><span class="n">velocity_offsets</span><span class="p">,</span>
+                                           <span class="n">sigma</span><span class="o">=</span><span class="n">sigma</span><span class="p">,</span> <span class="n">nsigma</span><span class="o">=</span><span class="n">nsigma</span><span class="p">)</span></div>
+        
+
+<div class="viewcode-block" id="SpectralPixelMask.bits"><a class="viewcode-back" href="../../../mangadap.util.pixelmask.html#mangadap.util.pixelmask.SpectralPixelMask.bits">[docs]</a>    <span class="k">def</span> <span class="nf">bits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bitmask</span><span class="p">,</span> <span class="n">wave</span><span class="p">,</span> <span class="n">nspec</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">velocity_offsets</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mf">250.0</span><span class="p">,</span>
+             <span class="n">nsigma</span><span class="o">=</span><span class="mf">3.0</span><span class="p">,</span> <span class="n">waverange_flag</span><span class="o">=</span><span class="s1">&#39;OUTSIDE_RANGE&#39;</span><span class="p">,</span> <span class="n">art_flag</span><span class="o">=</span><span class="s1">&#39;ARTIFACT&#39;</span><span class="p">,</span>
+             <span class="n">eml_flag</span><span class="o">=</span><span class="s1">&#39;EML_REGION&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Construct a bit mask that signifies pixels as outside the</span>
+<span class="sd">        desired wavelength range, as being affected by an artifact, and</span>
+<span class="sd">        being designated as an emission-line region.  To simply flag the</span>
+<span class="sd">        pixels as a binary masked or unmasked, use :func:`boolean`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            bitmask (:class:`mangadap.util.bitmask.BitMask`): Bitmask</span>
+<span class="sd">                used to flag pixels.  The flags waverange_flag,</span>
+<span class="sd">                art_flag, and eml_flag *must* be defined in the provided</span>
+<span class="sd">                instance of BitMask.</span>
+<span class="sd">            wave (numpy.ndarray): Wavelength coordinate vector</span>
+<span class="sd">            nspec (int): (**Optional**) Number of spectra to mask.</span>
+<span class="sd">                Default is just one.</span>
+<span class="sd">            mask (numpy.array): (**Optional**) Baseline mask to add</span>
+<span class="sd">                pixels masks.  Should have data type that matches</span>
+<span class="sd">                provided bitmask.  Default is to start with all pixels</span>
+<span class="sd">                unmasked.</span>
+<span class="sd">            velocity_offsets (float, numpy.ndarray): (**Optional**) One</span>
+<span class="sd">                or more velocity offsets to apply to the emission-line</span>
+<span class="sd">                bands on a spectrum-by-spectrum basis. Default is to</span>
+<span class="sd">                apply no velocity offset.</span>
+<span class="sd">            sigma (float, numpy.ndarray): (**Optional**) One or more</span>
+<span class="sd">                velocity dispersions to use for setting the width of the</span>
+<span class="sd">                emission-line band on a line-by-line basis.  Default is</span>
+<span class="sd">                a width based on a dispersion of 250 km/s.</span>
+<span class="sd">            nsigma (float, numpy.ndarray): (**Optional**) One or more</span>
+<span class="sd">                numbers that sets the width of the band in units of the</span>
+<span class="sd">                provided velocity dipsersions band on a line-by-line</span>
+<span class="sd">                basis.</span>
+<span class="sd">            waverange_flag (str): (**Optional**) Bitmask name used to</span>
+<span class="sd">                flag a pixel as outside of the desired wavelength range.</span>
+<span class="sd">                Default is &#39;OUTSIDE_RANGE&#39;.</span>
+<span class="sd">            art_flag (str): (**Optional**) Bitmask name used to flag a</span>
+<span class="sd">                pixel being affected by an artifact.  Default is</span>
+<span class="sd">                &#39;ARTIFACT&#39;.</span>
+<span class="sd">            eml_flag (str): (**Optional**) Bitmask name used to flag a</span>
+<span class="sd">                pixel being within an emission-line region.  Default is</span>
+<span class="sd">                &#39;EML_REGION&#39;.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            numpy.ndarray : Bit mask of the correct shape.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Check the bitmask type</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">bitmask</span><span class="p">,</span> <span class="n">BitMask</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Must provide object of type BitMask.&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">nspec</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">nspec</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Number of spectra must be larger than 0!&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Get the wavelength range mask</span>
+        <span class="n">wavemask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_waverange_mask</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">nspec</span><span class="o">=</span><span class="n">nspec</span><span class="p">)</span>
+        <span class="c1"># Check that the input mask has the same size</span>
+        <span class="k">if</span> <span class="n">mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">wavemask</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">mask</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Input mask does not have the correct shape.&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Get the artifact mask</span>
+        <span class="n">artmask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_artifact_mask</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">nspec</span><span class="o">=</span><span class="n">nspec</span><span class="p">)</span>
+
+        <span class="c1"># Get the emission-line mask</span>
+        <span class="n">emlmask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emission_line_mask</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">nspec</span><span class="o">=</span><span class="n">nspec</span><span class="p">,</span> <span class="n">velocity_offsets</span><span class="o">=</span><span class="n">velocity_offsets</span><span class="p">,</span>
+                                           <span class="n">sigma</span><span class="o">=</span><span class="n">sigma</span><span class="p">,</span> <span class="n">nsigma</span><span class="o">=</span><span class="n">nsigma</span><span class="p">)</span>
+
+        <span class="c1"># Construct and return the mask</span>
+        <span class="n">_mask</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">wavemask</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">bitmask</span><span class="o">.</span><span class="n">minimum_dtype</span><span class="p">())</span> \
+                    <span class="k">if</span> <span class="n">mask</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">mask</span>
+
+        <span class="k">if</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">wavemask</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">_mask</span><span class="p">[</span><span class="n">wavemask</span><span class="p">]</span> <span class="o">=</span> <span class="n">bitmask</span><span class="o">.</span><span class="n">turn_on</span><span class="p">(</span><span class="n">_mask</span><span class="p">[</span><span class="n">wavemask</span><span class="p">],</span> <span class="n">flag</span><span class="o">=</span><span class="n">waverange_flag</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">artmask</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">_mask</span><span class="p">[</span><span class="n">artmask</span><span class="p">]</span> <span class="o">=</span> <span class="n">bitmask</span><span class="o">.</span><span class="n">turn_on</span><span class="p">(</span><span class="n">_mask</span><span class="p">[</span><span class="n">artmask</span><span class="p">],</span> <span class="n">flag</span><span class="o">=</span><span class="n">art_flag</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">emlmask</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">_mask</span><span class="p">[</span><span class="n">emlmask</span><span class="p">]</span> <span class="o">=</span> <span class="n">bitmask</span><span class="o">.</span><span class="n">turn_on</span><span class="p">(</span><span class="n">_mask</span><span class="p">[</span><span class="n">emlmask</span><span class="p">],</span> <span class="n">flag</span><span class="o">=</span><span class="n">eml_flag</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">_mask</span></div></div>
+
+
+</pre></div>
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, SDSS-IV/MaNGA Pipeline Group.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'2.2.2',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

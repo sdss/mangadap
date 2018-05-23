@@ -61,6 +61,7 @@ Implements an emission-line fitting class that largely wraps pPXF.
         fit.
     | **20 Mar 2018**: (KBW) Corrected flux calculation and inclusion
         of provided pixel mask.
+    | **22 May 2018**: (KBW) Change import to ppxf package.
 
 .. _numpy.ma.MaskedArray: https://docs.scipy.org/doc/numpy-1.12.0/reference/maskedarray.baseclass.html
 .. _numpy.recarray: https://docs.scipy.org/doc/numpy/reference/generated/numpy.recarray.html
@@ -84,6 +85,7 @@ import numpy
 from scipy import interpolate, fftpack
 
 import astropy.constants
+from ppxf import ppxf
 
 from ..par.parset import ParSet
 from ..par.emissionlinedb import EmissionLineDB
@@ -105,7 +107,6 @@ from .emissionlinetemplates import EmissionLineTemplates
 from .util import sample_growth
 from .ppxffit import PPXFModel, PPXFFitResult, PPXFFit
 from ..contrib.xjmc import emline_fitter_with_ppxf_edit
-from captools import ppxf
 
 # For debugging
 from matplotlib import pyplot

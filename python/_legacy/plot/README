@@ -1,9 +1,0 @@
-make_qa_file_list.py: create a list of files for plot_qa_wrap to process
-
-plot_qa.py: module file with plotting functions
-
-plot_qa_wrap.py: wrapper to plot_qa.py
-
-
-Linear_L_0-1.csv: color map (download from https://mycarta.wordpress.com/color-palettes/)
-(direct link: https://mycarta.files.wordpress.com/2013/03/0-1.odt)

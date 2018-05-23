@@ -1,0 +1,790 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mangadap.util.filter &mdash; mangadap 2.2.2 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../search.html"/>
+    <link rel="top" title="mangadap 2.2.2 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> mangadap
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../mangadap.html">mangadap package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">mangadap</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>mangadap.util.filter</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for mangadap.util.filter</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Licensed under a 3-clause BSD style license - see LICENSE.rst</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">A set of functions used to filter arrays.</span>
+
+<span class="sd">*License*:</span>
+<span class="sd">    Copyright (c) 2017, SDSS-IV/MaNGA Pipeline Group</span>
+<span class="sd">        Licensed under BSD 3-clause license - see LICENSE.rst</span>
+
+<span class="sd">*Source location*:</span>
+<span class="sd">    $MANGADAP_DIR/python/mangadap/util/filter.py</span>
+
+<span class="sd">*Imports and python version compliance*:</span>
+<span class="sd">    ::</span>
+
+<span class="sd">        from __future__ import division</span>
+<span class="sd">        from __future__ import print_function</span>
+<span class="sd">        from __future__ import absolute_import</span>
+<span class="sd">        from __future__ import unicode_literals</span>
+
+<span class="sd">        import sys</span>
+<span class="sd">        if sys.version &gt; &#39;3&#39;:</span>
+<span class="sd">            long = int</span>
+
+<span class="sd">        import numpy</span>
+
+<span class="sd">*Revision history*:</span>
+<span class="sd">    | **26 Jan 2017**: Original implementation by K. Westfall (KBW)</span>
+<span class="sd">    | **06 Apr 2017**: Interpolate sigma vectors as well as the smoothed</span>
+<span class="sd">        vectors in :class:`BoxcarFilter`.</span>
+<span class="sd">    | **21 Dec 2017**: Add weighting functionality to</span>
+<span class="sd">        :class:`BoxcarFilter`.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version</span> <span class="o">&gt;</span> <span class="s1">&#39;3&#39;</span><span class="p">:</span>
+    <span class="n">long</span> <span class="o">=</span> <span class="nb">int</span>
+
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="k">import</span> <span class="n">interpolate</span><span class="p">,</span> <span class="n">sparse</span>
+
+<span class="c1"># Debug</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="k">import</span> <span class="n">pyplot</span>
+<span class="kn">from</span> <span class="nn">matplotlib.ticker</span> <span class="k">import</span> <span class="n">NullFormatter</span>
+
+<div class="viewcode-block" id="high_pass_filter"><a class="viewcode-back" href="../../../mangadap.util.filter.html#mangadap.util.filter.high_pass_filter">[docs]</a><span class="k">def</span> <span class="nf">high_pass_filter</span><span class="p">(</span><span class="n">flux</span><span class="p">,</span> <span class="n">dw</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">Dw</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Pulled from FIREFLY&#39;s hpf() function and edited on 17 Nov 2016.</span>
+
+<span class="sd">    Apply a high-pass filter to the input vector.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">n</span> <span class="o">=</span> <span class="n">flux</span><span class="o">.</span><span class="n">size</span>
+    <span class="n">_dw</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">dw</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">k</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">Dw</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">Dw</span> <span class="o">=</span> <span class="mi">100</span>
+        <span class="n">_k</span> <span class="o">=</span> <span class="n">n</span><span class="o">//</span><span class="n">Dw</span>
+    <span class="k">elif</span> <span class="n">k</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">Dw</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">_k</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+        <span class="n">Dw</span> <span class="o">=</span> <span class="n">n</span><span class="o">//</span><span class="n">_k</span>
+    <span class="k">elif</span> <span class="n">k</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">Dw</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">_k</span> <span class="o">=</span> <span class="n">n</span><span class="o">//</span><span class="n">Dw</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Cannot provide both k and Dw.&#39;</span><span class="p">)</span>
+
+    <span class="c1"># PRINT A REPORT</span>
+
+    <span class="c1"># Rita&#39;s typical inputs for SDSS:</span>
+    <span class="c1"># w = 10 # 10</span>
+    <span class="c1"># windowsize = 20 # 20</span>
+
+    <span class="c1"># My MaNGA inputs:</span>
+    <span class="c1"># if w == 0 and windowsize == 0:</span>
+    <span class="c1">#     print &quot;HPF parameters not specified: choosing default window (stepsize=40)&quot;</span>
+    <span class="c1">#     w = 40</span>
+    <span class="c1">#     windowsize = 0</span>
+
+    <span class="n">h</span>           <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fft</span><span class="p">(</span><span class="n">flux</span><span class="p">)</span>
+    <span class="n">h_filtered</span>  <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">complex</span><span class="p">)</span>
+    <span class="n">window</span>      <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+    <span class="n">unwindow</span>    <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+    <span class="n">window</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>   <span class="o">=</span> <span class="mi">1</span>                             <span class="c1"># keep F0 for normalisation</span>
+    <span class="n">unwindow</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">_dw</span><span class="p">):</span>
+        <span class="n">window</span><span class="p">[</span><span class="n">_k</span><span class="o">+</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mf">1.0</span><span class="p">)</span><span class="o">/</span><span class="n">_dw</span>
+        <span class="n">window</span><span class="p">[</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="o">-</span><span class="p">(</span><span class="n">_k</span><span class="o">+</span><span class="n">_dw</span><span class="o">-</span><span class="n">i</span><span class="p">)]</span> <span class="o">=</span> <span class="p">(</span><span class="n">_dw</span><span class="o">-</span><span class="n">i</span><span class="p">)</span><span class="o">/</span><span class="n">_dw</span>
+    <span class="n">window</span><span class="p">[</span><span class="n">_k</span><span class="o">+</span><span class="n">_dw</span><span class="p">:</span><span class="n">n</span><span class="o">-</span><span class="p">(</span><span class="n">_k</span><span class="o">+</span><span class="n">_dw</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="n">unwindow</span>        <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">window</span>
+    <span class="n">unwindow</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>     <span class="o">=</span> <span class="mi">1</span>
+    
+    <span class="n">h_filtered</span>      <span class="o">=</span> <span class="n">h</span> <span class="o">*</span> <span class="n">window</span>
+    <span class="n">un_h_filtered</span>   <span class="o">=</span> <span class="n">h</span> <span class="o">*</span> <span class="n">unwindow</span>
+
+    <span class="n">res</span>     <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">ifft</span><span class="p">(</span><span class="n">h_filtered</span><span class="p">))</span>
+    <span class="n">unres</span>   <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">ifft</span><span class="p">(</span><span class="n">un_h_filtered</span><span class="p">))</span> 
+    <span class="n">res_out</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span><span class="o">+</span><span class="p">(</span><span class="n">res</span><span class="o">-</span><span class="n">numpy</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">res</span><span class="p">))</span><span class="o">/</span><span class="n">unres</span><span class="p">)</span> <span class="o">*</span> <span class="n">numpy</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">res</span><span class="p">)</span> 
+
+    <span class="k">return</span> <span class="n">res_out</span><span class="p">,</span> <span class="n">window</span><span class="p">,</span> <span class="n">res</span><span class="p">,</span> <span class="n">unres</span></div>
+
+<span class="c1">#def off_diagonal_identity(size, win):</span>
+<span class="c1">#    r&quot;&quot;&quot;</span>
+<span class="c1">#    Construct a matrix with ones within a window along the diagonal.</span>
+<span class="c1">#</span>
+<span class="c1">#    Args:</span>
+<span class="c1">#        size (int) : Size for the square matrix; i.e., :math:`N` for the</span>
+<span class="c1">#            :math:`N\timesN` matrix.</span>
+<span class="c1">#        win (int): Number of ones in each row along the diagonal.</span>
+<span class="c1">#</span>
+<span class="c1">#    Raises:</span>
+<span class="c1">#        ValueError: Raised if the window is larger than 2*size-1.</span>
+<span class="c1">#</span>
+<span class="c1">#    &quot;&quot;&quot;</span>
+<span class="c1">#    if win &gt; 2*size-1:</span>
+<span class="c1">#        raise ValueError(&#39;Window too large for matrix size.&#39;)</span>
+<span class="c1">#    if win == 2*size-1:</span>
+<span class="c1">#        return numpy.ones((size,size), dtype=int)</span>
+<span class="c1">#    x = numpy.zeros((size,size), dtype=int)#numpy.identity(size).astype(int)</span>
+<span class="c1">#    for i in range(1,(win+1)//2):</span>
+<span class="c1">#        x[:-i,i:] = x[:-i,i:] + numpy.identity(size-i).astype(int)</span>
+<span class="c1">#    x += x.T</span>
+<span class="c1">#    if win % 2 != 1:</span>
+<span class="c1">#        x[:-i-1,i+1:] = x[:-i-1,i+1:] + numpy.identity(size-i-1).astype(int)</span>
+<span class="c1">#    return x + numpy.identity(size).astype(int)</span>
+
+<div class="viewcode-block" id="off_diagonal_identity"><a class="viewcode-back" href="../../../mangadap.util.filter.html#mangadap.util.filter.off_diagonal_identity">[docs]</a><span class="k">def</span> <span class="nf">off_diagonal_identity</span><span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="n">win</span><span class="p">,</span> <span class="n">return_sparse</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Construct a matrix with ones within a window along the diagonal.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        size (int) : Size for the square matrix; i.e., :math:`N` for the</span>
+<span class="sd">            :math:`N\timesN` matrix.</span>
+<span class="sd">        win (int): Number of ones in each row along the diagonal.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: Raised if the window is larger than 2*size-1.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">win</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="o">*</span><span class="n">size</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Window too large for matrix size.&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">win</span> <span class="o">==</span> <span class="mi">2</span><span class="o">*</span><span class="n">size</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">size</span><span class="p">,</span><span class="n">size</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+
+    <span class="c1"># Indices of diagonal</span>
+    <span class="n">ii</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">size</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+
+    <span class="c1"># Build the upper triangle</span>
+    <span class="n">i</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+    <span class="n">j</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,(</span><span class="n">win</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">//</span><span class="mi">2</span><span class="p">):</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">ii</span><span class="p">[:</span><span class="n">size</span><span class="o">-</span><span class="n">k</span><span class="p">])</span>
+        <span class="n">j</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="n">ii</span><span class="p">[</span><span class="n">k</span><span class="p">:</span><span class="n">size</span><span class="p">])</span>
+
+    <span class="c1"># Copy to the lower triangle</span>
+    <span class="n">_i</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">)</span>
+    <span class="n">j</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">j</span><span class="p">,</span><span class="n">i</span><span class="p">)</span>
+
+    <span class="c1"># Add the diagonal</span>
+    <span class="n">i</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_i</span><span class="p">,</span> <span class="n">ii</span><span class="p">)</span>
+    <span class="n">j</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="n">ii</span><span class="p">)</span>
+
+    <span class="c1"># Accommodate an even window</span>
+    <span class="k">if</span> <span class="n">win</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">ii</span><span class="p">[:</span><span class="n">size</span><span class="o">-</span><span class="n">k</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">j</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="n">ii</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">:</span><span class="n">size</span><span class="p">])</span>
+
+    <span class="c1"># Construct and return the array</span>
+    <span class="k">if</span> <span class="n">return_sparse</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">sparse</span><span class="o">.</span><span class="n">coo_matrix</span><span class="p">((</span><span class="n">numpy</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">),(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">)),</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">size</span><span class="p">,</span><span class="n">size</span><span class="p">))</span><span class="o">.</span><span class="n">tocsr</span><span class="p">()</span>
+
+    <span class="n">a</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">size</span><span class="p">,</span><span class="n">size</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+    <span class="n">a</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">a</span></div>
+
+
+<div class="viewcode-block" id="build_smoothing_mask"><a class="viewcode-back" href="../../../mangadap.util.filter.html#mangadap.util.filter.build_smoothing_mask">[docs]</a><span class="k">def</span> <span class="nf">build_smoothing_mask</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">pix_buffer</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mask_x</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Construct a mask for the provided vector that masks the first and</span>
+<span class="sd">    last pix_buffer pixels in the coordinate vector.</span>
+<span class="sd">    </span>
+<span class="sd">    The mask is instantiated as fully unmasked, unless a default mask is</span>
+<span class="sd">    provided.</span>
+<span class="sd">    </span>
+<span class="sd">    To mask specified ranges in x, provide mask_x with a shape</span>
+<span class="sd">    :math:`N_{\rm mask}\times 2` where each mask is defined by the</span>
+<span class="sd">    starting and ending value of x to exclude.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Smooth the ratio of the data to the model</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Input must be a vector.&#39;</span><span class="p">)</span>
+    <span class="n">npix</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">size</span>
+    <span class="n">mask</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">npix</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span> <span class="k">if</span> <span class="n">default</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">default</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">mask</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="n">npix</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Provided default has an incorrect length.&#39;</span><span class="p">)</span>
+    <span class="n">mask</span><span class="p">[:</span><span class="n">pix_buffer</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">mask</span><span class="p">[</span><span class="o">-</span><span class="n">pix_buffer</span><span class="p">:]</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">if</span> <span class="n">mask_x</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">mask</span>
+
+    <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">mask_x</span><span class="p">:</span>
+        <span class="n">mask</span> <span class="o">|=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">x</span> <span class="o">&gt;</span> <span class="n">m</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">x</span> <span class="o">&lt;</span> <span class="n">m</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">mask</span></div>
+
+
+<div class="viewcode-block" id="BoxcarFilter"><a class="viewcode-back" href="../../../mangadap.util.filter.html#mangadap.util.filter.BoxcarFilter">[docs]</a><span class="k">class</span> <span class="nc">BoxcarFilter</span><span class="p">():</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">boxcar</span><span class="p">,</span> <span class="n">lo</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">hi</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">niter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">wgt</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">local_sigma</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="n">boxcar</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Boxcar must be greater than 1!&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wgt</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_mask</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_mask</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">boxcar</span> <span class="o">=</span> <span class="n">boxcar</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lo_rej</span> <span class="o">=</span> <span class="n">lo</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hi_rej</span> <span class="o">=</span> <span class="n">hi</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nrej</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span> <span class="k">if</span> <span class="n">niter</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">niter</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nvec</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">npix</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">local_sigma</span> <span class="o">=</span> <span class="kc">False</span> <span class="k">if</span> <span class="n">local_sigma</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">local_sigma</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">smoothed_wgt</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">smoothed_n</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">smoothed_y</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigma_y</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rdx_index</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="n">y</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">smooth</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">wgt</span><span class="o">=</span><span class="n">wgt</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">,</span> <span class="n">boxcar</span><span class="o">=</span><span class="n">boxcar</span><span class="p">,</span> <span class="n">lo</span><span class="o">=</span><span class="n">lo</span><span class="p">,</span> <span class="n">hi</span><span class="o">=</span><span class="n">hi</span><span class="p">,</span> <span class="n">niter</span><span class="o">=</span><span class="n">niter</span><span class="p">,</span>
+                        <span class="n">local_sigma</span><span class="o">=</span><span class="n">local_sigma</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="BoxcarFilter._assign_par"><a class="viewcode-back" href="../../../mangadap.util.filter.html#mangadap.util.filter.BoxcarFilter._assign_par">[docs]</a>    <span class="k">def</span> <span class="nf">_assign_par</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">boxcar</span><span class="p">,</span> <span class="n">lo</span><span class="p">,</span> <span class="n">hi</span><span class="p">,</span> <span class="n">niter</span><span class="p">,</span> <span class="n">local_sigma</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">boxcar</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">boxcar</span> <span class="o">=</span> <span class="n">boxcar</span>
+        <span class="k">if</span> <span class="n">lo</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">lo_rej</span> <span class="o">=</span> <span class="n">lo</span>
+        <span class="k">if</span> <span class="n">hi</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">hi_rej</span> <span class="o">=</span> <span class="n">hi</span>
+        <span class="k">if</span> <span class="n">niter</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">nrej</span> <span class="o">=</span> <span class="n">niter</span>
+        <span class="k">if</span> <span class="n">local_sigma</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">local_sigma</span> <span class="o">=</span> <span class="n">local_sigma</span></div>
+
+
+<div class="viewcode-block" id="BoxcarFilter._check_par"><a class="viewcode-back" href="../../../mangadap.util.filter.html#mangadap.util.filter.BoxcarFilter._check_par">[docs]</a>    <span class="k">def</span> <span class="nf">_check_par</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">boxcar</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Boxcar must be greater than 1!&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nrej</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">nrej</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">lo_rej</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">hi_rej</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Must provide lo or hi if niter provided&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BoxcarFilter._reduce_indices"><a class="viewcode-back" href="../../../mangadap.util.filter.html#mangadap.util.filter.BoxcarFilter._reduce_indices">[docs]</a>    <span class="k">def</span> <span class="nf">_reduce_indices</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">indx</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">npix</span><span class="p">)</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">boxcar</span><span class="o">//</span><span class="mi">2</span><span class="p">,</span>
+                            <span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">npix</span><span class="p">)</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">boxcar</span><span class="o">//</span><span class="mi">2</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">boxcar</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">indx</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">npix</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">indx</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">npix</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BoxcarFilter._apply"><a class="viewcode-back" href="../../../mangadap.util.filter.html#mangadap.util.filter.BoxcarFilter._apply">[docs]</a>    <span class="k">def</span> <span class="nf">_apply</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">smoothed_n</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">add</span><span class="o">.</span><span class="n">reduceat</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_mask</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">rdx_index</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                                             <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)[:,::</span><span class="mi">2</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">smoothed_wgt</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">add</span><span class="o">.</span><span class="n">reduceat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_wgt</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rdx_index</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                                             <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)[:,::</span><span class="mi">2</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">smoothed_y</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">add</span><span class="o">.</span><span class="n">reduceat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_wgt</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="o">.</span><span class="n">filled</span><span class="p">(</span><span class="mf">0.0</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">rdx_index</span><span class="p">,</span>
+                                             <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)[:,::</span><span class="mi">2</span><span class="p">]</span>
+        <span class="n">smoothed_y2</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">add</span><span class="o">.</span><span class="n">reduceat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_wgt</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="o">.</span><span class="n">filled</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)),</span>
+                                         <span class="bp">self</span><span class="o">.</span><span class="n">rdx_index</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)[:,::</span><span class="mi">2</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">smoothed_y</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">smoothed_y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">smoothed_wgt</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">smoothed_y</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">output_mask</span> <span class="o">|</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">smoothed_n</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">masked</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigma_y</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span><span class="n">smoothed_y2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">smoothed_wgt</span><span class="p">)</span>
+                                            <span class="o">-</span> <span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">smoothed_y</span><span class="p">))</span>
+                                        <span class="o">*</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">smoothed_n</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">smoothed_n</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span> \
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">local_sigma</span> <span class="k">else</span> \
+                            <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">numpy</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">smoothed_y</span><span class="p">,</span>
+                                                                        <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)]</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">npix</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_mask</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">getmaskarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">smoothed_y</span><span class="p">)</span> \
+                                <span class="o">|</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">getmaskarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sigma_y</span><span class="p">)</span> 
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">smoothed_y</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">output_mask</span> <span class="o">|</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">smoothed_n</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">masked</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigma_y</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">output_mask</span> <span class="o">|</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">smoothed_n</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">masked</span>
+
+        <span class="k">return</span>
+
+        <span class="n">w</span><span class="p">,</span><span class="n">h</span> <span class="o">=</span> <span class="n">pyplot</span><span class="o">.</span><span class="n">figaspect</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">pyplot</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mf">1.5</span><span class="o">*</span><span class="n">w</span><span class="p">,</span><span class="mf">1.5</span><span class="o">*</span><span class="n">h</span><span class="p">))</span>
+
+        <span class="n">minf</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">amin</span><span class="p">(</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="o">.</span><span class="n">compressed</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">smoothed_y</span><span class="o">.</span><span class="n">compressed</span><span class="p">()))</span> <span class="p">)</span>
+        <span class="n">maxf</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="o">.</span><span class="n">compressed</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">smoothed_y</span><span class="o">.</span><span class="n">compressed</span><span class="p">()))</span> <span class="p">)</span>
+
+        <span class="n">mins</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">amin</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sigma_y</span><span class="p">)</span><span class="o">.</span><span class="n">compressed</span><span class="p">())</span>
+        <span class="n">maxs</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sigma_y</span><span class="p">)</span><span class="o">.</span><span class="n">compressed</span><span class="p">())</span>
+
+        <span class="n">minr</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">amin</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">smoothed_y</span><span class="p">))</span><span class="o">.</span><span class="n">compressed</span><span class="p">())</span>
+        <span class="n">maxr</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">smoothed_y</span><span class="p">))</span><span class="o">.</span><span class="n">compressed</span><span class="p">())</span>
+
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_axes</span><span class="p">([</span><span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.50</span><span class="p">,</span> <span class="mf">0.45</span><span class="p">,</span> <span class="mf">0.45</span><span class="p">])</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_major_formatter</span><span class="p">(</span><span class="n">NullFormatter</span><span class="p">())</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">),</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="n">minf</span><span class="p">,</span>
+                  <span class="n">vmax</span><span class="o">=</span><span class="n">maxf</span><span class="p">,</span> <span class="n">aspect</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">)</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_axes</span><span class="p">([</span><span class="mf">0.50</span><span class="p">,</span> <span class="mf">0.50</span><span class="p">,</span> <span class="mf">0.45</span><span class="p">,</span> <span class="mf">0.45</span><span class="p">])</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_major_formatter</span><span class="p">(</span><span class="n">NullFormatter</span><span class="p">())</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_major_formatter</span><span class="p">(</span><span class="n">NullFormatter</span><span class="p">())</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">smoothed_y</span><span class="p">),</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">,</span>
+                  <span class="n">vmin</span><span class="o">=</span><span class="n">minf</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="n">maxf</span><span class="p">,</span> <span class="n">aspect</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">)</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_axes</span><span class="p">([</span><span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.45</span><span class="p">,</span> <span class="mf">0.45</span><span class="p">])</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_major_formatter</span><span class="p">(</span><span class="n">NullFormatter</span><span class="p">())</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">smoothed_y</span><span class="p">)),</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">,</span>
+                  <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">,</span> <span class="n">aspect</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="n">minr</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="n">maxr</span><span class="p">)</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_axes</span><span class="p">([</span><span class="mf">0.50</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.45</span><span class="p">,</span> <span class="mf">0.45</span><span class="p">])</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_major_formatter</span><span class="p">(</span><span class="n">NullFormatter</span><span class="p">())</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sigma_y</span><span class="p">),</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">,</span>
+                  <span class="n">aspect</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="n">mins</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="n">maxs</span><span class="p">)</span>
+
+        <span class="n">pyplot</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+        <span class="n">exit</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="BoxcarFilter._interpolate"><a class="viewcode-back" href="../../../mangadap.util.filter.html#mangadap.util.filter.BoxcarFilter._interpolate">[docs]</a>    <span class="k">def</span> <span class="nf">_interpolate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Interpolate the smoothed image across the masked regions.</span>
+<span class="sd">        Leading and trailing masked regions of each row are set to the</span>
+<span class="sd">        first and last unmasked value, respectively.</span>
+
+<span class="sd">        interpolate both the smoothed data and the sigma</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Boolean arrays with bad pixels (should be the same for both</span>
+        <span class="c1"># smoothed_y and sigma_y)</span>
+        <span class="n">badpix</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">getmaskarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">smoothed_y</span><span class="p">)</span>
+
+        <span class="c1"># Deal with any vectors that are fully masked</span>
+        <span class="n">goodvec</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">badpix</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+        <span class="n">ngood</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">goodvec</span><span class="p">)</span>
+        <span class="n">veci</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nvec</span><span class="p">)[</span><span class="n">goodvec</span><span class="p">]</span>
+
+        <span class="c1"># Find the first and last unflagged pixels in the good vectors</span>
+        <span class="n">pixcoo</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">npix</span><span class="p">)]</span><span class="o">*</span><span class="n">ngood</span><span class="p">),</span>
+                                      <span class="n">mask</span><span class="o">=</span><span class="n">badpix</span><span class="p">[</span><span class="n">goodvec</span><span class="p">,:])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="n">mini</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">amin</span><span class="p">(</span><span class="n">pixcoo</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">maxi</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">pixcoo</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># Copy those to the first and last pixels for each row</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">smoothed_y</span><span class="p">[</span><span class="n">veci</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">smoothed_y</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">m</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">m</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">veci</span><span class="p">,</span> <span class="n">mini</span><span class="p">)])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">smoothed_y</span><span class="p">[</span><span class="n">veci</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">smoothed_y</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">m</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">m</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">veci</span><span class="p">,</span> <span class="n">maxi</span><span class="p">)])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigma_y</span><span class="p">[</span><span class="n">veci</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">sigma_y</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">m</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">m</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">veci</span><span class="p">,</span> <span class="n">mini</span><span class="p">)])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigma_y</span><span class="p">[</span><span class="n">veci</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">sigma_y</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">m</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">m</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">veci</span><span class="p">,</span> <span class="n">maxi</span><span class="p">)])</span>
+
+        <span class="c1"># Detach badpix from self.smoothed_y</span>
+        <span class="n">badpix</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">getmaskarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">smoothed_y</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="c1"># Interpolate the smoothed array</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nvec</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">npix</span><span class="p">),</span> <span class="n">mask</span><span class="o">=</span><span class="n">badpix</span><span class="p">)</span>
+        <span class="n">interpolator</span> <span class="o">=</span> <span class="n">interpolate</span><span class="o">.</span><span class="n">interp1d</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">compressed</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">smoothed_y</span><span class="o">.</span><span class="n">compressed</span><span class="p">(),</span>
+                                            <span class="n">assume_sorted</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="s1">&#39;extrapolate&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">smoothed_y</span><span class="o">.</span><span class="n">ravel</span><span class="p">()[</span><span class="n">badpix</span><span class="o">.</span><span class="n">ravel</span><span class="p">()]</span> <span class="o">=</span> <span class="n">interpolator</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">badpix</span><span class="o">.</span><span class="n">ravel</span><span class="p">()])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">smoothed_y</span><span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">goodvec</span><span class="p">),:]</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+        <span class="c1"># Interpolate the sigma array</span>
+        <span class="n">interpolator</span> <span class="o">=</span> <span class="n">interpolate</span><span class="o">.</span><span class="n">interp1d</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">compressed</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigma_y</span><span class="o">.</span><span class="n">compressed</span><span class="p">(),</span>
+                                            <span class="n">assume_sorted</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="s1">&#39;extrapolate&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigma_y</span><span class="o">.</span><span class="n">ravel</span><span class="p">()[</span><span class="n">badpix</span><span class="o">.</span><span class="n">ravel</span><span class="p">()]</span> <span class="o">=</span> <span class="n">interpolator</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">badpix</span><span class="o">.</span><span class="n">ravel</span><span class="p">()])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigma_y</span><span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">goodvec</span><span class="p">),:]</span> <span class="o">=</span> <span class="mf">0.0</span></div>
+
+
+<div class="viewcode-block" id="BoxcarFilter.smooth"><a class="viewcode-back" href="../../../mangadap.util.filter.html#mangadap.util.filter.BoxcarFilter.smooth">[docs]</a>    <span class="k">def</span> <span class="nf">smooth</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">wgt</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">boxcar</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">lo</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">hi</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">niter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+               <span class="n">local_sigma</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Smooth a vector or array of vectors by a boxcar with specified</span>
+<span class="sd">        rejection.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Assign and check the binning parameters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_assign_par</span><span class="p">(</span><span class="n">boxcar</span><span class="p">,</span> <span class="n">lo</span><span class="p">,</span> <span class="n">hi</span><span class="p">,</span> <span class="n">niter</span><span class="p">,</span> <span class="n">local_sigma</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_par</span><span class="p">()</span>
+
+        <span class="c1"># Check the input vector/array</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Can only deal with vectors or matrices.&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Set the weighting</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_wgt</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span> <span class="k">if</span> <span class="n">wgt</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">wgt</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_wgt</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Weights shape does not match data.&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">input_wgt</span><span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">getmaskarray</span><span class="p">(</span><span class="n">y</span><span class="p">)]</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+        <span class="c1"># Set the mask</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_mask</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span> <span class="k">if</span> <span class="n">mask</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">mask</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_mask</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Mask shape does not match data.&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">input_mask</span> <span class="o">|=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">getmaskarray</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+
+        <span class="c1"># Save the input</span>
+        <span class="n">provided_vector</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">atleast_2d</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">(</span><span class="n">y</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">mask</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">input_mask</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_wgt</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">atleast_2d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_wgt</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_mask</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">atleast_2d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_mask</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_mask</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nvec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">npix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="o">.</span><span class="n">shape</span>
+
+        <span class="c1"># Create the list of reduceat indices</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rdx_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reduce_indices</span><span class="p">()</span>
+
+        <span class="c1"># Get the first iteration of the smoothed vectors</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_apply</span><span class="p">()</span>
+
+        <span class="c1"># No rejection iterations requested so return the result</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">lo_rej</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">hi_rej</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_interpolate</span><span class="p">()</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">smoothed_y</span><span class="p">[</span><span class="mi">0</span><span class="p">,:]</span> <span class="k">if</span> <span class="n">provided_vector</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">smoothed_y</span>
+
+        <span class="c1"># Iteratively reject outliers</span>
+        <span class="n">nmasked</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">getmaskarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">))</span>
+        <span class="n">i</span><span class="o">=</span><span class="mi">0</span>
+        <span class="k">while</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="n">nbad</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_mask</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">lo_rej</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">output_mask</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">logical_or</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_mask</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="o">.</span><span class="n">data</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">smoothed_y</span>
+                                                        <span class="o">&lt;</span> <span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">lo_rej</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">sigma_y</span><span class="p">))</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">hi_rej</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">output_mask</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">logical_or</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_mask</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="o">.</span><span class="n">data</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">smoothed_y</span>
+                                                        <span class="o">&gt;</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hi_rej</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">sigma_y</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">output_mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">masked</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_apply</span><span class="p">()</span>
+
+            <span class="n">nmasked</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_mask</span><span class="p">)</span> <span class="o">-</span> <span class="n">nbad</span>
+<span class="c1">#            print(&#39;Niter: {0}; Nmasked: {1}&#39;.format(i+1, nmasked))</span>
+
+            <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">nrej</span> <span class="ow">or</span> <span class="n">nmasked</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">break</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_interpolate</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">smoothed_y</span><span class="p">[</span><span class="mi">0</span><span class="p">,:]</span> <span class="k">if</span> <span class="n">provided_vector</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">smoothed_y</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">mask</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_mask</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="smooth_masked_vector"><a class="viewcode-back" href="../../../mangadap.util.filter.html#mangadap.util.filter.smooth_masked_vector">[docs]</a><span class="k">def</span> <span class="nf">smooth_masked_vector</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">nsmooth</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Smooth a masked vector by a box of size nsmooth.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="n">off_diagonal_identity</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">nsmooth</span><span class="p">)</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">getmaskarray</span><span class="p">(</span><span class="n">x</span><span class="p">))[</span><span class="kc">None</span><span class="p">,:]</span>
+    <span class="n">nn</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="n">x</span><span class="o">.</span><span class="n">data</span><span class="p">),</span> <span class="n">mask</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">nn</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">)</span> <span class="o">|</span> <span class="n">x</span><span class="o">.</span><span class="n">mask</span><span class="p">)</span><span class="o">/</span><span class="n">nn</span></div>
+
+
+<div class="viewcode-block" id="interpolate_masked_vector"><a class="viewcode-back" href="../../../mangadap.util.filter.html#mangadap.util.filter.interpolate_masked_vector">[docs]</a><span class="k">def</span> <span class="nf">interpolate_masked_vector</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">quiet</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">extrap_with_median</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Interpolate over the masked pixels in an input vector using linear</span>
+<span class="sd">    interpolation.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        y (numpy.ma.MaskedArray):</span>
+<span class="sd">            Vector to interpolate.</span>
+<span class="sd">        quiet (:obj:`bool`, optional):</span>
+<span class="sd">            Suppress standard output (default is True).</span>
+<span class="sd">        extrap_with_median (:obj:`bool`, optional):</span>
+<span class="sd">            Instead of linear extrapolation, use the median of the</span>
+<span class="sd">            interpolated vector.  Defaults to linear extrapolation.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        numpy.ndarray: Returns the interpolated, unmasked vector.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">y</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+    <span class="n">indx</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">getmaskarray</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">indx</span><span class="p">))</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">quiet</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Input vector has fewer than 2 unmasked values!  Returning zero vector.&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">y</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">y</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+    <span class="n">interpolator</span> <span class="o">=</span> <span class="n">interpolate</span><span class="o">.</span><span class="n">interp1d</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">indx</span><span class="p">)],</span> <span class="n">y</span><span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">indx</span><span class="p">)],</span>
+                                        <span class="n">fill_value</span><span class="o">=</span><span class="s1">&#39;extrapolate&#39;</span><span class="p">)</span>
+    <span class="n">_y</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">_y</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="n">interpolator</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">indx</span><span class="p">])</span>
+
+    <span class="k">if</span> <span class="n">extrap_with_median</span><span class="p">:</span>
+        <span class="n">med</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">interpolator</span><span class="o">.</span><span class="n">y</span><span class="p">)</span>
+        <span class="n">m_indx</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">interpolator</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">|</span> <span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">interpolator</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">_y</span><span class="p">[</span><span class="n">indx</span><span class="p">][</span><span class="n">m_indx</span><span class="p">]</span> <span class="o">=</span> <span class="n">med</span>
+
+    <span class="k">return</span> <span class="n">_y</span></div>
+
+
+<div class="viewcode-block" id="boxcar_smooth_vector"><a class="viewcode-back" href="../../../mangadap.util.filter.html#mangadap.util.filter.boxcar_smooth_vector">[docs]</a><span class="k">def</span> <span class="nf">boxcar_smooth_vector</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">boxcar</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">lo</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">hi</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">niter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">return_mask</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Boxcar smooth an input vector.</span>
+<span class="sd">        - Ignores masked pixels.</span>
+<span class="sd">        - Allows for iterative positive and negative outliers.</span>
+<span class="sd">        - Can return the mask separately from the smoothed vector.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">niter</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">lo</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">hi</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Must provide lo or hi if niter provided&#39;</span><span class="p">)</span>
+
+    <span class="n">_mask</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span> <span class="k">if</span> <span class="n">mask</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">mask</span>
+    <span class="n">_x</span> <span class="o">=</span> <span class="n">x</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">)</span> <span class="k">else</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">_x</span><span class="p">[</span><span class="n">_mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">masked</span>
+
+    <span class="n">sx</span> <span class="o">=</span> <span class="n">interpolate_masked_vector</span><span class="p">(</span> <span class="n">smooth_masked_vector</span><span class="p">(</span><span class="n">_x</span><span class="p">,</span> <span class="n">boxcar</span><span class="p">)</span> <span class="p">)</span>
+
+<span class="c1">#    pyplot.step(numpy.arange(_x.size), _x.data, where=&#39;mid&#39;, color=&#39;0.3&#39;, lw=0.5)</span>
+<span class="c1">#    pyplot.step(numpy.arange(_x.size), _x, where=&#39;mid&#39;, color=&#39;k&#39;, lw=0.5)</span>
+<span class="c1">#    pyplot.plot(numpy.arange(_x.size), sx, color=&#39;r&#39;, lw=1)</span>
+<span class="c1">#    pyplot.show()</span>
+
+    <span class="k">if</span> <span class="n">numpy</span><span class="o">.</span><span class="n">all</span><span class="p">([</span> <span class="n">x</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="p">[</span> <span class="n">lo</span><span class="p">,</span> <span class="n">hi</span><span class="p">,</span> <span class="n">niter</span> <span class="p">]]):</span>
+        <span class="k">if</span> <span class="n">return_mask</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">sx</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">getmaskarray</span><span class="p">(</span><span class="n">_x</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">sx</span>
+    
+    <span class="n">_niter</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span> <span class="k">if</span> <span class="n">niter</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">niter</span>
+    <span class="n">nrej</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">getmaskarray</span><span class="p">(</span><span class="n">_x</span><span class="p">))</span>
+    <span class="n">i</span><span class="o">=</span><span class="mi">0</span>
+    <span class="k">while</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+        <span class="n">sig</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">std</span><span class="p">((</span><span class="n">_x</span> <span class="o">-</span> <span class="n">sx</span><span class="p">)</span><span class="o">.</span><span class="n">compressed</span><span class="p">())</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">getmaskarray</span><span class="p">(</span><span class="n">_x</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">lo</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">mask</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">logical_or</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="n">_x</span><span class="o">.</span><span class="n">data</span> <span class="o">-</span> <span class="n">sx</span> <span class="o">&lt;</span> <span class="o">-</span><span class="n">lo</span><span class="o">*</span><span class="n">sig</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">hi</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">mask</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">logical_or</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="n">_x</span><span class="o">.</span><span class="n">data</span> <span class="o">-</span> <span class="n">sx</span> <span class="o">&gt;</span> <span class="n">hi</span><span class="o">*</span><span class="n">sig</span><span class="p">)</span>
+        <span class="n">nrej</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span> <span class="o">-</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">_x</span><span class="o">.</span><span class="n">mask</span><span class="p">)</span>
+<span class="c1">#        print(&#39;Niter: {0}; Nrej: {1}&#39;.format(i+1, nrej))</span>
+        <span class="n">_x</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">masked</span>
+        <span class="n">sx</span> <span class="o">=</span> <span class="n">interpolate_masked_vector</span><span class="p">(</span> <span class="n">smooth_masked_vector</span><span class="p">(</span><span class="n">_x</span><span class="p">,</span> <span class="n">boxcar</span><span class="p">)</span> <span class="p">)</span>
+
+<span class="c1">#        pyplot.step(numpy.arange(_x.size), _x.data, where=&#39;mid&#39;, color=&#39;cyan&#39;, lw=0.5)</span>
+<span class="c1">#        pyplot.step(numpy.arange(_x.size), _x, where=&#39;mid&#39;, color=&#39;k&#39;, lw=0.5)</span>
+<span class="c1">#        pyplot.plot(numpy.arange(_x.size), sx, color=&#39;r&#39;, lw=1)</span>
+<span class="c1">#        pyplot.show()</span>
+
+        <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="n">_niter</span> <span class="ow">or</span> <span class="n">nrej</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">break</span>
+
+    <span class="n">pyplot</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">_x</span><span class="o">.</span><span class="n">size</span><span class="p">),</span> <span class="n">_x</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="s1">&#39;mid&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;cyan&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+    <span class="n">pyplot</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">_x</span><span class="o">.</span><span class="n">size</span><span class="p">),</span> <span class="n">_x</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="s1">&#39;mid&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+    <span class="n">pyplot</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">_x</span><span class="o">.</span><span class="n">size</span><span class="p">),</span> <span class="n">sx</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">pyplot</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">return_mask</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">sx</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">getmaskarray</span><span class="p">(</span><span class="n">_x</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">sx</span></div>
+
+
+</pre></div>
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, SDSS-IV/MaNGA Pipeline Group.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'2.2.2',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

@@ -1,0 +1,818 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mangadap.proc.spectralfitting &mdash; mangadap 2.2.2 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../search.html"/>
+    <link rel="top" title="mangadap 2.2.2 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> mangadap
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../mangadap.html">mangadap package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">mangadap</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>mangadap.proc.spectralfitting</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for mangadap.proc.spectralfitting</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Licensed under a 3-clause BSD style license - see LICENSE.rst</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Implements a few base classes used during spectral fitting procedures.</span>
+
+<span class="sd">*License*:</span>
+<span class="sd">    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group</span>
+<span class="sd">        Licensed under BSD 3-clause license - see LICENSE.rst</span>
+
+<span class="sd">*Source location*:</span>
+<span class="sd">    $MANGADAP_DIR/python/mangadap/proc/spectralfitting.py</span>
+
+<span class="sd">*Imports and python version compliance*:</span>
+<span class="sd">    ::</span>
+
+<span class="sd">        from __future__ import division</span>
+<span class="sd">        from __future__ import print_function</span>
+<span class="sd">        from __future__ import absolute_import</span>
+<span class="sd">        from __future__ import unicode_literals</span>
+
+<span class="sd">        import sys</span>
+<span class="sd">        import warnings</span>
+<span class="sd">        if sys.version &gt; &#39;3&#39;:</span>
+<span class="sd">            long = int</span>
+
+<span class="sd">        import numpy</span>
+
+<span class="sd">*Class usage examples*:</span>
+<span class="sd">        Add examples</span>
+
+<span class="sd">*Revision history*:</span>
+<span class="sd">    | **14 Apr 2016**: Implementation begun by K. Westfall (KBW)</span>
+<span class="sd">    | **19 Apr 2016**: (KBW) First version</span>
+<span class="sd">    | **26 Apr 2016**: (KBW) Moved PPXFFit to a separate file (ppxffit.py)</span>
+<span class="sd">    | **03 Nov 2016**: (KBW) Added USETPL column to stellar kinematics</span>
+<span class="sd">        output table.</span>
+<span class="sd">    | **25 Oct 2017**: (KBW) Added PLY columns to emission-line database</span>
+<span class="sd">    | **02 Feb 2018**: (KBW) Added :func:`select_binned_spectra_to_fit`.</span>
+<span class="sd">    | **15 Mar 2018**: (KBW) Equivalenth width now measured at the</span>
+<span class="sd">        velocity of each line if a redshift is not provided.  See</span>
+<span class="sd">        :func:`measure_equivalent_width`.</span>
+
+<span class="sd">.. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html</span>
+<span class="sd">.. _glob.glob: https://docs.python.org/3.4/library/glob.html</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version</span> <span class="o">&gt;</span> <span class="s1">&#39;3&#39;</span><span class="p">:</span>
+    <span class="n">long</span> <span class="o">=</span> <span class="nb">int</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">from</span> <span class="nn">scipy.interpolate</span> <span class="k">import</span> <span class="n">interp1d</span>
+<span class="kn">import</span> <span class="nn">astropy.constants</span>
+
+<span class="kn">from</span> <span class="nn">..util.bitmask</span> <span class="k">import</span> <span class="n">BitMask</span>
+<span class="kn">from</span> <span class="nn">..util.constants</span> <span class="k">import</span> <span class="n">DAPConstants</span>
+<span class="kn">from</span> <span class="nn">..util</span> <span class="k">import</span> <span class="n">lineprofiles</span>
+<span class="kn">from</span> <span class="nn">..par.emissionlinedb</span> <span class="k">import</span> <span class="n">EmissionLineDB</span>
+<span class="kn">from</span> <span class="nn">.bandpassfilter</span> <span class="k">import</span> <span class="n">emission_line_equivalent_width</span>
+
+<span class="c1"># For debugging</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="k">import</span> <span class="n">pyplot</span>
+
+<span class="c1"># BASE CLASS -----------------------------------------------------------</span>
+<div class="viewcode-block" id="SpectralFitting"><a class="viewcode-back" href="../../../mangadap.proc.spectralfitting.html#mangadap.proc.spectralfitting.SpectralFitting">[docs]</a><span class="k">class</span> <span class="nc">SpectralFitting</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Base class for spectral fitting.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fit_type</span><span class="p">,</span> <span class="n">bitmask</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">par</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fit_type</span> <span class="o">=</span> <span class="n">fit_type</span>
+        <span class="k">if</span> <span class="n">bitmask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">bitmask</span><span class="p">,</span> <span class="n">BitMask</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Input bit mask must have type BitMask.&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bitmask</span> <span class="o">=</span> <span class="n">bitmask</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">par</span> <span class="o">=</span> <span class="n">par</span></div>
+
+
+<span class="c1"># ----------------------------------------------------------------------</span>
+<div class="viewcode-block" id="StellarKinematicsFit"><a class="viewcode-back" href="../../../mangadap.proc.spectralfitting.html#mangadap.proc.spectralfitting.StellarKinematicsFit">[docs]</a><span class="k">class</span> <span class="nc">StellarKinematicsFit</span><span class="p">(</span><span class="n">SpectralFitting</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Base class for fitting stellar kinematics.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fit_method</span><span class="p">,</span> <span class="n">bitmask</span><span class="p">,</span> <span class="n">par</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">SpectralFitting</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;stellar_kinematics&#39;</span><span class="p">,</span> <span class="n">bitmask</span><span class="o">=</span><span class="n">bitmask</span><span class="p">,</span> <span class="n">par</span><span class="o">=</span><span class="n">par</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fit_method</span> <span class="o">=</span> <span class="n">fit_method</span>
+
+<div class="viewcode-block" id="StellarKinematicsFit._per_stellar_kinematics_dtype"><a class="viewcode-back" href="../../../mangadap.proc.spectralfitting.html#mangadap.proc.spectralfitting.StellarKinematicsFit._per_stellar_kinematics_dtype">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_per_stellar_kinematics_dtype</span><span class="p">(</span><span class="n">ntpl</span><span class="p">,</span> <span class="n">nadd</span><span class="p">,</span> <span class="n">nmult</span><span class="p">,</span> <span class="n">nkin</span><span class="p">,</span> <span class="n">mask_dtype</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Construct the record array data type for the output fits</span>
+<span class="sd">        extension.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span> <span class="p">(</span><span class="s1">&#39;BINID&#39;</span><span class="p">,</span><span class="n">numpy</span><span class="o">.</span><span class="n">int</span><span class="p">),</span>
+                 <span class="p">(</span><span class="s1">&#39;BINID_INDEX&#39;</span><span class="p">,</span><span class="n">numpy</span><span class="o">.</span><span class="n">int</span><span class="p">),</span>
+                 <span class="p">(</span><span class="s1">&#39;MASK&#39;</span><span class="p">,</span><span class="n">mask_dtype</span><span class="p">),</span>
+                 <span class="p">(</span><span class="s1">&#39;BEGPIX&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int</span><span class="p">),</span>
+                 <span class="p">(</span><span class="s1">&#39;ENDPIX&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int</span><span class="p">),</span>
+                 <span class="p">(</span><span class="s1">&#39;NPIXTOT&#39;</span><span class="p">,</span><span class="n">numpy</span><span class="o">.</span><span class="n">int</span><span class="p">),</span>
+                 <span class="p">(</span><span class="s1">&#39;NPIXFIT&#39;</span><span class="p">,</span><span class="n">numpy</span><span class="o">.</span><span class="n">int</span><span class="p">),</span>
+                 <span class="p">(</span><span class="s1">&#39;TPLWGT&#39;</span><span class="p">,</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">,(</span><span class="n">ntpl</span><span class="p">,)),</span>
+                 <span class="p">(</span><span class="s1">&#39;TPLWGTERR&#39;</span><span class="p">,</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">,(</span><span class="n">ntpl</span><span class="p">,)),</span>
+                 <span class="p">(</span><span class="s1">&#39;USETPL&#39;</span><span class="p">,</span><span class="n">numpy</span><span class="o">.</span><span class="n">bool</span><span class="p">,(</span><span class="n">ntpl</span><span class="p">,)),</span>
+                 <span class="p">(</span><span class="s1">&#39;ADDCOEF&#39;</span><span class="p">,</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">,(</span><span class="n">nadd</span><span class="p">,))</span> <span class="k">if</span> <span class="n">nadd</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="p">(</span><span class="s1">&#39;ADDCOEF&#39;</span><span class="p">,</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">),</span>
+                 <span class="p">(</span><span class="s1">&#39;MULTCOEF&#39;</span><span class="p">,</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">,(</span><span class="n">nmult</span><span class="p">,))</span> <span class="k">if</span> <span class="n">nmult</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="p">(</span><span class="s1">&#39;MULTCOEF&#39;</span><span class="p">,</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">),</span>
+                 <span class="p">(</span><span class="s1">&#39;KININP&#39;</span><span class="p">,</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">,(</span><span class="mi">2</span><span class="p">,)),</span>
+                 <span class="p">(</span><span class="s1">&#39;KIN&#39;</span><span class="p">,</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">,(</span><span class="n">nkin</span><span class="p">,)),</span>
+                 <span class="p">(</span><span class="s1">&#39;KINERR&#39;</span><span class="p">,</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">,(</span><span class="n">nkin</span><span class="p">,)),</span>
+                 <span class="p">(</span><span class="s1">&#39;CHI2&#39;</span><span class="p">,</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">),</span>
+                 <span class="p">(</span><span class="s1">&#39;RCHI2&#39;</span><span class="p">,</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">),</span>
+                 <span class="p">(</span><span class="s1">&#39;ROBUST_RCHI2&#39;</span><span class="p">,</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">),</span>
+                 <span class="p">(</span><span class="s1">&#39;RMS&#39;</span><span class="p">,</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">),</span>
+                 <span class="p">(</span><span class="s1">&#39;ABSRESID&#39;</span><span class="p">,</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">,(</span><span class="mi">5</span><span class="p">,)),</span>
+                 <span class="p">(</span><span class="s1">&#39;FRMS&#39;</span><span class="p">,</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">),</span>
+                 <span class="p">(</span><span class="s1">&#39;FABSRESID&#39;</span><span class="p">,</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">,(</span><span class="mi">5</span><span class="p">,)),</span>
+                 <span class="p">(</span><span class="s1">&#39;SIGMACORR_SRES&#39;</span><span class="p">,</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">),</span>
+                 <span class="p">(</span><span class="s1">&#39;SIGMACORR_EMP&#39;</span><span class="p">,</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+               <span class="p">]</span></div></div>
+
+<span class="c1"># ----------------------------------------------------------------------</span>
+<div class="viewcode-block" id="CompositionFit"><a class="viewcode-back" href="../../../mangadap.proc.spectralfitting.html#mangadap.proc.spectralfitting.CompositionFit">[docs]</a><span class="k">class</span> <span class="nc">CompositionFit</span><span class="p">(</span><span class="n">SpectralFitting</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Base class for fitting the spectral composition.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fit_method</span><span class="p">,</span> <span class="n">bitmask</span><span class="p">,</span> <span class="n">par</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">SpectralFitting</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;composition&#39;</span><span class="p">,</span> <span class="n">bitmask</span><span class="o">=</span><span class="n">bitmask</span><span class="p">,</span> <span class="n">par</span><span class="o">=</span><span class="n">par</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fit_method</span> <span class="o">=</span> <span class="n">fit_method</span></div>
+
+
+<span class="c1"># ----------------------------------------------------------------------</span>
+<div class="viewcode-block" id="EmissionLineFit"><a class="viewcode-back" href="../../../mangadap.proc.spectralfitting.html#mangadap.proc.spectralfitting.EmissionLineFit">[docs]</a><span class="k">class</span> <span class="nc">EmissionLineFit</span><span class="p">(</span><span class="n">SpectralFitting</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Base class for fitting emission lines.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fit_method</span><span class="p">,</span> <span class="n">bitmask</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">par</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">SpectralFitting</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;emission_line&#39;</span><span class="p">,</span> <span class="n">bitmask</span><span class="o">=</span><span class="n">bitmask</span><span class="p">,</span> <span class="n">par</span><span class="o">=</span><span class="n">par</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fit_method</span> <span class="o">=</span> <span class="n">fit_method</span>
+
+
+<div class="viewcode-block" id="EmissionLineFit._per_emission_line_dtype"><a class="viewcode-back" href="../../../mangadap.proc.spectralfitting.html#mangadap.proc.spectralfitting.EmissionLineFit._per_emission_line_dtype">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_per_emission_line_dtype</span><span class="p">(</span><span class="n">neml</span><span class="p">,</span> <span class="n">nkin</span><span class="p">,</span> <span class="n">mask_dtype</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Construct the record array data type for the output fits</span>
+<span class="sd">        extension.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span> <span class="p">(</span><span class="s1">&#39;BINID&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int</span><span class="p">),</span>
+                 <span class="p">(</span><span class="s1">&#39;BINID_INDEX&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int</span><span class="p">),</span>
+                 <span class="p">(</span><span class="s1">&#39;FIT_INDEX&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int</span><span class="p">,</span> <span class="p">(</span><span class="n">neml</span><span class="p">,)),</span>
+                 <span class="p">(</span><span class="s1">&#39;MASK&#39;</span><span class="p">,</span> <span class="n">mask_dtype</span><span class="p">,</span> <span class="p">(</span><span class="n">neml</span><span class="p">,)),</span>
+                 <span class="p">(</span><span class="s1">&#39;FLUX&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="p">(</span><span class="n">neml</span><span class="p">,)),</span>
+                 <span class="p">(</span><span class="s1">&#39;FLUXERR&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="p">(</span><span class="n">neml</span><span class="p">,)),</span>
+                 <span class="p">(</span><span class="s1">&#39;KIN&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="p">(</span><span class="n">neml</span><span class="p">,</span><span class="n">nkin</span><span class="p">)),</span>
+                 <span class="p">(</span><span class="s1">&#39;KINERR&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="p">(</span><span class="n">neml</span><span class="p">,</span><span class="n">nkin</span><span class="p">)),</span>
+                 <span class="p">(</span><span class="s1">&#39;SIGMACORR&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="p">(</span><span class="n">neml</span><span class="p">,)),</span>
+                 <span class="p">(</span><span class="s1">&#39;SIGMAINST&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="p">(</span><span class="n">neml</span><span class="p">,)),</span>
+                 <span class="p">(</span><span class="s1">&#39;SIGMATPL&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="p">(</span><span class="n">neml</span><span class="p">,)),</span>
+                 <span class="p">(</span><span class="s1">&#39;CONTAPLY&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="p">(</span><span class="n">neml</span><span class="p">,)),</span>
+                 <span class="p">(</span><span class="s1">&#39;CONTMPLY&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="p">(</span><span class="n">neml</span><span class="p">,)),</span>
+                 <span class="p">(</span><span class="s1">&#39;CONTRFIT&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="p">(</span><span class="n">neml</span><span class="p">,)),</span>
+                 <span class="p">(</span><span class="s1">&#39;LINE_PIXC&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int</span><span class="p">,</span> <span class="p">(</span><span class="n">neml</span><span class="p">,)),</span>
+                 <span class="p">(</span><span class="s1">&#39;AMP&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="p">(</span><span class="n">neml</span><span class="p">,)),</span>
+                 <span class="p">(</span><span class="s1">&#39;ANR&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="p">(</span><span class="n">neml</span><span class="p">,)),</span>
+                 <span class="p">(</span><span class="s1">&#39;LINE_NSTAT&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int</span><span class="p">,</span> <span class="p">(</span><span class="n">neml</span><span class="p">,)),</span>
+                 <span class="p">(</span><span class="s1">&#39;LINE_RMS&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="p">(</span><span class="n">neml</span><span class="p">,)),</span>
+                 <span class="p">(</span><span class="s1">&#39;LINE_FRMS&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="p">(</span><span class="n">neml</span><span class="p">,)),</span>
+                 <span class="p">(</span><span class="s1">&#39;LINE_CHI2&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="p">(</span><span class="n">neml</span><span class="p">,)),</span>
+                 <span class="p">(</span><span class="s1">&#39;BMED&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="p">(</span><span class="n">neml</span><span class="p">,)),</span>
+                 <span class="p">(</span><span class="s1">&#39;RMED&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="p">(</span><span class="n">neml</span><span class="p">,)),</span>
+                 <span class="p">(</span><span class="s1">&#39;EWCONT&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="p">(</span><span class="n">neml</span><span class="p">,)),</span>
+                 <span class="p">(</span><span class="s1">&#39;EW&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="p">(</span><span class="n">neml</span><span class="p">,)),</span>
+                 <span class="p">(</span><span class="s1">&#39;EWERR&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="p">(</span><span class="n">neml</span><span class="p">,))</span>
+               <span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="EmissionLineFit.select_binned_spectra_to_fit"><a class="viewcode-back" href="../../../mangadap.proc.spectralfitting.html#mangadap.proc.spectralfitting.EmissionLineFit.select_binned_spectra_to_fit">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">select_binned_spectra_to_fit</span><span class="p">(</span><span class="n">binned_spectra</span><span class="p">,</span> <span class="n">minimum_snr</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">stellar_continuum</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Select binned spectra for which to fit emission lines.</span>
+
+<span class="sd">        .. todo::</span>
+<span class="sd">            This could be based on the moment assessment of the</span>
+<span class="sd">            emission-line S/N instead; for now just based on continuum</span>
+<span class="sd">            S/N.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            binned_spectra</span>
+<span class="sd">                (:class:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra`):</span>
+<span class="sd">                Binned spectra to be fit.</span>
+<span class="sd">            minimum_snr (float): The minimum S/N of the binned spectrum</span>
+<span class="sd">                to fit; see</span>
+<span class="sd">                :func:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra.above_snr_limit`.</span>
+<span class="sd">            stellar_continuum</span>
+<span class="sd">                (:class:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel`):</span>
+<span class="sd">                (**Optional**) Stellar-continuum models that have been</span>
+<span class="sd">                fit to the binned spectra, if available.  The current</span>
+<span class="sd">                function will only return True for spectra that are both</span>
+<span class="sd">                above the S/N limit and have good stellar-continuum</span>
+<span class="sd">                models.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            numpy.ndarray: Boolean vector with the spectra in the</span>
+<span class="sd">            binned_spectra object to fit.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">bins_to_fit</span> <span class="o">=</span> <span class="n">binned_spectra</span><span class="o">.</span><span class="n">above_snr_limit</span><span class="p">(</span><span class="n">minimum_snr</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">stellar_continuum</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">bins_to_fit</span>
+
+        <span class="c1"># Determine which spectra have a valid stellar continuum fit</span>
+        <span class="n">indx</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">stellar_continuum</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">flagged</span><span class="p">(</span>
+                                    <span class="n">stellar_continuum</span><span class="p">[</span><span class="s1">&#39;PAR&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;MASK&#39;</span><span class="p">],</span>
+                                    <span class="n">flag</span><span class="o">=</span><span class="p">[</span> <span class="s1">&#39;NO_FIT&#39;</span><span class="p">,</span> <span class="s1">&#39;INSUFFICIENT_DATA&#39;</span><span class="p">,</span> <span class="s1">&#39;FIT_FAILED&#39;</span><span class="p">]))</span>
+        <span class="n">with_good_continuum</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">binned_spectra</span><span class="o">.</span><span class="n">nbins</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+        <span class="n">with_good_continuum</span><span class="p">[</span><span class="n">stellar_continuum</span><span class="p">[</span><span class="s1">&#39;PAR&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;BINID_INDEX&#39;</span><span class="p">][</span><span class="n">indx</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">bins_to_fit</span> <span class="o">&amp;=</span> <span class="n">with_good_continuum</span>
+
+<span class="c1">#        warnings.warn(&#39;DEBUG!!&#39;)</span>
+<span class="c1">#        k = numpy.argmin(numpy.arange(len(bins_to_fit))[bins_to_fit])</span>
+<span class="c1">#        bins_to_fit[k+1:] = False</span>
+
+        <span class="k">return</span> <span class="n">bins_to_fit</span></div>
+
+
+<div class="viewcode-block" id="EmissionLineFit.get_spectra_to_fit"><a class="viewcode-back" href="../../../mangadap.proc.spectralfitting.html#mangadap.proc.spectralfitting.EmissionLineFit.get_spectra_to_fit">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">get_spectra_to_fit</span><span class="p">(</span><span class="n">spectra</span><span class="p">,</span> <span class="n">pixelmask</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">select</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">error</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the spectra to fit during the emission-line fitting.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            spectra (:class:`mangadap.drpfits.DRPFits`,</span>
+<span class="sd">                :class:`mangadap.proc.spatiallybinnedspectra.SpatiallBinnedSpectra`):</span>
+<span class="sd">                Object with the spectra to fit.  Can be one of the</span>
+<span class="sd">                provided objects.  This works because both have</span>
+<span class="sd">                `copy_to_masked_array` and `do_not_fit_flags` methods.</span>
+<span class="sd">            pixelmask</span>
+<span class="sd">                (:class:`mangadap.util.pixelmask.SpectralPixelMask`):</span>
+<span class="sd">                (**Optional**) Pixel mask to apply.</span>
+<span class="sd">            select (numpy.ndarray): (**Optional**) Select specific</span>
+<span class="sd">                spectra to return.</span>
+<span class="sd">            error (bool): (**Optional**) Return 1-sigma errors instead</span>
+<span class="sd">                of inverse variance.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            numpy.ma.MaskedArray: Two masked arrays: the flux data and</span>
+<span class="sd">            the uncertainties, either as 1-sigma error or the inverse</span>
+<span class="sd">            variance.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Grab the spectra</span>
+        <span class="n">wave</span> <span class="o">=</span> <span class="n">spectra</span><span class="p">[</span><span class="s1">&#39;WAVE&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">flux</span> <span class="o">=</span> <span class="n">spectra</span><span class="o">.</span><span class="n">copy_to_masked_array</span><span class="p">(</span><span class="n">flag</span><span class="o">=</span><span class="n">spectra</span><span class="o">.</span><span class="n">do_not_fit_flags</span><span class="p">())</span>
+        <span class="n">ivar</span> <span class="o">=</span> <span class="n">spectra</span><span class="o">.</span><span class="n">copy_to_masked_array</span><span class="p">(</span><span class="n">ext</span><span class="o">=</span><span class="s1">&#39;IVAR&#39;</span><span class="p">,</span> <span class="n">flag</span><span class="o">=</span><span class="n">spectra</span><span class="o">.</span><span class="n">do_not_fit_flags</span><span class="p">())</span>
+        <span class="n">nspec</span> <span class="o">=</span> <span class="n">flux</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># Convert inverse variance to error</span>
+        <span class="k">if</span> <span class="n">error</span><span class="p">:</span>
+            <span class="n">ivar</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">ivar</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.5</span><span class="p">)</span>
+            <span class="n">flux</span><span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">getmaskarray</span><span class="p">(</span><span class="n">ivar</span><span class="p">)]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">masked</span>
+
+        <span class="c1"># Mask any pixels in the pixel mask</span>
+        <span class="k">if</span> <span class="n">pixelmask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">indx</span> <span class="o">=</span> <span class="n">pixelmask</span><span class="o">.</span><span class="n">boolean</span><span class="p">(</span><span class="n">spectra</span><span class="p">[</span><span class="s1">&#39;WAVE&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">nspec</span><span class="o">=</span><span class="n">nspec</span><span class="p">)</span>
+            <span class="n">flux</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">masked</span>
+            <span class="n">ivar</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">masked</span>
+        
+        <span class="n">_select</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">nspec</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span> <span class="k">if</span> <span class="n">select</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">select</span>
+        <span class="k">return</span> <span class="n">wave</span><span class="p">,</span> <span class="n">flux</span><span class="p">[</span><span class="n">_select</span><span class="p">,:],</span> <span class="n">ivar</span><span class="p">[</span><span class="n">_select</span><span class="p">,:]</span></div>
+
+
+<div class="viewcode-block" id="EmissionLineFit.check_and_prep_input"><a class="viewcode-back" href="../../../mangadap.proc.spectralfitting.html#mangadap.proc.spectralfitting.EmissionLineFit.check_and_prep_input">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">check_and_prep_input</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">ivar</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sres</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">continuum</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                             <span class="n">redshift</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dispersion</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">default_dispersion</span><span class="o">=</span><span class="mf">100.0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check the input used for emission-line measurements.</span>
+
+<span class="sd">        inverse variance is converted to 1-sigma error</span>
+
+<span class="sd">        mask must be a boolean array.</span>
+
+<span class="sd">        sres can be a single vector, but will be returned as an array</span>
+<span class="sd">        with a size that matches flux.</span>
+
+<span class="sd">        output all converted to masked arrays with at least two dimensions</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Check the input wavelength and flux shapes</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">wave</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Input wavelengths must be a single vector.&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Check the mask shape</span>
+        <span class="k">if</span> <span class="n">mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">mask</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">flux</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Input mask must have the same shape as the flux array.&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Convert the input arrays to masked arrays if they aren&#39;t</span>
+        <span class="c1"># already, and compare the array shapes</span>
+        <span class="n">_flux</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">atleast_2d</span><span class="p">(</span><span class="n">flux</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">flux</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">)</span> \
+                                            <span class="k">else</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">(</span><span class="n">flux</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">))</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">wave</span><span class="p">)</span> <span class="o">!=</span> <span class="n">_flux</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Wavelength vector does not match shape of the flux array.&#39;</span><span class="p">)</span>
+        <span class="n">expected_shape</span> <span class="o">=</span> <span class="n">_flux</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">nspec</span> <span class="o">=</span> <span class="n">expected_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">ivar</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">_err</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">_ivar</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">atleast_2d</span><span class="p">(</span><span class="n">ivar</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ivar</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">)</span> \
+                                                <span class="k">else</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">(</span><span class="n">ivar</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">_ivar</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">expected_shape</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Input ivar array must be the same shape as the flux array.&#39;</span><span class="p">)</span>
+            <span class="n">_err</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">/</span><span class="n">_ivar</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">sres</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">_sres</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">_sres</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">sres</span><span class="p">]</span><span class="o">*</span><span class="n">nspec</span><span class="p">)</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sres</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">sres</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">_sres</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">expected_shape</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Input sres array must match the flux array, either as a single &#39;</span>
+                                 <span class="s1">&#39;vector as an 2D array.&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">continuum</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">_continuum</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">_continuum</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">atleast_2d</span><span class="p">(</span><span class="n">continuum</span> \
+                                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">continuum</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">)</span> \
+                                    <span class="k">else</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">(</span><span class="n">continuum</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">_continuum</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">expected_shape</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Input continuum array must be the same shape as the flux array.&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Check the input redshifts and dispersions</span>
+        <span class="n">_redshift</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nspec</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">)</span> <span class="k">if</span> <span class="n">redshift</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">redshift</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">_redshift</span><span class="p">)</span> <span class="o">!=</span> <span class="n">nspec</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Must provide one redshift per input spectrum.&#39;</span><span class="p">)</span>
+
+        <span class="n">_dispersion</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">nspec</span><span class="p">,</span> <span class="n">default_dispersion</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">)</span> \
+                            <span class="k">if</span> <span class="n">dispersion</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">dispersion</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">_dispersion</span><span class="p">)</span> <span class="o">!=</span> <span class="n">nspec</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Must provide one dispersion per input spectrum.&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Return all arrays (even if None)</span>
+        <span class="k">return</span> <span class="n">_flux</span><span class="p">,</span> <span class="n">_err</span><span class="p">,</span> <span class="n">_sres</span><span class="p">,</span> <span class="n">_continuum</span><span class="p">,</span> <span class="n">_redshift</span><span class="p">,</span> <span class="n">_dispersion</span></div>
+
+
+<div class="viewcode-block" id="EmissionLineFit.subtract_continuum"><a class="viewcode-back" href="../../../mangadap.proc.spectralfitting.html#mangadap.proc.spectralfitting.EmissionLineFit.subtract_continuum">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">subtract_continuum</span><span class="p">(</span><span class="n">flux</span><span class="p">,</span> <span class="n">continuum</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Subtract the continuum.  Does not check that shapes match.</span>
+<span class="sd">        Returns the continuum subtracted flux and a boolean array</span>
+<span class="sd">        setting where the continuum is not defined.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Allow continuum to be None</span>
+        <span class="k">if</span> <span class="n">continuum</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">flux</span><span class="p">,</span> <span class="kc">None</span>
+
+        <span class="c1"># Get where the continuum is masked but the spectra are not</span>
+        <span class="n">no_continuum</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">getmaskarray</span><span class="p">(</span><span class="n">flux</span><span class="p">))</span> <span class="o">&amp;</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">getmaskarray</span><span class="p">(</span><span class="n">continuum</span><span class="p">)</span>
+
+        <span class="c1"># Subtract the continuum (ensure output is a masked array)</span>
+        <span class="n">continuum_subtracted_flux</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="n">flux</span><span class="p">,</span> <span class="n">continuum</span><span class="p">)</span>
+
+        <span class="c1"># Unmask regions where only the continuum is masked.</span>
+        <span class="n">continuum_subtracted_flux</span><span class="o">.</span><span class="n">mask</span><span class="p">[</span><span class="n">no_continuum</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">return</span> <span class="n">continuum_subtracted_flux</span><span class="p">,</span> <span class="n">no_continuum</span></div>
+
+
+<div class="viewcode-block" id="EmissionLineFit.instrumental_dispersion"><a class="viewcode-back" href="../../../mangadap.proc.spectralfitting.html#mangadap.proc.spectralfitting.EmissionLineFit.instrumental_dispersion">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">instrumental_dispersion</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">sres</span><span class="p">,</span> <span class="n">restwave</span><span class="p">,</span> <span class="n">cz</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Determine the instrumental dispersion for a set of rest</span>
+<span class="sd">        wavelengths and velocities.</span>
+
+<span class="sd">        Args:</span>
+
+<span class="sd">            wave (numpy.ndarray): Vector with the wavelengths of the</span>
+<span class="sd">                spectrum.</span>
+
+<span class="sd">            sres (numpy.ndarray): Vector with the spectral resolution as</span>
+<span class="sd">                a function of wavelength.</span>
+
+<span class="sd">            restwave (float, numpy.ndarray): Rest wavelengths for a set</span>
+<span class="sd">                of measured lines.</span>
+
+<span class="sd">            cz (float, numpy.ndarray): Redshifts (in km/s) of each or</span>
+<span class="sd">                all lines.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            numpy.ndarray : The instrumental dispersions for each</span>
+<span class="sd">                provided line.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Check input</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">wave</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Input wavelength must be a 1D vector.&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">wave</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">sres</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Input wavelength and resolution vectors must have the same shape.&#39;</span><span class="p">)</span>
+        
+        <span class="n">nwave</span> <span class="o">=</span> <span class="n">wave</span><span class="o">.</span><span class="n">size</span>
+        <span class="n">_restwave</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">restwave</span><span class="p">)</span>
+        <span class="n">nline</span> <span class="o">=</span> <span class="n">_restwave</span><span class="o">.</span><span class="n">size</span>
+        <span class="n">_cz</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">cz</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">_cz</span><span class="o">.</span><span class="n">size</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span> <span class="mi">1</span><span class="p">,</span> <span class="n">nline</span> <span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Must provide single redshift or one redshift per line.&#39;</span><span class="p">)</span>
+        <span class="n">_cz</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">nline</span><span class="p">,</span> <span class="n">cz</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span> <span class="k">if</span> <span class="n">_cz</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">_cz</span>
+
+        <span class="n">interpolator</span> <span class="o">=</span> <span class="n">interp1d</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">sres</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="s1">&#39;extrapolate&#39;</span><span class="p">,</span> <span class="n">assume_sorted</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">astropy</span><span class="o">.</span><span class="n">constants</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;km/s&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
+
+        <span class="n">sinst</span> <span class="o">=</span> <span class="n">c</span> <span class="o">/</span> <span class="n">interpolator</span><span class="p">((</span><span class="n">cz</span><span class="o">/</span><span class="n">c</span> <span class="o">+</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">*</span> <span class="n">restwave</span><span class="p">)</span><span class="o">/</span><span class="n">DAPConstants</span><span class="o">.</span><span class="n">sig2fwhm</span>
+
+<span class="c1">#        pyplot.plot(wave, c/sres/DAPConstants.sig2fwhm, lw=2)</span>
+<span class="c1">#        pyplot.plot(wave, 2.5*astropy.constants.c.to(&#39;km/s&#39;).value/wave/DAPConstants.sig2fwhm,</span>
+<span class="c1">#                    color=&#39;k&#39;, lw=1)</span>
+<span class="c1">#        pyplot.scatter((cz/c + 1.0) * restwave, sinst, color=&#39;C1&#39;, marker=&#39;.&#39;, lw=0, s=100)</span>
+<span class="c1">#        pyplot.show()</span>
+
+        <span class="k">return</span> <span class="n">c</span> <span class="o">/</span> <span class="n">interpolator</span><span class="p">((</span><span class="n">cz</span><span class="o">/</span><span class="n">c</span> <span class="o">+</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">*</span> <span class="n">restwave</span><span class="p">)</span><span class="o">/</span><span class="n">DAPConstants</span><span class="o">.</span><span class="n">sig2fwhm</span></div>
+
+
+<div class="viewcode-block" id="EmissionLineFit.check_emission_line_database"><a class="viewcode-back" href="../../../mangadap.proc.spectralfitting.html#mangadap.proc.spectralfitting.EmissionLineFit.check_emission_line_database">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">check_emission_line_database</span><span class="p">(</span><span class="n">emldb</span><span class="p">,</span> <span class="n">wave</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">check_par</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check the emission-line database.  Modes are checked by</span>
+<span class="sd">        :class:`mangadap.par.emissionlinedb.EmissionLinePar`, and the</span>
+<span class="sd">        indices are checked to be unique by</span>
+<span class="sd">        :class:`mangadap.par.emissionlinedb.EmissionLineDB`.</span>
+
+<span class="sd">            - The type of the object must be</span>
+<span class="sd">              :class:`mangadap.par.emissionlinedb.EmissionLineDB`</span>
+<span class="sd">            - The provided profile type of each line must be a defined</span>
+<span class="sd">              class.</span>
+<span class="sd">            - At least one line must have mode=`f`</span>
+<span class="sd">            - All tied lines must be tied to a line with a correctly</span>
+<span class="sd">              specified index.</span>
+<span class="sd">            - Warnings will be provided for any line with a centroid</span>
+<span class="sd">              that falls outside of the provided wavelength range.</span>
+<span class="sd">            - The database must provide at least one valid line.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            emldb (:class:`mangadap.par.emissionlinedb.EmissionLineDB&#39;):</span>
+<span class="sd">                Emission-line database.</span>
+<span class="sd">            wave (array-like)</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            TypeError: Raised if the provided object is not an instance</span>
+<span class="sd">                of :class:`mangadap.par.emissionlinedb.EmissionLineDB`.</span>
+<span class="sd">            ValueError: Raised if any line has a mode of `x` or if the</span>
+<span class="sd">                database does not provide a valid definition for any</span>
+<span class="sd">                templates.</span>
+<span class="sd">            NameError: Raised if a defined profile type is not known.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Check the object type</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">emldb</span><span class="p">,</span> <span class="n">EmissionLineDB</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Emission lines must be defined using an EmissionLineDB object.&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Check the profile type</span>
+        <span class="n">unique_profiles</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">emldb</span><span class="p">[</span><span class="s1">&#39;profile&#39;</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">u</span> <span class="ow">in</span> <span class="n">unique_profiles</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="nb">eval</span><span class="p">(</span><span class="s1">&#39;lineprofiles.&#39;</span><span class="o">+</span><span class="n">u</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">NameError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span><span class="s1">&#39;Profile type </span><span class="si">{0}</span><span class="s1"> not defined in&#39;</span>
+                                <span class="s1">&#39;mangadap.util.lineprofiles!&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">u</span><span class="p">))</span>
+
+        <span class="c1"># There must be one primary line</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">numpy</span><span class="o">.</span><span class="n">any</span><span class="p">([</span><span class="n">m</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;f&#39;</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">emldb</span><span class="p">[</span><span class="s1">&#39;mode&#39;</span><span class="p">]]):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;At least one line in the database must have mode=f.&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Check that there are lines to fit</span>
+        <span class="n">lines_to_fit</span> <span class="o">=</span> <span class="n">emldb</span><span class="p">[</span><span class="s1">&#39;action&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;f&#39;</span>
+        <span class="k">if</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">lines_to_fit</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;No lines to fit in the database!&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">wave</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">_wave</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">wave</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">_wave</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Provided wavelengths must be a single vector.&#39;</span><span class="p">)</span>
+            <span class="n">lines_in_range</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">rw</span> <span class="o">&gt;</span> <span class="n">_wave</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">and</span> <span class="n">rw</span> <span class="o">&lt;</span> <span class="n">_wave</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> 
+                                                <span class="k">for</span> <span class="n">rw</span> <span class="ow">in</span> <span class="n">emldb</span><span class="p">[</span><span class="s1">&#39;restwave&#39;</span><span class="p">]])</span> 
+            <span class="k">if</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">lines_to_fit</span> <span class="o">&amp;</span> <span class="n">lines_in_range</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;No lines to fit in the provided spectral range!&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Check that the tied line indices exist in the database</span>
+        <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">emldb</span><span class="p">[</span><span class="s1">&#39;mode&#39;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">m</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;f&#39;</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">tied_index</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">m</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+            <span class="k">if</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">emldb</span><span class="p">[</span><span class="s1">&#39;index&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">tied_index</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;No line with index=</span><span class="si">{0}</span><span class="s1"> to tie to!&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tied_index</span><span class="p">))</span>
+
+        <span class="c1"># Only check the provided parameters if requested</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">check_par</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="c1"># Check the provided parameters, fix flags, and bounds</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">emldb</span><span class="o">.</span><span class="n">neml</span><span class="p">):</span>
+            <span class="n">profile</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="s1">&#39;lineprofiles.&#39;</span><span class="o">+</span><span class="n">emldb</span><span class="p">[</span><span class="s1">&#39;profile&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">])</span>
+            <span class="n">npar</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">profile</span><span class="o">.</span><span class="n">param_names</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">emldb</span><span class="p">[</span><span class="s1">&#39;par&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="n">npar</span><span class="o">*</span><span class="n">emldb</span><span class="p">[</span><span class="s1">&#39;ncomp&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Provided </span><span class="si">{0}</span><span class="s1"> parameters, but expected </span><span class="si">{1}</span><span class="s1">.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                  <span class="n">emldb</span><span class="p">[</span><span class="s1">&#39;par&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">npar</span><span class="o">*</span><span class="n">emldb</span><span class="p">[</span><span class="s1">&#39;ncomp&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]))</span>
+            <span class="k">if</span> <span class="n">emldb</span><span class="p">[</span><span class="s1">&#39;fix&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="n">npar</span><span class="o">*</span><span class="n">emldb</span><span class="p">[</span><span class="s1">&#39;ncomp&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Provided </span><span class="si">{0}</span><span class="s1"> fix flags, but expected </span><span class="si">{1}</span><span class="s1">.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                  <span class="n">emldb</span><span class="p">[</span><span class="s1">&#39;fix&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">npar</span><span class="o">*</span><span class="n">emldb</span><span class="p">[</span><span class="s1">&#39;ncomp&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]))</span>
+            <span class="k">if</span> <span class="n">numpy</span><span class="o">.</span><span class="n">any</span><span class="p">([</span><span class="n">f</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">emldb</span><span class="p">[</span><span class="s1">&#39;fix&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="p">]):</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Fix values should only be 0 or 1; non-zero values interpreted as 1.&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">emldb</span><span class="p">[</span><span class="s1">&#39;lobnd&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="n">npar</span><span class="o">*</span><span class="n">emldb</span><span class="p">[</span><span class="s1">&#39;ncomp&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Provided </span><span class="si">{0}</span><span class="s1"> lower bounds, but expected </span><span class="si">{1}</span><span class="s1">.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                  <span class="n">emldb</span><span class="p">[</span><span class="s1">&#39;lobnd&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">npar</span><span class="o">*</span><span class="n">emldb</span><span class="p">[</span><span class="s1">&#39;ncomp&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]))</span>
+            <span class="k">if</span> <span class="n">emldb</span><span class="p">[</span><span class="s1">&#39;hibnd&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="n">npar</span><span class="o">*</span><span class="n">emldb</span><span class="p">[</span><span class="s1">&#39;ncomp&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Provided </span><span class="si">{0}</span><span class="s1"> upper bounds, but expected </span><span class="si">{1}</span><span class="s1">.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                  <span class="n">emldb</span><span class="p">[</span><span class="s1">&#39;hibnd&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">npar</span><span class="o">*</span><span class="n">emldb</span><span class="p">[</span><span class="s1">&#39;ncomp&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]))</span>
+            <span class="k">if</span> <span class="n">emldb</span><span class="p">[</span><span class="s1">&#39;log_bnd&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="n">npar</span><span class="o">*</span><span class="n">emldb</span><span class="p">[</span><span class="s1">&#39;ncomp&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Provided </span><span class="si">{0}</span><span class="s1"> log boundaries designations, but expected &#39;</span>
+                                 <span class="s1">&#39;</span><span class="si">{1}</span><span class="s1">.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">emldb</span><span class="p">[</span><span class="s1">&#39;log_bnd&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">npar</span><span class="o">*</span><span class="n">emldb</span><span class="p">[</span><span class="s1">&#39;ncomp&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]))</span></div>
+
+
+<div class="viewcode-block" id="EmissionLineFit.measure_equivalent_width"><a class="viewcode-back" href="../../../mangadap.proc.spectralfitting.html#mangadap.proc.spectralfitting.EmissionLineFit.measure_equivalent_width">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">measure_equivalent_width</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">emission_lines</span><span class="p">,</span> <span class="n">model_eml_par</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                 <span class="n">redshift</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">bitmask</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">checkdb</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The flux array is expected to have size Nspec x Nwave.</span>
+
+<span class="sd">        Provided previous emission-line fits, this function adds the</span>
+<span class="sd">        equivalent width measurements to the output database.</span>
+
+<span class="sd">        Errors currently *do not* include the errors in the continuum</span>
+<span class="sd">        measurement; only the provided error in the flux.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: Raised if the length of the spectra, errors, or</span>
+<span class="sd">                mask does not match the length of the wavelength array;</span>
+<span class="sd">                raised if the wavelength, redshift, or dispersion arrays</span>
+<span class="sd">                are not 1D vectors; and raised if the number of</span>
+<span class="sd">                redshifts or dispersions is not a single value or the</span>
+<span class="sd">                same as the number of input spectra.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Check the input emission-line database</span>
+        <span class="k">if</span> <span class="n">checkdb</span><span class="p">:</span>
+            <span class="n">EmissionLineFit</span><span class="o">.</span><span class="n">check_emission_line_database</span><span class="p">(</span><span class="n">emission_lines</span><span class="p">)</span>
+
+        <span class="n">nspec</span> <span class="o">=</span> <span class="n">flux</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">nbands</span> <span class="o">=</span> <span class="n">emission_lines</span><span class="o">.</span><span class="n">neml</span>
+        <span class="k">if</span> <span class="n">redshift</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># If the redshift is NOT provided, use the fitted velocity</span>
+            <span class="c1"># for each emission line.  Replace masked measurements with</span>
+            <span class="c1"># mean (unmasked) redshift of that spectrum, or of all</span>
+            <span class="c1"># spectra.</span>
+            <span class="n">_redshift</span> <span class="o">=</span> <span class="n">model_eml_par</span><span class="p">[</span><span class="s1">&#39;KIN&#39;</span><span class="p">][:,:,</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="n">astropy</span><span class="o">.</span><span class="n">constants</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;km/s&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
+            <span class="n">_redshift</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">(</span><span class="n">_redshift</span><span class="p">,</span>
+                                             <span class="n">mask</span><span class="o">=</span><span class="n">bitmask</span><span class="o">.</span><span class="n">flagged</span><span class="p">(</span><span class="n">model_eml_par</span><span class="p">[</span><span class="s1">&#39;MASK&#39;</span><span class="p">]))</span>
+            <span class="n">mean_redshift</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">_redshift</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">filled</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">_redshift</span><span class="p">))</span>
+            <span class="n">mean_redshift</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">mean_redshift</span><span class="p">]</span><span class="o">*</span><span class="n">nbands</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+            <span class="n">_redshift</span><span class="p">[</span><span class="n">_redshift</span><span class="o">.</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">mean_redshift</span><span class="p">[</span><span class="n">_redshift</span><span class="o">.</span><span class="n">mask</span><span class="p">]</span>
+            <span class="n">_redshift</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">_redshift</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Use provided data and check its shape</span>
+            <span class="n">_redshift</span> <span class="o">=</span> <span class="n">redshift</span>
+            <span class="k">if</span> <span class="n">_redshift</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">_redshift</span><span class="p">)</span> <span class="o">!=</span> <span class="n">nspec</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Must provide at least one redshift per input spectrum.&#39;</span><span class="p">)</span>
+                <span class="n">_redshift</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">_redshift</span><span class="p">]</span><span class="o">*</span><span class="n">nbands</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+            <span class="k">if</span> <span class="n">_redshift</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="n">_redshift</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="n">nspec</span><span class="p">,</span><span class="n">nbands</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Provided redshift array does not match spectra and bands.&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Calculate the wavelength at which to measure the continuum,</span>
+        <span class="c1"># matching what is done by</span>
+        <span class="c1"># :class:`mangadap.proc.emissionlineMoments.EmissionLineMoments`</span>
+        <span class="n">line_center</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">_redshift</span><span class="p">)</span><span class="o">*</span><span class="n">emission_lines</span><span class="p">[</span><span class="s1">&#39;restwave&#39;</span><span class="p">][</span><span class="kc">None</span><span class="p">,:]</span>
+
+        <span class="c1"># Compute the equivalent widths.  The checking done by</span>
+        <span class="c1"># EmissionLineFit.check_and_prep_input is *identical* to what is</span>
+        <span class="c1"># done within emission_line_equivalent_width()</span>
+        <span class="n">model_eml_par</span><span class="p">[</span><span class="s1">&#39;BMED&#39;</span><span class="p">],</span> <span class="n">model_eml_par</span><span class="p">[</span><span class="s1">&#39;RMED&#39;</span><span class="p">],</span> <span class="n">pos</span><span class="p">,</span> <span class="n">model_eml_par</span><span class="p">[</span><span class="s1">&#39;EWCONT&#39;</span><span class="p">],</span> \
+                <span class="n">model_eml_par</span><span class="p">[</span><span class="s1">&#39;EW&#39;</span><span class="p">],</span> <span class="n">model_eml_par</span><span class="p">[</span><span class="s1">&#39;EWERR&#39;</span><span class="p">]</span> \
+                        <span class="o">=</span> <span class="n">emission_line_equivalent_width</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">emission_lines</span><span class="p">[</span><span class="s1">&#39;blueside&#39;</span><span class="p">],</span>
+                                                         <span class="n">emission_lines</span><span class="p">[</span><span class="s1">&#39;redside&#39;</span><span class="p">],</span> <span class="n">line_center</span><span class="p">,</span>
+                                                         <span class="n">model_eml_par</span><span class="p">[</span><span class="s1">&#39;FLUX&#39;</span><span class="p">],</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">,</span>
+                                                         <span class="n">redshift</span><span class="o">=</span><span class="n">_redshift</span><span class="p">,</span>
+                                                         <span class="n">line_flux_err</span><span class="o">=</span><span class="n">model_eml_par</span><span class="p">[</span><span class="s1">&#39;FLUXERR&#39;</span><span class="p">])</span>
+
+        <span class="c1"># Flag non-positive measurements</span>
+        <span class="k">if</span> <span class="n">bitmask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">model_eml_par</span><span class="p">[</span><span class="s1">&#39;MASK&#39;</span><span class="p">][</span><span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">pos</span><span class="p">)]</span> \
+                    <span class="o">=</span> <span class="n">bitmask</span><span class="o">.</span><span class="n">turn_on</span><span class="p">(</span><span class="n">model_eml_par</span><span class="p">[</span><span class="s1">&#39;MASK&#39;</span><span class="p">][</span><span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">pos</span><span class="p">)],</span>
+                                      <span class="s1">&#39;NON_POSITIVE_CONTINUUM&#39;</span><span class="p">)</span></div></div>
+
+
+
+</pre></div>
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, SDSS-IV/MaNGA Pipeline Group.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'2.2.2',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

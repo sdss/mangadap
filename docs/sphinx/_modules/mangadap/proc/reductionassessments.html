@@ -1,0 +1,1122 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mangadap.proc.reductionassessments &mdash; mangadap 2.2.2 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../search.html"/>
+    <link rel="top" title="mangadap 2.2.2 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> mangadap
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../mangadap.html">mangadap package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">mangadap</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>mangadap.proc.reductionassessments</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for mangadap.proc.reductionassessments</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Licensed under a 3-clause BSD style license - see LICENSE.rst</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Class that performs a number of assessments of a DRP file needed for</span>
+<span class="sd">handling of the data by the DAP.  These assessments need only be done</span>
+<span class="sd">once per DRP data file.</span>
+
+<span class="sd">*License*:</span>
+<span class="sd">    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group</span>
+<span class="sd">        Licensed under BSD 3-clause license - see LICENSE.rst</span>
+
+<span class="sd">*Source location*:</span>
+<span class="sd">    $MANGADAP_DIR/python/mangadap/proc/reductionassessments.py</span>
+
+<span class="sd">*Imports and python version compliance*:</span>
+<span class="sd">    ::</span>
+
+<span class="sd">        from __future__ import division</span>
+<span class="sd">        from __future__ import print_function</span>
+<span class="sd">        from __future__ import absolute_import</span>
+<span class="sd">        from __future__ import unicode_literals</span>
+
+<span class="sd">        import sys</span>
+<span class="sd">        import warnings</span>
+<span class="sd">        if sys.version &gt; &#39;3&#39;:</span>
+<span class="sd">            long = int</span>
+
+<span class="sd">        import glob</span>
+<span class="sd">        import os</span>
+<span class="sd">        import time</span>
+<span class="sd">        import logging</span>
+<span class="sd">        import numpy</span>
+
+<span class="sd">        from scipy import sparse</span>
+<span class="sd">        from pydl.goddard.astro import airtovac</span>
+<span class="sd">        from astropy.io import fits</span>
+
+<span class="sd">        from ..drpfits import DRPFits</span>
+<span class="sd">        from ..par.parset import ParSet</span>
+<span class="sd">        from ..config.defaults import default_dap_source, default_dap_common_path</span>
+<span class="sd">        from ..config.defaults import default_dap_file_name</span>
+<span class="sd">        from ..util.covariance import Covariance</span>
+<span class="sd">        from ..util.geometry import SemiMajorAxisCoo</span>
+<span class="sd">        from ..util.fileio import init_record_array, rec_to_fits_type, write_hdu</span>
+<span class="sd">        from ..util.log import log_output</span>
+<span class="sd">        from ..util.parser import DefaultConfig</span>
+<span class="sd">        from .util import select_proc_method</span>
+
+<span class="sd">*Class usage examples*:</span>
+<span class="sd">    Add examples!</span>
+
+<span class="sd">*Revision history*:</span>
+<span class="sd">    | **24 Mar 2016**: Implementation begun by K. Westfall (KBW)</span>
+<span class="sd">    | **11 May 2016**: (KBW) Switch to using</span>
+<span class="sd">        `pydl.goddard.astro.airtovac`_ instead of internal function</span>
+<span class="sd">    | **19 May 2016**: (KBW) Added loggers and quiet keyword arguments</span>
+<span class="sd">        to :class:`ReductionAssessment`, removed verbose </span>
+<span class="sd">    | **23 Feb 2017**: (KBW) Use DAPFitsUtil read and write functions.</span>
+<span class="sd">    | **27 Feb 2017**: (KBW) Use DefaultConfig.</span>
+<span class="sd">    | **17 May 2017**: (KBW) Added ability to use a response function</span>
+<span class="sd">        for the flux statistics.</span>
+
+<span class="sd">.. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html</span>
+<span class="sd">.. _glob.glob: https://docs.python.org/3.4/library/glob.html</span>
+<span class="sd">.. _pydl.goddard.astro.airtovac: http://pydl.readthedocs.io/en/stable/api/pydl.goddard.astro.airtovac.html#pydl.goddard.astro.airtovac</span>
+<span class="sd">.. _logging.Logger: https://docs.python.org/3/library/logging.html</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version</span> <span class="o">&gt;</span> <span class="s1">&#39;3&#39;</span><span class="p">:</span>
+    <span class="n">long</span> <span class="o">=</span> <span class="nb">int</span>
+
+<span class="kn">import</span> <span class="nn">glob</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="k">import</span> <span class="n">sparse</span>
+<span class="kn">from</span> <span class="nn">pydl.goddard.astro</span> <span class="k">import</span> <span class="n">airtovac</span>
+<span class="kn">from</span> <span class="nn">astropy.io</span> <span class="k">import</span> <span class="n">fits</span>
+
+<span class="kn">from</span> <span class="nn">..drpfits</span> <span class="k">import</span> <span class="n">DRPFits</span>
+<span class="kn">from</span> <span class="nn">..par.parset</span> <span class="k">import</span> <span class="n">ParSet</span>
+<span class="kn">from</span> <span class="nn">..config.defaults</span> <span class="k">import</span> <span class="n">default_dap_source</span><span class="p">,</span> <span class="n">default_dap_common_path</span>
+<span class="kn">from</span> <span class="nn">..config.defaults</span> <span class="k">import</span> <span class="n">default_dap_file_name</span>
+<span class="kn">from</span> <span class="nn">..util.fitsutil</span> <span class="k">import</span> <span class="n">DAPFitsUtil</span>
+<span class="kn">from</span> <span class="nn">..util.covariance</span> <span class="k">import</span> <span class="n">Covariance</span>
+<span class="kn">from</span> <span class="nn">..util.geometry</span> <span class="k">import</span> <span class="n">SemiMajorAxisCoo</span>
+<span class="kn">from</span> <span class="nn">..util.fileio</span> <span class="k">import</span> <span class="n">init_record_array</span><span class="p">,</span> <span class="n">rec_to_fits_type</span><span class="p">,</span> <span class="n">create_symlink</span>
+<span class="kn">from</span> <span class="nn">..util.log</span> <span class="k">import</span> <span class="n">log_output</span>
+<span class="kn">from</span> <span class="nn">..util.parser</span> <span class="k">import</span> <span class="n">DefaultConfig</span>
+<span class="kn">from</span> <span class="nn">.util</span> <span class="k">import</span> <span class="n">select_proc_method</span>
+
+<span class="c1"># Used for testing/debugging</span>
+<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="k">import</span> <span class="n">pyplot</span>
+<span class="c1">#from memory_profiler import profile</span>
+
+<span class="c1"># Add strict versioning</span>
+<span class="c1"># from distutils.version import StrictVersion</span>
+
+<div class="viewcode-block" id="ReductionAssessmentDef"><a class="viewcode-back" href="../../../mangadap.proc.reductionassessments.html#mangadap.proc.reductionassessments.ReductionAssessmentDef">[docs]</a><span class="k">class</span> <span class="nc">ReductionAssessmentDef</span><span class="p">(</span><span class="n">ParSet</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class with parameters used to define how the reduction assessments</span>
+<span class="sd">    are performed.  At the moment this is just a set of parameters that</span>
+<span class="sd">    define how the S/N is calculated.</span>
+
+<span class="sd">    See :class:`mangadap.par.parset.ParSet` for attributes.</span>
+
+<span class="sd">    .. todo::</span>
+
+<span class="sd">        - Allow for different ways of calculating covariance?</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        key (str): Keyword to distinguish the assessment method.</span>
+<span class="sd">        waverange (numpy.ndarray, list) : A two-element vector with the</span>
+<span class="sd">            starting and ending wavelength (angstroms in VACUUM) within</span>
+<span class="sd">            which to calculate the signal-to-noise</span>
+<span class="sd">        response_func (array-like): A two-column array with a response</span>
+<span class="sd">            function to use for the S/N calculation.  The columns must</span>
+<span class="sd">            br the wavelength and amplitude of the response function,</span>
+<span class="sd">            respectively.</span>
+<span class="sd">        covariance (str) : Type of covariance measurement to produce</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">waverange</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">response_func</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">covariance</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="c1"># Perform some checks of the input</span>
+        <span class="n">ar_like</span> <span class="o">=</span> <span class="p">[</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="nb">list</span> <span class="p">]</span>
+        <span class="c1">#covar_opt = covariance_options()</span>
+        
+        <span class="n">pars</span> <span class="o">=</span>   <span class="p">[</span> <span class="s1">&#39;key&#39;</span><span class="p">,</span> <span class="s1">&#39;waverange&#39;</span><span class="p">,</span> <span class="s1">&#39;response_func&#39;</span><span class="p">,</span> <span class="s1">&#39;covariance&#39;</span> <span class="p">]</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="p">[</span>   <span class="n">key</span><span class="p">,</span>   <span class="n">waverange</span><span class="p">,</span>   <span class="n">response_func</span><span class="p">,</span>   <span class="n">covariance</span> <span class="p">]</span>
+        <span class="c1">#options = [ None,        None,    covar_opt ]</span>
+        <span class="n">dtypes</span> <span class="o">=</span> <span class="p">[</span>   <span class="nb">str</span><span class="p">,</span>     <span class="n">ar_like</span><span class="p">,</span>         <span class="n">ar_like</span><span class="p">,</span>         <span class="nb">bool</span> <span class="p">]</span>
+
+        <span class="c1">#ParSet.__init__(self, pars, values=values, options=options, dtypes=dtypes)</span>
+        <span class="n">ParSet</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pars</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="n">values</span><span class="p">,</span> <span class="n">dtypes</span><span class="o">=</span><span class="n">dtypes</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="validate_reduction_assessment_config"><a class="viewcode-back" href="../../../mangadap.proc.reductionassessments.html#mangadap.proc.reductionassessments.validate_reduction_assessment_config">[docs]</a><span class="k">def</span> <span class="nf">validate_reduction_assessment_config</span><span class="p">(</span><span class="n">cnfg</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">    Validate the :class:`mangadap.util.parser.DefaultConfig` object that</span>
+<span class="sd">    provides the reduction-assessment method parameters.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        cnfg (:class:`mangadap.util.parser.DefaultConfig`): Object with</span>
+<span class="sd">            the reduction-assessment method parameters needed by</span>
+<span class="sd">            :class:`mangadap.proc.reductionassessments.ReductionAssessmentDef`.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        bool: Booleans that specify how the reduction assessment should</span>
+<span class="sd">        be constructed.  The flags specify to use (1) the wavelength</span>
+<span class="sd">        range, (2) a bandpass filter parameter file, or (3) a file with</span>
+<span class="sd">        a filter response function.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        KeyError: Raised if required keyword does not exist.</span>
+<span class="sd">        ValueError: Raised if keys have unacceptable values.</span>
+<span class="sd">        FileNotFoundError: Raised if a file is specified but could not</span>
+<span class="sd">            be found.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Check for required keywords</span>
+    <span class="n">required_keywords</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;key&#39;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">cnfg</span><span class="o">.</span><span class="n">all_required</span><span class="p">(</span><span class="n">required_keywords</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s1">&#39;Keywords </span><span class="si">{0}</span><span class="s1"> must all have valid values.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">required_keywords</span><span class="p">))</span>
+
+    <span class="n">def_range</span> <span class="o">=</span> <span class="n">cnfg</span><span class="o">.</span><span class="n">keyword_specified</span><span class="p">(</span><span class="s1">&#39;wave_limits&#39;</span><span class="p">)</span>
+    <span class="n">def_response</span> <span class="o">=</span> <span class="n">cnfg</span><span class="o">.</span><span class="n">keyword_specified</span><span class="p">(</span><span class="s1">&#39;response_function_file&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">([</span> <span class="n">def_range</span><span class="p">,</span> <span class="n">def_response</span><span class="p">]</span> <span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Method undefined.  Must provide either </span><span class="se">\&#39;</span><span class="s1">waverange</span><span class="se">\&#39;</span><span class="s1"> or &#39;</span>
+                         <span class="s1">&#39;</span><span class="se">\&#39;</span><span class="s1">response_function_file</span><span class="se">\&#39;</span><span class="s1">.&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">def_response</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">cnfg</span><span class="p">[</span><span class="s1">&#39;response_function_file&#39;</span><span class="p">]):</span>
+        <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="s1">&#39;response_function_file does not exist: </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                <span class="n">cnfg</span><span class="p">[</span><span class="s1">&#39;response_function_file&#39;</span><span class="p">]))</span>
+
+    <span class="k">return</span> <span class="n">def_range</span><span class="p">,</span> <span class="n">def_response</span></div>
+
+
+<div class="viewcode-block" id="available_reduction_assessments"><a class="viewcode-back" href="../../../mangadap.proc.reductionassessments.html#mangadap.proc.reductionassessments.available_reduction_assessments">[docs]</a><span class="k">def</span> <span class="nf">available_reduction_assessments</span><span class="p">(</span><span class="n">dapsrc</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return the list of available reduction assessment methods.  To get a</span>
+<span class="sd">    list of default methods provided by the DAP do::</span>
+
+<span class="sd">        from mangadap.proc.reductionassessments import available_reduction_assessments</span>
+<span class="sd">        rdx_methods = available_reduction_assessments()</span>
+<span class="sd">        print(rdx_methods)</span>
+
+<span class="sd">    Each element in the `rdx_methods` list is an instance of</span>
+<span class="sd">    :class:`ReductionAssessmentDef`, which  is printed using the</span>
+<span class="sd">    :class:`ParSet` base class representation function.</span>
+
+<span class="sd">    New methods can be included by adding ini config files to</span>
+<span class="sd">    `$MANGADAP_DIR/python/mangadap/config/reduction_assessments`.  See</span>
+<span class="sd">    an example file at</span>
+<span class="sd">    `$MANGADAP_DIR/python/mangadap/config/example_ini/example_reduction_assessment_config.ini`.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        dapsrc (str): (**Optional**) Root path to the DAP source</span>
+<span class="sd">            directory (i.e., $MANGADAP_DIR).  If not provided, the</span>
+<span class="sd">            default is defined by</span>
+<span class="sd">            :func:`mangadap.config.defaults.default_dap_source`.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        list: A list of :func:`ReductionAssessmentDef` objects, each</span>
+<span class="sd">        defining a separate assessment method.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        NotADirectoryError: Raised if the provided or default</span>
+<span class="sd">            *dapsrc* is not a directory.</span>
+<span class="sd">        OSError/IOError: Raised if no reduction assessment configuration</span>
+<span class="sd">            files could be found.</span>
+<span class="sd">        KeyError: Raised if the assessment method keywords are not all</span>
+<span class="sd">            unique.</span>
+<span class="sd">        NameError: Raised if either ConfigParser or</span>
+<span class="sd">            ExtendedInterpolation are not correctly imported.  The</span>
+<span class="sd">            latter is a *Python 3 only module*!</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Check the source directory exists</span>
+    <span class="n">dapsrc</span> <span class="o">=</span> <span class="n">default_dap_source</span><span class="p">()</span> <span class="k">if</span> <span class="n">dapsrc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotADirectoryError</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1"> does not exist!&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">))</span>
+
+    <span class="c1"># Check the configuration files exist</span>
+    <span class="n">ini_files</span> <span class="o">=</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">dapsrc</span><span class="o">+</span><span class="s1">&#39;/python/mangadap/config/reduction_assessments/*.ini&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ini_files</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;Could not find any configuration files in </span><span class="si">{0}</span><span class="s1"> !&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                      <span class="n">dapsrc</span><span class="o">+</span><span class="s1">&#39;/python/mangadap/config/reduction_assessments&#39;</span><span class="p">))</span>
+
+    <span class="c1"># Build the list of library definitions</span>
+    <span class="n">assessment_methods</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">ini_files</span><span class="p">:</span>
+        <span class="c1"># Read the config file</span>
+        <span class="n">cnfg</span> <span class="o">=</span> <span class="n">DefaultConfig</span><span class="p">(</span><span class="n">f</span><span class="o">=</span><span class="n">f</span><span class="p">,</span> <span class="n">interpolate</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="c1"># Ensure it has the necessary elements to define the template</span>
+        <span class="c1"># library</span>
+<span class="c1">#        def_range, def_par, def_response = validate_reduction_assessment_config(cnfg)</span>
+        <span class="n">def_range</span><span class="p">,</span> <span class="n">def_response</span> <span class="o">=</span> <span class="n">validate_reduction_assessment_config</span><span class="p">(</span><span class="n">cnfg</span><span class="p">)</span>
+        <span class="n">in_vacuum</span> <span class="o">=</span> <span class="n">cnfg</span><span class="o">.</span><span class="n">getbool</span><span class="p">(</span><span class="s1">&#39;in_vacuum&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">def_range</span><span class="p">:</span>
+            <span class="n">waverange</span> <span class="o">=</span> <span class="n">cnfg</span><span class="o">.</span><span class="n">getlist</span><span class="p">(</span><span class="s1">&#39;wave_limits&#39;</span><span class="p">,</span> <span class="n">evaluate</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">in_vacuum</span><span class="p">:</span>
+                <span class="n">waverange</span> <span class="o">=</span> <span class="n">airtovac</span><span class="p">(</span><span class="n">waverange</span><span class="p">)</span>
+            <span class="n">assessment_methods</span> <span class="o">+=</span> <span class="p">[</span> <span class="n">ReductionAssessmentDef</span><span class="p">(</span><span class="n">cnfg</span><span class="p">[</span><span class="s1">&#39;key&#39;</span><span class="p">],</span> <span class="n">waverange</span><span class="o">=</span><span class="n">waverange</span><span class="p">,</span>
+                                                           <span class="n">covariance</span><span class="o">=</span><span class="n">cnfg</span><span class="o">.</span><span class="n">getbool</span><span class="p">(</span><span class="s1">&#39;covariance&#39;</span><span class="p">,</span>
+                                                                            <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span> <span class="p">]</span>
+        <span class="k">elif</span> <span class="n">def_response</span><span class="p">:</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">genfromtxt</span><span class="p">(</span><span class="n">cnfg</span><span class="p">[</span><span class="s1">&#39;response_function_file&#39;</span><span class="p">])[:,:</span><span class="mi">2</span><span class="p">]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">in_vacuum</span><span class="p">:</span>
+                <span class="n">response</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">airtovac</span><span class="p">(</span><span class="n">response</span><span class="p">[:,</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">assessment_methods</span> <span class="o">+=</span> <span class="p">[</span> <span class="n">ReductionAssessmentDef</span><span class="p">(</span><span class="n">cnfg</span><span class="p">[</span><span class="s1">&#39;key&#39;</span><span class="p">],</span> <span class="n">response_func</span><span class="o">=</span><span class="n">response</span><span class="p">,</span>
+                                                           <span class="n">covariance</span><span class="o">=</span><span class="n">cnfg</span><span class="o">.</span><span class="n">getbool</span><span class="p">(</span><span class="s1">&#39;covariance&#39;</span><span class="p">,</span>
+                                                                                   <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span> <span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Must define a wavelength range or a response function.&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Check the keywords of the libraries are all unique</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span> <span class="n">method</span><span class="p">[</span><span class="s1">&#39;key&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">method</span> <span class="ow">in</span> <span class="n">assessment_methods</span> <span class="p">])</span> <span class="p">))</span> \
+            <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">assessment_methods</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s1">&#39;Reduction assessment method keywords are not all unique!&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Return the default list of assessment methods</span>
+    <span class="k">return</span> <span class="n">assessment_methods</span></div>
+
+
+<div class="viewcode-block" id="ReductionAssessment"><a class="viewcode-back" href="../../../mangadap.proc.reductionassessments.html#mangadap.proc.reductionassessments.ReductionAssessment">[docs]</a><span class="k">class</span> <span class="nc">ReductionAssessment</span><span class="p">:</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Object used to perform and store assessments of a DRP file needed</span>
+<span class="sd">    for handling of the data by the DAP.  These assessments need only be</span>
+<span class="sd">    done once per DRP data file.</span>
+
+<span class="sd">    See :func:`compute` for the provided data.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        method_key (str): Keyword selecting the assessment method to</span>
+<span class="sd">            use.</span>
+<span class="sd">        drpf (:class:`mangadap.drpfits.DRPFits`): DRP file (object) to</span>
+<span class="sd">            use for the assessments.</span>
+<span class="sd">        pa (float): (**Optional**) On-sky position angle of the major</span>
+<span class="sd">            axis used to calculate elliptical, semi-major-axis</span>
+<span class="sd">            coordinates, defined as the angle from North through East</span>
+<span class="sd">            and denoted :math:`\phi_0`.  Default is 0.0.</span>
+<span class="sd">        ell (float): (**Optional**) Ellipticity defined as</span>
+<span class="sd">            :math:`\varepsilon=1-b/a`, based on the semi-minor to</span>
+<span class="sd">            semi-major axis ratio (:math:`b/a`) of the isophotal ellipse</span>
+<span class="sd">            used to calculate elliptical, semi-major-axis coordinates.</span>
+<span class="sd">            Default is 0.0.</span>
+<span class="sd">        method_list (list): (**Optional**) List of</span>
+<span class="sd">            :class:`ReductionAssessmentDef` objects that define the</span>
+<span class="sd">            parameters required to perform the assessments of the DRP</span>
+<span class="sd">            file.  The *method_key* must select one of these objects.</span>
+<span class="sd">            Default is to construct list using</span>
+<span class="sd">            :func:`available_reduction_assessments`.</span>
+<span class="sd">        dapver (str): (**Optional**) DAP version, which is used to</span>
+<span class="sd">            define the default DAP analysis path.  Default is defined by</span>
+<span class="sd">            :func:`mangadap.config.defaults.default_dap_version`</span>
+<span class="sd">        analysis_path (str): (**Optional**) The path to the top level</span>
+<span class="sd">            directory containing the DAP output files for a given DRP</span>
+<span class="sd">            and DAP version.  Default is defined by</span>
+<span class="sd">            :func:`mangadap.config.defaults.default_analysis_path`.</span>
+<span class="sd">        directory_path (str): (**Optional**) The exact path for the</span>
+<span class="sd">            output file.  Default is defined by</span>
+<span class="sd">            :func:`mangadap.config.defaults.default_dap_common_path`.</span>
+<span class="sd">        output_file (str): (**Optional**) The name of the file for the</span>
+<span class="sd">            computed assessments.  The full path of the output file will</span>
+<span class="sd">            be :attr:`directory_path`/:attr:`output_file`.  Default is</span>
+<span class="sd">            defined by</span>
+<span class="sd">            :func:`mangadap.config.defaults.default_dap_file_name`.</span>
+<span class="sd">        hardcopy (bool): (**Optional**) Flag to write the data to a fits</span>
+<span class="sd">            file.  Default is True.</span>
+<span class="sd">        symlink_dir (str): (**Optional**) Create a symlink to the file</span>
+<span class="sd">            in this directory.  Default is for no symlink.</span>
+<span class="sd">        clobber (bool): (**Optional**) If the output file already</span>
+<span class="sd">            exists, this will force the assessments to be redone and the</span>
+<span class="sd">            output file to be overwritten.  Default is False.</span>
+<span class="sd">        checksum (bool): (**Optional**) Compare the checksum when</span>
+<span class="sd">            reading the data.</span>
+<span class="sd">        loggers (list): (**Optional**) List of `logging.Logger`_ objects</span>
+<span class="sd">            to log progress; ignored if quiet=True.  Logging is done</span>
+<span class="sd">            using :func:`mangadap.util.log.log_output`.  Default is no</span>
+<span class="sd">            logging.</span>
+<span class="sd">        quiet (bool): (**Optional**) Suppress all terminal and logging</span>
+<span class="sd">            output.  Default is False.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        method (:class:`ReductionAssessmentDef`):  Parameters defining the</span>
+<span class="sd">            method to use for the reduction assessments.</span>
+<span class="sd">        drpf (:class:`mangadap.drpfits.DRPFits`): DRP file (object) with</span>
+<span class="sd">            which the template library is associated for analysis</span>
+<span class="sd">        pa (float): On-sky position angle of the major axis used to</span>
+<span class="sd">            calculate elliptical, semi-major-axis coordinates, defined</span>
+<span class="sd">            as the angle from North through East and denoted</span>
+<span class="sd">            :math:`\phi_0`.</span>
+<span class="sd">        ell (float): Ellipticity defined as :math:`\varepsilon=1-b/a`,</span>
+<span class="sd">            based on the semi-minor to semi-major axis ratio</span>
+<span class="sd">            (:math:`b/a`) of the isophotal ellipse used to calculate</span>
+<span class="sd">            elliptical, semi-major-axis coordinates.</span>
+<span class="sd">        directory_path (str): The exact path for the output file.</span>
+<span class="sd">            Default is defined by</span>
+<span class="sd">            :func:`mangadap.config.defaults.default_dap_common_path`.</span>
+<span class="sd">        output_file (str): The name of the file for the computed</span>
+<span class="sd">            assessments.  The full path of the output file will be</span>
+<span class="sd">            :attr:`directory_path`/:attr:`output_file`.  Default is</span>
+<span class="sd">            defined by :func:`_set_paths`.</span>
+<span class="sd">        hardcopy (bool): Flag to keep a hardcopy of the data by writing</span>
+<span class="sd">            the data to a fits file.</span>
+<span class="sd">        symlink_dir (str): Symlink created to the file in this directory</span>
+<span class="sd">        hdu (`astropy.io.fits.hdu.hdulist.HDUList`_): HDUList with the</span>
+<span class="sd">            data, with columns as described above.</span>
+<span class="sd">        correlation (:class:`mangadap.util.covariance.Covariance`):</span>
+<span class="sd">            Covariance matrix for the mean flux measurements, if</span>
+<span class="sd">            calculated.</span>
+<span class="sd">        loggers (list): List of `logging.Logger`_ objects to log</span>
+<span class="sd">            progress; ignored if quiet=True.  Logging is done using</span>
+<span class="sd">            :func:`mangadap.util.log.log_output`.</span>
+<span class="sd">        quiet (bool): Suppress all terminal and logging output.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+<span class="c1">#    @profile</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method_key</span><span class="p">,</span> <span class="n">drpf</span><span class="p">,</span> <span class="n">pa</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">ell</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">method_list</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dapsrc</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">dapver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">analysis_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">directory_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">hardcopy</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">symlink_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">clobber</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">checksum</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">loggers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">quiet</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+                 
+        <span class="bp">self</span><span class="o">.</span><span class="n">loggers</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">quiet</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="c1"># Define the method properties</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_define_method</span><span class="p">(</span><span class="n">method_key</span><span class="p">,</span> <span class="n">method_list</span><span class="o">=</span><span class="n">method_list</span><span class="p">,</span> <span class="n">dapsrc</span><span class="o">=</span><span class="n">dapsrc</span><span class="p">)</span>
+
+        <span class="c1"># Set in compute via _set_paths</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">drpf</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># Define the output directory and file</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">directory_path</span> <span class="o">=</span> <span class="kc">None</span>      <span class="c1"># Set in _set_paths</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_file</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hardcopy</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">symlink_dir</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># Initialize the objects used in the assessments</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pa</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ell</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">checksum</span> <span class="o">=</span> <span class="n">checksum</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">correlation</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">covar_wave</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">covar_channel</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># Run the assessments of the DRP file</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">drpf</span><span class="p">,</span> <span class="n">pa</span><span class="o">=</span><span class="n">pa</span><span class="p">,</span> <span class="n">ell</span><span class="o">=</span><span class="n">ell</span><span class="p">,</span> <span class="n">dapver</span><span class="o">=</span><span class="n">dapver</span><span class="p">,</span> <span class="n">analysis_path</span><span class="o">=</span><span class="n">analysis_path</span><span class="p">,</span>
+                     <span class="n">directory_path</span><span class="o">=</span><span class="n">directory_path</span><span class="p">,</span> <span class="n">output_file</span><span class="o">=</span><span class="n">output_file</span><span class="p">,</span> <span class="n">hardcopy</span><span class="o">=</span><span class="n">hardcopy</span><span class="p">,</span>
+                     <span class="n">symlink_dir</span><span class="o">=</span><span class="n">symlink_dir</span><span class="p">,</span> <span class="n">clobber</span><span class="o">=</span><span class="n">clobber</span><span class="p">,</span> <span class="n">loggers</span><span class="o">=</span><span class="n">loggers</span><span class="p">,</span> <span class="n">quiet</span><span class="o">=</span><span class="n">quiet</span><span class="p">)</span>
+
+
+<span class="c1">#    def __del__(self):</span>
+<span class="c1">#        &quot;&quot;&quot;</span>
+<span class="c1">#        Deconstruct the data object by ensuring that the fits file is</span>
+<span class="c1">#        properly closed.</span>
+<span class="c1">#        &quot;&quot;&quot;</span>
+<span class="c1">#        if self.hdu is None:</span>
+<span class="c1">#            return</span>
+<span class="c1">#        self.hdu.close()</span>
+<span class="c1">#        self.hdu = None</span>
+
+
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="ReductionAssessment._define_method"><a class="viewcode-back" href="../../../mangadap.proc.reductionassessments.html#mangadap.proc.reductionassessments.ReductionAssessment._define_method">[docs]</a>    <span class="k">def</span> <span class="nf">_define_method</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method_key</span><span class="p">,</span> <span class="n">method_list</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dapsrc</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Select the assessment method from the provided list.  Used to</span>
+<span class="sd">        set :attr:`method`; see</span>
+<span class="sd">        :func:`mangadap.proc.util.select_proc_method`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            method_key (str): Keyword of the selected method.  Available</span>
+<span class="sd">                methods are provided by</span>
+<span class="sd">                :func:`available_reduction_assessments`</span>
+<span class="sd">            method_list (list): (**Optional**) List of</span>
+<span class="sd">                :class:`ReductionAssessmentDef` objects that define the</span>
+<span class="sd">                parameters required to assess the reduced data.</span>
+<span class="sd">            dapsrc (str): (**Optional**) Root path to the DAP source</span>
+<span class="sd">                directory.  If not provided, the default is defined by</span>
+<span class="sd">                :func:`mangadap.config.defaults.default_dap_source`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">=</span> <span class="n">select_proc_method</span><span class="p">(</span><span class="n">method_key</span><span class="p">,</span> <span class="n">ReductionAssessmentDef</span><span class="p">,</span>
+                                         <span class="n">method_list</span><span class="o">=</span><span class="n">method_list</span><span class="p">,</span>
+                                         <span class="n">available_func</span><span class="o">=</span><span class="n">available_reduction_assessments</span><span class="p">,</span>
+                                         <span class="n">dapsrc</span><span class="o">=</span><span class="n">dapsrc</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ReductionAssessment._set_paths"><a class="viewcode-back" href="../../../mangadap.proc.reductionassessments.html#mangadap.proc.reductionassessments.ReductionAssessment._set_paths">[docs]</a>    <span class="k">def</span> <span class="nf">_set_paths</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">directory_path</span><span class="p">,</span> <span class="n">dapver</span><span class="p">,</span> <span class="n">analysis_path</span><span class="p">,</span> <span class="n">output_file</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the I/O paths.  Used to set :attr:`directory_path` and</span>
+<span class="sd">        :attr:`output_file`.  If not provided, the defaults are set</span>
+<span class="sd">        using, respectively,</span>
+<span class="sd">        :func:`mangadap.config.defaults.default_dap_common_path` and</span>
+<span class="sd">        :func:`mangadap.config.defaults.default_dap_file_name`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            directory_path (str): The exact path to the DAP reduction</span>
+<span class="sd">                assessments file.  See :attr:`directory_path`.</span>
+<span class="sd">            dapver (str): DAP version.</span>
+<span class="sd">            analysis_path (str): The path to the top-level directory</span>
+<span class="sd">                containing the DAP output files for a given DRP and DAP</span>
+<span class="sd">                version.</span>
+<span class="sd">            output_file (str): The name of the file with the reduction</span>
+<span class="sd">                assessments.  See :func:`compute`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">directory_path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_file</span> \
+                <span class="o">=</span> <span class="n">ReductionAssessment</span><span class="o">.</span><span class="n">default_paths</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">drpf</span><span class="o">.</span><span class="n">plate</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">drpf</span><span class="o">.</span><span class="n">ifudesign</span><span class="p">,</span>
+                                                    <span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">[</span><span class="s1">&#39;key&#39;</span><span class="p">],</span>
+                                                    <span class="n">directory_path</span><span class="o">=</span><span class="n">directory_path</span><span class="p">,</span>
+                                                    <span class="n">drpver</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">drpf</span><span class="o">.</span><span class="n">drpver</span><span class="p">,</span> <span class="n">dapver</span><span class="o">=</span><span class="n">dapver</span><span class="p">,</span>
+                                                    <span class="n">analysis_path</span><span class="o">=</span><span class="n">analysis_path</span><span class="p">,</span>
+                                                    <span class="n">output_file</span><span class="o">=</span><span class="n">output_file</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ReductionAssessment._per_spectrum_dtype"><a class="viewcode-back" href="../../../mangadap.proc.reductionassessments.html#mangadap.proc.reductionassessments.ReductionAssessment._per_spectrum_dtype">[docs]</a>    <span class="k">def</span> <span class="nf">_per_spectrum_dtype</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Construct the record array data type for the output fits</span>
+<span class="sd">        extension.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span> <span class="p">(</span><span class="s1">&#39;DRP_INDEX&#39;</span><span class="p">,</span><span class="n">numpy</span><span class="o">.</span><span class="n">int</span><span class="p">,(</span><span class="n">numpy</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">drpf</span><span class="o">.</span><span class="n">spatial_index</span><span class="p">))</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],)),</span>
+                 <span class="p">(</span><span class="s1">&#39;SKY_COO&#39;</span><span class="p">,</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">,(</span><span class="mi">2</span><span class="p">,)),</span>
+                 <span class="p">(</span><span class="s1">&#39;ELL_COO&#39;</span><span class="p">,</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">,(</span><span class="mi">2</span><span class="p">,)),</span>
+                 <span class="p">(</span><span class="s1">&#39;FGOODPIX&#39;</span><span class="p">,</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">),</span>
+                 <span class="p">(</span><span class="s1">&#39;MINEQMAX&#39;</span><span class="p">,</span><span class="n">numpy</span><span class="o">.</span><span class="n">uint8</span><span class="p">),</span>
+                 <span class="p">(</span><span class="s1">&#39;SIGNAL&#39;</span><span class="p">,</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">),</span>
+                 <span class="p">(</span><span class="s1">&#39;VARIANCE&#39;</span><span class="p">,</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">),</span>
+                 <span class="p">(</span><span class="s1">&#39;SNR&#39;</span><span class="p">,</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+               <span class="p">]</span></div>
+
+    
+<div class="viewcode-block" id="ReductionAssessment._initialize_primary_header"><a class="viewcode-back" href="../../../mangadap.proc.reductionassessments.html#mangadap.proc.reductionassessments.ReductionAssessment._initialize_primary_header">[docs]</a>    <span class="k">def</span> <span class="nf">_initialize_primary_header</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hdr</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="c1"># Copy the from the DRP and clean it</span>
+        <span class="k">if</span> <span class="n">hdr</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">hdr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">drpf</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;PRIMARY&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">hdr</span> <span class="o">=</span> <span class="n">DAPFitsUtil</span><span class="o">.</span><span class="n">clean_dap_primary_header</span><span class="p">(</span><span class="n">hdr</span><span class="p">)</span>
+
+        <span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;AUTHOR&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;Kyle B. Westfall &lt;westfall@ucolick.org&gt;&#39;</span>
+        <span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;RDXQAKEY&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">[</span><span class="s1">&#39;key&#39;</span><span class="p">],</span> <span class="s1">&#39;Method keyword&#39;</span><span class="p">)</span>
+        <span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;ECOOPA&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pa</span><span class="p">,</span> <span class="s1">&#39;Position angle for ellip. coo&#39;</span><span class="p">)</span>
+        <span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;ECOOELL&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ell</span><span class="p">,</span> <span class="s1">&#39;Ellipticity (1-b/a) for ellip. coo&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">[</span><span class="s1">&#39;covariance&#39;</span><span class="p">]:</span>
+            <span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;BBWAVE&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">covar_wave</span><span class="p">,</span> <span class="s1">&#39;Covariance channel wavelength&#39;</span><span class="p">)</span>
+            <span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;BBINDEX&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">covar_channel</span><span class="p">,</span> <span class="s1">&#39;Covariance channel index&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">hdr</span></div>
+
+
+<div class="viewcode-block" id="ReductionAssessment.default_paths"><a class="viewcode-back" href="../../../mangadap.proc.reductionassessments.html#mangadap.proc.reductionassessments.ReductionAssessment.default_paths">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">default_paths</span><span class="p">(</span><span class="n">plate</span><span class="p">,</span> <span class="n">ifudesign</span><span class="p">,</span> <span class="n">method_key</span><span class="p">,</span> <span class="n">directory_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">drpver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dapver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                      <span class="n">analysis_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_file</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the default directory and file name for the output file.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            plate (int): Plate number of the observation.</span>
+<span class="sd">            ifudesign (int): IFU design number of the observation.</span>
+<span class="sd">            method_key (str): Keyword designating the method used for</span>
+<span class="sd">                the reduction assessments.</span>
+<span class="sd">            directory_path (str): (**Optional**) The exact path to the</span>
+<span class="sd">                DAP reduction assessments file.  Default set by</span>
+<span class="sd">                :func:`mangadap.config.defaults.default_dap_common_path`.</span>
+<span class="sd">            drpver (str): (**Optional**) DRP version.  Default set by</span>
+<span class="sd">                :func:`mangadap.config.defaults.default_drp_version`.</span>
+<span class="sd">            dapver (str): (**Optional**) DAP version.  Default set by</span>
+<span class="sd">                :func:`mangadap.config.defaults.default_dap_version`.</span>
+<span class="sd">            analysis_path (str): (**Optional**) The path to the</span>
+<span class="sd">                top-level directory containing the DAP output files for</span>
+<span class="sd">                a given DRP and DAP version. Default set by</span>
+<span class="sd">                :func:`mangadap.config.defaults.default_analysis_path`.</span>
+<span class="sd">            output_file (str): (**Optional**) The name of the file with</span>
+<span class="sd">                the reduction assessments.  Default set by</span>
+<span class="sd">                :func:`mangadap.config.defaults.default_dap_file_name`.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: Two strings with the path for the output file and the</span>
+<span class="sd">            name of the output file.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">_directory_path</span> <span class="o">=</span> <span class="n">default_dap_common_path</span><span class="p">(</span><span class="n">plate</span><span class="o">=</span><span class="n">plate</span><span class="p">,</span> <span class="n">ifudesign</span><span class="o">=</span><span class="n">ifudesign</span><span class="p">,</span>
+                                                  <span class="n">drpver</span><span class="o">=</span><span class="n">drpver</span><span class="p">,</span> <span class="n">dapver</span><span class="o">=</span><span class="n">dapver</span><span class="p">,</span>
+                                                  <span class="n">analysis_path</span><span class="o">=</span><span class="n">analysis_path</span><span class="p">)</span> \
+                                        <span class="k">if</span> <span class="n">directory_path</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">directory_path</span><span class="p">)</span>
+        <span class="n">_output_file</span> <span class="o">=</span> <span class="n">default_dap_file_name</span><span class="p">(</span><span class="n">plate</span><span class="p">,</span> <span class="n">ifudesign</span><span class="p">,</span> <span class="n">method_key</span><span class="p">)</span> \
+                                        <span class="k">if</span> <span class="n">output_file</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">output_file</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">_directory_path</span><span class="p">,</span> <span class="n">_output_file</span></div>
+
+
+<div class="viewcode-block" id="ReductionAssessment.file_name"><a class="viewcode-back" href="../../../mangadap.proc.reductionassessments.html#mangadap.proc.reductionassessments.ReductionAssessment.file_name">[docs]</a>    <span class="k">def</span> <span class="nf">file_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the name of the output file.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_file</span></div>
+
+
+<div class="viewcode-block" id="ReductionAssessment.file_path"><a class="viewcode-back" href="../../../mangadap.proc.reductionassessments.html#mangadap.proc.reductionassessments.ReductionAssessment.file_path">[docs]</a>    <span class="k">def</span> <span class="nf">file_path</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the full path to the output file.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">directory_path</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_file</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">directory_path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_file</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ReductionAssessment.info"><a class="viewcode-back" href="../../../mangadap.proc.reductionassessments.html#mangadap.proc.reductionassessments.ReductionAssessment.info">[docs]</a>    <span class="k">def</span> <span class="nf">info</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="o">.</span><span class="n">info</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="ReductionAssessment.compute"><a class="viewcode-back" href="../../../mangadap.proc.reductionassessments.html#mangadap.proc.reductionassessments.ReductionAssessment.compute">[docs]</a>    <span class="k">def</span> <span class="nf">compute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">drpf</span><span class="p">,</span> <span class="n">pa</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ell</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dapver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">analysis_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">directory_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                <span class="n">output_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">hardcopy</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">symlink_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">clobber</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">loggers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                <span class="n">quiet</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute and output the main data products.  The list of HDUs</span>
+<span class="sd">        are:</span>
+
+<span class="sd">            - ``PRIMARY`` : Empty apart from the header information.</span>
+<span class="sd">            - ``SPECTRUM`` : Extension with the main, per-spectrum</span>
+<span class="sd">              measurements; see below.</span>
+<span class="sd">            - ``CORREL`` : The correlation matrix between the ``SIGNAL``</span>
+<span class="sd">              measurements provided in the ``SPECTRUM`` extension.  The</span>
+<span class="sd">              format of this extension is identical to the nominal</span>
+<span class="sd">              output of the :class:`mangadap.util.covariance.Covariance`</span>
+<span class="sd">              object; see</span>
+<span class="sd">              :func:`mangadap.util.covariance.Covariance.write`.</span>
+
+<span class="sd">        The ``SPECTRUM`` extension contains the following columns:</span>
+
+<span class="sd">            - ``DRP_INDEX`` : Array coordinates in the DRP file; see</span>
+<span class="sd">              :attr:`mangadap.drpfits.DRPFits.spatial_index`.  For RSS</span>
+<span class="sd">              files, this is a single integer; for CUBE files, it is a</span>
+<span class="sd">              vector of two integers.</span>
+<span class="sd">            - ``SKY_COO`` : On-sky X and Y coordinates.  Coordinates are</span>
+<span class="sd">              sky-right offsets from the object center; i.e., positive X</span>
+<span class="sd">              is along the direction of positive right ascension.  See</span>
+<span class="sd">              :class:`mangadap.drpfits.DRPFits.mean_sky_coordinates`.</span>
+<span class="sd">            - ``ELL_COO`` : Elliptical (semi-major axis) radius and</span>
+<span class="sd">              azimuth angle from N through East with respect to the</span>
+<span class="sd">              photometric position angle; based on the provided</span>
+<span class="sd">              ellipticity parameters.  See</span>
+<span class="sd">              :class:`mangadap.util.geometry.SemiMajorAxisCoo`.</span>
+<span class="sd">            - ``FGOODPIX`` : Fraction of good pixels in each spectrum.</span>
+<span class="sd">            - ``MINEQMAX`` : Flag that min(flux) = max(flux) in the</span>
+<span class="sd">              spectrum; i.e., the spaxel has no data.</span>
+<span class="sd">            - ``SIGNAL``, ``VARIANCE``, ``SNR`` : Per pixel means of the</span>
+<span class="sd">              flux, flux variance, and signal-to-noise.  The</span>
+<span class="sd">              ``VARIANCE`` and ``SNR`` columns use the inverse variance</span>
+<span class="sd">              provided by the DRP.  See</span>
+<span class="sd">              :func:`mangadap.drpfits.DRPFits.flux_stats`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            drpf (:class:`mangadap.drpfits.DRPFits`): DRP file (object)</span>
+<span class="sd">                to use for the assessments.</span>
+<span class="sd">            pa (float): (**Optional**) On-sky position angle of the</span>
+<span class="sd">                major axis used to calculate elliptical, semi-major-axis</span>
+<span class="sd">                coordinates, defined as the angle from North through</span>
+<span class="sd">                East and denoted :math:`\phi_0`.  Default is 0.0.</span>
+<span class="sd">            ell (float): (**Optional**) Ellipticity defined as</span>
+<span class="sd">                :math:`\varepsilon=1-b/a`, based on the semi-minor to</span>
+<span class="sd">                semi-major axis ratio (:math:`b/a`) of the isophotal</span>
+<span class="sd">                ellipse used to calculate elliptical, semi-major-axis</span>
+<span class="sd">                coordinates.  Default is 0.0.</span>
+<span class="sd">            dapver (str): (**Optional**) DAP version, which is used to</span>
+<span class="sd">                define the default DAP analysis path.  Default is</span>
+<span class="sd">                defined by</span>
+<span class="sd">                :func:`mangadap.config.defaults.default_dap_version`</span>
+<span class="sd">            analysis_path (str): (**Optional**) The path to the top</span>
+<span class="sd">                level directory containing the DAP output files for a</span>
+<span class="sd">                given DRP and DAP version.  Default is defined by</span>
+<span class="sd">                :func:`mangadap.config.defaults.default_analysis_path`.</span>
+<span class="sd">            directory_path (str): (**Optional**) The exact path for the</span>
+<span class="sd">                output file.  Default is defined by</span>
+<span class="sd">                :func:`mangadap.config.defaults.default_dap_common_path`.</span>
+<span class="sd">            output_file (str): (**Optional**) The name of the file for</span>
+<span class="sd">                the computed assessments.  The full path of the output</span>
+<span class="sd">                file will be :attr:`directory_path`/:attr:`output_file`.</span>
+<span class="sd">                Default is defined by</span>
+<span class="sd">                :func:`mangadap.config.defaults.default_reduction_assessments_file`.</span>
+<span class="sd">            hardcopy (bool): (**Optional**) Flag to write the data to a</span>
+<span class="sd">                fits file.  Default is True.</span>
+<span class="sd">            symlink_dir (str): (**Optional**) Create a symlink to the</span>
+<span class="sd">                file in this directory.  Default is for no symlink.</span>
+<span class="sd">            clobber (bool): (**Optional**) If the output file already</span>
+<span class="sd">                exists, this will force the assessments to be redone and</span>
+<span class="sd">                the output file to be overwritten.  Default is False.</span>
+<span class="sd">            loggers (list): (**Optional**) List of `logging.Logger`_</span>
+<span class="sd">                objects to log progress; ignored if quiet=True.  Default</span>
+<span class="sd">                is no logging.</span>
+<span class="sd">            quiet (bool): (**Optional**) Suppress all terminal and</span>
+<span class="sd">                logging output.  Default is False.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: Raise if no DRPFits object is provided or if</span>
+<span class="sd">                the output file is undefined.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Initialize the reporting</span>
+        <span class="k">if</span> <span class="n">loggers</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">loggers</span> <span class="o">=</span> <span class="n">loggers</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">quiet</span> <span class="o">=</span> <span class="n">quiet</span>
+
+        <span class="c1"># Check the input DRPFits object</span>
+        <span class="k">if</span> <span class="n">drpf</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Must provide DRP file object to compute assessments.&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">drpf</span><span class="p">,</span> <span class="n">DRPFits</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Must provide a valid DRPFits object!&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">drpf</span><span class="o">.</span><span class="n">hdu</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">quiet</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;DRP file previously unopened.  Reading now.&#39;</span><span class="p">)</span>
+            <span class="n">drpf</span><span class="o">.</span><span class="n">open_hdu</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">drpf</span> <span class="o">=</span> <span class="n">drpf</span>
+
+        <span class="c1"># Reset the output paths if necessary</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_paths</span><span class="p">(</span><span class="n">directory_path</span><span class="p">,</span> <span class="n">dapver</span><span class="p">,</span> <span class="n">analysis_path</span><span class="p">,</span> <span class="n">output_file</span><span class="p">)</span>
+        <span class="c1"># Check that the path for or to the file is defined</span>
+        <span class="n">ofile</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_path</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">ofile</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;File path for output file is undefined!&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Report</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">quiet</span><span class="p">:</span>
+            <span class="n">log_output</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">loggers</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="s1">&#39;-&#39;</span><span class="o">*</span><span class="mi">50</span><span class="p">)</span>
+            <span class="n">log_output</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">loggers</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">{0:^50}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s1">&#39;REDUCTION ASSESSMENT&#39;</span>
+                                                                       <span class="s1">&#39; COMPUTATIONS&#39;</span><span class="p">))</span>
+            <span class="n">log_output</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">loggers</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="s1">&#39;-&#39;</span><span class="o">*</span><span class="mi">50</span><span class="p">)</span>
+            <span class="n">log_output</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">loggers</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="s1">&#39;Output path: </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                                                            <span class="bp">self</span><span class="o">.</span><span class="n">directory_path</span><span class="p">))</span>
+            <span class="n">log_output</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">loggers</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="s1">&#39;Output file: </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                                                            <span class="bp">self</span><span class="o">.</span><span class="n">output_file</span><span class="p">))</span>
+
+        <span class="c1"># If the file already exists, and not clobbering, just read the</span>
+        <span class="c1"># file</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">symlink_dir</span> <span class="o">=</span> <span class="n">symlink_dir</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">ofile</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">clobber</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">hardcopy</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">quiet</span><span class="p">:</span>
+                <span class="n">log_output</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">loggers</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="s1">&#39;Reading exiting file&#39;</span><span class="p">)</span>
+
+            <span class="c1"># Read the existing output file</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span> <span class="o">=</span> <span class="n">DAPFitsUtil</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">ofile</span><span class="p">,</span> <span class="n">checksum</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">checksum</span><span class="p">)</span>
+
+            <span class="c1"># Construct the correlation matrix with the appropriate</span>
+            <span class="c1"># variance</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">correlation</span> <span class="o">=</span> <span class="n">Covariance</span><span class="o">.</span><span class="n">from_fits</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">,</span> <span class="n">ivar_ext</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">row_major</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                                    <span class="n">correlation</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">correlation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">correlation</span><span class="o">.</span><span class="n">apply_new_variance</span><span class="p">(</span>
+                                                            <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;SPECTRUM&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;VARIANCE&#39;</span><span class="p">])</span>
+
+            <span class="c1"># Read the header data</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pa</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;PRIMARY&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;ECOOPA&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">quiet</span> <span class="ow">and</span> <span class="n">pa</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">pa</span> <span class="o">!=</span> <span class="n">pa</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Provided position angle different from available file; set &#39;</span> \
+                              <span class="s1">&#39;clobber=True to overwrite.&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ell</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;PRIMARY&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;ECOOELL&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">quiet</span> <span class="ow">and</span> <span class="n">ell</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">ell</span> <span class="o">!=</span> <span class="n">ell</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Provided ellipticity different from available file; set &#39;</span> \
+                              <span class="s1">&#39;clobber=True to overwrite.&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">covar_wave</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;PRIMARY&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;BBWAVE&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">covar_wave</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">covar_wave</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">covar_wave</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">covar_channel</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;PRIMARY&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;BBINDEX&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">covar_channel</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">covar_channel</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">covar_channel</span><span class="p">)</span>
+<span class="c1">#            print(self.covar_wave, self.covar_channel)</span>
+
+            <span class="c1"># Make sure the symlink exists</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">symlink_dir</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">create_symlink</span><span class="p">(</span><span class="n">ofile</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">symlink_dir</span><span class="p">,</span> <span class="n">clobber</span><span class="o">=</span><span class="n">clobber</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">quiet</span><span class="p">:</span>
+                <span class="n">log_output</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">loggers</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="s1">&#39;-&#39;</span><span class="o">*</span><span class="mi">50</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="c1"># (Re)Initialize some of the attributes</span>
+        <span class="k">if</span> <span class="n">pa</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pa</span> <span class="o">=</span> <span class="n">pa</span>
+        <span class="k">if</span> <span class="n">ell</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ell</span> <span class="o">=</span> <span class="n">ell</span>
+
+        <span class="c1"># Only mask pixels with the following flags set</span>
+        <span class="n">flags</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;DONOTUSE&#39;</span><span class="p">,</span> <span class="s1">&#39;FORESTAR&#39;</span><span class="p">]</span>
+
+        <span class="c1"># Initialize the record array for the SPECTRUM extension</span>
+        <span class="n">spectrum_data</span> <span class="o">=</span> <span class="n">init_record_array</span><span class="p">(</span><span class="n">drpf</span><span class="o">.</span><span class="n">nspec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_per_spectrum_dtype</span><span class="p">())</span>
+        <span class="n">spectrum_data</span><span class="p">[</span><span class="s1">&#39;DRP_INDEX&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">drpf</span><span class="o">.</span><span class="n">spatial_index</span><span class="p">))</span>
+        <span class="n">spectrum_data</span><span class="p">[</span><span class="s1">&#39;SKY_COO&#39;</span><span class="p">][:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">spectrum_data</span><span class="p">[</span><span class="s1">&#39;SKY_COO&#39;</span><span class="p">][:,</span><span class="mi">1</span><span class="p">]</span> \
+                <span class="o">=</span> <span class="n">drpf</span><span class="o">.</span><span class="n">mean_sky_coordinates</span><span class="p">(</span><span class="n">waverange</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">[</span><span class="s1">&#39;waverange&#39;</span><span class="p">],</span>
+                                            <span class="n">response_func</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">[</span><span class="s1">&#39;response_func&#39;</span><span class="p">],</span>
+                                            <span class="n">offset</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">flag</span><span class="o">=</span><span class="n">flags</span><span class="p">)</span>
+
+<span class="c1">#        print(spectrum_data[&#39;DRP_INDEX&#39;].shape)</span>
+<span class="c1">#        print(spectrum_data[&#39;DRP_INDEX&#39;][0:drpf.nx,0])</span>
+<span class="c1">#        print(spectrum_data[&#39;DRP_INDEX&#39;][0:drpf.nx,1])</span>
+<span class="c1">#        print(spectrum_data[&#39;SKY_COO&#39;].shape)</span>
+<span class="c1">#        print(spectrum_data[&#39;SKY_COO&#39;][0:drpf.nx,0])</span>
+<span class="c1">#        print(spectrum_data[&#39;SKY_COO&#39;][0:drpf.nx,1])</span>
+
+<span class="c1">#        pyplot.scatter(spectrum_data[&#39;SKY_COO&#39;][:,0], spectrum_data[&#39;SKY_COO&#39;][:,1], marker=&#39;.&#39;,</span>
+<span class="c1">#                       s=30, color=&#39;k&#39;, lw=0)</span>
+<span class="c1">#        pyplot.show()</span>
+
+        <span class="n">coord_conversion</span> <span class="o">=</span> <span class="n">SemiMajorAxisCoo</span><span class="p">(</span><span class="n">xc</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">yc</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">rot</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">pa</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pa</span><span class="p">,</span> <span class="n">ell</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ell</span><span class="p">)</span>
+        <span class="n">spectrum_data</span><span class="p">[</span><span class="s1">&#39;ELL_COO&#39;</span><span class="p">][:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">spectrum_data</span><span class="p">[</span><span class="s1">&#39;ELL_COO&#39;</span><span class="p">][:,</span><span class="mi">1</span><span class="p">]</span> \
+            <span class="o">=</span> <span class="n">coord_conversion</span><span class="o">.</span><span class="n">polar</span><span class="p">(</span><span class="n">spectrum_data</span><span class="p">[</span><span class="s1">&#39;SKY_COO&#39;</span><span class="p">][:,</span><span class="mi">0</span><span class="p">],</span> <span class="n">spectrum_data</span><span class="p">[</span><span class="s1">&#39;SKY_COO&#39;</span><span class="p">][:,</span><span class="mi">1</span><span class="p">])</span>
+
+<span class="c1">#        pyplot.scatter(spectrum_data[&#39;ELL_COO&#39;][:,0], spectrum_data[&#39;ELL_COO&#39;][:,1], marker=&#39;.&#39;,</span>
+<span class="c1">#                       s=30, color=&#39;k&#39;, lw=0)</span>
+<span class="c1">#        pyplot.show()</span>
+       
+        <span class="n">flux</span> <span class="o">=</span> <span class="n">drpf</span><span class="o">.</span><span class="n">copy_to_masked_array</span><span class="p">(</span><span class="n">flag</span><span class="o">=</span><span class="n">flags</span><span class="p">)</span>
+        <span class="n">spectrum_data</span><span class="p">[</span><span class="s1">&#39;FGOODPIX&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">getmaskarray</span><span class="p">(</span><span class="n">flux</span><span class="p">)),</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> \
+                                            <span class="o">/</span> <span class="n">flux</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="c1"># TODO: Is this superfluous now?</span>
+        <span class="n">frange</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">flux</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">-</span><span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">flux</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">spectrum_data</span><span class="p">[</span><span class="s1">&#39;MINEQMAX&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">getmaskarray</span><span class="p">(</span><span class="n">frange</span><span class="p">)))</span> \
+                                        <span class="o">&amp;</span> <span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">absolute</span><span class="p">(</span><span class="n">frange</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-10</span><span class="p">)</span>
+<span class="c1">#        print(spectrum_data[&#39;MINEQMAX&#39;])</span>
+<span class="c1">#        print(drpf.nspec, numpy.sum(spectrum_data[&#39;MINEQMAX&#39;] &amp; (spectrum_data[&#39;FGOODPIX&#39;] &gt; 0.8)))</span>
+
+<span class="c1">#        srt = numpy.argsort(spectrum_data[&#39;FGOODPIX&#39;])</span>
+<span class="c1">#        grw = numpy.arange(len(srt))/len(srt)</span>
+<span class="c1">#        pyplot.step(spectrum_data[&#39;FGOODPIX&#39;][srt], grw, color=&#39;k&#39;)</span>
+<span class="c1">#        pyplot.show()</span>
+
+        <span class="c1"># Get the wavelength range</span>
+        <span class="n">waverange</span> <span class="o">=</span> <span class="p">[</span> <span class="n">drpf</span><span class="p">[</span><span class="s1">&#39;WAVE&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">drpf</span><span class="p">[</span><span class="s1">&#39;WAVE&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="p">]</span> \
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">[</span><span class="s1">&#39;waverange&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">[</span><span class="s1">&#39;response_func&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span> \
+                    <span class="k">else</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">[</span><span class="s1">&#39;waverange&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">[</span><span class="s1">&#39;waverange&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span>
+                        <span class="p">[</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">[</span><span class="s1">&#39;response_func&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">[</span><span class="s1">&#39;response_func&#39;</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="p">])</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">quiet</span><span class="p">:</span>
+            <span class="n">log_output</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">loggers</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
+                       <span class="s1">&#39;Wavelength range for S and N calculation: </span><span class="si">{0:.1f}</span><span class="s1"> -- </span><span class="si">{1:.1f}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                <span class="o">*</span><span class="n">waverange</span><span class="p">))</span>
+
+        <span class="c1"># If calculating covariance, make sure that all the pixels in</span>
+        <span class="c1"># the channel used and selected for analysis (at minimum based</span>
+        <span class="c1"># on fraction of valid pixels in the spectrum - FGOODPIX) have</span>
+        <span class="c1"># covariance measurements.  This is done by first assuming the</span>
+        <span class="c1"># channel at the center of the wavelength range and then</span>
+        <span class="c1"># flipping back and forth across this channel until a valid</span>
+        <span class="c1"># channel is found or you reach the limits of the defined</span>
+        <span class="c1"># wavelength range.  In the latter case, and exception is</span>
+        <span class="c1"># raised!</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">[</span><span class="s1">&#39;covariance&#39;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">covar_wave</span> <span class="o">=</span> <span class="n">drpf</span><span class="o">.</span><span class="n">_covariance_wavelength</span><span class="p">(</span><span class="n">waverange</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">[</span><span class="s1">&#39;waverange&#39;</span><span class="p">],</span>
+                                                        <span class="n">response_func</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">[</span><span class="s1">&#39;response_func&#39;</span><span class="p">],</span>
+                                                          <span class="n">flag</span><span class="o">=</span><span class="n">flags</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">covar_channel</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">absolute</span><span class="p">(</span><span class="n">drpf</span><span class="p">[</span><span class="s1">&#39;WAVE&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">covar_wave</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+
+            <span class="c1"># TODO: Make this fraction an input parameter!</span>
+            <span class="n">goodfrac</span> <span class="o">=</span> <span class="p">(</span><span class="n">spectrum_data</span><span class="p">[</span><span class="s1">&#39;FGOODPIX&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">drpf</span><span class="o">.</span><span class="n">spatial_shape</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">0.8</span><span class="p">)</span>
+
+            <span class="n">off</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="n">sign</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">covar_wave</span> <span class="o">&gt;</span> <span class="n">waverange</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">covar_wave</span> <span class="o">&lt;</span> <span class="n">waverange</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> \
+                    <span class="ow">and</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">goodfrac</span> <span class="o">&amp;</span> <span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">drpf</span><span class="p">[</span><span class="s1">&#39;IVAR&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[:,:,</span><span class="bp">self</span><span class="o">.</span><span class="n">covar_channel</span><span class="p">]</span>
+                                                          <span class="o">&gt;</span> <span class="mi">0</span><span class="p">))</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">covar_channel</span> <span class="o">+=</span> <span class="n">sign</span><span class="o">*</span><span class="n">off</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">covar_wave</span> <span class="o">=</span> <span class="n">drpf</span><span class="p">[</span><span class="s1">&#39;WAVE&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">covar_channel</span><span class="p">]</span>
+<span class="c1">#                print(self.covar_wave, self.covar_channel, off, sign,</span>
+<span class="c1">#                      numpy.sum(goodfrac &amp; ~(drpf[&#39;IVAR&#39;].data[:,:,self.covar_channel] &gt; 0)))</span>
+                <span class="n">sign</span> <span class="o">*=</span> <span class="o">-</span><span class="mi">1</span>
+                <span class="n">off</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="k">if</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">goodfrac</span> <span class="o">&amp;</span>
+                                <span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">drpf</span><span class="p">[</span><span class="s1">&#39;IVAR&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[:,:,</span><span class="bp">self</span><span class="o">.</span><span class="n">covar_channel</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">))</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Unable to find wavelength channel within fully valid data.&#39;</span><span class="p">)</span>
+            
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">quiet</span><span class="p">:</span>
+                <span class="n">log_output</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">loggers</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
+                           <span class="s1">&#39;Covariance measured at wavelength: </span><span class="si">{0}</span><span class="s1"> (channel </span><span class="si">{1}</span><span class="s1">)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">covar_wave</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">covar_channel</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">covar_wave</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">covar_channel</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># Determine the statistics of the flux in the specified</span>
+        <span class="c1"># wavelength range</span>
+        <span class="n">spectrum_data</span><span class="p">[</span><span class="s1">&#39;SIGNAL&#39;</span><span class="p">],</span> <span class="n">spectrum_data</span><span class="p">[</span><span class="s1">&#39;VARIANCE&#39;</span><span class="p">],</span> <span class="n">spectrum_data</span><span class="p">[</span><span class="s1">&#39;SNR&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">correlation</span> \
+                <span class="o">=</span> <span class="n">drpf</span><span class="o">.</span><span class="n">flux_stats</span><span class="p">(</span><span class="n">waverange</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">[</span><span class="s1">&#39;waverange&#39;</span><span class="p">],</span>
+                                  <span class="n">response_func</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">[</span><span class="s1">&#39;response_func&#39;</span><span class="p">],</span>
+                                  <span class="n">flag</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;DONOTUSE&#39;</span><span class="p">,</span> <span class="s1">&#39;FORESTAR&#39;</span><span class="p">],</span>
+                                  <span class="n">covar</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">[</span><span class="s1">&#39;covariance&#39;</span><span class="p">],</span> <span class="n">correlation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                  <span class="n">covar_wave</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">covar_wave</span><span class="p">)</span>
+
+        <span class="c1"># Force the covariance matrix to use the mean variance instead</span>
+        <span class="c1"># of the variance in the single, specified channel.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">[</span><span class="s1">&#39;covariance&#39;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">correlation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">correlation</span><span class="o">.</span><span class="n">apply_new_variance</span><span class="p">(</span><span class="n">spectrum_data</span><span class="p">[</span><span class="s1">&#39;VARIANCE&#39;</span><span class="p">])</span>
+<span class="c1">#            self.correlation.show()</span>
+
+<span class="c1">#        t = (spectrum_data[&#39;FGOODPIX&#39;].reshape(drpf.spatial_shape) &gt; 0.8) &amp; \</span>
+<span class="c1">#                        (drpf.bitmask.flagged(drpf[&#39;MASK&#39;].data[:,:,self.covar_channel],</span>
+<span class="c1">#                                             flag=[&#39;DONOTUSE&#39;, &#39;FORESTAR&#39;]))</span>
+<span class="c1">#        print(numpy.sum(t))</span>
+<span class="c1">#</span>
+<span class="c1">#        t = (spectrum_data[&#39;FGOODPIX&#39;].reshape(drpf.spatial_shape) &gt; 0.8) &amp; \</span>
+<span class="c1">#                        ~(drpf[&#39;IVAR&#39;].data[:,:,self.covar_channel] &gt; 0)</span>
+<span class="c1">#        print(numpy.sum(t))</span>
+<span class="c1">#</span>
+<span class="c1">#        t = (spectrum_data[&#39;FGOODPIX&#39;].reshape(drpf.spatial_shape) &gt; 0.8) &amp; \</span>
+<span class="c1">#                        ~(drpf[&#39;FLUX&#39;].data[:,:,self.covar_channel] &gt; 0)</span>
+<span class="c1">#        print(numpy.sum(t))</span>
+<span class="c1">#</span>
+<span class="c1">#        goodpix_im = spectrum_data[&#39;FGOODPIX&#39;].reshape(drpf.spatial_shape)</span>
+<span class="c1">#        m = drpf[&#39;FLUX&#39;].data[:,:,self.covar_channel]</span>
+<span class="c1">#        pyplot.imshow(m, origin=&#39;lower&#39;, interpolation=&#39;nearest&#39;)</span>
+<span class="c1">#        pyplot.colorbar()</span>
+<span class="c1">#        pyplot.show()</span>
+<span class="c1">#</span>
+<span class="c1">#        maskedm = numpy.ma.MaskedArray(m, mask=~t)</span>
+<span class="c1">#        pyplot.imshow(maskedm, origin=&#39;lower&#39;, interpolation=&#39;nearest&#39;)</span>
+<span class="c1">#        pyplot.colorbar()</span>
+<span class="c1">#        pyplot.show()</span>
+
+<span class="c1">#        if correlation is not None:</span>
+<span class="c1">#            correlation.show()</span>
+<span class="c1">#</span>
+<span class="c1">#        pyplot.scatter(spectrum_data[&#39;SIGNAL&#39;], spectrum_data[&#39;VARIANCE&#39;], marker=&#39;.&#39;, color=&#39;k&#39;,</span>
+<span class="c1">#                       s=30)</span>
+<span class="c1">#        pyplot.plot([0,2], numpy.square(numpy.array([0,2])/50.), color=&#39;r&#39;)</span>
+<span class="c1">#        pyplot.show()</span>
+
+        <span class="c1"># Construct header</span>
+        <span class="n">hdr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_initialize_primary_header</span><span class="p">()</span>
+
+        <span class="c1"># Get the covariance hdu</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">[</span><span class="s1">&#39;covariance&#39;</span><span class="p">]:</span>
+            <span class="n">hdr</span><span class="p">,</span> <span class="n">ivar_hdu</span><span class="p">,</span> <span class="n">covar_hdu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">correlation</span><span class="o">.</span><span class="n">output_hdus</span><span class="p">(</span><span class="n">reshape</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">hdr</span><span class="o">=</span><span class="n">hdr</span><span class="p">)</span>
+
+        <span class="c1"># Get the main extension columns and construct the HDUList</span>
+        <span class="n">spectrum_cols</span> <span class="o">=</span> <span class="p">[</span> <span class="n">fits</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">n</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="n">rec_to_fits_type</span><span class="p">(</span><span class="n">spectrum_data</span><span class="p">[</span><span class="n">n</span><span class="p">]),</span>
+                                      <span class="n">array</span><span class="o">=</span><span class="n">spectrum_data</span><span class="p">[</span><span class="n">n</span><span class="p">])</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">spectrum_data</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">names</span> <span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">HDUList</span><span class="p">([</span> <span class="n">fits</span><span class="o">.</span><span class="n">PrimaryHDU</span><span class="p">(</span><span class="n">header</span><span class="o">=</span><span class="n">hdr</span><span class="p">),</span>
+                                  <span class="n">fits</span><span class="o">.</span><span class="n">BinTableHDU</span><span class="o">.</span><span class="n">from_columns</span><span class="p">(</span> <span class="n">spectrum_cols</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;SPECTRUM&#39;</span><span class="p">)</span> <span class="p">])</span>
+
+        <span class="c1"># Add the covariance information</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">[</span><span class="s1">&#39;covariance&#39;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span> <span class="o">+=</span> <span class="p">[</span> <span class="n">covar_hdu</span> <span class="p">]</span>
+
+        <span class="c1"># Write the file</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">directory_path</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">directory_path</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hardcopy</span> <span class="o">=</span> <span class="n">hardcopy</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">hardcopy</span><span class="p">:</span>
+            <span class="n">DAPFitsUtil</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">,</span> <span class="n">ofile</span><span class="p">,</span> <span class="n">clobber</span><span class="o">=</span><span class="n">clobber</span><span class="p">,</span> <span class="n">checksum</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                              <span class="n">symlink_dir</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">symlink_dir</span><span class="p">,</span> <span class="n">loggers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">loggers</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">quiet</span><span class="p">:</span>
+            <span class="n">log_output</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">loggers</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="s1">&#39;-&#39;</span><span class="o">*</span><span class="mi">50</span><span class="p">)</span></div></div>
+
+
+
+
+</pre></div>
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, SDSS-IV/MaNGA Pipeline Group.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'2.2.2',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
