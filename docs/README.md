@@ -7,8 +7,8 @@ Current Overleaf submodules linked to:
 
 | Directory             | Overleaf |
 | --------------------- | ------------- |
-| papers/Overview       | https://www.overleaf.com/15600261fykfjpznsdpz#/59256766/ |
-| papers/EmLines        | https://www.overleaf.com/15600261fykfjpznsdpz#/59256766/ |
+| papers/Overview       | https://www.overleaf.com/16412681zkjtcrcyzrwc |
+| papers/EmLines        | https://www.overleaf.com/14318910rcfbhbmxnvcy |
 
 ### Connecting this repo to an Overleaf project
 
@@ -19,20 +19,20 @@ behavior may vary with different git versions.  I'm using version
 2.17.0.)
 
 The Overleaf share button will provide the repo location.  For the
-EmLines paper, the result is:
+Overview paper, the result is:
 
-https://git.overleaf.com/14318910rcfbhbmxnvcy
+https://git.overleaf.com/16412681zkjtcrcyzrwc
 
 To add this document as a submodule:
 
 ```
 cd ~/Work/MaNGA/dap/repo/mangadap
-git submodule add https://git.overleaf.com/15600261fykfjpznsdpz docs/papers/EmLines
-cd docs/papers/EmLines
+git submodule add https://git.overleaf.com/16412681zkjtcrcyzrwc docs/papers/Overview
+cd docs/papers/Overview
 git checkout master
 ```
 
-You can then treat the docs/papers/EmLines directory as you would any
+You can then treat the docs/papers/Overview directory as you would any
 other git repository.  **Be sure to pull/push often to make sure that
 you're in sync with anyone making edits directly via the Overleaf
 browser interface.**
