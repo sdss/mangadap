@@ -309,8 +309,8 @@ class FFTGaussianLSF(GaussianLSF):
 
     Define a Gaussian line profile by first constructing the analytic
     FFT of the profile and then returning the inverse real FFT.  See
-    :func:`mangadap.contrib.ppxf_util.emline` by M. Cappellari.  The
-    sampling *must* be uniform in :math:`x`.
+    ppxf_util.emline by M. Cappellari.  The sampling *must* be uniform
+    in :math:`x`.
     
     Args:
         p (array-like): (**Optional**) Input parameters ordered as the

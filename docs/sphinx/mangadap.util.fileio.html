@@ -1,0 +1,501 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mangadap.util.fileio module &mdash; mangadap 2.2.2 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="mangadap 2.2.2 documentation" href="index.html"/>
+        <link rel="up" title="mangadap.util package" href="mangadap.util.html"/>
+        <link rel="next" title="mangadap.util.filter module" href="mangadap.util.filter.html"/>
+        <link rel="prev" title="mangadap.util.extinction module" href="mangadap.util.extinction.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> mangadap
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="mangadap.html">mangadap package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="mangadap.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="mangadap.config.html">mangadap.config package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.contrib.html">mangadap.contrib package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.par.html">mangadap.par package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.proc.html">mangadap.proc package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.survey.html">mangadap.survey package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.test.html">mangadap.test package</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="mangadap.util.html">mangadap.util package</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="mangadap.util.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="mangadap.util.html#module-mangadap.util">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="mangadap.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mangadap.html#module-mangadap">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">mangadap</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="mangadap.html">mangadap package</a> &raquo;</li>
+        
+          <li><a href="mangadap.util.html">mangadap.util package</a> &raquo;</li>
+        
+      <li>mangadap.util.fileio module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/mangadap.util.fileio.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-mangadap.util.fileio">
+<span id="mangadap-util-fileio-module"></span><h1>mangadap.util.fileio module<a class="headerlink" href="#module-mangadap.util.fileio" title="Permalink to this headline">¶</a></h1>
+<p>Provides a set of file I/O routines.</p>
+<dl class="docutils">
+<dt><em>License</em>:</dt>
+<dd><dl class="first last docutils">
+<dt>Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group</dt>
+<dd>Licensed under BSD 3-clause license - see LICENSE.rst</dd>
+</dl>
+</dd>
+<dt><em>Source location</em>:</dt>
+<dd>$MANGADAP_DIR/python/mangadap/util/fileio.py</dd>
+<dt><em>Imports and python version compliance</em>:</dt>
+<dd><div class="first last highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version</span> <span class="o">&gt;</span> <span class="s1">&#39;3&#39;</span><span class="p">:</span>
+    <span class="n">long</span> <span class="o">=</span> <span class="nb">int</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">gzip</span>
+<span class="kn">import</span> <span class="nn">shutil</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+
+<span class="kn">from</span> <span class="nn">astropy.io</span> <span class="k">import</span> <span class="n">fits</span>
+</pre></div>
+</div>
+</dd>
+<dt><em>Revision history</em>:</dt>
+<dd><div class="first last line-block">
+<div class="line"><strong>27 May 2015</strong>: Original implementation by K. Westfall (KBW)</div>
+<div class="line"><strong>29 Jan 2016</strong>: (KBW) Added <a class="reference internal" href="#mangadap.util.fileio.read_template_spectrum" title="mangadap.util.fileio.read_template_spectrum"><code class="xref py py-func docutils literal"><span class="pre">read_template_spectrum()</span></code></a></div>
+<div class="line"><strong>01 Feb 2016</strong>: (KBW) Moved wavelength calculation to a common
+function.</div>
+<div class="line"><strong>09 Feb 2016</strong>: (KBW) Added <a class="reference internal" href="#mangadap.util.fileio.writefits_1dspec" title="mangadap.util.fileio.writefits_1dspec"><code class="xref py py-func docutils literal"><span class="pre">writefits_1dspec()</span></code></a>.</div>
+<div class="line"><strong>28 Mar 2016</strong>: (KBW) Added function <a class="reference internal" href="#mangadap.util.fileio.init_record_array" title="mangadap.util.fileio.init_record_array"><code class="xref py py-func docutils literal"><span class="pre">init_record_array()</span></code></a>
+and <a class="reference internal" href="#mangadap.util.fileio.rec_to_fits_type" title="mangadap.util.fileio.rec_to_fits_type"><code class="xref py py-func docutils literal"><span class="pre">rec_to_fits_type()</span></code></a></div>
+<div class="line"><strong>19 May 2016</strong>: (KBW) In <code class="xref py py-func docutils literal"><span class="pre">write_hdu()</span></code>, removed verbose and
+added loggers and quiet.</div>
+<div class="line"><strong>25 Aug 2016</strong>: (KBW) Added <a class="reference internal" href="#mangadap.util.fileio.channel_dictionary" title="mangadap.util.fileio.channel_dictionary"><code class="xref py py-func docutils literal"><span class="pre">channel_dictionary()</span></code></a></div>
+<div class="line"><strong>23 Feb 2017</strong>: (KBW) create_symlink now creates the directory if
+it doesn’t exist</div>
+<div class="line"><strong>23 Mar 2017</strong>: (KBW) Force type of header keywords in
+<a class="reference internal" href="#mangadap.util.fileio.wavelength_vector" title="mangadap.util.fileio.wavelength_vector"><code class="xref py py-func docutils literal"><span class="pre">wavelength_vector()</span></code></a>.</div>
+</div>
+</dd>
+</dl>
+<dl class="function">
+<dt id="mangadap.util.fileio.channel_dictionary">
+<code class="descclassname">mangadap.util.fileio.</code><code class="descname">channel_dictionary</code><span class="sig-paren">(</span><em>hdu</em>, <em>ext</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/fileio.html#channel_dictionary"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.fileio.channel_dictionary" title="Permalink to this definition">¶</a></dt>
+<dd><p>Construct a dictionary of the channels in a MAPS file.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mangadap.util.fileio.channel_units">
+<code class="descclassname">mangadap.util.fileio.</code><code class="descname">channel_units</code><span class="sig-paren">(</span><em>hdu</em>, <em>ext</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/fileio.html#channel_units"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.fileio.channel_units" title="Permalink to this definition">¶</a></dt>
+<dd><p>Construct an array with the channel units.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mangadap.util.fileio.compress_file">
+<code class="descclassname">mangadap.util.fileio.</code><code class="descname">compress_file</code><span class="sig-paren">(</span><em>ifile</em>, <em>clobber=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/fileio.html#compress_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.fileio.compress_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compress a file using gzip.  The output file has the same name as
+the input file with ‘.gz’ appended.</p>
+<p>Any existing file will be overwritten if clobber is true.</p>
+<p>An error is raised if the input file name already has ‘.gz’ appended
+to the end.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mangadap.util.fileio.create_symlink">
+<code class="descclassname">mangadap.util.fileio.</code><code class="descname">create_symlink</code><span class="sig-paren">(</span><em>ofile</em>, <em>symlink_dir</em>, <em>relative_symlink=True</em>, <em>clobber=False</em>, <em>loggers=None</em>, <em>quiet=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/fileio.html#create_symlink"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.fileio.create_symlink" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a symlink to the input file in the provided directory.  If
+relative_symlink is True (default), the path to the file is relative
+to the directory with the symlink.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mangadap.util.fileio.init_record_array">
+<code class="descclassname">mangadap.util.fileio.</code><code class="descname">init_record_array</code><span class="sig-paren">(</span><em>shape</em>, <em>dtype</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/fileio.html#init_record_array"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.fileio.init_record_array" title="Permalink to this definition">¶</a></dt>
+<dd><p>Utility function that initializes a record array using a provided
+input data type.  For example:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">dtype</span> <span class="o">=</span> <span class="p">[</span> <span class="p">(</span><span class="s1">&#39;INDX&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int</span><span class="p">,</span> <span class="p">(</span><span class="mi">2</span><span class="p">,)</span> <span class="p">),</span>
+          <span class="p">(</span><span class="s1">&#39;VALUE&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">)</span> <span class="p">]</span>
+</pre></div>
+</div>
+<p>Defines two columns, one named <cite>INDEX</cite> with two integers per row and
+the one named <cite>VALUE</cite> with a single float element per row.  See
+<a class="reference external" href="http://docs.scipy.org/doc/numpy-1.10.1/reference/generated/numpy.recarray.html">numpy.recarray</a>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>shape</strong> (<em>int</em><em> or </em><em>tuple</em>) – Shape of the output array.</li>
+<li><strong>dtype</strong> (<em>list of tuples</em>) – List of the tuples that define each
+element in the record array.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Zeroed record array</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">numpy.recarray</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="mangadap.util.fileio.read_template_spectrum">
+<code class="descclassname">mangadap.util.fileio.</code><code class="descname">read_template_spectrum</code><span class="sig-paren">(</span><em>filename</em>, <em>data_ext=None</em>, <em>ivar_ext=None</em>, <em>sres_ext=None</em>, <em>log10=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/fileio.html#read_template_spectrum"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.fileio.read_template_spectrum" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read a template spectrum.</p>
+<p>Template spectra are “raw format” files with template data and are,
+at minimum, expected to have the following components:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">hdu</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;CRVAL1&#39;</span><span class="p">]</span>
+<span class="n">hdu</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;CRPIX1&#39;</span><span class="p">]</span>
+<span class="n">hdu</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;CDELT1&#39;</span><span class="p">]</span>
+<span class="n">hdu</span><span class="p">[</span><span class="n">data_ext</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+</pre></div>
+</div>
+<p>The latter has the flux data.  If <cite>log10</cite> is true, the wavelength
+solution above is expected to be in log wavelengths.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>filename</strong> (<em>str</em>) – Name of the fits file to read.</li>
+<li><strong>data_ext</strong> (<em>str</em>) – (<strong>Optional</strong>) Name of the extension with the
+flux data.  If None, default is 0.</li>
+<li><strong>ivar_ext</strong> (<em>str</em>) – (<strong>Optional</strong>) Name of the extension with the
+inverse variance data.  If None, no inverse data are
+returned.</li>
+<li><strong>sres_ext</strong> (<em>str</em>) – (<strong>Optional</strong>) Name of the extension with the
+specral resolution (:math:R=lambda/deltalambda`)
+measurements.  If None, no spectral resolution data are
+returned.</li>
+<li><strong>log10</strong> (<em>bool</em>) – (<strong>Optional</strong>) Flag the WCS wavelength coordinates
+as being in base-10 log wavelength, instead of linear.
+Default is to assume linear.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Up to four numpy.float64 arrays with the
+wavelength, flux, inverse variance (if <cite>ivar_ext</cite> is provided),
+and spectral resolution (if <cite>sres_ext</cite> is provided) of the
+template spectrum.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">numpy.ndarray</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
+<li><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if fits file is not one-dimensional.</li>
+<li><code class="xref py py-exc docutils literal"><span class="pre">KeyError</span></code> – Raised if various header keywords or extension names
+are not available.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="mangadap.util.fileio.readfits_1dspec">
+<code class="descclassname">mangadap.util.fileio.</code><code class="descname">readfits_1dspec</code><span class="sig-paren">(</span><em>filename</em>, <em>log10=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/fileio.html#readfits_1dspec"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.fileio.readfits_1dspec" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read a 1D fits spectrum and return two vectors with the wavelength
+and flux.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>filename</strong> (<em>str</em>) – Name of the file to read.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Two numpy.float64 arrays with the wavelength and
+flux read for the spectrum.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">numpy.ndarray</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal"><span class="pre">Exception</span></code> – Raised if the input fits file has more than one
+extension or its primary extension has more than two
+dimensions.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="mangadap.util.fileio.rec_to_fits_col_dim">
+<code class="descclassname">mangadap.util.fileio.</code><code class="descname">rec_to_fits_col_dim</code><span class="sig-paren">(</span><em>rec_element</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/fileio.html#rec_to_fits_col_dim"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.fileio.rec_to_fits_col_dim" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the string representation of the dimensions for the fits
+table column based on the provided record array element.</p>
+<p>The shape is inverted because the first element is supposed to be
+the most rapidly varying; i.e. the shape is supposed to be written
+as row-major, as opposed to the native column-major order in python.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mangadap.util.fileio.rec_to_fits_type">
+<code class="descclassname">mangadap.util.fileio.</code><code class="descname">rec_to_fits_type</code><span class="sig-paren">(</span><em>rec_element</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/fileio.html#rec_to_fits_type"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.fileio.rec_to_fits_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the string representation of a fits binary table data type
+based on the provided record array element.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mangadap.util.fileio.wavelength_vector">
+<code class="descclassname">mangadap.util.fileio.</code><code class="descname">wavelength_vector</code><span class="sig-paren">(</span><em>npix</em>, <em>header</em>, <em>log10=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/fileio.html#wavelength_vector"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.fileio.wavelength_vector" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a vector with wavelength coordinates drawn from the WCS
+coordinates in the header.  The function uses CRVAL1, CRPIX1,
+CDELT1.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mangadap.util.fileio.writefits_1dspec">
+<code class="descclassname">mangadap.util.fileio.</code><code class="descname">writefits_1dspec</code><span class="sig-paren">(</span><em>ofile</em>, <em>crval1</em>, <em>cdelt1</em>, <em>flux</em>, <em>hdr=None</em>, <em>clobber=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/fileio.html#writefits_1dspec"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.fileio.writefits_1dspec" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write a simple one-dimensional spectrum.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>ofile</strong> (<em>str</em>) – Name of the file to write.</li>
+<li><strong>crval1</strong> (<em>float</em>) – (Log base 10 of the) Initial wavelength, which
+is included in the header with the keyword ‘CRVAL1’;
+‘CRPIX1’ is always set to 1.</li>
+<li><strong>cdelt1</strong> (<em>float</em>) – The change in (log base 10) wavelength per
+pixel, which is included in the header with the keywords
+‘CDELT1’ and ‘CD1_1’; ‘CRPIX1’ is always set to 1.</li>
+<li><strong>flux</strong> (<em>array</em>) – Vector of the flux values.</li>
+<li><strong>clobber</strong> (<em>bool</em>) – (<strong>Optional</strong>) Flag to overwrite any existing
+file of the same name.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="mangadap.util.filter.html" class="btn btn-neutral float-right" title="mangadap.util.filter module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="mangadap.util.extinction.html" class="btn btn-neutral" title="mangadap.util.extinction module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, SDSS-IV/MaNGA Pipeline Group.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'2.2.2',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

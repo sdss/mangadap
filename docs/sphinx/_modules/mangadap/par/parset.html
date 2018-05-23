@@ -1,0 +1,826 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mangadap.par.parset &mdash; mangadap 2.2.2 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../search.html"/>
+    <link rel="top" title="mangadap 2.2.2 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> mangadap
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../mangadap.html">mangadap package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">mangadap</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>mangadap.par.parset</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for mangadap.par.parset</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Licensed under a 3-clause BSD style license - see LICENSE.rst</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Define a utility base class used to hold parameters.</span>
+
+<span class="sd">*License*:</span>
+<span class="sd">    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group</span>
+<span class="sd">        Licensed under BSD 3-clause license - see LICENSE.rst</span>
+
+<span class="sd">*Class usage examples*:</span>
+<span class="sd">    to be added</span>
+
+<span class="sd">.. todo::</span>
+<span class="sd">    - Add range and length parameters allowing one to define the range</span>
+<span class="sd">      allowed for the parameter values and number of elements required</span>
+<span class="sd">      (if the parameter is an array)</span>
+<span class="sd">    - Allow for a from_par_file classmethod to initialize the parameter</span>
+<span class="sd">      set based on a yanny parameter file.</span>
+<span class="sd">    - Save the defaults and allow for a revert_to_default function.</span>
+<span class="sd">    - Write an __add__ function that will all you to add multiple</span>
+<span class="sd">      parameter sets.</span>
+
+<span class="sd">*Revision history*:</span>
+<span class="sd">    | **16 Jun 2015**: Original implementation by K. Westfall (KBW)</span>
+<span class="sd">    | **18 Mar 2016**: (KBW) Change dtype checking</span>
+<span class="sd">    | **23 Mar 2016**: (KBW) Changed initialization type checking of</span>
+<span class="sd">        lists to use `isinstance`_.</span>
+<span class="sd">    | **02 Apr 2016**: (KBW) Allow input parameters to be callable</span>
+<span class="sd">        functions.</span>
+<span class="sd">    | **05 Apr 2018**: (KBW) Added to pypit repo</span>
+<span class="sd">    | **18 Apr 2018**: (KBW) Add parameter descriptions; keep default</span>
+<span class="sd">        values as attributes</span>
+<span class="sd">    | **19 Apr 2018**: (KBW) Spruce up the __repr__ function and add the</span>
+<span class="sd">        info function.  Add to_config function to write to a</span>
+<span class="sd">        configuration file.</span>
+
+<span class="sd">.. _isinstance: https://docs.python.org/2/library/functions.html#isinstance</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">import</span> <span class="nn">textwrap</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version</span> <span class="o">&gt;</span> <span class="s1">&#39;3&#39;</span><span class="p">:</span>
+    <span class="n">long</span> <span class="o">=</span> <span class="nb">int</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span>
+
+<div class="viewcode-block" id="ParSet"><a class="viewcode-back" href="../../../mangadap.par.parset.html#mangadap.par.parset.ParSet">[docs]</a><span class="k">class</span> <span class="nc">ParSet</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generic base class to handle and manipulate a list of operational</span>
+<span class="sd">    parameters.  A glorified dictionary that constrains and types its</span>
+<span class="sd">    components.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        pars (list):</span>
+<span class="sd">            A list of keywords for a list of parameter values.</span>
+<span class="sd">        values (:obj:`list`, optional):</span>
+<span class="sd">            Initialize the parameters to these values.  If not provided,</span>
+<span class="sd">            all parameters are initialized to `None` or the provided</span>
+<span class="sd">            default.</span>
+<span class="sd">        defaults (:obj:`list`, optional):</span>
+<span class="sd">            For any parameters not provided in the *values* list, use</span>
+<span class="sd">            these default values.  If not provided, no defaults are</span>
+<span class="sd">            assumed.</span>
+<span class="sd">        options (:obj:`list`, optional):</span>
+<span class="sd">            Force the parameters to be one of a list of options.  Each</span>
+<span class="sd">            element in the list can be a list itself.  If not provided,</span>
+<span class="sd">            all parameters are allowed to take on any value within the</span>
+<span class="sd">            allowed data type.</span>
+<span class="sd">        dtypes (:obj:`list`, optional):</span>
+<span class="sd">            Force the parameter to be one of a list of data types.  Each</span>
+<span class="sd">            element in the list can be a list itself.  If not provided,</span>
+<span class="sd">            all parameters are allowed to have any data type.</span>
+<span class="sd">        can_call (:obj:`list`, optional): Flag that the parameters are</span>
+<span class="sd">            callable operations.  Default is False.</span>
+<span class="sd">        descr (:obj:`list`, optional):</span>
+<span class="sd">            A list of parameter descriptions.  Empty strings by default.</span>
+<span class="sd">        cfg_section (:obj:`str`, optional): </span>
+<span class="sd">            The top-level designation for a configuration section</span>
+<span class="sd">            written based on the contents of this parameter set.</span>
+<span class="sd">        cfg_comment (:obj:`str`, optional): </span>
+<span class="sd">            Comment to be placed at the top-level of the configuration</span>
+<span class="sd">            section written based on the contents of this parameter set.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        TypeError:</span>
+<span class="sd">            Raised if the input parameters are not lists or if the input</span>
+<span class="sd">            keys are not strings.</span>
+<span class="sd">        ValueError:</span>
+<span class="sd">            Raised if any of the optional arguments do not have the same</span>
+<span class="sd">            length as the input list of parameter keys.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        npar (int):</span>
+<span class="sd">            Number of parameters</span>
+<span class="sd">        data (dict):</span>
+<span class="sd">            Dictionary with the parameter values</span>
+<span class="sd">        default (dict):</span>
+<span class="sd">            Dictionary with the default values</span>
+<span class="sd">        options (dict):</span>
+<span class="sd">            Dictionary with the allowed options for the parameter values</span>
+<span class="sd">        dtype (dict):</span>
+<span class="sd">            Dictionary with the allowed data types for the parameters</span>
+<span class="sd">        can_call (dict):</span>
+<span class="sd">            Dictionary with the callable flags</span>
+<span class="sd">        descr (dict):</span>
+<span class="sd">            Dictionary with the description of each parameter.</span>
+<span class="sd">        cfg_section (str): </span>
+<span class="sd">            The top-level designation for a configuration section</span>
+<span class="sd">            written based on the contents of this parameter set.</span>
+<span class="sd">        cfg_comment (str): </span>
+<span class="sd">            Comment to be placed at the top-level of the configuration</span>
+<span class="sd">            section written based on the contents of this parameter set.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pars</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">defaults</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dtypes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">can_call</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">descr</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">cfg_section</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">cfg_comment</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="c1"># Check that the list of input parameters is a list of strings</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pars</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Input parameter keys must be provided as a list.&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">pars</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Input parameter keys must be strings.&#39;</span><span class="p">)</span>
+        
+        <span class="c1"># Get the length of the parameter list and make sure the list</span>
+        <span class="c1"># has unique values</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">npar</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">pars</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">pars</span><span class="p">)))</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">npar</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;All input parameter keys must be unique.&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Check that the other lists, if provided, have the correct type</span>
+        <span class="c1"># and length</span>
+        <span class="k">if</span> <span class="n">values</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">(</span><span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">npar</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Values must be a list with the same length as the keys list.&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">defaults</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">(</span><span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">defaults</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">defaults</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">npar</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Defaults must be a list with the same length as the keys list.&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">options</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">(</span><span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">options</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">npar</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Options must be a list with the same length as the keys list.&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">dtypes</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">(</span><span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dtypes</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">dtypes</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">npar</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Data types list must have the same length as the keys list.&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">can_call</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">(</span><span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">can_call</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">can_call</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">npar</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;List of callable flags must have the same length as keys list.&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">descr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">(</span><span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">descr</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">descr</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">npar</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;List of parameter descriptions must have the same length as &#39;</span>
+                             <span class="s1">&#39;keys list.&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Set up dummy lists for no input</span>
+        <span class="n">_values</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">npar</span> <span class="k">if</span> <span class="n">values</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">values</span>
+        <span class="n">_defaults</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">npar</span> <span class="k">if</span> <span class="n">defaults</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">defaults</span>
+        <span class="n">_options</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">npar</span> <span class="k">if</span> <span class="n">options</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">options</span>
+        <span class="n">_dtypes</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">npar</span> <span class="k">if</span> <span class="n">dtypes</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">dtypes</span>
+        <span class="n">_can_call</span> <span class="o">=</span> <span class="p">[</span><span class="kc">False</span><span class="p">]</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">npar</span> <span class="k">if</span> <span class="n">can_call</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">can_call</span>
+        <span class="n">_descr</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;&#39;</span><span class="p">]</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">npar</span> <span class="k">if</span> <span class="n">descr</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">descr</span>
+
+        <span class="c1"># Set the defaults</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">default</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">([</span> <span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">d</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">pars</span><span class="p">,</span> <span class="n">_defaults</span><span class="p">)</span> <span class="p">])</span>
+
+        <span class="c1"># Set the valid options</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">options</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">([</span> <span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="p">[</span><span class="n">o</span><span class="p">])</span> <span class="k">if</span> <span class="n">o</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="k">else</span> <span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">o</span><span class="p">)</span> \
+                                       <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">o</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">pars</span><span class="p">,</span> <span class="n">_options</span><span class="p">)</span> <span class="p">])</span>
+        <span class="c1"># Set the valid types</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dtype</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">([</span> <span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="p">[</span><span class="n">t</span><span class="p">])</span> <span class="k">if</span> <span class="n">t</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="k">else</span> <span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span> \
+                                     <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">pars</span><span class="p">,</span> <span class="n">_dtypes</span><span class="p">)</span> <span class="p">])</span>
+
+        <span class="c1"># Set the calling flags</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">can_call</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">([</span> <span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">pars</span><span class="p">,</span> <span class="n">_can_call</span><span class="p">)</span> <span class="p">])</span>
+
+        <span class="c1"># Set the calling flags</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">descr</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">([</span> <span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">pars</span><span class="p">,</span> <span class="n">_descr</span><span class="p">)</span> <span class="p">])</span>
+
+        <span class="c1"># Set the data dictionary using the internal functions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">pars</span><span class="p">,</span> <span class="n">_defaults</span><span class="p">,</span> <span class="n">_values</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="fm">__setitem__</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">d</span><span class="p">)</span>
+                <span class="k">continue</span>
+            <span class="bp">self</span><span class="o">.</span><span class="fm">__setitem__</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+
+        <span class="c1"># Save the configuration file section details</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cfg_section</span> <span class="o">=</span> <span class="n">cfg_section</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cfg_comment</span> <span class="o">=</span> <span class="n">cfg_comment</span>
+
+
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the value of the designated key.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            key (str) : Key for new parameter</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+
+
+    <span class="k">def</span> <span class="nf">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the value for a key.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            key (str) : Key for new parameter</span>
+<span class="sd">            value (*dtype*) : Parameter value, must have a type in the</span>
+<span class="sd">                list provided (*dtype*), if the list is provided</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: Raised if the parameter value is not among the</span>
+<span class="sd">                allowed options (:attr:`options`).</span>
+<span class="sd">            TypeError: Raised if the parameter value does not have an</span>
+<span class="sd">                allowed data type (:attr:`dtype`) or if the provided</span>
+<span class="sd">                value is not a callable object, but is expected to be by</span>
+<span class="sd">                :attr:`can_call`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">value</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="n">key</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Input value for </span><span class="si">{0}</span><span class="s1"> invalid: </span><span class="si">{1}</span><span class="s1">.</span><span class="se">\n</span><span class="s1">Options are: </span><span class="si">{2}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                                                    <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="n">key</span><span class="p">]))</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> \
+                <span class="ow">and</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">([</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">d</span><span class="p">)</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">[</span><span class="n">key</span><span class="p">]]):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Input value for </span><span class="si">{0}</span><span class="s1"> has incorrect type: </span><span class="si">{1}</span><span class="s1">.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span> <span class="o">+</span>
+                            <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Valid types are: </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">[</span><span class="n">key</span><span class="p">]))</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">can_call</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">callable</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1"> is not a callable object.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+
+    <span class="k">def</span> <span class="nf">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the number of parameters.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">npar</span>
+        
+
+    <span class="k">def</span> <span class="nf">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return an iterable to the parameter values.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a string representation of the parameters.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_output_string</span><span class="p">(</span><span class="n">header</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cfg_section</span><span class="p">)</span>
+
+    
+<div class="viewcode-block" id="ParSet._output_string"><a class="viewcode-back" href="../../../mangadap.par.parset.html#mangadap.par.parset.ParSet._output_string">[docs]</a>    <span class="k">def</span> <span class="nf">_output_string</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">additional_par_strings</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">data_table</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">npar</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">object</span><span class="p">)</span>
+        <span class="n">data_table</span><span class="p">[</span><span class="mi">0</span><span class="p">,:]</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Parameter&#39;</span><span class="p">,</span> <span class="s1">&#39;Value&#39;</span><span class="p">,</span> <span class="s1">&#39;Default&#39;</span><span class="p">,</span> <span class="s1">&#39;Type&#39;</span><span class="p">,</span> <span class="s1">&#39;Callable&#39;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+            <span class="n">data_table</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">k</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">ParSet</span><span class="p">):</span>
+                <span class="n">_header</span> <span class="o">=</span> <span class="n">k</span> <span class="k">if</span> <span class="n">header</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="s1">&#39;</span><span class="si">{0}</span><span class="s1">:</span><span class="si">{1}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">header</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
+                <span class="n">additional_par_strings</span> <span class="o">+=</span> <span class="p">[</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">_output_string</span><span class="p">(</span><span class="n">header</span><span class="o">=</span><span class="n">_header</span><span class="p">)</span> <span class="p">]</span>
+                <span class="n">data_table</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;see below&#39;</span>
+                <span class="n">data_table</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;see below&#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">data_table</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">ParSet</span><span class="o">.</span><span class="n">_data_string</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+                <span class="n">data_table</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">ParSet</span><span class="o">.</span><span class="n">_data_string</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">default</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+            <span class="n">data_table</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">t</span><span class="o">.</span><span class="vm">__name__</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">[</span><span class="n">k</span><span class="p">]])</span>
+            <span class="n">data_table</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">can_call</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="fm">__repr__</span><span class="p">()</span>
+
+        <span class="n">output</span> <span class="o">=</span> <span class="p">[</span><span class="n">ParSet</span><span class="o">.</span><span class="n">_data_table_string</span><span class="p">(</span><span class="n">data_table</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="n">header</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">output</span> <span class="o">=</span> <span class="p">[</span><span class="n">header</span><span class="p">]</span> <span class="o">+</span> <span class="n">output</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">additional_par_strings</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">output</span> <span class="o">+=</span> <span class="n">additional_par_strings</span>
+        <span class="k">return</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">output</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ParSet._data_table_string"><a class="viewcode-back" href="../../../mangadap.par.parset.html#mangadap.par.parset.ParSet._data_table_string">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_data_table_string</span><span class="p">(</span><span class="n">data_table</span><span class="p">):</span>
+        <span class="n">nrows</span><span class="p">,</span> <span class="n">ncols</span> <span class="o">=</span> <span class="n">data_table</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">col_width</span> <span class="o">=</span> <span class="p">[</span> <span class="n">numpy</span><span class="o">.</span><span class="n">amax</span><span class="p">([</span> <span class="nb">len</span><span class="p">(</span><span class="n">dij</span><span class="p">)</span> <span class="k">for</span> <span class="n">dij</span> <span class="ow">in</span> <span class="n">dj</span><span class="p">])</span> <span class="k">for</span> <span class="n">dj</span> <span class="ow">in</span> <span class="n">data_table</span><span class="o">.</span><span class="n">T</span> <span class="p">]</span>
+        <span class="n">row_string</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;&#39;</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="n">nrows</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+        <span class="c1"># Heading row</span>
+        <span class="n">row_string</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;  &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span> <span class="n">data_table</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="n">col_width</span><span class="p">[</span><span class="n">j</span><span class="p">])</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">ncols</span><span class="p">)])</span>
+        <span class="c1"># Delimiter</span>
+        <span class="n">row_string</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;-&#39;</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">row_string</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="n">nrows</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+            <span class="n">row_string</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;  &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span> <span class="n">data_table</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">rjust</span><span class="p">(</span><span class="n">col_width</span><span class="p">[</span><span class="n">j</span><span class="p">])</span> 
+                                                                        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">ncols</span><span class="p">)])</span>
+        <span class="k">return</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">row_string</span><span class="p">)</span><span class="o">+</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span></div>
+
+
+<div class="viewcode-block" id="ParSet._data_string"><a class="viewcode-back" href="../../../mangadap.par.parset.html#mangadap.par.parset.ParSet._data_string">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_data_string</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">data</span>
+        <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s1">&#39;__len__&#39;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span> <span class="n">ParSet</span><span class="o">.</span><span class="n">_data_string</span><span class="p">(</span><span class="n">d</span><span class="p">)</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">data</span> <span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">data</span><span class="o">.</span><span class="fm">__repr__</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="ParSet._wrap_print"><a class="viewcode-back" href="../../../mangadap.par.parset.html#mangadap.par.parset.ParSet._wrap_print">[docs]</a>    <span class="k">def</span> <span class="nf">_wrap_print</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">head</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="n">tcols</span><span class="p">):</span>
+        <span class="n">tail</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">head</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">tcols</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">lines</span> <span class="o">=</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">wrap</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">output</span><span class="p">),</span> <span class="n">tcols</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">head</span><span class="p">))</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1">None&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">head</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">_head</span> <span class="o">=</span> <span class="p">[</span> <span class="n">head</span> <span class="p">]</span> <span class="o">+</span> <span class="p">[</span> <span class="n">tail</span> <span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span> <span class="n">h</span><span class="o">+</span><span class="n">l</span> <span class="k">for</span> <span class="n">h</span><span class="p">,</span><span class="n">l</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">_head</span><span class="p">,</span> <span class="n">lines</span><span class="p">)]))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">head</span><span class="o">+</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">output</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="ParSet._types_list"><a class="viewcode-back" href="../../../mangadap.par.parset.html#mangadap.par.parset.ParSet._types_list">[docs]</a>    <span class="k">def</span> <span class="nf">_types_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="vm">__name__</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">[</span><span class="n">key</span><span class="p">]]</span></div>
+
+
+<div class="viewcode-block" id="ParSet._config_lines"><a class="viewcode-back" href="../../../mangadap.par.parset.html#mangadap.par.parset.ParSet._config_lines">[docs]</a>    <span class="k">def</span> <span class="nf">_config_lines</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">section_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">section_comment</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">section_level</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Recursively generate the lines of a configuration file based on</span>
+<span class="sd">        this ParSet and its ParSet members.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Get the list of parameters that are ParSets</span>
+        <span class="n">parset_keys</span> <span class="o">=</span> <span class="p">[</span> <span class="n">k</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">ParSet</span><span class="p">)</span> <span class="p">]</span>
+        <span class="n">n_parsets</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">parset_keys</span><span class="p">)</span>
+
+        <span class="c1"># Set the top-level comment and section name</span>
+        <span class="n">section_indent</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span><span class="o">*</span><span class="mi">4</span><span class="o">*</span><span class="n">section_level</span>
+        <span class="n">component_indent</span> <span class="o">=</span> <span class="n">section_indent</span> <span class="o">+</span> <span class="s1">&#39; &#39;</span><span class="o">*</span><span class="mi">4</span>
+        <span class="n">config_lines</span> <span class="o">=</span> <span class="p">[]</span> <span class="k">if</span> <span class="n">section_comment</span> <span class="ow">is</span> <span class="kc">None</span> \
+                            <span class="k">else</span> <span class="n">ParSet</span><span class="o">.</span><span class="n">_config_comment</span><span class="p">(</span><span class="n">section_comment</span><span class="p">,</span> <span class="n">section_indent</span><span class="p">)</span>
+        <span class="n">config_lines</span> <span class="o">+=</span> <span class="p">[</span> <span class="n">section_indent</span> <span class="o">+</span> <span class="s1">&#39;[&#39;</span><span class="o">*</span><span class="p">(</span><span class="n">section_level</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="n">section_name</span>
+                            <span class="o">+</span> <span class="s1">&#39;]&#39;</span><span class="o">*</span><span class="p">(</span><span class="n">section_level</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="p">]</span>
+
+        <span class="c1"># Add all the parameters that are not ParSets</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">n_parsets</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">parset_keys</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">descr</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">config_lines</span> <span class="o">+=</span> <span class="n">ParSet</span><span class="o">.</span><span class="n">_config_comment</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">descr</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">component_indent</span><span class="p">)</span>
+            <span class="n">config_lines</span> <span class="o">+=</span> <span class="p">[</span> <span class="n">component_indent</span> <span class="o">+</span> <span class="n">k</span> <span class="o">+</span> <span class="s1">&#39; = &#39;</span> <span class="o">+</span> <span class="n">ParSet</span><span class="o">.</span><span class="n">_data_string</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">k</span><span class="p">])</span> <span class="p">]</span>
+
+        <span class="c1"># Then add the items that are ParSets as subsections</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">parset_keys</span><span class="p">:</span>
+            <span class="n">config_lines</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">_config_lines</span><span class="p">(</span><span class="n">section_name</span><span class="o">=</span><span class="n">k</span><span class="p">,</span>
+                                                       <span class="n">section_comment</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">descr</span><span class="p">[</span><span class="n">k</span><span class="p">],</span>
+                                                       <span class="n">section_level</span><span class="o">=</span><span class="n">section_level</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">config_lines</span></div>
+
+
+<div class="viewcode-block" id="ParSet._config_comment"><a class="viewcode-back" href="../../../mangadap.par.parset.html#mangadap.par.parset.ParSet._config_comment">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_config_comment</span><span class="p">(</span><span class="n">comment</span><span class="p">,</span> <span class="n">indent</span><span class="p">,</span> <span class="n">full_width</span><span class="o">=</span><span class="mi">72</span><span class="p">):</span>
+        <span class="n">head</span> <span class="o">=</span> <span class="n">indent</span> <span class="o">+</span> <span class="s1">&#39;# &#39;</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">wrap</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">comment</span><span class="p">),</span> <span class="n">full_width</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">head</span><span class="p">))</span>
+        <span class="k">return</span> <span class="p">[</span> <span class="n">head</span> <span class="o">+</span> <span class="n">l</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">lines</span> <span class="p">]</span></div>
+   
+
+<div class="viewcode-block" id="ParSet.info"><a class="viewcode-back" href="../../../mangadap.par.parset.html#mangadap.par.parset.ParSet.info">[docs]</a>    <span class="k">def</span> <span class="nf">info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">basekey</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A long-form version of __repr__ that includes the parameter descriptions.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Try to get the width of the available space to print</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">tr</span><span class="p">,</span> <span class="n">tcols</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">popen</span><span class="p">(</span><span class="s1">&#39;stty size&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">())</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+            <span class="n">tcols</span> <span class="o">-=</span> <span class="nb">int</span><span class="p">(</span><span class="n">tcols</span><span class="o">*</span><span class="mf">0.1</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">tr</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">tcols</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">ParSet</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">basekey</span><span class="o">=</span><span class="n">k</span><span class="p">)</span>
+                <span class="k">continue</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="k">if</span> <span class="n">basekey</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="s1">&#39;</span><span class="si">{0}</span><span class="s1">:</span><span class="si">{1}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">basekey</span><span class="p">,</span><span class="n">k</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_wrap_print</span><span class="p">(</span><span class="s1">&#39;        Value: &#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">tcols</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_wrap_print</span><span class="p">(</span><span class="s1">&#39;      Default: &#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">default</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">tcols</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_wrap_print</span><span class="p">(</span><span class="s1">&#39;      Options: &#39;</span><span class="p">,</span> <span class="s1">&#39;None&#39;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span>
+                                                <span class="k">else</span> <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="n">k</span><span class="p">]),</span> <span class="n">tcols</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_wrap_print</span><span class="p">(</span><span class="s1">&#39;  Valid Types: &#39;</span><span class="p">,</span> <span class="s1">&#39;None&#39;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span>
+                                                <span class="k">else</span> <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_types_list</span><span class="p">(</span><span class="n">k</span><span class="p">)),</span> <span class="n">tcols</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_wrap_print</span><span class="p">(</span><span class="s1">&#39;     Callable: &#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">can_call</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">tcols</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_wrap_print</span><span class="p">(</span><span class="s1">&#39;  Description: &#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">descr</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">tcols</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ParSet.keys"><a class="viewcode-back" href="../../../mangadap.par.parset.html#mangadap.par.parset.ParSet.keys">[docs]</a>    <span class="k">def</span> <span class="nf">keys</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span></div>
+
+    
+<div class="viewcode-block" id="ParSet.add"><a class="viewcode-back" href="../../../mangadap.par.parset.html#mangadap.par.parset.ParSet.add">[docs]</a>    <span class="k">def</span> <span class="nf">add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">can_call</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">descr</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add a new parameter.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            key (:obj:`str`):</span>
+<span class="sd">                Key for new parameter</span>
+<span class="sd">            value (:obj:`dtype`):</span>
+<span class="sd">                Parameter value, must have a type in the list provided</span>
+<span class="sd">                by :arg:`dtype`, if the list is provided</span>
+<span class="sd">            default (:obj:`dtype`, optional):</span>
+<span class="sd">                Define a default value for the parameter, must have a</span>
+<span class="sd">                type in the list provided by :arg:`dtype`, if the list</span>
+<span class="sd">                is provided.  No default if not provided.</span>
+<span class="sd">            options (:obj:`list`, optional):</span>
+<span class="sd">                List of discrete values that the parameter is allowed to</span>
+<span class="sd">                have.  Allowed to be anything if not provided.</span>
+<span class="sd">            dtype (:obj:`list`, optional):</span>
+<span class="sd">                List of allowed data types that the parameter can have.</span>
+<span class="sd">                Allowed to be anything if not provided.</span>
+<span class="sd">            can_call (:obj:`bool`, optional):</span>
+<span class="sd">                Flag that the parameters are callable operations.</span>
+<span class="sd">                Default is False.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Keyword </span><span class="si">{0}</span><span class="s1"> already exists and cannot be added!&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">npar</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">default</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">default</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">default</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">options</span><span class="p">]</span> <span class="k">if</span> <span class="n">options</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> \
+                                      <span class="k">else</span> <span class="n">options</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">dtype</span><span class="p">]</span> <span class="k">if</span> <span class="n">dtype</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dtype</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="k">else</span> <span class="n">dtype</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">can_call</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span> <span class="k">if</span> <span class="n">can_call</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">can_call</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">descr</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">descr</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">descr</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="fm">__setitem__</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="c1"># Delete the added components</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">default</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">dtype</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">can_call</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">descr</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="c1"># Re-raise the exception</span>
+            <span class="k">raise</span></div>
+
+
+<div class="viewcode-block" id="ParSet.to_config"><a class="viewcode-back" href="../../../mangadap.par.parset.html#mangadap.par.parset.ParSet.to_config">[docs]</a>    <span class="k">def</span> <span class="nf">to_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cfg_file</span><span class="p">,</span> <span class="n">section_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">section_comment</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">section_level</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                  <span class="n">append</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">quiet</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Write/Append the parameter set to a configuration file.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            cfg_file (str):</span>
+<span class="sd">                The name of the file to write/append to.</span>
+<span class="sd">            section_name (:obj:`str`, optional):</span>
+<span class="sd">                The top-level name for the config section.  This must be</span>
+<span class="sd">                provided if :attr:`cfg_section` is None or any of the</span>
+<span class="sd">                parameters are not also ParSet instances themselves.</span>
+<span class="sd">            section_comment (:obj:`str`, optional):</span>
+<span class="sd">                The top-level comment for the config section based on</span>
+<span class="sd">                this ParSet.</span>
+<span class="sd">            section_level (:obj:`int`, optional):</span>
+<span class="sd">                The top level of this ParSet.  Used for recursive output</span>
+<span class="sd">                of nested ParSets.</span>
+<span class="sd">            append (:obj:`bool`, optional):</span>
+<span class="sd">                Append this configuration output of this ParSet to the</span>
+<span class="sd">                file.  False by default.  If not appending and the file</span>
+<span class="sd">                exists, the file is automatically overwritten.</span>
+<span class="sd">            quiet (:obj:`bool`, optional):</span>
+<span class="sd">                Suppress all standard output from the function.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError:</span>
+<span class="sd">                Raised if there are types other than ParSet in the</span>
+<span class="sd">                parameter list, :attr:`cfg_section` is None, and no</span>
+<span class="sd">                section_name argument was provided.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">cfg_file</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">append</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">quiet</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Selected configuration file already exists and will be overwritten!&#39;</span><span class="p">)</span>
+
+        <span class="n">config_output</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">numpy</span><span class="o">.</span><span class="n">all</span><span class="p">([</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">ParSet</span><span class="p">)</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="p">]):</span>
+            <span class="c1"># All the elements are ParSets themselves, so just iterate</span>
+            <span class="c1"># through each one</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="n">config_output</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">_config_lines</span><span class="p">(</span><span class="n">section_name</span><span class="o">=</span><span class="n">k</span><span class="p">,</span>
+                                                            <span class="n">section_comment</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">descr</span><span class="p">[</span><span class="n">k</span><span class="p">],</span>
+                                                            <span class="n">section_level</span><span class="o">=</span><span class="n">section_level</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">section_name</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg_section</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;No top-level section name available for configuration!&#39;</span><span class="p">)</span>
+
+            <span class="n">_section_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg_section</span> <span class="k">if</span> <span class="n">section_name</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">section_name</span>
+            <span class="n">_section_comment</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cfg_comment</span> <span class="k">if</span> <span class="n">section_comment</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">section_comment</span>
+            <span class="n">config_output</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config_lines</span><span class="p">(</span><span class="n">section_name</span><span class="o">=</span><span class="n">_section_name</span><span class="p">,</span>
+                                                <span class="n">section_comment</span><span class="o">=</span><span class="n">_section_comment</span><span class="p">,</span>
+                                                <span class="n">section_level</span><span class="o">=</span><span class="n">section_level</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">cfg_file</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span> <span class="k">if</span> <span class="n">append</span> <span class="k">else</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">config_output</span><span class="p">))</span></div></div>
+
+
+<div class="viewcode-block" id="ParDatabase"><a class="viewcode-back" href="../../../mangadap.par.parset.html#mangadap.par.parset.ParDatabase">[docs]</a><span class="k">class</span> <span class="nc">ParDatabase</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class used as a list of ParSets in a glorified structured numpy</span>
+<span class="sd">    array.</span>
+
+<span class="sd">    Very similar to yanny when converted to a numpy array.</span>
+
+<span class="sd">    Can be initialized using a list of ParSet objects, or an SDSS</span>
+<span class="sd">    parameter file.</span>
+
+<span class="sd">    .. todo::</span>
+
+<span class="sd">        - Check that the data types are the same for all ParSet objects</span>
+<span class="sd">          in the list</span>
+<span class="sd">        - Better handle the NaN values when converting None to a float</span>
+<span class="sd">          type</span>
+<span class="sd">        - Add from_par_file classmethod?</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inp</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        nsets - number of parameter sets</span>
+<span class="sd">        npar - number of parameters in each parameter set</span>
+<span class="sd">        data - parameter set data</span>
+<span class="sd">        options - allowed options for values</span>
+<span class="sd">        dtype - allowed datatypes</span>
+<span class="sd">        can_call - parameter is a callable function</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">_inp</span> <span class="o">=</span> <span class="p">[</span><span class="n">inp</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">inp</span><span class="p">,</span> <span class="n">ParSet</span><span class="p">)</span> <span class="k">else</span> <span class="n">inp</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">_inp</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Input must be a list.&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">_inp</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">ParSet</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Input must be a list of ParSet objects.&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">npar</span> <span class="o">=</span> <span class="n">_inp</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">npar</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nsets</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">_inp</span><span class="p">)</span>
+        <span class="n">keys</span> <span class="o">=</span> <span class="n">_inp</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">nsets</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">_inp</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">npar</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">npar</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Not all ParSet objects have the same number of parameters.&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">_inp</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="o">!=</span> <span class="n">keys</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Not all ParSet objects have the same keys.&#39;</span><span class="p">)</span>
+            <span class="c1"># Other checks?</span>
+
+        <span class="n">record_dtypes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_set_dtypes</span><span class="p">(</span><span class="n">_inp</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+        <span class="n">data</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nsets</span><span class="p">):</span>
+            <span class="n">data</span> <span class="o">+=</span> <span class="p">[</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">_inp</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">])</span> <span class="p">]</span>
+
+        <span class="c1"># WARNING: None values are converted to nan if data type is</span>
+        <span class="c1"># float</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">record_dtypes</span> <span class="p">)</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">recarray</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">options</span> <span class="o">=</span> <span class="n">inp</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dtype</span> <span class="o">=</span> <span class="n">inp</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">can_call</span> <span class="o">=</span> <span class="n">inp</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">can_call</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+   
+
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the value of the designated key.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            key (str) : Key for new parameter</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="ParDatabase._set_dtypes"><a class="viewcode-back" href="../../../mangadap.par.parset.html#mangadap.par.parset.ParDatabase._set_dtypes">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_set_dtypes</span><span class="p">(</span><span class="n">inp</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+        <span class="n">keys</span> <span class="o">=</span> <span class="n">inp</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <span class="n">dtypes</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">inp</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">dtypes</span> <span class="o">+=</span> <span class="p">[(</span><span class="n">k</span><span class="p">,</span><span class="nb">object</span><span class="p">)]</span>
+                <span class="k">continue</span>
+            <span class="c1"># inp.dtype is always a list</span>
+            <span class="k">if</span> <span class="nb">any</span><span class="p">([</span><span class="n">t</span> <span class="ow">in</span> <span class="n">inp</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="p">[</span><span class="nb">int</span> <span class="p">,</span> <span class="nb">float</span><span class="p">]])</span> \
+                <span class="ow">and</span> <span class="nb">any</span><span class="p">([</span><span class="n">t</span> <span class="ow">in</span> <span class="n">inp</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="p">[</span><span class="nb">list</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]):</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Parameter set has elements that can be either individual &#39;</span> \
+                              <span class="s1">&#39;ints/floats or lists/arrays.  Database column </span><span class="si">{0}</span><span class="s1"> will have type &#39;</span> \
+                              <span class="s1">&#39;</span><span class="se">\&#39;</span><span class="s1">object</span><span class="se">\&#39;</span><span class="s1">.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">k</span><span class="p">))</span>
+                <span class="n">dtypes</span> <span class="o">+=</span> <span class="p">[(</span><span class="n">k</span><span class="p">,</span><span class="nb">object</span><span class="p">)]</span>
+            <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="nb">list</span><span class="p">({</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">}</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">inp</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="p">[</span><span class="n">k</span><span class="p">])))</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">dtypes</span> <span class="o">+=</span> <span class="p">[(</span><span class="n">k</span><span class="p">,</span><span class="nb">float</span><span class="p">)]</span>
+            <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="nb">list</span><span class="p">({</span><span class="nb">list</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">}</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">inp</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="p">[</span><span class="n">k</span><span class="p">])))</span> <span class="o">==</span> <span class="mi">0</span> \
+                    <span class="ow">or</span> <span class="n">inp</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">==</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+                <span class="n">_inp</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">inp</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">k</span><span class="p">])</span>
+                <span class="n">dtypes</span> <span class="o">+=</span> <span class="p">[(</span><span class="n">k</span><span class="p">,</span><span class="n">_inp</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span><span class="n">_inp</span><span class="o">.</span><span class="n">shape</span><span class="p">)]</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">inp</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">k</span><span class="p">],</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="k">if</span> <span class="nb">any</span><span class="p">([</span> <span class="n">_inp</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">_inp</span> <span class="ow">in</span> <span class="n">inp</span><span class="p">]):</span>
+                    <span class="n">dtypes</span> <span class="o">+=</span> <span class="p">[(</span><span class="n">k</span><span class="p">,</span> <span class="nb">object</span><span class="p">)]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">dtypes</span> <span class="o">+=</span> <span class="p">[(</span><span class="n">k</span><span class="p">,</span><span class="s1">&#39;&lt;U</span><span class="si">{0:d}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">max</span><span class="p">([</span> <span class="nb">len</span><span class="p">(</span><span class="n">_inp</span><span class="p">[</span><span class="n">k</span><span class="p">])</span> <span class="k">for</span> <span class="n">_inp</span> <span class="ow">in</span> <span class="n">inp</span><span class="p">])))]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">dtypes</span> <span class="o">+=</span> <span class="p">[(</span><span class="n">k</span><span class="p">,</span><span class="nb">type</span><span class="p">(</span><span class="n">inp</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">k</span><span class="p">]))]</span>
+        <span class="k">return</span> <span class="n">dtypes</span></div>
+
+
+<div class="viewcode-block" id="ParDatabase.append"><a class="viewcode-back" href="../../../mangadap.par.parset.html#mangadap.par.parset.ParDatabase.append">[docs]</a>    <span class="k">def</span> <span class="nf">append</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pdb</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pdb</span><span class="p">,</span> <span class="n">ParDatabase</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Can only append ParDatabase object.&#39;</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">pdb</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">TypeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Could not append data:: </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">e</span><span class="p">))</span></div></div>
+            
+
+
+
+</pre></div>
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, SDSS-IV/MaNGA Pipeline Group.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'2.2.2',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

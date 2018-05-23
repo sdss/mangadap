@@ -1,0 +1,1442 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mangadap.survey.drpcomplete &mdash; mangadap 2.2.2 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../search.html"/>
+    <link rel="top" title="mangadap 2.2.2 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> mangadap
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../mangadap.html">mangadap package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">mangadap</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>mangadap.survey.drpcomplete</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for mangadap.survey.drpcomplete</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Licensed under a 3-clause BSD style license - see LICENSE.rst</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Defines a class used to produce and provide an interface for data</span>
+<span class="sd">required to create the input `SDSS parameter files`_ for the DAP.</span>
+
+<span class="sd">The drpcomplete file/data is primarily required for the survey-level</span>
+<span class="sd">execution of the `DAP at Utah`_.  However, it does provide useful</span>
+<span class="sd">information regarding the completed DRP files, and it can be used to</span>
+<span class="sd">create DAP par files.</span>
+
+<span class="sd">Preferrably, however, one should get this information from the DRPall,</span>
+<span class="sd">or forthcoming DAPall, file for a given MPL.</span>
+
+<span class="sd">Until further documented here, the description of the `DAP par</span>
+<span class="sd">file`_ is available in the SDSS-IV/MaNGA `Technical Reference Manual`_.</span>
+
+<span class="sd">*License*:</span>
+<span class="sd">    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group</span>
+<span class="sd">        Licensed under BSD 3-clause license - see LICENSE.rst</span>
+
+<span class="sd">*Source location*:</span>
+<span class="sd">    $MANGADAP_DIR/python/mangadap/survey/drpcomplete.py</span>
+
+<span class="sd">*Imports and python version compliance*:</span>
+<span class="sd">    ::</span>
+
+<span class="sd">        from __future__ import division</span>
+<span class="sd">        from __future__ import print_function</span>
+<span class="sd">        from __future__ import absolute_import</span>
+<span class="sd">        from __future__ import unicode_literals</span>
+
+<span class="sd">        import sys</span>
+<span class="sd">        if sys.version &gt; &#39;3&#39;:</span>
+<span class="sd">            long = int</span>
+
+<span class="sd">        import os</span>
+<span class="sd">        import numpy</span>
+<span class="sd">        import warnings</span>
+<span class="sd">        from astropy.io import fits</span>
+<span class="sd">        import astropy.constants</span>
+<span class="sd">        from pydl.pydlutils.yanny import yanny</span>
+
+<span class="sd">        from ..config import defaults</span>
+<span class="sd">        from . import drpfits</span>
+<span class="sd">        from ..util.parser import arginp_to_list, list_to_csl_string, parse_drp_file_name</span>
+<span class="sd">        from ..util.exception_tools import print_frame</span>
+
+<span class="sd">*Class usage examples*:</span>
+<span class="sd">    Add some usage comments here!</span>
+
+<span class="sd">*Revision history*:</span>
+<span class="sd">    | **20 Nov 2014**: Started implementation by K. Westfall (KBW)</span>
+<span class="sd">    | **01 Dec 2014**: (KBW) Committed to SVN</span>
+<span class="sd">    | **12 Jan 2015**: (KBW) Allow for use of plateTargets file using yanny.py</span>
+<span class="sd">    | **19 Mar 2015**: (KBW) Adjustments for changes to drpfile and</span>
+<span class="sd">        drpfile_list.  Now always sets the names of the NSA catalogs and</span>
+<span class="sd">        the plateTargets files; added the nsa_catid.  Changed drppath to</span>
+<span class="sd">        redux_path.  Added catid and catindx to output file.  Major</span>
+<span class="sd">        change to matching when using NSA catalog(s).  Imports full</span>
+<span class="sd">        :class:`mangadap.drpfits` and :class:`mangadap.dapfile` classes,</span>
+<span class="sd">        require a change to the function calls. Changed parameter order</span>
+<span class="sd">        in :func:`write` and allowed for use of attributes as default.</span>
+<span class="sd">    | **20 May 2015**: (KBW) Documentation and Sphinx tests. Prep for</span>
+<span class="sd">        conversion from NSA to TRG nomenclatature, but still need to</span>
+<span class="sd">        make the full conversion.</span>
+<span class="sd">    | **21 Aug 2015**: (KBW) Major revisions: File moved from main</span>
+<span class="sd">        module to survey submodule; now only reads plateTargets files,</span>
+<span class="sd">        which have the NSA IDs in them; changed the number of arrays</span>
+<span class="sd">        returned by :func:`DRPComplete._match_platetargets` and the</span>
+<span class="sd">        default values; removed def_veldisp and use_trg from</span>
+<span class="sd">        :func:`DRPComplete.update`; added target-catalog version, and</span>
+<span class="sd">        NSAID v1_0_0 to the output fits file; removed options from</span>
+<span class="sd">        :func:`DRPComplete.write` related to the target catalogs and</span>
+<span class="sd">        platetargets files (these should be defined by the object);</span>
+<span class="sd">    | **27 Aug 2015**: (KBW) Include MANGA_TARGET1 and MANGA_TARGET3 in</span>
+<span class="sd">        data structure, pulled from plateTargets files; NSAID v1_0_0</span>
+<span class="sd">        removed; changed from returning Sersic parameters to elliptical</span>
+<span class="sd">        Petrosian parameters.</span>
+<span class="sd">    | **06 Oct 2015**: (KBW) Changed to reading &#39;object_ra&#39; and</span>
+<span class="sd">        &#39;object_dec&#39;, instead of target counter parts due to changes in</span>
+<span class="sd">        MaNGA core</span>
+<span class="sd">    | **17 Feb 2016**: (KBW) Converted the name of the class to</span>
+<span class="sd">        DRPComplete</span>
+<span class="sd">    | **29 Feb 2016**: (KBW) Import drpfits, not drpfile</span>
+<span class="sd">    | **13 May 2016**: (KBW) Switch to using `pydl.pydlutils.yanny`_</span>
+<span class="sd">        instead of internal yanny reader.  Incorporated changes to</span>
+<span class="sd">        plateTargets column names defined for DR13.</span>
+<span class="sd">    | **02 Aug 2016**: (KBW) Added directory_path input parameter to</span>
+<span class="sd">        :class:`DRPComplete`</span>
+<span class="sd">    | **01 Mar 2018**: (KBW) Added ability to read the redshift fix</span>
+<span class="sd">        file.</span>
+<span class="sd">    </span>
+<span class="sd">.. _DAP par file: https://trac.sdss.org/wiki/MANGA/TRM/TRM_ActiveDev/dap/Summary/parFile</span>
+<span class="sd">.. _Technical Reference Manual: https://trac.sdss.org/wiki/MANGA/TRM/TRM_ActiveDev</span>
+<span class="sd">.. _SDSS parameter files: http://www.sdss.org/dr12/software/par/</span>
+<span class="sd">.. _DAP at Utah: https://trac.sdss.org/wiki/MANGA/TRM/TRM_ActiveDev/dap/Summary/Utah</span>
+<span class="sd">.. _pydl.pydlutils.yanny: http://pydl.readthedocs.io/en/stable/api/pydl.pydlutils.yanny.yanny.html</span>
+<span class="sd">.. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version</span> <span class="o">&gt;</span> <span class="s1">&#39;3&#39;</span><span class="p">:</span>
+    <span class="n">long</span> <span class="o">=</span> <span class="nb">int</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">from</span> <span class="nn">astropy.io</span> <span class="k">import</span> <span class="n">fits</span>
+<span class="kn">import</span> <span class="nn">astropy.constants</span>
+<span class="kn">from</span> <span class="nn">pydl.pydlutils.yanny</span> <span class="k">import</span> <span class="n">yanny</span>
+
+<span class="kn">from</span> <span class="nn">..config</span> <span class="k">import</span> <span class="n">defaults</span>
+<span class="kn">from</span> <span class="nn">..</span> <span class="k">import</span> <span class="n">drpfits</span>
+<span class="kn">from</span> <span class="nn">..util.parser</span> <span class="k">import</span> <span class="n">arginp_to_list</span><span class="p">,</span> <span class="n">list_to_csl_string</span><span class="p">,</span> <span class="n">parse_drp_file_name</span>
+<span class="kn">from</span> <span class="nn">..util.exception_tools</span> <span class="k">import</span> <span class="n">print_frame</span>
+
+<div class="viewcode-block" id="DRPComplete"><a class="viewcode-back" href="../../../mangadap.survey.drpcomplete.html#mangadap.survey.drpcomplete.DRPComplete">[docs]</a><span class="k">class</span> <span class="nc">DRPComplete</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Find DRP files ready for analysis and write parameter files.</span>
+
+<span class="sd">    This class searches the defined paths for files resulting from the</span>
+<span class="sd">    3D phase of the MaNGA DRP, and then collates the information</span>
+<span class="sd">    necessary to run those files through the MaNGA DAP.  The necessary</span>
+<span class="sd">    parameters are pulled from the provided platetargets files; see</span>
+<span class="sd">    :func:`update`.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        platelist (str or list): (**Optional**) List of plates to search</span>
+<span class="sd">            for.  Default is to search the full DRP path.</span>
+<span class="sd">        ifudesignlist (str or list): (**Optional**) List of ifudesign to</span>
+<span class="sd">            search for.  Default is to search the full DRP path.</span>
+<span class="sd">        platetargets (str or list): (**Optional**) List of platetargets</span>
+<span class="sd">            files to search through to find any given plate ifudesign</span>
+<span class="sd">            combination.  Default is returned as the first element in</span>
+<span class="sd">            :func:`mangadap.config.defaults.default_plate_target_files`.</span>
+<span class="sd">        catid (str or list): (**Optional**) List of target catalog ID</span>
+<span class="sd">            numbers.  Default is returned as the second element in</span>
+<span class="sd">            :func:`mangadap.config.defaults.default_plate_target_files`.</span>
+<span class="sd">        drpver (str): (**Optional**) DRP version, which is:</span>
+<span class="sd">        </span>
+<span class="sd">                - used to define the default DRP redux path</span>
+<span class="sd">                - used when declaring a drpfits instance</span>
+<span class="sd">                - used in the name of the drpcomplete fits file</span>
+<span class="sd">                - included as a header keyword in the output file</span>
+<span class="sd">                </span>
+<span class="sd">            Default is defined by</span>
+<span class="sd">            :func:`mangadap.config.defaults.default_drp_version`.</span>
+<span class="sd">        redux_path (str): (**Optional**) The path to the top level directory</span>
+<span class="sd">            containing the DRP output files; this is the same as the</span>
+<span class="sd">            *redux_path* in the :class:`mangadap.drpfits.DRPFits` class.</span>
+<span class="sd">            Default is defined by</span>
+<span class="sd">            :func:`mangadap.config.defaults.default_redux_path`.</span>
+<span class="sd">        dapver (str): (**Optional**) DAP version, which is:</span>
+
+<span class="sd">                - used to define the default DAP analysis path</span>
+<span class="sd">                - included as a header keyword in the output drpcomplete</span>
+<span class="sd">                  fits file</span>
+
+<span class="sd">            Default is defined by</span>
+<span class="sd">            :func:`mangadap.config.defaults.default_dap_version`</span>
+<span class="sd">        analysis_path (str): (**Optional**) The path to the top level</span>
+<span class="sd">            directory for the DAP output files; this is **different**</span>
+<span class="sd">            from the directory_path in the :class:`mangadap.dapfile`</span>
+<span class="sd">            class.  Default is defined by</span>
+<span class="sd">            :func:`mangadap.config.defaults.default_analysis_path`</span>
+<span class="sd">        directory_path (str): (**Optional**) Direct path to the output</span>
+<span class="sd">            file produced using</span>
+<span class="sd">            :func:`mangadap.config.defaults.default_dap_common_path`</span>
+<span class="sd">        readonly (bool): (**Optional**) Flag that the drpcomplete fits</span>
+<span class="sd">            file is only opened for reading, not for updating.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        Exception: Raised if user supplies only one of platetargets or</span>
+<span class="sd">            catid instead of both.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        platelist (list) : List of plates to search for, see above.</span>
+<span class="sd">        ifudesignlist (list) : List of IFU designs to search for, see</span>
+<span class="sd">            above.</span>
+<span class="sd">        platetargets (numpy.ndarray): List of platetargets files to</span>
+<span class="sd">            search through, see above</span>
+<span class="sd">        catid (numpy.ndarray): List of target catalog IDs, see above</span>
+<span class="sd">        drpver (str): DRP version, see above.</span>
+<span class="sd">        redux_path (str): Path to the top level of directory for the</span>
+<span class="sd">            DRP output, see above.</span>
+<span class="sd">        dapver (str) : DAP version, see above.</span>
+<span class="sd">        analysis_path (str): Path to the top level directory for the</span>
+<span class="sd">            DAP output files, see above.</span>
+<span class="sd">        directory_path (str): Direct path to the output file produced</span>
+<span class="sd">            using</span>
+<span class="sd">            :func:`mangadap.config.defaults.default_dap_common_path`</span>
+<span class="sd">        readonly (bool) : Flag that the drpcomplete fits file is only</span>
+<span class="sd">            opened for reading, not for updating.</span>
+<span class="sd">        hdu (`astropy.io.fits.hdu.hdulist.HDUList`_): Fits data with</span>
+<span class="sd">            binary table data.</span>
+<span class="sd">        nobs (int) : Number of observations in the file</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">platelist</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ifudesignlist</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">platetargets</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">catid</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">drpver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">redux_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dapver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">analysis_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">directory_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">readonly</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="c1"># Input properties</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">drpver</span> <span class="o">=</span> <span class="n">defaults</span><span class="o">.</span><span class="n">default_drp_version</span><span class="p">()</span> <span class="k">if</span> <span class="n">drpver</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">drpver</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">redux_path</span> <span class="o">=</span> <span class="n">defaults</span><span class="o">.</span><span class="n">default_redux_path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">drpver</span><span class="p">)</span> <span class="k">if</span> <span class="n">redux_path</span> <span class="ow">is</span> <span class="kc">None</span> \
+                                                                  <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">redux_path</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">dapver</span> <span class="o">=</span> <span class="n">defaults</span><span class="o">.</span><span class="n">default_dap_version</span><span class="p">()</span> <span class="k">if</span> <span class="n">dapver</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">dapver</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">analysis_path</span> <span class="o">=</span> <span class="n">defaults</span><span class="o">.</span><span class="n">default_analysis_path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">drpver</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dapver</span><span class="p">)</span> \
+                             <span class="k">if</span> <span class="n">analysis_path</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">analysis_path</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">directory_path</span> <span class="o">=</span> <span class="n">defaults</span><span class="o">.</span><span class="n">default_dap_common_path</span><span class="p">(</span><span class="n">drpver</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">drpver</span><span class="p">,</span>
+                                            <span class="n">dapver</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dapver</span><span class="p">,</span> <span class="n">analysis_path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">analysis_path</span><span class="p">)</span> \
+                             <span class="k">if</span> <span class="n">directory_path</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">directory_path</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nobs</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_path</span><span class="p">()):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;READING&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_read</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">readonly</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">readonly</span><span class="o">=</span><span class="kc">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">platelist</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ifudesignlist</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">platetargets</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">catid</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">return</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">readonly</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">platelist</span> <span class="o">=</span> <span class="n">arginp_to_list</span><span class="p">(</span><span class="n">platelist</span><span class="p">,</span> <span class="n">evaluate</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ifudesignlist</span> <span class="o">=</span> <span class="n">arginp_to_list</span><span class="p">(</span><span class="n">ifudesignlist</span><span class="p">,</span> <span class="n">evaluate</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">platetargets</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">catid</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> \
+           <span class="p">(</span><span class="n">platetargets</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">catid</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;To use user-provided platetargets files, must provide both &#39;</span>
+                             <span class="s1">&#39;platetargets and catid.&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">platetargets</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">platetargets</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span> <span class="n">arginp_to_list</span><span class="p">(</span><span class="n">platetargets</span><span class="p">)</span> <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">catid</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span> <span class="n">arginp_to_list</span><span class="p">(</span><span class="n">catid</span><span class="p">)</span> <span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">int</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">platetargets</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">catid</span> <span class="o">=</span> <span class="n">defaults</span><span class="o">.</span><span class="n">default_plate_target_files</span><span class="p">()</span>
+
+
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;DRPC&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+
+
+    <span class="c1"># ******************************************************************</span>
+    <span class="c1">#  Utility functions</span>
+    <span class="c1"># ******************************************************************</span>
+<div class="viewcode-block" id="DRPComplete._drp_mangaid"><a class="viewcode-back" href="../../../mangadap.survey.drpcomplete.html#mangadap.survey.drpcomplete.DRPComplete._drp_mangaid">[docs]</a>    <span class="k">def</span> <span class="nf">_drp_mangaid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">drplist</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Grab the MaNGA IDs from the DRP fits files.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            drplist (list) : List of :class:`mangadap.drpfits.DRPFits`</span>
+<span class="sd">                objects</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            numpy.array: Array with the MaNGA IDs from the headers of</span>
+<span class="sd">            the DRP fits files.</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">            This takes far too long; either astropy.io.fits is reading</span>
+<span class="sd">            the entire file instead of just the header, or the slowdown</span>
+<span class="sd">            is because the DRP files are compressed.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">nn</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">drplist</span><span class="p">)</span>
+        <span class="n">mangaid</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Gathering MANGA-IDs for DRP files...&#39;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\r</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">nn</span><span class="p">):</span>
+            <span class="n">mangaid_</span><span class="p">,</span> <span class="n">ra</span><span class="p">,</span> <span class="n">dec</span> <span class="o">=</span> <span class="n">drplist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">object_data</span><span class="p">()</span>
+            <span class="n">mangaid</span> <span class="o">=</span> <span class="n">mangaid</span> <span class="o">+</span> <span class="p">[</span><span class="n">mangaid_</span><span class="p">]</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Gathering MANGA-IDs for DRP files...DONE&#39;</span><span class="p">)</span>
+        <span class="n">mangaid</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">mangaid</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">mangaid</span></div>
+
+
+<div class="viewcode-block" id="DRPComplete._drp_info"><a class="viewcode-back" href="../../../mangadap.survey.drpcomplete.html#mangadap.survey.drpcomplete.DRPComplete._drp_info">[docs]</a>    <span class="k">def</span> <span class="nf">_drp_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">drplist</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Grab the MaNGA IDs and object coordinates from the DRP fits</span>
+<span class="sd">        files.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            drplist (list) : List of :class:`mangadap.drpfits.DRPFits`</span>
+<span class="sd">                objects</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            numpy.array: Three arrays with, respectively, the MaNGA IDs</span>
+<span class="sd">            from the headers of the DRP fits files, the object right</span>
+<span class="sd">            ascension, and the object declination.</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">            This takes far too long; either astropy.io.fits is reading</span>
+<span class="sd">            the entire file instead of just the header, or the slowdown</span>
+<span class="sd">            is because the DRP files are compressed.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">nn</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">drplist</span><span class="p">)</span>
+        <span class="n">mangaid</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">objra</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">nn</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="n">objdec</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">nn</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Gathering DRP header data...&#39;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\r</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">nn</span><span class="p">):</span>
+            <span class="n">mangaid_</span><span class="p">,</span> <span class="n">objra</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">objdec</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">drplist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">object_data</span><span class="p">()</span>
+            <span class="n">mangaid</span> <span class="o">=</span> <span class="n">mangaid</span> <span class="o">+</span> <span class="p">[</span><span class="n">mangaid_</span><span class="p">]</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Gathering DRP header data...DONE&#39;</span><span class="p">)</span>
+        <span class="n">mangaid</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">mangaid</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">mangaid</span><span class="p">,</span> <span class="n">objra</span><span class="p">,</span> <span class="n">objdec</span></div>
+
+
+<div class="viewcode-block" id="DRPComplete._read_platetargets"><a class="viewcode-back" href="../../../mangadap.survey.drpcomplete.html#mangadap.survey.drpcomplete.DRPComplete._read_platetargets">[docs]</a>    <span class="k">def</span> <span class="nf">_read_platetargets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">quiet</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Read all the platetargets files using `pydl.pydlutils.yanny`_</span>
+<span class="sd">        and return a list of yanny structures.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            quiet (bool): (**Optional**) Suppress terminal output (NOT USED)</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            list: A list of yanny structures, one per platetargets file.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            FileNotFoundError: Raised if cannot open one or more</span>
+<span class="sd">                platetargets files.</span>
+
+<span class="sd">        .. todo::</span>
+<span class="sd">            This should be made more efficient by collating the required</span>
+<span class="sd">            plateTargets data into a single record array!</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+
+<span class="c1">#        from matplotlib import pyplot</span>
+<span class="c1">#        print(self.platetargets[0])</span>
+<span class="c1">#        plttrg_data = yanny(filename=self.platetargets[0])</span>
+<span class="c1">#        pyplot.scatter(plttrg_data[&#39;PLTTRGT&#39;][&#39;nsa_elpetro_phi&#39;],</span>
+<span class="c1">#                       plttrg_data[&#39;PLTTRGT&#39;][&#39;nsa_sersic_phi&#39;], marker=&#39;.&#39;, color=&#39;k&#39;, s=30)</span>
+<span class="c1">#        pyplot.show()</span>
+<span class="c1">#        pyplot.scatter(plttrg_data[&#39;PLTTRGT&#39;][&#39;nsa_elpetro_ba&#39;],</span>
+<span class="c1">#                       plttrg_data[&#39;PLTTRGT&#39;][&#39;nsa_sersic_ba&#39;], marker=&#39;.&#39;, color=&#39;k&#39;, s=30)</span>
+<span class="c1">#        pyplot.show()</span>
+
+        <span class="n">plttrg_data</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">root</span> <span class="o">=</span> <span class="s1">&#39;/&#39;</span><span class="o">+</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">platetargets</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;plateTargets root directory: </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">root</span><span class="p">))</span>
+
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">platetargets</span><span class="p">:</span>
+            <span class="n">pfile</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Reading plateTargets file: </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">pfile</span><span class="p">),</span> <span class="n">end</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\r</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="c1"># Check that the file exists</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">p</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="s1">&#39;Cannot open </span><span class="si">{0}</span><span class="s1">!&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">p</span><span class="p">))</span>
+            <span class="c1"># Read and append the data</span>
+            <span class="n">plttrg_data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">yanny</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">p</span><span class="p">)</span> <span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Reading plateTargets file: DONE&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">plttrg_data</span></div>
+
+
+<div class="viewcode-block" id="DRPComplete._read_redshift_fix"><a class="viewcode-back" href="../../../mangadap.survey.drpcomplete.html#mangadap.survey.drpcomplete.DRPComplete._read_redshift_fix">[docs]</a>    <span class="k">def</span> <span class="nf">_read_redshift_fix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">quiet</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Read data from the $MANGADAP_DIR/data/fix/redshift_fix.par file,</span>
+<span class="sd">        if it exists.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            quiet (bool): (**Optional**) Suppress terminal output (NOT USED)</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            yanny: A yanny structure with the redshift fixes.  Returns</span>
+<span class="sd">            None and raises a warning if the file does not exist.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">fix_file</span> <span class="o">=</span> <span class="n">defaults</span><span class="o">.</span><span class="n">default_redshift_fix_file</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">fix_file</span><span class="p">):</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;No redshift fix file available.&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">yanny</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">fix_file</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="DRPComplete._match_platetargets"><a class="viewcode-back" href="../../../mangadap.survey.drpcomplete.html#mangadap.survey.drpcomplete.DRPComplete._match_platetargets">[docs]</a>    <span class="k">def</span> <span class="nf">_match_platetargets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">quiet</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Read the platetargets files and match the data therein to the</span>
+<span class="sd">        completed DRP files based on the plate and ifudesign.</span>
+
+<span class="sd">        If a plate-ifudesign combination is not found in the</span>
+<span class="sd">        plateTargets file, the other parameter values are set to -9999</span>
+<span class="sd">        and the MaNGA ID is set to NULL.</span>
+
+<span class="sd">        If the plate-ifudesign combination is found, the columns in the</span>
+<span class="sd">        plateTargets files that the code expects to find are &#39;plate&#39;,</span>
+<span class="sd">        &#39;ifudesign&#39;, &#39;mangaid&#39;, &#39;object_ra&#39;, and &#39;object_dec&#39;; the</span>
+<span class="sd">        values that will be replaced with &#39;NULL&#39; (str) or -9999 (int or</span>
+<span class="sd">        float) if they do not exist are &#39;nsa_version&#39;, &#39;nsa_id&#39;,</span>
+<span class="sd">        &#39;manga_target1&#39;, &#39;manga_target3&#39;, &#39;nsa_redshift&#39;,</span>
+<span class="sd">        &#39;nsa_sersic_ba&#39;, &#39;nsa_sersic_phi&#39;, &#39;nsa_sersic_th50&#39;,</span>
+<span class="sd">        &#39;nsa_vdisp&#39;.</span>
+<span class="sd">        </span>
+<span class="sd">        .. todo::</span>
+
+<span class="sd">            - Instead of searching through all files for the correct</span>
+<span class="sd">              plate-ifudesign, use the MaNGA ID to get the correct</span>
+<span class="sd">              catalog?  Requires getting the MaNGA ID from somewhere,</span>
+<span class="sd">              but it takes a long time to read from the fits files...</span>
+<span class="sd">            - Is there some more concise method of performing the same</span>
+<span class="sd">              thing as what is done below with many try/except blocks?</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            quiet (bool): (**Optional**) Suppress terminal output</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            numpy.array: 14 arrays with: MaNGA ID, object right</span>
+<span class="sd">            ascension, object declination, catalog ID, index of the</span>
+<span class="sd">            entry in the catalog, catalog version, ID of object in the</span>
+<span class="sd">            catalog, main MaNGA survey target bitmask, ancillary MaNGA</span>
+<span class="sd">            survey target bitmask, velocity, velocity dispersion,</span>
+<span class="sd">            ellipticity, position angle, and effective radius.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Read the platetargets file</span>
+        <span class="n">plttrg_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_read_platetargets</span><span class="p">(</span><span class="n">quiet</span><span class="o">=</span><span class="n">quiet</span><span class="p">)</span>
+        <span class="n">ntrg</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">plttrg_data</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Read </span><span class="si">{0}</span><span class="s1"> plateTargets file(s)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ntrg</span><span class="p">))</span>
+
+        <span class="c1"># Read the redshift fix file</span>
+        <span class="n">redshift_fix_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_read_redshift_fix</span><span class="p">(</span><span class="n">quiet</span><span class="o">=</span><span class="n">quiet</span><span class="p">)</span>
+
+        <span class="c1"># Initialize the output arrays (needed in case some DRP targets not found)</span>
+        <span class="n">n_drp</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">platelist</span><span class="p">)</span>
+        <span class="n">mangaid</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c1"># TODO: try mangaid = numpy.empty(n_drp, dtype=object) ?</span>
+        <span class="n">objra</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">n_drp</span><span class="p">,</span> <span class="o">-</span><span class="mf">9999.0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="n">objdec</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">n_drp</span><span class="p">,</span> <span class="o">-</span><span class="mf">9999.0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="n">catid</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">n_drp</span><span class="p">,</span> <span class="o">-</span><span class="mi">9999</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+        <span class="n">catindx</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">n_drp</span><span class="p">,</span> <span class="o">-</span><span class="mi">9999</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+        <span class="n">trg_version</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c1"># TODO: try trg_version = numpy.empty(n_drp, dtype=object) ?</span>
+        <span class="n">trg_id</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">n_drp</span><span class="p">,</span> <span class="o">-</span><span class="mi">9999</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+        <span class="n">manga_trg1</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">n_drp</span><span class="p">,</span> <span class="o">-</span><span class="mi">9999</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+        <span class="n">manga_trg3</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">n_drp</span><span class="p">,</span> <span class="o">-</span><span class="mi">9999</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+        <span class="n">vel</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">n_drp</span><span class="p">,</span> <span class="o">-</span><span class="mf">9999.0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="n">veldisp</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">n_drp</span><span class="p">,</span> <span class="o">-</span><span class="mf">9999.0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="n">ell</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">n_drp</span><span class="p">,</span> <span class="o">-</span><span class="mf">9999.0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="n">pa</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">n_drp</span><span class="p">,</span> <span class="o">-</span><span class="mf">9999.0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="n">Reff</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">n_drp</span><span class="p">,</span> <span class="o">-</span><span class="mf">9999.0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Searching platetargets file for observed galaxies...&#39;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\r</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_drp</span><span class="p">):</span>
+            <span class="n">plttrg_j</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">mangaid_i</span> <span class="o">=</span> <span class="s1">&#39;NULL&#39;</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">ntrg</span><span class="p">):</span>
+                <span class="n">indx</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">where</span><span class="p">((</span><span class="n">plttrg_data</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="s1">&#39;PLTTRGT&#39;</span><span class="p">][</span><span class="s1">&#39;plateid&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">platelist</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="o">&amp;</span>
+                                <span class="p">(</span><span class="n">plttrg_data</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="s1">&#39;PLTTRGT&#39;</span><span class="p">][</span><span class="s1">&#39;ifudesign&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">ifudesignlist</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">indx</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Multiple instances of </span><span class="si">{0}</span><span class="s1">-</span><span class="si">{1}</span><span class="s1"> (MaNGA ID=</span><span class="si">{2}</span><span class="s1">) in </span><span class="si">{3}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                    <span class="bp">self</span><span class="o">.</span><span class="n">platelist</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">ifudesignlist</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">mangaid_i</span><span class="p">,</span>
+                                    <span class="bp">self</span><span class="o">.</span><span class="n">platetargets</span><span class="p">[</span><span class="n">j</span><span class="p">]))</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">indx</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">plttrg_j</span> <span class="o">=</span> <span class="n">j</span>
+                    <span class="n">mangaid_i</span> <span class="o">=</span> <span class="n">plttrg_data</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="s1">&#39;PLTTRGT&#39;</span><span class="p">][</span><span class="s1">&#39;mangaid&#39;</span><span class="p">][</span><span class="n">indx</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;ascii&quot;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">quiet</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Found </span><span class="si">{0}</span><span class="s1">-</span><span class="si">{1}</span><span class="s1"> (MaNGA ID=</span><span class="si">{2}</span><span class="s1">) in </span><span class="si">{3}</span><span class="s1"> (CAT=</span><span class="si">{4}</span><span class="s1">)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                        <span class="bp">self</span><span class="o">.</span><span class="n">platelist</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">ifudesignlist</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">mangaid_i</span><span class="p">,</span>
+                                        <span class="bp">self</span><span class="o">.</span><span class="n">platetargets</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">catid</span><span class="p">[</span><span class="n">j</span><span class="p">]))</span>
+                    <span class="k">break</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">indx</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Could not find </span><span class="si">{0}</span><span class="s1">-</span><span class="si">{1}</span><span class="s1"> in any plateTargets file!&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                                        <span class="bp">self</span><span class="o">.</span><span class="n">platelist</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">ifudesignlist</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+                <span class="n">mangaid</span> <span class="o">=</span> <span class="n">mangaid</span> <span class="o">+</span> <span class="p">[</span><span class="s1">&#39;NULL&#39;</span><span class="p">]</span>
+                <span class="k">continue</span>
+            <span class="n">mangaid</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">plttrg_data</span><span class="p">[</span><span class="n">plttrg_j</span><span class="p">][</span><span class="s1">&#39;PLTTRGT&#39;</span><span class="p">][</span><span class="s1">&#39;mangaid&#39;</span><span class="p">][</span><span class="n">indx</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;ascii&quot;</span><span class="p">))</span>
+            <span class="n">objra</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">plttrg_data</span><span class="p">[</span><span class="n">plttrg_j</span><span class="p">][</span><span class="s1">&#39;PLTTRGT&#39;</span><span class="p">][</span><span class="s1">&#39;object_ra&#39;</span><span class="p">][</span><span class="n">indx</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">objdec</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">plttrg_data</span><span class="p">[</span><span class="n">plttrg_j</span><span class="p">][</span><span class="s1">&#39;PLTTRGT&#39;</span><span class="p">][</span><span class="s1">&#39;object_dec&#39;</span><span class="p">][</span><span class="n">indx</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+
+            <span class="c1"># From David Wake:</span>
+            <span class="c1">#</span>
+            <span class="c1"># &quot;MANGAID consists of CATID-CATIND, where CATID identifies</span>
+            <span class="c1"># a parent catalog, in the case of the main manga samples</span>
+            <span class="c1"># CATID = 1 which refers to nsa_v1_0_0.fits, and CATIND is</span>
+            <span class="c1"># the position within that catalog (zero indexed). So if you</span>
+            <span class="c1"># strip out CATIND from MANGAID you have the position within</span>
+            <span class="c1"># nsa_v1_0_0.fits without any matching required.&quot;</span>
+            <span class="n">catid</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">mangaid</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">catid</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">catid</span><span class="p">[</span><span class="n">plttrg_j</span><span class="p">]:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1">-</span><span class="si">{1}</span><span class="s1"> (MaNGA ID=</span><span class="si">{2}</span><span class="s1">) found in </span><span class="si">{3}</span><span class="s1"> (CAT=</span><span class="si">{4}</span><span class="s1">)!&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">platelist</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">ifudesignlist</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">mangaid_i</span><span class="p">,</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">platetargets</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">catid</span><span class="p">[</span><span class="n">j</span><span class="p">]))</span>
+            <span class="n">catindx</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">mangaid</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">])</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">trg_version</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">plttrg_data</span><span class="p">[</span><span class="n">plttrg_j</span><span class="p">][</span><span class="s1">&#39;PLTTRGT&#39;</span><span class="p">][</span><span class="s1">&#39;nsa_version&#39;</span><span class="p">][</span><span class="n">indx</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span>
+                                                                                        <span class="s1">&#39;ascii&#39;</span><span class="p">))</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">trg_version</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;NULL&#39;</span><span class="p">)</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">trg_id</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">plttrg_data</span><span class="p">[</span><span class="n">plttrg_j</span><span class="p">][</span><span class="s1">&#39;PLTTRGT&#39;</span><span class="p">][</span><span class="s1">&#39;nsa_nsaid&#39;</span><span class="p">][</span><span class="n">indx</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">trg_id</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">9999</span>
+                
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">manga_trg1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">plttrg_data</span><span class="p">[</span><span class="n">plttrg_j</span><span class="p">][</span><span class="s1">&#39;PLTTRGT&#39;</span><span class="p">][</span><span class="s1">&#39;manga_target1&#39;</span><span class="p">][</span><span class="n">indx</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">manga_trg1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">9999</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">manga_trg3</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">plttrg_data</span><span class="p">[</span><span class="n">plttrg_j</span><span class="p">][</span><span class="s1">&#39;PLTTRGT&#39;</span><span class="p">][</span><span class="s1">&#39;manga_target3&#39;</span><span class="p">][</span><span class="n">indx</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">manga_trg3</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">9999</span>
+
+            <span class="c1"># Allow for the redshift to come from a fix file instead of</span>
+            <span class="c1"># the plateTargets files</span>
+            <span class="n">corrected_z</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="n">redshift_fix_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">z_indx</span> <span class="o">=</span> <span class="p">(</span><span class="n">redshift_fix_data</span><span class="p">[</span><span class="s1">&#39;DAPZCORR&#39;</span><span class="p">][</span><span class="s1">&#39;plate&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">platelist</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> \
+                            <span class="o">&amp;</span> <span class="p">(</span><span class="n">redshift_fix_data</span><span class="p">[</span><span class="s1">&#39;DAPZCORR&#39;</span><span class="p">][</span><span class="s1">&#39;ifudesign&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">ifudesignlist</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                <span class="k">if</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">z_indx</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">corrected_z</span> <span class="o">=</span> <span class="n">redshift_fix_data</span><span class="p">[</span><span class="s1">&#39;DAPZCORR&#39;</span><span class="p">][</span><span class="s1">&#39;z&#39;</span><span class="p">][</span><span class="n">z_indx</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="n">corrected_z</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># As of MPL-6, platetargets files now include the</span>
+                <span class="c1"># redshift from the targeting catalog which is the</span>
+                <span class="c1"># combination of the NSA data and the ancillary targets;</span>
+                <span class="c1"># the NSA only redshift column is &#39;nsa_z&#39;.  To be</span>
+                <span class="c1"># compatible with previous versions, first try to grab</span>
+                <span class="c1"># the redshift using the keyword &#39;z&#39;, then try with</span>
+                <span class="c1"># &#39;nsa_z&#39;, then just set it to -9999.</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">vel</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">plttrg_data</span><span class="p">[</span><span class="n">plttrg_j</span><span class="p">][</span><span class="s1">&#39;PLTTRGT&#39;</span><span class="p">][</span><span class="s1">&#39;z&#39;</span><span class="p">][</span><span class="n">indx</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> \
+                                <span class="o">*</span> <span class="n">astropy</span><span class="o">.</span><span class="n">constants</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;km/s&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">vel</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">plttrg_data</span><span class="p">[</span><span class="n">plttrg_j</span><span class="p">][</span><span class="s1">&#39;PLTTRGT&#39;</span><span class="p">][</span><span class="s1">&#39;nsa_z&#39;</span><span class="p">][</span><span class="n">indx</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> \
+                                    <span class="o">*</span> <span class="n">astropy</span><span class="o">.</span><span class="n">constants</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;km/s&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
+                    <span class="k">except</span><span class="p">:</span>
+                        <span class="n">vel</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mf">9999.0</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">vel</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">corrected_z</span> <span class="o">*</span> <span class="n">astropy</span><span class="o">.</span><span class="n">constants</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;km/s&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Using redshift fix for </span><span class="si">{0}</span><span class="s1">-</span><span class="si">{1}</span><span class="s1"> (v=</span><span class="si">{2:.1f}</span><span class="s1">)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                    <span class="bp">self</span><span class="o">.</span><span class="n">platelist</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">ifudesignlist</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">vel</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">plttrg_data</span><span class="p">[</span><span class="n">plttrg_j</span><span class="p">][</span><span class="s1">&#39;PLTTRGT&#39;</span><span class="p">][</span><span class="s1">&#39;nsa_elpetro_ba&#39;</span><span class="p">][</span><span class="n">indx</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">raise</span>
+                <span class="n">ell</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span><span class="o">-</span><span class="n">plttrg_data</span><span class="p">[</span><span class="n">plttrg_j</span><span class="p">][</span><span class="s1">&#39;PLTTRGT&#39;</span><span class="p">][</span><span class="s1">&#39;nsa_elpetro_ba&#39;</span><span class="p">][</span><span class="n">indx</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">ell</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mf">9999.0</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Ellipticity for </span><span class="si">{0}</span><span class="s1">-</span><span class="si">{1}</span><span class="s1"> is bogus!&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">platelist</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                                                                         <span class="bp">self</span><span class="o">.</span><span class="n">ifudesignlist</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c1"># THERE&#39;S A BUG IN THE MANGACORE/V1_2_0 PLATETARGETS FILES</span>
+                <span class="n">pa</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">plttrg_data</span><span class="p">[</span><span class="n">plttrg_j</span><span class="p">][</span><span class="s1">&#39;PLTTRGT&#39;</span><span class="p">][</span><span class="s1">&#39;nsa_elpetro_phi&#39;</span><span class="p">][</span><span class="n">indx</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">pa</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">raise</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">pa</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mf">9999.0</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;PA for </span><span class="si">{0}</span><span class="s1">-</span><span class="si">{1}</span><span class="s1"> is bogus!&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">platelist</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                                                                <span class="bp">self</span><span class="o">.</span><span class="n">ifudesignlist</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">Reff</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">plttrg_data</span><span class="p">[</span><span class="n">plttrg_j</span><span class="p">][</span><span class="s1">&#39;PLTTRGT&#39;</span><span class="p">][</span><span class="s1">&#39;nsa_elpetro_th50_r&#39;</span><span class="p">][</span><span class="n">indx</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">Reff</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mf">9999.0</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">veldisp</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">plttrg_data</span><span class="p">[</span><span class="n">plttrg_j</span><span class="p">][</span><span class="s1">&#39;PLTTRGT&#39;</span><span class="p">][</span><span class="s1">&#39;nsa_vdisp&#39;</span><span class="p">][</span><span class="n">indx</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">veldisp</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mf">9999.0</span>
+
+            <span class="c1"># Correct for known nan issue</span>
+            <span class="k">if</span> <span class="n">numpy</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">ell</span><span class="p">[</span><span class="n">i</span><span class="p">]):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;nan encountered!&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">numpy</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">pa</span><span class="p">[</span><span class="n">i</span><span class="p">]):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;nan encountered!&#39;</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Searching platetargets file for observed galaxies...DONE&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">mangaid</span><span class="p">),</span> <span class="n">objra</span><span class="p">,</span> <span class="n">objdec</span><span class="p">,</span> <span class="n">catid</span><span class="p">,</span> <span class="n">catindx</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">trg_version</span><span class="p">),</span> \
+               <span class="n">trg_id</span><span class="p">,</span> <span class="n">manga_trg1</span><span class="p">,</span> <span class="n">manga_trg3</span><span class="p">,</span> <span class="n">vel</span><span class="p">,</span> <span class="n">veldisp</span><span class="p">,</span> <span class="n">ell</span><span class="p">,</span> <span class="n">pa</span><span class="p">,</span> <span class="n">Reff</span></div>
+
+
+<div class="viewcode-block" id="DRPComplete._all_data_exists"><a class="viewcode-back" href="../../../mangadap.survey.drpcomplete.html#mangadap.survey.drpcomplete.DRPComplete._all_data_exists">[docs]</a>    <span class="k">def</span> <span class="nf">_all_data_exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">quiet</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Determines if the data for all the plates/ifudesigns selected in</span>
+<span class="sd">        the current compilation is already present in the current</span>
+<span class="sd">        drpcomplete fits file.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            quiet (bool): (**Optional**) Suppress output</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            bool: Flag that all data has already been collated for the</span>
+<span class="sd">            requested plate/ifudesign list.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">nn</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">platelist</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Checking for plate-ifudesign entries in existing file ...&#39;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\r</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">nn</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">entry_index</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">platelist</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">ifudesignlist</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">quiet</span><span class="p">:</span>
+                    <span class="n">print_frame</span><span class="p">(</span><span class="s1">&#39;Exception&#39;</span><span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Checking for plate-ifudesign entries in existing file ... DONE&#39;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="kc">False</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Checking for plate-ifudesign entries in existing file ... DONE&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+
+<div class="viewcode-block" id="DRPComplete._read"><a class="viewcode-back" href="../../../mangadap.survey.drpcomplete.html#mangadap.survey.drpcomplete.DRPComplete._read">[docs]</a>    <span class="k">def</span> <span class="nf">_read</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Read the data in the existing file at :func:`file_path`.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_path</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nobs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;DRPC&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;NAXIS2&#39;</span><span class="p">]</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Read data: </span><span class="si">{0}</span><span class="s1"> rows&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nobs</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="DRPComplete._confirm_access"><a class="viewcode-back" href="../../../mangadap.survey.drpcomplete.html#mangadap.survey.drpcomplete.DRPComplete._confirm_access">[docs]</a>    <span class="k">def</span> <span class="nf">_confirm_access</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reread</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check the drpcomplete fits file at :func:`file_path` is</span>
+<span class="sd">        accessible, and read the data if not yet read.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            reread (bool): (**Optional**) Force the file to be re-read</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            FileNotFoundError: Raised if the drpcomplete fits file does</span>
+<span class="sd">                not exist.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">inp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_path</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">inp</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="s1">&#39;Cannot open file: </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">inp</span><span class="p">))</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">reread</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_read</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="DRPComplete._find_completed_reductions"><a class="viewcode-back" href="../../../mangadap.survey.drpcomplete.html#mangadap.survey.drpcomplete.DRPComplete._find_completed_reductions">[docs]</a>    <span class="k">def</span> <span class="nf">_find_completed_reductions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mindesign</span><span class="o">=</span><span class="mi">19</span><span class="p">,</span> <span class="n">combinatorics</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Search the DRP path for reduced CUBE files.</span>
+
+<span class="sd">        Function allows for one or both of :attr:`platelist` and</span>
+<span class="sd">        :attr:`ifudesignlist` to be None.  The behavior is:</span>
+<span class="sd">        </span>
+<span class="sd">            - If both are None, all available CUBE files are used to</span>
+<span class="sd">              create :attr:`platelist` and :attr:`ifudesignlist`.</span>
+
+<span class="sd">            - If one is None, all available CUBE files within the</span>
+<span class="sd">              provided list of the one that is not None are used to</span>
+<span class="sd">              create :attr:`platelist` and :attr:`ifudesignlist`.  E.g.,</span>
+<span class="sd">              if :attr:`platelist` =[7443] and :attr:`ifudesignlist` is</span>
+<span class="sd">              None, all CUBE files with plate=7443 are chosen.</span>
+
+<span class="sd">            - If both are not None and they have different lengths, or</span>
+<span class="sd">              the same length and combinatorics is True, all available</span>
+<span class="sd">              CUBE files within the constraints of both lists are</span>
+<span class="sd">              selected. E.g., if :attr:`platelist` =[7443,7495] and</span>
+<span class="sd">              :attr:`ifudesignlist` =[12704], the CUBE files with</span>
+<span class="sd">              (plate,ifudesign)=[(7443,12704),(7459,12704)] are chosen.</span>
+
+<span class="sd">            - If both are not None and they have the same length and</span>
+<span class="sd">              combinatorics is False, all available CUBE files in the</span>
+<span class="sd">              matched lists are chosen.  E.g. if :attr:`platelist`</span>
+<span class="sd">              =[7443,7495] and :attr:`ifudesignlist` =[12704,12703], the</span>
+<span class="sd">              CUBE files with</span>
+<span class="sd">              (plate,ifudesign)=[(7443,12704),(7459,12703) are chosen</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            mindesign (int): (**Optional**) Minimum bundle design to</span>
+<span class="sd">                consider.  The bundle design is determined by</span>
+<span class="sd">                ifudesign/100, such that::</span>
+
+<span class="sd">                    if mindesign is not None and b/100 &lt; mindesign:</span>
+<span class="sd">                        continue</span>
+
+<span class="sd">                a DRP file is ignored.  Default only ignores the</span>
+<span class="sd">                minibundles (design=7).</span>
+
+<span class="sd">            combinatorics (bool): (**Optional**) Create :attr:`platelist`</span>
+<span class="sd">                and :attr:`ifudesignlist` by determining all possible</span>
+<span class="sd">                combinations of the input values. See above.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            list: Two lists with the available plates and ifudesigns for</span>
+<span class="sd">            which to collect data.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">matchedlist</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">platelist</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">ifudesignlist</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> \
+                       <span class="ow">and</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">platelist</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ifudesignlist</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">combinatorics</span><span class="p">))</span>
+
+        <span class="n">plates</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">ifudesigns</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># Lists already matched, just see if the pairs exist</span>
+        <span class="k">if</span> <span class="n">matchedlist</span><span class="p">:</span>
+            <span class="n">n_plates</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">platelist</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">n_plates</span><span class="p">):</span>
+                <span class="n">drpf</span> <span class="o">=</span> <span class="n">drpfits</span><span class="o">.</span><span class="n">DRPFits</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">platelist</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">ifudesignlist</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="s1">&#39;CUBE&#39;</span><span class="p">,</span>
+                                       <span class="n">drpver</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">drpver</span><span class="p">,</span> <span class="n">redux_path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">redux_path</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">drpf</span><span class="o">.</span><span class="n">file_path</span><span class="p">()):</span>
+                    <span class="n">plates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">platelist</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                    <span class="n">ifudesigns</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ifudesignlist</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="k">return</span> <span class="n">plates</span><span class="p">,</span> <span class="n">ifudesigns</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Searching for completed DRP CUBE files...&#39;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\r</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="c1"># Otherwise generate the lists</span>
+        <span class="k">for</span> <span class="n">root</span><span class="p">,</span> <span class="nb">dir</span><span class="p">,</span> <span class="n">files</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">walk</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">redux_path</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">file</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;-LOGCUBE.fits.gz&#39;</span><span class="p">):</span>
+                    <span class="n">p</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">m</span> <span class="o">=</span> <span class="n">parse_drp_file_name</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+
+<span class="c1">#                   print(&#39;{0}, {1}, {2}&#39;.format(p,b,m))</span>
+
+                    <span class="n">ip</span> <span class="o">=</span> <span class="mi">0</span>
+                    <span class="n">ib</span> <span class="o">=</span> <span class="mi">0</span>
+
+                    <span class="c1"># Include only those files with fibers above a</span>
+                    <span class="c1"># threshold ifu size</span>
+                    <span class="k">if</span> <span class="n">mindesign</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">b</span><span class="o">/</span><span class="mi">100</span> <span class="o">&lt;</span> <span class="n">mindesign</span><span class="p">:</span>
+                        <span class="k">continue</span>
+
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">platelist</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="k">try</span><span class="p">:</span>
+                            <span class="n">ip</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">platelist</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+                        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                            <span class="c1">#print_frame(&#39;ValueError&#39;)</span>
+                            <span class="n">ip</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ifudesignlist</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="k">try</span><span class="p">:</span>
+                            <span class="n">ib</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ifudesignlist</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+                        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                            <span class="c1">#print_frame(&#39;ValueError&#39;)</span>
+                            <span class="n">ib</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+
+                    <span class="k">if</span> <span class="n">ip</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span> <span class="ow">and</span> <span class="n">ib</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                        <span class="n">plates</span> <span class="o">=</span> <span class="n">plates</span> <span class="o">+</span> <span class="p">[</span><span class="n">p</span><span class="p">]</span>
+                        <span class="n">ifudesigns</span> <span class="o">=</span> <span class="n">ifudesigns</span> <span class="o">+</span> <span class="p">[</span><span class="n">b</span><span class="p">]</span>
+<span class="c1">#                        print(&#39;{0}-{1}&#39;.format(p, b))</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Searching for completed DRP CUBE files...DONE.&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">plates</span><span class="p">,</span> <span class="n">ifudesigns</span></div>
+
+
+<div class="viewcode-block" id="DRPComplete._find_modes"><a class="viewcode-back" href="../../../mangadap.survey.drpcomplete.html#mangadap.survey.drpcomplete.DRPComplete._find_modes">[docs]</a>    <span class="k">def</span> <span class="nf">_find_modes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">drplist</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Using the provided list of CUBE DRP files, find if the RSS mode</span>
+<span class="sd">        is also available.</span>
+
+<span class="sd">        Currently only two modes are possible:</span>
+
+<span class="sd">            - modes[i] = 1 -&gt; only &#39;CUBE&#39; file are available</span>
+
+<span class="sd">            - modes[i] = 2 -&gt; both &#39;CUBE&#39; and &#39;RSS&#39; files are available</span>
+
+<span class="sd">        .. todo::</span>
+<span class="sd">            - Allow for there to be *only* &#39;RSS&#39; files.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            drplist (list) : List of :class:`mangadap.drpfits.DRPFits`</span>
+<span class="sd">                objects</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            numpy.array: Array of modes for each input DRP file.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">n_drp</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">drplist</span><span class="p">)</span>
+        <span class="n">modes</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">n_drp</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">int8</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Checking for RSS counterparts...&#39;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\r</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">n_drp</span><span class="p">):</span>
+            <span class="n">drpf</span> <span class="o">=</span> <span class="n">drpfits</span><span class="o">.</span><span class="n">DRPFits</span><span class="p">(</span><span class="n">drplist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">plate</span><span class="p">,</span> <span class="n">drplist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">ifudesign</span><span class="p">,</span> <span class="s1">&#39;RSS&#39;</span><span class="p">,</span>
+                                   <span class="n">drpver</span><span class="o">=</span><span class="n">drplist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">drpver</span><span class="p">,</span> <span class="n">redux_path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">redux_path</span><span class="p">)</span>
+            <span class="n">modes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span> <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">drpf</span><span class="o">.</span><span class="n">file_path</span><span class="p">())</span> <span class="k">else</span> <span class="mi">1</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Checking for RSS counterparts...DONE.&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">modes</span></div>
+
+
+<div class="viewcode-block" id="DRPComplete._write_parameter_struct"><a class="viewcode-back" href="../../../mangadap.survey.drpcomplete.html#mangadap.survey.drpcomplete.DRPComplete._write_parameter_struct">[docs]</a>    <span class="k">def</span> <span class="nf">_write_parameter_struct</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ostream</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Write the structure of the DAP SDSS-style parameter set to a</span>
+<span class="sd">        file.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            ostream (_io.TextIOWrapper) : File stream for output</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ostream</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;typedef struct {</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">ostream</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;    long plate;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">ostream</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;    long ifudesign;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">ostream</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;    char mode[4];</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">ostream</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;    double vel;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">ostream</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;    double vdisp;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">ostream</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;    double ell;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">ostream</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;    double pa;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">ostream</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;    double reff;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">ostream</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;} DAPPAR;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="DRPComplete._write_parameter_list"><a class="viewcode-back" href="../../../mangadap.survey.drpcomplete.html#mangadap.survey.drpcomplete.DRPComplete._write_parameter_list">[docs]</a>    <span class="k">def</span> <span class="nf">_write_parameter_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ostream</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">mode</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Write a DAPPAR entry to the SDSS-style parameter file.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            ostream (_io.TextIOWrapper) : File stream for output</span>
+<span class="sd">            index (int) : Index of the entry in :attr:`data` to write</span>
+<span class="sd">            mode (int) : Mode of the entry; see :func:`_find_modes`</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ostream</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;DAPPAR </span><span class="si">{0:4d}</span><span class="s1"> </span><span class="si">{1:5d}</span><span class="s1"> </span><span class="si">{2:4s}</span><span class="s1"> </span><span class="si">{3:14.7e}</span><span class="s1"> </span><span class="si">{4:14.7e}</span><span class="s1"> </span><span class="si">{5:14.7e}</span><span class="s1"> </span><span class="si">{6:14.7e}</span><span class="s1">&#39;</span>
+                      <span class="s1">&#39; </span><span class="si">{7:14.7e}</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;DRPC&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;PLATE&#39;</span><span class="p">][</span><span class="n">index</span><span class="p">],</span>
+                                            <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;DRPC&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;IFUDESIGN&#39;</span><span class="p">][</span><span class="n">index</span><span class="p">],</span> <span class="n">mode</span><span class="p">,</span>
+                                            <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;DRPC&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;VEL&#39;</span><span class="p">][</span><span class="n">index</span><span class="p">],</span>
+                                            <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;DRPC&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;VDISP&#39;</span><span class="p">][</span><span class="n">index</span><span class="p">],</span>
+                                            <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;DRPC&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;ELL&#39;</span><span class="p">][</span><span class="n">index</span><span class="p">],</span>
+                                            <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;DRPC&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;PA&#39;</span><span class="p">][</span><span class="n">index</span><span class="p">],</span>
+                                            <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;DRPC&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;REFF&#39;</span><span class="p">][</span><span class="n">index</span><span class="p">]))</span></div>
+
+
+    <span class="c1"># ******************************************************************</span>
+    <span class="c1">#  User functions</span>
+    <span class="c1"># ******************************************************************</span>
+<div class="viewcode-block" id="DRPComplete.file_name"><a class="viewcode-back" href="../../../mangadap.survey.drpcomplete.html#mangadap.survey.drpcomplete.DRPComplete.file_name">[docs]</a>    <span class="k">def</span> <span class="nf">file_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the name of the DRP complete database.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">(</span><span class="s1">&#39;drpcomplete_</span><span class="si">{0}</span><span class="s1">.fits&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">drpver</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="DRPComplete.file_path"><a class="viewcode-back" href="../../../mangadap.survey.drpcomplete.html#mangadap.survey.drpcomplete.DRPComplete.file_path">[docs]</a>    <span class="k">def</span> <span class="nf">file_path</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the full pat to the DRP complete database.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">directory_path</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_name</span><span class="p">())</span></div>
+
+
+<div class="viewcode-block" id="DRPComplete.update"><a class="viewcode-back" href="../../../mangadap.survey.drpcomplete.html#mangadap.survey.drpcomplete.DRPComplete.update">[docs]</a>    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">platelist</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ifudesignlist</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">combinatorics</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">force</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+               <span class="n">alldrp</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Update the DRP complete file.</span>
+<span class="sd">        </span>
+<span class="sd">        If *platelist* and/or *ifudesignlist* are provided, the existing</span>
+<span class="sd">        :attr:`platelist` and :attr:`ifudesignlist` attributes are</span>
+<span class="sd">        replaced.</span>
+
+<span class="sd">        If *platelist* and *ifudesignlist* do not have the same length</span>
+<span class="sd">        or *combinatorics* is True, the lists are expanded to include</span>
+<span class="sd">        all combinations of their elements.</span>
+
+<span class="sd">        If *platelist* and *ifudesignlist* are None or *alldrp* is True,</span>
+<span class="sd">        all available plates/ifudesigns are collected from within the</span>
+<span class="sd">        DRP directory structure.</span>
+
+<span class="sd">        If the result of :func:`file_path` does not exist, it is</span>
+<span class="sd">        created.</span>
+
+<span class="sd">        If the result of :func:`file_path` does exist, the available</span>
+<span class="sd">        plates and ifudesigns in the file are compared against the list</span>
+<span class="sd">        (provided or collected) to update.  If the lists differ, the</span>
+<span class="sd">        drpcomplete fits file is re-created from scratch.  If all the</span>
+<span class="sd">        plates and ifudesigns are available, nothing is done, unless</span>
+<span class="sd">        force=True.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            platelist (str or list): (**Optional**) List of plates to</span>
+<span class="sd">                include in the drpcomplete fits file.</span>
+<span class="sd">            ifudesignlist (str or list): (**Optional**) List of ifudesigns</span>
+<span class="sd">                to include in the drpcomplete fits file.</span>
+<span class="sd">            combinatorics (bool): (**Optional**) Determine all combinations</span>
+<span class="sd">                of the entered plates and ifudesigns.</span>
+<span class="sd">            force (bool): (**Optional**) Overwrite any existing drpcomplete</span>
+<span class="sd">                fits file with a new one built from scratch.</span>
+<span class="sd">            alldrp (bool): (**Optional**) Find the full list of available</span>
+<span class="sd">                DRP files.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            AttributeError: Raised if drpcomplete fits file was opened</span>
+<span class="sd">                in read-only mode.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">readonly</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s1">&#39;drpcomplete fits file was opened as read-only!&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">platelist</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">platelist</span> <span class="o">=</span> <span class="n">arginp_to_list</span><span class="p">(</span><span class="n">platelist</span><span class="p">,</span> <span class="n">evaluate</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">ifudesignlist</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ifudesignlist</span> <span class="o">=</span> <span class="n">arginp_to_list</span><span class="p">(</span><span class="n">ifudesignlist</span><span class="p">,</span> <span class="n">evaluate</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">alldrp</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">platelist</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ifudesignlist</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># TODO: _find_completed_reductions() only searches for CUBE files</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">platelist</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ifudesignlist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_completed_reductions</span><span class="p">(</span>
+                                                                    <span class="n">combinatorics</span><span class="o">=</span><span class="n">combinatorics</span><span class="p">)</span>
+
+        <span class="c1"># Setup the list of modes such that the combinatorics in</span>
+        <span class="c1"># drpfits_list is correct.  After running</span>
+        <span class="c1"># _find_completed_reductions(), the length of platelist and</span>
+        <span class="c1"># ifudesignlist should be the same!</span>
+        <span class="n">n_plates</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">platelist</span><span class="p">)</span>
+        <span class="n">modelist</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;CUBE&#39;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">n_plates</span><span class="p">)]</span>
+        <span class="n">drplist</span> <span class="o">=</span> <span class="n">drpfits</span><span class="o">.</span><span class="n">drpfits_list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">platelist</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ifudesignlist</span><span class="p">,</span> <span class="n">modelist</span><span class="p">,</span>
+                                       <span class="n">drpver</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">drpver</span><span class="p">)</span>
+
+        <span class="c1"># By running _all_data_exists() the self.hdu and self.nobs</span>
+        <span class="c1"># attributes will be populated if they haven&#39;t been already!</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">force</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_all_data_exists</span><span class="p">():</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1"> up to date.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_path</span><span class="p">()))</span>
+            <span class="k">return</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Updating </span><span class="si">{0}</span><span class="s1">.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_path</span><span class="p">()))</span>
+
+        <span class="c1"># Past this point, the drpcomplete fits file will be ovewritten</span>
+        <span class="c1"># if it already exists.  Only DRP files created using</span>
+        <span class="c1"># self.platelist and self.ifudesignlist will be used to create</span>
+        <span class="c1"># the file, EVEN IF OTHER FILES EXIST.</span>
+
+        <span class="n">modes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_modes</span><span class="p">(</span><span class="n">drplist</span><span class="p">)</span>
+
+        <span class="n">nn</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">drplist</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Number of DRP files: </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">nn</span><span class="p">))</span>
+
+        <span class="c1"># Use the  plateTargets files to gather the needed data</span>
+        <span class="n">mangaid</span><span class="p">,</span> <span class="n">objra</span><span class="p">,</span> <span class="n">objdec</span><span class="p">,</span> <span class="n">catid</span><span class="p">,</span> <span class="n">catindx</span><span class="p">,</span> <span class="n">trg_version</span><span class="p">,</span> <span class="n">trg_id</span><span class="p">,</span> <span class="n">manga_trg1</span><span class="p">,</span> <span class="n">manga_trg3</span><span class="p">,</span> <span class="n">vel</span><span class="p">,</span> \
+            <span class="n">veldisp</span><span class="p">,</span> <span class="n">ell</span><span class="p">,</span> <span class="n">pa</span><span class="p">,</span> <span class="n">Reff</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_match_platetargets</span><span class="p">()</span>
+
+        <span class="c1"># Write the data to disk</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">([</span><span class="n">drplist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">plate</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">nn</span><span class="p">)],</span>
+                   <span class="p">[</span><span class="n">drplist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">ifudesign</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">nn</span><span class="p">)],</span> <span class="n">modes</span><span class="p">,</span> <span class="n">mangaid</span><span class="p">,</span> <span class="n">objra</span><span class="p">,</span> <span class="n">objdec</span><span class="p">,</span>
+                   <span class="n">catid</span><span class="p">,</span> <span class="n">catindx</span><span class="p">,</span> <span class="n">trg_version</span><span class="p">,</span> <span class="n">trg_id</span><span class="p">,</span> <span class="n">manga_trg1</span><span class="p">,</span> <span class="n">manga_trg3</span><span class="p">,</span> <span class="n">vel</span><span class="p">,</span> <span class="n">veldisp</span><span class="p">,</span> <span class="n">ell</span><span class="p">,</span>
+                   <span class="n">pa</span><span class="p">,</span> <span class="n">Reff</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="DRPComplete.write"><a class="viewcode-back" href="../../../mangadap.survey.drpcomplete.html#mangadap.survey.drpcomplete.DRPComplete.write">[docs]</a>    <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">platelist</span><span class="p">,</span> <span class="n">ifudesignlist</span><span class="p">,</span> <span class="n">modes</span><span class="p">,</span> <span class="n">mangaid</span><span class="p">,</span> <span class="n">objra</span><span class="p">,</span> <span class="n">objdec</span><span class="p">,</span> <span class="n">catid</span><span class="p">,</span> <span class="n">catindx</span><span class="p">,</span>
+              <span class="n">trg_version</span><span class="p">,</span> <span class="n">trg_id</span><span class="p">,</span> <span class="n">manga_trg1</span><span class="p">,</span> <span class="n">manga_trg3</span><span class="p">,</span> <span class="n">vel</span><span class="p">,</span> <span class="n">veldisp</span><span class="p">,</span> <span class="n">ell</span><span class="p">,</span> <span class="n">pa</span><span class="p">,</span> <span class="n">Reff</span><span class="p">,</span> <span class="n">drpver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+              <span class="n">redux_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dapver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">analysis_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">clobber</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Write the drpcomplete fits binary table.</span>
+
+<span class="sd">        Header keywords are:</span>
+<span class="sd">            - VERSDRP: DRP version</span>
+<span class="sd">            - RDXPTH: DRP reduction path</span>
+<span class="sd">            - VERSDAP: DAP version</span>
+<span class="sd">            - SISPTH: DAP analysis path</span>
+<span class="sd">            - PLTTRG *N*: plateTargets file *N*</span>
+<span class="sd">            - CATID *N*: ID Number of target catalog *N*</span>
+<span class="sd">            - AUTHOR: Set to &#39;K.B. Westfall &lt;kbwestfall@gmail.com&gt;&#39;</span>
+
+<span class="sd">        Binary table columns:</span>
+<span class="sd">            1. PLATE (1J): Plate number</span>
+<span class="sd">            2. IFUDESIGN (1J): IFU design</span>
+<span class="sd">            3. MODES (1B): Modes available </span>
+<span class="sd">                - MODES=1: only &#39;CUBE&#39; file is available</span>
+<span class="sd">                - MODES=2: both &#39;CUBE&#39; and &#39;RSS&#39; files are available</span>
+
+<span class="sd">            4. MANGAID (*n* A): MaNGA ID (same as &#39;CATID-CATINDX&#39;)</span>
+<span class="sd">            5. OBJRA (1D): Object right ascension</span>
+<span class="sd">            6. OBJDEC (1D): Object declination</span>
+<span class="sd">            7. CATID (1J): Catalog ID used for target selection</span>
+<span class="sd">            8. CATINDX (1J): Index in catalog with target data</span>
+<span class="sd">            9. TRG_VERSION (*n* A): Version of the catalog (e.g., NSA)</span>
+<span class="sd">                used in targetting (def=&#39;NULL&#39; if not available)</span>
+<span class="sd">            10. TRG_ID (1J): Target ID in catalog (def=-9999 if not</span>
+<span class="sd">                available)</span>
+<span class="sd">            11. MANGA_TARGET1: Main MaNGA survey target bitmask</span>
+<span class="sd">            12. MANGA_TARGET3: Ancillary MaNGA survey target bitmask</span>
+<span class="sd">            13. VEL (1D): Systemic velocity from catalog (def=-9999.0 if</span>
+<span class="sd">                not available)</span>
+<span class="sd">            14. VDISP (1D): Velocity dispersion from catalog</span>
+<span class="sd">                (def=-9999.0 if not available)</span>
+<span class="sd">            15. ELL (1D): Ellipticity (1-b/a) from catalog (def=-9999.0</span>
+<span class="sd">                if not available); Elliptical Petrosian value from NSA</span>
+<span class="sd">            16. PA (1D): Position angle from catalog (def=-9999.0 if not</span>
+<span class="sd">                available); Elliptical Petrosian value from NSA</span>
+<span class="sd">            17. REFF (1D): Effective radius from catalog (def=-9999.0 if</span>
+<span class="sd">                not available); Elliptical Petrosian value from NSA</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            platelist (list) : List of plates</span>
+<span class="sd">            ifudesignlist (list) : List of IFU designs</span>
+<span class="sd">            modes (numpy.array): Mode values, see above</span>
+<span class="sd">            mangaid (numpy.array): MaNGA IDs</span>
+<span class="sd">            objra (numpy.array): Object right ascensions</span>
+<span class="sd">            objdec (numpy.array): Object declinations</span>
+<span class="sd">            catid (numpy.array): Catalog ID used for target selection</span>
+<span class="sd">            catindx (numpy.array): Index in catalog with target data</span>
+<span class="sd">            trg_version (numpy.array): Version of the catalog (e.g.,</span>
+<span class="sd">                NSA) used in targetting</span>
+<span class="sd">            trg_id (numpy.array): Target ID in catalog</span>
+<span class="sd">            manga_trg1 (numpy.array): Main MaNGA survey target bitmask</span>
+<span class="sd">            manga_trg3 (numpy.array): Ancillary MaNGA survey target</span>
+<span class="sd">                bitmask</span>
+<span class="sd">            vel (numpy.array): Velocity from catalog, if available</span>
+<span class="sd">            veldisp (numpy.array): Velocity dispersion from catalog,</span>
+<span class="sd">                if available</span>
+<span class="sd">            ell (numpy.array): Ellipticity (1-b/a) from catalog, if</span>
+<span class="sd">                available</span>
+<span class="sd">            pa (numpy.array): Position angle from catalog, if</span>
+<span class="sd">                available</span>
+<span class="sd">            Reff (numpy.array): Effective radius from catalog, if</span>
+<span class="sd">                available</span>
+<span class="sd">            drpver (str) : (**Optional**) DRP version, see above.</span>
+<span class="sd">            redux_path (str) : (**Optional**) Path to the top level of</span>
+<span class="sd">                directory for the DRP output, see above.</span>
+<span class="sd">            dapver (str) : (**Optional**) DAP version, see above.</span>
+<span class="sd">            analysis_path (str) : (**Optional**) Path to the top level</span>
+<span class="sd">                directory for the DAP output files, see above.</span>
+<span class="sd">            clobber (bool): (**Optional**) Overwrite any existing file.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            AttributeError: Raised if drpcomplete fits file was opened</span>
+<span class="sd">                in read-only mode.</span>
+<span class="sd">            FileExistsError: Raised if the drpcomplete file exists and</span>
+<span class="sd">                clobber=False.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">readonly</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s1">&#39;drpcomplete fits file was opened as read-only!&#39;</span><span class="p">)</span>
+
+        <span class="n">out</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">file_path</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">out</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">clobber</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">FileExistsError</span><span class="p">(</span><span class="s1">&#39;DRP complete file already exists: </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">out</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">directory_path</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">directory_path</span><span class="p">)</span>
+
+        <span class="c1"># Create the primary header</span>
+        <span class="n">nplttrg</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">platetargets</span><span class="p">)</span>
+
+        <span class="n">hdr</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">Header</span><span class="p">()</span>
+        <span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;VERSDRP&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">drpver</span> <span class="k">if</span> <span class="n">drpver</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">drpver</span>
+        <span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;RDXPTH&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">redux_path</span> <span class="k">if</span> <span class="n">redux_path</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">redux_path</span>
+        <span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;VERSDAP&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dapver</span> <span class="k">if</span> <span class="n">dapver</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">dapver</span>
+        <span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;SISPTH&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">analysis_path</span> <span class="k">if</span> <span class="n">analysis_path</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">analysis_path</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nplttrg</span><span class="p">):</span>
+            <span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;PLTTRG</span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">platetargets</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;CATID</span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">catid</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;AUTHOR&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;K.B. Westfall &lt;kbwestfall@gmail.com&gt;&#39;</span>
+
+        <span class="c1"># Create the Binary Table</span>
+        <span class="n">cols</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">cols</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fits</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;PLATE&#39;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;1J&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">platelist</span><span class="p">)))</span>
+        <span class="n">cols</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fits</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;IFUDESIGN&#39;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;1J&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">ifudesignlist</span><span class="p">)))</span>
+        <span class="n">cols</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fits</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;MODES&#39;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;1B&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">modes</span><span class="p">))</span>
+        <span class="n">cols</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fits</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;MANGAID&#39;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1">A&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mangaid</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">itemsize</span><span class="p">),</span>
+                           <span class="n">array</span><span class="o">=</span><span class="n">mangaid</span><span class="p">))</span>
+        <span class="n">cols</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fits</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;OBJRA&#39;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;1D&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">objra</span><span class="p">))</span>
+        <span class="n">cols</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fits</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;OBJDEC&#39;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;1D&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">objdec</span><span class="p">))</span>
+        <span class="n">cols</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fits</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;CATID&#39;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;1J&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">catid</span><span class="p">))</span>
+        <span class="n">cols</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fits</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;CATINDX&#39;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;1J&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">catindx</span><span class="p">))</span>
+        <span class="n">cols</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fits</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;TRG_VERSION&#39;</span><span class="p">,</span>
+                                <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1">A&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">trg_version</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">itemsize</span><span class="p">),</span>
+                                <span class="n">array</span><span class="o">=</span><span class="n">trg_version</span><span class="p">))</span>
+        <span class="n">cols</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fits</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;TRG_ID&#39;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;1J&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">trg_id</span><span class="p">))</span>
+        <span class="n">cols</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fits</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;MANGA_TARGET1&#39;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;1J&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">manga_trg1</span><span class="p">))</span>
+        <span class="n">cols</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fits</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;MANGA_TARGET3&#39;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;1J&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">manga_trg3</span><span class="p">))</span>
+        <span class="n">cols</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fits</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;VEL&#39;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;1D&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">vel</span><span class="p">))</span>
+        <span class="n">cols</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fits</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;VDISP&#39;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;1D&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">veldisp</span><span class="p">))</span>
+        <span class="n">cols</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fits</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;ELL&#39;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;1D&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">ell</span><span class="p">))</span>
+        <span class="n">cols</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fits</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;PA&#39;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;1D&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">pa</span><span class="p">))</span>
+        <span class="n">cols</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fits</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;REFF&#39;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;1D&#39;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">Reff</span><span class="p">))</span>
+
+        <span class="c1"># Create the HDUList and write it to the fits file</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">HDUList</span><span class="p">([</span> <span class="n">fits</span><span class="o">.</span><span class="n">PrimaryHDU</span><span class="p">(</span><span class="n">header</span><span class="o">=</span><span class="n">hdr</span><span class="p">),</span>
+                                  <span class="n">fits</span><span class="o">.</span><span class="n">BinTableHDU</span><span class="o">.</span><span class="n">from_columns</span><span class="p">(</span><span class="n">cols</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;DRPC&#39;</span><span class="p">)</span> <span class="p">])</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Writing to disk: </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">out</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="o">.</span><span class="n">writeto</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="n">clobber</span><span class="p">)</span> <span class="c1">#clobber=clobber)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nobs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;DRPC&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;NAXIS2&#39;</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="DRPComplete.grab_data"><a class="viewcode-back" href="../../../mangadap.survey.drpcomplete.html#mangadap.survey.drpcomplete.DRPComplete.grab_data">[docs]</a>    <span class="k">def</span> <span class="nf">grab_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ifudesign</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">reread</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the data for a given plate-ifudesign, or index in the</span>
+<span class="sd">        :attr:`data`.  Even though *plate*, *ifudesign*, and *index* are</span>
+<span class="sd">        all optional, the arguments must contain either *plate* and</span>
+<span class="sd">        *ifudesign* or *index*.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            plate (int): (**Optional**) Plate number</span>
+<span class="sd">            ifudesign (int): (**Optional**) IFU design</span>
+<span class="sd">            index (int): (**Optional**) Index of the row in :attr:`data`</span>
+<span class="sd">                with the data to return</span>
+<span class="sd">            reread (bool): (**Optional**) Force the database to be re-read</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            list: List of the 14 elements of :attr:`data`; see</span>
+<span class="sd">            :func:`write`.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: Raised if the row with the data is unknown</span>
+<span class="sd">                because either *index* is not defined or one or both of</span>
+<span class="sd">                *plate* and *ifudesign* is not defined.  Also raised if</span>
+<span class="sd">                *index* does not exist in the data array.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">plate</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">ifudesign</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="n">index</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Must provide plate and ifudesign or row index!&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">index</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">entry_index</span><span class="p">(</span><span class="n">plate</span><span class="p">,</span> <span class="n">ifudesign</span><span class="p">,</span> <span class="n">reread</span><span class="o">=</span><span class="n">reread</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_confirm_access</span><span class="p">(</span><span class="n">reread</span><span class="o">=</span><span class="n">reread</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">index</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nobs</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Selected row index does not exist&#39;</span><span class="p">)</span>
+
+        <span class="c1"># TODO: Can&#39;t I just select index, i.e.,</span>
+        <span class="c1"># self.hdu[1].data[index]?</span>
+
+        <span class="k">return</span> <span class="p">[</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;DRPC&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;PLATE&#39;</span><span class="p">][</span><span class="n">index</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;DRPC&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;IFUDESIGN&#39;</span><span class="p">][</span><span class="n">index</span><span class="p">],</span>
+                 <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;DRPC&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;MODES&#39;</span><span class="p">][</span><span class="n">index</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;DRPC&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;MANGAID&#39;</span><span class="p">][</span><span class="n">index</span><span class="p">],</span>
+                 <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;DRPC&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;OBJRA&#39;</span><span class="p">][</span><span class="n">index</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;DRPC&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;OBJDEC&#39;</span><span class="p">][</span><span class="n">index</span><span class="p">],</span>
+                 <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;DRPC&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;CATID&#39;</span><span class="p">][</span><span class="n">index</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;DRPC&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;CATINDX&#39;</span><span class="p">][</span><span class="n">index</span><span class="p">],</span>
+                 <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;DRPC&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;TRG_VERSION&#39;</span><span class="p">][</span><span class="n">index</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;DRPC&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;TRG_ID&#39;</span><span class="p">][</span><span class="n">indx</span><span class="p">],</span>
+                 <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;DRPC&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;NSA_V100_ID&#39;</span><span class="p">][</span><span class="n">index</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;DRPC&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;VEL&#39;</span><span class="p">][</span><span class="n">index</span><span class="p">],</span>
+                 <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;DRPC&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;VDISP&#39;</span><span class="p">][</span><span class="n">index</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;DRPC&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;ELL&#39;</span><span class="p">][</span><span class="n">index</span><span class="p">],</span>
+                 <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;DRPC&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;PA&#39;</span><span class="p">][</span><span class="n">index</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;DRPC&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;REFF&#39;</span><span class="p">][</span><span class="n">index</span><span class="p">]</span> <span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="DRPComplete.write_par"><a class="viewcode-back" href="../../../mangadap.survey.drpcomplete.html#mangadap.survey.drpcomplete.DRPComplete.write_par">[docs]</a>    <span class="k">def</span> <span class="nf">write_par</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ofile</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">plate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ifudesign</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">reread</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                  <span class="n">clobber</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Write the SDSS-style parameter (Yanny) file for use with the</span>
+<span class="sd">        MaNGA DAP.</span>
+
+<span class="sd">        Args: </span>
+<span class="sd">            ofile (str): Output file name</span>
+<span class="sd">            mode (str): Mode of the DRP file to analyze; must be either</span>
+<span class="sd">                &#39;RSS&#39; or &#39;CUBE&#39;</span>
+<span class="sd">            plate (int): (**Optional**) Plate number</span>
+<span class="sd">            ifudesign (int): (**Optional**) IFU design</span>
+<span class="sd">            index (int): (**Optional**) Index of the row in :attr:`data`</span>
+<span class="sd">                with the data to return</span>
+<span class="sd">            reread (bool): (**Optional**) Force the database to be re-read</span>
+<span class="sd">            clobber (bool): (**Optional**) Overwrite any existing parameter</span>
+<span class="sd">                file</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            IOError: Raised if the parameter file already exists and</span>
+<span class="sd">                clobber is False.</span>
+<span class="sd">            ValueError: Raised if</span>
+
+<span class="sd">                - the row with the data is unknown because either</span>
+<span class="sd">                  *index* is not defined or one or both of *plate* and</span>
+<span class="sd">                  *ifudesign* is not defined.</span>
+<span class="sd">                - *index* does not exist in the data array.</span>
+<span class="sd">                - the &#39;RSS&#39; mode is selected but unavailable</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">ofile</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">clobber</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;Parameter file already exists.  Set clobber=True to overwrite.&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">plate</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">ifudesign</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="n">index</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Must provide plate and ifudesign or row index!&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">mode</span> <span class="o">!=</span> <span class="s1">&#39;CUBE&#39;</span> <span class="ow">and</span> <span class="n">mode</span> <span class="o">!=</span> <span class="s1">&#39;RSS&#39;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Mode must be either CUBE or RSS.&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">index</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">entry_index</span><span class="p">(</span><span class="n">plate</span><span class="p">,</span> <span class="n">ifudesign</span><span class="p">,</span> <span class="n">reread</span><span class="o">=</span><span class="n">reread</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_confirm_access</span><span class="p">(</span><span class="n">reread</span><span class="o">=</span><span class="n">reread</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">index</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nobs</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Selected row index does not exist&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">mode</span> <span class="ow">is</span> <span class="s1">&#39;RSS&#39;</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;DRPC&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;MODES&#39;</span><span class="p">][</span><span class="n">index</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;RSS mode not available for plate=</span><span class="si">{0}</span><span class="s1">,ifudesign=</span><span class="si">{1}</span><span class="s1"> !&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                                        <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;DRPC&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;PLATE&#39;</span><span class="p">][</span><span class="n">index</span><span class="p">],</span>
+                                                        <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;DRPC&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;IFUDESIGN&#39;</span><span class="p">][</span><span class="n">index</span><span class="p">]))</span>
+
+        <span class="c1"># Write the SDSS parameter file</span>
+        <span class="n">ostream</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">ofile</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span>
+        <span class="n">ostream</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_write_parameter_struct</span><span class="p">(</span><span class="n">ostream</span><span class="p">)</span>
+        <span class="n">ostream</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">ostream</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_write_parameter_list</span><span class="p">(</span><span class="n">ostream</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">mode</span><span class="p">)</span>
+        <span class="n">ostream</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">ostream</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="DRPComplete.entry_index"><a class="viewcode-back" href="../../../mangadap.survey.drpcomplete.html#mangadap.survey.drpcomplete.DRPComplete.entry_index">[docs]</a>    <span class="k">def</span> <span class="nf">entry_index</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plate</span><span class="p">,</span> <span class="n">ifudesign</span><span class="p">,</span> <span class="n">reread</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Find the index of the row with the parameter data for the</span>
+<span class="sd">        specified plate and ifudesign.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            plate (int): Plate number</span>
+<span class="sd">            ifudesign (int): IFU design</span>
+<span class="sd">            reread (bool): (**Optional**) Force the database to be re-read</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            int: Index of the row in :attr:`data` with the data for the</span>
+<span class="sd">            given *plate* and *ifudesign*</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            Exception: Raised if the given *plate* and *ifudesign* were</span>
+<span class="sd">                not found.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_confirm_access</span><span class="p">(</span><span class="n">reread</span><span class="o">=</span><span class="n">reread</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nobs</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;DRPC&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;PLATE&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="n">plate</span> \
+                    <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;DRPC&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;IFUDESIGN&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="n">ifudesign</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">i</span>
+
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Could not find plate=</span><span class="si">{0}</span><span class="s1">,ifudesign=</span><span class="si">{1}</span><span class="s1"> in drpcomplete file!&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                <span class="n">plate</span><span class="p">,</span> <span class="n">ifudesign</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="DRPComplete.can_analyze"><a class="viewcode-back" href="../../../mangadap.survey.drpcomplete.html#mangadap.survey.drpcomplete.DRPComplete.can_analyze">[docs]</a>    <span class="k">def</span> <span class="nf">can_analyze</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">row</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">row</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;MANGAID&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;NULL&#39;</span><span class="p">)</span> \
+                    <span class="o">&amp;</span> <span class="p">((</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;MANGA_TARGET1&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;MANGA_TARGET3&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">))</span> \
+                    <span class="o">&amp;</span> <span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;VEL&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="o">-</span><span class="mf">500.0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;MANGAID&#39;</span><span class="p">][</span><span class="n">row</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;NULL&#39;</span> \
+                <span class="ow">and</span> <span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;MANGA_TARGET1&#39;</span><span class="p">][</span><span class="n">row</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;MANGA_TARGET3&#39;</span><span class="p">][</span><span class="n">row</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> \
+                <span class="ow">and</span> <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;VEL&#39;</span><span class="p">][</span><span class="n">row</span><span class="p">]</span> <span class="o">&gt;</span> <span class="o">-</span><span class="mf">500.0</span></div></div>
+
+</pre></div>
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, SDSS-IV/MaNGA Pipeline Group.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'2.2.2',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

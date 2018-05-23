@@ -1,0 +1,576 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mangadap.util.fileio &mdash; mangadap 2.2.2 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../search.html"/>
+    <link rel="top" title="mangadap 2.2.2 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> mangadap
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../mangadap.html">mangadap package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">mangadap</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>mangadap.util.fileio</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for mangadap.util.fileio</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Licensed under a 3-clause BSD style license - see LICENSE.rst</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">Provides a set of file I/O routines.</span>
+
+<span class="sd">*License*:</span>
+<span class="sd">    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group</span>
+<span class="sd">        Licensed under BSD 3-clause license - see LICENSE.rst</span>
+
+<span class="sd">*Source location*:</span>
+<span class="sd">    $MANGADAP_DIR/python/mangadap/util/fileio.py</span>
+
+<span class="sd">*Imports and python version compliance*:</span>
+<span class="sd">    ::</span>
+
+<span class="sd">        from __future__ import division</span>
+<span class="sd">        from __future__ import print_function</span>
+<span class="sd">        from __future__ import absolute_import</span>
+<span class="sd">        from __future__ import unicode_literals</span>
+
+<span class="sd">        import sys</span>
+<span class="sd">        if sys.version &gt; &#39;3&#39;:</span>
+<span class="sd">            long = int</span>
+
+<span class="sd">        import os</span>
+<span class="sd">        import gzip</span>
+<span class="sd">        import shutil</span>
+<span class="sd">        import logging</span>
+<span class="sd">        import numpy</span>
+
+<span class="sd">        from astropy.io import fits</span>
+
+<span class="sd">*Revision history*:</span>
+<span class="sd">    | **27 May 2015**: Original implementation by K. Westfall (KBW)</span>
+<span class="sd">    | **29 Jan 2016**: (KBW) Added :func:`read_template_spectrum`</span>
+<span class="sd">    | **01 Feb 2016**: (KBW) Moved wavelength calculation to a common</span>
+<span class="sd">        function.</span>
+<span class="sd">    | **09 Feb 2016**: (KBW) Added :func:`writefits_1dspec`.</span>
+<span class="sd">    | **28 Mar 2016**: (KBW) Added function :func:`init_record_array`</span>
+<span class="sd">        and :func:`rec_to_fits_type`</span>
+<span class="sd">    | **19 May 2016**: (KBW) In :func:`write_hdu`, removed verbose and</span>
+<span class="sd">        added loggers and quiet.</span>
+<span class="sd">    | **25 Aug 2016**: (KBW) Added :func:`channel_dictionary`</span>
+<span class="sd">    | **23 Feb 2017**: (KBW) create_symlink now creates the directory if</span>
+<span class="sd">        it doesn&#39;t exist</span>
+<span class="sd">    | **23 Mar 2017**: (KBW) Force type of header keywords in</span>
+<span class="sd">        :func:`wavelength_vector`.</span>
+
+<span class="sd">.. _numpy.recarray: http://docs.scipy.org/doc/numpy-1.10.1/reference/generated/numpy.recarray.html</span>
+<span class="sd">.. _logging.Logger: https://docs.python.org/3/library/logging.html</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version</span> <span class="o">&gt;</span> <span class="s1">&#39;3&#39;</span><span class="p">:</span>
+    <span class="n">long</span> <span class="o">=</span> <span class="nb">int</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">gzip</span>
+<span class="kn">import</span> <span class="nn">shutil</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+
+<span class="kn">from</span> <span class="nn">astropy.io</span> <span class="k">import</span> <span class="n">fits</span>
+<span class="kn">from</span> <span class="nn">.log</span> <span class="k">import</span> <span class="n">log_output</span>
+
+<div class="viewcode-block" id="wavelength_vector"><a class="viewcode-back" href="../../../mangadap.util.fileio.html#mangadap.util.fileio.wavelength_vector">[docs]</a><span class="k">def</span> <span class="nf">wavelength_vector</span><span class="p">(</span><span class="n">npix</span><span class="p">,</span> <span class="n">header</span><span class="p">,</span> <span class="n">log10</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return a vector with wavelength coordinates drawn from the WCS</span>
+<span class="sd">    coordinates in the header.  The function uses CRVAL1, CRPIX1,</span>
+<span class="sd">    CDELT1.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">crval</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;CRVAL1&#39;</span><span class="p">])</span>
+    <span class="n">crpix</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;CRPIX1&#39;</span><span class="p">])</span>
+    <span class="n">cdelt</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;CDELT1&#39;</span><span class="p">])</span>
+    <span class="n">wave</span> <span class="o">=</span> <span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span><span class="n">npix</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="n">crpix</span><span class="p">)</span><span class="o">*</span><span class="n">cdelt</span> <span class="o">+</span> <span class="n">crval</span>
+    <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="mf">10.</span><span class="p">,</span> <span class="n">wave</span><span class="p">)</span> <span class="k">if</span> <span class="n">log10</span> <span class="k">else</span> <span class="n">wave</span></div>
+
+
+<div class="viewcode-block" id="readfits_1dspec"><a class="viewcode-back" href="../../../mangadap.util.fileio.html#mangadap.util.fileio.readfits_1dspec">[docs]</a><span class="k">def</span> <span class="nf">readfits_1dspec</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">log10</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Read a 1D fits spectrum and return two vectors with the wavelength</span>
+<span class="sd">    and flux.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        filename (str): Name of the file to read.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        numpy.ndarray: Two numpy.float64 arrays with the wavelength and</span>
+<span class="sd">        flux read for the spectrum.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        Exception: Raised if the input fits file has more than one</span>
+<span class="sd">            extension or its primary extension has more than two</span>
+<span class="sd">            dimensions.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">hdu</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;readonly&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">hdu</span><span class="p">))</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1"> has more than one extension.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filename</span><span class="p">))</span>
+    
+    <span class="k">if</span> <span class="n">hdu</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;NAXIS&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1"> is not one dimensional!&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filename</span><span class="p">))</span>
+    
+    <span class="n">spec</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">hdu</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+    <span class="n">wave</span> <span class="o">=</span> <span class="n">wavelength_vector</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">hdu</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">header</span><span class="p">,</span> <span class="n">log10</span><span class="o">=</span><span class="n">log10</span><span class="p">)</span>
+    <span class="n">hdu</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">wave</span><span class="p">,</span> <span class="n">spec</span></div>
+
+
+<div class="viewcode-block" id="writefits_1dspec"><a class="viewcode-back" href="../../../mangadap.util.fileio.html#mangadap.util.fileio.writefits_1dspec">[docs]</a><span class="k">def</span> <span class="nf">writefits_1dspec</span><span class="p">(</span><span class="n">ofile</span><span class="p">,</span> <span class="n">crval1</span><span class="p">,</span> <span class="n">cdelt1</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">hdr</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">clobber</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">    Write a simple one-dimensional spectrum.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        ofile (str): Name of the file to write.</span>
+<span class="sd">        crval1 (float): (Log base 10 of the) Initial wavelength, which</span>
+<span class="sd">            is included in the header with the keyword &#39;CRVAL1&#39;;</span>
+<span class="sd">            &#39;CRPIX1&#39; is always set to 1.</span>
+<span class="sd">        cdelt1 (float): The change in (log base 10) wavelength per</span>
+<span class="sd">            pixel, which is included in the header with the keywords</span>
+<span class="sd">            &#39;CDELT1&#39; and &#39;CD1_1&#39;; &#39;CRPIX1&#39; is always set to 1.</span>
+<span class="sd">        flux (array): Vector of the flux values.</span>
+<span class="sd">        clobber (bool): (**Optional**) Flag to overwrite any existing</span>
+<span class="sd">            file of the same name.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_hdr</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">Header</span><span class="p">()</span> <span class="k">if</span> <span class="n">hdr</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">hdr</span>
+    <span class="n">_hdr</span><span class="p">[</span><span class="s1">&#39;CRPIX1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">_hdr</span><span class="p">[</span><span class="s1">&#39;CRVAL1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">crval1</span>
+    <span class="n">_hdr</span><span class="p">[</span><span class="s1">&#39;CDELT1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">cdelt1</span>
+    <span class="n">_hdr</span><span class="p">[</span><span class="s1">&#39;CD1_1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_hdr</span><span class="p">[</span><span class="s1">&#39;CDELT1&#39;</span><span class="p">]</span>
+    <span class="n">fits</span><span class="o">.</span><span class="n">HDUList</span><span class="p">([</span> <span class="n">fits</span><span class="o">.</span><span class="n">PrimaryHDU</span><span class="p">(</span><span class="n">flux</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="n">_hdr</span><span class="p">)</span> <span class="p">])</span><span class="o">.</span><span class="n">writeto</span><span class="p">(</span><span class="n">ofile</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="n">clobber</span><span class="p">)</span></div>
+                 <span class="c1">#clobber=clobber)</span>
+
+
+<div class="viewcode-block" id="read_template_spectrum"><a class="viewcode-back" href="../../../mangadap.util.fileio.html#mangadap.util.fileio.read_template_spectrum">[docs]</a><span class="k">def</span> <span class="nf">read_template_spectrum</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">data_ext</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ivar_ext</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sres_ext</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">log10</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Read a template spectrum.</span>
+<span class="sd">    </span>
+<span class="sd">    Template spectra are &quot;raw format&quot; files with template data and are,</span>
+<span class="sd">    at minimum, expected to have the following components::</span>
+<span class="sd">    </span>
+<span class="sd">        hdu[0].header[&#39;CRVAL1&#39;]</span>
+<span class="sd">        hdu[0].header[&#39;CRPIX1&#39;]</span>
+<span class="sd">        hdu[0].header[&#39;CDELT1&#39;]</span>
+<span class="sd">        hdu[data_ext].data</span>
+
+<span class="sd">    The latter has the flux data.  If `log10` is true, the wavelength</span>
+<span class="sd">    solution above is expected to be in log wavelengths.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        filename (str): Name of the fits file to read.</span>
+<span class="sd">        data_ext (str): (**Optional**) Name of the extension with the</span>
+<span class="sd">            flux data.  If None, default is 0.</span>
+<span class="sd">        ivar_ext (str): (**Optional**) Name of the extension with the</span>
+<span class="sd">            inverse variance data.  If None, no inverse data are</span>
+<span class="sd">            returned.</span>
+<span class="sd">        sres_ext (str): (**Optional**) Name of the extension with the</span>
+<span class="sd">            specral resolution (:math:R=\lambda/\delta\lambda`)</span>
+<span class="sd">            measurements.  If None, no spectral resolution data are</span>
+<span class="sd">            returned.</span>
+<span class="sd">        log10 (bool): (**Optional**) Flag the WCS wavelength coordinates</span>
+<span class="sd">            as being in base-10 log wavelength, instead of linear.</span>
+<span class="sd">            Default is to assume linear.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        numpy.ndarray : Up to four numpy.float64 arrays with the</span>
+<span class="sd">        wavelength, flux, inverse variance (if `ivar_ext` is provided),</span>
+<span class="sd">        and spectral resolution (if `sres_ext` is provided) of the</span>
+<span class="sd">        template spectrum.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: Raised if fits file is not one-dimensional.</span>
+<span class="sd">        KeyError: Raised if various header keywords or extension names</span>
+<span class="sd">            are not available.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">data_ext</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">data_ext</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="n">hdu</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;readonly&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">hdu</span><span class="p">[</span><span class="n">data_ext</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Spectrum in </span><span class="si">{0}</span><span class="s1"> is not one dimensional!&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filename</span><span class="p">))</span>
+    
+    <span class="n">spec</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">hdu</span><span class="p">[</span><span class="n">data_ext</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+    <span class="n">wave</span> <span class="o">=</span> <span class="n">wavelength_vector</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">hdu</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">header</span><span class="p">,</span> <span class="n">log10</span><span class="o">=</span><span class="n">log10</span><span class="p">)</span>
+
+    <span class="n">ret</span> <span class="o">=</span> <span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">spec</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">ivar_ext</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">ret</span> <span class="o">+=</span> <span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">hdu</span><span class="p">[</span><span class="n">ivar_ext</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span> <span class="p">)</span>
+    <span class="k">if</span> <span class="n">sres_ext</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">ret</span> <span class="o">+=</span> <span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">hdu</span><span class="p">[</span><span class="n">sres_ext</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span> <span class="p">)</span>
+
+    <span class="n">hdu</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">ret</span></div>
+    
+
+<div class="viewcode-block" id="init_record_array"><a class="viewcode-back" href="../../../mangadap.util.fileio.html#mangadap.util.fileio.init_record_array">[docs]</a><span class="k">def</span> <span class="nf">init_record_array</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">    Utility function that initializes a record array using a provided</span>
+<span class="sd">    input data type.  For example::</span>
+
+<span class="sd">        dtype = [ (&#39;INDX&#39;, numpy.int, (2,) ),</span>
+<span class="sd">                  (&#39;VALUE&#39;, numpy.float) ]</span>
+
+<span class="sd">    Defines two columns, one named `INDEX` with two integers per row and</span>
+<span class="sd">    the one named `VALUE` with a single float element per row.  See</span>
+<span class="sd">    `numpy.recarray`_.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        shape (int or tuple) : Shape of the output array.</span>
+
+<span class="sd">        dtype (list of tuples) : List of the tuples that define each</span>
+<span class="sd">            element in the record array.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        numpy.recarray: Zeroed record array</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">data</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">recarray</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="rec_to_fits_type"><a class="viewcode-back" href="../../../mangadap.util.fileio.html#mangadap.util.fileio.rec_to_fits_type">[docs]</a><span class="k">def</span> <span class="nf">rec_to_fits_type</span><span class="p">(</span><span class="n">rec_element</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return the string representation of a fits binary table data type</span>
+<span class="sd">    based on the provided record array element.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">rec_element</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">rec_element</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">size</span>
+    <span class="k">if</span> <span class="n">rec_element</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="n">numpy</span><span class="o">.</span><span class="n">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">&#39;</span><span class="si">{0}</span><span class="s1">L&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">rec_element</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="n">numpy</span><span class="o">.</span><span class="n">uint8</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">&#39;</span><span class="si">{0}</span><span class="s1">B&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">rec_element</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int16</span> <span class="ow">or</span> <span class="n">rec_element</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="n">numpy</span><span class="o">.</span><span class="n">uint16</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">&#39;</span><span class="si">{0}</span><span class="s1">I&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">rec_element</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int32</span> <span class="ow">or</span> <span class="n">rec_element</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="n">numpy</span><span class="o">.</span><span class="n">uint32</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">&#39;</span><span class="si">{0}</span><span class="s1">J&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">rec_element</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int64</span> <span class="ow">or</span> <span class="n">rec_element</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="n">numpy</span><span class="o">.</span><span class="n">uint64</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">&#39;</span><span class="si">{0}</span><span class="s1">K&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">rec_element</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float32</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">&#39;</span><span class="si">{0}</span><span class="s1">E&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">rec_element</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">&#39;</span><span class="si">{0}</span><span class="s1">D&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+    
+    <span class="c1"># If it makes it here, assume its a string</span>
+    <span class="n">l</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">rec_element</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">str</span><span class="p">[</span><span class="n">rec_element</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s1">&#39;U&#39;</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">:])</span>
+<span class="c1">#    return &#39;{0}A&#39;.format(l) if n==1 else &#39;{0}A{1}&#39;.format(l*n,l)</span>
+    <span class="k">return</span> <span class="s1">&#39;</span><span class="si">{0}</span><span class="s1">A&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">l</span><span class="o">*</span><span class="n">n</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="rec_to_fits_col_dim"><a class="viewcode-back" href="../../../mangadap.util.fileio.html#mangadap.util.fileio.rec_to_fits_col_dim">[docs]</a><span class="k">def</span> <span class="nf">rec_to_fits_col_dim</span><span class="p">(</span><span class="n">rec_element</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return the string representation of the dimensions for the fits</span>
+<span class="sd">    table column based on the provided record array element.</span>
+
+<span class="sd">    The shape is inverted because the first element is supposed to be</span>
+<span class="sd">    the most rapidly varying; i.e. the shape is supposed to be written</span>
+<span class="sd">    as row-major, as opposed to the native column-major order in python.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="kc">None</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">rec_element</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">rec_element</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="channel_dictionary"><a class="viewcode-back" href="../../../mangadap.util.fileio.html#mangadap.util.fileio.channel_dictionary">[docs]</a><span class="k">def</span> <span class="nf">channel_dictionary</span><span class="p">(</span><span class="n">hdu</span><span class="p">,</span> <span class="n">ext</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Construct a dictionary of the channels in a MAPS file.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">channel_dict</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">hdu</span><span class="p">[</span><span class="n">ext</span><span class="p">]</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">k</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;C&#39;</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">i</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">k</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span><span class="o">-</span><span class="mi">1</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">channel_dict</span><span class="p">[</span><span class="n">v</span><span class="p">]</span> <span class="o">=</span> <span class="n">i</span>
+    <span class="k">return</span> <span class="n">channel_dict</span></div>
+
+
+<div class="viewcode-block" id="channel_units"><a class="viewcode-back" href="../../../mangadap.util.fileio.html#mangadap.util.fileio.channel_units">[docs]</a><span class="k">def</span> <span class="nf">channel_units</span><span class="p">(</span><span class="n">hdu</span><span class="p">,</span> <span class="n">ext</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Construct an array with the channel units.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">nchannels</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">hdu</span><span class="p">[</span><span class="n">ext</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span> <span class="k">else</span> <span class="n">hdu</span><span class="p">[</span><span class="n">ext</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">channel_units</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">nchannels</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">object</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">hdu</span><span class="p">[</span><span class="n">ext</span><span class="p">]</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">k</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;U&#39;</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">i</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">k</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span><span class="o">-</span><span class="mi">1</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">channel_units</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">channel_units</span></div>
+
+
+<div class="viewcode-block" id="compress_file"><a class="viewcode-back" href="../../../mangadap.util.fileio.html#mangadap.util.fileio.compress_file">[docs]</a><span class="k">def</span> <span class="nf">compress_file</span><span class="p">(</span><span class="n">ifile</span><span class="p">,</span> <span class="n">clobber</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compress a file using gzip.  The output file has the same name as</span>
+<span class="sd">    the input file with &#39;.gz&#39; appended.</span>
+
+<span class="sd">    Any existing file will be overwritten if clobber is true.</span>
+
+<span class="sd">    An error is raised if the input file name already has &#39;.gz&#39; appended</span>
+<span class="sd">    to the end.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">ifile</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;gz&#39;</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;File appears to already have been compressed! </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ifile</span><span class="p">))</span>
+
+    <span class="n">ofile</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{0}</span><span class="s1">.gz&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ifile</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">ofile</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">clobber</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">FileExistsError</span><span class="p">(</span><span class="s1">&#39;File already exists: </span><span class="si">{0}</span><span class="s1">.</span><span class="se">\n</span><span class="s1">To overwrite, set clobber=True.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                                <span class="n">ofile</span><span class="p">))</span>
+
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">ifile</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f_in</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">gzip</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">ofile</span><span class="p">,</span> <span class="s1">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f_out</span><span class="p">:</span>
+            <span class="n">shutil</span><span class="o">.</span><span class="n">copyfileobj</span><span class="p">(</span><span class="n">f_in</span><span class="p">,</span> <span class="n">f_out</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="create_symlink"><a class="viewcode-back" href="../../../mangadap.util.fileio.html#mangadap.util.fileio.create_symlink">[docs]</a><span class="k">def</span> <span class="nf">create_symlink</span><span class="p">(</span><span class="n">ofile</span><span class="p">,</span> <span class="n">symlink_dir</span><span class="p">,</span> <span class="n">relative_symlink</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">clobber</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">loggers</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                   <span class="n">quiet</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create a symlink to the input file in the provided directory.  If</span>
+<span class="sd">    relative_symlink is True (default), the path to the file is relative</span>
+<span class="sd">    to the directory with the symlink.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Check if the file already exists</span>
+    <span class="n">olink_dest</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">symlink_dir</span><span class="p">,</span> <span class="n">ofile</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">olink_dest</span><span class="p">)</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">islink</span><span class="p">(</span><span class="n">olink_dest</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">clobber</span><span class="p">:</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">olink_dest</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span>
+
+    <span class="c1"># Make sure the symlink directory exists</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">symlink_dir</span><span class="p">):</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">symlink_dir</span><span class="p">)</span>
+
+    <span class="c1"># Set the relative path for the symlink, if requested</span>
+    <span class="n">olink_src</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">relpath</span><span class="p">(</span><span class="n">ofile</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">olink_dest</span><span class="p">))</span> \
+                    <span class="k">if</span> <span class="n">relative_symlink</span> <span class="k">else</span> <span class="n">ofile</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">quiet</span><span class="p">:</span>
+        <span class="n">log_output</span><span class="p">(</span><span class="n">loggers</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="s1">&#39;Creating symlink: </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">olink_dest</span><span class="p">))</span>
+
+    <span class="c1"># Create the symlink</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">symlink</span><span class="p">(</span><span class="n">olink_src</span><span class="p">,</span> <span class="n">olink_dest</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, SDSS-IV/MaNGA Pipeline Group.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'2.2.2',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

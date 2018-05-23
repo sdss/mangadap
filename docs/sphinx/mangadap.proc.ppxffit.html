@@ -1,0 +1,1333 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mangadap.proc.ppxffit module &mdash; mangadap 2.2.2 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="mangadap 2.2.2 documentation" href="index.html"/>
+        <link rel="up" title="mangadap.proc package" href="mangadap.proc.html"/>
+        <link rel="next" title="mangadap.proc.reductionassessments module" href="mangadap.proc.reductionassessments.html"/>
+        <link rel="prev" title="mangadap.proc.emissionlinetemplates module" href="mangadap.proc.emissionlinetemplates.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> mangadap
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="mangadap.html">mangadap package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="mangadap.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="mangadap.config.html">mangadap.config package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.contrib.html">mangadap.contrib package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.par.html">mangadap.par package</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="mangadap.proc.html">mangadap.proc package</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="mangadap.proc.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="mangadap.proc.html#module-mangadap.proc">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.survey.html">mangadap.survey package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.test.html">mangadap.test package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.util.html">mangadap.util package</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="mangadap.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mangadap.html#module-mangadap">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">mangadap</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="mangadap.html">mangadap package</a> &raquo;</li>
+        
+          <li><a href="mangadap.proc.html">mangadap.proc package</a> &raquo;</li>
+        
+      <li>mangadap.proc.ppxffit module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/mangadap.proc.ppxffit.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-mangadap.proc.ppxffit">
+<span id="mangadap-proc-ppxffit-module"></span><h1>mangadap.proc.ppxffit module<a class="headerlink" href="#module-mangadap.proc.ppxffit" title="Permalink to this headline">¶</a></h1>
+<p>Implements a wrapper class for pPXF.</p>
+<dl class="docutils">
+<dt><em>License</em>:</dt>
+<dd><dl class="first last docutils">
+<dt>Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group</dt>
+<dd>Licensed under BSD 3-clause license - see LICENSE.rst</dd>
+</dl>
+</dd>
+<dt><em>Source location</em>:</dt>
+<dd>$MANGADAP_DIR/python/mangadap/proc/ppxffit.py</dd>
+<dt><em>Imports and python version compliance</em>:</dt>
+<dd><div class="first last highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version</span> <span class="o">&gt;</span> <span class="s1">&#39;3&#39;</span><span class="p">:</span>
+    <span class="n">long</span> <span class="o">=</span> <span class="nb">int</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">import</span> <span class="nn">scipy.interpolate</span>
+<span class="kn">import</span> <span class="nn">scipy.signal</span>
+<span class="kn">import</span> <span class="nn">astropy.constants</span>
+
+<span class="kn">from</span> <span class="nn">..par.parset</span> <span class="k">import</span> <span class="n">ParSet</span>
+<span class="kn">from</span> <span class="nn">..util.bitmask</span> <span class="k">import</span> <span class="n">BitMask</span>
+<span class="kn">from</span> <span class="nn">..util.fileio</span> <span class="k">import</span> <span class="n">init_record_array</span>
+<span class="kn">from</span> <span class="nn">..util.instrument</span> <span class="k">import</span> <span class="n">spectrum_velocity_scale</span><span class="p">,</span> <span class="n">resample1d</span><span class="p">,</span> <span class="n">SpectralResolution</span>
+<span class="kn">from</span> <span class="nn">..contrib.ppxf</span> <span class="k">import</span> <span class="n">ppxf</span>
+<span class="kn">from</span> <span class="nn">.spatiallybinnedspectra</span> <span class="k">import</span> <span class="n">SpatiallyBinnedSpectra</span>
+<span class="kn">from</span> <span class="nn">.templatelibrary</span> <span class="k">import</span> <span class="n">TemplateLibrary</span>
+<span class="kn">from</span> <span class="nn">.pixelmask</span> <span class="k">import</span> <span class="n">PixelMask</span>
+<span class="kn">from</span> <span class="nn">.spectralfitting</span> <span class="k">import</span> <span class="n">StellarKinematicsFit</span>
+</pre></div>
+</div>
+</dd>
+<dt><em>Class usage examples</em>:</dt>
+<dd>Add examples</dd>
+<dt><em>Revision history</em>:</dt>
+<dd><div class="first last line-block">
+<div class="line"><strong>26 Apr 2016</strong>: Moved from spectralfitting.py to its own file by
+K. Westfall (KBW)</div>
+<div class="line"><strong>05 Jul 2016</strong>: (KBW) V6.0.0 of pPXF does not use the oversample
+keyword given a better solution; see Cappellari (in prep).  This
+keyword was therefore removed from the parameter set.</div>
+<div class="line"><strong>06 Jul 2016</strong>: (KBW) Use v6.0.0 pPXF functions to compute models
+using new LOSVD kernel functionality.</div>
+<div class="line"><strong>10 Oct 2016</strong>: (KBW) Fixed error in calculation of velocity
+offset between template and object spectra to account for
+different size pixels.</div>
+<div class="line"><strong>31 Oct 2016</strong>: (KBW) Allow the spectral resolution to be a
+vector per spaxel or a vector per set of input spectra in
+<a class="reference internal" href="#mangadap.proc.ppxffit.PPXFFit.fit" title="mangadap.proc.ppxffit.PPXFFit.fit"><code class="xref py py-func docutils literal"><span class="pre">PPXFFit.fit()</span></code></a>.</div>
+<div class="line"><strong>01 Nov 2016</strong>: (KBW) Added new iteration method that does not do
+a first fit to the global spectrum but does include the
+rejection iteration.  Allows users to treat each spectrum
+provided to <a class="reference internal" href="#mangadap.proc.ppxffit.PPXFFit.fit" title="mangadap.proc.ppxffit.PPXFFit.fit"><code class="xref py py-func docutils literal"><span class="pre">PPXFFit.fit()</span></code></a> individually.  Fixed goodpixel
+mask when not first fitting the global spectrum.</div>
+<div class="line"><strong>02 Nov 2016</strong>: (KBW) Added ability to limit which templates are
+fit to each spectrum in <a class="reference internal" href="#mangadap.proc.ppxffit.PPXFFit.fit" title="mangadap.proc.ppxffit.PPXFFit.fit"><code class="xref py py-func docutils literal"><span class="pre">PPXFFit.fit()</span></code></a> using usetpl kwarg.</div>
+<div class="line"><strong>17 Feb 2017</strong>: (KBW) Included filtering options.  Changed to use
+ppxf v6.0.4; mpfit object no longer returned, only mpfit status.</div>
+<div class="line"><strong>30 Aug 2017</strong>: (KBW) Switch from
+<a class="reference internal" href="mangadap.util.instrument.html#mangadap.util.instrument.resample_vector" title="mangadap.util.instrument.resample_vector"><code class="xref py py-func docutils literal"><span class="pre">mangadap.util.instrument.resample_vector()</span></code></a> to
+<a class="reference internal" href="mangadap.util.instrument.html#mangadap.util.instrument.resample1d" title="mangadap.util.instrument.resample1d"><code class="xref py py-func docutils literal"><span class="pre">mangadap.util.instrument.resample1d()</span></code></a>.</div>
+<div class="line"><strong>05 Feb 2018</strong>: (KBW) Added <a class="reference internal" href="#mangadap.proc.ppxffit.PPXFModel" title="mangadap.proc.ppxffit.PPXFModel"><code class="xref py py-class docutils literal"><span class="pre">PPXFModel</span></code></a>.</div>
+</div>
+</dd>
+</dl>
+<div class="admonition-todo admonition" id="index-0">
+<p class="first admonition-title">Todo</p>
+<p class="last">Allow new iteration mode that iteratively fits until the velocity is
+not up against one of the +/- 2000 km/s limits?  Could be useful for
+poor redshift guesses.</p>
+</div>
+<dl class="class">
+<dt id="mangadap.proc.ppxffit.PPXFFit">
+<em class="property">class </em><code class="descclassname">mangadap.proc.ppxffit.</code><code class="descname">PPXFFit</code><span class="sig-paren">(</span><em>bitmask</em>, <em>par=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="mangadap.proc.spectralfitting.html#mangadap.proc.spectralfitting.StellarKinematicsFit" title="mangadap.proc.spectralfitting.StellarKinematicsFit"><code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.spectralfitting.StellarKinematicsFit</span></code></a></p>
+<p>Use pPXF to measure the stellar kinematics.  Although it can also
+fit the composition and emission lines, for now just force it to be
+a <code class="xref py py-class docutils literal"><span class="pre">StellarKinematicsFit</span></code> objec.</p>
+<dl class="attribute">
+<dt id="mangadap.proc.ppxffit.PPXFFit.bitmask">
+<code class="descname">bitmask</code><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit.bitmask" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>BitMask</em> – Bitmask to use for masking spectral pixels
+and parameter values.  For
+<a class="reference internal" href="#mangadap.proc.ppxffit.PPXFFit.fit_SpatiallyBinnedSpectra" title="mangadap.proc.ppxffit.PPXFFit.fit_SpatiallyBinnedSpectra"><code class="xref py py-func docutils literal"><span class="pre">fit_SpatiallyBinnedSpectra()</span></code></a>, must have bit for
+‘LOW_SNR’.  For <a class="reference internal" href="#mangadap.proc.ppxffit.PPXFFit.fit" title="mangadap.proc.ppxffit.PPXFFit.fit"><code class="xref py py-func docutils literal"><span class="pre">fit()</span></code></a> must have bits for ‘TPL_PIXELS’,
+‘TRUNCATED’, ‘PPXF_REJECT’, ‘LARGE_CHI2’, ‘LARGE_RESID’,
+‘INSUFFICIENT_DATA’, ‘FIT_FAILED’, ‘NEAR_BOUND’.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.proc.ppxffit.PPXFFit._check_mode">
+<code class="descname">_check_mode</code><span class="sig-paren">(</span><em>iteration_mode</em>, <em>reject_boxcar</em>, <em>filter_boxcar</em>, <em>filter_operation</em>, <em>filter_iterations</em>, <em>mdegree</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit._check_mode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit._check_mode" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.proc.ppxffit.PPXFFit._fill_ppxf_par">
+<code class="descname">_fill_ppxf_par</code><span class="sig-paren">(</span><em>kin</em>, <em>no_shift=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit._fill_ppxf_par"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit._fill_ppxf_par" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.proc.ppxffit.PPXFFit._fit_all_spectra">
+<code class="descname">_fit_all_spectra</code><span class="sig-paren">(</span><em>templates</em>, <em>templates_rfft</em>, <em>tpl_to_use</em>, <em>plot=False</em>, <em>plot_file_root=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit._fit_all_spectra"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit._fit_all_spectra" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fit all spectra provided.</p>
+<ul class="simple">
+<li>Get an initial fit</li>
+<li>Reject</li>
+<li>Mask and smooth templates and objects</li>
+<li>Fit ratio</li>
+<li>Mask and smooth</li>
+<li>Fit ratio</li>
+<li>Fit unmasked with fixed kinematics to get models (with
+emission lines?)</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.proc.ppxffit.PPXFFit._fit_dispersion_correction">
+<code class="descname">_fit_dispersion_correction</code><span class="sig-paren">(</span><em>result</em>, <em>baseline_dispersion=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit._fit_dispersion_correction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit._fit_dispersion_correction" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Calculate the dispersion correction:</dt>
+<dd><ul class="first last simple">
+<li>Construct the optimized, redshifted template <em>without</em> the
+convolution with the best-fitting LOSVD.</li>
+<li>Convolve it with the resolution difference in the data.</li>
+<li>Use pPXF to fit the matched version to the unmatched version;
+this should be the dispersion correction.</li>
+</ul>
+</dd>
+</dl>
+<div class="admonition-todo admonition" id="index-1">
+<p class="first admonition-title">Todo</p>
+<p class="last">Decide how to deal with regions below 2-pixel resolution in
+synthetic spectrum being fit.  How does this alter the
+correction?</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.proc.ppxffit.PPXFFit._fit_global_spectrum">
+<code class="descname">_fit_global_spectrum</code><span class="sig-paren">(</span><em>obj_to_include=None</em>, <em>plot=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit._fit_global_spectrum"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit._fit_global_spectrum" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Fit the global spectrum.  This:</dt>
+<dd><ul class="first last simple">
+<li>Sets the base-level good pixel mask for the fits to the individual
+bins</li>
+<li>Gives the template weights for the global template</li>
+</ul>
+</dd>
+</dl>
+<div class="admonition-todo admonition" id="index-2">
+<p class="first admonition-title">Todo</p>
+<ul class="last simple">
+<li>Only include spectra above a given S/N in global spectrum?</li>
+<li>Allow for a number of iterations as input.</li>
+</ul>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.proc.ppxffit.PPXFFit._get_losvd_kernels">
+<code class="descname">_get_losvd_kernels</code><span class="sig-paren">(</span><em>result</em>, <em>no_shift=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit._get_losvd_kernels"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit._get_losvd_kernels" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.proc.ppxffit.PPXFFit._is_near_bounds">
+<code class="descname">_is_near_bounds</code><span class="sig-paren">(</span><em>result</em>, <em>guess_velocity</em>, <em>tol_frac=0.01</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit._is_near_bounds"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit._is_near_bounds" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check if the fitted kinematics are near the imposed limits.</p>
+<p>The definition of “near” is that the velocity and higher moments
+cannot be closer than the provided fraction of the total width
+to the boundary.  For the velocity dispersion, the fraction is
+done in log space.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.proc.ppxffit.PPXFFit._matched_mask_filter">
+<code class="descname">_matched_mask_filter</code><span class="sig-paren">(</span><em>bf</em>, <em>obj_mask</em>, <em>tpl_flux</em>, <em>tpl_rfft</em>, <em>tpl_to_use</em>, <em>result</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit._matched_mask_filter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit._matched_mask_filter" title="Permalink to this definition">¶</a></dt>
+<dd><p>self.tpl_npad must exist!</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.proc.ppxffit.PPXFFit._mode_includes_rejection">
+<code class="descname">_mode_includes_rejection</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit._mode_includes_rejection"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit._mode_includes_rejection" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.proc.ppxffit.PPXFFit._mode_uses_all_templates">
+<code class="descname">_mode_uses_all_templates</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit._mode_uses_all_templates"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit._mode_uses_all_templates" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.proc.ppxffit.PPXFFit._mode_uses_filter">
+<code class="descname">_mode_uses_filter</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit._mode_uses_filter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit._mode_uses_filter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.proc.ppxffit.PPXFFit._mode_uses_global_spectrum">
+<code class="descname">_mode_uses_global_spectrum</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit._mode_uses_global_spectrum"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit._mode_uses_global_spectrum" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.proc.ppxffit.PPXFFit._mode_uses_global_template">
+<code class="descname">_mode_uses_global_template</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit._mode_uses_global_template"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit._mode_uses_global_template" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.proc.ppxffit.PPXFFit._mode_uses_nonzero_templates">
+<code class="descname">_mode_uses_nonzero_templates</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit._mode_uses_nonzero_templates"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit._mode_uses_nonzero_templates" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.proc.ppxffit.PPXFFit._nominal_dispersion_correction">
+<code class="descname">_nominal_dispersion_correction</code><span class="sig-paren">(</span><em>obj_sres</em>, <em>gpm</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit._nominal_dispersion_correction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit._nominal_dispersion_correction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the dispersion corrections as the quadrature
+difference between the spectral resolution of the template and
+object spectra.  Returns a masked array!</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.proc.ppxffit.PPXFFit._run_fit_iteration">
+<code class="descname">_run_fit_iteration</code><span class="sig-paren">(</span><em>obj_flux</em>, <em>obj_ferr</em>, <em>start</em>, <em>end</em>, <em>base_velocity</em>, <em>tpl_flux</em>, <em>tpl_rfft</em>, <em>guess_kin</em>, <em>fix_kinematics=False</em>, <em>obj_to_fit=None</em>, <em>tpl_to_use=None</em>, <em>degree=None</em>, <em>mdegree=None</em>, <em>dof=None</em>, <em>weight_errors=False</em>, <em>plot=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit._run_fit_iteration"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit._run_fit_iteration" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fit all the object spectra in obj_flux.</p>
+<div class="admonition-todo admonition" id="index-3">
+<p class="first admonition-title">Todo</p>
+<ul class="last simple">
+<li>Calculate DOF in this function?</li>
+<li>Explicitly set the bounds to use instead of using the pPXF
+defaults?</li>
+</ul>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>obj_flux</strong> (<em>numpy.ma.MaskedArray</em>) – Size is <span class="math">\(N_{\rm
+spec}\times N_{\rm chan}\)</span>, object spectra.</li>
+<li><strong>obj_ferr</strong> (<em>numpy.ma.MaskedArray</em>) – Size is <span class="math">\(N_{\rm
+spec}\times N_{\rm chan}\)</span>, object errors</li>
+<li><strong>start</strong> (<em>array</em>) – Size is <span class="math">\(N_{\rm spec}\)</span>, starting pixel
+for each spectrum</li>
+<li><strong>end</strong> (<em>array</em>) – Size is <span class="math">\(N_{\rm spec}\)</span>, ending pixel (+1)
+for each spectrum</li>
+<li><strong>base_velocity</strong> (<em>array</em>) – Size is <span class="math">\(N_{\rm spec}\)</span>, base
+velocity offset between each object spectrum and the
+template spectra.</li>
+<li><strong>tpl_flux</strong> (<em>array</em>) – Size is <span class="math">\(N_{\rm tpl}\times N_{\rm
+tpl chan}\)</span>, template spectra</li>
+<li><strong>tpl_rfft</strong> (<em>array</em>) – Size is <span class="math">\(N_{\rm tpl}\times N_{\rm
+tpl pad}\)</span>, real FFT of the template spectra</li>
+<li><strong>guess_kin</strong> (<em>array</em>) – Initial guess for kinematics.  Size is
+<span class="math">\(N_{\rm spec}\times N_{\rm moments}\)</span>.</li>
+<li><strong>fix_kinematics</strong> (<em>bool</em>) – (<strong>Optional</strong>) Flag to fix the
+kinematics to the input values during the fit.</li>
+<li><strong>obj_to_fit</strong> (<em>array</em>) – (<strong>Optional</strong>) Size is <span class="math">\(N_{\rm
+spec}\)</span>, boolean flag to fit object spectrum</li>
+<li><strong>tpl_to_use</strong> (<em>array</em>) – (<strong>Optional</strong>) Size is <span class="math">\(N_{\rm
+spec}\times N_{\rm tpl}\)</span>, boolean flag to use a template
+for the fit to each object spectrum</li>
+<li><strong>plot</strong> (<em>bool</em>) – (<strong>Optional</strong>) Produce the default ppxf fit
+plot.</li>
+<li><strong>degree</strong> (<em>int</em>) – (<strong>Optional</strong>) Additive polynomial order.
+Default is to use the internal attribute <code class="xref py py-attr docutils literal"><span class="pre">degree</span></code>.</li>
+<li><strong>mdegree</strong> (<em>int</em>) – (<strong>Optional</strong>) Multiplicative polynomial
+order.  Default is to use the internal attribute
+<code class="xref py py-attr docutils literal"><span class="pre">mdegree</span></code>.</li>
+<li><strong>dof</strong> (<em>int</em>) – (<strong>Optional</strong>) Number of degrees of freedom in
+the fit.  Default is to use the internal attribute
+<code class="xref py py-attr docutils literal"><span class="pre">dof</span></code>.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Array with <span class="math">\(N_{\rm spec}\)</span> instances of
+<a class="reference internal" href="#mangadap.proc.ppxffit.PPXFFitResult" title="mangadap.proc.ppxffit.PPXFFitResult"><code class="xref py py-class docutils literal"><span class="pre">PPXFFitResult</span></code></a>.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">numpy.ndarray</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.proc.ppxffit.PPXFFit._save_results">
+<code class="descname">_save_results</code><span class="sig-paren">(</span><em>global_fit_result</em>, <em>result</em>, <em>model_flux</em>, <em>model_mask</em>, <em>model_par</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit._save_results"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit._save_results" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.proc.ppxffit.PPXFFit._validate_kinematics">
+<code class="descname">_validate_kinematics</code><span class="sig-paren">(</span><em>model_mask</em>, <em>model_par</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit._validate_kinematics"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit._validate_kinematics" title="Permalink to this definition">¶</a></dt>
+<dd><p>Validate the returned kinematics.</p>
+<dl class="docutils">
+<dt>Checks:</dt>
+<dd><ul class="first last simple">
+<li>corrected velocity dispersion must be in the range 50-400
+km/s</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.proc.ppxffit.PPXFFit.check_input_kinematics">
+<em class="property">static </em><code class="descname">check_input_kinematics</code><span class="sig-paren">(</span><em>nobj</em>, <em>guess_redshift</em>, <em>guess_dispersion</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit.check_input_kinematics"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit.check_input_kinematics" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.proc.ppxffit.PPXFFit.check_objects">
+<em class="property">static </em><code class="descname">check_objects</code><span class="sig-paren">(</span><em>obj_wave</em>, <em>obj_flux</em>, <em>obj_ferr=None</em>, <em>obj_sres=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit.check_objects"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit.check_objects" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check that the input object data is valid for use with pPXFFit.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>obj_wave</strong> (<em>numpy.ndarray</em>) – 1D vector of object wavelengths in
+angstroms.  Does NOT need to be same as the template
+wavelengths.</li>
+<li><strong>obj_flux</strong> (<em>numpy.ndarray</em>) – <span class="math">\(N_{\rm spec}\times N_{\rm
+pix}\)</span> array of object spectra to fit.  Can be a
+numpy.ma.MaskedArray.</li>
+<li><strong>obj_ferr</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) <span class="math">\(N_{\rm
+spec}\times N_{\rm pix}\)</span> array with the errors in the
+object spectra.  Can be a numpy.ma.MaskedArray.</li>
+<li><strong>obj_sres</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) 1D or 2D array with
+the spectral resolution (<span class="math">\(R =
+\lambda/\Delta\lambda\)</span>) at each wavelength for (each of)
+the object spectra.  Default is the resolution is not
+provided and assumed to be same as the template
+resolution.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.proc.ppxffit.PPXFFit.check_pixel_scale">
+<em class="property">static </em><code class="descname">check_pixel_scale</code><span class="sig-paren">(</span><em>tpl_wave</em>, <em>obj_wave</em>, <em>velscale_ratio=None</em>, <em>dvtol=1e-10</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit.check_pixel_scale"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit.check_pixel_scale" title="Permalink to this definition">¶</a></dt>
+<dd><p>Confirm that the pixel scale of the template and object spectra
+are identical within a certain tolerance, accounting for an
+input pixel-scale ratio.  Returns the velocity scale of the
+object spectra and the velocity scale ratio wrt the template
+spectra.</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.proc.ppxffit.PPXFFit.check_resolution_match">
+<em class="property">static </em><code class="descname">check_resolution_match</code><span class="sig-paren">(</span><em>tpl_sres</em>, <em>obj_sres</em>, <em>matched_resolution</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit.check_resolution_match"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit.check_resolution_match" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.proc.ppxffit.PPXFFit.check_template_usage_flags">
+<em class="property">static </em><code class="descname">check_template_usage_flags</code><span class="sig-paren">(</span><em>nobj</em>, <em>ntpl</em>, <em>usetpl</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit.check_template_usage_flags"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit.check_template_usage_flags" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.proc.ppxffit.PPXFFit.check_templates">
+<em class="property">static </em><code class="descname">check_templates</code><span class="sig-paren">(</span><em>tpl_wave</em>, <em>tpl_flux</em>, <em>tpl_sres=None</em>, <em>velscale_ratio=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit.check_templates"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit.check_templates" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check that the input template data is valid for use with
+pPXFFit.</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.proc.ppxffit.PPXFFit.compile_model_flux">
+<em class="property">static </em><code class="descname">compile_model_flux</code><span class="sig-paren">(</span><em>obj_flux</em>, <em>ppxf_result</em>, <em>rescale=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit.compile_model_flux"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit.compile_model_flux" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the model flux, masked where the data were not fit.  The
+function does <em>not</em> reconstruct the model based on the ppxf
+parameters.</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.proc.ppxffit.PPXFFit.construct_models">
+<em class="property">static </em><code class="descname">construct_models</code><span class="sig-paren">(</span><em>tpl_wave</em>, <em>tpl_flux</em>, <em>obj_wave</em>, <em>obj_flux_shape</em>, <em>model_par</em>, <em>select=None</em>, <em>redshift_only=False</em>, <em>deredshift=False</em>, <em>corrected_dispersion=False</em>, <em>dvtol=1e-10</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit.construct_models"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit.construct_models" title="Permalink to this definition">¶</a></dt>
+<dd><p>Construct models using the provided set of model parameters.
+This is a wrapper for <a class="reference internal" href="#mangadap.proc.ppxffit.PPXFModel" title="mangadap.proc.ppxffit.PPXFModel"><code class="xref py py-class docutils literal"><span class="pre">PPXFModel</span></code></a>.</p>
+<p>Only the shape of the object data is needed, not the data
+itself.</p>
+<p>Allows for a replacement template library that must have the
+same shape as <code class="xref py py-attr docutils literal"><span class="pre">tpl_flux</span></code>.</p>
+<p>The input velocities are expected to be cz, not “ppxf”
+(pixelized) velocities.</p>
+<p>If redshift_only is true, the provided dispersion is set to 1e-9
+km/s, which is numerically identical to 0 (i.e., just shifting
+the spectrum) in the tested applications.  However, beware that
+this is a HARDCODED number.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">This will not work if the parameters are the result of a
+filtered fit! (iteration_mode = ‘fit_reject_filter’)</p>
+</div>
+<p>To convolve the model to the corrected dispersion, instead of
+the uncorrected dispersion, set corrected_dispersion=True.
+Correction <em>always</em> uses SIGMACORR_EMP data.</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.proc.ppxffit.PPXFFit.convert_velocity">
+<em class="property">static </em><code class="descname">convert_velocity</code><span class="sig-paren">(</span><em>v</em>, <em>verr</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit.convert_velocity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit.convert_velocity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert kinematics from pPXF from pixel shifts to redshifts.
+pPXF determines the velocity offset by making the approximation
+that every pixel (logarithmically binned in wavelength) is a
+constant change in velocity.  Over large velocity shifts, this
+approximation can become poor.  An e-mail summary from Michele
+Cappellari:</p>
+<p>The velocity scale per pixel is input as</p>
+<div class="math">
+\[\delta v = c \delta\ln\lambda = c (\ln\lambda_1 -
+\ln\lambda_0)\]</div>
+<p>The velocites output by pPXF are:</p>
+<div class="math">
+\[V = \delta V N_{\rm shift} = c \ln(\lambda_{N_{\rm
+shift}}/\lambda_0)\]</div>
+<p>which implies that the relation between PPXF output velocity and
+redshift is</p>
+<div class="math">
+\[1 + z = exp(V/c),\]</div>
+<p>which reduces z~vel/c in the low-redshift limit.  This function
+converts the <span class="math">\(V\)</span> values provided by pPXF to <span class="math">\(cz\)</span>
+velocities.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last"><strong>IMPORTANT</strong>: After this conversion, you must revert the
+velocities back to the “pixel-based velocities” (using
+<code class="xref py py-func docutils literal"><span class="pre">_revert_velocity()</span></code>) before using the velocities to
+reconstruct the pPXF fitted model.</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.proc.ppxffit.PPXFFit.fit">
+<code class="descname">fit</code><span class="sig-paren">(</span><em>tpl_wave</em>, <em>tpl_flux</em>, <em>obj_wave</em>, <em>obj_flux</em>, <em>obj_ferr</em>, <em>guess_redshift</em>, <em>guess_dispersion</em>, <em>iteration_mode='global_template'</em>, <em>reject_boxcar=100</em>, <em>filter_boxcar=100</em>, <em>filter_operation='divide'</em>, <em>filter_iterations=0</em>, <em>ensemble=True</em>, <em>velscale_ratio=None</em>, <em>mask=None</em>, <em>usetpl=None</em>, <em>matched_resolution=True</em>, <em>tpl_sres=None</em>, <em>obj_sres=None</em>, <em>waverange=None</em>, <em>bias=None</em>, <em>degree=4</em>, <em>mdegree=0</em>, <em>filt_degree=4</em>, <em>filt_mdegree=0</em>, <em>moments=2</em>, <em>loggers=None</em>, <em>quiet=False</em>, <em>max_velocity_range=400.0</em>, <em>alias_window=None</em>, <em>dvtol=1e-10</em>, <em>plot=False</em>, <em>plot_file_root=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper for pPXF with some additional convenience functions.
+Limited implementation at the moment.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>tpl_wave</strong> (<em>numpy.ndarray</em>) – 1D vector of template wavelengths
+at rest in angstroms.</li>
+<li><strong>tpl_flux</strong> (<em>numpy.ndarray</em>) – N-templates x N-wavelengths array
+of template spectra to fit.</li>
+<li><strong>obj_wave</strong> (<em>numpy.ndarray</em>) – 1D vector of object wavelengths in
+angstroms.  Does NOT need to be same as the template
+wavelengths.</li>
+<li><strong>obj_flux</strong> (<em>numpy.ndarray</em>) – N-spec x N-wavelengths array of
+object spectra to fit.  Can be a numpy.ma.MaskedArray.</li>
+<li><strong>obj_ferr</strong> (<em>numpy.ndarray</em>) – N-spec x N-wavelengths array
+with the errors in the object spectra.</li>
+<li><strong>guess_redshift</strong> (<em>float</em><em> or </em><em>numpy.ndarray</em>) – Single or
+spectrum-specific redshift used to set the initial guess
+kinematics.</li>
+<li><strong>guess_dispersion</strong> (<em>float</em><em> or </em><em>numpy.ndarray</em>) – Single or
+spectrum-specific velocity dispersion used to set the
+initial guess kinematics.</li>
+<li><strong>iteration_mode</strong> (<em>str</em>) – (<strong>Optional</strong>) Iteration sequence to
+perform.  See <a class="reference internal" href="#mangadap.proc.ppxffit.PPXFFit.iteration_modes" title="mangadap.proc.ppxffit.PPXFFit.iteration_modes"><code class="xref py py-func docutils literal"><span class="pre">iteration_modes()</span></code></a>.</li>
+<li><strong>reject_boxcar</strong> (<em>int</em>) – (<strong>Optional</strong>) Size of the boxcar to
+use during the rejection iteration.  Default is 100.  If
+None, rejection uses the entire residual spectrum.</li>
+<li><strong>filter_boxcar</strong> (<em>int</em>) – (<strong>Optional</strong>) Size of the boxcar to
+use when filtering the spectra.  Default is 100.  Cannot
+be None.</li>
+<li><strong>filter_iterations</strong> (<em>int</em>) – (<strong>Optional</strong>) Number of filtering
+iterations for the ‘fit_reject_filter’ iteration mode.</li>
+<li><strong>ensemble</strong> (<em>bool</em>) – (<strong>Optional</strong>) Treat the list of input
+spectra as an ensemble.  Currently, this only affects
+how the spectra are masked.  Default is to treat them as
+an ensemble.  When not treated as an ensemble, each
+spectrum is masked individually according to the input
+wavelength range and velocity offsets.  <em>It does not
+make sense to set the iteration_mode to something that
+will include a fit to the global spectrum if you’re not
+treating the list of object spectra as an ensemble.</em></li>
+<li><strong>velscale_ratio</strong> (<em>int</em>) – (<strong>Optional</strong>) Ratio of velocity scale
+per pixel in the object spectra to that for the template
+spectra.  Default is that they should be identical.</li>
+<li><strong>(</strong><strong>numpy.ndarray</strong><strong>,</strong> (<a class="reference internal" href="mangadap.proc.elric.html#mangadap.proc.elric.LineProfileFit.mask" title="mangadap.proc.elric.LineProfileFit.mask"><em>mask</em></a>) – :class:<a href="#id1"><span class="problematic" id="id2">`</span></a>mangadap.util.pixelmask.SpectralPixelMask):
+(<strong>Optional</strong>) A baseline pixel mask to use during the
+fitting.  Other pixels may be masked via the convenience
+functions, but these pixels will always be masked.</li>
+<li><strong>matched_resolution</strong> (<em>bool</em>) – (<strong>Optional</strong>)  Flag that the
+object and template spectra have identical spectral
+resolution.  Default is True.</li>
+<li><strong>tpl_sres</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) One-dimensional
+vector with the spectral resolution (<span class="math">\(R =
+\lambda/\Delta\lambda\)</span>) at each wavelength of the
+template spectra.  Default is the resolution is not
+provided and assumed to be same as the object
+resolution.</li>
+<li><strong>obj_sres</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) One- or Two-dimensional
+array with the spectral resolution (<span class="math">\(R =
+\lambda/\Delta\lambda\)</span>) at each wavelength for (each of)
+the object spectra.  Default is the resolution is not
+provided and assumed to be same as the template
+resolution.</li>
+<li><strong>waverange</strong> (<em>array-like</em>) – (<strong>Optional</strong>) Lower and upper
+wavelength limits to <em>include</em> in the fit.  This can be
+a two-element vector to apply the same limits to all
+spectra, or a N-spec x 2 array with wavelength ranges
+for each spectrum to be fit.  Default is to use as much
+of the spectrum as possible.</li>
+<li><strong>bias</strong> (<em>float</em>) – (<strong>Optional</strong>) Defaults to 0.0. From the pPXF
+documentation: This parameter biases the (h3, h4, …)
+measurements towards zero (Gaussian LOSVD) unless their
+inclusion significantly decreases the error in the fit.
+Set this to BIAS=0.0 not to bias the fit: the solution
+(including [V, sigma]) will be noisier in that case. The
+default BIAS should provide acceptable results in most
+cases, but it would be safe to test it with Monte Carlo
+simulations. This keyword precisely corresponds to the
+parameter lambda in the Cappellari &amp; Emsellem (2004)
+paper. Note that the penalty depends on the <em>relative</em>
+change of the fit residuals, so it is insensitive to
+proper scaling of the NOISE vector. A nonzero BIAS can
+be safely used even without a reliable NOISE spectrum,
+or with equal weighting for all pixels.</li>
+<li><strong>degree</strong> (<em>int</em>) – (<strong>Optional</strong>) Default is 4.  From the pPXF
+documentation: degree of the <em>additive</em> Legendre
+polynomial used to correct the template continuum shape
+during the fit (default: 4).  Set DEGREE = -1 not to
+include any additive polynomial.</li>
+<li><strong>mdegree</strong> (<em>int</em>) – <p>(<strong>Optional</strong>) Default is 0.  From the pPXF
+documentation: degree of the <em>multiplicative</em> Legendre
+polynomial (with mean of 1) used to correct the
+continuum shape during the fit (default: 0). The zero
+degree multiplicative polynomial is always included in
+the fit as it corresponds to the weights assigned to the
+templates.  Note that the computation time is longer
+with multiplicative polynomials than with the same
+number of additive polynomials.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last"><strong>IMPORTANT</strong>: Multiplicative polynomials cannot be
+used when the REDDENING keyword is set.</p>
+</div>
+</li>
+<li><strong>filt_degree</strong> (<em>int</em>) – (<strong>Optional</strong>) The order of the additive
+polynomial to use when fitting the filtered spectra.</li>
+<li><strong>filt_mdegree</strong> (<em>int</em>) – (<strong>Optional</strong>) The order of the
+multiplicative polynomial to use when fitting the
+filtered spectra.</li>
+<li><strong>moments</strong> (<em>int</em>) – <p>(<strong>Optional</strong>) Default is 2.  From the pPXF
+documentation: Order of the Gauss-Hermite moments to
+fit. Set this keyword to 4 to fit [h3, h4] and to 6 to
+fit [h3, h4, h5, h6]. Note that in all cases the G-H
+moments are fitted (non-linearly) <em>together</em> with [V,
+sigma].</p>
+<blockquote>
+<div><ul>
+<li>If MOMENTS=2 or MOMENTS is not set then only [V,
+sigma] are fitted and the other parameters are
+returned as zero.</li>
+<li>If MOMENTS is negative then the kinematics of the
+given COMPONENT are kept fixed to the input
+values.</li>
+<li>EXAMPLE: We want to keep fixed component 0, which
+has an LOSVD described by [V, sigma, h3, h4] and
+is modelled with 100 spectral templates; At the
+same time we fit [V, sigma] for COMPONENT=1, which
+is described by 5 templates (this situation may
+arise when fitting stellar templates with
+pre-determined stellar kinematics, while fitting
+the gas emission).  We should give in input to
+ppxf() the following parameters: component =
+[0]*100 + [1]*5   # –&gt; [0, 0, …, 0, 1, 1, 1, 1,
+1] moments = [-4, 2] start = [[V, sigma, h3, h4],
+[V, sigma]]</li>
+</ul>
+</div></blockquote>
+</li>
+<li><strong>loggers</strong> (<em>list</em>) – (<strong>Optional</strong>) List of <a class="reference external" href="https://docs.python.org/3/library/logging.html">logging.Logger</a> objects
+to log progress; ignored if quiet=True.  Logging is done
+using <a class="reference internal" href="mangadap.util.log.html#mangadap.util.log.log_output" title="mangadap.util.log.log_output"><code class="xref py py-func docutils literal"><span class="pre">mangadap.util.log.log_output()</span></code></a>.  Default is
+no logging.</li>
+<li><strong>quiet</strong> (<em>bool</em>) – (<strong>Optional</strong>) Suppress all terminal and
+logging output.  Default is False.</li>
+<li><strong>max_velocity_range</strong> (<em>float</em>) – (<strong>Optional</strong>) Maximum range
+(+/-) expected for the fitted velocities in km/s.
+Default is 400 km/s.</li>
+<li><strong>alias_window</strong> (<em>float</em>) – (<strong>Optional</strong>) The window to mask to
+avoid aliasing near the edges of the spectral range in
+km/s.  Default is six times <em>max_velocity_range</em>.</li>
+<li><strong>dvtol</strong> (<em>float</em>) – (<strong>Optional</strong>) The velocity scale of the
+template spectra and object spectrum must be smaller
+than this tolerance.  Default is 1e-10.</li>
+<li><strong>plot</strong> (<em>bool</em>) – (<strong>Optional</strong>) Show the automatically generated
+pPXF fit plots.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><p>Returns 4 objects:</p>
+<blockquote>
+<div><p>1. The wavelengths of the best fitting model spectra.
+Nominally the same as the wavelengths of the input
+object spectra (<em>obj_wave</em>).</p>
+<ol class="arabic simple" start="2">
+<li>The fluxes of the best-fitting model spectra.</li>
+</ol>
+<p>3. A mask for the best-fitting models spectra, following
+from the internal bitmask.</p>
+<p>4. A record array with the fitted model parameters; see
+<code class="xref py py-class docutils literal"><span class="pre">spectralfitting.StellarKinematicsFit._per_stellar_kinematics_dtype</span></code>.</p>
+</div></blockquote>
+</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">numpy.ndarray</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if the input arrays are not of the
+correct shape or if the pixel scale of the template and
+object spectra is greater than the specified tolerance.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.proc.ppxffit.PPXFFit.fit_SpatiallyBinnedSpectra">
+<code class="descname">fit_SpatiallyBinnedSpectra</code><span class="sig-paren">(</span><em>binned_spectra</em>, <em>par=None</em>, <em>loggers=None</em>, <em>quiet=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit.fit_SpatiallyBinnedSpectra"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit.fit_SpatiallyBinnedSpectra" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a basic interface that is geared for the DAP that
+interacts with the rest of the, more general, parts of the
+class.</p>
+<p>This should not declare anything to self!</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.proc.ppxffit.PPXFFit.fitting_mask">
+<em class="property">static </em><code class="descname">fitting_mask</code><span class="sig-paren">(</span><em>tpl_wave</em>, <em>obj_wave</em>, <em>velscale</em>, <em>velscale_ratio=None</em>, <em>waverange=None</em>, <em>velocity_offset=None</em>, <em>max_velocity_range=400.0</em>, <em>alias_window=None</em>, <em>loggers=None</em>, <em>quiet=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit.fitting_mask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit.fitting_mask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a list of pixels in the object spectrum to be fit using pPXF.</p>
+<p>Be clear between velocity (ppxf) vs. redshift (cz) !</p>
+<p>The limits applied to the fitted pixels are:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Apply the provided wavelength range limit (<em>waverange</em>).</li>
+<li>pPXF will only allow a fit when the number of template
+pixels is the same as or exceeds the number of pixels in
+the object spectrum.  The first step toward limiting
+template spectra that are too long is to truncate the blue
+and red edges that likely won’t be used given the provided
+velocity offsets (<em>velocity_offset</em>) and the expected
+velocity range (<em>max_velocity_range</em>).</li>
+<li>Remove leading and trailing pixels that will cause alias
+problems during the convolution with the LOSVD
+(<em>alias_window</em>).</li>
+</ul>
+</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>obj_wave</strong> (<em>array</em>) – Wavelength vector of the object spectrum to be
+fit.</li>
+<li><strong>tpl_wave</strong> (<em>array</em>) – Wavelength vector of the template library to
+fit to the object spectrum.</li>
+<li><strong>velscale</strong> (<em>float</em>) – Velocity scale of the pixel.</li>
+<li><strong>velscale_ratio</strong> (<em>int</em>) – (<strong>Optional</strong>) Ratio of the object
+velscale to the template velscale.  Default is 1 (i.e.
+the two have the same pixel scale).</li>
+<li><strong>waverange</strong> (<em>array</em>) – (<strong>Optional</strong>) Lower and upper wavelength
+limits to <em>include</em> in the analysis.  The array can
+either define a single wavelength range – shape is (2,)
+– or a set of wavelength ranges – shape is (n,2).
+Default is to apply no wavelength range limitation.</li>
+<li><strong>velocity_offset</strong> (<em>array</em>) – (<strong>Optional</strong>) Vector with the
+velocity offset (expected or actual) between the
+template and the object spectrum in km/s.  Used to
+estimate which wavelengths can be removed from the
+template.  This can be a single offset or a set of
+offsets.  If both waverange and velocity_offset are 2D
+arrays, the number of wavelength ranges and offsets must
+be the same.  Default is that there is no velocity
+offset.</li>
+<li><strong>max_velocity_range</strong> (<em>float</em>) – (<strong>Optional</strong>) Maximum range
+(+/-) expected for the fitted velocities in km/s.
+Default is 400 km/s.</li>
+<li><strong>alias_window</strong> (<em>float</em>) – (<strong>Optional</strong>) The window to mask to
+avoid aliasing near the edges of the spectral range in
+km/s.  Default is six times <em>max_velocity_range</em>.</li>
+<li><strong>loggers</strong> (<em>list</em>) – (<strong>Optional</strong>) List of <a class="reference external" href="https://docs.python.org/3/library/logging.html">logging.Logger</a>
+objects to log progress; ignored if quiet=True.  Logging
+is done using <a class="reference internal" href="mangadap.util.log.html#mangadap.util.log.log_output" title="mangadap.util.log.log_output"><code class="xref py py-func docutils literal"><span class="pre">mangadap.util.log.log_output()</span></code></a>.
+Default is no logging.</li>
+<li><strong>quiet</strong> (<em>bool</em>) – (<strong>Optional</strong>) Suppress all terminal and
+logging output.  Default is False.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><p>Four boolean vectors are returned:</p>
+<blockquote>
+<div><ul class="simple">
+<li>flags for pixels to include in the fit</li>
+<li>flags for pixels that were excluded because they were
+outside the designated wavelength range</li>
+<li>flags for pixels that were excluded to ensure the
+proper length of the template spectrum wrt the object
+spectrum.</li>
+<li>flags for pixels that were truncated to avoid
+convolution aliasing</li>
+</ul>
+</div></blockquote>
+</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">numpy.ndarray</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if (1) no pixels are valid for the fit,
+(2) the template and object do not have overlapping
+spectral regions given the expected velocity offset
+between the two, or (3) the turncation to deal with
+aliasing removes all remaining pixels.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.proc.ppxffit.PPXFFit.initialize_model_mask">
+<em class="property">static </em><code class="descname">initialize_model_mask</code><span class="sig-paren">(</span><em>obj_wave</em>, <em>obj_flux</em>, <em>mask=None</em>, <em>bitmask=None</em>, <em>velocity_offset=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit.initialize_model_mask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit.initialize_model_mask" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.proc.ppxffit.PPXFFit.initialize_pixels_to_fit">
+<em class="property">static </em><code class="descname">initialize_pixels_to_fit</code><span class="sig-paren">(</span><em>tpl_wave</em>, <em>obj_wave</em>, <em>obj_flux</em>, <em>obj_ferr</em>, <em>velscale</em>, <em>velscale_ratio=None</em>, <em>waverange=None</em>, <em>mask=None</em>, <em>bitmask=None</em>, <em>velocity_offset=None</em>, <em>max_velocity_range=400.0</em>, <em>alias_window=None</em>, <em>ensemble=True</em>, <em>loggers=None</em>, <em>quiet=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit.initialize_pixels_to_fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit.initialize_pixels_to_fit" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.proc.ppxffit.PPXFFit.iteration_modes">
+<em class="property">static </em><code class="descname">iteration_modes</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit.iteration_modes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit.iteration_modes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Possible iteration methods:</p>
+<blockquote>
+<div><p><code class="docutils literal"><span class="pre">none</span></code>: Fit all bins with all templates with a single call
+to pPXF.</p>
+<dl class="docutils">
+<dt><code class="docutils literal"><span class="pre">fit_reject_filter</span></code>: Perform the following procedure:</dt>
+<dd><ul class="first last simple">
+<li>Fit each spectrum</li>
+<li><dl class="first docutils">
+<dt>for n iterations:</dt>
+<dd><ul class="first last">
+<li>Reject outliers</li>
+<li>Filter the object and template spectra</li>
+<li>Fit the filtered spectra</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li>Fit the unfiltered spectra with the kinematics fixed
+to result of the final filtered fit</li>
+</ul>
+</dd>
+</dl>
+<p><code class="docutils literal"><span class="pre">no_global_wrej</span></code>: Do not fit the global spectrum
+first, but include a rejection iteration.  All templates are
+fit in each step.</p>
+<p><code class="docutils literal"><span class="pre">global_template</span></code>:  Fit the global spectrum with all
+templates and include a single rejection iteration.  The
+pixel mask for this fit is the base mask for all fits to the
+individual bins.  A single rejection iteration is done for
+each bin.  <strong>Only the global template is used when fitting
+each bin.</strong></p>
+<p><code class="docutils literal"><span class="pre">nonzero_templates</span></code>:  Fit the global spectrum with
+all templates and include a single rejection iteration.  The
+pixel mask for this fit is the base mask for all fits to the
+individual bins.  A single rejection iteration is done for
+each bin.  <strong>Only the templates with non-zero weights are
+used when fitting each bin.</strong></p>
+<p><code class="docutils literal"><span class="pre">all_templates</span></code>:  Fit the global spectrum with all
+templates and include a single rejection iteration.  The
+pixel mask for this fit is the base mask for all fits to the
+individual bins.  A single rejection iteration is done for
+each bin.  <strong>All templates are used when fitting each bin.</strong></p>
+</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">List of allowed options.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">list</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.proc.ppxffit.PPXFFit.losvd_limits">
+<em class="property">static </em><code class="descname">losvd_limits</code><span class="sig-paren">(</span><em>velscale</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit.losvd_limits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit.losvd_limits" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the limits on the LOSVD parameters used by pPXF.</p>
+<blockquote>
+<div><ul class="simple">
+<li>Velocity limits are <span class="math">\(\pm 2000\)</span> km/s</li>
+<li>Velocity-disperison limits are from 1/10 pixels to 1000 km/s</li>
+<li>Limits of the higher orders moments are from -0.3 to 0.3</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.proc.ppxffit.PPXFFit.obj_tpl_pixelmatch">
+<em class="property">static </em><code class="descname">obj_tpl_pixelmatch</code><span class="sig-paren">(</span><em>velscale</em>, <em>tpl_wave</em>, <em>velscale_ratio=None</em>, <em>dvtol=1e-10</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit.obj_tpl_pixelmatch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit.obj_tpl_pixelmatch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Confirm that the pixel scale of the template and object data are
+the same within some tolerance, accounting for and input ratio
+of the two.</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.proc.ppxffit.PPXFFit.ppxf_tpl_obj_voff">
+<em class="property">static </em><code class="descname">ppxf_tpl_obj_voff</code><span class="sig-paren">(</span><em>tpl_wave</em>, <em>obj_wave</em>, <em>velscale</em>, <em>velscale_ratio=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit.ppxf_tpl_obj_voff"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit.ppxf_tpl_obj_voff" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine the pseudo offset in velocity between the template and
+object spectra, just due to the difference in the starting
+wavelengths.</p>
+<p>This calculation is independent of the base of the logarithm used
+the sampling of the spectra.</p>
+<p>Assumes wavelengths are logarithmically binned.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>tpl_wave</strong> (<em>numpy.ndarray</em>) – Wavelength vector for the template
+library to fit to the object spectrum.</li>
+<li><strong>obj_wave</strong> (<em>numpy.ndarray</em>) – Wavelength vector for the object
+spectrum to be fit.</li>
+<li><strong>velscale</strong> (<em>float</em>) – Velocity step per pixel in km/s for the
+<strong>object</strong> spectrum.</li>
+<li><strong>velscale_ratio</strong> (<em>int</em>) – (<strong>Optional</strong>) The <strong>integer</strong> ratio
+between the velocity scale of the pixel in the galaxy
+data to that of the template data.  This is used only
+when constructing the template library.  Default is
+None, which is the same as assuming that the velocity
+scales are identical.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Velocity offset in km/s between the initial wavelengths
+of the template and object spectra.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">float</p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition-todo admonition" id="index-4">
+<p class="first admonition-title">Todo</p>
+<ul class="last simple">
+<li>Implement a check that calculates the velocity ratio directly?</li>
+</ul>
+</div>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.proc.ppxffit.PPXFFit.reconstruct_model">
+<em class="property">static </em><code class="descname">reconstruct_model</code><span class="sig-paren">(</span><em>tpl_wave</em>, <em>templates</em>, <em>obj_wave</em>, <em>kin</em>, <em>weights</em>, <em>velscale</em>, <em>polyweights=None</em>, <em>mpolyweights=None</em>, <em>start=None</em>, <em>end=None</em>, <em>redshift_only=False</em>, <em>sigma_corr=0.0</em>, <em>velscale_ratio=None</em>, <em>dvtol=1e-10</em>, <em>revert_velocity=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit.reconstruct_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit.reconstruct_model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Construct a pPXF model spectrum based on a set of input spectra
+and parameters.</p>
+<p><strong>This function is outdated!  Use :func:`construct_models` or
+:class:`PPXFModel` instead.</strong></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.ppxffit.PPXFFit.rej_flag">
+<code class="descname">rej_flag</code><em class="property"> = 'PPXF_REJECT'</em><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit.rej_flag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.proc.ppxffit.PPXFFit.reject_model_outliers">
+<em class="property">static </em><code class="descname">reject_model_outliers</code><span class="sig-paren">(</span><em>obj_flux</em>, <em>ppxf_result</em>, <em>rescale=False</em>, <em>local_sigma=False</em>, <em>boxcar=None</em>, <em>nsigma=3.0</em>, <em>niter=9</em>, <em>loggers=None</em>, <em>quiet=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit.reject_model_outliers"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit.reject_model_outliers" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.proc.ppxffit.PPXFFit.revert_velocity">
+<em class="property">static </em><code class="descname">revert_velocity</code><span class="sig-paren">(</span><em>v</em>, <em>verr</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit.revert_velocity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit.revert_velocity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Revert the velocity back to the “pixelized” velocity returned by
+pPXF.</p>
+<p>Order matters here.  The error computation is NOT a true error
+propagation; it’s just the inverse of the “convert” operation</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.ppxffit.PPXFFit.rng_flag">
+<code class="descname">rng_flag</code><em class="property"> = 'OUTSIDE_RANGE'</em><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit.rng_flag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.proc.ppxffit.PPXFFit.set_wavelength_range">
+<em class="property">static </em><code class="descname">set_wavelength_range</code><span class="sig-paren">(</span><em>nobj</em>, <em>obj_wave</em>, <em>waverange=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit.set_wavelength_range"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit.set_wavelength_range" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.ppxffit.PPXFFit.snr_flag">
+<code class="descname">snr_flag</code><em class="property"> = 'LOW_SNR'</em><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit.snr_flag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.ppxffit.PPXFFit.tpl_flag">
+<code class="descname">tpl_flag</code><em class="property"> = 'TPL_PIXELS'</em><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit.tpl_flag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.proc.ppxffit.PPXFFit.trunc_flag">
+<code class="descname">trunc_flag</code><em class="property"> = 'TRUNCATED'</em><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit.trunc_flag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="mangadap.proc.ppxffit.PPXFFitPar">
+<em class="property">class </em><code class="descclassname">mangadap.proc.ppxffit.</code><code class="descname">PPXFFitPar</code><span class="sig-paren">(</span><em>template_library_key</em>, <em>template_library</em>, <em>guess_redshift</em>, <em>guess_dispersion</em>, <em>iteration_mode='global_template'</em>, <em>reject_boxcar=None</em>, <em>filter_boxcar=None</em>, <em>filter_operation=None</em>, <em>filter_iterations=None</em>, <em>match_resolution=True</em>, <em>velscale_ratio=None</em>, <em>minimum_snr=None</em>, <em>pixelmask=None</em>, <em>bias=None</em>, <em>degree=None</em>, <em>mdegree=None</em>, <em>filt_degree=None</em>, <em>filt_mdegree=None</em>, <em>moments=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFitPar"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFitPar" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet" title="mangadap.par.parset.ParSet"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.parset.ParSet</span></code></a></p>
+<p>Define a parameter set used by the pPXF fitting method.</p>
+<div class="admonition-todo admonition" id="index-5">
+<p class="first admonition-title">Todo</p>
+<p class="last">The overlap between this and
+<a class="reference internal" href="mangadap.proc.stellarcontinuummodel.html#mangadap.proc.stellarcontinuummodel.StellarContinuumModelDef" title="mangadap.proc.stellarcontinuummodel.StellarContinuumModelDef"><code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.stellarcontinuummodel.StellarContinuumModelDef</span></code></a>
+is not well designed.</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>template_library_key</strong> (<em>str</em>) – Keyword of the library to fit.  See
+<a class="reference internal" href="mangadap.proc.templatelibrary.html#mangadap.proc.templatelibrary.available_template_libraries" title="mangadap.proc.templatelibrary.available_template_libraries"><code class="xref py py-func docutils literal"><span class="pre">mangadap.proc.templatelibrary.available_template_libraries()</span></code></a>.</li>
+<li><strong>template_library</strong> – (<a class="reference internal" href="mangadap.proc.templatelibrary.html#mangadap.proc.templatelibrary.TemplateLibrary" title="mangadap.proc.templatelibrary.TemplateLibrary"><code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.templatelibrary.TemplateLibrary</span></code></a>):
+Object with the spectra in the template library that have
+been prepared for analysis of the data.</li>
+<li><strong>guess_redshift</strong> (<em>array-like</em>) – Initial guess for the redshift
+(<span class="math">\(cz\)</span>) of each binned spectrum.</li>
+<li><strong>guess_dispersion</strong> (<em>array-like</em>) – Initial guess for the velocity
+dispersion for each binned spectrum.</li>
+<li><strong>iteration_mode</strong> (<em>str</em>) – (<strong>Optional</strong>) Iteration mode to use; see
+<a class="reference internal" href="#mangadap.proc.ppxffit.PPXFFit.iteration_modes" title="mangadap.proc.ppxffit.PPXFFit.iteration_modes"><code class="xref py py-func docutils literal"><span class="pre">PPXFFit.iteration_modes()</span></code></a>.</li>
+<li><strong>match_resolution</strong> (<em>bool</em>) – (<strong>Optional</strong>) Match the spectral
+resolution of the template to that of the galaxy data.  This
+is used only when constructing the template library.
+Default is True.</li>
+<li><strong>velscale_ratio</strong> (<em>int</em>) – (<strong>Optional</strong>) The <strong>integer</strong> ratio
+between the velocity scale of the pixel in the galaxy data
+to that of the template data.  This is used only when
+constructing the template library.  Default is None, which
+is the same as assuming that the velocity scales are
+identical.</li>
+<li><strong>minimum_snr</strong> (<em>float</em>) – (<strong>Optional</strong>) Minimum S/N ratio to include
+in the fitting.</li>
+<li><strong>pixelmask</strong> (<code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.pixelmask.PixelMask</span></code>) – (<strong>Optional</strong>) Pixel mask to include during the fitting.</li>
+<li><strong>degree</strong><strong>, </strong><strong>mdegree</strong><strong>, </strong><strong>moments</strong> (<a class="reference internal" href="mangadap.proc.sasuke.html#mangadap.proc.sasuke.Sasuke.bias" title="mangadap.proc.sasuke.Sasuke.bias"><em>bias</em></a><em>,</em>) – (<strong>Optional</strong>) See
+<code class="xref py py-class docutils literal"><span class="pre">mangadap.contrib.ppxf.ppxf</span></code> documentation.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="mangadap.proc.ppxffit.PPXFFitPar._check">
+<code class="descname">_check</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFitPar._check"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFitPar._check" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform some preliminary checks on the values of the parameters.</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="mangadap.proc.ppxffit.PPXFFitPar._keyword_defaults">
+<em class="property">static </em><code class="descname">_keyword_defaults</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFitPar._keyword_defaults"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFitPar._keyword_defaults" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the keyword defaults.  Pulled from
+<code class="xref py py-class docutils literal"><span class="pre">mangadap.contrib.ppxf.ppxf</span></code>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.proc.ppxffit.PPXFFitPar.fromheader">
+<code class="descname">fromheader</code><span class="sig-paren">(</span><em>hdr</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFitPar.fromheader"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFitPar.fromheader" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.proc.ppxffit.PPXFFitPar.toheader">
+<code class="descname">toheader</code><span class="sig-paren">(</span><em>hdr</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFitPar.toheader"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFitPar.toheader" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="mangadap.proc.ppxffit.PPXFFitResult">
+<em class="property">class </em><code class="descclassname">mangadap.proc.ppxffit.</code><code class="descname">PPXFFitResult</code><span class="sig-paren">(</span><em>degree</em>, <em>mdegree</em>, <em>start</em>, <em>end</em>, <em>tpl_to_use</em>, <em>ppxf_fit</em>, <em>ntpl</em>, <em>weight_errors=False</em>, <em>component_fits=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFitResult"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFitResult" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>A basic utility to save the critical parts of the pPXF model.</p>
+<dl class="method">
+<dt id="mangadap.proc.ppxffit.PPXFFitResult.empty_fit">
+<code class="descname">empty_fit</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFitResult.empty_fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFitResult.empty_fit" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.proc.ppxffit.PPXFFitResult.fit_failed">
+<code class="descname">fit_failed</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFitResult.fit_failed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFitResult.fit_failed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mangadap.proc.ppxffit.PPXFFitResult.reached_maxiter">
+<code class="descname">reached_maxiter</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFitResult.reached_maxiter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFitResult.reached_maxiter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="mangadap.proc.ppxffit.PPXFModel">
+<em class="property">class </em><code class="descclassname">mangadap.proc.ppxffit.</code><code class="descname">PPXFModel</code><span class="sig-paren">(</span><em>templates</em>, <em>galaxy</em>, <em>velscale</em>, <em>velscale_ratio=None</em>, <em>vsyst=None</em>, <em>sigma_diff=0</em>, <em>moments=2</em>, <em>degree=4</em>, <em>mdegree=0</em>, <em>component=0</em>, <em>gas_component=None</em>, <em>lam=None</em>, <em>reddening=None</em>, <em>gas_reddening=None</em>, <em>reddening_func=None</em>, <em>sky=None</em>, <em>templates_rfft=None</em>, <em>trig=False</em>, <em>quiet=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Class that reconstructs a pPXF model given a set of templates and
+the model parameters.</p>
+<p>This pulls functions from M. Cappellari’s ppxf class, version 6.7.0.</p>
+<p>Input common to ppxf() input should have the same format as pPXF
+input.</p>
+<p>The only reason the galaxy spectrum (or spectra) are provided is to
+set if the data are to fit as reflection-symmetric and how many
+spectral pixels there are.</p>
+<dl class="method">
+<dt id="mangadap.proc.ppxffit.PPXFModel.construct">
+<code class="descname">construct</code><span class="sig-paren">(</span><em>kin</em>, <em>tplwgts</em>, <em>addpoly=None</em>, <em>multpoly=None</em>, <em>reddening=None</em>, <em>gas_reddening=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFModel.construct"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFModel.construct" title="Permalink to this definition">¶</a></dt>
+<dd><p>Construct a pPXF model spectrum provided the input
+parameters.  Mostly a copy of ppxf._linear_fit().</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>kin</strong> (<em>list</em><em>, </em><em>numpy.ndarray</em>) – Must have the kinematics of each
+component.  Must be a list or array of vectors with a
+shape (NCOMP,).  The length of each vector in the
+list/array must be the same as MOMENTS.</li>
+<li><strong>tplwgts</strong> (<em>numpy.ndarray</em>) – Weights to apply to each template.
+Shape must be (NTEMP,).</li>
+<li><strong>addpoly</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) Coefficients of the
+additive polynomials.  Shape must be
+(NSPEC*(DEGREE+1),).  Exception is raised if
+coefficients are expected (self.degree &gt; -1), but no
+coefficiencts are provided.</li>
+<li><strong>multpoly</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) Coefficients of the
+multiplicative polynomials.  Shape must be
+(NSPEC*MDEGREE,).  Exception is raised if coefficients
+are expected (self.mdegree &gt; 0), but no coefficiencts
+are provided.</li>
+<li><strong>reddening</strong> (<em>float</em>) – (<strong>Optional</strong>) E(B-V) value for the
+continuum fit.  Exception is raised if value is expected
+(self.reddening is not None), but none is provided.</li>
+<li><strong>gas_reddening</strong> (<em>float</em>) – (<strong>Optional</strong>) E(B-V) value for the
+gas components.  Exception is raised if value is
+expected (self.reddening is not None), but none is
+provided.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">numpy.ndarray</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="mangadap.proc.reductionassessments.html" class="btn btn-neutral float-right" title="mangadap.proc.reductionassessments module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="mangadap.proc.emissionlinetemplates.html" class="btn btn-neutral" title="mangadap.proc.emissionlinetemplates module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, SDSS-IV/MaNGA Pipeline Group.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'2.2.2',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

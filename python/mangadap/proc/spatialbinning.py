@@ -27,9 +27,10 @@ Binning!
         from scipy import sparse
         from astropy.io import fits
 
+        from vorbin.voronoi_2d_binning import voronoi_2d_binning
+
         from ..par.parset import ParSet
         from ..util.geometry import SemiMajorAxisCoo
-        from ..contrib.voronoi_2d_binning import voronoi_2d_binning
         from ..util.covariance import Covariance
 
 *Class usage examples*:
@@ -37,6 +38,8 @@ Binning!
 
 *Revision history*:
     | **01 Apr 2016**: Implementation begun by K. Westfall (KBW)
+    | **22 May 2018**: (KBW) Import vorbin package version of
+        voronoi_2d_binning
 
 .. _numpy.ndarray: http://docs.scipy.org/doc/numpy-1.10.0/reference/generated/numpy.ndarray.html
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
@@ -60,7 +63,7 @@ import numpy
 from scipy import sparse
 from astropy.io import fits
 
-from captools.voronoi_2d_binning import voronoi_2d_binning
+from vorbin.voronoi_2d_binning import voronoi_2d_binning
 
 from ..par.parset import ParSet
 from ..util.geometry import SemiMajorAxisCoo

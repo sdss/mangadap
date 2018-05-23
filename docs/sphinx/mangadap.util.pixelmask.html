@@ -1,0 +1,700 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mangadap.util.pixelmask module &mdash; mangadap 2.2.2 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="mangadap 2.2.2 documentation" href="index.html"/>
+        <link rel="up" title="mangadap.util package" href="mangadap.util.html"/>
+        <link rel="next" title="mangadap.util.version module" href="mangadap.util.version.html"/>
+        <link rel="prev" title="mangadap.util.parser module" href="mangadap.util.parser.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> mangadap
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="mangadap.html">mangadap package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="mangadap.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="mangadap.config.html">mangadap.config package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.contrib.html">mangadap.contrib package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.par.html">mangadap.par package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.proc.html">mangadap.proc package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.survey.html">mangadap.survey package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.test.html">mangadap.test package</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="mangadap.util.html">mangadap.util package</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="mangadap.util.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="mangadap.util.html#module-mangadap.util">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="mangadap.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mangadap.html#module-mangadap">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">mangadap</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="mangadap.html">mangadap package</a> &raquo;</li>
+        
+          <li><a href="mangadap.util.html">mangadap.util package</a> &raquo;</li>
+        
+      <li>mangadap.util.pixelmask module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/mangadap.util.pixelmask.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-mangadap.util.pixelmask">
+<span id="mangadap-util-pixelmask-module"></span><h1>mangadap.util.pixelmask module<a class="headerlink" href="#module-mangadap.util.pixelmask" title="Permalink to this headline">¶</a></h1>
+<p>A class heirarchy for pixel masks.</p>
+<dl class="docutils">
+<dt><em>License</em>:</dt>
+<dd><dl class="first last docutils">
+<dt>Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group</dt>
+<dd>Licensed under BSD 3-clause license - see LICENSE.rst</dd>
+</dl>
+</dd>
+<dt><em>Source location</em>:</dt>
+<dd>$MANGADAP_DIR/python/mangadap/proc/pixelmask.py</dd>
+<dt><em>Imports and python version compliance</em>:</dt>
+<dd><div class="first last highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version</span> <span class="o">&gt;</span> <span class="s1">&#39;3&#39;</span><span class="p">:</span>
+    <span class="n">long</span> <span class="o">=</span> <span class="nb">int</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">import</span> <span class="nn">astropy.constants</span>
+
+<span class="kn">from</span> <span class="nn">.bitmask</span> <span class="k">import</span> <span class="n">BitMask</span>
+<span class="kn">from</span> <span class="nn">..par.artifactdb</span> <span class="k">import</span> <span class="n">ArtifactDB</span>
+<span class="kn">from</span> <span class="nn">..par.emissionlinedb</span> <span class="k">import</span> <span class="n">EmissionLineDB</span>
+</pre></div>
+</div>
+</dd>
+<dt><em>Class usage examples</em>:</dt>
+<dd>Add examples</dd>
+<dt><em>Revision history</em>:</dt>
+<dd><div class="first last line-block">
+<div class="line"><strong>18 Apr 2016</strong>: Original implementation K. Westfall (KBW)</div>
+<div class="line"><strong>30 Nov 2016</strong>: (KBW) Generalization of <a class="reference internal" href="#mangadap.util.pixelmask.PixelMask" title="mangadap.util.pixelmask.PixelMask"><code class="xref py py-class docutils literal"><span class="pre">PixelMask</span></code></a> and
+minor edits</div>
+</div>
+</dd>
+</dl>
+<dl class="class">
+<dt id="mangadap.util.pixelmask.PixelMask">
+<em class="property">class </em><code class="descclassname">mangadap.util.pixelmask.</code><code class="descname">PixelMask</code><a class="reference internal" href="_modules/mangadap/util/pixelmask.html#PixelMask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.pixelmask.PixelMask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Base class for a general 1D or 2D pixel mask.</p>
+<dl class="attribute">
+<dt id="mangadap.util.pixelmask.PixelMask.shape">
+<code class="descname">shape</code><a class="headerlink" href="#mangadap.util.pixelmask.PixelMask.shape" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>tuple</em> – Shape of the array for the mask.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.pixelmask.PixelMask._empty_mask">
+<code class="descname">_empty_mask</code><span class="sig-paren">(</span><em>x</em>, <em>ny=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/pixelmask.html#PixelMask._empty_mask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.pixelmask.PixelMask._empty_mask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return an empty mask with the correct shape.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>x</strong> (<em>numpy.ndarray</em>) – Coordinate vector</li>
+<li><strong>ny</strong> (<em>int</em>) – (<strong>Optional</strong>) Size of the second dimension.
+Default is that there is only one dimension.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Boolean mask of the correct shape.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">numpy.ndarray</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.pixelmask.PixelMask._mask_coordinate_ranges">
+<code class="descname">_mask_coordinate_ranges</code><span class="sig-paren">(</span><em>x</em>, <em>rng</em>, <em>ny=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/pixelmask.html#PixelMask._mask_coordinate_ranges"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.pixelmask.PixelMask._mask_coordinate_ranges" title="Permalink to this definition">¶</a></dt>
+<dd><p>Flag any x coordinates between a set of range limits as True.
+The mask is repeated in the second dimension, if requested.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>x</strong> (<em>numpy.ndarray</em>) – Coordinate vector</li>
+<li><strong>rng</strong> (<em>list</em><em>, </em><em>numpy.ndarray</em>) – (List of) Coordinate ranges that
+should be masked.</li>
+<li><strong>ny</strong> (<em>int</em>) – (<strong>Optional</strong>) Size of the second dimension.
+Default is that there is only one dimension.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Boolean mask of the correct shape.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">numpy.ndarray</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.pixelmask.PixelMask._set_shape">
+<code class="descname">_set_shape</code><span class="sig-paren">(</span><em>x</em>, <em>ny=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/pixelmask.html#PixelMask._set_shape"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.pixelmask.PixelMask._set_shape" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set <a class="reference internal" href="#mangadap.util.pixelmask.PixelMask.shape" title="mangadap.util.pixelmask.PixelMask.shape"><code class="xref py py-attr docutils literal"><span class="pre">shape</span></code></a> of the object</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>x</strong> (<em>numpy.ndarray</em>) – Vector with the x-coordinates</li>
+<li><strong>ny</strong> (<em>int</em>) – (<strong>Optional</strong>) Size of the second dimension.
+Default is that there is no second dimension.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="mangadap.util.pixelmask.SpectralPixelMask">
+<em class="property">class </em><code class="descclassname">mangadap.util.pixelmask.</code><code class="descname">SpectralPixelMask</code><span class="sig-paren">(</span><em>artdb=None</em>, <em>emldb=None</em>, <em>waverange=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/pixelmask.html#SpectralPixelMask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.pixelmask.SpectralPixelMask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#mangadap.util.pixelmask.PixelMask" title="mangadap.util.pixelmask.PixelMask"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.pixelmask.PixelMask</span></code></a></p>
+<p>Container that produces a mask for the stellar continuum based on a
+set of emission lines and artifacts.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>artdb</strong> (<code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.artifactdb.ArtifactDB</span></code>) – (<strong>Optional</strong>) Database with the list of artifacts to mask.</li>
+<li><strong>emldb</strong> (<code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.emissionlinedb.EmissionLineDB</span></code>) – (<strong>Optional</strong>) Database with the list of emission lines to
+mask.</li>
+<li><strong>waverange</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) Any pixels <strong>outside</strong>
+this wavelength range are masked.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="mangadap.util.pixelmask.SpectralPixelMask.artdb">
+<code class="descname">artdb</code><a class="headerlink" href="#mangadap.util.pixelmask.SpectralPixelMask.artdb" title="Permalink to this definition">¶</a></dt>
+<dd><p><code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.artifactdb.ArtifactDB</span></code> – Database with the list of artifacts to mask.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.util.pixelmask.SpectralPixelMask.emldb">
+<code class="descname">emldb</code><a class="headerlink" href="#mangadap.util.pixelmask.SpectralPixelMask.emldb" title="Permalink to this definition">¶</a></dt>
+<dd><p><code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.emissionlinedb.EmissionLineDB</span></code> – Database with the list of emission lines to
+mask.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.util.pixelmask.SpectralPixelMask.waverange">
+<code class="descname">waverange</code><a class="headerlink" href="#mangadap.util.pixelmask.SpectralPixelMask.waverange" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>numpy.ndarray</em> – Any pixels <strong>outside</strong>
+this wavelength range are masked.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.pixelmask.SpectralPixelMask._artifact_mask">
+<code class="descname">_artifact_mask</code><span class="sig-paren">(</span><em>wave</em>, <em>nspec=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/pixelmask.html#SpectralPixelMask._artifact_mask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.pixelmask.SpectralPixelMask._artifact_mask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mask the pixels in the wavelength range(s) defined by the
+artifact database.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>wave</strong> (<em>numpy.ndarray</em>) – Wavelength coordinate vector</li>
+<li><strong>nspec</strong> (<em>int</em>) – (<strong>Optional</strong>) Number of spectra to mask.
+Default is just one.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Boolean mask of the correct shape.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">numpy.ndarray</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.pixelmask.SpectralPixelMask._check_eml_kin_argument">
+<code class="descname">_check_eml_kin_argument</code><span class="sig-paren">(</span><em>kin</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/pixelmask.html#SpectralPixelMask._check_eml_kin_argument"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.pixelmask.SpectralPixelMask._check_eml_kin_argument" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check and return the correct kinematics vectors.  If a single
+number is provided, the function returns the number repeated for
+each emission line.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>kin</strong> (<em>float</em><em>, </em><em>list</em><em>, </em><em>numpy.ndarray</em>) – An input set of kinematics
+to used by the mask.</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A 1D float array of the correct shape with
+the kinematics</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">numpy.ndarray</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
+<li><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if the length of the <cite>kin</cite> array is not</li>
+<li>the same as the number of emission lines in <a class="reference internal" href="#mangadap.util.pixelmask.SpectralPixelMask.emldb" title="mangadap.util.pixelmask.SpectralPixelMask.emldb"><code class="xref py py-attr docutils literal"><span class="pre">emldb</span></code></a>.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.pixelmask.SpectralPixelMask._emission_line_mask">
+<code class="descname">_emission_line_mask</code><span class="sig-paren">(</span><em>wave</em>, <em>nspec=None</em>, <em>velocity_offsets=0.0</em>, <em>sigma=250.0</em>, <em>nsigma=3.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/pixelmask.html#SpectralPixelMask._emission_line_mask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.pixelmask.SpectralPixelMask._emission_line_mask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mask the pixels in the wavelength range(s) defined by the
+emission-line database that has been adjusted by a set of
+velocities and dispersions.</p>
+<p>Currently, the velocity offsets are applied to all lines for
+each spectrum, whereas sigma and nsigma are applied to all
+spectra for each line.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>wave</strong> (<em>numpy.ndarray</em>) – Wavelength coordinate vector</li>
+<li><strong>nspec</strong> (<em>int</em>) – (<strong>Optional</strong>) Number of spectra to mask.
+Default is just one.</li>
+<li><strong>velocity_offsets</strong> (<em>float</em><em>, </em><em>numpy.ndarray</em>) – (<strong>Optional</strong>) One
+or more velocity offsets to apply to the emission-line
+bands on a spectrum-by-spectrum basis. Default is to
+apply no velocity offset.</li>
+<li><strong>sigma</strong> (<em>float</em><em>, </em><em>numpy.ndarray</em>) – (<strong>Optional</strong>) One or more
+velocity dispersions to use for setting the width of the
+emission-line band on a line-by-line basis.  Default is
+a width based on a dispersion of 250 km/s.</li>
+<li><strong>nsigma</strong> (<em>float</em><em>, </em><em>numpy.ndarray</em>) – (<strong>Optional</strong>) One or more
+numbers that sets the width of the band in units of the
+provided velocity dipsersions band on a line-by-line
+basis.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Boolean mask of the correct shape.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">numpy.ndarray</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.pixelmask.SpectralPixelMask._get_emission_line_bands">
+<code class="descname">_get_emission_line_bands</code><span class="sig-paren">(</span><em>velocity_offsets=0.0</em>, <em>sigma=250.0</em>, <em>nsigma=3.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/pixelmask.html#SpectralPixelMask._get_emission_line_bands"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.pixelmask.SpectralPixelMask._get_emission_line_bands" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the emission-line masks, using the emission-line parameters
+defined by <a class="reference internal" href="#mangadap.util.pixelmask.SpectralPixelMask.emldb" title="mangadap.util.pixelmask.SpectralPixelMask.emldb"><code class="xref py py-attr docutils literal"><span class="pre">emldb</span></code></a> (see
+<a class="reference internal" href="mangadap.par.emissionlinedb.html#mangadap.par.emissionlinedb.EmissionLineDB" title="mangadap.par.emissionlinedb.EmissionLineDB"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.emissionlinedb.EmissionLineDB</span></code></a>.</p>
+<p>All emission lines in the database, except for those marked with
+<cite>action==i</cite> are masked.</p>
+<p>The center of the masked region is constructed using
+<cite>emldb[‘restwave’]</cite> and the provided velocity
+(<cite>velocity_offset</cite>).  The velocity of any lines marked as sky
+(<cite>action==s</cite>) is always set to 0.</p>
+<p>The width of the mask is set to be <span class="math">\(\pm n_\sigma \sigma\)</span>
+about this center, where both <span class="math">\(n_\sigma\)</span> and
+<span class="math">\(\sigma\)</span> are parameters (<cite>nsigma</cite>, <cite>sigma</cite>).  If <cite>sigma</cite> is
+None, <cite>emldb[‘sig’]</cite> is used for each line.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>velocity_offsets</strong> (<em>float</em><em>, </em><em>numpy.ndarray</em>) – (<strong>Optional</strong>) The
+velocity offset to apply to each emission-line mask.
+Must be either a single number or one number per
+emission line.  Assumed to be 0 if set to None.</li>
+<li><strong>sigma</strong> (<em>float</em><em>, </em><em>numpy.ndarray</em>) – (<strong>Optional</strong>) Line velocity
+dispersions used to set the mask width.  Must be either
+a single number or one number per emission line.  If
+None, the dispersion provided by the emission-line
+database is used (<cite>emldb[‘sig’]</cite>).</li>
+<li><strong>nsigma</strong> (<em>float</em><em>, </em><em>numpy.ndarray</em>) – (<strong>Optional</strong>) The half-width
+of the band in units of the provided velocity
+dipsersions.  Must be either a single number or one
+number per emission line.  Cannot be None.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A <span class="math">\(N_l \times 2\)</span> array with the
+wavelength limits of the emission-line bands.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">numpy.ndarray</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if <cite>nsigma</cite> is None, or any <cite>nsigma</cite> is
+not greater than 0; raised if the half-width of any mask
+is not greater than 0.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.pixelmask.SpectralPixelMask._waverange_mask">
+<code class="descname">_waverange_mask</code><span class="sig-paren">(</span><em>wave</em>, <em>nspec=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/pixelmask.html#SpectralPixelMask._waverange_mask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.pixelmask.SpectralPixelMask._waverange_mask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mask the pixels <strong>not</strong> within the selected wavelength range.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>wave</strong> (<em>numpy.ndarray</em>) – Wavelength coordinate vector</li>
+<li><strong>nspec</strong> (<em>int</em>) – (<strong>Optional</strong>) Number of spectra to mask.
+Default is just one.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Boolean mask of the correct shape.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">numpy.ndarray</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.pixelmask.SpectralPixelMask.bits">
+<code class="descname">bits</code><span class="sig-paren">(</span><em>bitmask</em>, <em>wave</em>, <em>nspec=None</em>, <em>mask=None</em>, <em>velocity_offsets=0.0</em>, <em>sigma=250.0</em>, <em>nsigma=3.0</em>, <em>waverange_flag='OUTSIDE_RANGE'</em>, <em>art_flag='ARTIFACT'</em>, <em>eml_flag='EML_REGION'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/pixelmask.html#SpectralPixelMask.bits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.pixelmask.SpectralPixelMask.bits" title="Permalink to this definition">¶</a></dt>
+<dd><p>Construct a bit mask that signifies pixels as outside the
+desired wavelength range, as being affected by an artifact, and
+being designated as an emission-line region.  To simply flag the
+pixels as a binary masked or unmasked, use <a class="reference internal" href="#mangadap.util.pixelmask.SpectralPixelMask.boolean" title="mangadap.util.pixelmask.SpectralPixelMask.boolean"><code class="xref py py-func docutils literal"><span class="pre">boolean()</span></code></a>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>bitmask</strong> (<a class="reference internal" href="mangadap.util.bitmask.html#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.bitmask.BitMask</span></code></a>) – Bitmask
+used to flag pixels.  The flags waverange_flag,
+art_flag, and eml_flag <em>must</em> be defined in the provided
+instance of BitMask.</li>
+<li><strong>wave</strong> (<em>numpy.ndarray</em>) – Wavelength coordinate vector</li>
+<li><strong>nspec</strong> (<em>int</em>) – (<strong>Optional</strong>) Number of spectra to mask.
+Default is just one.</li>
+<li><strong>mask</strong> (<em>numpy.array</em>) – (<strong>Optional</strong>) Baseline mask to add
+pixels masks.  Should have data type that matches
+provided bitmask.  Default is to start with all pixels
+unmasked.</li>
+<li><strong>velocity_offsets</strong> (<em>float</em><em>, </em><em>numpy.ndarray</em>) – (<strong>Optional</strong>) One
+or more velocity offsets to apply to the emission-line
+bands on a spectrum-by-spectrum basis. Default is to
+apply no velocity offset.</li>
+<li><strong>sigma</strong> (<em>float</em><em>, </em><em>numpy.ndarray</em>) – (<strong>Optional</strong>) One or more
+velocity dispersions to use for setting the width of the
+emission-line band on a line-by-line basis.  Default is
+a width based on a dispersion of 250 km/s.</li>
+<li><strong>nsigma</strong> (<em>float</em><em>, </em><em>numpy.ndarray</em>) – (<strong>Optional</strong>) One or more
+numbers that sets the width of the band in units of the
+provided velocity dipsersions band on a line-by-line
+basis.</li>
+<li><strong>waverange_flag</strong> (<em>str</em>) – (<strong>Optional</strong>) Bitmask name used to
+flag a pixel as outside of the desired wavelength range.
+Default is ‘OUTSIDE_RANGE’.</li>
+<li><strong>art_flag</strong> (<em>str</em>) – (<strong>Optional</strong>) Bitmask name used to flag a
+pixel being affected by an artifact.  Default is
+‘ARTIFACT’.</li>
+<li><strong>eml_flag</strong> (<em>str</em>) – (<strong>Optional</strong>) Bitmask name used to flag a
+pixel being within an emission-line region.  Default is
+‘EML_REGION’.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Bit mask of the correct shape.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">numpy.ndarray</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.util.pixelmask.SpectralPixelMask.boolean">
+<code class="descname">boolean</code><span class="sig-paren">(</span><em>wave</em>, <em>nspec=None</em>, <em>velocity_offsets=0.0</em>, <em>sigma=250.0</em>, <em>nsigma=3.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/pixelmask.html#SpectralPixelMask.boolean"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.pixelmask.SpectralPixelMask.boolean" title="Permalink to this definition">¶</a></dt>
+<dd><p>Construct the full boolean mask that includes the desired
+wavelength range, omitting artifacts, and omitting emission
+lines.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>wave</strong> (<em>numpy.ndarray</em>) – Wavelength coordinate vector</li>
+<li><strong>nspec</strong> (<em>int</em>) – (<strong>Optional</strong>) Number of spectra to mask.
+Default is just one.</li>
+<li><strong>velocity_offsets</strong> (<em>float</em><em>, </em><em>numpy.ndarray</em>) – (<strong>Optional</strong>) One
+or more velocity offsets to apply to the emission-line
+bands on a spectrum-by-spectrum basis. Default is to
+apply no velocity offset.</li>
+<li><strong>sigma</strong> (<em>float</em><em>, </em><em>numpy.ndarray</em>) – (<strong>Optional</strong>) One or more
+velocity dispersions to use for setting the width of the
+emission-line band on a line-by-line basis.  Default is
+a width based on a dispersion of 250 km/s.</li>
+<li><strong>nsigma</strong> (<em>float</em><em>, </em><em>numpy.ndarray</em>) – (<strong>Optional</strong>) One or more
+numbers that sets the width of the band in units of the
+provided velocity dipsersions band on a line-by-line
+basis.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Boolean mask of the correct shape.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">numpy.ndarray</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="mangadap.util.version.html" class="btn btn-neutral float-right" title="mangadap.util.version module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="mangadap.util.parser.html" class="btn btn-neutral" title="mangadap.util.parser module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, SDSS-IV/MaNGA Pipeline Group.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'2.2.2',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

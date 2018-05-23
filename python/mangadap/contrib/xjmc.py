@@ -30,7 +30,7 @@ Implements an emission-line fitting function using pPXF.
 
         import astropy.constants
 
-        from captools import ppxf, capfit
+        from ppxf import ppxf, capfit
 
 *Class usage examples*:
         Add examples
@@ -41,6 +41,7 @@ Implements an emission-line fitting function using pPXF.
     | **09 Feb 2018**: (KBW) Return the bin matching vector
     | **20 Mar 2018**: (KBW) Correct error in carrying around pixels
         rejected during fit
+    | **22 May 2018**: (KBW) Change import to ppxf package.
 
 """
 
@@ -61,7 +62,7 @@ from scipy.ndimage import rank_filter
 
 import astropy.constants
 
-from captools import ppxf, capfit
+from ppxf import ppxf, capfit
 
 # For debugging
 from matplotlib import pyplot as plt
