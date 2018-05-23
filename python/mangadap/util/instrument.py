@@ -104,11 +104,9 @@ def spectral_coordinate_step(wave, log=False, base=10.0):
         the step in log(angstroms).
     """
     dw = numpy.diff(numpy.log(wave))/numpy.log(base) if log else numpy.diff(wave)
-#    print(dw)
-#    print('mean: ', numpy.mean(dw))
-#    print('sdev: ', numpy.std(dw))
+    if numpy.any( numpy.absolute(numpy.diff(dw)) > np.finfo(dw.dtype).eps):
+        raise ValueError('Wavelength vector is not uniformly sampled to numerical accuracy.')
     return numpy.mean(dw)
-#    return (numpy.diff(numpy.log(wave[0:2]))/numpy.log(base) if log else numpy.diff(wave[0:2]))[0]
 
 
 def spectrum_velocity_scale(wave):
