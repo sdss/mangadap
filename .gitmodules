@@ -1,6 +1,3 @@
 [submodule "docs/papers/EmLines"]
 	path = docs/papers/EmLines
 	url = https://git.overleaf.com/14318910rcfbhbmxnvcy
-[submodule "docs/papers/Overview"]
-	path = docs/papers/Overview
-	url = https://git.overleaf.com/16412681zkjtcrcyzrwc
