@@ -7,7 +7,7 @@ Current Overleaf submodules linked to:
 
 | Directory             | Overleaf |
 | --------------------- | ------------- |
-| papers/Overview       | https://www.overleaf.com/16412681zkjtcrcyzrwc |
+| papers/Overview/ms    | https://www.overleaf.com/16412681zkjtcrcyzrwc |
 | papers/EmLines        | https://www.overleaf.com/14318910rcfbhbmxnvcy |
 
 ### Connecting this repo to an Overleaf project
@@ -27,14 +27,14 @@ To add this document as a submodule:
 
 ```
 cd ~/Work/MaNGA/dap/repo/mangadap
-git submodule add https://git.overleaf.com/16412681zkjtcrcyzrwc docs/papers/Overview
-cd docs/papers/Overview
+git submodule add https://git.overleaf.com/16412681zkjtcrcyzrwc docs/papers/Overview/ms
+cd docs/papers/Overview/ms
 git checkout master
 ```
 
-You can then treat the docs/papers/Overview directory as you would any
-other git repository.  **Be sure to pull/push often to make sure that
-you're in sync with anyone making edits directly via the Overleaf
+You can then treat the docs/papers/Overview/ms directory as you would
+any other git repository.  **Be sure to pull/push often to make sure
+that you're in sync with anyone making edits directly via the Overleaf
 browser interface.**
 
 The status of the main repository should also track changes in the
