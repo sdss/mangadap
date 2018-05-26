@@ -430,7 +430,7 @@ def _reorder_solution(ppsol, pperr, component_map, moments, start=None, fill_val
 
 def _fit_iteration(templates, wave, flux, noise, velscale, start, moments, component, gas_template,
                    tpl_to_use=None, reject_boxcar=101, velscale_ratio=None, degree=-1, mdegree=0,
-                   reddening=None, tied=None, mask=None, vsyst=0, plot=False, quiet=True):
+                   reddening=None, tied=None, mask=None, vsyst=0, plot=False, quiet=True, sigma_rej=3.):
     """
     Run a single fit+rejection iteration of the pPXF fit for all input
     spectra with the provided set of constraints/options.
@@ -481,6 +481,9 @@ def _fit_iteration(templates, wave, flux, noise, velscale, start, moments, compo
             iteration.  Default is to skip the plot.
         quiet (bool): (**Optional**) Suppress output to the terminal
             (default).
+        sigma_rej (float): (**Optional**) Sigma values used for the rejection.
+            Defalut is 3.
+            
 
     Returns:
         numpy.ndarray: Eleven arrays are returned: (1) The best-fitting
@@ -562,7 +565,7 @@ def _fit_iteration(templates, wave, flux, noise, velscale, start, moments, compo
             # - Calculate the 1-sigma confidence interval
             NOISE = calculate_noise(resid[reject_pixels], width=reject_boxcar)
             # - Reject pixels with > 3-sigma residuals
-            model_mask[i,reject_pixels] &= (abs(resid[reject_pixels]) < (3*NOISE))
+            model_mask[i,reject_pixels] &= (abs(resid[reject_pixels]) < (sigma_rej*NOISE))
         
             # Reorder the output; sets any omitted components to have
             # the starting values from the original input
@@ -711,7 +714,7 @@ def emline_fitter_with_ppxf_edit(templates, wave, flux, noise, mask, velscale, v
                                  tied=None, degree=-1, mdegree=0, reddening=None,
                                  reject_boxcar=101, vsyst=0, tpl_to_use=None, flux_binned=None,
                                  noise_binned=None, mask_binned=None, x_binned=None, y_binned=None,
-                                 x=None, y=None, plot=False, quiet=False, debug=False):
+                                 x=None, y=None, plot=False, quiet=False, debug=False, sigma_rej=3.):
 
     """
     Main calling function for fitting stellar-continuum and nebular
@@ -952,7 +955,7 @@ def emline_fitter_with_ppxf_edit(templates, wave, flux, noise, mask, velscale, v
                                      moments, component, gas_template, tpl_to_use=tpl_to_use,
                                      reject_boxcar=reject_boxcar, velscale_ratio=velscale_ratio,
                                      degree=degree, mdegree=mdegree, reddening=reddening,
-                                     mask=mask_binned, vsyst=vsyst, plot=plot, quiet=quiet)
+                                     mask=mask_binned, vsyst=vsyst, plot=plot, quiet=quiet, sigma_rej=sigma_rej)
 
         valid_bin_str_fit = np.sum(binned_tpl_wgts[:,np.invert(gas_template)], axis=1) > 0
         valid_bin_fit = np.sum(binned_tpl_wgts, axis=1) > 0
@@ -1012,7 +1015,7 @@ def emline_fitter_with_ppxf_edit(templates, wave, flux, noise, mask, velscale, v
                              _gas_template, tpl_to_use=_tpl_to_use, reject_boxcar=reject_boxcar,
                              velscale_ratio=velscale_ratio, degree=degree, mdegree=mdegree,
                              reddening=reddening, mask=model_mask, vsyst=vsyst, plot=plot,
-                             quiet=quiet)
+                             quiet=quiet, sigma_rej=sigma_rej)
 
     if mode == 'noBins':
         # - If no previous fit to binned spectra, create new template
@@ -1038,7 +1041,7 @@ def emline_fitter_with_ppxf_edit(templates, wave, flux, noise, mask, velscale, v
                                                   velscale_ratio=velscale_ratio, degree=degree,
                                                   mdegree=mdegree, reddening=reddening, tied=tied,
                                                   mask=model_mask, vsyst=vsyst, plot=plot,
-                                                  quiet=quiet)
+                                                  quiet=quiet, sigma_rej=sigma_rej)
 
     # - Use the single output weight to renormalize the individual
     #   stellar template weights (only one of the weights for the
