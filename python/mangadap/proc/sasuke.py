@@ -1828,7 +1828,7 @@ class Sasuke(EmissionLineFit):
             remap_mask=None, remap_sres=None, remap_skyx=None, remap_skyy=None, obj_skyx=None,
             obj_skyy=None, velscale_ratio=None, matched_resolution=True, waverange=None, bias=None,
             degree=-1, mdegree=0, reddening=None, max_velocity_range=400., alias_window=None,
-            dvtol=1e-10, loggers=None, quiet=False, plot=False):
+            dvtol=1e-10, loggers=None, quiet=False, plot=False, sigma_rej=3.):
             #moments=2,
         r"""
         Fit a set of emission lines using pPXF to all provided spectra.
@@ -2479,7 +2479,7 @@ class Sasuke(EmissionLineFit):
                                                            x_binned=self.obj_skyx,
                                                            y_binned=self.obj_skyy,
                                                            x=self.remap_skyx, y=self.remap_skyy,
-                                                           plot=plot, quiet=not plot)
+                                                           plot=plot, quiet=not plot,sigma_rej=sigma_rej)
 #                                                           plot=True, quiet=False)
 
         # Construct the bin ID numbers
