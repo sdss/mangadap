@@ -86,7 +86,7 @@ import glob
 import numpy
 
 from ..util.exception_tools import check_environment_variable
-from ..util.version import __version__
+from mangadap import __version__
 
 def default_idlutils_dir():
     """
