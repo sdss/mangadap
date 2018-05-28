@@ -68,11 +68,12 @@ from astropy.wcs import WCS
 from astropy.io import fits
 import astropy.constants
 
+from mangadap import __version__
+
 from .bitmask import BitMask
 from .log import log_output
 from .fileio import compress_file, create_symlink
 from .pixelmask import SpectralPixelMask
-from .version import __version__
 
 class DAPFitsUtil:
     r"""

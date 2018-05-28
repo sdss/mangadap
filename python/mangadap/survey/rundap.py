@@ -134,6 +134,8 @@ except:
 
 import numpy
 
+from mangadap import __version__
+
 from .drpcomplete import DRPComplete
 from ..drpfits import DRPFits
 from ..config.defaults import default_redux_path, default_drp_directory_path
@@ -143,7 +145,6 @@ from ..config.defaults import default_dap_par_file, default_dap_plan_file
 from ..util.exception_tools import print_frame
 from ..util.parser import arginp_to_list
 from ..util.fileio import create_symlink
-from ..util.version import __version__
 from .mangampl import MaNGAMPL
 from ..par.analysisplan import AnalysisPlanSet
 from . import util
