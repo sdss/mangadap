@@ -35,7 +35,6 @@ Provides the main wrapper function for the MaNGA DAP.
         from ..config.defaults import default_analysis_path, default_dap_method
         from ..config.defaults import default_dap_method_path
         from ..util.log import init_DAP_logging, module_logging, log_output
-        from ..util.version import __version__
         from ..drpfits import DRPFits
         from ..par.obsinput import ObsInputPar
         from ..par.analysisplan import AnalysisPlanSet
@@ -75,11 +74,12 @@ import numpy
 
 import astropy.constants
 
+from mangadap import __version__
+
 from ..config.defaults import default_drp_version, default_dap_version
 from ..config.defaults import default_analysis_path, default_dap_method
 from ..config.defaults import default_dap_method_path
 from ..util.log import init_DAP_logging, module_logging, log_output
-from ..util.version import __version__
 from ..drpfits import DRPFits
 from ..par.obsinput import ObsInputPar
 from ..par.analysisplan import AnalysisPlanSet
