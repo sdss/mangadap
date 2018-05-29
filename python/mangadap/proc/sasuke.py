@@ -62,6 +62,7 @@ Implements an emission-line fitting class that largely wraps pPXF.
     | **20 Mar 2018**: (KBW) Corrected flux calculation and inclusion
         of provided pixel mask.
     | **22 May 2018**: (KBW) Change import to ppxf package.
+    | **29 May 2018**: (KBW) Change xjmc function import and call
 
 .. _numpy.ma.MaskedArray: https://docs.scipy.org/doc/numpy-1.12.0/reference/maskedarray.baseclass.html
 .. _numpy.recarray: https://docs.scipy.org/doc/numpy/reference/generated/numpy.recarray.html
@@ -106,7 +107,7 @@ from .bandpassfilter import emission_line_equivalent_width
 from .emissionlinetemplates import EmissionLineTemplates
 from .util import sample_growth
 from .ppxffit import PPXFModel, PPXFFitResult, PPXFFit
-from ..contrib.xjmc import emline_fitter_with_ppxf_edit
+from ..contrib.xjmc import emline_fitter_with_ppxf
 
 # For debugging
 from matplotlib import pyplot
@@ -2463,23 +2464,23 @@ class Sasuke(EmissionLineFit):
         model_flux[:,start:end], model_eml_flux[:,start:end], _model_mask, model_wgts, \
                 model_wgts_err, model_addcoef, model_multcoef, model_reddening, model_kin_inp, \
                 model_kin, model_kin_err, nearest_bin \
-                            = emline_fitter_with_ppxf_edit(self.tpl_flux, wave, flux, ferr, mask,
-                                                           self.velscale, self.velscale_ratio,
-                                                           self.tpl_comp, self.gas_tpl,
-                                                           self.comp_moments, self.comp_start_kin,
-                                                           tied=self.tied, degree=self.degree,
-                                                           mdegree=self.mdegree,
-                                                           reddening=self.reddening,
-                                                           reject_boxcar=self.reject_boxcar,
-                                                           vsyst=self.base_velocity,
-                                                           tpl_to_use=self.tpl_to_use,
-                                                           flux_binned=flux_binned,
-                                                           noise_binned=ferr_binned,
-                                                           mask_binned=mask_binned,
-                                                           x_binned=self.obj_skyx,
-                                                           y_binned=self.obj_skyy,
-                                                           x=self.remap_skyx, y=self.remap_skyy,
-                                                           plot=plot, quiet=not plot,sigma_rej=sigma_rej)
+                            = emline_fitter_with_ppxf(self.tpl_flux, wave, flux, ferr, mask,
+                                                      self.velscale, self.velscale_ratio,
+                                                      self.tpl_comp, self.gas_tpl,
+                                                      self.comp_moments, self.comp_start_kin,
+                                                      tied=self.tied, degree=self.degree,
+                                                      mdegree=self.mdegree,
+                                                      reddening=self.reddening,
+                                                      reject_boxcar=self.reject_boxcar,
+                                                      vsyst=self.base_velocity,
+                                                      tpl_to_use=self.tpl_to_use,
+                                                      flux_binned=flux_binned,
+                                                      noise_binned=ferr_binned,
+                                                      mask_binned=mask_binned,
+                                                      x_binned=self.obj_skyx,
+                                                      y_binned=self.obj_skyy, x=self.remap_skyx,
+                                                      y=self.remap_skyy, plot=plot, quiet=not plot,
+                                                      sigma_rej=sigma_rej)
 #                                                           plot=True, quiet=False)
 
         # Construct the bin ID numbers
