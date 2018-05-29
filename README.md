@@ -1,3 +1,9 @@
+# WARNINGS
+
+Only comments, bugs, and installation improvements should be changed for
+this branch!  Any code development should happen on the `develop`
+branch.
+
 # The MaNGA Data Analysis Pipeline
 
 The MaNGA data-analysis pipeline (MaNGA DAP) is the survey-led software

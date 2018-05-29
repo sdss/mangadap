@@ -90,7 +90,7 @@ if __name__ == '__main__':
     scripts = get_scripts()
 
     # Get the packages to include
-    packages = find_packages()
+    packages = find_packages(where='python')
 
     # Collate the dependencies based on the system text file
     install_requires = get_requirements()
