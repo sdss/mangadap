@@ -1037,9 +1037,10 @@ class TemplateLibrary:
         self.hdu = HDUList_mask_wavelengths(self.hdu, self.bitmask, 'SPECRES_EXTRAP', wavelim,
                                             invert=True)
 
-#        oldwave = numpy.copy(self.hdu['WAVE'].data[0,:]).ravel()
-#        oldflux = numpy.copy(self.hdu['FLUX'].data[0,:]).ravel()
-#        pyplot.plot(self.hdu['WAVE'].data[0,:], self.hdu['FLUX'].data[0,:]) 
+#        i = 10
+#        oldwave = numpy.copy(self.hdu['WAVE'].data[i,:]).ravel()
+#        oldflux = numpy.copy(self.hdu['FLUX'].data[i,:]).ravel()
+#        pyplot.plot(self.hdu['WAVE'].data[i,:], self.hdu['FLUX'].data[i,:]) 
 #        pyplot.show()
 
         # Match the resolution of the templates.  ivar is returned, but
@@ -1047,7 +1048,7 @@ class TemplateLibrary:
         # match_spectral_resolution
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, 'Modifying spectral resolution ... ')
-#        print('min_sig_pix: ', self.min_sig_pix)
+        print('min_sig_pix: ', self.min_sig_pix)
 #        print(spectrum_velocity_scale(self.hdu['WAVE'].data))
         self.hdu['FLUX'].data, self.hdu['SPECRES'].data, self.hdu['SIGOFF'].data, res_mask, ivar = \
             match_spectral_resolution(self.hdu['WAVE'].data, self.hdu['FLUX'].data,
@@ -1064,7 +1065,7 @@ class TemplateLibrary:
             self.bitmask.turn_on(self.hdu['MASK'].data[res_mask == 1], 'SPECRES_LOW')
 
 #        pyplot.plot(oldwave, oldflux)
-#        pyplot.plot(self.hdu['WAVE'].data[0,:], self.hdu['FLUX'].data[0,:], 'g')
+#        pyplot.plot(self.hdu['WAVE'].data[i,:], self.hdu['FLUX'].data[i,:], 'g')
 #        pyplot.show()
 
         return redshift
