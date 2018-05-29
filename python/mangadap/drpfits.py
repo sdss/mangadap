@@ -2885,6 +2885,16 @@ class DRPFits:
         if self.mode == 'RSS' or not covar:
             return signal, variance, snr, None
 
+        # Test if the RSS file exists
+        if self.mode == 'CUBE' and covar:
+            rss = DRPFits(self.plate, self.ifudesign, 'RSS', drpver=self.drpver,
+                          redux_path=self.redux_path, directory_path=self.directory_path,
+                          read=False)
+            if not os.path.isfile(rss.file_path()):
+                warnings.warn('RSS counterpart not available.  Cannot determine covariance matrix!')
+
+            return signal, variance, snr, None
+
         # Only calculate the covariance at the central, or input, wavelength
         _covar_wave = covar_wave if covar_wave is not None \
                         else self._covariance_wavelength(waverange=waverange,
