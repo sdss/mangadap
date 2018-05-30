@@ -118,6 +118,10 @@ the MaNGA Data Reduction Pipeline (DRP).
       create CUBE related data, like the covariance matrix and
       instrumental dispersion calculations.
 
+    - Computing the approximate covariance cube is currently not
+      possible with only the CUBE on disk.  There's a logic problem that
+      needs to be fixed.
+
 .. _astropy.io.fits: http://docs.astropy.org/en/stable/io/fits/index.html
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _astropy.wcs.wcs.WCS: http://docs.astropy.org/en/v1.0.2/api/astropy.wcs.WCS.html
@@ -1002,6 +1006,18 @@ class DRPFits:
         self.spatial_index[:] = [ (ii,jj) for ii, jj in zip(i,j) ]
 
 
+    def _spectral_resolution_extension(self, ext=None, pre=False):
+        """
+        Determine the spectral resolution channel to use.
+        """
+        _ext = ext
+        if ext is None:
+            _ext = 'PREDISP' if pre else 'DISP'
+            if _ext not in self.sres_ext:
+                _ext = 'PRESPECRES' if pre else 'SPECRES'
+        return None if _ext not in self.sres_ext else _ext
+
+
     @staticmethod
     def mode_options():
         """
@@ -1309,18 +1325,6 @@ class DRPFits:
                                                 bitmask=self.bitmask,
                                                 allowed_ext=self.spectral_arrays,
                                                 waverange=waverange)
-
-
-    def _spectral_resolution_extension(self, ext=None, pre=False):
-        """
-        Determine the spectral resolution channel to use.
-        """
-        _ext = ext
-        if ext is None:
-            _ext = 'PREDISP' if pre else 'DISP'
-            if _ext not in self.sres_ext:
-                _ext = 'PRESPECRES' if pre else 'SPECRES'
-        return None if _ext not in self.sres_ext else _ext
 
 
     def spectral_resolution(self, ext=None, toarray=False, fill=False, pre=False,
@@ -2998,6 +3002,20 @@ class DRPFits:
             warnings.warn('Could not use \'shapely\' package to compute overlapping fiber area.' \
                           'Return the total fiber area.', ImportWarning)
             return (nbin*numpy.pi).astype(float)
+
+
+    @property
+    def can_compute_covariance(self):
+        if self.mode == 'RSS':
+            return True
+       
+        # Try to find the RSS file
+        rss = DRPFits(self.plate, self.ifudesign, 'RSS', drpver=self.drpver,
+                          redux_path=self.redux_path, directory_path=self.directory_path,
+                          read=False)
+        if not os.path.isfile(rss.file_path()):
+            return False
+        return True
         
 
 #   def white_light(self, mask_list=None):

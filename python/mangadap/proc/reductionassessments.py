@@ -656,12 +656,8 @@ class ReductionAssessment:
         self.drpf = drpf
 
         # Test if the RSS file exists; cannot compute covariance if not
-        if self.drpf.mode == 'CUBE' and self.method['covariance']:
-            rss = DRPFits(self.drpf.plate, self.drpf.ifudesign, 'RSS', drpver=self.drpf.drpver,
-                          redux_path=self.drpf.redux_path, directory_path=self.drpf.directory_path,
-                          read=False)
-            if not os.path.isfile(rss.file_path()):
-                warnings.warn('RSS counterpart not available.  Cannot determine covariance matrix!')
+        if self.method['covariance'] and not drpf.can_compute_covariance:
+            warnings.warn('RSS counterpart not available.  Cannot determine covariance matrix!')
             self.method['covariance'] = False
 
         # Reset the output paths if necessary
