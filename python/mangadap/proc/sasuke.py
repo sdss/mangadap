@@ -1490,19 +1490,6 @@ class Sasuke(EmissionLineFit):
                                                         stellar_continuum=par['stellar_continuum'])
         nobj = flux.shape[0]
 
-        # Check if the user wants to switch the templates being used for
-        # the stellar continuum.  The construction of the
-        # TemplateLibrary object must be done inside
-        # self.method['fitfunc'] !
-        if self.method['continuum_tpl_key'] is not None:
-            self.method['fitpar']['continuum_templates'] = self.method['continuum_tpl_key']
-            if self.method['fitpar']['stellar_continuum'] is not None \
-                    and self.stellar_continuum.method['fitpar']['template_library_key'] \
-                                    == self.method['continuum_tpl_key']:
-                warnings.warn('Request emission-line continuum templates identical to those used'
-                              'during the stellar continuum fitting; selection unnecessary.')
-                self.method['fitpar']['continuum_templates'] = None
-
         # Get the stellar templates.  If fitting a different set of
         # templates, the spectral resolution of the new templates must
         # be matched to the galaxy data and the velocity dispersion used
