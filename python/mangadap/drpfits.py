@@ -510,6 +510,7 @@ class DRPFits:
         # Setup the variables for the internal data structure
         self.hdu = None                 # Do not automatically read the data
         self.ext = None                 # Extensions
+        self.sres_ext = None            # Spectral resolution extensions
         self.checksum = checksum        # Check the file for corruption
         self.wcs = None                 # WCS structure
         self.shape = None               # Shape of the data array
@@ -1124,6 +1125,8 @@ class DRPFits:
         # image arrays.  Can I expedite this somehow?
         self.hdu = DAPFitsUtil.read(inp, permissions='readonly', checksum=checksum)
         self.ext = [ h.name for h in self.hdu ]
+        self.sres_ext = [ h.name for h in self.hdu
+                            if h.name in [ 'PREDISP', 'DISP', 'PRESPECRES', 'SPECRES' ] ]
         self._set_spectral_arrays()
 
 #        # Reformat and initialize properties of the data
@@ -1308,6 +1311,18 @@ class DRPFits:
                                                 waverange=waverange)
 
 
+    def _spectral_resolution_extension(self, ext=None, pre=False):
+        """
+        Determine the spectral resolution channel to use.
+        """
+        _ext = ext
+        if ext is None:
+            _ext = 'PREDISP' if pre else 'DISP'
+            if _ext not in self.sres_ext:
+                _ext = 'PRESPECRES' if pre else 'SPECRES'
+        return None if _ext not in self.sres_ext else _ext
+
+
     def spectral_resolution(self, ext=None, toarray=False, fill=False, pre=False,
                             median=False):
         """
@@ -1356,17 +1371,27 @@ class DRPFits:
         """
         # Make sure the fits file has been opened
         self.open_hdu(checksum=self.checksum)
-        # Check the selected base extension exists
-        if ext in ['DISP','SPECRES'] and ext not in self.ext:
-            raise ValueError('No extension: {0}'.format(ext))
 
-        # Set the base extension
-        _ext = ('DISP' if 'DISP' in self.ext else 'SPECRES') if ext is None else ext
-        # Add the 'PRE' qualifier if requested and check that it exists
-        if pre:
-            if 'PRE'+_ext not in self.ext:
-                raise ValueError('No {0} extension in DRP file.'.format('PRE'+_ext))
-            _ext = 'PRE'+_ext
+        # Determine which spectral resolution element to use
+        _ext = self._spectral_resolution_extension(ext=ext, pre=pre)
+
+        # If no valid extension, raise an exception
+        if ext is None and _ext is None:
+            raise ValueError('No valid spectral resolution extension.')
+        if ext is not None and _ext is None:
+            raise ValueError('No extension: {0}'.format(ext))
+            
+#        # Check the selected base extension exists
+#        if ext in ['DISP','SPECRES'] and ext not in self.ext:
+#            raise ValueError('No extension: {0}'.format(ext))
+#
+#        # Set the base extension
+#        _ext = ('DISP' if 'DISP' in self.ext else 'SPECRES') if ext is None else ext
+#        # Add the 'PRE' qualifier if requested and check that it exists
+#        if pre:
+#            if 'PRE'+_ext not in self.ext:
+#                raise ValueError('No {0} extension in DRP file.'.format('PRE'+_ext))
+#            _ext = 'PRE'+_ext
 
         # Build the spectral resolution vectors
         sres = None
