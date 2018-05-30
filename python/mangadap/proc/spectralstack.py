@@ -1027,7 +1027,7 @@ class SpectralStack():
         if self.sres is not None:
             if numpy.sum(self.sres.mask) == 0:
                 self.sres = self.sres.data
-            if fill_sres:
+            elif fill_sres:
                 outshape = self.sres.shape
                 self.sres = numpy.apply_along_axis(interpolate_masked_vector, 1,
                                                    self.sres.reshape(1,-1) if self.sres.ndim == 1
