@@ -88,12 +88,33 @@ import numpy
 from ..util.exception_tools import check_environment_variable
 from mangadap import __version__
 
-def default_idlutils_dir():
-    """
-    Return the default IDLUTILS directory.
-    """
+def dap_source_dir():
+    """Return the root path to the DAP source directory."""
+    dirlist = os.path.dirname(os.path.abspath(__file__)).split('/')[:-3]
+    return os.path.join(os.sep, *dirlist) if dirlist[0] == '' else os.path.join(*dirlist)
+#    check_environment_variable('MANGADAP_DIR')
+#    return environ['MANGADAP_DIR']
+
+
+def idlutils_dir():
+    """Return the default IDLUTILS directory."""
     check_environment_variable('IDLUTILS_DIR')
     return environ['IDLUTILS_DIR']
+
+
+def sdss_maskbits_file():
+    """Return the path to the sdss maskbits yanny file."""
+    maskbits_file = os.path.join(dap_source_dir(), 'data', 'sdss', 'sdssMaskbits.par')
+    print(maskbits_file)
+    if os.path.isfile(maskbits_file):
+        return maskbits_file
+
+    try:
+        maskbits_file = os.path.join(idlutils_dir(), 'data', 'sdss', 'sdssMaskbits.par')
+        if os.path.isfile(maskbits_file):
+            return maskbits_file
+    except:
+        return None
 
 
 def default_drp_version():
@@ -182,15 +203,6 @@ def default_regrid_sigma():
     when regridding the DRP RSS spectra into the CUBE format.
     """
     return 0.7
-
-
-def default_dap_source():
-    """
-    Return the root path to the DAP source directory using the
-    environmental variable MANGADAP_DIR.
-    """
-    check_environment_variable('MANGADAP_DIR')
-    return environ['MANGADAP_DIR']
 
 
 def default_dap_version():
