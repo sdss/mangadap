@@ -140,7 +140,7 @@ class DAPall:
             :func:`mangadap.config.defaults.default_dap_version`.
         dapsrc (str): (**Optional**) Source directory of the DAP.
             Default determined by
-            :func:`mangadap.config.defaults.default_dap_source`.
+            :func:`mangadap.config.defaults.dap_source_dir`.
         analysis_path (str) : (**Optional**) Top-level directory for the DAP
             output data; default is defined by
             :func:`mangadap.config.defaults.default_analysis_path`.
@@ -208,7 +208,7 @@ class DAPall:
         self.redux_path = defaults.default_redux_path(self.drpver) if redux_path is None \
                                                                   else str(redux_path)
 
-        self.dapsrc = defaults.default_dap_source() if dapsrc is None else str(dapsrc)
+        self.dapsrc = defaults.dap_source_dir() if dapsrc is None else str(dapsrc)
 
         self.dapver = defaults.default_dap_version() if dapver is None else str(dapver)
         self.analysis_path = defaults.default_analysis_path(self.drpver, self.dapver) \

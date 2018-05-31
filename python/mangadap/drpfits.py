@@ -161,7 +161,8 @@ from .util.covariance import Covariance
 from .util.pixelmask import SpectralPixelMask
 from .util.filter import interpolate_masked_vector
 from .util.instrument import spectral_coordinate_step
-from .config.defaults import default_idlutils_dir, default_drp_version
+#from .config.defaults import default_idlutils_dir
+from .config.defaults import sdss_maskbits_file, default_drp_version
 from .config.defaults import default_redux_path, default_drp_directory_path
 from .config.defaults import default_cube_pixelscale, default_cube_width_buffer
 from .config.defaults import default_cube_recenter, default_regrid_rlim
@@ -283,8 +284,7 @@ class DRPFitsBitMask(BitMask):
     """
     def __init__(self, sdss_maskbits=None, mode='CUBE'):
         DRPFits.check_mode(mode)
-        sdss_maskbits = os.path.join(default_idlutils_dir(), 'data', 'sdss', 'sdssMaskbits.par') \
-                        if sdss_maskbits is None else sdss_maskbits
+        sdss_maskbits = sdss_maskbits_file()
         BitMask.__init__(self, par_file=sdss_maskbits, par_grp='MANGA_DRP3PIXMASK' \
                                                         if mode == 'CUBE' else 'MANGA_DRP2PIXMASK')
 
@@ -294,8 +294,7 @@ class DRPQuality3DBitMask(BitMask):
     Structure with the definition of the DRP3QUAL mask bits.
     """
     def __init__(self, sdss_maskbits=None):
-        sdss_maskbits = os.path.join(default_idlutils_dir(), 'data', 'sdss', 'sdssMaskbits.par') \
-                        if sdss_maskbits is None else sdss_maskbits
+        sdss_maskbits = sdss_maskbits_file()
         BitMask.__init__(self, par_file=sdss_maskbits, par_grp='MANGA_DRP3QUAL')
 
 

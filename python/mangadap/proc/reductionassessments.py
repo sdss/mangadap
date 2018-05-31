@@ -37,7 +37,7 @@ once per DRP data file.
 
         from ..drpfits import DRPFits
         from ..par.parset import ParSet
-        from ..config.defaults import default_dap_source, default_dap_common_path
+        from ..config.defaults import dap_source_dir, default_dap_common_path
         from ..config.defaults import default_dap_file_name
         from ..util.covariance import Covariance
         from ..util.geometry import SemiMajorAxisCoo
@@ -89,7 +89,7 @@ from astropy.io import fits
 
 from ..drpfits import DRPFits
 from ..par.parset import ParSet
-from ..config.defaults import default_dap_source, default_dap_common_path
+from ..config.defaults import dap_source_dir, default_dap_common_path
 from ..config.defaults import default_dap_file_name
 from ..util.fitsutil import DAPFitsUtil
 from ..util.covariance import Covariance
@@ -206,7 +206,7 @@ def available_reduction_assessments(dapsrc=None):
         dapsrc (str): (**Optional**) Root path to the DAP source
             directory (i.e., $MANGADAP_DIR).  If not provided, the
             default is defined by
-            :func:`mangadap.config.defaults.default_dap_source`.
+            :func:`mangadap.config.defaults.dap_source_dir`.
 
     Returns:
         list: A list of :func:`ReductionAssessmentDef` objects, each
@@ -224,7 +224,7 @@ def available_reduction_assessments(dapsrc=None):
             latter is a *Python 3 only module*!
     """
     # Check the source directory exists
-    dapsrc = default_dap_source() if dapsrc is None else str(dapsrc)
+    dapsrc = dap_source_dir() if dapsrc is None else str(dapsrc)
     if not os.path.isdir(dapsrc):
         raise NotADirectoryError('{0} does not exist!'.format(dapsrc))
 
@@ -430,7 +430,7 @@ class ReductionAssessment:
                 parameters required to assess the reduced data.
             dapsrc (str): (**Optional**) Root path to the DAP source
                 directory.  If not provided, the default is defined by
-                :func:`mangadap.config.defaults.default_dap_source`.
+                :func:`mangadap.config.defaults.dap_source_dir`.
         """
         self.method = select_proc_method(method_key, ReductionAssessmentDef,
                                          method_list=method_list,

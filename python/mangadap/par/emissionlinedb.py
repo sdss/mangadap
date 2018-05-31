@@ -34,7 +34,7 @@ support classes and functions.
         from .parset import ParSet, ParDatabase
         from .spectralfeaturedb import available_spectral_feature_databases, SpectralFeatureDBDef
         from ..proc.util import select_proc_method
-        from ..config.defaults import default_dap_source
+        from ..config.defaults import dap_source_dir
 
 *Class usage examples*:
     To define an emission line::
@@ -113,7 +113,7 @@ from pydl.pydlutils.yanny import yanny
 from .parset import ParSet, ParDatabase
 from .spectralfeaturedb import available_spectral_feature_databases, SpectralFeatureDBDef
 from ..proc.util import select_proc_method
-from ..config.defaults import default_dap_source
+from ..config.defaults import dap_source_dir
 
 # Add strict versioning
 # from distutils.version import StrictVersion
@@ -317,7 +317,7 @@ def available_emission_line_databases(dapsrc=None):
     Args:
         dapsrc (str): (**Optional**) Root path to the DAP source
             directory.  If not provided, the default is defined by
-            :func:`mangadap.config.defaults.default_dap_source`.
+            :func:`mangadap.config.defaults.dap_source_dir`.
 
     Returns:
         list: An list of :func:`SpectralFeatureDBDef` objects, each of
@@ -347,7 +347,7 @@ class EmissionLineDB(ParDatabase):
             parameter file.
         dapsrc (str): (**Optional**) Root path to the DAP source
             directory.  If not provided, the default is defined by
-            :func:`mangadap.config.defaults.default_dap_source`.
+            :func:`mangadap.config.defaults.dap_source_dir`.
 
     Attributes:
         database (str): Keyword of the selected database to use.

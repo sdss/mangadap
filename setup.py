@@ -1,4 +1,4 @@
-# !usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # K. Westfall, 22 May 2018
 #   Adapted from Marvin's setup.py file
@@ -8,11 +8,26 @@ import os
 import glob
 from setuptools import setup, find_packages
 
+import requests
+import warnings
+
+IDLUTILS_VER = 'v5_5_30'
 
 _VERSION = '2.2.3dev'
 _RELEASE = 'dev' not in _VERSION
 _MINIMUM_PYTHON_VERSION = '3.5'
 
+#def required_environmental_variables(survey=False):
+#    return 
+#
+#    [ 'MANGA_SPECTRO_REDUX', 'MANGADRP_VER', 'MANGA_SPECTRO_ANALYSIS', 'MANGADAP_VER' ]
+#
+#    MANGADAP_DIR = mangadap.__file__
+#
+#    os.environ['MANGADAP_DIR']
+#
+#    os.environ['MANGACORE_VER']
+#    os.environ['IDLUTILS_DIR']
 
 def get_data_files():
     """Generate the list of data files."""
@@ -83,6 +98,24 @@ def run_setup(data_files, scripts, packages, install_requires):
 #-----------------------------------------------------------------------
 if __name__ == '__main__':
 
+    # Pull over the maskbits file
+    idlpath = 'https://svn.sdss.org/public/repo/sdss/idlutils'
+    ofile = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'sdss',
+                         'sdssMaskbits.par')
+    try:
+        idldir = 'tags/{0}'.format(IDLUTILS_VER)
+        parpath = '{0}/{1}/data/sdss/sdssMaskbits.par'.format(idlpath,idldir)
+        r = requests.get(parpath)
+        open(ofile, 'wb').write(r.content)
+    except:
+        try:
+            idldir = 'trunk'
+            parpath = '{0}/{1}/data/sdss/sdssMaskbits.par'.format(idlpath,idldir)
+            open(ofile, 'wb').write(requests.get(parpath).content)
+        except:
+            warnings.warn('Could not download SDSS maskbits file!')
+    exit()
+
     # Compile the data files to include
     data_files = get_data_files()
 
@@ -97,4 +130,15 @@ if __name__ == '__main__':
 
     # Run setup from setuptools
     run_setup(data_files, scripts, packages, install_requires)
+
+#    # Check for the environmental variables
+#    os.environ['MANGA_SPECTRO_REDUX']
+#    os.environ['MANGA_SPECTRO_ANALYSIS']
+#    os.environ['MANGADRP_VER']
+#    os.environ['MANGADAP_VER']
+#    os.environ['MANGADAP_DIR']
+#
+#    os.environ['MANGACORE_VER']
+#    os.environ['SDSS_ACCESS_DIR']
+
 

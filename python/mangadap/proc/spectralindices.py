@@ -32,7 +32,7 @@ A class hierarchy that performs the spectral-index measurements.
         from ..par.artifactdb import ArtifactDB
         from ..par.absorptionindexdb import AbsorptionIndexDB
         from ..par.bandheadindexdb import BandheadIndexDB
-        from ..config.defaults import default_dap_source, default_dap_file_name
+        from ..config.defaults import dap_source_dir, default_dap_file_name
         from ..config.defaults import default_dap_method, default_dap_method_path
         from ..config.defaults import default_dap_common_path
         from ..util.instrument import SpectralResolution, match_spectral_resolution
@@ -141,7 +141,7 @@ from ..par.parset import ParSet
 from ..par.artifactdb import ArtifactDB
 from ..par.absorptionindexdb import AbsorptionIndexDB
 from ..par.bandheadindexdb import BandheadIndexDB
-from ..config.defaults import default_dap_source, default_dap_file_name
+from ..config.defaults import dap_source_dir, default_dap_file_name
 from ..config.defaults import default_dap_method, default_dap_method_path
 from ..config.defaults import default_dap_common_path
 from ..util.instrument import SpectralResolution, match_spectral_resolution
@@ -234,7 +234,7 @@ def available_spectral_index_databases(dapsrc=None):
     Args:
         dapsrc (str): (**Optional**) Root path to the DAP source
             directory.  If not provided, the default is defined by
-            :func:`mangadap.config.defaults.default_dap_source`.
+            :func:`mangadap.config.defaults.dap_source_dir`.
 
     Returns:
         list: A list of :func:`SpectralIndicesDef` objects, each
@@ -256,7 +256,7 @@ def available_spectral_index_databases(dapsrc=None):
         
     """
     # Check the source directory exists
-    dapsrc = default_dap_source() if dapsrc is None else str(dapsrc)
+    dapsrc = dap_source_dir() if dapsrc is None else str(dapsrc)
     if not os.path.isdir(dapsrc):
         raise NotADirectoryError('{0} does not exist!'.format(dapsrc))
 
@@ -308,7 +308,7 @@ class SpectralIndicesBitMask(BitMask):
 
     """
     def __init__(self, dapsrc=None):
-        dapsrc = default_dap_source() if dapsrc is None else str(dapsrc)
+        dapsrc = dap_source_dir() if dapsrc is None else str(dapsrc)
         BitMask.__init__(self, ini_file=os.path.join(dapsrc, 'python', 'mangadap', 'config',
                                                      'bitmasks', 'spectral_indices_bits.ini'))
 
@@ -604,7 +604,7 @@ class SpectralIndices:
             database (see :mod:`mangadap.par.bandheadindexdb`).
         dapsrc (str): (**Optional**) Root path to the DAP source
             directory.  If not provided, the default is defined by
-            :func:`mangadap.config.defaults.default_dap_source`.
+            :func:`mangadap.config.defaults.dap_source_dir`.
         dapver (str): (**Optional**) The DAP version to use for the
             analysis, used to override the default defined by
             :func:`mangadap.config.defaults.default_dap_version`.
@@ -1808,7 +1808,7 @@ class SpectralIndices:
                 either the binned spectra or the unbinned spaxels.
             dapsrc (str): (**Optional**) Root path to the DAP source
                 directory.  If not provided, the default is defined by
-                :func:`mangadap.config.defaults.default_dap_source`.
+                :func:`mangadap.config.defaults.dap_source_dir`.
             dapver (str): (**Optional**) The DAP version to use for the
                 analysis, used to override the default defined by
                 :func:`mangadap.config.defaults.default_dap_version`.
