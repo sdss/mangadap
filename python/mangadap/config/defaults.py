@@ -84,14 +84,12 @@ import glob
 import numpy
 
 from ..util.exception_tools import check_environment_variable
-from mangadap import __version__
+from mangadap import __version__, dap_source_dir
 
 def dap_source_dir():
     """Return the root path to the DAP source directory."""
     dirlist = os.path.dirname(os.path.abspath(__file__)).split('/')[:-3]
     return os.path.join(os.sep, *dirlist) if dirlist[0] == '' else os.path.join(*dirlist)
-#    check_environment_variable('MANGADAP_DIR')
-#    return environ['MANGADAP_DIR']
 
 
 def idlutils_dir():
@@ -103,7 +101,6 @@ def idlutils_dir():
 def sdss_maskbits_file():
     """Return the path to the sdss maskbits yanny file."""
     maskbits_file = os.path.join(dap_source_dir(), 'data', 'sdss', 'sdssMaskbits.par')
-    print(maskbits_file)
     if os.path.isfile(maskbits_file):
         return maskbits_file
 
@@ -534,6 +531,6 @@ def default_redshift_fix_file():
     """
 
     # Default search string
-    check_environment_variable('MANGADAP_DIR')
-    return os.path.join(os.environ['MANGADAP_DIR'], 'data', 'fix', 'redshift_fix.par')
+    dapsrc = dap_source_dir()
+    return os.path.join(dapsrc, 'data', 'fix', 'redshift_fix.par')
 
