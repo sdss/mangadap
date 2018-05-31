@@ -44,6 +44,12 @@ def check_environment():
             warnings.warn('{0} environmental variable undefined.  Using: {1}'.format(k,ev[k]))
             os.environ[k] = ev[k]
 
-
 check_environment()
+
+def dap_source_dir():
+    """Return the root path to the DAP source directory."""
+    dirlist = os.path.dirname(os.path.abspath(__file__)).split('/')[:-2]
+    return os.path.join(os.sep, *dirlist) if dirlist[0] == '' else os.path.join(*dirlist)
+
+os.environ['MANGADAP_DIR'] = dap_source_dir()
 
