@@ -53,5 +53,3 @@ def dap_source_dir():
 
 os.environ['MANGADAP_DIR'] = dap_source_dir()
 
-print(os.environ['MANGADAP_DIR'])
-

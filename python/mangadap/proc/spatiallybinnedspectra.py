@@ -1244,6 +1244,12 @@ class SpatiallyBinnedSpectra:
                 warnings.warn('DRP file previously unopened.  Reading now.')
             drpf.open_hdu()
 
+        # Test if the RSS file exists; cannot compute covariance if not
+        # TODO: this will break for a different stacking class
+        if self.method['stackpar']['covar_mode'] is not 'none' and not drpf.can_compute_covariance:
+            warnings.warn('Cannot determine covariance matrix!  Continuing without!')
+            self.method['stackpar']['covar_mode'] = 'none'
+
         # TODO: How many of these attributes should I keep, vs. just use
         # drpf attributes?
         self.drpf = drpf

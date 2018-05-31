@@ -655,6 +655,11 @@ class ReductionAssessment:
             drpf.open_hdu()
         self.drpf = drpf
 
+        # Test if the RSS file exists; cannot compute covariance if not
+        if self.method['covariance'] and not drpf.can_compute_covariance:
+            warnings.warn('RSS counterpart not available.  Cannot determine covariance matrix!')
+            self.method['covariance'] = False
+
         # Reset the output paths if necessary
         self._set_paths(directory_path, dapver, analysis_path, output_file)
         # Check that the path for or to the file is defined
@@ -686,10 +691,13 @@ class ReductionAssessment:
 
             # Construct the correlation matrix with the appropriate
             # variance
-            self.correlation = Covariance.from_fits(self.hdu, ivar_ext=None, row_major=True,
-                                                    correlation=True)
-            self.correlation = self.correlation.apply_new_variance(
+            if self.method['covariance']:
+                self.correlation = Covariance.from_fits(self.hdu, ivar_ext=None, row_major=True,
+                                                        correlation=True)
+                self.correlation = self.correlation.apply_new_variance(
                                                             self.hdu['SPECTRUM'].data['VARIANCE'])
+            else:
+                self.correlation = None
 
             # Read the header data
             self.pa = self.hdu['PRIMARY'].header['ECOOPA']
@@ -700,12 +708,16 @@ class ReductionAssessment:
             if not self.quiet and ell is not None and self.ell != ell:
                 warnings.warn('Provided ellipticity different from available file; set ' \
                               'clobber=True to overwrite.')
-            self.covar_wave = self.hdu['PRIMARY'].header['BBWAVE']
-            if isinstance(self.covar_wave, str):
-                self.covar_wave = eval(self.covar_wave)
-            self.covar_channel = self.hdu['PRIMARY'].header['BBINDEX']
-            if isinstance(self.covar_channel, str):
-                self.covar_channel = eval(self.covar_channel)
+            if self.method['covariance']:
+                self.covar_wave = self.hdu['PRIMARY'].header['BBWAVE']
+                if isinstance(self.covar_wave, str):
+                    self.covar_wave = eval(self.covar_wave)
+                self.covar_channel = self.hdu['PRIMARY'].header['BBINDEX']
+                if isinstance(self.covar_channel, str):
+                    self.covar_channel = eval(self.covar_channel)
+            else:
+                self.covar_wave = None
+                self.covar_channel = None
 #            print(self.covar_wave, self.covar_channel)
 
             # Make sure the symlink exists
