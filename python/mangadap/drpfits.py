@@ -2920,8 +2920,7 @@ class DRPFits:
                           read=False)
             if not os.path.isfile(rss.file_path()):
                 warnings.warn('RSS counterpart not available.  Cannot determine covariance matrix!')
-
-            return signal, variance, snr, None
+                return signal, variance, snr, None
 
         # Only calculate the covariance at the central, or input, wavelength
         _covar_wave = covar_wave if covar_wave is not None \

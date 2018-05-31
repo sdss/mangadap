@@ -589,6 +589,13 @@ class Sasuke(EmissionLineFit):
 
 
     @staticmethod
+    def _copy_from_stellar_continuum(stellar_continuum):
+        return stellar_continuum.method['fitpar']['template_library'], \
+                stellar_continuum.method['fitpar']['match_resolution'], \
+                stellar_continuum.method['fitpar']['velscale_ratio']
+
+
+    @staticmethod
     def etpl_line_sigma_options():
         r"""
 
@@ -1396,7 +1403,6 @@ class Sasuke(EmissionLineFit):
         return model_flux, model_eml_flux, model_mask, model_fit_par, model_eml_par
 
 
-
     def fit_SpatiallyBinnedSpectra(self, binned_spectra, par=None, loggers=None, quiet=False):
         """
         This DAP-specific function interprets the DAP-specific classes
@@ -1522,12 +1528,14 @@ class Sasuke(EmissionLineFit):
                     # This maintains the resolution difference
                     warnings.warn('Request emission-line continuum templates identical to those '
                                   'used during the stellar continuum fitting.')
-                    stellar_templates \
-                            = par['stellar_continuum'].method['fitpar']['template_library']
-                    matched_resolution \
-                            = par['stellar_continuum'].method['fitpar']['match_resolution']
-                    velscale_ratio \
-                            = par['stellar_continuum'].method['fitpar']['velscale_ratio']
+                    stellar_templates, matched_resolution, velscale_ratio \
+                                = Sasuke._copy_from_stellar_continuum(par['stellar_continuum'])
+#                    stellar_templates \
+#                            = par['stellar_continuum'].method['fitpar']['template_library']
+#                    matched_resolution \
+#                            = par['stellar_continuum'].method['fitpar']['match_resolution']
+#                    velscale_ratio \
+#                            = par['stellar_continuum'].method['fitpar']['velscale_ratio']
                 else:
                     # The template library needs to be constructed based
                     # on the provided keyword
@@ -1548,7 +1556,8 @@ class Sasuke(EmissionLineFit):
                                               loggers=loggers, quiet=quiet)
 
         elif par['continuum_templates'] is None and par['stellar_continuum'] is not None:
-            stellar_templates = par['stellar_continuum'].method['fitpar']['template_library']
+            stellar_templates, matched_resolution, velscale_ratio \
+                        = Sasuke._copy_from_stellar_continuum(par['stellar_continuum'])
 
         stpl_wave = None if stellar_templates is None else stellar_templates['WAVE'].data
         stpl_flux = None if stellar_templates is None else stellar_templates['FLUX'].data
