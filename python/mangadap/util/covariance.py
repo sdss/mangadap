@@ -567,7 +567,7 @@ class Covariance:
 
 
     @classmethod
-    def from_variance_vector(cls, variance, correlation=False):
+    def from_variance(cls, variance, correlation=False):
         r"""
         Construct a diagonal covariance matrix using the provided variance.
         """

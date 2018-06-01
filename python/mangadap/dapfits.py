@@ -2327,6 +2327,7 @@ def add_snr_metrics_to_header(hdr, drpf, r_re, dapsrc=None):
             continue
 
         if covar is None:
+            warnings.warn('Covariance not available!  Continuing without it.')
             covar = Covariance.from_variance(variance, correlation=True)
             
         # Get the appropriate covariance pixels to select
