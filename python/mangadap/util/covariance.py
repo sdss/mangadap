@@ -565,7 +565,15 @@ class Covariance:
         # Construct the covariance matrix
         return cls( sparse.triu(_T.dot(_Sigma.dot(_T.transpose()))).tocsr() )
 
-        
+
+    @classmethod
+    def from_variance_vector(cls, variance, correlation=False):
+        r"""
+        Construct a diagonal covariance matrix using the provided variance.
+        """
+        return cls(sparse.csr.csr_matrix(numpy.diagflat(variance)), correlation=correlation)
+
+
     def _grab_true_index(self, inp):
         """
         In the case of a 3D array, return the true array-element index
