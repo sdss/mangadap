@@ -62,6 +62,7 @@ Implements an emission-line fitting class that largely wraps pPXF.
     | **20 Mar 2018**: (KBW) Corrected flux calculation and inclusion
         of provided pixel mask.
     | **22 May 2018**: (KBW) Change import to ppxf package.
+    | **29 May 2018**: (KBW) Change xjmc function import and call
 
 .. _numpy.ma.MaskedArray: https://docs.scipy.org/doc/numpy-1.12.0/reference/maskedarray.baseclass.html
 .. _numpy.recarray: https://docs.scipy.org/doc/numpy/reference/generated/numpy.recarray.html
@@ -106,7 +107,7 @@ from .bandpassfilter import emission_line_equivalent_width
 from .emissionlinetemplates import EmissionLineTemplates
 from .util import sample_growth
 from .ppxffit import PPXFModel, PPXFFitResult, PPXFFit
-from ..contrib.xjmc import emline_fitter_with_ppxf_edit
+from ..contrib.xjmc import emline_fitter_with_ppxf
 
 # For debugging
 from matplotlib import pyplot
@@ -585,6 +586,13 @@ class Sasuke(EmissionLineFit):
                  ('FRMS',numpy.float),
                  ('FABSRESID',numpy.float,(5,))
                ] 
+
+
+    @staticmethod
+    def _copy_from_stellar_continuum(stellar_continuum):
+        return stellar_continuum.method['fitpar']['template_library'], \
+                stellar_continuum.method['fitpar']['match_resolution'], \
+                stellar_continuum.method['fitpar']['velscale_ratio']
 
 
     @staticmethod
@@ -1395,7 +1403,6 @@ class Sasuke(EmissionLineFit):
         return model_flux, model_eml_flux, model_mask, model_fit_par, model_eml_par
 
 
-
     def fit_SpatiallyBinnedSpectra(self, binned_spectra, par=None, loggers=None, quiet=False):
         """
         This DAP-specific function interprets the DAP-specific classes
@@ -1489,19 +1496,6 @@ class Sasuke(EmissionLineFit):
                                                         stellar_continuum=par['stellar_continuum'])
         nobj = flux.shape[0]
 
-        # Check if the user wants to switch the templates being used for
-        # the stellar continuum.  The construction of the
-        # TemplateLibrary object must be done inside
-        # self.method['fitfunc'] !
-        if self.method['continuum_tpl_key'] is not None:
-            self.method['fitpar']['continuum_templates'] = self.method['continuum_tpl_key']
-            if self.method['fitpar']['stellar_continuum'] is not None \
-                    and self.stellar_continuum.method['fitpar']['template_library_key'] \
-                                    == self.method['continuum_tpl_key']:
-                warnings.warn('Request emission-line continuum templates identical to those used'
-                              'during the stellar continuum fitting; selection unnecessary.')
-                self.method['fitpar']['continuum_templates'] = None
-
         # Get the stellar templates.  If fitting a different set of
         # templates, the spectral resolution of the new templates must
         # be matched to the galaxy data and the velocity dispersion used
@@ -1534,12 +1528,14 @@ class Sasuke(EmissionLineFit):
                     # This maintains the resolution difference
                     warnings.warn('Request emission-line continuum templates identical to those '
                                   'used during the stellar continuum fitting.')
-                    stellar_templates \
-                            = par['stellar_continuum'].method['fitpar']['template_library']
-                    matched_resolution \
-                            = par['stellar_continuum'].method['fitpar']['match_resolution']
-                    velscale_ratio \
-                            = par['stellar_continuum'].method['fitpar']['velscale_ratio']
+                    stellar_templates, matched_resolution, velscale_ratio \
+                                = Sasuke._copy_from_stellar_continuum(par['stellar_continuum'])
+#                    stellar_templates \
+#                            = par['stellar_continuum'].method['fitpar']['template_library']
+#                    matched_resolution \
+#                            = par['stellar_continuum'].method['fitpar']['match_resolution']
+#                    velscale_ratio \
+#                            = par['stellar_continuum'].method['fitpar']['velscale_ratio']
                 else:
                     # The template library needs to be constructed based
                     # on the provided keyword
@@ -1548,7 +1544,7 @@ class Sasuke(EmissionLineFit):
                     # resolution match to the MaNGA data.
                     match_resolution = True
                     velscale_ratio = par['velscale_ratio']
-                    velocity_offset = numpy.mean(c*par['guess_redshift'][bins_to_fit,:])
+                    velocity_offset = numpy.mean(astropy.constants.c.to('km/s').value*par['guess_redshift'][bins_to_fit,:])
                     # TODO: The dapsrc and analysis_path will return to
                     # the defaults!
                     stellar_templates \
@@ -1560,7 +1556,8 @@ class Sasuke(EmissionLineFit):
                                               loggers=loggers, quiet=quiet)
 
         elif par['continuum_templates'] is None and par['stellar_continuum'] is not None:
-            stellar_templates = par['stellar_continuum'].method['fitpar']['template_library']
+            stellar_templates, matched_resolution, velscale_ratio \
+                        = Sasuke._copy_from_stellar_continuum(par['stellar_continuum'])
 
         stpl_wave = None if stellar_templates is None else stellar_templates['WAVE'].data
         stpl_flux = None if stellar_templates is None else stellar_templates['FLUX'].data
@@ -2463,23 +2460,23 @@ class Sasuke(EmissionLineFit):
         model_flux[:,start:end], model_eml_flux[:,start:end], _model_mask, model_wgts, \
                 model_wgts_err, model_addcoef, model_multcoef, model_reddening, model_kin_inp, \
                 model_kin, model_kin_err, nearest_bin \
-                            = emline_fitter_with_ppxf_edit(self.tpl_flux, wave, flux, ferr, mask,
-                                                           self.velscale, self.velscale_ratio,
-                                                           self.tpl_comp, self.gas_tpl,
-                                                           self.comp_moments, self.comp_start_kin,
-                                                           tied=self.tied, degree=self.degree,
-                                                           mdegree=self.mdegree,
-                                                           reddening=self.reddening,
-                                                           reject_boxcar=self.reject_boxcar,
-                                                           vsyst=self.base_velocity,
-                                                           tpl_to_use=self.tpl_to_use,
-                                                           flux_binned=flux_binned,
-                                                           noise_binned=ferr_binned,
-                                                           mask_binned=mask_binned,
-                                                           x_binned=self.obj_skyx,
-                                                           y_binned=self.obj_skyy,
-                                                           x=self.remap_skyx, y=self.remap_skyy,
-                                                           plot=plot, quiet=not plot,sigma_rej=sigma_rej)
+                            = emline_fitter_with_ppxf(self.tpl_flux, wave, flux, ferr, mask,
+                                                      self.velscale, self.velscale_ratio,
+                                                      self.tpl_comp, self.gas_tpl,
+                                                      self.comp_moments, self.comp_start_kin,
+                                                      tied=self.tied, degree=self.degree,
+                                                      mdegree=self.mdegree,
+                                                      reddening=self.reddening,
+                                                      reject_boxcar=self.reject_boxcar,
+                                                      vsyst=self.base_velocity,
+                                                      tpl_to_use=self.tpl_to_use,
+                                                      flux_binned=flux_binned,
+                                                      noise_binned=ferr_binned,
+                                                      mask_binned=mask_binned,
+                                                      x_binned=self.obj_skyx,
+                                                      y_binned=self.obj_skyy, x=self.remap_skyx,
+                                                      y=self.remap_skyy, plot=plot, quiet=not plot,
+                                                      sigma_rej=sigma_rej)
 #                                                           plot=True, quiet=False)
 
         # Construct the bin ID numbers
