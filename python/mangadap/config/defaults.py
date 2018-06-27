@@ -23,8 +23,7 @@ MaNGA DAP, such as paths and file names.
         if sys.version > '3':
             long = int
     
-        import os.path
-        from os import environ
+        import os
         import glob
         import numpy
         from mangadap.util.exception_tools import check_environment_variable
@@ -80,20 +79,37 @@ import sys
 if sys.version > '3':
     long = int
 
-import os.path
-from os import environ
+import os
 import glob
 import numpy
 
 from ..util.exception_tools import check_environment_variable
-from mangadap import __version__
+from mangadap import __version__, dap_source_dir
 
-def default_idlutils_dir():
-    """
-    Return the default IDLUTILS directory.
-    """
+def dap_source_dir():
+    """Return the root path to the DAP source directory."""
+    dirlist = os.path.dirname(os.path.abspath(__file__)).split('/')[:-3]
+    return os.path.join(os.sep, *dirlist) if dirlist[0] == '' else os.path.join(*dirlist)
+
+
+def idlutils_dir():
+    """Return the default IDLUTILS directory."""
     check_environment_variable('IDLUTILS_DIR')
-    return environ['IDLUTILS_DIR']
+    return os.environ['IDLUTILS_DIR']
+
+
+def sdss_maskbits_file():
+    """Return the path to the sdss maskbits yanny file."""
+    maskbits_file = os.path.join(dap_source_dir(), 'data', 'sdss', 'sdssMaskbits.par')
+    if os.path.isfile(maskbits_file):
+        return maskbits_file
+
+    try:
+        maskbits_file = os.path.join(idlutils_dir(), 'data', 'sdss', 'sdssMaskbits.par')
+        if os.path.isfile(maskbits_file):
+            return maskbits_file
+    except:
+        return None
 
 
 def default_drp_version():
@@ -102,7 +118,7 @@ def default_drp_version():
     MANGADRP_VER.
     """
     check_environment_variable('MANGADRP_VER')
-    return environ['MANGADRP_VER']
+    return os.environ['MANGADRP_VER']
 
 
 def default_redux_path(drpver=None):
@@ -121,7 +137,7 @@ def default_redux_path(drpver=None):
     if drpver is None:
         drpver = default_drp_version()
     check_environment_variable('MANGA_SPECTRO_REDUX')
-    return os.path.join(environ['MANGA_SPECTRO_REDUX'], drpver)
+    return os.path.join(os.environ['MANGA_SPECTRO_REDUX'], drpver)
 
 
 def default_drp_directory_path(plate, drpver=None, redux_path=None):
@@ -184,15 +200,6 @@ def default_regrid_sigma():
     return 0.7
 
 
-def default_dap_source():
-    """
-    Return the root path to the DAP source directory using the
-    environmental variable MANGADAP_DIR.
-    """
-    check_environment_variable('MANGADAP_DIR')
-    return environ['MANGADAP_DIR']
-
-
 def default_dap_version():
     """
     Return the DAP version defined by the environmental variable
@@ -205,7 +212,7 @@ def default_dap_version():
     except EnvironmentError as e:
         warnings.warn('$MANGADAP_VER undefined in environment; returning internal version')
         no_environ_var = True
-    return __version__ if no_environ_var else environ['MANGADAP_VER']
+    return __version__ if no_environ_var else os.environ['MANGADAP_VER']
 
 
 def default_analysis_path(drpver=None, dapver=None):
@@ -229,7 +236,7 @@ def default_analysis_path(drpver=None, dapver=None):
     if dapver is None:
         dapver = default_dap_version()
     check_environment_variable('MANGA_SPECTRO_ANALYSIS')
-    return os.path.join(environ['MANGA_SPECTRO_ANALYSIS'], drpver, dapver)
+    return os.path.join(os.environ['MANGA_SPECTRO_ANALYSIS'], drpver, dapver)
 
 
 def default_dap_common_path(plate=None, ifudesign=None, drpver=None, dapver=None,
@@ -503,7 +510,7 @@ def default_plate_target_files():
     """
     # Default search string
     check_environment_variable('MANGACORE_DIR')
-    search_str = os.path.join(environ['MANGACORE_DIR'], 'platedesign', 'platetargets',
+    search_str = os.path.join(os.environ['MANGACORE_DIR'], 'platedesign', 'platetargets',
                               'plateTargets*.par')
     file_list = glob.glob(search_str)                       # List of files
     nfiles = len(file_list)
@@ -524,6 +531,6 @@ def default_redshift_fix_file():
     """
 
     # Default search string
-    check_environment_variable('MANGADAP_DIR')
-    return os.path.join(os.environ['MANGADAP_DIR'], 'data', 'fix', 'redshift_fix.par')
+    dapsrc = dap_source_dir()
+    return os.path.join(dapsrc, 'data', 'fix', 'redshift_fix.par')
 

@@ -124,7 +124,7 @@ def available_bandhead_index_databases(dapsrc=None):
     Args:
         dapsrc (str): (**Optional**) Root path to the DAP source
             directory.  If not provided, the default is defined by
-            :func:`mangadap.config.defaults.default_dap_source`.
+            :func:`mangadap.config.defaults.dap_source_dir`.
 
     Returns:
         list: An list of :class:`SpectralFeatureDBDef` objects, each of
@@ -156,7 +156,7 @@ class BandheadIndexDB(ParDatabase):
             list.
         dapsrc (str): (**Optional**) Root path to the DAP source
             directory.  If not provided, the default is defined by
-            :func:`mangadap.config.defaults.default_dap_source`.
+            :func:`mangadap.config.defaults.dap_source_dir`.
 
     Attributes:
         database (:class:`mangadap.par.ParSet`): Database parameters.

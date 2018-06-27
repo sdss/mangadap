@@ -135,7 +135,7 @@ def available_artifact_databases(dapsrc=None):
     Args:
         dapsrc (str): (**Optional**) Root path to the DAP source
             directory.  If not provided, the default is defined by
-            :func:`mangadap.config.defaults.default_dap_source`.
+            :func:`mangadap.config.defaults.dap_source_dir`.
 
     Returns:
         list: An list of
@@ -166,7 +166,7 @@ class ArtifactDB(ParDatabase):
             path to the source SDSS parameter file.
         dapsrc (str): (**Optional**) Root path to the DAP source
             directory.  If not provided, the default is defined by
-            :func:`mangadap.config.defaults.default_dap_source`.
+            :func:`mangadap.config.defaults.dap_source_dir`.
 
     Attributes:
         database (:class:`mangadap.par.ParSet`): Database parameters.
