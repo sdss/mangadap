@@ -1,10 +1,10 @@
 # Package dependencies of the MaNGA DAP
-# TODO: Require python 3?
+# Add a comment
 numpy>=1.13.3
 scipy>=1.0
 matplotlib>=2.1.0
 astropy>=2.0.2
 pydl>=0.6.0
-ppxf==6.7.7
+ppxf==6.7.8
 vorbin==3.1.3
 
