@@ -52,12 +52,12 @@ if __name__ == '__main__':
     plt = 7815
     ifu = 3702
     # Spaxel coordinates
-    x = 25
-    y = 25
+    x = 21
+    y = 21
 
     # Show the ppxf plots
-#    fit_plots = True
-    fit_plots = False
+    fit_plots = True
+#    fit_plots = False
 
     # Template keywords
     sc_tpl_key = 'MILESHC'
@@ -82,6 +82,9 @@ if __name__ == '__main__':
     # Read a spectrum
     print('reading spectrum')
     wave, flux, ivar, sres = get_spectrum(plt, ifu, x, y, directory_path='./data')
+
+#    pyplot.plot(wave, flux)
+#    pyplot.show()
 
     # Fitting functions expect data to be in 2D arrays (for now):
     flux = flux.reshape(1,-1)

@@ -2,5 +2,4 @@
 python/mangadap/*.__pycache__
 .*swp
 .DS_Store
-data/sdss/*par
-
+*/.ipynb_checkpoints/
