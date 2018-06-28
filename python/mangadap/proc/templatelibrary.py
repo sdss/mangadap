@@ -1468,6 +1468,7 @@ class TemplateLibrary:
                 except:
                     self.sres = drpf.spectral_resolution(ext='SPECRES', toarray=True, fill=True,
                                                          median=True)
+                self.sres = SpectralResolution(drpf['WAVE'].data, self.sres, log10=True)
             else:
                 self.sres = None
 

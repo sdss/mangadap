@@ -1544,7 +1544,8 @@ class Sasuke(EmissionLineFit):
                     # resolution match to the MaNGA data.
                     match_resolution = True
                     velscale_ratio = par['velscale_ratio']
-                    velocity_offset = numpy.mean(astropy.constants.c.to('km/s').value*par['guess_redshift'][bins_to_fit,:])
+                    velocity_offset = numpy.mean(astropy.constants.c.to('km/s').value 
+                                                    * par['guess_redshift'][bins_to_fit])
                     # TODO: The dapsrc and analysis_path will return to
                     # the defaults!
                     stellar_templates \
