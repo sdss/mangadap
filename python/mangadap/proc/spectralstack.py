@@ -164,7 +164,7 @@ class SpectralStackPar(ParSet):
         hdr (`astropy.io.fits.Header`_): Header object to write to.
         """
         self['operation'] = hdr['STCKOP']
-        self['vel_register'] = bool(hdr['STCKVREG'])
+        self['vel_register'] = eval(hdr['STCKVREG'])
         self['covar_mode'] = hdr['STCKCRMD']
         self['covar_par'] = eval(hdr['STCKCRPR'])
         self['stack_sres'] = eval(hdr['STCKRES'])
