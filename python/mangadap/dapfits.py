@@ -2331,7 +2331,8 @@ def add_snr_metrics_to_header(hdr, drpf, r_re, dapsrc=None):
         # Use the covariance matrix from the single wavelength channel
         # calculation, but renormalize it to the mean variance over the
         # response function
-        covar = covar.apply_new_variance(variance).toarray()
+        covar = numpy.identity(len(variance), dtype=float) if covar is None \
+                        else covar.apply_new_variance(variance).toarray()
         # Set the median S/N ...
         hdr[key_med[i]] = (numpy.ma.median(snr[indx]), com_med[i])
         # ... and the combined S/N
