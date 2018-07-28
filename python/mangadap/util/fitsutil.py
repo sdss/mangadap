@@ -585,7 +585,7 @@ class DAPFitsUtil:
     @staticmethod
     def unique_bins(bin_indx, return_index=False):
         """
-        Get the unique bins andthe indices of the unique bins in the
+        Get the unique bins and the indices of the unique bins in the
         flattened spatial dimension, ignoring the bins with indices of
         -1.
         """

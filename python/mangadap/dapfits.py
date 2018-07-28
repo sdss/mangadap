@@ -959,7 +959,7 @@ class construct_maps_file:
 
         MAIN_INCOMP, BLUE_INCOMP, RED_INCOMP propagated to UNRELIABLE
 
-        NO_ABSORPTION_CORRECTION propaged to NOCORRECTION
+        NO_ABSORPTION_CORRECTION propagated to NOCORRECTION
 
         DIVBYZERO propagated to MATHERROR
 
