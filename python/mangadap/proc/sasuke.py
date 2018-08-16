@@ -2155,7 +2155,8 @@ class Sasuke(EmissionLineFit):
                                     dtype=float)
         if self.obj_sres is not None:
             interp = interpolate.interp1d(self.obj_wave,
-                                          R_to_sinst/numpy.amin(self.obj_sres, axis=0),
+# THIS WAS EDITED POST DR15                R_to_sinst/numpy.amin(self.obj_sres, axis=0),
+                                          R_to_sinst/numpy.amax(self.obj_sres, axis=0),
                                           assume_sorted=True, bounds_error=False,
                                           fill_value='extrapolate')
             etpl_sinst = interp(self.tpl_wave * (1 + numpy.median(self.input_cz) 

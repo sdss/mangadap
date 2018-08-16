@@ -960,7 +960,7 @@ class construct_maps_file:
 
         MAIN_INCOMP, BLUE_INCOMP, RED_INCOMP propagated to UNRELIABLE
 
-        NO_ABSORPTION_CORRECTION propaged to NOCORRECTION
+        NO_ABSORPTION_CORRECTION propagated to NOCORRECTION
 
         DIVBYZERO propagated to MATHERROR
 
@@ -1326,9 +1326,10 @@ class construct_maps_file:
                                                     -2).filled(0.0), self.nsa_redshift, ivar=True),
                 stellar_continuum['PAR'].data['KIN'][:,1],
                 numpy.ma.power(stellar_continuum['PAR'].data['KINERR'][:,1], -2).filled(0.0),
-# Only provide the empirical correction
-#                stellar_continuum['PAR'].data['SIGMACORR_SRES'],
-                stellar_continuum['PAR'].data['SIGMACORR_EMP'],
+# Error in empirical correction, only output difference in resolution
+# vectors
+#                stellar_continuum['PAR'].data['SIGMACORR_EMP'],
+                stellar_continuum['PAR'].data['SIGMACORR_SRES'],
                 stellar_continuum['PAR'].data['FABSRESID'][:,1],
                 stellar_continuum['PAR'].data['FABSRESID'][:,3],
                 stellar_continuum['PAR'].data['RCHI2'],
@@ -2336,7 +2337,8 @@ def add_snr_metrics_to_header(hdr, drpf, r_re, dapsrc=None):
         # Use the covariance matrix from the single wavelength channel
         # calculation, but renormalize it to the mean variance over the
         # response function
-        covar = covar.apply_new_variance(variance).toarray()
+        covar = numpy.identity(len(variance), dtype=float) if covar is None \
+                        else covar.apply_new_variance(variance).toarray()
         # Set the median S/N ...
         hdr[key_med[i]] = (numpy.ma.median(snr[indx]), com_med[i])
         # ... and the combined S/N

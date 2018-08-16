@@ -1126,8 +1126,8 @@ class SpatiallyBinnedSpectra:
         return self.method['binpar'] is None and self.method['binclass'] is None \
                     and self.method['binfunc'] is None
 
-
-    def do_not_fit_flags(self):
+    @staticmethod
+    def do_not_fit_flags():
         return ['DIDNOTUSE', 'FORESTAR', 'LOW_SPECCOV', 'LOW_SNR', 'NONE_IN_STACK']
 
 
