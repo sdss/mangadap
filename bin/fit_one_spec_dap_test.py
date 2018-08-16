@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 from astropy.io import fits
 from argparse import ArgumentParser
 from scipy import interpolate
+import pdb
 
 #from mangadap.drpfits import DRPFits
 #from mangadap.util.fitsutil import DAPFitsUtil
@@ -92,7 +93,7 @@ class fit_single_spectrum(object):
                        z, dispersion, iteration_mode='no_global_wrej', reject_boxcar=100,
                        ensemble=False, velscale_ratio=velscale_ratio, mask=sc_pixel_mask,
                        matched_resolution=False, tpl_sres=sc_tpl_sres, 
-                       obj_sres=self.sres, degree=4, mdegree=0,
+                       obj_sres=self.sres, degree=8, mdegree=0,
                        moments=2, plot=False)
     
         # Remask the continuum fit
@@ -153,7 +154,7 @@ class fit_single_spectrum(object):
     
         # Read the emission line fitting database
         emldb = EmissionLineDB(self.elfit_key)
-    
+        
         # Instantiate the fitting class
         emlfit = Sasuke(EmissionLineModelBitMask())
     
@@ -165,7 +166,7 @@ class fit_single_spectrum(object):
             stpl_wave=el_tpl['WAVE'].data, stpl_flux=el_tpl['FLUX'].data,
             stpl_sres=el_tpl_sres, stellar_kinematics=stellar_kinematics,
             etpl_sinst_mode='offset', etpl_sinst_min=10.,
-            velscale_ratio=velscale_ratio, matched_resolution=False, mdegree=0,
+            velscale_ratio=velscale_ratio, matched_resolution=False, mdegree=5,
             plot=False, sigma_rej=5.)
 #
 #        print(emlfit.velscale)
@@ -182,8 +183,8 @@ class fit_single_spectrum(object):
         self.model_flux=model_flux[0,:]
         self.el_continuum=el_continuum[0,:]
         self.sc_continuum=sc_continuum[0,:]
-        self.emlines_par=eml_eml_par
-        self.eml_fit_par=eml_fit_par
+        self.emlines_par=table.Table(eml_eml_par)[0]
+        self.eml_fit_par=table.Table(eml_fit_par)[0]
         
 
         # Plot the result
@@ -191,9 +192,9 @@ class fit_single_spectrum(object):
             plt.figure()
             plt.plot(self.wave, self.flux[0,:], label='Data')
             plt.plot(self.wave, model_flux[0,:], label='Model')
-            plt.plot(self.wave, el_continuum[0,:], label='EL Cont.')
-            plt.plot(self.wave, sc_continuum[0,:], label='SC Cont.')
-            plt.plot(self.wave, self.flux[0,:] - model_flux[0,:], label='Resid')
+#            plt.plot(self.wave, el_continuum[0,:], label='EL Cont.')
+#            plt.plot(self.wave, sc_continuum[0,:], label='SC Cont.')
+#            plt.plot(self.wave, self.flux[0,:] - model_flux[0,:], label='Resid')
             plt.legend()
             plt.xlabel('Wavelength')
             plt.ylabel('Flux')
@@ -235,7 +236,8 @@ if __name__ == '__main__':
     if test=='manga':
         
         
-        hdulist=fits.open(mangadap+'/data/testdata/manga-7992-1901-LOGCUBE.fits.gz')
+#        hdulist=fits.open(mangadap+'/data/testdata/manga-7992-1901-LOGCUBE.fits.gz')
+        hdulist=fits.open('/Users/francesco/Downloads/manga-8313-1901-LOGCUBE.fits')
         
         wave=hdulist['WAVE'].data
         spectral_step=np.mean(np.diff(np.log10(wave)))
@@ -248,7 +250,8 @@ if __name__ == '__main__':
         flux=flux[:,sz[1]//2,sz[2]//2]
         ivar=ivar[:,sz[1]//2,sz[2]//2]
         
-        redshift=0.0164
+#        redshift=0.0164
+        redshift=0.0243
         
         
         out=fit_single_spectrum(flux, ivar, wave, sres, redshift, sc_tpl_key='MILESHC', 
@@ -261,7 +264,10 @@ if __name__ == '__main__':
 #         elfit_key = 'ELPMILES'
         
     elif test=='sdss':
-        hdulist=fits.open(mangadap+'/data/testdata/spec-0352-51694-0030.fits')
+#        hdulist=fits.open(mangadap+'/data/testdata/spec-0352-51694-0030.fits')
+        hdulist=fits.open('/Users/francesco/Downloads/spec-1335-52824-0378.fits')
+        
+        
         coadd = hdulist['COADD'].data
         wave=np.array(10**coadd['loglam'], dtype='float64')
     #    restructure the wavelength vector so it's constant
@@ -297,5 +303,27 @@ if __name__ == '__main__':
         out=fit_single_spectrum(flux, ivar, wave, sres, redshift, sc_tpl_key='MIUSCATTHIN', 
                      el_tpl_key = 'MIUSCATTHIN', elfit_key = 'ELPT2',
                      plot=True)
+    elif test=='joe':
+        hdu = fits.open('/Users/francesco/Desktop/spec1678.fits') 
+#        sp=hdu['DATA'].data
+        wave = hdu[1].data
+        flux= hdu[0].data
+        sres= flux*0.0+2000
+        ivar = 1/(flux*0.01)**0.5
+        
+        ww  = (wave < 9000)
+        wave=wave[ww]
+        flux=flux[ww]
+        sres=sres[ww]
+        ivar=ivar[ww]
+        
+        redshift=0.5998
+        
+        
+        out=fit_single_spectrum(flux, ivar, wave, sres, redshift, sc_tpl_key='MIUSCATTHIN', 
+                     el_tpl_key = 'MIUSCATTHIN', elfit_key = 'ELPMILES',
+                     plot=True)
+        pdb.set_trace()
 
+#    pdb.set_trace()
     print('Elapsed time: {0} seconds'.format(time.clock() - t))

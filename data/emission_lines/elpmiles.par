@@ -36,12 +36,11 @@ typedef struct {
     double redside[2];
 } DAPEML;
 
+
 DAPEML   1  OII     3727.092   vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 3696.3  3716.3 } { 3738.3  3758.3 }
 DAPEML   2  OII     3729.875   vac  f   1.000   k1  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 3696.3  3716.3 } { 3738.3  3758.3 }
 DAPEML   3  Hthe    3798.9826  vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 3771.5  3791.5 } { 3806.5  3826.5 }
 DAPEML   4  Heta    3836.4790  vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 3806.5  3826.5 } { 3900.2  3920.2 }
-DAPEML   5  NeIII   3869.86    vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 3806.5  3826.5 } { 3900.2  3920.2 }
-DAPEML   6  Hzet    3890.1576  vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 3806.5  3826.5 } { 3900.2  3920.2 }
 DAPEML   7  NeIII   3968.59    vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 3938.6  3958.6 } { 3978.6  3998.6 }
 DAPEML   8  Heps    3971.2020  vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 3941.2  3961.2 } { 3981.2  4001.2 }
 DAPEML   9  Hdel    4102.8991  vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 4072.9  4092.9 } { 4112.9  4132.9 }
@@ -58,4 +57,6 @@ DAPEML  19  Ha      6564.632   vac  f   1.000    f  FFTGaussianLSF  1  1  { 1.0 
 DAPEML  20  NII     6585.271   vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 6483.0  6513.0 } { 6623.0  6653.0 }
 DAPEML  21  SII     6718.294   vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 6673.0  6703.0 } { 6748.0  6778.0 }
 DAPEML  22  SII     6732.674   vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 6673.0  6703.0 } { 6748.0  6778.0 }
-
+DAPEML   23  NeIII   3869.86    vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 3806.5  3826.5 } { 3900.2  3920.2 }
+DAPEML   24  Hzet    3890.1576  vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 3806.5  3826.5 } { 3900.2  3920.2 }
+DAPEML  25  HeI     3889.749   vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 200. }  { 0 0 1 }  { 6673.0  6703.0 } { 6748.0  6778.0 }
