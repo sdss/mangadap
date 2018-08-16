@@ -2,7 +2,6 @@
 
 import time
 import os
-import time
 import astropy.constants
 from astropy.io import fits
 from mangadap.survey.manga_dap import manga_dap
@@ -30,19 +29,18 @@ def get_obsinput(plt, ifu, drpall_file=None):
 
 def fit_one_cube(plt, ifu, drpall_file=None, directory_path=None, analysis_path=None):
     # Grab the required input parameters
-    obs = get_obsinput(plt, ifu, drpall_file=drpall_file)
+    obs = get_obsinput(plt, ifu, drpall_file='./data/drpall-v2_4_3.fits')
 
     # Define how you want to analyze the data
     plan = AnalysisPlanSet([ AnalysisPlan(drpqa_key='SNRG',
-                                          bin_key='HYB10',
+                                          bin_key='VOR10',
                                           continuum_key='GAU-MILESHC',
                                           elmom_key='EMOMM',
-                                          elfit_key='EFITMDB',
+                                          elfit_key='EFITM-MIUSCATTHIN',
                                           spindex_key='INDXEN') ])
 
     # Run it!
-    return manga_dap(obs, plan, verbose=2, directory_path=directory_path,
-                     analysis_path=analysis_path)
+    return manga_dap(obs, plan, verbose=2, directory_path='./data', analysis_path='./output')
 
 
 #-----------------------------------------------------------------------------

@@ -107,6 +107,7 @@ from .util.log import log_output
 from .util.fileio import channel_dictionary
 from .util.exception_tools import print_frame
 from .util.geometry import SemiMajorAxisCoo
+from .util.covariance import Covariance
 from .par.obsinput import ObsInputPar
 from .config.defaults import default_drp_version, dap_source_dir, default_dap_version
 from .config.defaults import default_dap_par_file, default_analysis_path
@@ -2325,6 +2326,10 @@ def add_snr_metrics_to_header(hdr, drpf, r_re, dapsrc=None):
             hdr[key_med[i]] = (0., com_med[i])
             hdr[key_ring[i]] = (0., com_ring[i])
             continue
+
+        if covar is None:
+            warnings.warn('Covariance not available!  Continuing without it.')
+            covar = Covariance.from_variance(variance, correlation=True)
             
         # Get the appropriate covariance pixels to select
         ci, cj = map( lambda x: x.ravel(), numpy.meshgrid(indx, indx) )
