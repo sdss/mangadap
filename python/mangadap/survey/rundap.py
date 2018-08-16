@@ -1433,7 +1433,7 @@ class rundap:
 #        output_path = default_dap_common_path(plate=plate, ifudesign=ifudesign,
 #                                              drpver=self.mpl.drpver, dapver=self.dapver,
 #                                              analysis_path=self.analysis_path)
-#        dap_source = default_dap_source()
+#        dap_source = dap_source_dir()
 
         # Set the root path for the scripts, inputs, outputs, and logs
         _calling_path = os.path.join(self.calling_path, str(plate), str(ifudesign))

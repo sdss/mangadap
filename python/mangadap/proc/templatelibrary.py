@@ -65,7 +65,7 @@ bitmasks for the template library spectra.
 
         from ..util.bitmask import BitMask
         from ..par.parset import ParSet
-        from ..config.defaults import default_dap_source, default_dap_common_path
+        from ..config.defaults import dap_source_dir, default_dap_common_path
         from ..config.defaults import default_dap_file_name
         from ..util.log import log_output
         from ..util.fileio import readfits_1dspec, read_template_spectrum, writefits_1dspec
@@ -134,11 +134,11 @@ bitmasks for the template library spectra.
         # Imports
         from mangadap.proc.templatelibrary import TemplateLibraryDef
         from mangadap.proc.templatelibrary import TemplateLibrary
-        from mangadap.config.defaults import default_dap_source
+        from mangadap.config.defaults import dap_source_dir
         from matplotlib import pyplot
 
         # Define the search string for the library
-        search_str = default_dap_source()+'/data/stellar_templates/miles/*.fits'
+        search_str = dap_source_dir()+'/data/stellar_templates/miles/*.fits'
 
         # Define the template library parameters
         tpl_par = TemplateLibraryDef(key='MILES',    # Unique keyword for the library
@@ -233,7 +233,7 @@ import astropy.constants
 from pydl.goddard.astro import airtovac
 
 from ..par.parset import ParSet
-from ..config.defaults import default_dap_source, default_dap_common_path
+from ..config.defaults import dap_source_dir, default_dap_common_path
 from ..config.defaults import default_dap_file_name
 from ..util.bitmask import BitMask
 from ..util.log import log_output
@@ -354,7 +354,7 @@ def available_template_libraries(dapsrc=None):
     Args:
         dapsrc (str): (**Optional**) Root path to the DAP source
             directory.  If not provided, the default is defined by
-            :func:`mangadap.config.defaults.default_dap_source`.
+            :func:`mangadap.config.defaults.dap_source_dir`.
 
     Returns:
         list: A list of
@@ -378,7 +378,7 @@ def available_template_libraries(dapsrc=None):
         
     """
     # Check the source directory exists
-    dapsrc = default_dap_source() if dapsrc is None else str(dapsrc)
+    dapsrc = dap_source_dir() if dapsrc is None else str(dapsrc)
     if not os.path.isdir(dapsrc):
         raise NotADirectoryError('{0} does not exist!'.format(dapsrc))
 
@@ -435,7 +435,7 @@ class TemplateLibraryBitMask(BitMask):
 
     """
     def __init__(self, dapsrc=None):
-        dapsrc = default_dap_source() if dapsrc is None else str(dapsrc)
+        dapsrc = dap_source_dir() if dapsrc is None else str(dapsrc)
         BitMask.__init__(self, ini_file=os.path.join(dapsrc, 'python', 'mangadap', 'config',
                                                      'bitmasks', 'spectral_template_bits.ini'))
 
@@ -492,7 +492,7 @@ class TemplateLibrary:
             in this list.
         dapsrc (str): (**Optional**) Root path to the DAP source
             directory.  If not provided, the default is defined by
-            :func:`mangadap.config.defaults.default_dap_source`.
+            :func:`mangadap.config.defaults.dap_source_dir`.
         drpf (:class:`mangadap.drpfits.DRPFits`): (**Optional**) DRP
             file (object) with which the template library is associated
             for analysis
@@ -694,7 +694,7 @@ class TemplateLibrary:
                 interpret a template library.
             dapsrc (str): (**Optional**) Root path to the DAP source
                 directory.  If not provided, the default is defined by
-                :func:`mangadap.config.defaults.default_dap_source`.
+                :func:`mangadap.config.defaults.dap_source_dir`.
         """
         # Get the details of the selected template library
         self.library = select_proc_method(library_key, TemplateLibraryDef, method_list=tpllib_list,
@@ -1292,7 +1292,7 @@ class TemplateLibrary:
                 interpret a template library.
             dapsrc (str): (**Optional**) Root path to the DAP source
                 directory.  If not provided, the default is defined by
-                :func:`mangadap.config.defaults.default_dap_source`.
+                :func:`mangadap.config.defaults.dap_source_dir`.
 
         """
         if library_key is not None:
@@ -1354,7 +1354,7 @@ class TemplateLibrary:
                 *library_key* is None.
             dapsrc (str): (**Optional**) Root path to the DAP source
                 directory.  If not provided, the default is defined by
-                :func:`mangadap.config.defaults.default_dap_source`.
+                :func:`mangadap.config.defaults.dap_source_dir`.
                 Input ignored if *library_key* is None.
             drpf (:class:`mangadap.drpfits.DRPFits`): (**Optional**) DRP
                 file (object) with which the template library is

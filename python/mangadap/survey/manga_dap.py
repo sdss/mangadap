@@ -159,7 +159,7 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
             :func:`mangadap.config.defaults.default_dap_version`.
         dapsrc (str): (**Optional**) Source directory of the DAP.
             Default determined by
-            :func:`mangadap.config.defaults.default_dap_source`.
+            :func:`mangadap.config.defaults.dap_source_dir`.
         analysis_path (str) : (**Optional**) Top-level directory for the DAP
             output data; default is defined by
             :func:`mangadap.config.defaults.default_analysis_path`.

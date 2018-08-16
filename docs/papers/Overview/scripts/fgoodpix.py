@@ -98,7 +98,7 @@ if __name__ == '__main__':
     ax.text(-0.06, 0.05, r'7495-12704', horizontalalignment='center', verticalalignment='bottom',
             transform=ax.transAxes, rotation='vertical')
     
-    ofile='good_spaxel_growth.pdf'
+    ofile='../ms/figs/good_spaxel_growth.pdf'
 #    ofile=None
     if ofile is None:
         pyplot.show()

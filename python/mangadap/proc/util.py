@@ -106,7 +106,7 @@ def select_proc_method(method_key, method_type, method_list=None, available_func
             :func:`mangadap.proc.templatelibrary.available_template_libraries`.
         dapsrc (str): (**Optional**) Root path to the DAP source
             directory.  If not provided, the default is defined by
-            :func:`mangadap.config.defaults.default_dap_source`.
+            :func:`mangadap.config.defaults.dap_source_dir`.
 
     Returns:
         object: An object with base class :class:`mangadap.par.ParSet`,

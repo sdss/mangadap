@@ -42,7 +42,7 @@ A class hierarchy that performs the stellar-continuum fitting.
         from ..util.bitmask import BitMask
         from ..util.pixelmask import SpectralPixelMask
         from ..util.parser import DefaultConfig
-        from ..config.defaults import default_dap_source, default_dap_file_name
+        from ..config.defaults import dap_source_dir, default_dap_file_name
         from ..config.defaults import default_dap_method, default_dap_method_path
         from .spatiallybinnedspectra import SpatiallyBinnedSpectra
         from .templatelibrary import TemplateLibrary
@@ -108,7 +108,7 @@ from ..util.instrument import spectral_coordinate_step, spectrum_velocity_scale,
 from ..util.bitmask import BitMask
 from ..util.pixelmask import SpectralPixelMask
 from ..util.parser import DefaultConfig
-from ..config.defaults import default_dap_source, default_dap_file_name
+from ..config.defaults import dap_source_dir, default_dap_file_name
 from ..config.defaults import default_dap_method, default_dap_method_path
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .templatelibrary import TemplateLibrary
@@ -213,7 +213,7 @@ def available_stellar_continuum_modeling_methods(dapsrc=None):
     Args:
         dapsrc (str): (**Optional**) Root path to the DAP source
             directory.  If not provided, the default is defined by
-            :func:`mangadap.config.defaults.default_dap_source`.
+            :func:`mangadap.config.defaults.dap_source_dir`.
 
     Returns:
         list: A list of
@@ -236,7 +236,7 @@ def available_stellar_continuum_modeling_methods(dapsrc=None):
         
     """
     # Check the source directory exists
-    dapsrc = default_dap_source() if dapsrc is None else str(dapsrc)
+    dapsrc = dap_source_dir() if dapsrc is None else str(dapsrc)
     if not os.path.isdir(dapsrc):
         raise NotADirectoryError('{0} does not exist!'.format(dapsrc))
 
@@ -315,7 +315,7 @@ class StellarContinuumModelBitMask(BitMask):
 
     """
     def __init__(self, dapsrc=None):
-        dapsrc = default_dap_source() if dapsrc is None else str(dapsrc)
+        dapsrc = dap_source_dir() if dapsrc is None else str(dapsrc)
         BitMask.__init__(self, ini_file=os.path.join(dapsrc, 'python', 'mangadap', 'config',
                                                      'bitmasks',
                                                      'stellar_continuum_model_bits.ini'))
@@ -345,7 +345,7 @@ class StellarContinuumModel:
             :func:`available_stellar_continuum_modeling_methods`.
         dapsrc (str): (**Optional**) Root path to the DAP source
             directory.  If not provided, the default is defined by
-            :func:`mangadap.config.defaults.default_dap_source`.
+            :func:`mangadap.config.defaults.dap_source_dir`.
         dapver (str): (**Optional**) The DAP version to use for the
             analysis, used to override the default defined by
             :func:`mangadap.config.defaults.default_dap_version`.
@@ -864,7 +864,7 @@ class StellarContinuumModel:
                 dispersion in km/s.  Default is 100 km/s.
             dapsrc (str): (**Optional**) Root path to the DAP source
                 directory.  If not provided, the default is defined by
-                :func:`mangadap.config.defaults.default_dap_source`.
+                :func:`mangadap.config.defaults.dap_source_dir`.
             dapver (str): (**Optional**) The DAP version to use for the
                 analysis, used to override the default defined by
                 :func:`mangadap.config.defaults.default_dap_version`.
