@@ -3,6 +3,4 @@ python/mangadap/*.__pycache__
 .*swp
 .DS_Store
 */.ipynb_checkpoints/
-*.png
-*.fits
 
