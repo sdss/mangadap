@@ -69,6 +69,8 @@ def run_setup(data_files, scripts, packages, install_requires):
           include_package_data=True,
           install_requires=install_requires,
           scripts=scripts,
+          setup_requires=[ 'pytest-runner' ],
+          tests_require=[ 'pytest' ],
           classifiers=[
               'Development Status :: 4 - Beta',
               'Intended Audience :: Science/Research',
