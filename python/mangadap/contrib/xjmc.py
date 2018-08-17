@@ -419,7 +419,7 @@ def _reorder_solution(ppsol, pperr, component_map, moments, start=None, fill_val
     new_start = []
     new_error = []
     for i in range(ncomp):
-        indx = [component_map == i]
+        indx = component_map == i
         if np.sum(indx) == 0:
             new_start += ([[fill_value]*abs(moments[i])] if start is None else [start[i]])
             new_error += [[fill_value]*abs(moments[i])]
