@@ -1,9 +1,3 @@
-# WARNINGS
-
-Only comments, bugs, and installation improvements should be changed for
-this branch!  Any code development should happen on the `develop`
-branch.
-
 # The MaNGA Data Analysis Pipeline
 
 The MaNGA data-analysis pipeline (MaNGA DAP) is the survey-led software
@@ -28,6 +22,26 @@ properties, such as stellar-population parameters, will be included in
 future releases on a best-effort basis. 
 
 ## Installation
+
+To install, export the code from git (although note that this **will not include the documentation submodules**; see [Cloning the full repo](#cloning-the-full-repo) below):
+
+`git clone https://github.com/sdss/mangadap.git`
+
+Then run the `setup.py` file to install it.
+
+`python3 setup.py install`
+
+Or
+
+`python3 setup.py develop`
+
+for development purposes.
+
+You can also test the installation using
+
+`python3 setup.py test`
+
+Although the tests are severely lacking so far.
 
 ## Usage
 
