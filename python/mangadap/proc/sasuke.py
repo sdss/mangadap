@@ -2175,7 +2175,7 @@ class Sasuke(EmissionLineFit):
 
         # Find the minimum instrumental dispersion over the fitted
         # wavelength range
-        indx = (tpl_wave_red  > self.obj_wave[0]) & (tpl_wave_red < self.obj_wave[-1]))
+        indx = (tpl_wave_obs  > self.obj_wave[0]) & (tpl_wave_obs < self.obj_wave[-1])
         min_sinst = numpy.amin(etpl_sinst[indx])
 
         if (etpl_sinst_mode == 'offset' and min_sinst > _etpl_sinst_min) \
