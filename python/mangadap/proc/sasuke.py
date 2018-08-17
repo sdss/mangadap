@@ -2202,7 +2202,7 @@ class Sasuke(EmissionLineFit):
 
         #---------------------------------------------------------------
         # Build the emission-line templates; the EmissionLineTemplates
-        # object will check the databaseq
+        # object will check the database
         self.emldb = emission_lines
         self.neml = self.emldb.neml
         etpl = EmissionLineTemplates(self.tpl_wave, etpl_sinst, emldb=self.emldb,
