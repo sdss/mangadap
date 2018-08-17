@@ -34,7 +34,7 @@ class used by :class:`mangadap.par.artifactdb.ArtifactDB`,
         import numpy
 
         from .parset import ParSet
-        from ..config.defaults import default_dap_source
+        from ..config.defaults import dap_source_dir
         from ..util.parser import DefaultConfig
 
 *Class usage examples*:
@@ -62,7 +62,7 @@ import glob
 import numpy
 
 from .parset import ParSet
-from ..config.defaults import default_dap_source
+from ..config.defaults import dap_source_dir
 from ..util.parser import DefaultConfig
 
 # Add strict versioning
@@ -114,7 +114,7 @@ def available_spectral_feature_databases(sub_directory, dapsrc=None):
     Args:
         dapsrc (str): (Optional) Root path to the DAP source
             directory.  If not provided, the default is defined by
-            :func:`mangadap.config.defaults.default_dap_source`.
+            :func:`mangadap.config.defaults.dap_source_dir`.
 
     Returns:
         list: An list of :class:`SpectralFeatureDBDef` objects.
@@ -133,7 +133,7 @@ def available_spectral_feature_databases(sub_directory, dapsrc=None):
         - Add backup function for Python 2.
     """
     # Check the source directory exists
-    dapsrc = default_dap_source() if dapsrc is None else str(dapsrc)
+    dapsrc = dap_source_dir() if dapsrc is None else str(dapsrc)
     if not os.path.isdir(dapsrc):
         raise NotADirectoryError('{0} does not exist!'.format(dapsrc))
 

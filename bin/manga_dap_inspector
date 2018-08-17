@@ -17,7 +17,7 @@ from mangadap.par.analysisplan import AnalysisPlanSet
 from mangadap.util.bitmask import BitMask
 from mangadap.drpfits import DRPFits
 from mangadap.config.defaults import default_dap_method, default_dap_method_path
-from mangadap.config.defaults import default_dap_file_name, default_idlutils_dir
+from mangadap.config.defaults import default_dap_file_name, sdss_maskbits_file
 
 #-----------------------------------------------------------------------
 # Slider class
@@ -430,9 +430,8 @@ class MaNGATargetBitMask(BitMask):
     Structure with the DRP mask bits.
     """
     def __init__(self, sdss_maskbits=None, trgt='MANGA_TARGET1'):
-        sdss_maskbits = os.path.join(default_idlutils_dir(), 'data', 'sdss', 'sdssMaskbits.par') \
-                        if sdss_maskbits is None else sdss_maskbits
-        BitMask.__init__(self, par_file=sdss_maskbits, par_grp=trgt)
+        _sdss_maskbits = sdss_maskbits_file() if sdss_maskbits is None else sdss_maskbits
+        BitMask.__init__(self, par_file=_sdss_maskbits, par_grp=trgt)
 
 
 def channel_bitmask():

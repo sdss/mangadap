@@ -117,9 +117,9 @@ class DAPFitsUtil:
     @staticmethod
     def clean_dap_primary_header(hdr):
         # Remove some keys that are incorrect for DAP data
-        hdr.remove('BSCALE')
-        hdr.remove('BZERO')
-        hdr.remove('BUNIT')
+        hdr.remove('BSCALE', ignore_missing=True)
+        hdr.remove('BZERO', ignore_missing=True)
+        hdr.remove('BUNIT', ignore_missing=True)
         return hdr
 
 
@@ -585,7 +585,7 @@ class DAPFitsUtil:
     @staticmethod
     def unique_bins(bin_indx, return_index=False):
         """
-        Get the unique bins andthe indices of the unique bins in the
+        Get the unique bins and the indices of the unique bins in the
         flattened spatial dimension, ignoring the bins with indices of
         -1.
         """

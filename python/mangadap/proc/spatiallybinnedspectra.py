@@ -36,7 +36,7 @@ procedures.
         import numpy
 
         from ..par.parset import ParSet
-        from ..config.defaults import default_dap_source, default_dap_common_path
+        from ..config.defaults import dap_source_dir, default_dap_common_path
         from ..config.defaults import default_dap_file_name
         from ..util.geometry import SemiMajorAxisCoo
         from ..util.fileio import init_record_array
@@ -112,7 +112,7 @@ from ..util.covariance import Covariance
 from ..util.geometry import SemiMajorAxisCoo
 from ..util.extinction import GalacticExtinction
 from ..util.log import log_output
-from ..config.defaults import default_dap_source, default_dap_common_path
+from ..config.defaults import dap_source_dir, default_dap_common_path
 from ..config.defaults import default_dap_file_name, default_cube_pixelscale
 from . import spatialbinning
 from .reductionassessments import ReductionAssessment
@@ -267,7 +267,7 @@ def available_spatial_binning_methods(dapsrc=None):
     Args:
         dapsrc (str): (**Optional**) Root path to the DAP source
             directory.  If not provided, the default is defined by
-            :func:`mangadap.config.defaults.default_dap_source`.
+            :func:`mangadap.config.defaults.dap_source_dir`.
 
     Returns:
         list: A list of
@@ -290,7 +290,7 @@ def available_spatial_binning_methods(dapsrc=None):
         
     """
     # Check the source directory exists
-    dapsrc = default_dap_source() if dapsrc is None else str(dapsrc)
+    dapsrc = dap_source_dir() if dapsrc is None else str(dapsrc)
     if not os.path.isdir(dapsrc):
         raise NotADirectoryError('{0} does not exist!'.format(dapsrc))
 
@@ -375,7 +375,7 @@ class SpatiallyBinnedSpectraBitMask(BitMask):
 
     """
     def __init__(self, dapsrc=None):
-        dapsrc = default_dap_source() if dapsrc is None else str(dapsrc)
+        dapsrc = dap_source_dir() if dapsrc is None else str(dapsrc)
         BitMask.__init__(self, ini_file=os.path.join(dapsrc, 'python', 'mangadap', 'config',
                                                      'bitmasks',
                                                      'spatially_binned_spectra_bits.ini'))
@@ -402,7 +402,7 @@ class SpatiallyBinnedSpectra:
             :func:`available_spatial_binning_methods`.
         dapsrc (str): (**Optional**) Root path to the DAP source
             directory.  If not provided, the default is defined by
-            :func:`mangadap.config.defaults.default_dap_source`.
+            :func:`mangadap.config.defaults.dap_source_dir`.
         dapver (str): (**Optional**) The DAP version to use for the
             analysis, used to override the default defined by
             :func:`mangadap.config.defaults.default_dap_version`.
@@ -1126,8 +1126,8 @@ class SpatiallyBinnedSpectra:
         return self.method['binpar'] is None and self.method['binclass'] is None \
                     and self.method['binfunc'] is None
 
-
-    def do_not_fit_flags(self):
+    @staticmethod
+    def do_not_fit_flags():
         return ['DIDNOTUSE', 'FORESTAR', 'LOW_SPECCOV', 'LOW_SNR', 'NONE_IN_STACK']
 
 
@@ -1243,6 +1243,12 @@ class SpatiallyBinnedSpectra:
             if not self.quiet:
                 warnings.warn('DRP file previously unopened.  Reading now.')
             drpf.open_hdu()
+
+        # Test if the RSS file exists; cannot compute covariance if not
+        # TODO: this will break for a different stacking class
+        if self.method['stackpar']['covar_mode'] is not 'none' and not drpf.can_compute_covariance:
+            warnings.warn('Cannot determine covariance matrix!  Continuing without!')
+            self.method['stackpar']['covar_mode'] = 'none'
 
         # TODO: How many of these attributes should I keep, vs. just use
         # drpf attributes?

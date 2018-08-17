@@ -61,6 +61,9 @@ resolution effects.
     | **27 Sep 2017**: (KBW) Added `integral` keyword to
         :func:`match_spectral_resolution` so that it can be passed to
         :func:`convolution_variable_sigma`.
+    | **19 Jul 2018**: (KBW) Fixed a bug in
+        :class:`VariableGaussianKernel` when constructing the kernel
+        based on the error function.
 """
 
 from __future__ import division
@@ -105,6 +108,8 @@ def spectral_coordinate_step(wave, log=False, base=10.0):
     """
     dw = numpy.diff(numpy.log(wave))/numpy.log(base) if log else numpy.diff(wave)
     if numpy.any( numpy.absolute(numpy.diff(dw)) > 100*numpy.finfo(dw.dtype).eps):
+#        pyplot.plot(dw[:-1], numpy.absolute(numpy.diff(dw)))
+#        pyplot.show()
         raise ValueError('Wavelength vector is not uniformly sampled to numerical accuracy.')
     return numpy.mean(dw)
 
@@ -317,16 +322,16 @@ class VariableGaussianKernel:
         self.sigma = sigma.clip(min=minsig)                     # Force sigmas to minimum 
         self.p = int(numpy.ceil(numpy.amax(nsig*self.sigma)))   # Kernel covers up to nsig*sigma
         self.m = 2*self.p + 1                                   # Kernel length
-        x2 = numpy.square(numpy.linspace(-self.p, self.p, self.m))   # X^2 for kernel
+        x = numpy.linspace(-self.p, self.p, self.m)             # X^2 for kernel
+        x2 = numpy.square(x)
 
         # Kernel will have size m x n
-#        print('division by zero?')
-        self.kernel = (erf((x2[:,None]+0.5)/numpy.sqrt(2)/self.sigma) 
-                            - erf((x2[:,None]-0.5)/numpy.sqrt(2)/self.sigma))/2. if integral else \
-                      numpy.exp(-x2[:, None]/(2*numpy.square(self.sigma)))
+        self.kernel = (erf((x[:,None]+0.5)/numpy.sqrt(2)/self.sigma) 
+                            - erf((x[:,None]-0.5)/numpy.sqrt(2)/self.sigma))/2. if integral else \
+                      numpy.exp(-x2[:, None]/(2*numpy.square(self.sigma))) \
+                                / numpy.sqrt(2*numpy.pi) / self.sigma
 
         self.kernel /= numpy.sum(self.kernel, axis=0)[None, :]       # Normalize kernel
-#        print('division by zero...')
 
 
     def _check_shape(self, y, ye=None):
@@ -1074,7 +1079,6 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
     # Get the kernel parameters necessary to match all spectra to the
     # new resolution
     if nsres == 1 and sres_dim == 1:
-#        print('one')
         res[0] = SpectralResolution(wave, sres, log10=log10)
         res[0].match(new_res, no_offset=no_offset, min_sig_pix=min_sig_pix)
         sigma_offset[0] = res[0].sig_vo
@@ -1083,7 +1087,6 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
 #        pyplot.plot(wave, res[0].sig_pd)
 #        pyplot.show()
     else:
-#        print('multiple')
         for i in range(0,nsres):
             _wave = wave[i,:].ravel() if wave_matrix else wave
             _sres = sres[i,:].ravel() if sres_matrix else sres
@@ -1111,18 +1114,21 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
 
 #    print('test div by zero')
     if nspec == 1 and spec_dim == 1:
-#        indx = numpy.where(res[0].sig_pd > min_sig_pix)
+        sig_kernel = res[0].sig_pd.copy()
+        sig_kernel[sig_kernel < min_sig_pix] = 0.0
         indx = res[0].sig_pd > min_sig_pix
-#        print(len(indx), numpy.sum(indx))
         try:
             if ivar is None:
-                out_flux[indx] = convolution_variable_sigma(flux[indx], res[0].sig_pd[indx],
-                                                            integral=integral)
+                out_flux[indx] = convolution_variable_sigma(flux, sig_kernel,
+                                                            integral=integral)[indx]
             else:
-                out_flux[indx], out_ivar[indx] \
-                        = convolution_variable_sigma(flux[indx], res[0].sig_pd[indx],
-                                                     ye=None if ivar is None else noise[indx],
-                                                     integral=integral)
+                oflux, oivar = convolution_variable_sigma(flux, sig_kernel,
+                                                          ye=None if ivar is None else noise[indx],
+                                                          integral=integral)
+
+                out_flux[indx] = oflux[indx]
+                out_ivar[indx] = oivar[indx]
+                del oflux, oivar
             out_sres[indx] = res[0].adjusted_resolution(indx=indx)
             out_mask = numpy.array((res[0].sig_mask == 1) | (mask == 1)).astype(numpy.uint)
         except ValueError as e:
@@ -1135,17 +1141,20 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
                 print('Matching resolution: {0}/{1}'.format(i+1,nspec), end='\r')
             try:
 #                indx = numpy.where(res[i].sig_pd > min_sig_pix)
+                sig_kernel = res[i].sig_pd.copy()
+                sig_kernel[sig_kernel < min_sig_pix] = 0.0
                 indx = res[i].sig_pd > min_sig_pix
                 if ivar is None:
-                    out_flux[i,indx] = convolution_variable_sigma(flux[i,indx].ravel(),
-                                                                  res[i].sig_pd[indx],
-                                                                  integral=integral)
+                    out_flux[i,indx] = convolution_variable_sigma(flux[i,:], sig_kernel,
+                                                                  integral=integral)[indx]
                 else:
-                    out_flux[i,indx], out_ivar[i,indx] \
-                            = convolution_variable_sigma(flux[i,indx].ravel(), res[i].sig_pd[indx],
-                                                         ye=None if ivar is None else
-                                                            noise[i,indx].ravel(),
-                                                         integral=integral)
+                    oflux, oivar = convolution_variable_sigma(flux[i,:], sig_kernel,
+                                                              ye=None if ivar is None 
+                                                                    else noise[i,:].ravel(),
+                                                              integral=integral)
+                    out_flux[i,indx] = oflux[indx]
+                    out_ivar[i,indx] = oivar[indx]
+                    del oflux, oivar
                 out_mask[i,:] = numpy.array((res[i].sig_mask == 1) \
                                         | (_mask[i,:] == 1)).astype(numpy.uint)
                 if len(out_sres.shape) == 1 and i == 0:

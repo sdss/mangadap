@@ -118,6 +118,10 @@ the MaNGA Data Reduction Pipeline (DRP).
       create CUBE related data, like the covariance matrix and
       instrumental dispersion calculations.
 
+    - Computing the approximate covariance cube is currently not
+      possible with only the CUBE on disk.  There's a logic problem that
+      needs to be fixed.
+
 .. _astropy.io.fits: http://docs.astropy.org/en/stable/io/fits/index.html
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _astropy.wcs.wcs.WCS: http://docs.astropy.org/en/v1.0.2/api/astropy.wcs.WCS.html
@@ -161,7 +165,8 @@ from .util.covariance import Covariance
 from .util.pixelmask import SpectralPixelMask
 from .util.filter import interpolate_masked_vector
 from .util.instrument import spectral_coordinate_step
-from .config.defaults import default_idlutils_dir, default_drp_version
+#from .config.defaults import default_idlutils_dir
+from .config.defaults import sdss_maskbits_file, default_drp_version
 from .config.defaults import default_redux_path, default_drp_directory_path
 from .config.defaults import default_cube_pixelscale, default_cube_width_buffer
 from .config.defaults import default_cube_recenter, default_regrid_rlim
@@ -283,8 +288,7 @@ class DRPFitsBitMask(BitMask):
     """
     def __init__(self, sdss_maskbits=None, mode='CUBE'):
         DRPFits.check_mode(mode)
-        sdss_maskbits = os.path.join(default_idlutils_dir(), 'data', 'sdss', 'sdssMaskbits.par') \
-                        if sdss_maskbits is None else sdss_maskbits
+        sdss_maskbits = sdss_maskbits_file()
         BitMask.__init__(self, par_file=sdss_maskbits, par_grp='MANGA_DRP3PIXMASK' \
                                                         if mode == 'CUBE' else 'MANGA_DRP2PIXMASK')
 
@@ -294,8 +298,7 @@ class DRPQuality3DBitMask(BitMask):
     Structure with the definition of the DRP3QUAL mask bits.
     """
     def __init__(self, sdss_maskbits=None):
-        sdss_maskbits = os.path.join(default_idlutils_dir(), 'data', 'sdss', 'sdssMaskbits.par') \
-                        if sdss_maskbits is None else sdss_maskbits
+        sdss_maskbits = sdss_maskbits_file()
         BitMask.__init__(self, par_file=sdss_maskbits, par_grp='MANGA_DRP3QUAL')
 
 
@@ -510,6 +513,7 @@ class DRPFits:
         # Setup the variables for the internal data structure
         self.hdu = None                 # Do not automatically read the data
         self.ext = None                 # Extensions
+        self.sres_ext = None            # Spectral resolution extensions
         self.checksum = checksum        # Check the file for corruption
         self.wcs = None                 # WCS structure
         self.shape = None               # Shape of the data array
@@ -1001,6 +1005,18 @@ class DRPFits:
         self.spatial_index[:] = [ (ii,jj) for ii, jj in zip(i,j) ]
 
 
+    def _spectral_resolution_extension(self, ext=None, pre=False):
+        """
+        Determine the spectral resolution channel to use.
+        """
+        _ext = ext
+        if ext is None:
+            _ext = 'PREDISP' if pre else 'DISP'
+            if _ext not in self.sres_ext:
+                _ext = 'PRESPECRES' if pre else 'SPECRES'
+        return None if _ext not in self.sres_ext else _ext
+
+
     @staticmethod
     def mode_options():
         """
@@ -1124,6 +1140,8 @@ class DRPFits:
         # image arrays.  Can I expedite this somehow?
         self.hdu = DAPFitsUtil.read(inp, permissions='readonly', checksum=checksum)
         self.ext = [ h.name for h in self.hdu ]
+        self.sres_ext = [ h.name for h in self.hdu
+                            if h.name in [ 'PREDISP', 'DISP', 'PRESPECRES', 'SPECRES' ] ]
         self._set_spectral_arrays()
 
 #        # Reformat and initialize properties of the data
@@ -1356,17 +1374,27 @@ class DRPFits:
         """
         # Make sure the fits file has been opened
         self.open_hdu(checksum=self.checksum)
-        # Check the selected base extension exists
-        if ext in ['DISP','SPECRES'] and ext not in self.ext:
-            raise ValueError('No extension: {0}'.format(ext))
 
-        # Set the base extension
-        _ext = ('DISP' if 'DISP' in self.ext else 'SPECRES') if ext is None else ext
-        # Add the 'PRE' qualifier if requested and check that it exists
-        if pre:
-            if 'PRE'+_ext not in self.ext:
-                raise ValueError('No {0} extension in DRP file.'.format('PRE'+_ext))
-            _ext = 'PRE'+_ext
+        # Determine which spectral resolution element to use
+        _ext = self._spectral_resolution_extension(ext=ext, pre=pre)
+
+        # If no valid extension, raise an exception
+        if ext is None and _ext is None:
+            raise ValueError('No valid spectral resolution extension.')
+        if ext is not None and _ext is None:
+            raise ValueError('No extension: {0}'.format(ext))
+            
+#        # Check the selected base extension exists
+#        if ext in ['DISP','SPECRES'] and ext not in self.ext:
+#            raise ValueError('No extension: {0}'.format(ext))
+#
+#        # Set the base extension
+#        _ext = ('DISP' if 'DISP' in self.ext else 'SPECRES') if ext is None else ext
+#        # Add the 'PRE' qualifier if requested and check that it exists
+#        if pre:
+#            if 'PRE'+_ext not in self.ext:
+#                raise ValueError('No {0} extension in DRP file.'.format('PRE'+_ext))
+#            _ext = 'PRE'+_ext
 
         # Build the spectral resolution vectors
         sres = None
@@ -2885,6 +2913,15 @@ class DRPFits:
         if self.mode == 'RSS' or not covar:
             return signal, variance, snr, None
 
+        # Test if the RSS file exists
+        if self.mode == 'CUBE' and covar:
+            rss = DRPFits(self.plate, self.ifudesign, 'RSS', drpver=self.drpver,
+                          redux_path=self.redux_path, directory_path=self.directory_path,
+                          read=False)
+            if not os.path.isfile(rss.file_path()):
+                warnings.warn('RSS counterpart not available.  Cannot determine covariance matrix!')
+                return signal, variance, snr, None
+
         # Only calculate the covariance at the central, or input, wavelength
         _covar_wave = covar_wave if covar_wave is not None \
                         else self._covariance_wavelength(waverange=waverange,
@@ -2963,6 +3000,20 @@ class DRPFits:
             warnings.warn('Could not use \'shapely\' package to compute overlapping fiber area.' \
                           'Return the total fiber area.', ImportWarning)
             return (nbin*numpy.pi).astype(float)
+
+
+    @property
+    def can_compute_covariance(self):
+        if self.mode == 'RSS':
+            return True
+       
+        # Try to find the RSS file
+        rss = DRPFits(self.plate, self.ifudesign, 'RSS', drpver=self.drpver,
+                          redux_path=self.redux_path, directory_path=self.directory_path,
+                          read=False)
+        if not os.path.isfile(rss.file_path()):
+            return False
+        return True
         
 
 #   def white_light(self, mask_list=None):

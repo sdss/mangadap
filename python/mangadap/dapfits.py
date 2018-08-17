@@ -40,7 +40,7 @@ the MaNGA Data Analysis Pipeline (DAP).
         from .util.fileio import channel_dictionary
         from .util.exception_tools import print_frame
         from .par.obsinput import ObsInputPar
-        from .config.defaults import default_drp_version, default_dap_source, default_dap_version
+        from .config.defaults import default_drp_version, dap_source_dir, default_dap_version
         from .config.defaults import default_dap_par_file, default_analysis_path
         from .config.defaults import default_dap_method, default_dap_method_path
         from .config.defaults import default_dap_file_name
@@ -107,8 +107,9 @@ from .util.log import log_output
 from .util.fileio import channel_dictionary
 from .util.exception_tools import print_frame
 from .util.geometry import SemiMajorAxisCoo
+from .util.covariance import Covariance
 from .par.obsinput import ObsInputPar
-from .config.defaults import default_drp_version, default_dap_source, default_dap_version
+from .config.defaults import default_drp_version, dap_source_dir, default_dap_version
 from .config.defaults import default_dap_par_file, default_analysis_path
 from .config.defaults import default_dap_method, default_dap_method_path
 from .config.defaults import default_dap_file_name
@@ -128,7 +129,7 @@ class DAPQualityBitMask(BitMask):
         - Force read IDLUTILS version as opposed to internal one?
     """
     def __init__(self, dapsrc=None):
-        _dapsrc = default_dap_source() if dapsrc is None else str(dapsrc)
+        _dapsrc = dap_source_dir() if dapsrc is None else str(dapsrc)
         BitMask.__init__(self, ini_file=os.path.join(_dapsrc, 'python', 'mangadap', 'config',
                                                      'bitmasks', 'dap_quality_bits.ini'))
 
@@ -139,7 +140,7 @@ class DAPMapsBitMask(BitMask):
         - Force read IDLUTILS version as opposed to internal one?
     """
     def __init__(self, dapsrc=None):
-        _dapsrc = default_dap_source() if dapsrc is None else str(dapsrc)
+        _dapsrc = dap_source_dir() if dapsrc is None else str(dapsrc)
         BitMask.__init__(self, ini_file=os.path.join(_dapsrc, 'python', 'mangadap', 'config',
                                                      'bitmasks', 'dap_maps_bits.ini'))
 
@@ -150,7 +151,7 @@ class DAPCubeBitMask(BitMask):
         - Force read IDLUTILS version as opposed to internal one?
     """
     def __init__(self, dapsrc=None):
-        _dapsrc = default_dap_source() if dapsrc is None else str(dapsrc)
+        _dapsrc = dap_source_dir() if dapsrc is None else str(dapsrc)
         BitMask.__init__(self, ini_file=os.path.join(_dapsrc, 'python', 'mangadap', 'config',
                                                      'bitmasks', 'dap_cube_bits.ini'))
 
@@ -959,7 +960,7 @@ class construct_maps_file:
 
         MAIN_INCOMP, BLUE_INCOMP, RED_INCOMP propagated to UNRELIABLE
 
-        NO_ABSORPTION_CORRECTION propaged to NOCORRECTION
+        NO_ABSORPTION_CORRECTION propagated to NOCORRECTION
 
         DIVBYZERO propagated to MATHERROR
 
@@ -2292,7 +2293,7 @@ def add_snr_metrics_to_header(hdr, drpf, r_re, dapsrc=None):
         FileNotFoundError: Raised if any of the response function files
             cannot be found.
     """
-    _dapsrc = default_dap_source() if dapsrc is None else str(dapsrc)
+    _dapsrc = dap_source_dir() if dapsrc is None else str(dapsrc)
     filter_response_file = [ os.path.join(_dapsrc, 'data', 'filter_response',
                                            f) for f in [ 'gunn_2001_g_response.db',
                                                          'gunn_2001_r_response.db',
@@ -2325,6 +2326,10 @@ def add_snr_metrics_to_header(hdr, drpf, r_re, dapsrc=None):
             hdr[key_med[i]] = (0., com_med[i])
             hdr[key_ring[i]] = (0., com_ring[i])
             continue
+
+        if covar is None:
+            warnings.warn('Covariance not available!  Continuing without it.')
+            covar = Covariance.from_variance(variance, correlation=True)
             
         # Get the appropriate covariance pixels to select
         ci, cj = map( lambda x: x.ravel(), numpy.meshgrid(indx, indx) )
@@ -2332,7 +2337,8 @@ def add_snr_metrics_to_header(hdr, drpf, r_re, dapsrc=None):
         # Use the covariance matrix from the single wavelength channel
         # calculation, but renormalize it to the mean variance over the
         # response function
-        covar = covar.apply_new_variance(variance).toarray()
+        covar = numpy.identity(len(variance), dtype=float) if covar is None \
+                        else covar.apply_new_variance(variance).toarray()
         # Set the median S/N ...
         hdr[key_med[i]] = (numpy.ma.median(snr[indx]), com_med[i])
         # ... and the combined S/N

@@ -46,6 +46,8 @@ if sys.version > '3':
 import logging
 import warnings
 
+# TODO: Move much of this to __init__ ?
+
 def init_DAP_logging(log, simple_warnings=True, append=False):
     """
     Initialize the logging preferences for the DAP.

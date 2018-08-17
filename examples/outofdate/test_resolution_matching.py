@@ -9,13 +9,13 @@ from time import clock
 
 #from mangadap.util.instrument import spectral_resolution, convolution_variable_sigma
 from mangadap.util.instrument import match_spectral_resolution
-from mangadap.util.constants import constants
+from mangadap.util.constants import DAPConstants
 from matplotlib import pyplot
 
 def run_test():
 
-    # Define some constants
-    cnst = constants()
+#    # Define some constants
+#    cnst = constants()
 
     #-------------------------------------------------------------------
     # Build a fake spectrum
@@ -24,7 +24,7 @@ def run_test():
     # Set the resolution to 2.5 angstroms
     fwhm = numpy.zeros(wave.shape, dtype=numpy.float64)
     fwhm += 2.5
-    sigma = fwhm/cnst.sig2fwhm
+    sigma = fwhm/DAPConstants.sig2fwhm
     sres = wave/fwhm
 
     # Set the flux to a set of uniform emission lines
@@ -41,7 +41,7 @@ def run_test():
     new_sres = sres/3.0 + 2.0*sres[0]/3.0 + 300
     new_sres = sres-sres+900
     new_fwhm = wave/new_sres
-    new_sigma = new_fwhm/cnst.sig2fwhm
+    new_sigma = new_fwhm/DAPConstants.sig2fwhm
 
     # Set the flux to a set of uniform emission lines
     expected_flux = numpy.zeros(wave.shape, dtype=numpy.float64)
@@ -91,7 +91,7 @@ def run_test():
 
 
     # Match the resolution
-    new_flux, matched_sres, sigma_offset, new_mask = \
+    new_flux, matched_sres, sigma_offset, new_mask, _ = \
         match_spectral_resolution(wave, flux, sres, wave, new_sres, min_sig_pix=0.0)
 
     # Overplot the old and new spectrum
@@ -101,7 +101,7 @@ def run_test():
 
     pyplot.plot(wave, flux)
     pyplot.plot(wave, new_flux, 'g')
-    pyplot.plot(wave, expected_flux, 'r')
+    pyplot.plot(wave, expected_flux, 'r', lw=0.5)
     pyplot.show()
 
     pyplot.plot(wave, sres)

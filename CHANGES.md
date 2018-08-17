@@ -1,6 +1,7 @@
-2.2.1dev
+2.2.3dev
 --------
- - Code migrated from SVN to GitHub
+ - Put in default paths when environmental variables not defined and
+   warn user, both when running setup.py and when importing mangadap
 
 TODO:
  - Documentation of config examples are out of date!
@@ -10,13 +11,16 @@ TODO:
  - Add DAP versioning to reference files
  - Fix ELMREBIN in 2nd round of moment calculations
 
+2.2.2 (Not released):
+---------------------
+ - Code migrated from SVN to GitHub
+
 2.2.1 (28 Mar 2018): MPL-7/DR15 Candidate tag
 ---------------------------------------------
  - Add DAPFRMT and DAPTYPE header keywords to MAPS and LOGCUBE files.
 
 2.2   (23 Mar 2018): Initial tag for DR15
 -----------------------------------------
-
  - Fixed NaN problems in DAPall file
  - Emission-lines moments are remeasured after the emission-line model
    fitting to account for the adjustments made to the continuum during

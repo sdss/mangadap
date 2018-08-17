@@ -284,7 +284,10 @@ class MaNGAMPL:
             accessver_env = os.environ['SDSS_ACCESS_DIR'].split('/')[-1]
         except KeyError:
             accessver_env = None
-        idlver_env = os.environ['IDLUTILS_DIR'].split('/')[-1]
+        try:
+            idlver_env = os.environ['IDLUTILS_DIR'].split('/')[-1]
+        except KeyError:
+            idlver_env = None
         python_ver = '.'.join([ str(v) for v in sys.version_info[:3]])
 
         return [ accessver_env, idlver_env, os.environ['MANGACORE_VER'],

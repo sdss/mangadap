@@ -31,7 +31,7 @@ A class hierarchy that measures moments of the observed emission lines.
         from astropy.io import fits
         import astropy.constants
 
-        from ..config.defaults import default_dap_source, default_dap_file_name
+        from ..config.defaults import dap_source_dir, default_dap_file_name
         from ..config.defaults import default_dap_method, default_dap_method_path
         from ..util.fileio import init_record_array, rec_to_fits_type
         from ..util.bitmask import BitMask
@@ -95,7 +95,7 @@ import numpy
 from astropy.io import fits
 import astropy.constants
 
-from ..config.defaults import default_dap_source, default_dap_file_name
+from ..config.defaults import dap_source_dir, default_dap_file_name
 from ..config.defaults import default_dap_method, default_dap_method_path
 from ..util.fitsutil import DAPFitsUtil
 from ..util.fileio import init_record_array, rec_to_fits_type
@@ -180,7 +180,7 @@ def available_emission_line_moment_databases(dapsrc=None):
     Args:
         dapsrc (str): (**Optional**) Root path to the DAP source
             directory.  If not provided, the default is defined by
-            :func:`mangadap.config.defaults.default_dap_source`.
+            :func:`mangadap.config.defaults.dap_source_dir`.
 
     Returns:
         list: A list of :func:`EmissionLineMomentsDef` objects, each
@@ -202,7 +202,7 @@ def available_emission_line_moment_databases(dapsrc=None):
         
     """
     # Check the source directory exists
-    dapsrc = default_dap_source() if dapsrc is None else str(dapsrc)
+    dapsrc = dap_source_dir() if dapsrc is None else str(dapsrc)
     if not os.path.isdir(dapsrc):
         raise NotADirectoryError('{0} does not exist!'.format(dapsrc))
 
@@ -253,7 +253,7 @@ class EmissionLineMomentsBitMask(BitMask):
 
     """
     def __init__(self, dapsrc=None):
-        dapsrc = default_dap_source() if dapsrc is None else str(dapsrc)
+        dapsrc = dap_source_dir() if dapsrc is None else str(dapsrc)
         BitMask.__init__(self, ini_file=os.path.join(dapsrc, 'python', 'mangadap', 'config',
                                                      'bitmasks', 'emission_line_moments_bits.ini'))
 
