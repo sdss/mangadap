@@ -1933,7 +1933,7 @@ class Sasuke(EmissionLineFit):
                 instrumental dispersion of the emission-line templates;
                 see :func:`etpl_line_sigma_options` for the options.
                 Default mode is `default`, imagine that.
-            etpl_sinst_min (str): (**Optional**) Minimum allowed
+            etpl_sinst_min (float): (**Optional**) Minimum allowed
                 instrumental dispersion value.  If the mode of
                 constructing the instrumental dispersion of the
                 templates results in values that are below this value,
@@ -2151,45 +2151,46 @@ class Sasuke(EmissionLineFit):
         self.matched_resolution = matched_resolution
         if etpl_sinst is None and self.obj_sres is None:
             self.matched_resolution = False
-            etpl_sinst = numpy.full(self.npix_obj, 2*self.velscale/DAPConstants.sig2fwhm,dtype=float)
+            etpl_sinst = numpy.full(self.npix_obj, 2*self.velscale/DAPConstants.sig2fwhm,
+                                    dtype=float)
 
-        tpl_wave_red =self.tpl_wave * (1 + numpy.median(self.input_cz) / astropy.constants.c.to('km/s').value)                   
+        # Get the observed template wavelengths at the expectected
+        # redshift of the galaxy spectrum
+        tpl_wave_obs =self.tpl_wave * (1 + numpy.median(self.input_cz)
+                                            / astropy.constants.c.to('km/s').value)
+
         if self.obj_sres is not None:
+            # Set the instrumental resolution of the emission-line
+            # templates to be the same as the observed spectrum
             interp = interpolate.interp1d(self.obj_wave,
-# THIS WAS EDITED POST DR15                R_to_sinst/numpy.amin(self.obj_sres, axis=0),
                                           R_to_sinst/numpy.amax(self.obj_sres, axis=0),
                                           assume_sorted=True, bounds_error=False,
-                                          fill_value='extrapolate')
-            etpl_sinst = interp(tpl_wave_red)
-                                                        
-#            pyplot.plot(self.obj_wave, interp.y)
-#            pyplot.plot(self.tpl_wave, etpl_sinst)
-#            _etpl_sinst = etpl_sinst.copy()
+                                          fill_value=0.0) #'extrapolate')
+            # Instrumental resolution should not be below 0!
+            etpl_sinst = numpy.clip(interp(tpl_wave_obs), 0.0, None)
 
         if etpl_sinst_mode == 'zero':
+            # Force the instrumental dispersion to be 0 everywhere
             etpl_sinst[:] = 0.
 
-        ww = (tpl_wave_red  > numpy.min(self.obj_wave)) & (tpl_wave_red < numpy.max(self.obj_wave ))
-        min_sinst = numpy.amin(etpl_sinst[ww])
+        # Find the minimum instrumental dispersion over the fitted
+        # wavelength range
+        indx = (tpl_wave_red  > self.obj_wave[0]) & (tpl_wave_red < self.obj_wave[-1]))
+        min_sinst = numpy.amin(etpl_sinst[indx])
 
         if (etpl_sinst_mode == 'offset' and min_sinst > _etpl_sinst_min) \
                 or min_sinst < _etpl_sinst_min:
+            # Offset such that the minimum over the fitted wavelength
+            # range matches the requested minimum
             dsigma_inst = numpy.square(min_sinst)-numpy.square(_etpl_sinst_min)
-            etpl_sinst = numpy.sqrt(numpy.square(etpl_sinst) - dsigma_inst)
-            min_sinst = numpy.amin(etpl_sinst[ww])
-
-            ww = numpy.isfinite(etpl_sinst)==0
-            etpl_sinst[ww]=0.
-#            print(min_sinst)
-#        pyplot.plot(self.tpl_wave, etpl_sinst)
-#        pyplot.plot(self.tpl_wave, numpy.sqrt(numpy.square(_etpl_sinst) - numpy.square(etpl_sinst)))
-#        pyplot.show()
-#        exit()
+            # Clip to make sure instrumental resolution is real!
+            etpl_sinst = numpy.sqrt(numpy.clip(numpy.square(etpl_sinst) - dsigma_inst, 0., None))
+            min_sinst = numpy.amin(etpl_sinst[indx])
 
         #---------------------------------------------------------------
         # If provided, check the shapes of the stellar kinematics
         if stellar_kinematics is not None and stellar_kinematics.shape[0] != self.nobj:
-            raise ValueError('Provided kinematics do not match the number of input object spectra.')
+            raise ValueError('Provided kinematics do not match the number of object spectra.')
         stellar_moments = None if stellar_kinematics is None else stellar_kinematics.shape[1]
         if self.nstpl > 0 and stellar_kinematics is None:
             raise ValueError('Must provide stellar kinematics if refiting stellar templates.')
@@ -2222,7 +2223,7 @@ class Sasuke(EmissionLineFit):
         self.fit_eml = self.emldb['action'] == 'f'
         self.eml_tpli = etpl.tpli.copy()
         self.eml_compi = numpy.full(self.neml, -1, dtype=int)
-        self.eml_compi[self.fit_eml] = numpy.array([ etpl.comp[i] for i in etpl.tpli[self.fit_eml]])
+        self.eml_compi[self.fit_eml] = numpy.array([etpl.comp[i] for i in etpl.tpli[self.fit_eml]])
 
         #---------------------------------------------------------------
         # Save the basic pPXF parameters
@@ -2324,7 +2325,8 @@ class Sasuke(EmissionLineFit):
             if self.nstpl > 0:
                 log_output(self.loggers, 1, logging.INFO,
                            'Number of stellar templates: {0}'.format(self.nstpl))
-            log_output(self.loggers, 1, logging.INFO, 'Pixel scale: {0} km/s'.format(self.velscale))
+            log_output(self.loggers, 1, logging.INFO, 'Pixel scale: {0} km/s'.format(
+                                                                            self.velscale))
             log_output(self.loggers, 1, logging.INFO, 'Pixel scale ratio: {0}'.format(
                                                                             self.velscale_ratio))
             log_output(self.loggers, 1, logging.INFO, 'Dispersion limits: {0} - {1}'.format(
@@ -2405,7 +2407,7 @@ class Sasuke(EmissionLineFit):
                                                            velscale_ratio=self.velscale_ratio,
                                                            waverange=waverange, # mask=remap_mask,
                                                            bitmask=self.bitmask,
-                                                        velocity_offset=numpy.median(self.input_cz),
+                                                    velocity_offset=numpy.median(self.input_cz),
                                                            max_velocity_range=max_velocity_range,
                                                            alias_window=alias_window,
                                                            ensemble=True, #False,
@@ -2415,7 +2417,7 @@ class Sasuke(EmissionLineFit):
                 if not self.quiet:
                     warnings.warn('Masking failures in some/all remapping spectra.  '
                                   'Errors are: {0}'.format(
-                                    numpy.array([(i,e) for i,e in enumerate(err)])[ended_in_error]))
+                                numpy.array([(i,e) for i,e in enumerate(err)])[ended_in_error]))
                 model_fit_par['MASK'][ended_in_error] \
                         = self.bitmask.turn_on(model_fit_par['MASK'][ended_in_error], 'NO_FIT')
                 model_eml_par['MASK'][ended_in_error] \
