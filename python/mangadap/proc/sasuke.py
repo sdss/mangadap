@@ -2281,15 +2281,15 @@ class Sasuke(EmissionLineFit):
             if self.comp_moments[i] < 0:
                 continue
             # Velocity group of this component
-            indx = self.tpl_comp[tpl_index[self.tpl_vgrp == i]]
+            indx = numpy.unique(self.tpl_comp[tpl_index[self.tpl_vgrp == i]])
             if len(indx) > 1:
-                parn = [ 0 + numpy.sum(numpy.absolute(self.comp_moments[:i])) for i in indx ]
+                parn = [ 0 + numpy.sum(numpy.absolute(self.comp_moments[:j])) for j in indx ]
                 self.tied[parn[1:]] = 'p[{0}]'.format(parn[0])
             
             # Sigma group of this component
-            indx = self.tpl_comp[tpl_index[self.tpl_sgrp == i]]
+            indx = numpy.unique(self.tpl_comp[tpl_index[self.tpl_sgrp == i]])
             if len(indx) > 1:
-                parn = [ 1 + numpy.sum(numpy.absolute(self.comp_moments[:i])) for i in indx ]
+                parn = [ 1 + numpy.sum(numpy.absolute(self.comp_moments[:j])) for j in indx ]
                 self.tied[parn[1:]] = 'p[{0}]'.format(parn[0])
 
         self.tied[[t is None for t in self.tied ]] = ''
