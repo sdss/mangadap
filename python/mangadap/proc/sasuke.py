@@ -2151,28 +2151,35 @@ class Sasuke(EmissionLineFit):
         self.matched_resolution = matched_resolution
         if etpl_sinst is None and self.obj_sres is None:
             self.matched_resolution = False
-            etpl_sinst = numpy.full(self.npix_obj, 2*self.velscale/DAPConstants.sig2fwhm,
-                                    dtype=float)
+            etpl_sinst = numpy.full(self.npix_obj, 2*self.velscale/DAPConstants.sig2fwhm,dtype=float)
+
+        tpl_wave_red =self.tpl_wave * (1 + numpy.median(self.input_cz) / astropy.constants.c.to('km/s').value)                   
         if self.obj_sres is not None:
             interp = interpolate.interp1d(self.obj_wave,
 # THIS WAS EDITED POST DR15                R_to_sinst/numpy.amin(self.obj_sres, axis=0),
                                           R_to_sinst/numpy.amax(self.obj_sres, axis=0),
                                           assume_sorted=True, bounds_error=False,
                                           fill_value='extrapolate')
-            etpl_sinst = interp(self.tpl_wave * (1 + numpy.median(self.input_cz) 
-                                                        / astropy.constants.c.to('km/s').value))
+            etpl_sinst = interp(tpl_wave_red)
+                                                        
 #            pyplot.plot(self.obj_wave, interp.y)
 #            pyplot.plot(self.tpl_wave, etpl_sinst)
 #            _etpl_sinst = etpl_sinst.copy()
 
         if etpl_sinst_mode == 'zero':
             etpl_sinst[:] = 0.
-        min_sinst = numpy.amin(etpl_sinst)
+
+        ww = (tpl_wave_red  > numpy.min(self.obj_wave)) & (tpl_wave_red < numpy.max(self.obj_wave ))
+        min_sinst = numpy.amin(etpl_sinst[ww])
+
         if (etpl_sinst_mode == 'offset' and min_sinst > _etpl_sinst_min) \
                 or min_sinst < _etpl_sinst_min:
             dsigma_inst = numpy.square(min_sinst)-numpy.square(_etpl_sinst_min)
             etpl_sinst = numpy.sqrt(numpy.square(etpl_sinst) - dsigma_inst)
-            min_sinst = numpy.amin(etpl_sinst)
+            min_sinst = numpy.amin(etpl_sinst[ww])
+
+            ww = numpy.isfinite(etpl_sinst)==0
+            etpl_sinst[ww]=0.
 #            print(min_sinst)
 #        pyplot.plot(self.tpl_wave, etpl_sinst)
 #        pyplot.plot(self.tpl_wave, numpy.sqrt(numpy.square(_etpl_sinst) - numpy.square(etpl_sinst)))
@@ -2194,15 +2201,15 @@ class Sasuke(EmissionLineFit):
 
         #---------------------------------------------------------------
         # Build the emission-line templates; the EmissionLineTemplates
-        # object will check the database
+        # object will check the databaseq
         self.emldb = emission_lines
         self.neml = self.emldb.neml
         etpl = EmissionLineTemplates(self.tpl_wave, etpl_sinst, emldb=self.emldb,
                                      loggers=self.loggers, quiet=self.quiet)
-#        pyplot.plot(self.tpl_wave, numpy.sum(etpl.flux, axis=0))
-#        for i in range(etpl.ntpl):
-#            pyplot.plot(self.tpl_wave, etpl.flux[i,:])
-#        pyplot.show()
+    
+        # pyplot.plot(self.tpl_wave, numpy.sum(etpl.flux, axis=0))
+        # # pyplot.plot(self.tpl_wave, etpl.flux[i,:])
+        # pyplot.show()
 
         # Report the resolution mode
         if not self.quiet:
