@@ -1063,7 +1063,7 @@ class Sasuke(EmissionLineFit):
             nmom = numpy.absolute(self.comp_moments[j])
             par_indx += [ [0]*nmom ]
             for k in range(nmom):
-                par_indx[j][k] = ii+k if len(self.tied[j][k]) == 0 \
+                par_indx[j][k] = ii+k if self.tied is None or len(self.tied[j][k]) == 0 \
                                             else int(self.tied[j][k].split('[')[1].split(']')[0])
             vel_indx[ii+0] = True
             sig_indx[ii+1] = True
