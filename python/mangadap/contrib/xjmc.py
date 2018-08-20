@@ -419,7 +419,7 @@ def _reorder_solution(ppsol, pperr, component_map, moments, start=None, fill_val
     new_start = []
     new_error = []
     for i in range(ncomp):
-        indx = [component_map == i]
+        indx = component_map == i
         if np.sum(indx) == 0:
             new_start += ([[fill_value]*abs(moments[i])] if start is None else [start[i]])
             new_error += [[fill_value]*abs(moments[i])]
@@ -432,7 +432,8 @@ def _reorder_solution(ppsol, pperr, component_map, moments, start=None, fill_val
 
 def _fit_iteration(templates, wave, flux, noise, velscale, start, moments, component, gas_template,
                    tpl_to_use=None, reject_boxcar=101, velscale_ratio=None, degree=-1, mdegree=0,
-                   reddening=None, tied=None, mask=None, vsyst=0, plot=False, quiet=True, sigma_rej=3.):
+                   reddening=None, tied=None, mask=None, vsyst=0, plot=False, quiet=True,
+                   sigma_rej=3.):
     """
     Run a single fit+rejection iteration of the pPXF fit for all input
     spectra with the provided set of constraints/options.
