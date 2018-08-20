@@ -37,6 +37,7 @@ def fit_one_cube(plt, ifu, drpall_file=None, directory_path=None, analysis_path=
                                           continuum_key='GAU-MILESHC',
                                           elmom_key='EMOMM',
                                           elfit_key='EFITM-MIUSCATTHIN',
+                                          elfit_clobber=True,
                                           spindex_key='INDXEN') ])
 
     # Run it!

@@ -1403,6 +1403,59 @@ class Sasuke(EmissionLineFit):
         return model_flux, model_eml_flux, model_mask, model_fit_par, model_eml_par
 
 
+    def get_stellar_templates(self, par, drpf, z=0., loggers=None, quiet=False):
+        """
+        Return the stellar template library.
+
+        If fitting a different set of templates, the spectral resolution
+        of the new templates must be matched to the galaxy data and the
+        velocity dispersion used by the fit must be astrophysical
+        (corrected for any resolution difference).
+
+        Returns:
+            TemplateLibrary, bool, int: Returns the template library, a
+            flag if the resolution of the templates has been matched to
+            the galaxy data, and the velocity sampling compared to the
+            galaxy data.
+        """
+        if par['continuum_templates'] is not None:
+            if isinstance(par['continuum_templates'], TemplateLibrary):
+                # The template library has already been instantiated so
+                # just copy the object.  Assume this means that the
+                # spectral resolution has been matched to the MaNGA data
+                # because otherwise par['continuum_templates'] is None.
+                # TODO: Instead test that the spectral resolution of the
+                # template libary has been matched to the MaNGA data?
+                return par['continuum_templates'], True, par['velscale_ratio']
+
+            # Otherwise it must be the keyword of the library that needs
+            # to be constructed.
+            if par['stellar_continuum'] is not None and par['continuum_templates'] \
+                        == par['stellar_continuum'].method['fitpar']['template_library_key']:
+                # The templates used are the same, so warn the user and
+                # just copy over the existing template library.  This
+                # maintains the resolution difference
+                warnings.warn('Request emission-line continuum templates identical to those '
+                              'used during the stellar continuum fitting.')
+                return Sasuke._copy_from_stellar_continuum(par['stellar_continuum'])
+
+            # The template library needs to be constructed based on the
+            # provided keyword TODO: The TemplateLibrary object uses the
+            # median spectral resolution vector when performing the
+            # resolution match to the MaNGA data.
+            return TemplateLibrary(par['continuum_templates'],
+                                   velocity_offset=astropy.constants.c.to('km/s').value*z,
+                                   drpf=drpf, match_to_drp_resolution=True,
+                                   velscale_ratio=par['velscale_ratio'], hardcopy=False,
+                                   loggers=loggers, quiet=quiet), True, par['velscale_ratio']
+
+        if par['continuum_templates'] is None and par['stellar_continuum'] is not None:
+            return Sasuke._copy_from_stellar_continuum(par['stellar_continuum'])
+
+        # No stellar templates available
+        return None, None, None
+
+
     def fit_SpatiallyBinnedSpectra(self, binned_spectra, par=None, loggers=None, quiet=False):
         """
         This DAP-specific function interprets the DAP-specific classes
@@ -1494,71 +1547,11 @@ class Sasuke(EmissionLineFit):
         bins_to_fit = EmissionLineFit.select_binned_spectra_to_fit(binned_spectra,
                                                                    minimum_snr=par['minimum_snr'],
                                                         stellar_continuum=par['stellar_continuum'])
-        nobj = flux.shape[0]
-
-        # Get the stellar templates.  If fitting a different set of
-        # templates, the spectral resolution of the new templates must
-        # be matched to the galaxy data and the velocity dispersion used
-        # by the fit must be astrophysical (corrected for any resolution
-        # difference).
-        stellar_templates = None
-        matched_resolution = False
-        velscale_ratio = 1
-        if par['continuum_templates'] is not None:
-            if isinstance(par['continuum_templates'], TemplateLibrary):
-                # The template library has already been instantiated so
-                # just copy the object.  Assume this means that the
-                # spectral resolution has been matched to the MaNGA
-                # data because otherwise par['continuum_templates'] is
-                # None.
-                stellar_templates = par['continuum_templates']
-                # TODO: Instead test that the spectral resolution of the
-                # template libary has been matched to the MaNGA data?
-                matched_resolution = True
-                velscale_ratio = par['velscale_ratio']
-            else:
-                # Otherwise it must be the keyword of the library that
-                # needs to be constructed.
-
-                if par['stellar_continuum'] is not None \
-                        and par['continuum_templates'] \
-                            == par['stellar_continuum'].method['fitpar']['template_library_key']:
-                    # The templates used are the same, so warn the user
-                    # and just copy over the existing template library.
-                    # This maintains the resolution difference
-                    warnings.warn('Request emission-line continuum templates identical to those '
-                                  'used during the stellar continuum fitting.')
-                    stellar_templates, matched_resolution, velscale_ratio \
-                                = Sasuke._copy_from_stellar_continuum(par['stellar_continuum'])
-#                    stellar_templates \
-#                            = par['stellar_continuum'].method['fitpar']['template_library']
-#                    matched_resolution \
-#                            = par['stellar_continuum'].method['fitpar']['match_resolution']
-#                    velscale_ratio \
-#                            = par['stellar_continuum'].method['fitpar']['velscale_ratio']
-                else:
-                    # The template library needs to be constructed based
-                    # on the provided keyword
-                    # TODO: The TemplateLibrary object uses the median
-                    # spectral resolution vector when performing the
-                    # resolution match to the MaNGA data.
-                    match_resolution = True
-                    velscale_ratio = par['velscale_ratio']
-                    velocity_offset = numpy.mean(astropy.constants.c.to('km/s').value 
-                                                    * par['guess_redshift'][bins_to_fit])
-                    # TODO: The dapsrc and analysis_path will return to
-                    # the defaults!
-                    stellar_templates \
-                            = TemplateLibrary(par['continuum_templates'],
-                                              velocity_offset=velocity_offset,
-                                              drpf=binned_spectra.drpf,
-                                              match_to_drp_resolution=True,
-                                              velscale_ratio=velscale_ratio, hardcopy=False,
-                                              loggers=loggers, quiet=quiet)
-
-        elif par['continuum_templates'] is None and par['stellar_continuum'] is not None:
-            stellar_templates, matched_resolution, velscale_ratio \
-                        = Sasuke._copy_from_stellar_continuum(par['stellar_continuum'])
+        # Get the stellar templates.
+        stellar_templates, matched_resolution, velscale_ratio \
+                = self.get_stellar_templates(par, binned_spectra.drpf,
+                                             z=numpy.mean(par['guess_redshift'][bins_to_fit]),
+                                             loggers=loggers, quiet=quiet)
 
         stpl_wave = None if stellar_templates is None else stellar_templates['WAVE'].data
         stpl_flux = None if stellar_templates is None else stellar_templates['FLUX'].data
@@ -1790,6 +1783,10 @@ class Sasuke(EmissionLineFit):
                 sc_continuum = par['stellar_continuum'].fill_to_match(binned_spectra['BINID'].data,
                                                             missing=binned_spectra.missing_bins)
                 model_eml_base = (el_continuum - sc_continuum[bins_to_fit,:]).filled(0.0)
+
+                import pdb
+                pdb.set_trace()
+
         else:
             model_eml_base = numpy.zeros(model_flux.shape, dtype=float)
 
