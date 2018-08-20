@@ -1063,7 +1063,7 @@ class Sasuke(EmissionLineFit):
             nmom = numpy.absolute(self.comp_moments[j])
             par_indx += [ [0]*nmom ]
             for k in range(nmom):
-                par_indx[j][k] = ii+k if len(self.tied[j][k]) == 0 \
+                par_indx[j][k] = ii+k if self.tied is None or len(self.tied[j][k]) == 0 \
                                             else int(self.tied[j][k].split('[')[1].split(']')[0])
             vel_indx[ii+0] = True
             sig_indx[ii+1] = True
@@ -2289,15 +2289,15 @@ class Sasuke(EmissionLineFit):
             if self.comp_moments[i] < 0:
                 continue
             # Velocity group of this component
-            indx = self.tpl_comp[tpl_index[self.tpl_vgrp == i]]
+            indx = numpy.unique(self.tpl_comp[tpl_index[self.tpl_vgrp == i]])
             if len(indx) > 1:
-                parn = [ 0 + numpy.sum(numpy.absolute(self.comp_moments[:i])) for i in indx ]
+                parn = [ 0 + numpy.sum(numpy.absolute(self.comp_moments[:j])) for j in indx ]
                 self.tied[parn[1:]] = 'p[{0}]'.format(parn[0])
             
             # Sigma group of this component
-            indx = self.tpl_comp[tpl_index[self.tpl_sgrp == i]]
+            indx = numpy.unique(self.tpl_comp[tpl_index[self.tpl_sgrp == i]])
             if len(indx) > 1:
-                parn = [ 1 + numpy.sum(numpy.absolute(self.comp_moments[:i])) for i in indx ]
+                parn = [ 1 + numpy.sum(numpy.absolute(self.comp_moments[:j])) for j in indx ]
                 self.tied[parn[1:]] = 'p[{0}]'.format(parn[0])
 
         self.tied[[t is None for t in self.tied ]] = ''
