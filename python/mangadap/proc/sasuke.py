@@ -1087,10 +1087,12 @@ class Sasuke(EmissionLineFit):
         residual = flux - model_flux
         fractional_residual = numpy.ma.divide(flux - model_flux, model_flux)
         # Get the (reduced) chi-square for each spectrum
-        model_fit_par['CHI2'] = numpy.ma.sum(numpy.square(residual/ferr), axis=1)
+        model_fit_par['CHI2'] = numpy.ma.sum(numpy.square(residual/ferr), axis=1).filled(0.0)
         # Get the (fractional) residual RMS for each spectrum
-        model_fit_par['RMS'] = numpy.sqrt(numpy.ma.mean(numpy.square(residual), axis=1))
-        model_fit_par['FRMS'] = numpy.sqrt(numpy.ma.mean(numpy.square(fractional_residual), axis=1))
+        model_fit_par['RMS'] = numpy.sqrt(numpy.ma.mean(numpy.square(residual),
+                                                        axis=1).filled(0.0))
+        model_fit_par['FRMS'] = numpy.sqrt(numpy.ma.mean(numpy.square(fractional_residual),
+                                                         axis=1).filled(0.0))
 
         # Reduced chi-square
         model_fit_par['RCHI2'] = model_fit_par['CHI2'] / (model_fit_par['NPIXFIT'] 

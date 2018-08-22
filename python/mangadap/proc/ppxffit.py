@@ -2047,17 +2047,17 @@ class PPXFFit(StellarKinematicsFit):
             # Mask the residuals according to the pixel fit for this
             # spectrum
             bpm[:] = True
-            bpm[result[i].start+ppxf_result[i].gpm] = False
+            bpm[result[i].start+result[i].gpm] = False
             residual[i,bpm] = numpy.ma.masked
             fractional_residual[i,bpm] = numpy.ma.masked
 
             # Get the chi-square and rms metrics
-            model_par['CHI2'][i] = numpy.ma.sum(numpy.square(
-                                                residual[i]/self.obj_ferr[i])).filled(0.0)
-            model_par['RMS'][i] = numpy.ma.sqrt(numpy.ma.mean(
-                                                numpy.square(residual[i]))).filled(0.0)
-            model_par['FRMS'][i] = numpy.ma.sqrt(numpy.ma.mean(
-                                                numpy.square(fractional_residual[i]))).filled(0.0)
+            model_par['CHI2'][i] = 0.0 if numpy.all(residual.mask[i] | self.obj_ferr.mask[i]) \
+                                    else numpy.sum(numpy.square(residual[i]/self.obj_ferr[i]))
+            model_par['RMS'][i] = 0.0 if numpy.all(residual.mask[i]) \
+                                    else numpy.sqrt(numpy.ma.mean(numpy.square(residual[i])))
+            model_par['FRMS'][i] = 0.0 if numpy.all(fractional_residual.mask[i]) \
+                            else numpy.sqrt(numpy.ma.mean(numpy.square(fractional_residual[i])))
 
             #-----------------------------------------------------------
             # Set output flags
