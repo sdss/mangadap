@@ -1742,8 +1742,22 @@ class EmissionLineModel:
         # Only the selected models are constructed, others are masked
         select = numpy.invert(self.bitmask.flagged(self.hdu['FIT'].data['MASK'],
                                             flag=['NO_FIT', 'FIT_FAILED', 'INSUFFICIENT_DATA']))
-        templates = self.stellar_continuum.method['fitpar']['template_library'] \
-                            if replacement_templates is None else replacement_templates
+        
+        # Get the template library
+        templates = replacement_templates
+        if templates is None or not isinstance(templates, TemplateLibrary):
+            try:
+                bins_to_fit = EmissionLineFit.select_binned_spectra_to_fit(self.binned_spectra,
+                                            minimum_snr=self.method['fitpar']['minimum_snr'],
+                                            stellar_continuum=self.stellar_continuum)
+                z = numpy.mean(self.method['fitpar']['guess_redshift'][bins_to_fit])
+                templates = self.method['fitclass'].get_stellar_templates(self.method['fitpar'],
+                                                                          self.binned_spectra.drpf,
+                                                                          z=z,
+                                                                          loggers=self.loggers,
+                                                                          quiet=self.quiet)[0]
+            except:
+                templates = self.stellar_continuum.method['fitpar']['template_library']
 
         return self.method['fitclass'].construct_continuum_models(
                                         self.emldb, templates['WAVE'].data, templates['FLUX'].data,
