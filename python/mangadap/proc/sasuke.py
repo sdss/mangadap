@@ -1072,20 +1072,9 @@ class Sasuke(EmissionLineFit):
         lbound = numpy.concatenate(tuple(lbound))
         ubound = numpy.concatenate(tuple(ubound))
 
-#        print(self.tpl_comp)
-#        print(self.tpl_vgrp)
-#        print(self.tpl_sgrp)
-#        print(lbound)
-#        print(ubound)
-#        print(numpy.concatenate(tuple(par_indx)))
-
         # Set the model data to masked arrays
         model_flux = numpy.ma.MaskedArray(model_flux.data, mask=model_mask > 0)
         model_eml_flux = numpy.ma.MaskedArray(model_eml_flux.data, mask=model_mask > 0)
-
-#        pyplot.imshow(numpy.log10(model_flux), origin='lower', interpolation='nearest', aspect='auto')
-#        pyplot.colorbar()
-#        pyplot.show()
 
         # Save the pixel statistics
         model_fit_par['BEGPIX'][:] = start
@@ -1103,12 +1092,9 @@ class Sasuke(EmissionLineFit):
         model_fit_par['RMS'] = numpy.sqrt(numpy.ma.mean(numpy.square(residual), axis=1))
         model_fit_par['FRMS'] = numpy.sqrt(numpy.ma.mean(numpy.square(fractional_residual), axis=1))
 
-#        print(model_fit_par['CHI2'])
-
         # Reduced chi-square
         model_fit_par['RCHI2'] = model_fit_par['CHI2'] / (model_fit_par['NPIXFIT'] 
                                     - self.dof - numpy.sum(model_fit_par['TPLWGT'] > 0, axis=1))
-#        print(model_fit_par['RCHI2'])
 
         # Save the weights and errors
         model_fit_par['TPLWGT'] = model_wgts
@@ -1184,10 +1170,6 @@ class Sasuke(EmissionLineFit):
         for j in range(self.neml):
             if not self.fit_eml[j]:
                 continue
-#            print(self.emldb['name'][j], self.emldb['restwave'][j], self.emldb['flux'][j],
-#                  self.eml_tpli[j], result[i].tplwgt[self.eml_tpli[j]])
-#            pyplot.plot(self.tpl_wave, self.tpl_flux[self.eml_tpli[j],:])
-#            pyplot.show()
 
             # The "fit index" is the component of the line
             model_eml_par['FIT_INDEX'][:,j] = self.eml_compi[j]
@@ -1250,7 +1232,6 @@ class Sasuke(EmissionLineFit):
         for i in range(nspec):
 
             # Get growth statistics for the residuals
-            # TODO: Specifically around the emission lines?
             model_fit_par['ABSRESID'][i,:] = sample_growth(numpy.ma.absolute(residual[i,:]),
                                                            [0.0, 0.68, 0.95, 0.99, 1.0])
             model_fit_par['FABSRESID'][i,:] \
@@ -2511,13 +2492,6 @@ class Sasuke(EmissionLineFit):
 
         #---------------------------------------------------------------
         # Save the results
-#        model_flux, model_eml_flux, model_mask, model_fit_par, model_eml_par \
-#                = self._save_results(etpl, result, model_mask, model_fit_par, model_eml_par)
-
-#        pyplot.imshow(numpy.log10(model_mask), origin='lower', interpolation='nearest',
-#                      aspect='auto')
-#        pyplot.show()
-
         if self.nremap == 0:
             flux = self.obj_flux
             ferr = self.obj_ferr
