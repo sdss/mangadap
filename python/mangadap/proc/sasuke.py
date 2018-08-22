@@ -1590,7 +1590,7 @@ class Sasuke(EmissionLineFit):
             # Get the individual spaxel data
             _, spaxel_flux, spaxel_ferr = EmissionLineFit.get_spectra_to_fit(binned_spectra.drpf,
                                                                         pixelmask=par['pixelmask'],
-                                                                          error=True)
+                                                                        error=True)
             # Apply the Galactic extinction
             spaxel_flux, spaxel_ferr = binned_spectra.galext.apply(spaxel_flux, err=spaxel_ferr,
                                                                    deredden=True)
@@ -1621,7 +1621,9 @@ class Sasuke(EmissionLineFit):
             # Return the fits to the individual spaxel data
             model_wave, model_flux, model_eml_flux, model_mask, model_fit_par, model_eml_par \
                     = self.fit(par['emission_lines'], wave, flux[bins_to_fit,:],
-                               obj_ferr=ferr[bins_to_fit,:], obj_sres=sres[bins_to_fit,:],
+                               obj_ferr=ferr[bins_to_fit,:],
+                               obj_mask=par['pixelmask'],
+                               obj_sres=sres[bins_to_fit,:],
                                guess_redshift=par['guess_redshift'][bins_to_fit],
                                guess_dispersion=par['guess_dispersion'][bins_to_fit],
                                reject_boxcar=par['reject_boxcar'], stpl_wave=stpl_wave,
@@ -1634,6 +1636,7 @@ class Sasuke(EmissionLineFit):
                                etpl_sinst_min=par['etpl_line_sigma_min'],
                                remap_flux=spaxel_flux[spaxel_to_fit,:],
                                remap_ferr=spaxel_ferr[spaxel_to_fit,:],
+                               remap_mask=par['pixelmask'],
                                remap_sres=spaxel_sres[spaxel_to_fit,:],
                                remap_skyx=spaxel_x[spaxel_to_fit],
                                remap_skyy=spaxel_y[spaxel_to_fit], obj_skyx=bin_x[bins_to_fit],
@@ -1665,7 +1668,8 @@ class Sasuke(EmissionLineFit):
             # Return the fits to the binned data
             model_wave, model_flux, model_eml_flux, model_mask, model_fit_par, model_eml_par \
                     = self.fit(par['emission_lines'], wave, flux[bins_to_fit,:],
-                               obj_ferr=ferr[bins_to_fit,:], obj_sres=sres[bins_to_fit,:],
+                               obj_ferr=ferr[bins_to_fit,:], obj_mask=par['pixelmask'],
+                               obj_sres=sres[bins_to_fit,:],
                                guess_redshift=par['guess_redshift'][bins_to_fit],
                                guess_dispersion=par['guess_dispersion'][bins_to_fit],
                                reject_boxcar=par['reject_boxcar'], stpl_wave=stpl_wave,
@@ -1740,7 +1744,8 @@ class Sasuke(EmissionLineFit):
                 # Construct the full 3D cube for the stellar continuum
                 sc_model_flux = DAPFitsUtil.reconstruct_cube(binned_spectra.drpf.shape,
                                                              binned_spectra['BINID'].data.ravel(),
-                                                             sc_continuum.filled(0.0))
+                                                             sc_continuum.filled(0.0)
+                                                            ).reshape(-1,self.npix_obj)
 
 #                print(type(sc_model_flux))
 #                print(sc_model_flux.shape)
@@ -1755,7 +1760,9 @@ class Sasuke(EmissionLineFit):
                 # emission-line fit
                 el_continuum = DAPFitsUtil.reconstruct_cube(binned_spectra.drpf.shape,
                                                             model_binid.ravel(),
-                                                            model_flux - model_eml_flux)
+                                                            model_flux - model_eml_flux
+                                                           ).reshape(-1,self.npix_obj)
+                el_continuum = StellarContinuumModel.reset_continuum_mask_window(el_continuum)
 
 #                print(type(el_continuum))
 #                print(el_continuum.shape)
@@ -1767,8 +1774,7 @@ class Sasuke(EmissionLineFit):
 
                 # Get the difference, restructure it to match the shape
                 # of the emission-line models
-                model_eml_base = (el_continuum - sc_model_flux).reshape(-1,
-                                                                self.npix_obj)[spaxel_to_fit,:]
+                model_eml_base = (el_continuum - sc_model_flux)[spaxel_to_fit,:]
 #                if model_mask is not None:
 #                    model_eml_base[model_mask==0] = 0.0
 
@@ -1779,14 +1785,11 @@ class Sasuke(EmissionLineFit):
 #                    pyplot.show()
 
             else:
-                el_continuum = model_flux - model_eml_flux
+                el_continuum = StellarContinuumModel.reset_continuum_mask_window(
+                                                            model_flux - model_eml_flux)
                 sc_continuum = par['stellar_continuum'].fill_to_match(binned_spectra['BINID'].data,
                                                             missing=binned_spectra.missing_bins)
-                model_eml_base = (el_continuum - sc_continuum[bins_to_fit,:]).filled(0.0)
-
-                import pdb
-                pdb.set_trace()
-
+                model_eml_base = (el_continuum - sc_continuum.data[bins_to_fit,:]).filled(0.0)
         else:
             model_eml_base = numpy.zeros(model_flux.shape, dtype=float)
 
