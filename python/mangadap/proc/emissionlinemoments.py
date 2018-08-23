@@ -108,8 +108,8 @@ from ..par.artifactdb import ArtifactDB
 from ..par.emissionmomentsdb import EmissionMomentsDB
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .stellarcontinuummodel import StellarContinuumModel
-from .bandpassfilter import passband_integral, passband_integrated_width, passband_median
-from .bandpassfilter import passband_integrated_mean, passband_weighted_mean, pseudocontinuum
+from .bandpassfilter import passband_integral, passband_integrated_width
+from .bandpassfilter import passband_weighted_mean, passband_weighted_sdev, pseudocontinuum
 from .bandpassfilter import emission_line_equivalent_width
 from .spectralfitting import EmissionLineFit
 from .util import select_proc_method
@@ -657,9 +657,17 @@ class EmissionLineMoments:
         Get the side-band integrals.
 
         err is a single vector that is the same for all spec!
+
+        Returns:
+            float, numpy.ndarray: Return five arrays or floats: (1) The
+            center of each passband, (2) the mean continuum level, (3)
+            the propagated error in the continuum level (will be None if
+            no errors are provided), (4) flag that part of the passband
+            was masked, (5) flag that the passband was fully masked or
+            empty.
         """
 
-        if len(spec.shape) == 1:
+        if spec.ndim == 1:
             return pseudocontinuum(wave, spec, passband=sidebands, err=err, log=log,
                                    weighted_center=weighted_center)
 
@@ -706,6 +714,16 @@ class EmissionLineMoments:
         """
         Measure the moments for a single band.
 
+        Args:
+            wave (numpy.ndarray):
+                Wavelengths in angstroms
+            spec (numpy.ndarray):
+                Flux in flux density (per angstrom)
+            restwave (float):
+                The rest wavelength of the line.
+            err (numpy.ndarray):
+                The 1-sigma errors in the flux density.
+
         Returns:
             flux
             fluxerr
@@ -732,45 +750,17 @@ class EmissionLineMoments:
         # Get the integrated flux
         flux = passband_integral(wave, spec, passband=passband, log=True)
         fluxerr = None if err is None else \
-                    numpy.ma.sqrt( passband_integral(wave, numpy.square(err), passband=passband,
-                                                     log=True))
+                    passband_integral(wave, err, passband=passband, log=True, quad=True))
 
         # No flux in the passband, meaning division by zero will occur!
         if not numpy.absolute(flux) > 0.0:
             return flux, fluxerr, 0.0, 0.0, 0.0, 0.0, incomplete, empty, True, False
 
-        # Get the first and second moments; saved to a temporary
-        # variable for use in the error calculations (if possible)
-        mom1 = passband_integral(wave, cz*spec, passband=passband, log=True)
-        _mom1 = mom1 / flux
-        mom2 = passband_integral(wave, numpy.square(cz)*spec, passband=passband, log=True)
-        _mom2 = mom2 / flux
-
-        # Perform the error calculations
-        if err is None:
-            mom1 = _mom1
-            mom1err = None
-
-            if _mom2 < numpy.square(mom1):
-                return flux, fluxerr, mom1, mom1err, 0.0, 0.0, incomplete, empty, False, True
-
-            mom2 = numpy.ma.sqrt(_mom2 - numpy.square(mom1))
-            mom2err = None
-        else:
-            mom1err = passband_integral(wave, cz*numpy.square(err), passband=passband, log=True)
-            mom1err = numpy.ma.sqrt(mom1err * numpy.square(_mom1/mom1)
-                                        + numpy.square(fluxerr * _mom1/flux))
-            mom1 = _mom1
-                
-            if _mom2 < numpy.square(mom1):
-                return flux, fluxerr, mom1, mom1err, 0.0, 0.0, incomplete, empty, False, True
-
-            mom2err = passband_integral(wave, numpy.square(cz*err), passband=passband, log=True)
-            mom2err = numpy.ma.sqrt(mom2err * numpy.square(_mom2/mom2)
-                                        + numpy.square(fluxerr * _mom2/flux))
-            mom2err = numpy.ma.sqrt(numpy.square(mom2err) + numpy.square(2*mom1*mom1err))
-            mom2 = numpy.ma.sqrt(_mom2 - numpy.square(mom1))
-            mom2err /= (2.0*mom2)
+        # Get the first and second moments:
+        mom1, mom1err = passband_weighted_mean(wave, spec, cz, yerr=err, passband=passband,
+                                               log=True)
+        mom2, mom2err = passband_weighted_sdev(wave, spec, cz, yerr=err, passband=passband,
+                                               log=True)
 
         return flux, fluxerr, mom1, mom1err, mom2, mom2err, incomplete, empty, False, False
 

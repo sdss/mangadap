@@ -156,9 +156,7 @@ from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .templatelibrary import TemplateLibrary
 from .stellarcontinuummodel import StellarContinuumModel
 from .emissionlinemodel import EmissionLineModel
-from .bandpassfilter import passband_integral, passband_integrated_width
-from .bandpassfilter import passband_integrated_mean
-from .bandpassfilter import passband_weighted_mean, pseudocontinuum
+from .bandpassfilter import passband_integral, passband_integrated_width, pseudocontinuum
 from .util import select_proc_method, flux_to_fnu
 
 import astropy.constants
@@ -387,8 +385,8 @@ class AbsorptionLineIndices:
             # Calculate the integral over the passband
             self.index[i] = passband_integral(wave, integrand, passband=m, log=log)
             if err is not None:
-                self.index_err[i] = numpy.sqrt(passband_integral(wave, numpy.square(err/cont),
-                                               passband=m, log=log))
+                self.index_err[i] = passband_integral(wave, err/cont, passband=m, log=log,
+                                                      quad=True)
 
             # Get the fraction of the band covered by the spectrum and
             # flag bands that are only partially covered or empty

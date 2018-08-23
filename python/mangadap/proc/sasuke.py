@@ -103,7 +103,6 @@ from .templatelibrary import TemplateLibrary
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .stellarcontinuummodel import StellarContinuumModel
 from .spectralfitting import EmissionLineFit
-from .bandpassfilter import emission_line_equivalent_width
 from .emissionlinetemplates import EmissionLineTemplates
 from .util import sample_growth
 from .ppxffit import PPXFModel, PPXFFitResult, PPXFFit
