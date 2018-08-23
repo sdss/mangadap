@@ -229,140 +229,366 @@ def passband_median(x, y, passband=None):
     return numpy.array([ 0.0 if len(ii) == 0 else numpy.median(_y[ii]) for ii in indx ])
 
 
-def pixel_fraction_in_passband(x, passband, dx):
+def pixel_fraction_in_passband(x, passband, dx=None):
+    r"""
+    Determine the width of each x interval to include in one or more
+    passband integrals.
+
+    Args:
+        x (1D array-like):
+            Borders of pixels.
+        passband (1D or 2D array-like):
+            Passbands to integrate over.  If more than one, the shape of
+            the input should be :math:`(N_{\rm passband},2)`.
+        dx (1D array-like, optional):
+            The size of each pixel.  If not provided, calculated from
+            `x`.  Can be provided to speed calculations for multiple
+            calls.
+
+    Returns:
+        numpy.ndarray: The array with the fraction of each pixel within
+        each passband.  The output shape is :math:`(N_{\rm pixel},N_{\rm
+        passband})`, where :math:`N_{\rm pixel}` is the 1 less than the
+        number of pixel borders.
     """
-    Get the width of each x interval to include in the passband
-    integral.
-    """
-    return ((x[1:]-passband[0])/dx).clip(0,1) + ((passband[1]-x[:-1])/dx).clip(0,1) - 1.0
+    _x = numpy.atleast_1d(x)
+    if _x.ndim != 1:
+        raise ValueError('Pixel coordinates must be a 1D vector.')
+    _dx = numpy.diff(_x) if dx is None else numpy.atleast_1d(dx)
+    if _dx.ndim != 1:
+        raise ValueError('Pixel sizes must be a 1D vector.')
+    if _x.size != _dx.size+1:
+        raise ValueError('Input coordinates must be the pixel borders.')
+    _passband = numpy.atleast_1d(passband)
+    if _passband.ndim == 1:
+        return ((_x[1:]-_passband[0])/_dx).clip(0,1)+((_passband[1]-_x[:-1])/_dx).clip(0,1)-1.0
+    
+    return ((x[1:,None]-passband[None,:,0])/dx[:,None]).clip(0,1) \
+                + ((passband[None,:,1]-x[:-1,None])/dx[:,None]).clip(0,1) - 1.0
 
 
-def passband_integral(x, y, passband=None, borders=False, log=False, base=10.0):
-    """
+def passband_integral(x, y, passband=None, borders=False, log=False, base=10.0, quad=False):
+    r"""
     Determine the integral of a discrete set of data over a passband
     accounting for fractional pixels.
 
-    If borders = True, the x values are the borders of the interval over
-    which y is measured.  These can be non-uniform.  In this case, the
-    number of x values must be N+1 for N y values.
+    The integral is done by a simple sum:
     
-    Otherwise, the x values are expected to be uniformly sampled either
-    linearly or geometrically.  In this case, x can be either a two
-    element vector giving the (geometric) centers of the first and last
-    sample interval or a vector with the N samples.  In either case,
-    :func:`mangadap.util.instrument._pixel_borders` is used to determine
-    the borders of the sample intervals.
+    .. math::
+        S(y) = \sum_i \delta_i y_i {\rm d}x_i
+        
+    where :math:`\delta_i` is the fraction of pixel :math:`i` within the
+    integration limits as determined by
+    :func:`pixel_fraction_in_passband`.  Given the errors in :math:`y`
+    (:math:`\epsilon_i`), the propagated error in :math:`S` is
 
-    If the passband is None, the integral is determined across all data.
+    .. math::
+
+        [\epsilon S(y)]^2 = \sum_i (\delta_i \epsilon_i {\rm d}x_i)^2, 
+
+    which can be calculated using the `quad` keyword.  For example,
+    given values to integrate, `y`, and errors, `e`, calculate the
+    passband integral and its error as follows::
+
+        integral = passband_integral(x, y)
+        integral_error = passband_integral(x, e, quad=True)
+
+    .. warning::
+
+        Although the equation for the formal error propagation is
+        correct, a comparison of the formal errors to errors from a
+        Monte Carlo simulation show that the former are pretty poor
+        estimates of the latter.
+
+    Args:
+        x (1D array-like):
+            The array of x coordinates for the integration.  If
+            borders=True, this array provides the borders of the
+            interval over which y is measured.  These can be
+            non-uniform.  In this case, the number of x values must be
+            :math:`N+1` for :math:`N` 1D `y` values (see below).
+            Otherwise, the `x` values are expected to be uniformly
+            sampled either linearly or geometrically.  In this case, `x`
+            can be either a two element vector giving the (geometric)
+            centers of the first and last sample interval or a vector
+            with the :math:`N` samples.  In either case,
+            :func:`mangadap.util.instrument._pixel_borders` is used to
+            determine the borders of the sample intervals.
+        y (1D or 2D array-like):
+            The measured values to be integrated.  The first axis must
+            always provide the values to be integrated.  If those values
+            are specific to the passband, `y` should be 2D with shape
+            :math:`(N_y,N_{\rm passband})`.
+        passband (1D or 2D array-like, optional):
+            The list of passbands (in units of x) to integrate.  The
+            length of the last dimension must always be 2 for that
+            starting and ending x coordinate.  If 2D, the array must
+            have shape :math:`(N_{\rm passband},2)`.  If not provided,
+            the integral is just performed over the full :math:`y`
+            vector.  If `y` is 2D, the last axis of `y` and the first
+            axis here must match.
+        borders (:obj:`bool`, optional):
+            The :math:`x` values provided are the border coordinates
+            over which the :math:`y` values have been determined.
+        log (:obj:`bool`, optional):
+            The coordinates are logarithmically sampled.  Ignored if
+            `borders` is True.
+        base (:obj:`float`, optional):
+            The base of the logarithm used in the geometric sampling if
+            `log` is True.
+        quad (:obj:`bool`, optional):
+            Perform the quadrature sum instead of the direct sum.  This
+            is used for error calculations.
+        
+    Returns:
+        float, numpy.ndarray: The passband integral for each passband.
+
     """
     # Ensure that y is a numpy array, fill any masked values with 0s,
     # and check its shape
     _y = y.filled(0.0) if isinstance(y, numpy.ma.MaskedArray) else numpy.atleast_1d(y) 
+
+    if passband is None and _y.ndim > 1:
+        raise ValueError('If no passbands provided, must provide single vector to integrate.')
+
+    ny = _y.shape[0]
+
+    # Check the input coordinates and calculate the borders
     _x = numpy.atleast_1d(x)
-    if len(_x.shape) != 1 or len(_y.shape) != 1:
-        raise ValueError('Can only provide one-dimensional vectors.')
-    # Check the input and calculate the pixel borders
-    if borders and len(_x) != len(_y)+1:
+    if len(_x.shape) != 1:
+        raise ValueError('Coordinates must be a 1D vector.')
+    if borders and len(_x) != ny+1:
         raise ValueError('Must provide N+1 borders for N samples.')
     if not borders:
-        _x, dx = _pixel_borders( numpy.array([x[0],x[-1]]), _y.size, log=log, base=base)
+        _x, dx = _pixel_borders( numpy.array([x[0],x[-1]]), ny, log=log, base=base)
+
     if passband is None:
-        return numpy.dot(_y, numpy.diff(_x))
-    _passband = numpy.atleast_1d(passband)
-    if len(_passband.shape) > 2:
+        # No passband, so just get the full integral; y is checked to
+        # be 1D above
+        return numpy.sqrt(numpy.dot(numpy.square(_y), numpy.square(numpy.diff(_x)))) if quad \
+                    else numpy.dot(_y, numpy.diff(_x))
+
+    # Check the input passbands
+    _passband = numpy.atleast_2d(passband)
+    if _passband.ndim > 2:
         raise ValueError('Can only handle passband arrays of 1 or 2 dimensions.')
     if _passband.shape[-1] != 2:
         raise ValueError('Passband(s) must have shape N_bands x 2.')
+    
+    # Reshape y if necessary
+    _y = numpy.atleast_2d(_y)
+    if _y.shape[0] == 1:
+        _y = numpy.tile(_y[0], (_passband.shape[0],1)).T
 
-    # Interval for each sample
+    # Check its shape
+    if _y.shape[1] != _passband.shape[0]:
+        raise ValueError('For 2D array input, second axis must match the number of passbands.')
+        
+    # Get the (fractional) interval of each pixel in each passband
     dx = numpy.diff(_x)
+    inband_dx = pixel_fraction_in_passband(_x, _passband, dx)*dx[:,None]
 
-    # Get the integral over a single passband
-    if len(_passband.shape) == 1:
-        inband_dx = pixel_fraction_in_passband(_x, _passband, dx)*dx
-    else:
-        # Get the integral over all passbands
-        inband_dx = numpy.empty((_passband.shape[0],y.size), dtype=numpy.float)
-        for i,pb in enumerate(_passband):
-            inband_dx[i,:] = pixel_fraction_in_passband(_x, pb, dx)*dx
-    # Sum of y*dx
-    return numpy.dot(_y, inband_dx.T)
+    # Sum of y*dx, or sqrt(sum((y*dx)^2))
+    integral = numpy.sqrt(numpy.sum(numpy.square(_y*inband_dx), axis=0)) if quad \
+                    else numpy.sum(_y*inband_dx, axis=0)
+
+    # Reshape the returned array if only one passband provided
+    return integral if _passband.shape[0] > 1 else integral[0]
 
 
-def passband_integrated_width(x, y, passband=None, log=False, base=10.0):
+def passband_integrated_width(x, y, passband=None, borders=False, log=False, base=10.0):
     """
     Determine the integrated width of the passband, accounting for masked pixels.
     """
     unity = y.copy()
     unity[numpy.invert(numpy.ma.getmaskarray(y))] = 1.0
-    return passband_integral(x, unity, passband=passband, log=log, base=base)
+    return passband_integral(x, unity, passband=passband, borders=borders, log=log, base=base)
 
 
-def passband_integrated_mean(x, y, passband=None, err=None, log=False, base=10.0):
+def passband_integrated_mean(x, y, err=None, passband=None, borders=False, log=False, base=10.0):
     """
     Determine the integrated mean over a (set of) passband(s).  Nominal
     errors are returned if err is provided.
     """
     # Get the passband interval, accounting for masked pixels
-    interval = passband_integrated_width(x, y, passband=passband, log=log, base=base)
+    interval = passband_integrated_width(x, y, passband=passband, borders=borders, log=log,
+                                         base=base)
     interval = numpy.ma.MaskedArray(interval, mask=numpy.invert(numpy.absolute(interval) > 0))
 
     # Get the integral of y over the passband
-    integral = numpy.ma.MaskedArray(passband_integral(x, y, passband=passband, log=log, base=base))
-    
-    # Return the integrated mean, and the error if possible
+    integral = numpy.ma.MaskedArray(passband_integral(x, y, passband=passband, borders=borders,
+                                                      log=log, base=base))
     if err is None:
-        return integral/interval, None
-    err_integral = numpy.ma.MaskedArray(passband_integral(x, numpy.square(err), passband=passband,
-                                        log=log, base=base))
-    return integral/interval, numpy.ma.sqrt(err_integral)/interval
+        # No error
+        return numpy.ma.divide(integral, interval), None
+
+    if len(y) != len(err):
+        raise ValueError('Value and error have different sizes.')
+
+    # Return the integrated mean and error
+    integral_err = numpy.ma.MaskedArray(passband_integral(x, err, passband=passband,
+                                                          borders=borders, log=log, base=base,
+                                                          quad=True))
+    return numpy.ma.divide(integral, interval), numpy.ma.divide(err_integral, interval)
 
 
-def passband_weighted_mean(x, y, z, passband=None, yerr=None, zerr=None, log=False, base=10.0):
+def passband_weighted_mean(x, y, z, passband=None, borders=False, yerr=None, zerr=None, log=False,
+                           base=10.0):
     r"""
-    Determine the y-weighted integral of z over the passband; i.e.,
+    Determine the y-weighted mean of z over the passband; i.e.,
 
     .. math::
 
-        \frac{\int_{x_1}^{x_2} y z dx}{\int_{x_1}_{x_2} y dx}.
-    
-    Nominal errors are returned if err is provided.
+        \mu = \frac{\int_{x_1}^{x_2} y z dx}{\int_{x_1}_{x_2} y dx},
+        
+    where the integrals are determined by the discrete sum; i.e.,
+    :math:`\mu = S(y z)/S(y)` where :math:`S(y)` is provided by
+    :func:`passband_integral`.
+
+    Because the error in the numerator and denominator of :math:`\mu`
+    are correlated, they are calculated here by explicit error
+    propagation:
+
+    .. math::
+
+        \epsilon_\mu^2 = \frac{1}{S(y)^2} (S((z-\mu)^2 \epsilon_y^2) +
+        S(y^2\epsilon_z^2)).
+
+    Returns:
+        numpy.ma.MaskedArray: Two masked arrays with the
+        passband-weighted mean and its error.  The error is returned as
+        `None` if no errors are provided.
     """
     # Get the passband interval, accounting for masked pixels
-    weighted_integral = passband_integral(x, z*y, passband=passband, log=log, base=base)
-    integral = passband_integral(x, y, passband=passband, log=log, base=base)
+    weighted_integral = passband_integral(x, z*y, passband=passband, borders=borders, log=log,
+                                          base=base)
+    integral = passband_integral(x, y, passband=passband, borders=borders, log=log, base=base)
     integral = numpy.ma.MaskedArray(integral, mask=numpy.invert(numpy.absolute(integral) > 0))
 
     if yerr is None and zerr is None:
-        return weighted_integral/integral, None
+        return numpy.ma.divide(weighted_integral,integral), None
 
-    weighted_integral = numpy.ma.MaskedArray(weighted_integral,
-                                        mask=numpy.invert(numpy.absolute(weighted_integral) > 0))
+    # Construct error
+    weighted_integral_err = numpy.zeros_like(weighted_integral, dtype=float)
 
-    werr = numpy.zeros(z.shape)
+    # Get the integrand for the y errors
     if yerr is not None:
-        werr += z*numpy.square(yerr)
-    if zerr is not None:
-        werr += y*numpy.square(zerr)
-    weighted_integral_err = passband_integral(x, werr, passband=passband, log=log, base=base)
+        if yerr.shape != y.shape:
+            raise ValueError('Incorrect shape for y errors.')
+        ye_integrand = (z[:,None]-integral[None,:])*yerr[:,None]
+        weighted_integral_err += numpy.square(passband_integral(x, ye_integrand, passband=passband,
+                                                                borders=borders, log=log,
+                                                                base=base, quad=True))
 
-    integral_err = 0 if yerr is None else passband_integral(x, numpy.square(yerr),
-                                                            passband=passband, log=log, base=base)
-    weighted_mean = weighted_integral/integral
-    weighted_mean_err = numpy.ma.sqrt(
-                            weighted_integral_err*numpy.square(weighted_mean/weighted_integral) \
-                                    + integral_err*numpy.square(weighted_mean/integral))
-    return weighted_mean, weighted_mean_err
+    # Get the integrand for the z errors
+    if zerr is not None:
+        if zerr.shape != z.shape:
+            raise ValueError('Incorrect shape for z errors.')
+        ze_integrand = _zerr*y
+        weighted_integral_err += numpy.square(passband_integral(x, ze_integrand, passband=passband,
+                                                                borders=borders, log=log,
+                                                                base=base, quad=True))
+    
+    # Finalize the error
+    weighted_integral_err = numpy.sqrt(weighted_integral_err)
+
+    # Return the passband weighted mean and its error
+    return numpy.ma.divide(weighted_integral, integral), \
+                numpy.ma.divide(weighted_integral_err, numpy.absolute(integral))
+
+
+def passband_weighted_sdev(x, y, z, passband=None, borders=False, yerr=None, zerr=None, log=False,
+                           base=10.0):
+    r"""
+    Determine the y-weighted standard deviation of z over the passband;
+    i.e.,
+
+    .. math::
+
+        \sigma^2 = \frac{\int_{x_1}^{x_2} y z^2 dx}{\int_{x_1}_{x_2} y
+        dx} - \mu^2,
+        
+    where :math:`\mu` is the y-weighted mean of z over the passband (see
+    :func:`passband_weighted_mean`) and the integrals are determined by
+    the discrete sum; i.e., :math:`\sigma^2 = S(y z^2)/S(y) - \mu^2`
+    where :math:`S(y)` is provided by :func:`passband_integral`.
+
+    Because the error in the various components of the :math:`\sigma`
+    calculation are correlated, they are calculated here by explicit
+    error propagation:
+
+    .. math::
+
+        \epsilon_{\sigma^2}^2 = \frac{1}{S(y)^2} (S([(z-\mu)^2 + \mu^2 -
+        \mu_2]^2 \epsilon_y^2) + S(4 (z-\mu)^2 y^2\epsilon_z^2)),
+        
+    where :math:`\mu_2` is the first term in the :math:`\sigma^2`
+    calculation above and
+    
+    .. math::
+
+        \epsilon_\sigma = \frac{\epsilon_{\sigma^2}}{2 \sigma}.
+
+    Returns:
+        numpy.ma.MaskedArray: Two masked arrays with the
+        passband-weighted standard deviation and its error.  The error
+        is returned as `None` if no errors are provided.
+    """
+    mu = passband_weighted_mean(x, y, z, passband=passband, borders=borders, log=log,
+                                base=base)[0]
+    mu2 = passband_weighted_mean(x, y, z*z, passband=passband, borders=borders, log=log,
+                                 base=base)[0]
+    sigma = numpy.ma.sqrt(mu2 - numpy.square(mu))
+
+    if yerr is None and zerr is None:
+        return sigma, None
+
+    # Construct error
+    sigma_error = numpy.zeros_like(sigma, dtype=float)
+
+    # Get the integrand for the y errors
+    if yerr is not None:
+        if yerr.shape != y.shape:
+            raise ValueError('Incorrect shape for y errors.')
+        ye_integrand = (numpy.square(z[:,None]-mu[None,:])
+                            + (numpy.square(mu)-mu2)[None,:])*yerr[:,None]
+        sigma_error += numpy.square(passband_integral(x, ye_integrand, passband=passband,
+                                                      borders=borders, log=log, base=base,
+                                                      quad=True))
+
+    # Get the integrand for the z errors
+    if zerr is not None:
+        if zerr.shape != z.shape:
+            raise ValueError('Incorrect shape for z errors.')
+        ze_integrand = 2*(z[:,None]-mu[None,:])*(y*zerr)[:,None]
+        sigma_error += numpy.square(passband_integral(x, ze_integrand, passband=passband,
+                                                      borders=borders, log=log, base=base,
+                                                      quad=True))
+
+    # Finalize the error in sigma
+    sigma_error = numpy.sqrt(sigma_error) \
+                        / numpy.absolute(passband_integral(x, y, passband=passband,
+                                         borders=borders, log=log, base=base) * 2*sigma)
+
+    return sigma, sigma_error
 
 
 def pseudocontinuum(x, y, passband=None, err=None, log=True, weighted_center=True):
     """
     Get the pseudocontinua in a set of passbands for a single vector (y)
+
+    Returns:
+        float, numpy.ndarray: Return five arrays or floats: (1) The
+        center of each passband, (2) the mean continuum level, (3) the
+        propagated error in the continuum level (will be None if no
+        errors are provided), (4) flag that part of the passband was
+        masked, (5) flag that the passband was fully masked or empty.
     """
     # Calculate the pseudo-continua in the sidebands
-    continuum, continuum_error = passband_integrated_mean(x, y, passband=passband, err=err, log=log)
+    continuum, continuum_error = passband_integrated_mean(x, y, err=err, passband=passband,
+                                                          log=log)
     if weighted_center:
-        band_center, _wc_err = passband_weighted_mean(x, y, x, passband=passband, log=log)
+        band_center = passband_weighted_mean(x, y, x, passband=passband, log=log)[0]
     else:
         band_center = numpy.mean(x) if passband is None else numpy.mean(passband, axis=1)
 
@@ -370,11 +596,6 @@ def pseudocontinuum(x, y, passband=None, err=None, log=True, weighted_center=Tru
     # pixels
     interval_frac = passband_integrated_width(x, y, passband=passband, log=log) \
                             / numpy.diff(passband, axis=1).ravel()
-
-#    pyplot.step(x, y, where='mid', color='k', lw=0.5, zorder=1)
-#    pyplot.scatter(band_center, continuum, marker='.', s=50,
-#                   color='b', lw=0, zorder=3)
-#    pyplot.show()
 
     return band_center, continuum, continuum_error, interval_frac < 1.0, \
                 numpy.invert(interval_frac > 0.0)

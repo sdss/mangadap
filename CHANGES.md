@@ -2,6 +2,14 @@
 --------
  - Put in default paths when environmental variables not defined and
    warn user, both when running setup.py and when importing mangadap
+ - Start testing suite (still very limited)
+ - Fix error in constructing parameter tying vector passed to ppxf
+ - Allow change of templates used during stellar-continuum and
+   emission-ine fit.
+ - Fixed bug in post-fit chi-square calculation in PPXFFit
+ - Updated requirements
+ - Fixed bug in passband_integral error calculation, but MC tests show
+   that it's a poor substitute for an MC simulation.
 
 TODO:
  - Documentation of config examples are out of date!

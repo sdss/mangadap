@@ -110,8 +110,6 @@ from ..util.log import log_output
 from ..util.parser import DefaultConfig
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .stellarcontinuummodel import StellarContinuumModel
-#from .emissionlinemoments import EmissionLineMoments
-from .bandpassfilter import emission_line_equivalent_width
 from .elric import Elric, ElricPar
 from .sasuke import Sasuke, SasukePar
 from .util import select_proc_method, replace_with_data_from_nearest_coo
@@ -1159,7 +1157,9 @@ class EmissionLineModel:
 
         #---------------------------------------------------------------
         # Fit the spectra
-        # Mask should be fully defined within the fitting function
+        # Mask should be fully defined within the fitting function This
+        # should also add the equivalent widths.  TODO: Shouldn't the
+        # equivalent widths be done here?
         model_flux, model_base, model_mask, model_fit_par, model_eml_par, model_binid = \
                 self.method['fitfunc'](self.binned_spectra, par=self.method['fitpar'],
                                        loggers=self.loggers, quiet=self.quiet)
