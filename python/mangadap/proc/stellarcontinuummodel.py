@@ -1237,8 +1237,12 @@ class StellarContinuumModel:
         """
         Reset the mask of the stellar continuum to a continuous window
         from the minimum to maximum valid wavelength.
-        """
 
+        .. todo::
+            - Allow continuum to be n-dimensional and use
+              `numpy.apply_along_axis`.
+
+        """
         spatial_shape = DAPFitsUtil.get_spatial_shape(continuum.shape, dispaxis)
         if len(spatial_shape) != 1:
             raise ValueError('Input array should be two-dimensional!')

@@ -38,7 +38,6 @@ def fit_one_cube(plt, ifu, drpall_file=None, directory_path=None, analysis_path=
                                           elmom_key='EMOMM',
                                           elfit_key='EFITM-MIUSCATTHIN',
                                           spindex_key='INDXEN') ])
-
     # Run it!
     return manga_dap(obs, plan, verbose=2, directory_path='./data', analysis_path='./output')
 
