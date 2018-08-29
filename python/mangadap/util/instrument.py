@@ -1588,163 +1588,8 @@ def resample_vector_npix(outRange=None, dx=None, log=False, base=10.0, default=N
     return npix, _outRange
 
 
-def resample_vector(y, xRange=None, inLog=False, newRange=None, newpix=None, newLog=True,
-                    dx=None, base=10.0, ext_value=0.0, conserve=False, flat=True):
-    """
-    Resample the provided vector to a new grid using integration.
-
-    This is a generalization of the routine :func:`log_rebin` provided
-    by Michele Cappellari in the pPXF package.
-
-    Args:
-        y (numpy.ndarray): Vector to resample.  Must be 1-D.
-        xRange (array): (**Optional**) A two-element array with the
-            starting and ending value for the coordinates of the centers
-            of the first and last pixels in y.  If not provided, the
-            pixel coordinates are used; i.e., xRange = [0,y.size-1].
-        inLog (bool): (**Optional**) Flag that the input vector is
-            logarithmically spaced within xRange.  Cannot be used if
-            xRange is not provided!
-        newRange (array): (**Optional**) Coordinates for the centers of
-            the first and last pixel in the output vector.  If not
-            provided, assumed to be the same as the input range.
-        newpix (int): (**Optional**) Number of pixels for the output
-            vector.  If not provided, assumed to be the same as the
-            input vector.
-        newLog (bool): (**Optional**) The output vector should be
-            logarithmically binned in the x-coordinates.
-        dx (float): (**Optional**) The sampling step for the output
-            vector.  If *newLog* is True, this has to be the change in
-            the logarithm of x for the output vector!  If not provided,
-            the sampling is set by the output range (see *newRange*
-            above) and number of pixels (see *newpix* above).
-        base (float): (**Optional**) When logarithmically binning the
-            output vector, use this as the base.  The default is 10.0;
-            use numpy.exp(1) for natural logarithm.
-        ext_value (float): (**Optional**) Set extrapolated values to the
-            provided float.
-        conserve (bool): (**Optional**) Conserve the integral of the
-            input vector.  For example, if the input vector is a
-            spectrum in flux units, you should conserve the flux in the
-            resampling; if the spectrum is in units of flux density, you
-            do not want to conserve the integral.
-        flat (bool): (**Optional**) Assume the 'true' y function is flat
-            across a pixel, as is done in M. Cappellari's log_rebin
-            routine; this is the default behavior.  If set to False, the
-            integration follows a basic linear interpolation across the
-            pixel.
-
-    Returns:
-        numpy.ndarray: Two numpy arrays with the new x coordinates and
-        new y values for the resampled vector.
-    
-    Raises:
-        ValueError: Raised if *y* is not of type numpy.ndarray, if *y*
-            is not one-dimensional, or if *xRange* is not provided and
-            the input vector is logarithmically binned (see *inLog*
-            above).
-
-    .. todo:
-        - Need to check if this works rebinning from log to log!
-
-    """
-    warnings.warn('resample_vector should be deprecated.  Use resample1d instead.')
-
-    # Check operation can be performed
-    if not isinstance(y, numpy.ndarray):
-        raise ValueError('Input vector must be a numpy.ndarray!')
-    if len(y.shape) != 1:
-        raise ValueError('Input must be a 1-D vector!')
-    if xRange is None and inLog:
-        raise ValueError('To specify the input vector as logarithmically binned, you must ' \
-                         'provided the coordinates of the first and last pixel!')
-
-    # Get the pixel borders of the input vector
-    n = int(y.shape[0])
-    inRange = numpy.array([0, n-1]) if xRange is None else numpy.array(xRange)
-    inBorders, inPscale = _pixel_borders(inRange, n, log=inLog, base=base)
-
-    # Set the output range, number of pixels, pixel borders, and output
-    # coordinate vector
-    outRange = inRange if newRange is None else numpy.array(newRange)
-    m, _outRange = resample_vector_npix(outRange=outRange, log=newLog, base=base, dx=dx,
-                                        default=(n if newpix is None else newpix))
-#    print(outRange, m, _outRange)
-    outRange = outRange if _outRange is None else _outRange
-    outBorders, outPscale = _pixel_borders(outRange, m, log=newLog, base=base)
-    outX = numpy.sqrt(outBorders[1:]*outBorders[:-1]) if newLog \
-            else (outBorders[1:]+outBorders[:-1])/2.0
-
-    #If the input is logarithmically binned, work in log space
-    if inLog:
-        inBorders = numpy.log(inBorders)/numpy.log(base)
-        outBorders = numpy.log(outBorders)/numpy.log(base)
-    # Convert the borders to the input pixel units
-    outBorders /= inPscale
-    inBorders /= inPscale
-
-    # Perform the integration
-    if flat:
-        # Get the new spectrum by performing an analytic integral
-        # assuming the value is flat across each pixel
-        #   - From M. Cappellari
-        k = (outBorders - inBorders[0]).clip(0, n-1).astype(int)
-        outY = numpy.add.reduceat(y, k)[:-1]
-        outY *= numpy.diff(k) > 0
-        outY += numpy.diff((outBorders - inBorders[k])*y[k])
-    else:
-        # Get the new spectrum by performing an analytic integral
-        # assuming a basic linear interpolation between the pixel values
-        #   - Not as elegant as Michele's code above, but it gets the
-        #     job done
-
-        # Create a sorted list of the pixel centers and the output
-        # borders
-        inCenters = numpy.sqrt(inBorders[1:]*inBorders[:-1]) if newLog \
-                         else (inBorders[1:]+inBorders[:-1])/2.0
-        _x = numpy.append( outBorders, inCenters )
-        srt = numpy.argsort(_x)
-        _x = _x[srt]
-
-        # Linearly interpolate the input function at the output border positions
-        _y = numpy.append(y, y[-1])
-        d = (outBorders-inCenters[0])
-        k = d.clip(0,n-1).astype(int)
-        _y = numpy.append( (1-(d-k))*y[k] + (d-k)*_y[k+1], y)[srt]
-
-        # Flag the input pixel centers for removal from reduceat
-        flg = numpy.zeros(_x.size, dtype=int)
-        flg[m+1:] = 1
-        _f = flg[srt]
-
-        # Compute the integrand
-        if inLog:
-            _y *= numpy.power(base, _x*inPscale)
-        integ = (_y[1:]+_y[:-1])*numpy.diff(_x)/2.0
-
-        # Use reduceat to calculate the integral
-        indx = _f < 1
-        k = numpy.arange(_y.size)[indx]
-        outY = numpy.add.reduceat(integ, k[:-1]) if k[-1] == _y.size-1 \
-                    else numpy.add.reduceat(integ, k)[:-1]
-
-    # Do not conserve the integral over the size of the pixel
-    if not conserve:
-        outY /= numpy.diff(outBorders)
-    if inLog:
-        outY /= outX
-
-    # Set values for extrapolated regions
-    if outRange is not None and (outRange[0] < inRange[0] or outRange[1] > inRange[1]):
-            outY[ (outX < inRange[0]) | (outX > inRange[1]) ] = ext_value
-
-    # Return new coordinates and rebinned values
-    return outX, outY
-
-
-def resample1d(y, x=None, xRange=None, inLog=False, newRange=None, newpix=None, newLog=True,
-               newdx=None, base=10.0, ext_value=0.0, conserve=False):
-    """
+class Resample:
+    r"""
     Resample regularly or irregularly sampled, 1-dimensional data to a
     new grid using integration.
     
@@ -1778,47 +1623,65 @@ def resample1d(y, x=None, xRange=None, inLog=False, newRange=None, newpix=None, 
     new spectra with units of flux.
 
     Args:
-        y (numpy.ndarray): Data values to resample.  Must be 1-D.
-        x (numpy.ndarray): (**Optional**) Abcissa coordinates for the
-            data, which do not need to be regularly sampled.  If not
-            provided, the `xRange`, which is `[0,y.size-1]` by default.
-        xRange (array): (**Optional**) A two-element array with the
-            starting and ending value for the coordinates of the centers
-            of the first and last pixels in y.  Default is
-            `[0,y.size-1]`.
-        inLog (bool): (**Optional**) Flag that the input vector is
-            logarithmically spaced within xRange.  Cannot be used if
-            xRange is not provided!
-        newRange (array): (**Optional**) Coordinates for the (geometric)
-            centers of the first and last pixel in the output vector.
-            If not provided, assumed to be the same as the input range.
-        newpix (int): (**Optional**) Number of pixels for the output
-            vector.  If not provided, assumed to be the same as the
-            input vector.
-        newLog (bool): (**Optional**) The output vector should be
-            logarithmically binned.
-        newdx (float): (**Optional**) The sampling step for the output
-            vector.  If `newLog=True`, this has to be the change in
-            the logarithm of x for the output vector!  If not provided,
-            the sampling is set by the output range (see *newRange*
-            above) and number of pixels (see *newpix* above).
-        base (float): (**Optional**) When logarithmically binning the
-            output vector, use this as the base.  The default is 10;
-            use `numpy.exp(1)` for natural logarithm.
-        ext_value (float): (**Optional**) Set extrapolated values to the
-            provided float.  By default, extrapolated values are set to
-            0.  If set to None, values are just set to the linear
-            exatrapolation of the data beyond the provided limits; use
-            `ext_value=None` with caution!
-        conserve (bool): (**Optional**) Conserve the integral of the
-            input vector.  For example, if the input vector is a
-            spectrum in flux units, you should conserve the flux in the
-            resampling; if the spectrum is in units of flux density, you
-            do not want to conserve the integral.
-
-    Returns:
-        numpy.ndarray: Two numpy arrays with the new x and y values for
-        the resampled data.
+        y (numpy.ndarray):
+            Data values to resample.  Shape can be 1 or 2D.  If 1D, the
+            shape must be :math:`(N_{\rm pix},)`; otherwise, it must be
+            :math:`(N_y,N_{\rm pix})`.  I.e., the length of the last
+            axis must match the input coordinates.
+        x (numpy.ndarray, optional):
+            Abcissa coordinates for the data, which do not need to be
+            regularly sampled.  If the pixel borders are not provided,
+            they are assumed to be half-way between adjacent pixels, and
+            the first and last borders are assumed to be equidistant
+            about the provided value.  If these coordinates are not
+            provided, they are determined by the input borders, the
+            input range, or just assumed to be the indices,
+            :math:`0..N_{\rm pix}-1`.
+        xRange (array-like, optional):
+            A two-element array with the starting and ending value for
+            the coordinates of the centers of the first and last pixels
+            in y.  Default is :math:`[0,N_{\rm pix}-1]`.
+        xBorders (numpy.ndarray, optional):
+            An array with the borders of each pixel that must have a
+            length of :math:`N_{\rm pix}+1`.
+        inLog (:obj:`bool`, optional):
+            Flag that the input is logarithmically binned, primarily
+            meaning that the coordinates are at the geometric center of
+            each pixel and the centers are spaced logarithmically.  If
+            false, the sampling is expected to be linear.
+        newRange (array-like, optional):
+            A two-element array with the (geometric) centers of the
+            first and last pixel in the output vector.  If not provided,
+            assumed to be the same as the input range.
+        newpix (:obj:`int`, optional): 
+            Number of pixels for the output vector.  If not provided,
+            assumed to be the same as the input vector.
+        newLog (:obj:`bool`, optional):
+            The output vector should be logarithmically binned.
+        newdx (:obj:`float`, optional):
+            The sampling step for the output vector.  If `newLog=True`,
+            this has to be the change in the logarithm of x for the
+            output vector!  If not provided, the sampling is set by the
+            output range (see `newRange` above) and number of pixels
+            (see `newpix` above).
+        base (:obj:`float`, optional):
+            The base of the logarithm used for both input and output
+            sampling, if specified.  The default is 10; use
+            `numpy.exp(1)` for natural logarithm.
+        ext_value (:obj:`float`, optional):
+            Set extrapolated values to the provided float.  By default,
+            extrapolated values are set to 0.  If set to None, values
+            are just set to the linear exatrapolation of the data beyond
+            the provided limits; use `ext_value=None` with caution!
+        conserve (:obj:`bool`, optional):
+            Conserve the integral of the input vector.  For example, if
+            the input vector is a spectrum in flux units, you should
+            conserve the flux in the resampling; if the spectrum is in
+            units of flux density, you do not want to conserve the
+            integral.
+    
+    Attributes:
+        oy...
     
     Raises:
         ValueError: Raised if *y* is not of type numpy.ndarray, if *y*
@@ -1826,81 +1689,154 @@ def resample1d(y, x=None, xRange=None, inLog=False, newRange=None, newpix=None, 
             the input vector is logarithmically binned (see *inLog*
             above).
     """
-    # Check operation can be performed
-    if not isinstance(y, numpy.ndarray):
-        raise ValueError('Input vector must be a numpy.ndarray!')
-    if len(y.shape) != 1:
-        raise ValueError('Input must be a 1-D vector!')
+    def __init__(self, y, x=None, xRange=None, xBorders=None, inLog=False, newRange=None,
+                 newpix=None, newLog=True, newdx=None, base=10.0, ext_value=0.0, conserve=False):
 
-    if x is None and xRange is None and inLog:
-        raise ValueError('To specify the input vector as logarithmically binned, you must ' \
-                         'provide the range.')
-    
-    if x is not None and xRange is not None:
-        warnings.warn('Provided both x and the xRange.  Preference given to x.')
-    _xRange = xRange if x is None else None
+        # Check operation can be performed
+        if not isinstance(y, numpy.ndarray):
+            raise ValueError('Input vector must be a numpy.ndarray!')
+        if len(y.shape) > 2:
+            raise ValueError('Input must be a 1D or 2D array!')
 
-    n = y.size
-    if x is None and xRange is None:
-        inX = numpy.arange(n).astype(float)
-    elif x is not None:
-        inX = x.copy()
-    else:
-        inX, _ = _pixel_centers(xRange, n, log=inLog, base=base)
-    if len(inX) != n:
-        raise ValueError('Input centers does not have the same length as the y vector.')
-    inBorders = numpy.array([(3*inX[0]-inX[1])/2] + ((inX[1:] + inX[:-1])/2).tolist()
-                                + [(3*inX[-1]-inX[-2])/2])
-    _y = y / numpy.diff(inBorders) if conserve else y
-    inBorderRange = numpy.array([inBorders[0], inBorders[-1]])
+        self.y = y.copy()
+        self.x = None
+        self.xborders = None
+        self._input_coordinates(x, xRange, xBorders, inLog, base)
 
-    # Set the output range, number of pixels, pixel borders, and output
-    # coordinate vector
-    outRange = numpy.array([inX[0], inX[-1]]) if newRange is None else numpy.array(newRange)
-    m, _outRange = resample_vector_npix(outRange=outRange, log=newLog, base=base, dx=newdx,
-                                        default=(n if newpix is None else newpix))
-    outRange = outRange if _outRange is None else _outRange
-    outBorders, _ = _pixel_borders(outRange, m, log=newLog, base=base)
-    outX = numpy.sqrt(outBorders[1:]*outBorders[:-1]) if newLog \
-            else (outBorders[1:]+outBorders[:-1])/2.0
+        # If conserving integral, assume input is integrated over pixel
+        # width and convert to a density function to be integrated
+        if conserve:
+            self.y /= numpy.diff(inBorders)
 
-    # Combine the input coordinates and the output borders into a single
-    # vector
-    combinedX = numpy.append( outBorders, inX )
-    srt = numpy.argsort(combinedX)
-    combinedX = combinedX[srt]
-    border = numpy.ones(combinedX.size, dtype=bool)
-    border[m+1:] = False
+        self._output_coordinates(newRange, newpix, newLog, newdx, base)
 
-    # Linearly interpolate the input function at the output border positions
-    interp = interpolate.interp1d(inX, _y, assume_sorted=True, fill_value='extrapolate')
-    combinedY = numpy.append( interp(outBorders), _y)[srt]
+        self.resample(ext_value=ext_value, conserve=conserve)
 
-    # Use reduceat to calculate the integral
-    integrand = (combinedY[1:]+combinedY[:-1])*numpy.diff(combinedX)/2.0
-    k = numpy.arange(combinedX.size)[border[srt]]
-    outY = numpy.add.reduceat(integrand, k[:-1]) if k[-1] == combinedY.size-1 \
-                    else numpy.add.reduceat(integrand, k)[:-1]
+    def _input_coordinates(self, x, xRange, xBorders, inLog, base):
+        """
+        Determine the centers and pixel borders of the input
+        coordinates.
+        """
+        if (x is not None or xBorders is not None) and xRange is not None:
+            warnings.warn('Provided both x or x borders and the x range.  Ignoring range.')
+        _xRange = xRange if x is None and xBorders is None else None
+        
+        if x is not None:
+            if x.ndim != 1:
+                raise ValueError('Coordinate vector must be 1D.')
+            if x.size != self.y.shape[-1]:
+                raise ValueError('Coordinate vector must match last dimension of value array.')
+        if xBorders is not None:
+            if xBorders.ndim != 1:
+                raise ValueError('Coordinate borders must be 1D.')
+            if xBorders.size != self.y.shape[-1]+1:
+                raise ValueError('Coordinate borders must match last dimension of value array.')
 
-    # Do not conserve the integral over the size of the pixel
-    if not conserve:
-        outY /= numpy.diff(outBorders)
+        if x is None:
+            if xBorders is not None:
+                self.x = numpy.sqrt(xBorders[:-1]*xBorders[1:]) if inLog \
+                            else (xBorders[:-1]+xBorders[1:])/2.0
+            elif xRange is not None:
+                self.x = _pixel_centers(xRange, self.y.shape[-1], log=inLog, base=base)
+            else:
+                self.x = numpy.arange(self.y.shape[-1]) + 0.5
+        else:
+            self.x = x
 
-    # Set values for extrapolated regions
-    if ext_value is not None:
-        indx = (outBorders[:-1] < inBorderRange[0]) | (outBorders[1:] > inBorderRange[-1]) 
-        if numpy.sum(indx) > 0:
-            outY[indx] = ext_value
+        if xBorders is None:
+            dx = numpy.diff(numpy.log(self.x)) if inLog else numpy.diff(self.x)
+            self.xborders = numpy.exp(numpy.append(numpy.log(self.x[:-1]) - dx/2,
+                                        numpy.log(self.x[-1]) + numpy.array([-1,1])*dx[-1]/2)) \
+                                if inLog else numpy.append(self.x - dx/2, [self.x[-1] + dx[-1]/2])
+        else:
+            self.xborders = xBorders
 
-#    pyplot.plot(inX, y)
-#    pyplot.scatter(inX, y, color='C0', marker='.', lw=0, s=100)
-#    pyplot.plot(outX, interp(outX), color='C2') #, marker='.', lw=0, s=100)
-#    pyplot.plot(outX, outY)
-#    pyplot.scatter(outX, outY, color='C1', marker='.', lw=0, s=100)
-#    pyplot.scatter(outBorders, numpy.array([outY[0]]+outY.tolist()), color='C3', marker='x')
-#    pyplot.show()
+    def _output_coordinates(self, newRange, newpix, newLog, newdx, base):
+        """Set the output coordinates."""
 
-    # Return new coordinates and rebinned values
-    return outX, outY
+        # Set the output range and number of pixels
+        outRange = numpy.array([self.x[0], self.x[-1]]) if newRange is None \
+                        else numpy.array(newRange)
+        m, _outRange = resample_vector_npix(outRange=outRange, log=newLog, base=base, dx=newdx,
+                                        default=(self.y.shape[-1] if newpix is None else newpix))
+        outRange = outRange if _outRange is None else _outRange
 
+        # Get the output pixel borders
+        self.outborders = _pixel_borders(outRange, m, log=newLog, base=base)[0]
+
+        # Get the output coordinate vector
+        self.outx = numpy.sqrt(self.outborders[:-1]*self.outborders[1:]) if newLog \
+                        else (self.outborders[:-1]+self.outborders[1:])/2.0
+
+    def old_resample(self, ext_value=0.0, conserve=False):
+        """Resample the vectors."""
+
+        # Combine the input coordinates and the output borders into a
+        # single vector
+        combinedX = numpy.append(self.outborders, self.x)
+        srt = numpy.argsort(combinedX)
+        combinedX = combinedX[srt]
+        border = numpy.ones(combinedX.size, dtype=bool)
+        border[self.outborders.size:] = False
+
+        # Linearly interpolate the input function at the output border positions
+        interp = interpolate.interp1d(self.x, self.y, assume_sorted=True, fill_value='extrapolate')
+        combinedY = numpy.append(interp(self.outborders), self.y)[srt]
+
+        # Use reduceat to calculate the integral
+        integrand = (combinedY[1:]+combinedY[:-1])*numpy.diff(combinedX)/2.0
+        k = numpy.arange(combinedX.size)[border[srt]]
+        self.outy = numpy.add.reduceat(integrand, k[:-1]) if k[-1] == combinedY.size-1 \
+                            else numpy.add.reduceat(integrand, k)[:-1]
+
+        # Do not conserve the integral over the size of the pixel
+        if not conserve:
+            self.outy /= numpy.diff(self.outborders)
+
+        # Set values for extrapolated regions
+        if ext_value is not None:
+            indx = (self.outborders[:-1] < self.xborders[0]) \
+                        | (self.outborders[1:] > self.xborders[-1]) 
+            if numpy.sum(indx) > 0:
+                self.outy[indx] = ext_value
+
+        return self.outx, self.outy
+
+
+    def resample(self, ext_value=0.0, conserve=False):
+        """Resample the vectors."""
+
+        # Convert y to a step function
+        _y = numpy.repeat(self.y, 2)
+        _x = numpy.repeat(self.xborders, 2)[1:-1]
+
+        # Combine the input coordinates and the output borders into a
+        # single vector
+        indx = numpy.searchsorted(_x, self.outborders)
+        combinedX = numpy.insert(_x, indx, self.outborders)
+
+        # Flag the output borders
+        border = numpy.insert(numpy.zeros(_x.size, dtype=bool), indx,
+                                numpy.ones(self.outborders.size, dtype=bool))
+
+        # Insert points at the borders of the output function
+        interp = interpolate.interp1d(_x, _y, assume_sorted=True, fill_value='extrapolate')
+        combinedY = numpy.insert(_y, indx, interp(self.outborders))
+
+        # Use reduceat to calculate the integral
+        integrand = combinedY[1:]*numpy.diff(combinedX)
+        k = numpy.arange(combinedX.size)[border]
+        self.outy = numpy.add.reduceat(integrand, k[:-1]) if k[-1] == combinedY.size-1 \
+                            else numpy.add.reduceat(integrand, k)[:-1]
+
+        # Do not conserve the integral over the size of the pixel
+        if not conserve:
+            self.outy /= numpy.diff(self.outborders)
+
+        # Set values for extrapolated regions
+        if ext_value is not None:
+            indx = (self.outborders[:-1] < self.xborders[0]) \
+                        | (self.outborders[1:] > self.xborders[-1]) 
+            if numpy.sum(indx) > 0:
+                self.outy[indx] = ext_value
 
