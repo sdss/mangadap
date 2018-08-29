@@ -1802,7 +1802,6 @@ class Resample:
 
         return self.outx, self.outy
 
-
     def resample(self, ext_value=0.0, conserve=False):
         """Resample the vectors."""
 
