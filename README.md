@@ -59,17 +59,16 @@ below.
 | `MANGACORE_VER`          | `v1_6_2`                          | Version of MaNGA core (survey-level meta data) |
 | `MANGACORE_DIR`          | `$HOME/MaNGA/core/$MANGACORE_VER` | Root path with the MaNGA core repository       |
 
-Notes:
-
-    - `$MANGACORE_VER` and `$MANGACORE_DIR` are only needed to perform
-      the survey-level execution of the pipeline.
-    - The DAP expects to find the DRP `LOGCUBE` files in
-      `$MANGA_SPECTRO_REDUX/$MANGADRP_VER/[plate]/stack`, where
-      `[plate]` is the desired plate number.
-    - The DAP expects to find/write data to
-      `$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER`.
-    - `$MANGADAP_VER` is only used to set the path names, not to select
-      the specific version of the pipeline to use
+**Notes:**
+ - `$MANGACORE_VER` and `$MANGACORE_DIR` are only needed to perform the
+   survey-level execution of the pipeline.
+ - The DAP expects to find the DRP `LOGCUBE` files in
+   `$MANGA_SPECTRO_REDUX/$MANGADRP_VER/[plate]/stack`, where `[plate]`
+   is the desired plate number.
+ - The DAP expects to find/write data to
+   `$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER`.
+ - `$MANGADAP_VER` is only used to set the path names, not to select the
+   specific version of the pipeline to use
 
 ## Usage
 
