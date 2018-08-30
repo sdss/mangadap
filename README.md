@@ -60,6 +60,7 @@ below.
 | `MANGACORE_DIR`          | `$HOME/MaNGA/core/$MANGACORE_VER` | Root path with the MaNGA core repository       |
 
 Notes:
+
     - `$MANGACORE_VER` and `$MANGACORE_DIR` are only needed to perform
       the survey-level execution of the pipeline.
     - The DAP expects to find the DRP `LOGCUBE` files in
