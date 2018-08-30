@@ -60,7 +60,7 @@ if sys.version > '3':
 import warnings
 import numpy
 from ..par.parset import ParSet
-from ..util.instrument import _pixel_borders
+from ..util.sampling import _pixel_borders
 
 from matplotlib import pyplot
 
@@ -312,7 +312,7 @@ def passband_integral(x, y, passband=None, borders=False, log=False, base=10.0, 
             can be either a two element vector giving the (geometric)
             centers of the first and last sample interval or a vector
             with the :math:`N` samples.  In either case,
-            :func:`mangadap.util.instrument._pixel_borders` is used to
+            :func:`mangadap.util.sampling._pixel_borders` is used to
             determine the borders of the sample intervals.
         y (1D or 2D array-like):
             The measured values to be integrated.  The first axis must

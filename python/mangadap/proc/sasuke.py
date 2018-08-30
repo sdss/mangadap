@@ -93,8 +93,8 @@ from ..par.emissionlinedb import EmissionLineDB
 from ..util.fitsutil import DAPFitsUtil
 from ..util.fileio import init_record_array
 from ..util.filter import interpolate_masked_vector
-from ..util.instrument import spectrum_velocity_scale, spectral_coordinate_step
-from ..util.instrument import SpectralResolution
+from ..util.sampling import spectrum_velocity_scale, spectral_coordinate_step
+from ..util.resolution import SpectralResolution
 from ..util.log import log_output
 from ..util.pixelmask import SpectralPixelMask
 from ..util.constants import DAPConstants
@@ -383,15 +383,6 @@ class Sasuke(EmissionLineFit):
           keyword.
     """
     def __init__(self, bitmask, loggers=None, quiet=False):
-
-# REMOVED
-#        tpl_sres (:class:`mangadap.util.instrument.SpectralResolution`):
-#            Spectral resolution of the template spectra.  All templates
-#            are assumed to have the same spectral resolution.
-
-#        gas_comp (numpy.ndarray): Boolean array set to True for
-#            emission-line components.  Shape is (:math:`N_{\rm comp}`).
-#        self.gas_comp = None
 
         EmissionLineFit.__init__(self, 'sasuke', bitmask)
         # Attributes kept by SpectralFitting:

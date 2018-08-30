@@ -55,6 +55,8 @@ Stack some spectra!
         :func:`mangadap.util.instrument.resample_vector` to
         :func:`mangadap.util.instrument.resample1d` in untested function
         :func:`SpectralStack.register`.
+    | **30 Aug 2018**: (KBW) Switch from resample1d to
+        :func:`mangadap.util.sampling.Resample`
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _astropy.io.fits.Header: http://docs.astropy.org/en/stable/io/fits/api/headers.html#header
@@ -79,7 +81,7 @@ import astropy.constants
 from ..par.parset import ParSet
 from ..util.covariance import Covariance
 from ..util.filter import interpolate_masked_vector
-from ..util.instrument import resample1d, resample_vector_npix, spectral_coordinate_step
+from ..util.sampling import Resample, spectral_coordinate_step
 
 from matplotlib import pyplot, rc
 
@@ -260,18 +262,31 @@ class SpectralStack():
 
      
     @staticmethod
-    def _get_input_sres(sres, nspec):
+    def _check_input_sres(sres, nspec):
         """
         Check the shape and type of the input spectral resolution.
-        Always returns a MaskedArray.
+
+        If the input is a masked array, interpolate over the mask.
+        Always returns a numpy.ndarray (unmasked).
         """
         if sres is None:
             return None
-        if len(sres.shape) == 2 and nspec > 0 and sres.shape[0] != nspec:
-            raise ValueError('spectral resolution array is not the correct shape.')
-        if (len(sres.shape) == 2 and sres.shape[0] == nspec) or nspec == 0:
-            return numpy.ma.MaskedArray(sres)
-        return numpy.ma.MaskedArray([sres]*nspec)
+        if sres.ndim > 2:
+            raise ValueError('Spectral resolution must be 2D or less.')
+        if sres.ndim == 2 and nspec > 0 and sres.shape[0] != nspec:
+            raise ValueError('Spectral resolution array is not the correct shape.')
+
+        if isinstance(sres, numpy.ma.MaskedArray):
+            _sres = numpy.apply_along_axis(interpolate_masked_vector, 1,
+                                           sres.reshape(1,-1) if sres.ndim == 1 else sres)
+            if sres.ndim == 1:
+                _sres = _sres[0,:]
+        else:
+            _sres = sres
+
+        if _sres.ndim == 2 or nspec == 0:
+            return _sres
+        return numpy.array([_sres]*nspec)
 
 
     def _set_rebin_transfer_matrix(self, binid, binwgt=None):
@@ -636,81 +651,107 @@ class SpectralStack():
         ranges.
 
         Args:
-            wave (numpy.ndarray): Original wavelengths.
-
-            voff (numpy.ndarray): Velocity offsets in km/s.  Each
-                element is applied to the wavelength vector to determine
-                the maximum wavelength range.  Does not need to be
-                one-dimensional.
+            wave (array-like):
+                Original wavelengths.  Should be 1D.
+            voff (float, array-like):
+                The velocity shift in km/s to apply to the wavelength
+                vector (i.e., the velocity shift should be :math:`v_{\rm
+                off} = -cz`.  de-redshift).  Each element is applied to
+                the wavelength vector to determine the maximum
+                wavelength range allowed for all spectra.  Should be 1D.
 
         Returns:
             float: Two floats with the minimum and maximum redshifted
             wavelengths.
         """
-        _wave = numpy.array([numpy.amin(wave), numpy.amax(wave)])
-        redshifted = _wave[None,:]*(1.+voff[:,None]/astropy.constants.c.to('km/s').value)
-        return numpy.amin(redshifted), numpy.amax(redshifted)
+        _wave = numpy.atleast_1d(wave)
+        if _wave.ndim != 1:
+            raise ValueError('Wavelength vector should be 1D!')
+        _voff = numpy.atleast_1d(voff)
+        if _voff.ndim != 1:
+            raise ValueError('Velocity should be a float or 1D vector.')
+        _wave = numpy.array([numpy.amin(_wave), numpy.amax(_wave)])
+        doppler_shifted = _wave[None,:]*(1.+_voff[:,None]/astropy.constants.c.to('km/s').value)
+        return numpy.amin(doppler_shifted), numpy.amax(doppler_shifted)
 
 
     #TODO: Untested!
     @staticmethod
     def register(wave, voff, flux, ivar=None, mask=None, sres=None, log=False, base=10.0,
-                 keep_range=False):
-        """
+                 keep_range=False, flim=0.5):
+        r"""
         Register a set of spectra to the same wavelength range given a
         set of velocity offsets.
 
         .. warning::
             **THIS FUNCTION IS UNTESTED!**
 
+        .. todo::
+            - Allow for correction for deredshifting flux.
+
         Args:
-            wave (numpy.ndarray): Single wavelength vector for all input
-                spectra.
-            voff (numpy.ndarray): Vector with velocity offsets to apply
-                to each spectrum.
-            flux (numpy.ndarray): Spectrum flux values.  Can be a
-                masked array.
-            ivar (numpy.ndarray): (**Optional**) Inverse variance in the
-                spectrum fluxes.  Can be a masked array.
-            mask (numpy.ndarray): (**Optional**) Binary mask values for
-                the spectrum fluxes; 0 (False) is unmasked, anything
-                else is masked.  Default assumes no pixel mask.
-            sres (numpy.ndarray): (**Optional**) 1D or 2D spectral
-                resolution as a function of wavelength for all or each
-                input spectrum.  Default is to ignore any spectral
-                resolution data.  Can be a masked array.
-            log (bool): (**Optional**) Flag that the wavelength vector
-                is geometrically stepped in wavelength.
-            base (float): (**Optional**) If the wavelength vector is
-                geometrically stepped, this is the base of the
-                logarithmic step.  Default is 10.0.
-            keep_range (float): (**Optional**)  When registering the
-                wavelengths of the shifted spectra, keep the identical
-                spectral range as input.
+            wave (numpy.ndarray):
+                Single wavelength vector for all input spectra.  Must be
+                1D with shape :math:`(N_{\rm wave},)`.
+            voff (float, array-like):
+                The velocity shift in km/s to apply to the wavelength
+                vector (i.e., the velocity shift should be :math:`v_{\rm
+                off} = -cz`.  de-redshift).  Should be 1D at most.
+            flux (numpy.ndarray):
+                Flux array to register.  Must be 2D with shape
+                :math:`(N_{\rm spec},N_{\rm wave})`.  Can be a masked
+                array.
+            ivar (numpy.ndarray, optional):
+                Inverse variance in the spectrum fluxes.  Shape must
+                match `flux`.  Can be a masked array.
+            mask (numpy.ndarray, optional):
+                Boolean array with values in `flux` to mask.  Default
+                assumes nothing is masked.  If `flux` and/or `ivar` are
+                masked array, this is included in union with those
+                masks.
+            sres (numpy.ndarray, optional):
+                1D or 2D spectral resolution as a function of wavelength
+                for all or each input spectrum.  Default is to ignore
+                any spectral resolution data.  If a masked array, the
+                masked pixels are interpolated.
+            log (bool, optional):
+                Flag that the wavelength vector is geometrically sampled
+                in wavelength.
+            base (float, optional):
+                If the wavelength vector is geometrically stepped, this
+                is the base of the logarithmic step.  Default is 10.0.
+            keep_range (float, optional):
+                When registering the wavelengths of the shifted spectra,
+                keep the identical spectral range as input.
+            flim (float, optional):
+                Mask any pixels in the output flux arrays that are
+                covered by less than this fraction by the input masked
+                flux array.
 
         Returns:
             numpy.ndarray, `numpy.ma.MaskedArray`_: Returns four arrays:
             (1) the new wavelength vector, common to all spectra; (2)
-            the new flux array; (3) the new inverse variance array,
-            which will be None if no inverse variances are provided to
-            the function; and (4) the new spectral resolution vectors,
-            which will also be None if no spectral resolution vectors
-            are provided.  The last three arrays are *all* MaskedArrays.
+            the new masked flux array; (3) the new masked inverse
+            variance array, which will be None if no inverse variances
+            are provided to the function; and (4) the new spectral
+            resolution vectors, which will also be None if no spectral
+            resolution vectors are provided.
 
         Raises:
-            ValueError: Raised if the wavelength or velocity offset
-                vectors are not one-dimensional, if the flux array is
-                not two-dimensional, if the inverse variance or mask
-                arrays do not have the same shape as the flux array, or
-                if the number of wavelengths does not match the second
-                axis of the flux array.
+            ValueError:
+                Raised if the wavelength or velocity offset vectors are
+                not one-dimensional, if the flux array is not
+                two-dimensional, if the inverse variance or mask arrays
+                do not have the same shape as the flux array, or if the
+                number of wavelengths does not match the second axis of
+                the flux array.
         """
         # Check the input
         if len(wave.shape) != 1:
             raise ValueError('Input wavelength array must be one-dimensional.')
         if len(flux.shape) != 2:
             raise ValueError('Input flux array must be two-dimensional.  To register a single ' \
-                             'flux vector, use mangadap.util.instrument.resample_vector.')
+                             'flux vector, use mangadap.util.sampling.Resample.')
         if flux.shape[1] != wave.size:
             raise ValueError('Flux array shape does not match the wavelength data.')
         if ivar is not None and ivar.shape != flux.shape:
@@ -724,60 +765,40 @@ class SpectralStack():
         inp_mask = SpectralStack._get_input_mask(flux, ivar=ivar, mask=mask, dtype=float)
 
         # Get the spectral resolution (always a masked array)
-        inp_sres = SpectralStack._get_input_sres(sres, flux.shape[0])
+        inp_sres = SpectralStack._check_input_sres(sres, flux.shape[0])
 
-        # Input and output spectral range
-#        inRange = [wave[0], wave[-1]]
-        outRange = [wave[0], wave[-1]] if keep_range else list(min_max_wave(wave, voff))
+        # Output spectral range
+        outRange = [wave[0], wave[-1]] if keep_range \
+                        else list(SpectralStack.min_max_wave(wave, voff))
         # Sampling (logarithmic or linear)
         dw = spectral_coordinate_step(wave, log=log, base=base)
-#        (numpy.log(wave[1]) - numpy.log(wave[0]))/numpy.log(base) \
-#                    if log else (wave[1] - wave[0])
-        # Output number of pixels
-        if keep_range:
-            nwave = wave.size
+
+        # Resample the flux and error
+        ferr = None if ivar is None else numpy.ma.power(ivar, -0.5)
+        resamp = Resample(flux, e=ferr, mask=inp_mask, x=wave, inLog=log, newRange=outRange,
+                          newdx=dw, base=base)
+
+        # Mask pixels covered below the designate fraction
+        _mask = resamp.outf < flim
+
+        # Get the inverse variance
+        if ivar is None:
+            _ivar = None
         else:
-            nwave, outRange = resample_vector_npix(outRange=outRange, dx=dw, log=log, base=base)
-        
-        #Initialize the output arrays
-        _flux = numpy.empty((nspec,nwave), dtype=numpy.float)
-        _ivar = numpy.zeros((nspec,nwave), dtype=numpy.float)
-        _mask = numpy.zeros((nspec,nwave), dtype=numpy.float)
-        _sres = None if sres is None else numpy.zeros((nspec,nwave), dtype=numpy.float)
-        _sres_mask = None if sres is None else numpy.zeros((nspec,nwave), dtype=numpy.float)
-        var = None if ivar is None else numpy.ma.power(ivar, -1).filled(0.0)
+            _ivar = numpy.ma.power(resamp.oute, -2)
+            _ivar[_mask] = numpy.ma.masked
 
-        # Resample each spectrum
-        # TODO: Use numpy.apply_along_axis
-        for i in range(nspec):
-            _wave, _flux[i,:] = resample1d(flux[i,:].ravel(), x=wave, inLog=log, newRange=outRange,
-                                           newpix=nwave, base=base)
-            _wave, _mask[i,:] = resample1d(inp_mask[i,:].ravel(), x=wave, inLog=log,
-                                           newRange=outRange, newpix=nwave, base=base, ext_value=1)
-            if var is not None:
-                _wave, _ivar[i,:] = resample1d(var[i,:].ravel(), x=wave, inLog=log,
-                                               newRange=outRange, newpix=nwave, base=base)
-            if inp_sres is not None:
-                _wave, _sres[i,:] = resample1d(inp_sres.data[i,:].ravel(), x=wave, inLog=log,
-                                               newRange=outRange, newpix=nwave, base=base)
-                _wave, _sres_mask[i,:] = resample1d(inp_sres.mask[i,:].ravel(), x=wave, inLog=log,
-                                                    newRange=outRange, newpix=nwave, base=base,
-                                                    ext_value=1)
+        # Interpolate the spectral resolution at the location of the new
+        # wavelength vector
+        if inp_sres is None:
+            _sres = None
+        else:
+            interp = interpolate.interp1d(wave, inp_sres, axis=1, assume_sorted=True,
+                                          fill_value='extrapolate')
+            _sres = interp(resamp.outx)
 
-        indx = _mask > 0.5
-        _mask[indx] = 1.0
-        _mask[numpy.invert(indx)] = 0.0
-        _mask = _mask.astype(bool)
-
-        if inp_sres is not None:
-            indx = _sres_mask > 0.5
-            _sres_mask[indx] = 1.0
-            _sres_mask[numpy.invert(indx)] = 0.0
-            _sres_mask = _sres_mask.astype(bool)
-            _sres = numpy.ma.MaskedArray(_sres, mask=_sres_mask)
-
-        return _wave, numpy.ma.MaskedArray(_flux, mask=_mask), \
-                    numpy.ma.MaskedArray(numpy.ma.power(_ivar, -1).filled(0.0), mask=_mask), _sres
+        # Return the result
+        return resamp.outx, numpy.ma.MaskedArray(resamp.outy, mask=_mask), _ivar, _sres
 
 
     @staticmethod
@@ -995,7 +1016,7 @@ class SpectralStack():
             _mask = SpectralStack._get_input_mask(flux, ivar=ivar, mask=mask)
             _flux = numpy.ma.MaskedArray(flux, mask=_mask)
             _ivar = None if ivar is None else numpy.ma.MaskedArray(ivar, mask=_mask)
-            _sres = SpectralStack._get_input_sres(sres, flux.shape[0])
+            _sres = SpectralStack._check_input_sres(sres, flux.shape[0])
             self.wave = wave
         else:
             self.wave, _flux, _ivar, _sres = register(wave, voff, flux, ivar=ivar, mask=mask,

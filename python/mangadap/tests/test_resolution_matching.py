@@ -7,7 +7,7 @@ import pytest
 
 import numpy
 
-from mangadap.util.instrument import match_spectral_resolution
+from mangadap.util.resolution import match_spectral_resolution
 from mangadap.util.constants import DAPConstants
 
 def test_match_spec_res():
