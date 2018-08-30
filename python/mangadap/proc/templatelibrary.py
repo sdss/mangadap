@@ -967,10 +967,12 @@ class TemplateLibrary:
             numpy.ndarray: Boolean array indicating which pixels in the
             rebinned spectrum should be masked.
         """
-        unity = self.bitmask.flagged(self.hdu['MASK'].data[i,:], flag=flag).astype(float)
+        unity = numpy.ma.MaskedArray(numpy.ones(self.hdu['WAVE'].data.shape[1], dtype=float),
+                                     mask=self.bitmask.flagged(self.hdu['MASK'].data[i,:],
+                                                               flag=flag))
         r = Resample(unity, x=self.hdu['WAVE'].data[i,:], inLog=self.library['log10'],
                      newRange=fullRange, newLog=self.log10_sampling, newdx=self.spectral_step)
-        return r.outf > rmsk_lim
+        return r.outf < rmsk_lim
 
     def _modify_spectral_resolution(self):
         """
@@ -1036,7 +1038,9 @@ class TemplateLibrary:
 
             - Add wavelength coordinate WCS information to the
               appropriate extension headers.
-
+            - Include 'step' as an argument
+            - Include limit on covering fraction used to mask data as an
+              argument
         """
         # Convert to vacuum wavelengths
 #        pyplot.plot(self.hdu['WAVE'].data[0,:], self.hdu['FLUX'].data[0,:]) 
@@ -1093,7 +1097,7 @@ class TemplateLibrary:
         # identified afterward.  The minimum flux is:
         min_flux = numpy.amin(self.hdu['FLUX'].data.ravel())
         # the observed pixels are
-        observed = numpy.invert(self.bitmask.flagged(self.hdu['MASK'].data, flag='NO_DATA'))
+        no_data = self.bitmask.flagged(self.hdu['MASK'].data, flag='NO_DATA')
 
         # Now resample the spectra.  First allocate the arrays
         flux = numpy.zeros((self.ntpl, npix), dtype=numpy.float64)
@@ -1102,21 +1106,23 @@ class TemplateLibrary:
 
         for i in range(self.ntpl):
             # Rebin the observed wavelength range
-            r = Resample(self.hdu['FLUX'].data[i,:], mask=observed[i,:],
+            r = Resample(self.hdu['FLUX'].data[i,:], mask=no_data[i,:],
                          x=self.hdu['WAVE'].data[i,:], inLog=self.library['log10'],
-                         newRange=fullRange, newLog=self.log10_sampling, newdx=self.spectral_step,
-                         flim = 0.9)
+                         newRange=fullRange, newLog=self.log10_sampling,
+                         newdx=self.spectral_step, step=False)
             
             # Save the result
             wave = r.outx
-            flux[i,:] = r.outy.filled(0.0)
-            mask[i,:] = self.bitmask.turn_on(r.outy.mask, 'NO_DATA')
+            flux[i,:] = r.outy
+            indx = r.outf < 0.9
+            flux[i,indx] = 0.0
+            mask[i,indx] = self.bitmask.turn_on(mask[i,indx], 'NO_DATA')
 
             # Resample the spectral resolution by simple interpolation.
             sres[i,:] = interpolate.interp1d(self.hdu['WAVE'].data[i,:],
                                              self.hdu['SPECRES'].data[i,:], assume_sorted=True,
                                              fill_value='extrapolate')(wave)
-            sres[i,r.out.mask] = 0.0
+            sres[i,indx] = 0.0
 
             # Recalculate the number of pixels per fwhm
 
@@ -1126,10 +1132,11 @@ class TemplateLibrary:
             # Number of pixels per resolution element
             _pix_per_fwhm = numpy.ma.divide(wave, sres[i,:] * _ang_per_pix)
 
-#            pyplot.plot(wave_in, pix_per_fwhm[i,observed[i,:]])
+#            pyplot.plot(self.hdu['WAVE'].data[i,:-1], numpy.diff(self.hdu['WAVE'].data[i,:]))
+#            pyplot.plot(self.hdu['WAVE'].data[i,:], pix_per_fwhm[i,:])
 #            pyplot.plot(wave, _pix_per_fwhm)
-#            pyplot.plot(wave, npix)
 #            pyplot.show()
+#            exit()
 
             indx = _pix_per_fwhm < 2
             if numpy.sum(indx) > 0:
@@ -1154,9 +1161,10 @@ class TemplateLibrary:
             indx = self._rebin_masked(i, 'SPECRES_LOW', fullRange, rmsk_lim=0.1)
             mask[i,indx] = self.bitmask.turn_on(mask[i,indx], 'SPECRES_LOW')
             
-#            pyplot.plot(oldwave, oldflux)
-#            pyplot.plot(wave, flux[i,:], 'g')
+#            pyplot.plot(self.hdu['WAVE'].data[i,:], self.hdu['FLUX'].data[i,:])
+#            pyplot.plot(wave, flux[i,:])
 #            pyplot.show()
+#            exit()
 
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '... done')

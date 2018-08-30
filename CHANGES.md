@@ -8,8 +8,11 @@
    emission-ine fit.
  - Fixed bug in post-fit chi-square calculation in PPXFFit
  - Updated requirements
- - Fixed bug in passband_integral error calculation, but MC tests show
+ - Fixed bug in `passband_integral` error calculation, but MC tests show
    that it's a poor substitute for an MC simulation.
+ - Significant changes to the resampling code; replaced `resample1d`
+   with `Resample` class.
+ - Added test data to `data/tests/`
 
 TODO:
  - Documentation of config examples are out of date!
@@ -19,8 +22,8 @@ TODO:
  - Add DAP versioning to reference files
  - Fix ELMREBIN in 2nd round of moment calculations
 
-2.2.2 (Not released):
----------------------
+2.2.2 (Not released)
+--------------------
  - Code migrated from SVN to GitHub
 
 2.2.1 (28 Mar 2018): MPL-7/DR15 Candidate tag
@@ -47,13 +50,13 @@ TODO:
    incorporated into each MILES-HC template.  The total number of
    templates was again 49; however, 7 of these have been removed because
    they had artifacts and/or emission-lines in their spectra.  See
-   ./data/spectral_templates/miles_cluster/README .
+   `./data/spectral_templates/miles_cluster/README` .
  - Included redshift fix file that can be used to replace the redshift
    used for any PLATEIFU either because it's not provided by the
    relevant ancillary programs or the NSA redshift is incorrect.
  - Corrected error in the emission-line fluxes for the fact that the
-   input template flux increases with the fitted redshift.  So: F_true =
-   (1+z)*F_MPL6.
+   input template flux increases with the fitted redshift.  So: `F_true
+   = (1+z)*F_MPL6`.
  - Corrected the emission-line equivalent width measurements from
    observed to rest frame.
  - Corrected the absorption-line spectral-index equivalent widths
@@ -82,23 +85,22 @@ TODO:
    provided to the ReductionAssessments class
  - Binned flux statistics now determined before applying the reddening
    correction; now matches individual spaxel measurements.
- - Fixed some roundoff errors in the SPX_* extensions due to conversion
-   from double to single-precision floats in output MAPS
+ - Fixed some roundoff errors in the `SPX_*` extensions due to
+   conversion from double to single-precision floats in output MAPS
  - Removed resolution-vector-based stellar velocity dispersion
    corrections from output MAPS files.  Only empirical (more robust)
    correction now provided, but resolution-vector calculation still in
    reference files.
  - Propagated this change though to the ppxf and spotcheck qa plots
- - Added EMLINE_TPLSIGMA to output MAPS files, providing the line width
-   of the templates used during Sasuke.  Also added this into the
-   measurements returned by pPXF such that EMLINE_GSIGMA and
-   EMLINE_INSTSIGMA have the same meaning as in MPL-5: EMLINE_GSIGMA is
-   the effective observed sigma of the line and EMLINE_INSTSIGMA is the
-   instrumental dispersion at the line centroid.
+ - Added `EMLINE_TPLSIGMA` to output MAPS files, providing the line
+   width of the templates used during Sasuke.  Also added this into the
+   measurements returned by pPXF such that `EMLINE_GSIGMA` and
+   `EMLINE_INSTSIGMA` have the same meaning as in MPL-5: `EMLINE_GSIGMA`
+   is the effective observed sigma of the line and `EMLINE_INSTSIGMA` is
+   the instrumental dispersion at the line centroid.
 
 2.1.1 (13 Nov 2017)
 -------------------
-
  - Added check that pPXF returns some non-zero weights in
    stellar-continuum fitting.  If all weights are zero, the pPXF status
    is set to -2.
@@ -114,7 +116,6 @@ TODO:
 
 2.1   (27 Oct 2017)
 -------------------
-
  - Included code for DAPall file
  - Fixed error in bin area calculation in unbinned data.
  - Added convenience functions to DAPFits for use with the MAPS files.
@@ -127,8 +128,8 @@ TODO:
    model cube files.
  - Changed how spectral step is calculated to avoid numerical precision
    issues.
- - Incorporated M. Cappellari's gaussian_filter1d into the
-   convolution_variable_sigma function in
+ - Incorporated M. Cappellari's `gaussian_filter1d` into the
+   `convolution_variable_sigma` function in
    python/mangadap/util/instrument.py.  It's 2 orders of magnitude
    faster now!
  - Include spectral resolution handling hooks into spatial binning and
@@ -189,13 +190,13 @@ TODO:
    for the emission lines.
  - Include pre-pixelized Gaussian extension from DRP.
  - Use 'z' column in plateTargets files to construct input parameter
-   files instead of the 'nsa_z' column; this should catch the
+   files instead of the `nsa_z` column; this should catch the
    ancillaries not in the NSA but with redshifts in the targeting
    catalog.
  - In rundap, wait for cluster processes to finish then also submit a
    script to construct the DAPall file
- - Updated versions of ppxf and voronoi_2d_binning and moved these files
-   out of the mangadap package and into a new captools directory
+ - Updated versions of ppxf and `voronoi_2d_binning` and moved these
+   files out of the mangadap package and into a new captools directory
  - Edited Sasuke to use iterations tested by Xihan Ji and Michele
    Cappellari.
 
@@ -205,7 +206,7 @@ TODO:
    stellar continuum not fit.
  - Fixed error in return type when an emission-line fit fails, and
    report which line and spectrum failed.
- - Necessary conversions from asarray() to atleast_1d()
+ - Necessary conversions from asarray() to `atleast_1d()`
  - Include spot-check plotting code for maps
  - NEARBOUND is treated differently and separately applied to the
    stellar velocities and stellar velocity dispersions.  pPXF fits where
@@ -219,8 +220,7 @@ TODO:
 
 2.0.1 (26 Jul 2016)
 -------------------
-
- - Removed old DAP IDL code, except for pro/mangadap_version.pro
+ - Removed old DAP IDL code, except for `pro/mangadap_version.pro`
  - Included correction for Galactic extinction; current default is to
    use the O'Donnell (1994) coefficents for the CCM extinction law.
  - Added MILES cluster template group.
@@ -251,13 +251,13 @@ TODO:
        30.:31, 774.16:800 are considered "near" the boundary.
      - For the stellar kinematics, this means:
 
-       | PAR   |     NEAR_BOUND ranges   |
+       | PAR   |   `NEAR_BOUND` ranges   |
        |:-----:| -----------------------:|
        |    V  | -2000:-1960, 1960:2000  |
        | sigma | 6.903:7.255, 951.46:1e3 |
        |  hN   | -0.3:-0.294, 0.294:0.3  |
 
- - Stellar-continuum model mask now includes NEAR_BOUND bits, if
+ - Stellar-continuum model mask now includes `NEAR_BOUND` bits, if
    necessary.
  - Constructs an output model data cube with the stellar continuum and
    emission-line model as a complement to the maps file.
@@ -268,20 +268,20 @@ TODO:
    lines fit in each window.
  - Fixed error in construction of the Hessian (inverse covariance)
    matrix from the emission-line fits.
- - Removed SPXL_SPCOV extension; changed extension names from 'SPXL' to
-   'SPX' to match binning scheme name.
+ - Removed `SPXL_SPCOV` extension; changed extension names from 'SPXL'
+   to 'SPX' to match binning scheme name.
  - Bookkeeping error in emission-line moment measurements
  - Incorrect/incomplete checking for sufficient data to fit emission
    lines
 
 2.0   (08 Jun 2016)
 -------------------
- -  Initial tag after major refactor of DAP to be solely in python.
-    Some directory cleanup performed; however, the pro/ directory is
-    still included in this tag.  All further tags will have the pro/
-    directory removed.
- -  This tag was used to run initial benchmark tests for the candidate
-    MPL-5 data.
+ - Initial tag after major refactor of DAP to be solely in python.  Some
+   directory cleanup performed; however, the pro/ directory is still
+   included in this tag.  All further tags will have the pro/ directory
+   removed.
+ - This tag was used to run initial benchmark tests for the candidate
+   MPL-5 data.
 
 1.1.2 (24 Feb 2016)
 -------------------
@@ -293,33 +293,35 @@ TODO:
  - Tagged version run for MPL-4.
  - Tag was created much later than MPL-4 was released.  DAP MPL-4
    release located in the mangawork/sandbox directory, and not
-   maintained in the nominal MANGA_SPECTRO_ANALYSIS directory structure
-   because run on ICG, Portsmouth, cluster.  Differences between tagged
-   version and version that produced MPL-4 are minor and largely
-   contained within the python/mangadap/plot directory.  Edits to
-   plotting routines have been used for plots of MPL-4 data shown in
+   maintained in the nominal `MANGA_SPECTRO_ANALYSIS` directory
+   structure because run on ICG, Portsmouth, cluster.  Differences
+   between tagged version and version that produced MPL-4 are minor and
+   largely contained within the python/mangadap/plot directory.  Edits
+   to plotting routines have been used for plots of MPL-4 data shown in
    Marvin.
 
 v1_0_0 (28 Apr 2015)
 --------------------
  - Tagged version run on MPL-3 DRP fits files. 
- - Altered python directory structure in anticipation of a python rewrite of DAP
- - Stable version v0.94 merged from kyle_testing to trunk.
+ - Altered python directory structure in anticipation of a python
+   rewrite of DAP
+ - Stable version v0.94 merged from `kyle_testing` to trunk.
  - Basic integration at Utah, with some minor edits.
- - Spectral index measurements added, most known bugs address.  QA ongoing!
+ - Spectral index measurements added, most known bugs address.  QA
+   ongoing!
  - Added spectral index measurements; known bugs. QA ongoing!  
  - Completed new structure and data model
  - Completed edits through Block 3
  - Completed edits through Block 2
  - Check in using svn in working directory
  - Database structure
- - New environment scripts: mdap_setup.sh, mdap_environment.sh
- - Basic compilation errors in manga_dap.pro
- - New code: mdap_match_obs_nsa.pro, mdap_create_input_table.pro
- - Formatting of manga_drp.pro
- - Copied from v0_8 by L. Coccato
- - Basic formatting of map_read_datacube.pro and manga_drp.pro
- - Adjustments to deal with DRP v1_0_0 headers (different from prototype
-   headers)
+ - New environment scripts: `mdap_setup.sh`, `mdap_environment.sh`
+ - Basic compilation errors in `manga_dap.pro`
+ - New code: `mdap_match_obs_nsa.pro`, `mdap_create_input_table.pro`
+ - Formatting of `manga_drp.pro`
+ - Copied from `v0_8` by L. Coccato
+ - Basic formatting of `map_read_datacube.pro` and `manga_drp.pro`
+ - Adjustments to deal with DRP `v1_0_0` headers (different from
+   prototype headers)
  - Begin KBW Development version 
 

@@ -750,7 +750,7 @@ class EmissionLineMoments:
         # Get the integrated flux
         flux = passband_integral(wave, spec, passband=passband, log=True)
         fluxerr = None if err is None else \
-                    passband_integral(wave, err, passband=passband, log=True, quad=True))
+                    passband_integral(wave, err, passband=passband, log=True, quad=True)
 
         # No flux in the passband, meaning division by zero will occur!
         if not numpy.absolute(flux) > 0.0:
