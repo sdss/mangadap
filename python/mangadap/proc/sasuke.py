@@ -990,10 +990,10 @@ class Sasuke(EmissionLineFit):
         return model_eml_par
 
 
-    def _save_results(self, etpl, start, end, flux, ferr, model_flux, model_eml_flux, model_mask,
+    def _save_results(self, etpl, start, end, flux, ferr, spec_to_fit, model_flux, model_eml_flux,
                       model_wgts, model_wgts_err, model_addcoef, model_multcoef, model_reddening,
-                      model_kin_inp, model_kin, model_kin_err, model_fit_par, model_eml_par,
-                      fill_value=-999.):
+                      model_kin_inp, model_kin, model_kin_err, model_mask, model_fit_par,
+                      model_eml_par, fill_value=-999.):
         r"""
         Save and assess the results of the ppxf fits.
         
@@ -1002,6 +1002,8 @@ class Sasuke(EmissionLineFit):
         The function also assesses the data to set any necessary flags.
         Much of this is the same as
         :class:`mangadap.proc.ppxffit.PPXFFit._save_results`.
+
+        DOCS OUT OF DATE
 
         Args:
             etpl (:class:`EmissionLineTemplates`): The object used to
@@ -1085,12 +1087,13 @@ class Sasuke(EmissionLineFit):
                                                          axis=1).filled(0.0))
 
         # Reduced chi-square
-        model_fit_par['RCHI2'] = model_fit_par['CHI2'] / (model_fit_par['NPIXFIT'] 
-                                    - self.dof - numpy.sum(model_fit_par['TPLWGT'] > 0, axis=1))
+        model_fit_par['RCHI2'][spec_to_fit] = model_fit_par['CHI2'][spec_to_fit] \
+                            / (model_fit_par['NPIXFIT'][spec_to_fit] - self.dof
+                                - numpy.sum(model_fit_par['TPLWGT'][spec_to_fit,:] > 0, axis=1))
 
         # Save the weights and errors
-        model_fit_par['TPLWGT'] = model_wgts
-        model_fit_par['TPLWGTERR'] = model_wgts_err
+        model_fit_par['TPLWGT'][spec_to_fit,:] = model_wgts
+        model_fit_par['TPLWGTERR'][spec_to_fit,:] = model_wgts_err
 
         # The set of gas templates, and the kinematic component,
         # velocity group, and sigma group associated with each
@@ -1104,37 +1107,36 @@ class Sasuke(EmissionLineFit):
         # Save the polynomial coefficients
         used_apoly = False
         if self.degree > -1 and model_addcoef is not None:
-            model_fit_par['ADDCOEF'] = model_addcoef
+            model_fit_par['ADDCOEF'][spec_to_fit,:] = model_addcoef
             used_apoly = True
 
         used_mpoly = False
         if self.mdegree > 0 and model_multcoef is not None:
-            model_fit_par['MULTCOEF'] = model_multcoef
+            model_fit_par['MULTCOEF'][spec_to_fit,:] = model_multcoef
             used_mpoly = True
 
         used_ebv = False
         if self.reddening is not None and model_reddening is not None:
-            model_fit_par['EBV'] = model_reddening
+            model_fit_par['EBV'][spec_to_fit,:] = model_reddening
             used_ebv = True
 
         # Flattened input and output kinematics
-        model_fit_par['KININP'] = model_kin_inp
-        model_fit_par['KIN'] = model_kin
-        model_fit_par['KINERR'] = model_kin_err
+        model_fit_par['KININP'][spec_to_fit,:] = model_kin_inp
+        model_fit_par['KIN'][spec_to_fit,:] = model_kin
+        model_fit_par['KINERR'][spec_to_fit,:] = model_kin_err
 
         # Test if the kinematics are near the imposed boundaries.
-        near_bound, near_lower_bound, no_data = self._is_near_bounds(model_fit_par['KIN'],
-                                                                     model_fit_par['KININP'],
-                                                                     vel_indx, sig_indx, lbound,
-                                                                     ubound, fill_value=fill_value)
+        near_bound, near_lower_bound, no_data \
+                = self._is_near_bounds(model_fit_par['KIN'], model_fit_par['KININP'], vel_indx,
+                                       sig_indx, lbound, ubound, fill_value=fill_value)
 
         # Flag the fit *globally*
         # - If the velocity dispersion has hit the lower limit for all
         #   lines, ONLY flag the value as having a MIN_SIGMA.
         indx = numpy.all(near_lower_bound & sig_indx[None,:], axis=1)
         if numpy.sum(indx) > 0:
-            model_fit_par['MASK'][indx] = self.bitmask.turn_on(model_fit_par['MASK'][indx],
-                                                               'MIN_SIGMA')
+            model_fit_par['MASK'][indx] \
+                    = self.bitmask.turn_on(model_fit_par['MASK'][indx], 'MIN_SIGMA')
 
         # - Otherwise, flag the full fit (parameters and model) as
         #   NEAR_BOUND if all the parameters are near the boundary but
@@ -1146,8 +1148,12 @@ class Sasuke(EmissionLineFit):
                                                                'NEAR_BOUND')
             model_mask[indx,:] = self.bitmask.turn_on(model_mask[indx,:], 'NEAR_BOUND')
 
-        # - If no_data is all true for any one spectrum, the ppxf fitter
-        # should have raised an error.
+        # - Flag the spectrum was not fit
+        if not numpy.all(spec_to_fit):
+            indx = numpy.invert(spec_to_fit)
+            model_fit_par['MASK'][indx] = self.bitmask.turn_on(model_fit_par['MASK'][indx],
+                                                               'NO_FIT')
+            model_mask[indx,:] = self.bitmask.turn_on(model_mask[indx,:], 'NO_FIT')
 
         # Convert the velocities from pixel units to cz
         model_fit_par['KININP'][:,vel_indx], _ \
@@ -1222,6 +1228,8 @@ class Sasuke(EmissionLineFit):
         poly_x = numpy.linspace(-1, 1, end-start)
         sres = self.obj_sres if self.nremap == 0 else self.remap_sres
         for i in range(nspec):
+            if not spec_to_fit[i]:
+                continue
 
             # Get growth statistics for the residuals
             model_fit_par['ABSRESID'][i,:] = sample_growth(numpy.ma.absolute(residual[i,:]),
@@ -1239,8 +1247,7 @@ class Sasuke(EmissionLineFit):
 
                 # - Additive polynomial:
                 if used_apoly:
-                    apoly = numpy.polynomial.legendre.legval(poly_x,
-                                                             numpy.append(1, model_addcoef[i,:]))
+                    apoly = numpy.polynomial.legendre.legval(poly_x, model_fit_par['ADDCOEF'][i,:])
                     model_fit_par['APLYMINMAX'][i,:] = [numpy.amin(apoly), numpy.amax(apoly)]
                     model_eml_par['CONTAPLY'][i,:] \
                             = interpolate.interp1d(self.obj_wave[start:end], apoly,
@@ -1249,8 +1256,8 @@ class Sasuke(EmissionLineFit):
 
                 # - Multiplicative polynomial:
                 if used_mpoly:
-                    mpoly = numpy.polynomial.legendre.legval(poly_x,
-                                                             numpy.append(1, model_multcoef[i,:]))
+                    mpoly = numpy.polynomial.legendre.legval(poly_x, numpy.append(1,
+                                                             model_fit_par['MULTCOEF'][i,:]))
                     model_fit_par['MPLYMINMAX'][i,:] = [numpy.amin(mpoly), numpy.amax(mpoly)]
                     model_eml_par['CONTMPLY'][i,:] \
                             = interpolate.interp1d(self.obj_wave[start:end], mpoly,
@@ -1267,7 +1274,7 @@ class Sasuke(EmissionLineFit):
 
                 # - Reddening:
                 if used_ebv:
-                    extcurve = ppxf.reddening_cal00(self.obj_wave, model_reddening[i])
+                    extcurve = ppxf.reddening_cal00(self.obj_wave, model_fit_par['EBV'][i])
                     model_eml_par['CONTRFIT'][i,:] \
                             = interpolate.interp1d(self.obj_wave, extcurve,
                                                    bounds_error=False, fill_value=1.0,
@@ -1298,60 +1305,7 @@ class Sasuke(EmissionLineFit):
             # With these definitions, the sigma correction is the same
             # as the instrumental dispersion; see copy function outside
             # the loop below
-
-#            # The dispersion correction is the quadrature difference
-#            # between the instrumental dispersion in the galaxy data to
-#            # the dispersion used when constructing the emission-line
-#            # templates
-#            sigma2corr = numpy.square(sigma_inst) - numpy.square(etpl.eml_sigma_inst[self.fit_eml])
-#            if numpy.any(sigma2corr < 0):
-#                # TODO: Raise an error instead?
-#                print(sigma2corr)
-#                warnings.warn('Encountered negative sigma corrections!')
-#            model_eml_par['SIGMACORR'][i,self.fit_eml] \
-#                            = sigma2corr / numpy.sqrt(numpy.absolute(sigma2corr))
-
-#            print(model_eml_par['SIGMACORR'][i,self.fit_eml])
-#            pyplot.scatter(self.emldb['restwave'][self.fit_eml], sigma_inst,
-#                           marker='.', lw=0, s=100)
-#            pyplot.scatter(self.emldb['restwave'][self.fit_eml], etpl.eml_sigma_inst[self.fit_eml],
-#                           marker='.', lw=0, s=100)
-#            pyplot.show()
-
             #-----------------------------------------------------------
-            # Set output flags
-            # - No fit was performed
-#            if result[i] is None:
-#                model_mask[i,:] = self.bitmask.turn_on(model_mask[i,:], 'NO_FIT')
-#                continue
-
-            # - No fit attempted because of insufficient data
-#            if result[i].empty_fit():
-#                model_mask[i,:] = self.bitmask.turn_on(model_mask[i,:], 'NO_FIT')
-#                model_fit_par['MASK'][i] = self.bitmask.turn_on(model_fit_par['MASK'][i],
-#                                                                'INSUFFICIENT_DATA')
-#                model_eml_par['MASK'][i] = self.bitmask.turn_on(model_eml_par['MASK'][i],
-#                                                                'INSUFFICIENT_DATA')
-#                continue
-
-            # - Fit attempted but failed
-#            if result[i].fit_failed():
-#                model_mask[i,:] = self.bitmask.turn_on(model_mask[i,:], 'FIT_FAILED')
-#                model_fit_par['MASK'][i] = self.bitmask.turn_on(model_fit_par['MASK'][i],
-#                                                                'FIT_FAILED')
-#                model_eml_par['MASK'][i] = self.bitmask.turn_on(model_eml_par['MASK'][i],
-#                                                                'FIT_FAILED')
-
-            # - Fit successful but hit maximum iterations.
-#            if result[i].reached_maxiter():
-#                model_fit_par['MASK'][i] = self.bitmask.turn_on(model_fit_par['MASK'][i], 'MAXITER')
-#                model_eml_par['MASK'][i] = self.bitmask.turn_on(model_eml_par['MASK'][i], 'MAXITER')
-
-            #-----------------------------------------------------------
-            # Save the model parameters and figures of merit
-
-            # TODO: FIX THIS
-#            model_fit_par['USETPL'][i,:] = result[i].tpl_to_use
 
         # With the above definitions (starting at line 1274), the
         # instrumental sigma and the sigma correction are identical
@@ -1818,8 +1772,8 @@ class Sasuke(EmissionLineFit):
         The body of this function mostly deals with checking the input
         and setting up the template and object data for use with pPXF.
 
-        The function is meant to be general, but has only been tested on
-        MaNGA spectra.
+        The function is meant to be general, but has been largely tested
+        with MaNGA spectra.
 
         If the spectral resolution is not matched between the templates
         and the object spectra, the provided stellar_kinematics is
@@ -1844,55 +1798,60 @@ class Sasuke(EmissionLineFit):
                 Emission-line database that is parsed to construct the
                 emission-line templates to fit (see
                 :class:`mangadap.proc.emissionelinetemplates.EmissionLineTemplates`).
-            obj_wave (numpy.ndarray): Wavelength vector for object
-                spectra.  Shape is (:math:`N_{\rm pix}`,).
-            obj_flux (numpy.ndarray): Object spectra to fit.  Can be
-                provided as a `numpy.ma.MaskedArray`_.  Shape is
-                (:math:`N_{\rm spec},N_{\rm pix}`).
-            obj_ferr (numpy.ndarray): (**Optional**) :math:`1\sigma`
-                errors in object spectra.  Can be provided as a
+            obj_wave (numpy.ndarray):
+                Wavelength vector for object spectra.  Shape is
+                (:math:`N_{\rm pix}`,).
+            obj_flux (numpy.ndarray):
+                Object spectra to fit.  Can be provided as a
                 `numpy.ma.MaskedArray`_.  Shape is (:math:`N_{\rm
-                spec},N_{\rm pix}`).  If None, the quadrature sum of the
-                fit residuals is used as the fit metric instead of
-                chi-square (all errors are set to unity).
-            obj_mask (numpy.ndarray or
-                :class:`mangadap.util.pixelmask.SpectralPixelMask`):
-                (**Optional**) Boolean array or
+                spec},N_{\rm pix}`).
+            obj_ferr (numpy.ndarray, optional):
+                :math:`1\sigma` errors in object spectra.  Can be
+                provided as a `numpy.ma.MaskedArray`_.  Shape is
+                (:math:`N_{\rm spec},N_{\rm pix}`).  If None, the
+                quadrature sum of the fit residuals is used as the fit
+                metric instead of chi-square (all errors are set to
+                unity).
+            obj_mask (numpy.ndarray,
+                :class:`mangadap.util.pixelmask.SpectralPixelMask`,
+                optional):
+                Boolean array or
                 :class:`mangadap.util.pixelmask.SpectralPixelMask`
                 instance used to censor regions of the spectra to ignore
                 during fitting.
-            obj_sres (numpy.ndarray): (**Optional**) The spectral
-                resolution of the object data.  Can be a single vector
-                for all spectra or one vector per object spectrum.
-            guess_redshift (array-like): (**Optional**) The starting
-                redshift guess.  Can provide a single value for all
-                spectra or one value per spectrum.
-            guess_dispersion (array-like): (**Optional**) The starting
-                velocity dispersion guess.  Can provide a single value
+            obj_sres (numpy.ndarray, optional):
+                The spectral resolution of the object data.  Can be a
+                single vector for all spectra or one vector per object
+                spectrum.
+            guess_redshift (array-like, optional):
+                The starting redshift guess.  Can provide a single value
                 for all spectra or one value per spectrum.
-            reject_boxcar (int): (**Optional**) Size of the boxcar to
-                use when rejecting fit outliers.  If None, no rejection
-                iteration is performed.
-            stpl_wave (numpy.ndarray): (**Optional**) Wavelength vector
-                for stellar template spectra.  Shape is (:math:`N_{{\rm
-                pix},\ast}`,).
-            stpl_flux (numpy.ndarray): (**Optional**) Stellar template
-                spectra to use in fit.  Shape is (:math:`N_{{\rm
-                tpl},\ast},N_{{\rm pix},\ast}`).
-            stpl_sres (numpy.ndarray): (**Optional**) Spectral
-                resolution of the stellar template spectra.  All
-                templates are assumed to have the same spectral
+            guess_dispersion (array-like, optional):
+                The starting velocity dispersion guess.  Can provide a
+                single value for all spectra or one value per spectrum.
+            reject_boxcar (:obj:`int`, optional):
+                Size of the boxcar to use when rejecting fit outliers.
+                If None, no rejection iteration is performed.
+            stpl_wave (numpy.ndarray, optional):
+                Wavelength vector for stellar template spectra.  Shape
+                is (:math:`N_{{\rm pix},\ast}`,).
+            stpl_flux (numpy.ndarray, optional):
+                Stellar template spectra to use in fit.  Shape is
+                (:math:`N_{{\rm tpl},\ast},N_{{\rm pix},\ast}`).
+            stpl_sres (numpy.ndarray, optional):
+                Spectral resolution of the stellar template spectra.
+                All templates are assumed to have the same spectral
                 resolution.  Shape is (:math:`N_{{\rm pix},\ast}`,).
                 This is also used to set the spectral resolution of the
                 emission-line templates.  If not provided, the
                 emission-line templates are constructed with an LSF that
                 has a disperison of 1 pixel.
-            stpl_to_use (numpy.ndarray): (**Optional**) Set of flags
-                used to select the stellar templates used to fit each
-                spectrum.  Shape is (:math:`N_{\rm spec},N_{{\rm
-                tpl},\ast}`).
-            stellar_kinematics (numpy.ndarray): (**Optional**) The
-                kinematics to use for the stellar component.  If the
+            stpl_to_use (numpy.ndarray, optional):
+                Set of flags used to select the stellar templates used
+                to fit each spectrum.  Shape is (:math:`N_{\rm
+                spec},N_{{\rm tpl},\ast}`).
+            stellar_kinematics (numpy.ndarray, optional):
+                The kinematics to use for the stellar component.  If the
                 spectral resolution of the templates is different from
                 the galaxy data, the provided stellar velocity
                 dispersions *must* include the the (assumed
@@ -1902,101 +1861,110 @@ class Sasuke(EmissionLineFit):
                 ppxf.  Shape is (:math:`N_{\rm spec},N_{{\rm
                 kin},\ast}`).  The shape of this array determines the
                 number of moments assigned to the stellar component.
-            etpl_sinst_mode (str): (**Optional**) Mode used to set the
-                instrumental dispersion of the emission-line templates;
-                see :func:`etpl_line_sigma_options` for the options.
+            etpl_sinst_mode (:obj:`str`, optional):
+                Mode used to set the instrumental dispersion of the
+                emission-line templates; see
+                :func:`etpl_line_sigma_options` for the options.
                 Default mode is `default`, imagine that.
-            etpl_sinst_min (float): (**Optional**) Minimum allowed
-                instrumental dispersion value.  If the mode of
-                constructing the instrumental dispersion of the
+            etpl_sinst_min (:obj:`float`, optional):
+                Minimum allowed instrumental dispersion value.  If the
+                mode of constructing the instrumental dispersion of the
                 templates results in values that are below this value,
                 the whole function is offset in quadrature such that no
                 value goes below the minimum.  Default is 0 km/s.
-            remap_flux (numpy.ndarray): (**Optional**) Ultimately the
-                spectra to be modeled, if provided.  The nominal usage
-                is, e.g., if the object spectra (`obj_flux`) are binned
-                spaxels, this can be flux arrays of all the spaxels that
-                were used to construct the binned data.  The function
-                would then use a first fit to the binned spectra and a
-                matching between the on-sky positions (see `remap_skyx`,
-                `remap_skyy`, `obj_skyx`, `obj_skyy`) to ultimately fit
-                the individual spaxel data.  See
+            remap_flux (numpy.ndarray, optional):
+                Ultimately the spectra to be modeled, if provided.  The
+                nominal usage is, e.g., if the object spectra
+                (`obj_flux`) are binned spaxels, this can be flux arrays
+                of all the spaxels that were used to construct the
+                binned data.  The function would then use a first fit to
+                the binned spectra and a matching between the on-sky
+                positions (see `remap_skyx`, `remap_skyy`, `obj_skyx`,
+                `obj_skyy`) to ultimately fit the individual spaxel
+                data.  See
                 :func:`mangadap.contrib.xjmc.emline_fitter_with_ppxf`.
                 These spectra must be sampled identically to the object
                 spectra (`velscale`) and have the same wavelength vector
                 (`obj_wave`).  Can be provided as a
                 `numpy.ma.MaskedArray`_.  Shape is (:math:`N_{\rm
                 remap},N_{\rm pix}`).
-            remap_ferr (numpy.ndarray): (**Optional**)  The 1-sigma
-                error in `remap_flux`.  Can be provided as a
-                `numpy.ma.MaskedArray`_.  Shape is (:math:`N_{\rm
-                remap},N_{\rm pix}`).
-            remap_mask (numpy.ndarray or
-                :class:`mangadap.util.pixelmask.SpectralPixelMask`):
-                (**Optional**) Boolean array or
+            remap_ferr (numpy.ndarray, optional):
+                The 1-:math:`\sigma` error in `remap_flux`.  Can be
+                provided as a `numpy.ma.MaskedArray`_.  Shape is
+                (:math:`N_{\rm remap},N_{\rm pix}`).
+            remap_mask (numpy.ndarray,
+                :class:`mangadap.util.pixelmask.SpectralPixelMask`,
+                optional):
+                Boolean array or
                 :class:`mangadap.util.pixelmask.SpectralPixelMask`
                 instance used to censor regions of the remapping spectra
                 to ignore during fitting.
-            remap_sres (numpy.ndarray): (**Optional**)  The spectral
-                resolution of the remapping spectra.  Can be a single
-                vector for all spectra or one vector per object
-                spectrum.
-            remap_skyx (numpy.ndarray): (**Optional**) On-sky x position
-                of the remapping spectra.  Shape is (:math:`N_{\rm
-                remap}`,).
-            remap_skyy (numpy.ndarray): (**Optional**) On-sky y position
-                of the remapping spectra.  Shape is (:math:`N_{\rm
-                remap}`,).
-            obj_skyx (numpy.ndarray): (**Optional**) On-sky x position
-                of the object spectra.  Shape is (:math:`N_{\rm
-                spec}`,).
-            obj_skyy (numpy.ndarray): (**Optional**) On-sky y position
-                of the object spectra.  Shape is (:math:`N_{\rm
-                spec}`,).
-            velscale_ratio (int): (**Optional**) The **integer** ratio
-                between the velocity scale of the pixel in the galaxy
-                data to that of the template data.  If None, set to
-                unity.
-            matched_resolution (bool): (**Optional**) The spectral
-                resolution of the templates is matched to that of the
-                galaxy data.  WARNING: This functionality is never used!
-            waverange (array-like): (**Optional**) Lower and upper
-                wavelength limits to *include* in the fit.  This can be
-                a two-element vector to apply the same limits to all
-                spectra, or a N-spec x 2 array with wavelength ranges
-                for each spectrum to be fit.  Default is to use as much
-                of the spectrum as possible.
-            bias (float): (**Optional**) pPXF bias parameter.
-                (Currently irrelevant because gas is currently always
-                fit with moments=2.)
-            degree (int): (**Optional**) pPXF degree parameter setting
-                the degree of the additive polynomials to use,
-                :math:`o_{\rm add}`.  Default is no polynomial included.
-            mdegree (int): (**Optional**) pPXF mdegree parameter setting
-                the degree of the multiplicative polynomials to use,
-                :math:`o_{\rm mult}`.  Default is no polynomial
-                included.
-            reddening (float): (**Optional**) pPXF reddening parameter
-                used to fit :math:`E(B-V)` assuming a Calzetti law.
-                Cannot be fit simultaneously with multiplicative
-                polynomial.  Must be larger than 0 to start.  Default is
-                not fit.
-            max_velocity_range (float): (**Optional**) Maximum range
-                (+/-) expected for the fitted velocities in km/s.
-                Default is 400 km/s.
-            alias_window (float) : (**Optional**) The window to mask to
-                avoid aliasing near the edges of the spectral range in
-                km/s.  Default is six times *max_velocity_range*.
-            dvtol (float): (**Optional**) The velocity scale of the
-                template spectra and object spectrum must be smaller
-                than this tolerance.  Default is 1e-10.
-            plot (bool): (**Optional**) Show the automatically generated
-                pPXF fit plots for each iterations of each spectrum.
-            loggers (list): (**Optional**) List of `logging.Logger`_
-                objects to log progress; ignored if quiet=True.  Logging
-                is done using :func:`mangadap.util.log.log_output`.
-            quiet (bool): (**Optional**) Suppress all terminal and
-                logging output.
+            remap_sres (numpy.ndarray, optional):
+                The spectral resolution of the remapping spectra.  Can
+                be a single vector for all spectra or one vector per
+                object spectrum.
+            remap_skyx (numpy.ndarray, optional):
+                On-sky x position of the remapping spectra.  Shape is
+                (:math:`N_{\rm remap}`,).
+            remap_skyy (numpy.ndarray, optional):
+                On-sky y position of the remapping spectra.  Shape is
+                (:math:`N_{\rm remap}`,).
+            obj_skyx (numpy.ndarray, optional):
+                On-sky x position of the object spectra.  Shape is
+                (:math:`N_{\rm spec}`,).
+            obj_skyy (numpy.ndarray, optional):
+                On-sky y position of the object spectra.  Shape is
+                (:math:`N_{\rm spec}`,).
+            velscale_ratio (:obj:`int`, optional):
+                The **integer** ratio between the velocity scale of the
+                pixel in the galaxy data to that of the template data.
+                If None, set to unity.
+            matched_resolution (:obj:`bool`, optional):
+                The spectral resolution of the templates is matched to
+                that of the galaxy data.  WARNING: This functionality is
+                never used!
+            waverange (array-like, optional):
+                Lower and upper wavelength limits to *include* in the
+                fit.  This can be a two-element vector to apply the same
+                limits to all spectra, or a N-spec x 2 array with
+                wavelength ranges for each spectrum to be fit.  Default
+                is to use as much of the spectrum as possible.
+            bias (:obj:`float`, optional):
+                pPXF bias parameter.  (Currently irrelevant because gas
+                is currently always fit with moments=2.)
+            degree (:obj:`int`, optional):
+                pPXF degree parameter setting the degree of the additive
+                polynomials to use, :math:`o_{\rm add}`.  Default is no
+                polynomial included.
+            mdegree (:obj:`int`, optional):
+                pPXF mdegree parameter setting the degree of the
+                multiplicative polynomials to use, :math:`o_{\rm mult}`.
+                Default is no polynomial included.
+            reddening (:obj:`float`, optional):
+                pPXF reddening parameter used to fit :math:`E(B-V)`
+                assuming a Calzetti law.  Cannot be fit simultaneously
+                with multiplicative polynomial.  Must be larger than 0
+                to start.  Default is not fit.
+            max_velocity_range (:obj:`float`, optional):
+                Maximum range (+/-) expected for the fitted velocities
+                in km/s.  Default is 400 km/s.
+            alias_window (:obj:`float`, optional):
+                The window to mask to avoid aliasing near the edges of
+                the spectral range in km/s.  Default is six times
+                *max_velocity_range*.
+            dvtol (:obj:`float`, optional):
+                The velocity scale of the template spectra and object
+                spectrum must be smaller than this tolerance.  Default
+                is 1e-10.
+            plot (:obj:`bool`, optional):
+                Show the automatically generated pPXF fit plots for each
+                iterations of each spectrum.
+            loggers (:obj:`list`, optional):
+                List of `logging.Logger`_ objects to log progress;
+                ignored if quiet=True.  Logging is done using
+                :func:`mangadap.util.log.log_output`.
+            quiet (:obj:`bool`, optional):
+                Suppress all terminal and logging output.
 
         Returns:
             numpy.ndarray, numpy.recarray: The function returns: (1) the
@@ -2039,8 +2007,6 @@ class Sasuke(EmissionLineFit):
                 = PPXFFit.check_objects(obj_wave, obj_flux, obj_ferr=obj_ferr, obj_sres=obj_sres)
         self.nobj, self.npix_obj = self.obj_flux.shape
         self.waverange = PPXFFit.set_wavelength_range(self.nobj, self.obj_wave, waverange)
-        self.input_obj_mask = numpy.ma.getmaskarray(self.obj_flux).copy()
-        self.obj_to_fit = numpy.any(numpy.invert(self.input_obj_mask), axis=1)
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO,
                        'Number of object spectra to fit: {0}/{1}'.format(
@@ -2048,8 +2014,6 @@ class Sasuke(EmissionLineFit):
         # guess_kin are in "ppxf" velocities
         self.input_cz, guess_kin = PPXFFit.check_input_kinematics(self.nobj, guess_redshift,
                                                                   guess_dispersion)
-#        print(self.input_cz[0], guess_kin[0,:])
-#        print(numpy.mean(self.input_cz))
 
         # Check the remapping data, if provided
         if remap_flux is not None:
@@ -2426,34 +2390,44 @@ class Sasuke(EmissionLineFit):
         # Prep:
         wave = self.obj_wave[start:end]
         if self.nremap == 0:
-            flux = self.obj_flux.data[:,start:end]
-            ferr = self.obj_ferr.data[:,start:end]
             mask = numpy.invert(self.obj_flux.mask[:,start:end])
+            spec_to_fit = numpy.any(mask, axis=1)
+            flux = self.obj_flux.data[spec_to_fit,start:end]
+            ferr = self.obj_ferr.data[spec_to_fit,start:end]
+            mask = mask[spec_to_fit,:]
+            tpl_to_use = self.tpl_to_use[spec_to_fit,:]
+            comp_start_kin = self.comp_start_kin[spec_to_fit,:]
             flux_binned = None
             ferr_binned = None
             mask_binned = None
         else:
-            flux = self.remap_flux.data[:,start:end]
-            ferr = self.remap_ferr.data[:,start:end]
             mask = numpy.invert(self.remap_flux.mask[:,start:end])
-            flux_binned = self.obj_flux.data[:,start:end]
-            ferr_binned = self.obj_ferr.data[:,start:end]
+            spec_to_fit = numpy.any(mask, axis=1)
+            flux = self.remap_flux.data[spec_to_fit,start:end]
+            ferr = self.remap_ferr.data[spec_to_fit,start:end]
+            mask = mask[spec_to_fit,:]
             mask_binned = numpy.invert(self.obj_flux.mask[:,start:end])
+            bins_to_fit = numpy.any(mask_binned, axis=1)
+            flux_binned = self.obj_flux.data[bins_to_fit,start:end]
+            ferr_binned = self.obj_ferr.data[bins_to_fit,start:end]
+            mask_binned = mask_binned[bins_to_fit,:]
+            tpl_to_use = self.tpl_to_use[bins_to_fit,:]
+            comp_start_kin = self.comp_start_kin[bins_to_fit,:]
 
         # Run the fitter
-        model_flux[:,start:end], model_eml_flux[:,start:end], _model_mask, model_wgts, \
-                model_wgts_err, model_addcoef, model_multcoef, model_reddening, model_kin_inp, \
-                model_kin, model_kin_err, nearest_bin \
+        model_flux[spec_to_fit,start:end], model_eml_flux[spec_to_fit,start:end], _model_mask, \
+                model_wgts, model_wgts_err, model_addcoef, model_multcoef, model_reddening, \
+                model_kin_inp, model_kin, model_kin_err, nearest_bin \
                             = emline_fitter_with_ppxf(self.tpl_flux, wave, flux, ferr, mask,
                                                       self.velscale, self.velscale_ratio,
                                                       self.tpl_comp, self.gas_tpl,
-                                                      self.comp_moments, self.comp_start_kin,
+                                                      self.comp_moments, comp_start_kin,
                                                       tied=self.tied, degree=self.degree,
                                                       mdegree=self.mdegree,
                                                       reddening=self.reddening,
                                                       reject_boxcar=self.reject_boxcar,
                                                       vsyst=self.base_velocity,
-                                                      tpl_to_use=self.tpl_to_use,
+                                                      tpl_to_use=tpl_to_use,
                                                       flux_binned=flux_binned,
                                                       noise_binned=ferr_binned,
                                                       mask_binned=mask_binned,
@@ -2461,17 +2435,15 @@ class Sasuke(EmissionLineFit):
                                                       y_binned=self.obj_skyy, x=self.remap_skyx,
                                                       y=self.remap_skyy, plot=plot, quiet=not plot,
                                                       sigma_rej=sigma_rej)
-#                                                           plot=True, quiet=False)
 
         # Construct the bin ID numbers
         model_fit_par['BINID'] = numpy.arange(output_shape[0])
         model_fit_par['BINID_INDEX'] = numpy.arange(output_shape[0])
-        model_fit_par['NEAREST_BIN'] = nearest_bin
+        model_fit_par['NEAREST_BIN'][spec_to_fit] = nearest_bin
 
         model_eml_par['BINID'] = numpy.arange(output_shape[0])
         model_eml_par['BINID_INDEX'] = numpy.arange(output_shape[0])
 
-#        result = self._fit_all_spectra(plot=plot)#, plot_file_root=plot_file_root)
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, 'Fits completed in {0:.4e} min.'.format(
                        (time.clock() - t)/60))
@@ -2479,8 +2451,9 @@ class Sasuke(EmissionLineFit):
         # Flag pixels as rejected during fitting; _model_mask is True
         # where the pixels were fit
         indx = mask & numpy.invert(_model_mask)
-        model_mask[:,start:end][indx] = self.bitmask.turn_on(model_mask[:,start:end][indx],
-                                                             PPXFFit.rej_flag)
+        _model_mask = model_mask[spec_to_fit,start:end]
+        _model_mask[indx] = self.bitmask.turn_on(_model_mask[indx], PPXFFit.rej_flag)
+        model_mask[spec_to_fit,start:end] = _model_mask
 
         #---------------------------------------------------------------
         # Save the results
@@ -2491,10 +2464,10 @@ class Sasuke(EmissionLineFit):
             flux = self.remap_flux
             ferr = self.remap_ferr
         model_flux, model_eml_flux, model_mask, model_fit_par, model_eml_par \
-                = self._save_results(etpl, start, end, flux, ferr, model_flux, model_eml_flux,
-                                     model_mask, model_wgts, model_wgts_err, model_addcoef,
+                = self._save_results(etpl, start, end, flux, ferr, spec_to_fit, model_flux,
+                                     model_eml_flux, model_wgts, model_wgts_err, model_addcoef,
                                      model_multcoef, model_reddening, model_kin_inp, model_kin,
-                                     model_kin_err, model_fit_par, model_eml_par)
+                                     model_kin_err, model_mask, model_fit_par, model_eml_par)
 
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, 'Sasuke finished')

@@ -681,7 +681,7 @@ class EmissionLineMoments:
         # allow the code to continue but issue a warning
         if spec_n is None:
             warnings.warn('Multiple spectra entered, but no designation for which to use!')
-            _spec_n = numpy.zeros(nbands, dtype=numpy.int)
+            _spec_n = numpy.zeros(nbands, dtype=int)
         else:
             _spec_n = spec_n
         
@@ -690,9 +690,9 @@ class EmissionLineMoments:
             raise ValueError('Selected spectrum not provided!')
 
         # Instantiate the arrays
-        continuum = numpy.zeros(nbands, dtype=numpy.float)
-        continuum_error = None if err is None else numpy.zeros(nbands, dtype=numpy.float)
-        band_center = numpy.zeros(nbands, dtype=numpy.float)
+        continuum = numpy.zeros(nbands, dtype=float)
+        continuum_error = None if err is None else numpy.zeros(nbands, dtype=float)
+        band_center = numpy.zeros(nbands, dtype=float)
         band_incomplete = numpy.zeros(nbands, dtype=bool)
         band_empty = numpy.zeros(nbands, dtype=bool)
 
@@ -714,6 +714,9 @@ class EmissionLineMoments:
         """
         Measure the moments for a single band.
 
+        If spectrum errors are not provided, moment errors are returned
+        as 0.0.
+
         Args:
             wave (numpy.ndarray):
                 Wavelengths in angstroms
@@ -734,7 +737,9 @@ class EmissionLineMoments:
             incomplete band
             empty band
             division by zero
+            undefined 1st moment
             undefined 2nd moment
+
         """
         # Get the fraction of the passband that is unmasked
         interval_frac = passband_integrated_width(wave, spec, passband=passband, log=True) \
@@ -742,19 +747,19 @@ class EmissionLineMoments:
         incomplete = interval_frac < 1.0
         empty = numpy.invert(interval_frac > 0.0)
         if empty:
-            return 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, incomplete, empty, False, False
+            return 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, incomplete, empty, False, True, True
 
         # Get the redshift vector
         cz = astropy.constants.c.to('km/s').value*(wave/restwave-1)
 
         # Get the integrated flux
         flux = passband_integral(wave, spec, passband=passband, log=True)
-        fluxerr = None if err is None else \
+        fluxerr = 0.0 if err is None else \
                     passband_integral(wave, err, passband=passband, log=True, quad=True)
 
         # No flux in the passband, meaning division by zero will occur!
         if not numpy.absolute(flux) > 0.0:
-            return flux, fluxerr, 0.0, 0.0, 0.0, 0.0, incomplete, empty, True, False
+            return flux, fluxerr, 0.0, 0.0, 0.0, 0.0, incomplete, empty, True, True, True
 
         # Get the first and second moments:
         mom1, mom1err = passband_weighted_mean(wave, spec, cz, yerr=err, passband=passband,
@@ -762,7 +767,23 @@ class EmissionLineMoments:
         mom2, mom2err = passband_weighted_sdev(wave, spec, cz, yerr=err, passband=passband,
                                                log=True)
 
-        return flux, fluxerr, mom1, mom1err, mom2, mom2err, incomplete, empty, False, False
+        # If no errors provided, set errors to 0
+        if err is None:
+            mom1err = 0.0
+            mom2err = 0.0
+
+        # Set masked values to 0.0
+        undefined_mom1 = False
+        if isinstance(mom1, numpy.ma.MaskedArray) and mom1.mask:
+            mom1 = 0.0
+            undefined_mom1 = True
+        undefined_mom2 = False
+        if isinstance(mom2, numpy.ma.MaskedArray) and mom2.mask:
+            mom2 = 0.0
+            undefined_mom2 = True
+        
+        return flux, fluxerr, mom1, mom1err, mom2, mom2err, incomplete, empty, False, \
+                    undefined_mom1, undefined_mom2
 
 
     @staticmethod
@@ -792,16 +813,17 @@ class EmissionLineMoments:
         # Get the parameters for the linear continuum across the
         # primary passband
         nbands = mainbands.shape[0]
-        flux = numpy.zeros(nbands, dtype=numpy.float)
-        fluxerr = numpy.zeros(nbands, dtype=numpy.float)
-        mom1 = numpy.zeros(nbands, dtype=numpy.float)
-        mom1err = numpy.zeros(nbands, dtype=numpy.float)
-        mom2 = numpy.zeros(nbands, dtype=numpy.float)
-        mom2err = numpy.zeros(nbands, dtype=numpy.float)
-        incomplete = numpy.zeros(nbands, dtype=numpy.bool)
-        empty = numpy.zeros(nbands, dtype=numpy.bool)
-        divbyzero = numpy.zeros(nbands, dtype=numpy.bool)
-        undefined_mom2 = numpy.zeros(nbands, dtype=numpy.bool)
+        flux = numpy.zeros(nbands, dtype=float)
+        fluxerr = numpy.zeros(nbands, dtype=float)
+        mom1 = numpy.zeros(nbands, dtype=float)
+        mom1err = numpy.zeros(nbands, dtype=float)
+        mom2 = numpy.zeros(nbands, dtype=float)
+        mom2err = numpy.zeros(nbands, dtype=float)
+        incomplete = numpy.zeros(nbands, dtype=bool)
+        empty = numpy.zeros(nbands, dtype=bool)
+        divbyzero = numpy.zeros(nbands, dtype=bool)
+        undefined_mom1 = numpy.zeros(nbands, dtype=bool)
+        undefined_mom2 = numpy.zeros(nbands, dtype=bool)
 
         if numpy.any(rcen-bcen == 0):
             print('band centers are the same!')
@@ -815,7 +837,7 @@ class EmissionLineMoments:
             # the code to continue with a warning
             if spec_n is None:
                 warnings.warn('Multiple spectra entered, but no designation for which to use!')
-                _spec_n = numpy.zeros(self.nmom, dtype=numpy.int)
+                _spec_n = numpy.zeros(self.nmom, dtype=int)
             else:
                 _spec_n = spec_n
 
@@ -825,17 +847,17 @@ class EmissionLineMoments:
             _spec = spec - cont if len(spec.shape) == 1 else spec[_spec_n[i],:] - cont
 
             flux[i], fluxerr[i], mom1[i], mom1err[i], mom2[i], mom2err[i], incomplete[i], \
-                    empty[i], divbyzero[i], undefined_mom2[i] \
+                    empty[i], divbyzero[i], undefined_mom1[i], undefined_mom2[i] \
                         = EmissionLineMoments.single_band_moments(wave, _spec, p, restwave[i],
                                                                   err=err)
 
         # Get the instrumental dispersion at the position of the line
         # center
-        sinst = numpy.zeros(nbands, dtype=numpy.float) if sres is None \
+        sinst = numpy.zeros(nbands, dtype=float) if sres is None \
                         else EmissionLineFit.instrumental_dispersion(wave, sres, restwave, mom1)
 
         return cntm, cntb, flux, fluxerr, mom1, mom1err, mom2, mom2err, sinst, incomplete, empty, \
-                    divbyzero, undefined_mom2
+                    divbyzero, undefined_mom1, undefined_mom2
 
 
     @staticmethod
@@ -861,7 +883,8 @@ class EmissionLineMoments:
                                                            redshift=redshift)
 
         # Subtract the continuum and determine where the continuum is
-        # undefined
+        # undefined.  If _continuum is None, this just returns _fluxnc =
+        # _flux and no_continuum = None.
         _fluxnc, no_continuum = EmissionLineFit.subtract_continuum(_flux, _continuum)
 
         # Initialize the output data
@@ -869,6 +892,9 @@ class EmissionLineMoments:
         nmom = momdb.nsets
         measurements = init_record_array(nspec, EmissionLineMoments.output_dtype(nmom,
                                                                                  bitmask=bitmask))
+
+        # Save the redshift used
+        measurements['REDSHIFT'] = _redshift
 
         # Mask dummy lines
         if numpy.any(momdb.dummy):
@@ -880,13 +906,14 @@ class EmissionLineMoments:
             return measurements
 
         # Common arrays used for each spectrum
-        blue_fraction = numpy.zeros(nmom, dtype=numpy.float)
-        red_fraction = numpy.zeros(nmom, dtype=numpy.float)
+        blue_fraction = numpy.zeros(nmom, dtype=float)
+        red_fraction = numpy.zeros(nmom, dtype=float)
 
-        incomplete = numpy.zeros(nmom, dtype=numpy.bool)
-        empty = numpy.zeros(nmom, dtype=numpy.bool)
-        divbyzero = numpy.zeros(nmom, dtype=numpy.bool)
-        undefined_mom2 = numpy.zeros(nmom, dtype=numpy.bool)
+        incomplete = numpy.zeros(nmom, dtype=bool)
+        empty = numpy.zeros(nmom, dtype=bool)
+        divbyzero = numpy.zeros(nmom, dtype=bool)
+        undefined_mom1 = numpy.zeros(nmom, dtype=bool)
+        undefined_mom2 = numpy.zeros(nmom, dtype=bool)
 
         # Perform the measurements for each spectrum
         for i in range(nspec):
@@ -896,6 +923,7 @@ class EmissionLineMoments:
             incomplete[:] = False
             empty[:] = False
             divbyzero[:] = False
+            undefined_mom1[:] = False
             undefined_mom2[:] = False
 
             # Shift the sidebands to the appropriate redshift
@@ -908,15 +936,14 @@ class EmissionLineMoments:
             # the sidebands, or if the model was subtracted in one
             # sideband but not the other
             if no_continuum is None:
-                spec = _flux[i,:] if _fluxnc is None else _fluxnc[i,:]
+                spec = _flux[i,:]
                 spec_n = None
 
-                # Flag moment calculations as having not corrected for
-                # stellar aborption
-                if _fluxnc is None:
-                    measurements['MASK'][i,:] = True if bitmask is None \
-                                else bitmask.turn_on(measurements['MASK'][i,:],
-                                                     'NO_ABSORPTION_CORRECTION')
+                # Flag moment calculations without a stellar-absorption
+                # correction
+                measurements['MASK'][i,:] = True if bitmask is None \
+                                                else bitmask.turn_on(measurements['MASK'][i,:],
+                                                                     'NO_ABSORPTION_CORRECTION')
             else:
                 blue_fraction[numpy.invert(momdb.dummy)] \
                         = passband_integrated_width(wave, no_continuum[i,:], passband=_bluebands,
@@ -945,7 +972,7 @@ class EmissionLineMoments:
                                                        'JUMP_BTWN_SIDEBANDS'])
 
                 spec = numpy.ma.append(_flux[i,:].reshape(1,-1), _fluxnc[i,:].reshape(1,-1), axis=0)
-                spec_n = numpy.zeros(nmom, dtype=numpy.int)
+                spec_n = numpy.zeros(nmom, dtype=int)
                 spec_n[numpy.invert(jumps)] = 1
 
                 # Flag moment calculations as having not been corrected
@@ -959,7 +986,8 @@ class EmissionLineMoments:
                 measurements['BCONT'][i,numpy.invert(momdb.dummy)], conterr, \
                 incomplete[numpy.invert(momdb.dummy)], empty[numpy.invert(momdb.dummy)] \
                     = EmissionLineMoments.sideband_pseudocontinua(wave, spec, _bluebands,
-                                                        spec_n=spec_n[numpy.invert(momdb.dummy)],
+                                                                  spec_n=None if spec_n is None
+                                                            else spec_n[numpy.invert(momdb.dummy)],
                                                                   err=__err, weighted_center=False)
             if __err is not None:
                 measurements['BCONTERR'][i,numpy.invert(momdb.dummy)] = conterr
@@ -975,7 +1003,8 @@ class EmissionLineMoments:
                 measurements['RCONT'][i,numpy.invert(momdb.dummy)], conterr, \
                 incomplete[numpy.invert(momdb.dummy)], empty[numpy.invert(momdb.dummy)] \
                     = EmissionLineMoments.sideband_pseudocontinua(wave, spec, _redbands,
-                                                          spec_n=spec_n[numpy.invert(momdb.dummy)],
+                                                                  spec_n=None if spec_n is None
+                                                            else spec_n[numpy.invert(momdb.dummy)],
                                                                   err=__err, weighted_center=False)
             if __err is not None:
                 measurements['RCONTERR'][i,numpy.invert(momdb.dummy)] = conterr
@@ -1000,14 +1029,16 @@ class EmissionLineMoments:
                     measurements['FLUXERR'][i,indx], measurements['MOM1'][i,indx], \
                     measurements['MOM1ERR'][i,indx], measurements['MOM2'][i,indx], \
                     measurements['MOM2ERR'][i,indx], measurements['SINST'][i,indx], \
-                    incomplete[indx], empty[indx], divbyzero[indx], undefined_mom2[indx] = \
+                    incomplete[indx], empty[indx], divbyzero[indx], undefined_mom1[indx], \
+                    undefined_mom2[indx] = \
                             EmissionLineMoments.continuum_subtracted_moments(wave, spec,
                                                                _mainbands, momdb['restwave'][indx],
                                                                measurements['BCEN'][i,indx],
                                                                measurements['BCONT'][i,indx],
                                                                measurements['RCEN'][i,indx],
                                                                measurements['RCONT'][i,indx],
-                                                               spec_n=spec_n[indx], err=__err,
+                                                               spec_n=None if spec_n is None 
+                                                                    else spec_n[indx], err=__err,
                                                                sres=__sres) 
 
             # Turn on any necessary bits
@@ -1017,6 +1048,9 @@ class EmissionLineMoments:
                         else bitmask.turn_on(measurements['MASK'][i,empty], 'MAIN_EMPTY')
             measurements['MASK'][i,divbyzero] = True if bitmask is None \
                         else bitmask.turn_on(measurements['MASK'][i,divbyzero], 'DIVBYZERO')
+            measurements['MASK'][i,undefined_mom1] = True if bitmask is None \
+                        else bitmask.turn_on(measurements['MASK'][i,undefined_mom1],
+                                             'UNDEFINED_MOM1')
             measurements['MASK'][i,undefined_mom2] = True if bitmask is None \
                         else bitmask.turn_on(measurements['MASK'][i,undefined_mom2],
                                              'UNDEFINED_MOM2')
@@ -1270,6 +1304,8 @@ class EmissionLineMoments:
                                                          measurements['FLUX'], redshift=_redshift,
                                                          line_flux_err=measurements['FLUXERR'],
                                                          include_band=include_band)
+
+        # TODO: This is also now set in measure_moments; remove this?
         measurements['REDSHIFT'] = _redshift
 
         # Flag non-positive measurements

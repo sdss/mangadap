@@ -13,6 +13,8 @@
  - Significant changes to the resampling code; replaced `resample1d`
    with `Resample` class.
  - Added test data to `data/tests/`
+ - Added tests for more core routines, like PPXFFit.fit() and
+   Sasuke.fit().  Tests take about 1 min to execute.
 
 TODO:
  - Documentation of config examples are out of date!

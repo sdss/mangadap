@@ -41,11 +41,11 @@ def compile_test_spectra(ofile):
         # Get the relevant spectra
         hdu = fits.open(os.path.join(root, pi.split('-')[0], 'stack',
                                      'manga-{0}-LOGCUBE.fits.gz'.format(pi)))
-        _flux = hdu['FLUX'].data[:,x[i],y[i]]
-        _ivar = hdu['IVAR'].data[:,x[i],y[i]]
-        _mask = hdu['MASK'].data[:,x[i],y[i]]
+        _flux = hdu['FLUX'].data[:,y[i],x[i]]
+        _ivar = hdu['IVAR'].data[:,y[i],x[i]]
+        _mask = hdu['MASK'].data[:,y[i],x[i]]
         _wave = numpy.tile(hdu['wave'].data, (_flux.shape[1],1)).T
-        _sres = numpy.ma.power(DAPConstants.sig2fwhm * hdu['PREDISP'].data[:,x[i],y[i]]
+        _sres = numpy.ma.power(DAPConstants.sig2fwhm * hdu['PREDISP'].data[:,y[i],x[i]]
                                 / _wave, -1)
         _sres = numpy.apply_along_axis(interpolate_masked_vector, 0, _sres)
 

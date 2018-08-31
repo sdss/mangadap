@@ -13,9 +13,11 @@ from astropy.io import fits
 
 from mangadap.util.sampling import Resample, _pixel_borders
 from mangadap.proc.bandpassfilter import passband_integral
+from mangadap.tests.util import data_file
 
-def data_file(filename):
-    return os.path.join(os.environ['MANGADAP_DIR'], 'data', 'tests', filename)
+import warnings
+warnings.simplefilter("ignore", UserWarning)
+warnings.simplefilter("ignore", RuntimeWarning)
 
 def test_resample():
     delt = 100
