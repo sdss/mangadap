@@ -107,7 +107,7 @@ from ..util.fileio import init_record_array, rec_to_fits_type, create_symlink
 from ..util.parser import DefaultConfig
 from ..util.bitmask import BitMask
 from ..util.pixelmask import SpectralPixelMask
-from ..util.instrument import spectral_coordinate_step
+from ..util.sampling import spectral_coordinate_step
 from ..util.covariance import Covariance
 from ..util.geometry import SemiMajorAxisCoo
 from ..util.extinction import GalacticExtinction

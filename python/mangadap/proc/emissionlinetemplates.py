@@ -34,7 +34,7 @@ use with :class:`mangadap.proc.sasuke.Sasuke`.
 
         import astropy.constants
 
-        from ..util.instrument import spectrum_velocity_scale, spectral_coordinate_step
+        from ..util.sampling import spectrum_velocity_scale, spectral_coordinate_step
         from ..util.log import log_output
         from ..util import lineprofiles
         from .spectralfitting import EmissionLineFit
@@ -84,7 +84,7 @@ from scipy import interpolate
 
 import astropy.constants
 
-from ..util.instrument import spectrum_velocity_scale, spectral_coordinate_step
+from ..util.sampling import spectrum_velocity_scale, spectral_coordinate_step
 from ..util.log import log_output
 from ..util import lineprofiles
 from .spectralfitting import EmissionLineFit

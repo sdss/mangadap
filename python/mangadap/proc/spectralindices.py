@@ -10,52 +10,8 @@ A class hierarchy that performs the spectral-index measurements.
 *Source location*:
     $MANGADAP_DIR/python/mangadap/proc/spectralindices.py
 
-*Imports and python version compliance*:
-    ::
-
-        from __future__ import division
-        from __future__ import print_function
-        from __future__ import absolute_import
-        from __future__ import unicode_literals
-
-        import sys
-        import warnings
-        if sys.version > '3':
-            long = int
-
-        import glob
-        import os.path
-        import numpy
-        from astropy.io import fits
-
-        from ..par.parset import ParSet
-        from ..par.artifactdb import ArtifactDB
-        from ..par.absorptionindexdb import AbsorptionIndexDB
-        from ..par.bandheadindexdb import BandheadIndexDB
-        from ..config.defaults import dap_source_dir, default_dap_file_name
-        from ..config.defaults import default_dap_method, default_dap_method_path
-        from ..config.defaults import default_dap_common_path
-        from ..util.instrument import SpectralResolution, match_spectral_resolution
-        from ..util.instrument import spectral_coordinate_step, spectrum_velocity_scale
-        from ..util.fitsutil import DAPFitsUtil
-        from ..util.fileio import init_record_array, rec_to_fits_type
-        from ..util.log import log_output
-        from ..util.bitmask import BitMask
-        from ..util.pixelmask import SpectralPixelMask
-        from ..util.parser import DefaultConfig
-        from .spatiallybinnedspectra import SpatiallyBinnedSpectra
-        from .templatelibrary import TemplateLibrary
-        from .stellarcontinuummodel import StellarContinuumModel
-        from .emissionlinemodel import EmissionLineModel
-        from .bandpassfilter import passband_integral, passband_integrated_width
-        from .bandpassfilter import passband_integrated_mean
-        from .bandpassfilter import passband_weighted_mean
-        from .util import select_proc_method, flux_to_fnu
-
-
 *Class usage examples*:
     Add examples!
-
 
 *Notes*:
     
@@ -144,8 +100,8 @@ from ..par.bandheadindexdb import BandheadIndexDB
 from ..config.defaults import dap_source_dir, default_dap_file_name
 from ..config.defaults import default_dap_method, default_dap_method_path
 from ..config.defaults import default_dap_common_path
-from ..util.instrument import SpectralResolution, match_spectral_resolution
-from ..util.instrument import spectral_coordinate_step, spectrum_velocity_scale
+from ..util.resolution import SpectralResolution, match_spectral_resolution
+from ..util.sampling import spectral_coordinate_step, spectrum_velocity_scale
 from ..util.fitsutil import DAPFitsUtil
 from ..util.fileio import init_record_array, rec_to_fits_type
 from ..util.log import log_output
@@ -1141,8 +1097,8 @@ class SpectralIndices:
 #        pyplot.step(wave, flux[0,:], where='mid', linestyle='-', color='r', lw=0.5)
 #        pyplot.show()
 
-        # Use :func:`mangadap.instrument.match_spectral_resolution` to
-        # match the spectral resolution of the binned spectra to the
+        # Use :func:`mangadap.util.resolution.match_spectral_resolution`
+        # to match the spectral resolution of the binned spectra to the
         # spectral-index system
         new_sres = wave/resolution_fwhm
         
@@ -1163,7 +1119,7 @@ class SpectralIndices:
 #        pyplot.step(wave, new_ivar[0,:]/numpy.mean(new_ivar[0,:]), where='mid', linestyle='-', color='r', lw=2.5)
 #        pyplot.show()
 
-        # From instrument.py:  "Any pixel that had a resolution that was
+        # From resolution.py:  "Any pixel that had a resolution that was
         # lower than the target resolution (up to some tolerance defined
         # by *min_sig_pix*) is returned as masked."  This is exactly
         # what should be masked with the SPECRES_LOW bit.

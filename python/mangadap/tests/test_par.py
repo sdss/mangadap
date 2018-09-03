@@ -7,6 +7,10 @@ import pytest
 
 from mangadap.par.parset import ParSet
 
+import warnings
+warnings.simplefilter("ignore", UserWarning)
+warnings.simplefilter("ignore", RuntimeWarning)
+
 #-----------------------------------------------------------------------------
 
 def test_parset():

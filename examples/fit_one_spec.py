@@ -9,7 +9,7 @@ from matplotlib import pyplot
 
 from mangadap.drpfits import DRPFits
 from mangadap.util.fitsutil import DAPFitsUtil
-from mangadap.util.instrument import SpectralResolution
+from mangadap.util.resolution import SpectralResolution
 from mangadap.util.pixelmask import SpectralPixelMask
 
 from mangadap.par.artifactdb import ArtifactDB

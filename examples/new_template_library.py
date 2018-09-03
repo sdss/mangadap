@@ -11,7 +11,7 @@ from matplotlib.ticker import NullFormatter
 from mangadap.drpfits import DRPFits
 from mangadap.util.constants import DAPConstants
 from mangadap.util.fitsutil import DAPFitsUtil
-from mangadap.util.instrument import SpectralResolution
+from mangadap.util.resolution import SpectralResolution
 from mangadap.util.filter import interpolate_masked_vector
 from mangadap.util.fileio import read_template_spectrum
 from mangadap.util.pixelmask import SpectralPixelMask

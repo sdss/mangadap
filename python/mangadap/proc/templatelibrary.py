@@ -38,42 +38,6 @@ bitmasks for the template library spectra.
 *Source location*:
     $MANGADAP_DIR/python/mangadap/proc/templatelibrary.py
 
-*Imports and python version compliance*:
-    ::
-
-        from __future__ import division
-        from __future__ import print_function
-        from __future__ import absolute_import
-        from __future__ import unicode_literals
-
-        import sys
-        import warnings
-        if sys.version > '3':
-            long = int
-
-        import glob
-        import os
-        import time
-        import logging
-
-        import numpy
-        from scipy import sparse
-        from scipy.interpolate import InterpolatedUnivariateSpline
-        from astropy.io import fits
-        import astropy.constants
-        from pydl.goddard.astro import airtovac
-
-        from ..util.bitmask import BitMask
-        from ..par.parset import ParSet
-        from ..config.defaults import dap_source_dir, default_dap_common_path
-        from ..config.defaults import default_dap_file_name
-        from ..util.log import log_output
-        from ..util.fileio import readfits_1dspec, read_template_spectrum, writefits_1dspec
-        from ..util.instrument import resample1d, resample_vector_npix, SpectralResolution
-        from ..util.instrument import match_spectral_resolution, spectral_coordinate_step
-        from ..util.parser import DefaultConfig
-        from .util import select_proc_method, HDUList_mask_wavelengths
-
 *Class usage examples*:
     Assuming you have the default directory structure setup, you can do::
 
@@ -204,6 +168,8 @@ bitmasks for the template library spectra.
     | **30 Aug 2017**: (KBW) Switch from using
         :func:`mangadap.util.instrument.resample_vector` to
         :func:`mangadap.util.instrument.resample1d`
+    | **30 Aug 2018**: (KBW) Switch from using resample1d to
+        :class:`mangadap.util.sampling.Resample`.
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
@@ -239,9 +205,9 @@ from ..util.bitmask import BitMask
 from ..util.log import log_output
 from ..util.fileio import readfits_1dspec, read_template_spectrum, writefits_1dspec, create_symlink
 from ..util.fitsutil import DAPFitsUtil
-from ..util.instrument import resample1d, resample_vector_npix, SpectralResolution
-from ..util.instrument import match_spectral_resolution, spectral_coordinate_step
-from ..util.instrument import spectrum_velocity_scale, angstroms_per_pixel
+from ..util.sampling import Resample, resample_vector_npix, angstroms_per_pixel
+from ..util.sampling import spectral_coordinate_step, spectrum_velocity_scale
+from ..util.resolution import SpectralResolution, match_spectral_resolution
 from ..util.parser import DefaultConfig
 from .util import select_proc_method, HDUList_mask_wavelengths
 
@@ -460,7 +426,7 @@ class TemplateLibrary:
     can be used with a non-DRP spectrum.  In the latter case, the user
     must supply the velocity scale of the pixel for the logarithmically
     resampled template library, and a
-    :class:`mangadap.util.instrument.SpectralResolution` object the
+    :class:`mangadap.util.resolution.SpectralResolution` object the
     defines the instrumental resolution of the spectrum/spectra to be
     analyzed.
 
@@ -506,7 +472,7 @@ class TemplateLibrary:
             provided :class:`mangadap.drpfits.DRPFits` object is this
             many times larger than the pixels in the resampled template
             spectrum.
-        sres (:class:`mangadap.util.instrument.SpectralResolution`):
+        sres (:class:`mangadap.util.resolution.SpectralResolution`):
             (**Optional**) The object is used simply to access the
             spectral resolution and associated wavelength coordinate
             vector needed when matching the spectral resolution of the
@@ -563,7 +529,7 @@ class TemplateLibrary:
         ntpl (int): Number of template spectra in the library
         drpf (:class:`mangadap.drpfits.DRPFits`): DRP file (object) with
             which the template library is associated for analysis
-        sres (:class:`mangadap.util.instrument.SpectralResolution`):
+        sres (:class:`mangadap.util.resolution.SpectralResolution`):
             The object is used simply to access the spectral resolution
             and associated wavelength coordinate vector needed when
             matching the spectral resolution of the template library;
@@ -825,7 +791,7 @@ class TemplateLibrary:
 
         The spectral resolution is set using :attr:`fwhm`, and the
         spectral resolution offset is initialized to zero (see
-        :func:`mangadap.util.instrument.GaussianKernelDifference`).
+        :func:`mangadap.util.resolution.GaussianKernelDifference`).
 
         .. warning::
 
@@ -912,7 +878,7 @@ class TemplateLibrary:
                 :math:`R=\lambda/\delta\lambda`, at each pixel.
             soff (numpy.ndarray): The spectral resolution offset for
                 each spectrum (see
-                :func:`mangadap.util.instrument.GaussianKernelDifference`). 
+                :func:`mangadap.util.resolution.GaussianKernelDifference`). 
 
         """
         if self.hdu is not None:
@@ -998,23 +964,15 @@ class TemplateLibrary:
                 allowed before considering the pixel as masked.
 
         Returns:
-            tuple: The indices of the pixels in the rebinned spectrum
-            that should be masked.
+            numpy.ndarray: Boolean array indicating which pixels in the
+            rebinned spectrum should be masked.
         """
-
-        mask_ex = self.bitmask.flagged(self.hdu['MASK'].data[i,:], flag=flag).astype(numpy.float64)
-        wave, mask_ex = resample1d(mask_ex, x=self.hdu['WAVE'].data[i,:],
-                                   inLog=self.library['log10'], newRange=fullRange,
-                                   newLog=self.log10_sampling, newdx=self.spectral_step)
-
-#        wave, mask_ex = resample_vector(mask_ex, xRange=[self.hdu['WAVE'].data[i,0],
-#                                                         self.hdu['WAVE'].data[i,-1]],
-#                                        inLog=self.library['log10'], newRange=fullRange,
-#                                        newLog=self.log10_sampling, dx=self.spectral_step,
-#                                        conserve=False) # flat=True!
-
-        return numpy.where(mask_ex > rmsk_lim)
-
+        unity = numpy.ma.MaskedArray(numpy.ones(self.hdu['WAVE'].data.shape[1], dtype=float),
+                                     mask=self.bitmask.flagged(self.hdu['MASK'].data[i,:],
+                                                               flag=flag))
+        r = Resample(unity, x=self.hdu['WAVE'].data[i,:], inLog=self.library['log10'],
+                     newRange=fullRange, newLog=self.log10_sampling, newdx=self.spectral_step)
+        return r.outf < rmsk_lim
 
     def _modify_spectral_resolution(self):
         """
@@ -1080,7 +1038,9 @@ class TemplateLibrary:
 
             - Add wavelength coordinate WCS information to the
               appropriate extension headers.
-
+            - Include 'step' as an argument
+            - Include limit on covering fraction used to mask data as an
+              argument
         """
         # Convert to vacuum wavelengths
 #        pyplot.plot(self.hdu['WAVE'].data[0,:], self.hdu['FLUX'].data[0,:]) 
@@ -1105,6 +1065,17 @@ class TemplateLibrary:
         # template library to that of a set of galaxy spectra to be fit.
         # However, the sampling can be left alone and this part will
         # force all the spectra to have the same wavelength range.
+        if not self.quiet:
+            log_output(self.loggers, 1, logging.INFO, 'Matching sampling ... ')
+
+        # Number of angstroms per pixel
+        ang_per_pix = numpy.array([angstroms_per_pixel(w, log=self.library['log10'], base=10.,
+                                                       regular=self.library['in_vacuum'])
+                                        for w in self.hdu['WAVE'].data])
+
+        # Number of pixels per resolution element
+        pix_per_fwhm = numpy.ma.divide(self.hdu['WAVE'].data,
+                                       self.hdu['SPECRES'].data * ang_per_pix)
 
         # The raw spectra are allowed to have wavelength ranges that
         # differ.  First, determine the wavelength range that encloses
@@ -1112,92 +1083,64 @@ class TemplateLibrary:
         # no data.
         fullRange = self._wavelength_range(flag='NO_DATA') if wavelength_range is None \
                             else numpy.array(wavelength_range).astype(float)
+
         # Get the spectral step if it hasn't been set yet
         if self.spectral_step is None:
             self.spectral_step = self._minimum_sampling()
 
         # Get the number of pixels needed
         npix, _fullRange = resample_vector_npix(outRange=fullRange, dx=self.spectral_step,
-                                               log=self.log10_sampling)
+                                                log=self.log10_sampling)
 
         # Any pixels without data after resampling are given a value
         # that is the minimum flux - 100 so that they can be easily
         # identified afterward.  The minimum flux is:
         min_flux = numpy.amin(self.hdu['FLUX'].data.ravel())
         # the observed pixels are
-        observed = numpy.invert(self.bitmask.flagged(self.hdu['MASK'].data, flag='NO_DATA'))
-        
-        # Number of angstroms per pixel
-        ang_per_pix = numpy.ones(self.hdu['FLUX'].data.shape, dtype=float)
-        for i in range(self.ntpl):
-            ang_per_pix[i,:] = angstroms_per_pixel(self.hdu['WAVE'].data[i,:],
-                                                   log=self.library['log10'], base=10.,
-                                                   regular=self.library['in_vacuum'])
-#        ang_per_pix_nr = angstroms_per_pixel(self.hdu['WAVE'].data[i,:], log=self.library['log10'],
-#                                             base=10., regular=False)
-#        pyplot.plot(ang_per_pix[0,:])
-#        pyplot.plot(ang_per_pix_nr)
-#        pyplot.show()
-        # Number of pixels per resolution element
-        pix_per_fwhm = numpy.ma.divide(numpy.ma.divide(self.hdu['WAVE'].data,
-                                                       self.hdu['SPECRES'].data), ang_per_pix)
+        no_data = self.bitmask.flagged(self.hdu['MASK'].data, flag='NO_DATA')
 
         # Now resample the spectra.  First allocate the arrays
         flux = numpy.zeros((self.ntpl, npix), dtype=numpy.float64)
         sres = numpy.zeros((self.ntpl, npix), dtype=numpy.float64)
         mask = numpy.zeros((self.ntpl, npix), dtype=self.bitmask.minimum_dtype())
-        if not self.quiet:
-            log_output(self.loggers, 1, logging.INFO, 'Matching sampling ... ')
-        for i in range(self.ntpl):
-            # Observed wavelengths
-            wave_in = self.hdu['WAVE'].data[i,observed[i,:]].ravel()
-            # Rebin the observed wavelength range
-            wave, flux[i,:] = resample1d(self.hdu['FLUX'].data[i,observed[i,:]].ravel(),
-                                         x=wave_in, inLog=self.library['log10'], newRange=fullRange,
-                                         newLog=self.log10_sampling, newdx=self.spectral_step,
-                                         ext_value=min_flux-100.)
-#            wave, flux[i,:] = resample_vector(self.hdu['FLUX'].data[i,observed[i,:]].ravel(),
-#                                              xRange=[wave_in[0], wave_in[-1]],
-#                                              inLog=self.library['log10'], newRange=fullRange,
-#                                              newLog=self.log10_sampling, dx=self.spectral_step,
-#                                              ext_value=min_flux-100., conserve=False, flat=False)
 
-            # Find the unobserved pixels, set them to have no flux, and
-            # flag them as having no data
-            indx = numpy.where(flux[i,:] < min_flux-10.)
+        for i in range(self.ntpl):
+            # Rebin the observed wavelength range
+            r = Resample(self.hdu['FLUX'].data[i,:], mask=no_data[i,:],
+                         x=self.hdu['WAVE'].data[i,:], inLog=self.library['log10'],
+                         newRange=fullRange, newLog=self.log10_sampling,
+                         newdx=self.spectral_step, step=False)
+            
+            # Save the result
+            wave = r.outx
+            flux[i,:] = r.outy
+            indx = r.outf < 0.9
             flux[i,indx] = 0.0
             mask[i,indx] = self.bitmask.turn_on(mask[i,indx], 'NO_DATA')
 
             # Resample the spectral resolution by simple interpolation.
-            # Select the good pixels
-            indx = numpy.where(numpy.invert(flux[i,:] < min_flux-10.))
-            # and interpolate
-            sres[i,indx] = interpolate.interp1d(self.hdu['WAVE'].data[i,:].ravel(),
-                                                self.hdu['SPECRES'].data[i,:].ravel(),
-                                                fill_value='extrapolate')(wave[indx])
+            sres[i,:] = interpolate.interp1d(self.hdu['WAVE'].data[i,:],
+                                             self.hdu['SPECRES'].data[i,:], assume_sorted=True,
+                                             fill_value='extrapolate')(wave)
+            sres[i,indx] = 0.0
 
-            #-----------------------------------------------------------
-            # Correct resolution for any resampling that results in
-            # less than 2 pixels per resolution element
-            # Get the number of new pixels combined for each new one
-            _, npix = resample1d(numpy.ones(wave_in.size, dtype=float), x=wave_in,
-                                 inLog=self.library['log10'], newRange=fullRange,
-                                 newLog=self.log10_sampling, newdx=self.spectral_step,
-                                 conserve=True)
-            # and the number of new pixels per resolution element
-            _pix_per_fwhm = interpolate.interp1d(self.hdu['WAVE'].data[i,observed[i,:]].ravel(),
-                                                 pix_per_fwhm[i,observed[i,:]].ravel(),
-                                                 fill_value='extrapolate')(wave) / npix
-#            pyplot.plot(wave_in, pix_per_fwhm[i,observed[i,:]])
+            # Recalculate the number of pixels per fwhm
+
+            # Number of angstroms per pixel
+            _ang_per_pix = angstroms_per_pixel(wave, log=self.log10_sampling, base=10.,
+                                               regular=True)
+            # Number of pixels per resolution element
+            _pix_per_fwhm = numpy.ma.divide(wave, sres[i,:] * _ang_per_pix)
+
+#            pyplot.plot(self.hdu['WAVE'].data[i,:-1], numpy.diff(self.hdu['WAVE'].data[i,:]))
+#            pyplot.plot(self.hdu['WAVE'].data[i,:], pix_per_fwhm[i,:])
 #            pyplot.plot(wave, _pix_per_fwhm)
-#            pyplot.plot(wave, npix)
 #            pyplot.show()
+#            exit()
 
             indx = _pix_per_fwhm < 2
             if numpy.sum(indx) > 0:
                 warnings.warn('Resampling has cause resolution below the two pixel limit!')
-                _ang_per_pix = angstroms_per_pixel(wave, log=self.log10_sampling, base=10.,
-                                                   regular=True)
                 sres[i,indx] = wave[indx]/2./_ang_per_pix[indx]
                 mask[i,indx] = self.bitmask.turn_on(mask[i,indx], 'SPECRES_2PIXEL')
             #-----------------------------------------------------------
@@ -1218,9 +1161,10 @@ class TemplateLibrary:
             indx = self._rebin_masked(i, 'SPECRES_LOW', fullRange, rmsk_lim=0.1)
             mask[i,indx] = self.bitmask.turn_on(mask[i,indx], 'SPECRES_LOW')
             
-#            pyplot.plot(oldwave, oldflux)
-#            pyplot.plot(wave, flux[i,:], 'g')
+#            pyplot.plot(self.hdu['WAVE'].data[i,:], self.hdu['FLUX'].data[i,:])
+#            pyplot.plot(wave, flux[i,:])
 #            pyplot.show()
+#            exit()
 
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '... done')
@@ -1229,7 +1173,6 @@ class TemplateLibrary:
             log_output(self.loggers, 1, logging.INFO,
                        'After resampling (calculated): {0}'.format(spectral_coordinate_step(wave,
                                                                                         log=True)))
-
 #        pyplot.plot(oldwave, oldflux)
 #        pyplot.plot(wave, flux[0,:], 'g')
 #        pyplot.show()
@@ -1323,7 +1266,7 @@ class TemplateLibrary:
 
             - Match the spectral resolution of the template to that of
               the DRP spectra; see
-              :func:`mangadap.util.instrument.match_spectral_resolution`.
+              :func:`mangadap.util.resolution.match_spectral_resolution`.
 
             - Mask the template pixels where the spectral resolution was
               too low to match to the DRP spectra; see
@@ -1332,8 +1275,8 @@ class TemplateLibrary:
             - Force a common wavelength range and sampling for all
               templates, where the sampling is forced to match the
               sampling of the DRP spectra; see
-              :func:`mangadap.util.instrument.resample_vector_pix`.  The masks
-              are appropriately resampled as well; see
+              :func:`mangadap.util.sampling.resample_vector_pix`.  The
+              masks are appropriately resampled as well; see
               :func:`_rebin_masked`.
 
         .. warning::
@@ -1373,7 +1316,7 @@ class TemplateLibrary:
                 provided :class:`mangadap.drpfits.DRPFits` object is
                 this many times larger than the pixels in the resampled
                 template spectrum.
-            sres (:class:`mangadap.util.instrument.SpectralResolution`):
+            sres (:class:`mangadap.util.resolution.SpectralResolution`):
                 (**Optional**) The object is used simply to access the
                 spectral resolution and associated wavelength coordinate
                 vector needed when matching the spectral resolution of
