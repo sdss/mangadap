@@ -2102,6 +2102,11 @@ class SpectralIndices:
             indx = measurements_binid < 0
             map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'DIDNOTUSE')
 
+            # Isolate any spaxels with foreground stars
+            map_mask = DAPFitsUtil.marginalize_mask(self.binned_spectra.drpf['MASK'].data,
+                                                    'FORESTAR', self.binned_spectra.drpf.bitmask,
+                                                    self.bitmask, out_mask=map_mask)
+
             # The number of valid bins MUST match the number of
             # measurements
             nvalid = numpy.sum(numpy.invert(indx))
