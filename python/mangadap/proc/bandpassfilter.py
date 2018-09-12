@@ -429,10 +429,6 @@ def passband_integrated_mean(x, y, err=None, passband=None, borders=False, log=F
     integral_err = numpy.ma.MaskedArray(passband_integral(x, err, passband=passband,
                                                           borders=borders, log=log, base=base,
                                                           quad=True))
-    #import pdb
-    #pdb.set_trace()
-    ### KHRR changing here!!!
-    #return numpy.ma.divide(integral, interval), numpy.ma.divide(err_integral, interval)
     return numpy.ma.divide(integral, interval), numpy.ma.divide(integral_err, interval)
 
 
@@ -479,9 +475,7 @@ def passband_weighted_mean(x, y, z, passband=None, borders=False, yerr=None, zer
     if yerr is not None:
         if yerr.shape != y.shape:
             raise ValueError('Incorrect shape for y errors.')
-        #import pdb
-        #pdb.set_trace()
-        ye_integrand = (z[:,None]-integral[None,:])*yerr[:,None]
+        ye_integrand = (z[:,None]-numpy.atleast_1d(integral)[None,:])*yerr[:,None]
         # KHRR - the line above is the original; the line below pushes through the crash
         #ye_integrand = (z[:,None]-integral[None])*yerr[:,None]
         weighted_integral_err += numpy.square(passband_integral(x, ye_integrand, passband=passband,
@@ -558,8 +552,8 @@ def passband_weighted_sdev(x, y, z, passband=None, borders=False, yerr=None, zer
     if yerr is not None:
         if yerr.shape != y.shape:
             raise ValueError('Incorrect shape for y errors.')
-        ye_integrand = (numpy.square(z[:,None]-mu[None,:])
-                            + (numpy.square(mu)-mu2)[None,:])*yerr[:,None]
+        ye_integrand = (numpy.square(z[:,None]-numpy.atleast_1d(mu)[None,:])
+                            + numpy.atleast_1d(numpy.square(mu)-mu2)[None,:])*yerr[:,None]
         sigma_error += numpy.square(passband_integral(x, ye_integrand, passband=passband,
                                                       borders=borders, log=log, base=base,
                                                       quad=True))

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import os
 import time
 import warnings
 import numpy
@@ -78,11 +79,13 @@ if __name__ == '__main__':
     nsa_redshift = 0.0280161
     vel = nsa_redshift * astropy.constants.c.to('km/s').value
 
+    analysis_path = os.getcwd()
+
     # Read the DRP LOGCUBE file
     drpf = DRPFits(plate, ifu, 'CUBE', read=True)
 
     # Calculate the S/N and coordinates
-    rdxqa = ReductionAssessment('SNRG', drpf)
+    rdxqa = ReductionAssessment('SNRG', drpf, analysis_path=analysis_path)
 
     # Setup the aperture binning class
     ax = numpy.array([0.0, 3.0, 6.0])
@@ -117,7 +120,8 @@ if __name__ == '__main__':
     binned_spectra = SpatiallyBinnedSpectra('Aperture',     # Key for binning method
                                             drpf,           # DRP data to bin
                                             rdxqa,          # Cube coordinates and S/N assessments
-                                            method_list=binning_method) # Methods to select from
+                                            method_list=binning_method, # Methods to select from
+                                            analysis_path=analysis_path)
 
     # The rest of this is just a single execution of the remaining
     # analysis steps in
@@ -125,28 +129,32 @@ if __name__ == '__main__':
     # simplifications
 
     stellar_continuum = StellarContinuumModel('GAU-MILESHC', binned_spectra, guess_vel=vel,
-                                              guess_sig=100.)
+                                              guess_sig=100., analysis_path=analysis_path)
 
-    emission_line_moments = EmissionLineMoments('EMOMF', binned_spectra,
+    emission_line_moments = EmissionLineMoments('EMOMM', binned_spectra,
                                                 stellar_continuum=stellar_continuum,
-                                                redshift=nsa_redshift)
+                                                redshift=nsa_redshift, analysis_path=analysis_path)
 
-    emission_line_model = EmissionLineModel('EFITF', binned_spectra,
+    emission_line_model = EmissionLineModel('EFITM', binned_spectra,
                                             stellar_continuum=stellar_continuum,
-                                            redshift=nsa_redshift, dispersion=100.0)
+                                            redshift=nsa_redshift, dispersion=100.0,
+                                            analysis_path=analysis_path)
         
-    spectral_indices = SpectralIndices('INDXEN', binned_spectra, redshift=nsa_redshift,
-                                       stellar_continuum=stellar_continuum,
-                                       emission_line_model=emission_line_model)
+#    spectral_indices = SpectralIndices('INDXEN', binned_spectra, redshift=nsa_redshift,
+#                                       stellar_continuum=stellar_continuum,
+#                                       emission_line_model=emission_line_model,
+#                                       analysis_path=analysis_path)
+    spectral_indices = None
 
     construct_maps_file(drpf, rdxqa=rdxqa, binned_spectra=binned_spectra,
                         stellar_continuum=stellar_continuum,
                         emission_line_moments=emission_line_moments,
                         emission_line_model=emission_line_model,
-                        spectral_indices=spectral_indices, nsa_redshift=nsa_redshift)
+                        spectral_indices=spectral_indices, nsa_redshift=nsa_redshift,
+                        analysis_path=analysis_path)
 
     construct_cube_file(drpf, binned_spectra=binned_spectra, stellar_continuum=stellar_continuum,
-                        emission_line_model=emission_line_model)
+                        emission_line_model=emission_line_model, analysis_path=analysis_path)
 
     print('Elapsed time: {0} seconds'.format(time.clock() - t))
 
