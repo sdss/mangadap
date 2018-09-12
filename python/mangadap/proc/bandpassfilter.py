@@ -429,7 +429,7 @@ def passband_integrated_mean(x, y, err=None, passband=None, borders=False, log=F
     integral_err = numpy.ma.MaskedArray(passband_integral(x, err, passband=passband,
                                                           borders=borders, log=log, base=base,
                                                           quad=True))
-    return numpy.ma.divide(integral, interval), numpy.ma.divide(err_integral, interval)
+    return numpy.ma.divide(integral, interval), numpy.ma.divide(integral_err, interval)
 
 
 def passband_weighted_mean(x, y, z, passband=None, borders=False, yerr=None, zerr=None, log=False,
