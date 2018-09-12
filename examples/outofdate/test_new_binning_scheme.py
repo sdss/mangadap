@@ -71,10 +71,12 @@ if __name__ == '__main__':
     t = time.clock()
 
     # Set the plate, ifu, and initial velocity/redshift
-    plate = 7495
-    ifu = 12704
-    vel = 8675.5
-    nsa_redshift = vel/astropy.constants.c.to('km/s').value
+    plate = 7443
+    ifu = 6102
+    #vel = 8675.5
+    #nsa_redshift = vel/astropy.constants.c.to('km/s').value
+    nsa_redshift = 0.0280161
+    vel = nsa_redshift * astropy.constants.c.to('km/s').value
 
     # Read the DRP LOGCUBE file
     drpf = DRPFits(plate, ifu, 'CUBE', read=True)
@@ -85,7 +87,7 @@ if __name__ == '__main__':
     # Setup the aperture binning class
     ax = numpy.array([0.0, 3.0, 6.0])
     ay = numpy.array([0.0, 0.0, 0.0])
-    apbin = ApertureBinning(ax, ay, 2.5)
+    apbin = ApertureBinning(ax, ay, numpy.array([2.5]))
 
     # Setup the stacking operations
     stackpar = SpectralStackPar('mean',         # Operation for stack
@@ -93,7 +95,8 @@ if __name__ == '__main__':
                                 None,           # Velocity offsets for registration
                                 'channels',     # Covariance mode and parameters
                                 SpectralStack.parse_covariance_parameters('channels', 11),
-                                True)           # Propagate the LSF through the stacking
+                                True,           # Propagate the LSF through the stacking
+                                True)  # Use pre-pixelized LSF (KHRR added this)
     stacker = SpectralStack()
 
     # Create a new binning method
@@ -107,7 +110,8 @@ if __name__ == '__main__':
                                                stackpar,        # Object with stacking parameters
                                                stacker,         # Stacking class instance
                                                stacker.stack_DRPFits,   # Stacking function
-                                               'spaxel')    # Type of LSF characterization to use
+                                               'spaxel',    # Type of LSF characterization to use
+                                               True)  # Use pre-pixelized LSF (KHRR added this)
 
     # Bin the spectra using the new binning method
     binned_spectra = SpatiallyBinnedSpectra('Aperture',     # Key for binning method
