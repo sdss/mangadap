@@ -99,7 +99,7 @@ from ..par.absorptionindexdb import AbsorptionIndexDB
 from ..par.bandheadindexdb import BandheadIndexDB
 from ..config.defaults import dap_source_dir, default_dap_file_name
 from ..config.defaults import default_dap_method, default_dap_method_path
-from ..config.defaults import default_dap_common_path
+from ..config.defaults import default_dap_common_path, default_analysis_path
 from ..util.resolution import SpectralResolution, match_spectral_resolution
 from ..util.sampling import spectral_coordinate_step, spectrum_velocity_scale
 from ..util.fitsutil import DAPFitsUtil
@@ -421,6 +421,8 @@ class BandheadIndices:
         # Calculate the index in the correct order
         blue_n = order == 'b_r'
         self.index = numpy.ma.zeros(self.nindx, dtype=numpy.float)
+#        import pdb
+#        pdb.set_trace()
         self.index[blue_n] = numpy.ma.divide(self.blue_continuum[blue_n],
                                              self.red_continuum[blue_n]).filled(0.0)
         self.divbyzero[blue_n] = numpy.invert(numpy.absolute(self.red_continuum[blue_n])>0.0)
@@ -703,7 +705,9 @@ class SpectralIndices:
         # Set the output directory path
         method = default_dap_method(binned_spectra=self.binned_spectra,
                                     stellar_continuum=self.stellar_continuum)
-        self.analysis_path = default_analysis_path if analysis_path is None else str(analysis_path)
+        self.analysis_path = default_analysis_path(drpver=self.binned_spectra.drpf.drpver,
+                                                   dapver=dapver) \
+                                    if analysis_path is None else str(analysis_path)
         self.directory_path = default_dap_method_path(method, plate=self.binned_spectra.drpf.plate,
                                                       ifudesign=self.binned_spectra.drpf.ifudesign,
                                                       ref=True,
@@ -2101,11 +2105,6 @@ class SpectralIndices:
             # spaxel that was not used
             indx = measurements_binid < 0
             map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'DIDNOTUSE')
-
-            # Isolate any spaxels with foreground stars
-            map_mask = DAPFitsUtil.marginalize_mask(self.binned_spectra.drpf['MASK'].data,
-                                                    'FORESTAR', self.binned_spectra.drpf.bitmask,
-                                                    self.bitmask, out_mask=map_mask)
 
             # The number of valid bins MUST match the number of
             # measurements
