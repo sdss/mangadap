@@ -104,7 +104,7 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.proc.html">mangadap.proc package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.survey.html">mangadap.survey package</a></li>
-<li class="toctree-l3"><a class="reference internal" href="mangadap.test.html">mangadap.test package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.tests.html">mangadap.tests package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.util.html">mangadap.util package</a></li>
 </ul>
 </li>
@@ -193,7 +193,7 @@ run the DAP for a specific MaNGA observation.</p>
 <dt><em>Source location</em>:</dt>
 <dd>$MANGADAP_DIR/python/mangadap/par/obsinput.py</dd>
 <dt><em>Imports and python version compliance</em>:</dt>
-<dd><div class="first last highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<dd><div class="first last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
@@ -214,7 +214,7 @@ run the DAP for a specific MaNGA observation.</p>
 </dd>
 <dt><em>Class usage examples</em>:</dt>
 <dd><p class="first">To define a set of observation parameteters:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">mangadap.par.obsinput</span> <span class="k">import</span> <span class="n">ObsInputPar</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">mangadap.par.obsinput</span> <span class="k">import</span> <span class="n">ObsInputPar</span>
 <span class="n">p</span> <span class="o">=</span> <span class="n">ObsInputPar</span><span class="p">(</span><span class="n">plate</span><span class="o">=</span><span class="mi">7443</span><span class="p">,</span> <span class="n">ifudesign</span><span class="o">=</span><span class="mi">12701</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;CUBE&#39;</span><span class="p">,</span> <span class="n">vel</span><span class="o">=</span><span class="mi">6139</span><span class="p">,</span>
                 <span class="n">vdisp</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">ell</span><span class="o">=</span><span class="mf">0.3416</span><span class="p">,</span> <span class="n">pa</span><span class="o">=</span><span class="mf">150.24</span><span class="p">,</span> <span class="n">reff</span><span class="o">=</span><span class="mf">5.70</span><span class="p">)</span>
 </pre></div>
@@ -233,19 +233,19 @@ instead of internal yanny reader.</div>
 <div class="line"><strong>24 Aug 2017</strong>: (KBW) Provide new ‘valid’ attributes to signify
 if the input data was changed to the default value.</div>
 <div class="line"><strong>11 Nov 2017</strong>: (KBW) Change velocity minimum to -500 km/s to
-match <a class="reference internal" href="mangadap.survey.drpcomplete.html#mangadap.survey.drpcomplete.DRPComplete" title="mangadap.survey.drpcomplete.DRPComplete"><code class="xref py py-class docutils literal"><span class="pre">mangadap.survey.drpcomplete.DRPComplete</span></code></a></div>
+match <a class="reference internal" href="mangadap.survey.drpcomplete.html#mangadap.survey.drpcomplete.DRPComplete" title="mangadap.survey.drpcomplete.DRPComplete"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.survey.drpcomplete.DRPComplete</span></code></a></div>
 </div>
 </dd>
 </dl>
 <dl class="class">
 <dt id="mangadap.par.obsinput.ObsInputPar">
 <em class="property">class </em><code class="descclassname">mangadap.par.obsinput.</code><code class="descname">ObsInputPar</code><span class="sig-paren">(</span><em>plate</em>, <em>ifudesign</em>, <em>mode=None</em>, <em>vel=None</em>, <em>vdisp=None</em>, <em>ell=None</em>, <em>pa=None</em>, <em>reff=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/par/obsinput.html#ObsInputPar"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.par.obsinput.ObsInputPar" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet" title="mangadap.par.parset.ParSet"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.parset.ParSet</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet" title="mangadap.par.parset.ParSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.par.parset.ParSet</span></code></a></p>
 <p>Parameter object that defines the input observation and guess
 parameters to be used by the DAP.</p>
 <p>Although technically optional in this version, use of the class by
 the DAP requires that <em>vel</em> must be defined.</p>
-<p>See <a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet" title="mangadap.par.parset.ParSet"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.parset.ParSet</span></code></a> for attributes and raised
+<p>See <a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet" title="mangadap.par.parset.ParSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.par.parset.ParSet</span></code></a> for attributes and raised
 exceptions.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -255,12 +255,12 @@ exceptions.</p>
 <li><strong>plate</strong> (<em>int</em>) – Plate number; default is None.</li>
 <li><strong>ifudesign</strong> (<em>int</em>) – IFU designation; default is None.</li>
 <li><strong>mode</strong> (<em>str</em>) – DRP 3D mode; see
-<a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits.mode_options" title="mangadap.drpfits.DRPFits.mode_options"><code class="xref py py-func docutils literal"><span class="pre">mangadap.drpfits.DRPFits.mode_options()</span></code></a>; default is
+<a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits.mode_options" title="mangadap.drpfits.DRPFits.mode_options"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.drpfits.DRPFits.mode_options()</span></code></a>; default is
 CUBE.</li>
 <li><strong>vel</strong> (<em>float</em>) – Systemic velocity (km/s); default is None.</li>
 <li><strong>vdisp</strong> (<em>float</em>) – Guess velocity dispersion (km/s); default is
 100.</li>
-<li><strong>ell</strong> (<em>float</em>) – Isophotal ellipticity (<span class="math">\(\varepsilon =
+<li><strong>ell</strong> (<em>float</em>) – Isophotal ellipticity (<span class="math notranslate nohighlight">\(\varepsilon =
 1-b/a\)</span>); default is 0 (circular).</li>
 <li><strong>pa</strong> (<em>float</em>) – Position angle (degrees) of the isophotal major
 axis; default is 0.</li>
@@ -301,10 +301,10 @@ axis; default is 0.</li>
 hard-coded limits.</p>
 <blockquote>
 <div><ul class="simple">
-<li>Velocity (<span class="math">\(cz\)</span>) and velocity dispersion have to be
+<li>Velocity (<span class="math notranslate nohighlight">\(cz\)</span>) and velocity dispersion have to be
 greater than -500.</li>
-<li>Ellipticity has to be <span class="math">\(0 \leq \varepsilon &lt; 1\)</span></li>
-<li>Position angle has to be <span class="math">\(0 \leq \phi &lt; 360\)</span></li>
+<li>Ellipticity has to be <span class="math notranslate nohighlight">\(0 \leq \varepsilon &lt; 1\)</span></li>
+<li>Position angle has to be <span class="math notranslate nohighlight">\(0 \leq \phi &lt; 360\)</span></li>
 <li>Effective radius has to be greater than zero.</li>
 </ul>
 </div></blockquote>
@@ -312,7 +312,7 @@ greater than -500.</li>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if velocity (<span class="math">\(cz\)</span>) is less than
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if velocity (<span class="math notranslate nohighlight">\(cz\)</span>) is less than
 zero.</td>
 </tr>
 </tbody>
@@ -331,19 +331,19 @@ zero.</td>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Derived instance of
-<code class="xref py py-class docutils literal"><span class="pre">mangadap.par.ParSet</span></code> with the input observational
+<code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.par.ParSet</span></code> with the input observational
 parameters of the DRP data product to analyze with the DAP.</p>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first"><a class="reference internal" href="#mangadap.par.obsinput.ObsInputPar" title="mangadap.par.obsinput.ObsInputPar"><code class="xref py py-class docutils literal"><span class="pre">ObsInputPar</span></code></a></p>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first"><a class="reference internal" href="#mangadap.par.obsinput.ObsInputPar" title="mangadap.par.obsinput.ObsInputPar"><code class="xref py py-class docutils literal notranslate"><span class="pre">ObsInputPar</span></code></a></p>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
-<li><code class="xref py py-exc docutils literal"><span class="pre">FileNotFoundError</span></code> – Raised if the provided file does not
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">FileNotFoundError</span></code> – Raised if the provided file does not
 exist.</li>
-<li><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if the input yanny file has more than
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if the input yanny file has more than
 one entry of DAPPAR.</li>
-<li><code class="xref py py-exc docutils literal"><span class="pre">KeyError</span></code> – Raised if selected keys are not in provided file.</li>
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">KeyError</span></code> – Raised if selected keys are not in provided file.</li>
 </ul>
 </td>
 </tr>

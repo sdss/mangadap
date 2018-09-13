@@ -181,7 +181,7 @@ the MaNGA Data Reduction Pipeline (DRP).</p>
 <dt><em>Source location</em>:</dt>
 <dd>$MANGADAP_DIR/python/mangadap/drpfits.py</dd>
 <dt><em>Imports and python version compliance</em>:</dt>
-<dd><div class="first last highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<dd><div class="first last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
 
@@ -218,30 +218,30 @@ the MaNGA Data Reduction Pipeline (DRP).</p>
 <dt><em>Revision history</em>:</dt>
 <dd><div class="first last line-block">
 <div class="line"><strong>20 Nov 2014</strong>: Original implementation by K. Westfall (KBW)</div>
-<div class="line"><strong>12 Feb 2014</strong>: (KBW) Added <a class="reference internal" href="#mangadap.drpfits.DRPFits.directory_path" title="mangadap.drpfits.DRPFits.directory_path"><code class="xref py py-func docutils literal"><span class="pre">DRPFits.directory_path()</span></code></a></div>
-<div class="line"><strong>20 Feb 2015</strong>: (KBW) Add covariance calculation to <a class="reference internal" href="#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal"><span class="pre">DRPFits</span></code></a></div>
-<div class="line"><strong>19 Mar 2015</strong>: (KBW) Added redux_path to <a class="reference internal" href="#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal"><span class="pre">DRPFits</span></code></a>.
-Re-arranged arguments in <a class="reference internal" href="#mangadap.drpfits.drpfits_list" title="mangadap.drpfits.drpfits_list"><code class="xref py py-func docutils literal"><span class="pre">drpfits_list()</span></code></a>, made drpver
+<div class="line"><strong>12 Feb 2014</strong>: (KBW) Added <a class="reference internal" href="#mangadap.drpfits.DRPFits.directory_path" title="mangadap.drpfits.DRPFits.directory_path"><code class="xref py py-func docutils literal notranslate"><span class="pre">DRPFits.directory_path()</span></code></a></div>
+<div class="line"><strong>20 Feb 2015</strong>: (KBW) Add covariance calculation to <a class="reference internal" href="#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal notranslate"><span class="pre">DRPFits</span></code></a></div>
+<div class="line"><strong>19 Mar 2015</strong>: (KBW) Added redux_path to <a class="reference internal" href="#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal notranslate"><span class="pre">DRPFits</span></code></a>.
+Re-arranged arguments in <a class="reference internal" href="#mangadap.drpfits.drpfits_list" title="mangadap.drpfits.drpfits_list"><code class="xref py py-func docutils literal notranslate"><span class="pre">drpfits_list()</span></code></a>, made drpver
 optional, and added redux_path</div>
 <div class="line"><strong>22 May 2015</strong>: (KBW) Sphinx documentation.  Changed DRPFits.w to
-<a class="reference internal" href="#mangadap.drpfits.DRPFits.wcs" title="mangadap.drpfits.DRPFits.wcs"><code class="xref py py-attr docutils literal"><span class="pre">DRPFits.wcs</span></code></a>.</div>
+<a class="reference internal" href="#mangadap.drpfits.DRPFits.wcs" title="mangadap.drpfits.DRPFits.wcs"><code class="xref py py-attr docutils literal notranslate"><span class="pre">DRPFits.wcs</span></code></a>.</div>
 <div class="line"><strong>26 May 2015</strong>: (KBW) Added checksum=True when opening the DRP
 file.</div>
 <div class="line"><strong>04 Jun 2015</strong>: (KBW) Moved parse_drp_file_name to
-<a class="reference internal" href="mangadap.util.parser.html#mangadap.util.parser.parse_drp_file_name" title="mangadap.util.parser.parse_drp_file_name"><code class="xref py py-func docutils literal"><span class="pre">mangadap.util.parser.parse_drp_file_name()</span></code></a></div>
+<a class="reference internal" href="mangadap.util.parser.html#mangadap.util.parser.parse_drp_file_name" title="mangadap.util.parser.parse_drp_file_name"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.util.parser.parse_drp_file_name()</span></code></a></div>
 <div class="line"><strong>15 Jun 2015</strong>: (KBW) Moved functions that return default values
-(like <code class="xref py py-func docutils literal"><span class="pre">DRPFits._default_pixelscale()</span></code>) to
-<a class="reference internal" href="mangadap.config.defaults.html#module-mangadap.config.defaults" title="mangadap.config.defaults"><code class="xref py py-mod docutils literal"><span class="pre">mangadap.config.defaults</span></code></a></div>
+(like <code class="xref py py-func docutils literal notranslate"><span class="pre">DRPFits._default_pixelscale()</span></code>) to
+<a class="reference internal" href="mangadap.config.defaults.html#module-mangadap.config.defaults" title="mangadap.config.defaults"><code class="xref py py-mod docutils literal notranslate"><span class="pre">mangadap.config.defaults</span></code></a></div>
 <div class="line"><strong>05 Aug 2015</strong>: (KBW) Changed mode testing to be more robust.
-Added directory_path keyword to <a class="reference internal" href="#mangadap.drpfits.drpfits_list" title="mangadap.drpfits.drpfits_list"><code class="xref py py-func docutils literal"><span class="pre">drpfits_list()</span></code></a>.  Changed
+Added directory_path keyword to <a class="reference internal" href="#mangadap.drpfits.drpfits_list" title="mangadap.drpfits.drpfits_list"><code class="xref py py-func docutils literal notranslate"><span class="pre">drpfits_list()</span></code></a>.  Changed
 how directory path is set; previously required drpver and
 redux_path defaults, even if directory_path was provided
 directly.  <strong>May need to add checks to other code to make sure
 drpver and redux_path are not None when directory_path has been
 directly defined.</strong></div>
 <div class="line"><strong>28 Aug 2015</strong>: (KBW) Added usage of
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_manga_fits_root" title="mangadap.config.defaults.default_manga_fits_root"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_manga_fits_root()</span></code></a></div>
-<div class="line"><strong>15 Feb 2016</strong>: (KBW) Added <code class="xref py py-func docutils literal"><span class="pre">DRPFits.__getitem__()</span></code>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_manga_fits_root" title="mangadap.config.defaults.default_manga_fits_root"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_manga_fits_root()</span></code></a></div>
+<div class="line"><strong>15 Feb 2016</strong>: (KBW) Added <code class="xref py py-func docutils literal notranslate"><span class="pre">DRPFits.__getitem__()</span></code>
 function</div>
 <div class="line"><strong>17 Feb 2016</strong>: (KBW) Converted drpfile class name to DRPFits</div>
 <div class="line"><strong>23 Mar 2016</strong>: (KBW) Added functionality that abstracts the
@@ -252,22 +252,22 @@ RSS files are left the same, which is [fiber, lambda].
 Documentation.  Testing, particularly of x,y order.</div>
 <div class="line"><strong>10 Nov 2016</strong>: (KBW) Included ‘DISP’ in spectral arrays.</div>
 <div class="line"><strong>30 Nov 2016</strong>: (KBW) Include
-<a class="reference internal" href="#mangadap.drpfits.DRPFits.spectral_resolution" title="mangadap.drpfits.DRPFits.spectral_resolution"><code class="xref py py-func docutils literal"><span class="pre">DRPFits.spectral_resolution()</span></code></a>, which returns spectral
+<a class="reference internal" href="#mangadap.drpfits.DRPFits.spectral_resolution" title="mangadap.drpfits.DRPFits.spectral_resolution"><code class="xref py py-func docutils literal notranslate"><span class="pre">DRPFits.spectral_resolution()</span></code></a>, which returns spectral
 resolution cube or vector independent of MPL</div>
 <div class="line"><strong>01 Dec 2016</strong>: (KBW) Added
-<a class="reference internal" href="#mangadap.drpfits.DRPFits.spectral_resolution_header" title="mangadap.drpfits.DRPFits.spectral_resolution_header"><code class="xref py py-func docutils literal"><span class="pre">DRPFits.spectral_resolution_header()</span></code></a>.</div>
+<a class="reference internal" href="#mangadap.drpfits.DRPFits.spectral_resolution_header" title="mangadap.drpfits.DRPFits.spectral_resolution_header"><code class="xref py py-func docutils literal notranslate"><span class="pre">DRPFits.spectral_resolution_header()</span></code></a>.</div>
 <div class="line"><strong>06 Dec 2016</strong>: (KBW) Removed wavelength_mask function, now uses
-<a class="reference internal" href="mangadap.util.pixelmask.html#mangadap.util.pixelmask.SpectralPixelMask" title="mangadap.util.pixelmask.SpectralPixelMask"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.pixelmask.SpectralPixelMask</span></code></a>.  Moved the
-main functionality of <a class="reference internal" href="#mangadap.drpfits.DRPFits.copy_to_array" title="mangadap.drpfits.DRPFits.copy_to_array"><code class="xref py py-func docutils literal"><span class="pre">DRPFits.copy_to_array()</span></code></a> and
-<a class="reference internal" href="#mangadap.drpfits.DRPFits.copy_to_masked_array" title="mangadap.drpfits.DRPFits.copy_to_masked_array"><code class="xref py py-func docutils literal"><span class="pre">DRPFits.copy_to_masked_array()</span></code></a> to
-<a class="reference internal" href="mangadap.util.fitsutil.html#mangadap.util.fitsutil.DAPFitsUtil" title="mangadap.util.fitsutil.DAPFitsUtil"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.fitsutil.DAPFitsUtil</span></code></a>, what’s left are
+<a class="reference internal" href="mangadap.util.pixelmask.html#mangadap.util.pixelmask.SpectralPixelMask" title="mangadap.util.pixelmask.SpectralPixelMask"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.pixelmask.SpectralPixelMask</span></code></a>.  Moved the
+main functionality of <a class="reference internal" href="#mangadap.drpfits.DRPFits.copy_to_array" title="mangadap.drpfits.DRPFits.copy_to_array"><code class="xref py py-func docutils literal notranslate"><span class="pre">DRPFits.copy_to_array()</span></code></a> and
+<a class="reference internal" href="#mangadap.drpfits.DRPFits.copy_to_masked_array" title="mangadap.drpfits.DRPFits.copy_to_masked_array"><code class="xref py py-func docutils literal notranslate"><span class="pre">DRPFits.copy_to_masked_array()</span></code></a> to
+<a class="reference internal" href="mangadap.util.fitsutil.html#mangadap.util.fitsutil.DAPFitsUtil" title="mangadap.util.fitsutil.DAPFitsUtil"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.fitsutil.DAPFitsUtil</span></code></a>, what’s left are
 wrapper functions for the more general functions in
-<a class="reference internal" href="mangadap.util.fitsutil.html#mangadap.util.fitsutil.DAPFitsUtil" title="mangadap.util.fitsutil.DAPFitsUtil"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.fitsutil.DAPFitsUtil</span></code></a>.</div>
+<a class="reference internal" href="mangadap.util.fitsutil.html#mangadap.util.fitsutil.DAPFitsUtil" title="mangadap.util.fitsutil.DAPFitsUtil"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.fitsutil.DAPFitsUtil</span></code></a>.</div>
 <div class="line"><strong>17 Feb 2017</strong>: (KBW) Return nominal inverse variance in
-<a class="reference internal" href="#mangadap.drpfits.DRPFits.regrid_wavelength_plane" title="mangadap.drpfits.DRPFits.regrid_wavelength_plane"><code class="xref py py-func docutils literal"><span class="pre">DRPFits.regrid_wavelength_plane()</span></code></a> if requested.</div>
+<a class="reference internal" href="#mangadap.drpfits.DRPFits.regrid_wavelength_plane" title="mangadap.drpfits.DRPFits.regrid_wavelength_plane"><code class="xref py py-func docutils literal notranslate"><span class="pre">DRPFits.regrid_wavelength_plane()</span></code></a> if requested.</div>
 <div class="line"><strong>17 May 2017</strong>: (KBW) Include a response function in
-<a class="reference internal" href="#mangadap.drpfits.DRPFits.flux_stats" title="mangadap.drpfits.DRPFits.flux_stats"><code class="xref py py-func docutils literal"><span class="pre">DRPFits.flux_stats()</span></code></a> and
-<code class="xref py py-func docutils literal"><span class="pre">DAPFits.mean_sky_coordinates()</span></code>.</div>
+<a class="reference internal" href="#mangadap.drpfits.DRPFits.flux_stats" title="mangadap.drpfits.DRPFits.flux_stats"><code class="xref py py-func docutils literal notranslate"><span class="pre">DRPFits.flux_stats()</span></code></a> and
+<code class="xref py py-func docutils literal notranslate"><span class="pre">DAPFits.mean_sky_coordinates()</span></code>.</div>
 <div class="line"><strong>21 Aug 2017</strong>: (KBW) In spectral resolution function, select
 pre- vs. post-pixelized Gaussian respresentation.</div>
 </div>
@@ -276,25 +276,28 @@ pre- vs. post-pixelized Gaussian respresentation.</div>
 <div class="admonition-todo admonition" id="index-0">
 <p class="first admonition-title">Todo</p>
 <ul class="last simple">
-<li>Calculation in <a class="reference internal" href="#mangadap.drpfits.DRPFits._cube_dimensions" title="mangadap.drpfits.DRPFits._cube_dimensions"><code class="xref py py-func docutils literal"><span class="pre">DRPFits._cube_dimensions()</span></code></a> will only be
+<li>Calculation in <a class="reference internal" href="#mangadap.drpfits.DRPFits._cube_dimensions" title="mangadap.drpfits.DRPFits._cube_dimensions"><code class="xref py py-func docutils literal notranslate"><span class="pre">DRPFits._cube_dimensions()</span></code></a> will only be
 correct if the WCS coordinates have no rotation.</li>
 <li>Further optimize calculation of transfer matrix</li>
 <li>Make DRP file class flexible to linear or log-linear wavelength
 sampling?  Incorporate into MODE?</li>
 <li>Reconstructed broad-band images and PSFs are <em>not</em> restructured in
 the CUBE files!  This is why the are transposed in
-<code class="xref py py-func docutils literal"><span class="pre">mangadap.drpfits.DRPFits.gri_composite()</span></code>.</li>
+<code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.drpfits.DRPFits.gri_composite()</span></code>.</li>
 <li>Image reconstruction has transpose sense wrt DRP output!</li>
 <li>Add logging</li>
 <li>Need to be clear about which functions use the RSS spectra to
 create CUBE related data, like the covariance matrix and
 instrumental dispersion calculations.</li>
+<li>Computing the approximate covariance cube is currently not
+possible with only the CUBE on disk.  There’s a logic problem that
+needs to be fixed.</li>
 </ul>
 </div>
 <dl class="class">
 <dt id="mangadap.drpfits.DRPFits">
 <em class="property">class </em><code class="descclassname">mangadap.drpfits.</code><code class="descname">DRPFits</code><span class="sig-paren">(</span><em>plate</em>, <em>ifudesign</em>, <em>mode</em>, <em>drpver=None</em>, <em>redux_path=None</em>, <em>directory_path=None</em>, <em>read=False</em>, <em>checksum=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/drpfits.html#DRPFits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.drpfits.DRPFits" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>A general purpose class used to interface with a MaNGA DRP file.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -307,21 +310,21 @@ instrumental dispersion calculations.</li>
 ‘CUBE’</li>
 <li><strong>drpver</strong> (<em>str</em>) – (<strong>Optional</strong>) DRP version, which is used to
 define the default DRP redux path.  Default is defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_drp_version" title="mangadap.config.defaults.default_drp_version"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_drp_version()</span></code></a></li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_drp_version" title="mangadap.config.defaults.default_drp_version"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_drp_version()</span></code></a></li>
 <li><strong>redux_path</strong> (<em>str</em>) – (<strong>Optional</strong>) The path to the top level
 directory containing the DRP output files for a given DRP
 version.  Default is defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_redux_path" title="mangadap.config.defaults.default_redux_path"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_redux_path()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_redux_path" title="mangadap.config.defaults.default_redux_path"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_redux_path()</span></code></a>.</li>
 <li><strong>directory_path</strong> (<em>str</em>) – (<strong>Optional</strong>) The exact path to the DRP
 file.  Default is defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_drp_directory_path" title="mangadap.config.defaults.default_drp_directory_path"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_drp_directory_path()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_drp_directory_path" title="mangadap.config.defaults.default_drp_directory_path"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_drp_directory_path()</span></code></a>.</li>
 <li><strong>read</strong> (<em>bool</em>) – (<strong>Optional</strong>) Read the DRP file upon
 instantiation of the object.</li>
 <li><strong>checksum</strong> (<em>bool</em>) – (<strong>Optional</strong>) Check for file corruption.</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if <em>mode</em> is not ‘RSS’ or ‘CUBE’.</p>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if <em>mode</em> is not ‘RSS’ or ‘CUBE’.</p>
 </td>
 </tr>
 </tbody>
@@ -400,13 +403,13 @@ reconstructed image.</p>
 <dl class="attribute">
 <dt id="mangadap.drpfits.DRPFits.regrid_T">
 <code class="descname">regrid_T</code><a class="headerlink" href="#mangadap.drpfits.DRPFits.regrid_T" title="Permalink to this definition">¶</a></dt>
-<dd><p><a class="reference external" href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html">scipy.sparse.csr_matrix</a> – Transfer matrix <span class="math">\({\mathbf
+<dd><p><a class="reference external" href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html">scipy.sparse.csr_matrix</a> – Transfer matrix <span class="math notranslate nohighlight">\({\mathbf
 T}\)</span> such that:</p>
-<div class="math">
+<div class="math notranslate nohighlight">
 \[{\mathbf T} \times {\mathbf F} = {\mathbf I}\]</div>
-<p>where <span class="math">\({\mathbf F}\)</span> is the vector of fluxes in a
+<p>where <span class="math notranslate nohighlight">\({\mathbf F}\)</span> is the vector of fluxes in a
 single wavelength channel for all the fiber measurements in
-the field of view and <span class="math">\({\mathbf I}\)</span> is the
+the field of view and <span class="math notranslate nohighlight">\({\mathbf I}\)</span> is the
 pre-formatted reconstructed image of that wavelength
 channel.  Saved such that repeat calls to create T for a
 given wavelength channel do not result in repeat
@@ -417,7 +420,7 @@ calculations.</p>
 <dt id="mangadap.drpfits.DRPFits.regrid_channel">
 <code class="descname">regrid_channel</code><a class="headerlink" href="#mangadap.drpfits.DRPFits.regrid_channel" title="Permalink to this definition">¶</a></dt>
 <dd><p><em>int</em> – Wavelength channel for which
-<a class="reference internal" href="#mangadap.drpfits.DRPFits.regrid_T" title="mangadap.drpfits.DRPFits.regrid_T"><code class="xref py py-attr docutils literal"><span class="pre">regrid_T</span></code></a> has been calculated.</p>
+<a class="reference internal" href="#mangadap.drpfits.DRPFits.regrid_T" title="mangadap.drpfits.DRPFits.regrid_T"><code class="xref py py-attr docutils literal notranslate"><span class="pre">regrid_T</span></code></a> has been calculated.</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -438,27 +441,27 @@ kernel used during image construction in arcseconds.</p>
 <dl class="attribute">
 <dt id="mangadap.drpfits.DRPFits.sigma_rho">
 <code class="descname">sigma_rho</code><a class="headerlink" href="#mangadap.drpfits.DRPFits.sigma_rho" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>float</em> – The sigma, <span class="math">\(\sigma_\rho\)</span>, of the
+<dd><p><em>float</em> – The sigma, <span class="math notranslate nohighlight">\(\sigma_\rho\)</span>, of the
 Gaussian function used to approximate the trend of the
-correlation coefficient <span class="math">\(\rho\)</span> with pixel separation
-as stored in <a class="reference internal" href="#mangadap.drpfits.DRPFits.cov_rho" title="mangadap.drpfits.DRPFits.cov_rho"><code class="xref py py-attr docutils literal"><span class="pre">cov_rho</span></code></a>.  That is:</p>
-<div class="math">
+correlation coefficient <span class="math notranslate nohighlight">\(\rho\)</span> with pixel separation
+as stored in <a class="reference internal" href="#mangadap.drpfits.DRPFits.cov_rho" title="mangadap.drpfits.DRPFits.cov_rho"><code class="xref py py-attr docutils literal notranslate"><span class="pre">cov_rho</span></code></a>.  That is:</p>
+<div class="math notranslate nohighlight">
 \[\rho_{ij} = \exp\left(\frac{-d^2_{ij}}{2
 \sigma^2_\rho}\right)\]</div>
-<p>where <span class="math">\(d_{ij}\)</span> is the distance between pixels
-<span class="math">\(i\)</span> and <span class="math">\(j\)</span>.</p>
+<p>where <span class="math notranslate nohighlight">\(d_{ij}\)</span> is the distance between pixels
+<span class="math notranslate nohighlight">\(i\)</span> and <span class="math notranslate nohighlight">\(j\)</span>.</p>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="mangadap.drpfits.DRPFits.cov_rho">
 <code class="descname">cov_rho</code><a class="headerlink" href="#mangadap.drpfits.DRPFits.cov_rho" title="Permalink to this definition">¶</a></dt>
-<dd><p><a class="reference external" href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html">scipy.sparse.csr_matrix</a> – The matrix <span class="math">\({\mathbf
-R}\)</span> containing the correlation coefficents, <span class="math">\(\rho\)</span>,
-between elements of the covariance matrix, <span class="math">\({\mathbf
+<dd><p><a class="reference external" href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html">scipy.sparse.csr_matrix</a> – The matrix <span class="math notranslate nohighlight">\({\mathbf
+R}\)</span> containing the correlation coefficents, <span class="math notranslate nohighlight">\(\rho\)</span>,
+between elements of the covariance matrix, <span class="math notranslate nohighlight">\({\mathbf
 C}\)</span>, as approximated using the parameterization of
-<span class="math">\(\rho\)</span> with pixel separation.  This matrix will be
+<span class="math notranslate nohighlight">\(\rho\)</span> with pixel separation.  This matrix will be
 <em>independent of wavelength</em>.  In general,</p>
-<div class="math">
+<div class="math notranslate nohighlight">
 \[\begin{split}{\mathbf C} = \left[
 \begin{array}{rrrr}
     ... &amp; ... &amp; ... &amp; ... \\
@@ -468,7 +471,7 @@ C}\)</span>, as approximated using the parameterization of
 \end{array}
 \right]\end{split}\]</div>
 <p>such that</p>
-<div class="math">
+<div class="math notranslate nohighlight">
 \[\begin{split}{\mathbf R} = \left[
 \begin{array}{rrrr}
     ... &amp; ... &amp; ... &amp; ... \\
@@ -482,7 +485,7 @@ C}\)</span>, as approximated using the parameterization of
 <dl class="attribute">
 <dt id="mangadap.drpfits.DRPFits.bitmask">
 <code class="descname">bitmask</code><a class="headerlink" href="#mangadap.drpfits.DRPFits.bitmask" title="Permalink to this definition">¶</a></dt>
-<dd><p><a class="reference internal" href="#mangadap.drpfits.DRPFitsBitMask" title="mangadap.drpfits.DRPFitsBitMask"><code class="xref py py-class docutils literal"><span class="pre">DRPFitsBitMask</span></code></a> – Object used to interpret the
+<dd><p><a class="reference internal" href="#mangadap.drpfits.DRPFitsBitMask" title="mangadap.drpfits.DRPFitsBitMask"><code class="xref py py-class docutils literal notranslate"><span class="pre">DRPFitsBitMask</span></code></a> – Object used to interpret the
 DRP bit mask values in the <cite>MASK</cite> extension.</p>
 </dd></dl>
 
@@ -532,7 +535,7 @@ cube.  <em>These are transposed w.r.t. the read-in DRP file!</em></p>
 <dt id="mangadap.drpfits.DRPFits.nspec">
 <code class="descname">nspec</code><a class="headerlink" href="#mangadap.drpfits.DRPFits.nspec" title="Permalink to this definition">¶</a></dt>
 <dd><p><em>int</em> – Number of spectra in the DRP file; this is just:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="bp">self</span><span class="o">.</span><span class="n">nspec</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spatial_shape</span><span class="p">)</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="bp">self</span><span class="o">.</span><span class="n">nspec</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spatial_shape</span><span class="p">)</span>
 </pre></div>
 </div>
 </dd></dl>
@@ -542,12 +545,12 @@ cube.  <em>These are transposed w.r.t. the read-in DRP file!</em></p>
 <code class="descname">spatial_index</code><a class="headerlink" href="#mangadap.drpfits.DRPFits.spatial_index" title="Permalink to this definition">¶</a></dt>
 <dd><p><em>numpy.ndarray</em> – Array with tuples used to select
 spectra at specific locations within the data array.  This
-is mainly useful in <code class="docutils literal"><span class="pre">CUBE</span></code> mode, where this provides the
+is mainly useful in <code class="docutils literal notranslate"><span class="pre">CUBE</span></code> mode, where this provides the
 indices in the spatial coordinates.  The order is
-<span class="math">\((x,y)\)</span>; i.e. this is <em>different</em> that what you get if
+<span class="math notranslate nohighlight">\((x,y)\)</span>; i.e. this is <em>different</em> that what you get if
 you read the DRP CUBE fits file directly using
-<a class="reference external" href="http://docs.astropy.org/en/stable/io/fits/index.html">astropy.io.fits</a>.  In <code class="docutils literal"><span class="pre">RSS</span></code> mode, this is just the index
-of the spectrum in the 2D array.  See: <a class="reference internal" href="#mangadap.drpfits.DRPFits.select" title="mangadap.drpfits.DRPFits.select"><code class="xref py py-func docutils literal"><span class="pre">select()</span></code></a>.</p>
+<a class="reference external" href="http://docs.astropy.org/en/stable/io/fits/index.html">astropy.io.fits</a>.  In <code class="docutils literal notranslate"><span class="pre">RSS</span></code> mode, this is just the index
+of the spectrum in the 2D array.  See: <a class="reference internal" href="#mangadap.drpfits.DRPFits.select" title="mangadap.drpfits.DRPFits.select"><code class="xref py py-func docutils literal notranslate"><span class="pre">select()</span></code></a>.</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -563,8 +566,8 @@ arrays in the DRP file.  For CUBE files, these are ‘FLUX’,
 <dt id="mangadap.drpfits.DRPFits.dispaxis">
 <code class="descname">dispaxis</code><a class="headerlink" href="#mangadap.drpfits.DRPFits.dispaxis" title="Permalink to this definition">¶</a></dt>
 <dd><p><em>int</em> – Index of the axis with the spectral channels.
-The internal data structure always has <a class="reference internal" href="#mangadap.drpfits.DRPFits.dispaxis" title="mangadap.drpfits.DRPFits.dispaxis"><code class="xref py py-attr docutils literal"><span class="pre">dispaxis</span></code></a> as
-the <em>last</em> axis in the array.  So <a class="reference internal" href="#mangadap.drpfits.DRPFits.dispaxis" title="mangadap.drpfits.DRPFits.dispaxis"><code class="xref py py-attr docutils literal"><span class="pre">dispaxis</span></code></a> is 2 for
+The internal data structure always has <a class="reference internal" href="#mangadap.drpfits.DRPFits.dispaxis" title="mangadap.drpfits.DRPFits.dispaxis"><code class="xref py py-attr docutils literal notranslate"><span class="pre">dispaxis</span></code></a> as
+the <em>last</em> axis in the array.  So <a class="reference internal" href="#mangadap.drpfits.DRPFits.dispaxis" title="mangadap.drpfits.DRPFits.dispaxis"><code class="xref py py-attr docutils literal notranslate"><span class="pre">dispaxis</span></code></a> is 2 for
 CUBE files and 1 for RSS files.  This means that the
 internal data array restructures the input fits data for the
 CUBE files.</p>
@@ -574,7 +577,7 @@ CUBE files.</p>
 <dt id="mangadap.drpfits.DRPFits.nwave">
 <code class="descname">nwave</code><a class="headerlink" href="#mangadap.drpfits.DRPFits.nwave" title="Permalink to this definition">¶</a></dt>
 <dd><p><em>int</em> – The number of wavelength channels; this is just:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="bp">self</span><span class="o">.</span><span class="n">nwave</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">dispaxis</span><span class="p">]</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="bp">self</span><span class="o">.</span><span class="n">nwave</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">dispaxis</span><span class="p">]</span>
 </pre></div>
 </div>
 </dd></dl>
@@ -584,16 +587,16 @@ CUBE files.</p>
 <code class="descname">_approximate_covariance_matrix</code><span class="sig-paren">(</span><em>channel</em>, <em>pixelscale</em>, <em>recenter</em>, <em>width_buffer</em>, <em>rlim</em>, <em>sigma</em>, <em>sigma_rho</em>, <em>csr=False</em>, <em>quiet=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/drpfits.html#DRPFits._approximate_covariance_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.drpfits.DRPFits._approximate_covariance_matrix" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return an approximate calculation of the covariance matrix
 assuming</p>
-<div class="math">
+<div class="math notranslate nohighlight">
 \[C_{ij} = \frac{\rho_{ij}}{(V^{-1}_{ii} V^{-1}_{jj})^{1/2}}\]</div>
-<p>where <span class="math">\(\rho_{ij}\)</span> is approximated by a Gaussian with a
+<p>where <span class="math notranslate nohighlight">\(\rho_{ij}\)</span> is approximated by a Gaussian with a
 standard deviation defined by the provided <em>sigma_rho</em>.  See the
-description of attributes <a class="reference internal" href="#mangadap.drpfits.DRPFits.cov_rho" title="mangadap.drpfits.DRPFits.cov_rho"><code class="xref py py-attr docutils literal"><span class="pre">cov_rho</span></code></a> and <a class="reference internal" href="#mangadap.drpfits.DRPFits.sigma_rho" title="mangadap.drpfits.DRPFits.sigma_rho"><code class="xref py py-attr docutils literal"><span class="pre">sigma_rho</span></code></a>.
+description of attributes <a class="reference internal" href="#mangadap.drpfits.DRPFits.cov_rho" title="mangadap.drpfits.DRPFits.cov_rho"><code class="xref py py-attr docutils literal notranslate"><span class="pre">cov_rho</span></code></a> and <a class="reference internal" href="#mangadap.drpfits.DRPFits.sigma_rho" title="mangadap.drpfits.DRPFits.sigma_rho"><code class="xref py py-attr docutils literal notranslate"><span class="pre">sigma_rho</span></code></a>.
 For this to work, the variance matrix of the reconstructed image
 must have been already calculated, meaning that this approach is
 most appropriately used with the ‘CUBE’ files.  For ‘RSS’ files,
 the covariance matrix is determined in this case by calling
-<a class="reference internal" href="#mangadap.drpfits.DRPFits.covariance_matrix" title="mangadap.drpfits.DRPFits.covariance_matrix"><code class="xref py py-func docutils literal"><span class="pre">covariance_matrix()</span></code></a> on the ‘CUBE’ file, which will raise
+<a class="reference internal" href="#mangadap.drpfits.DRPFits.covariance_matrix" title="mangadap.drpfits.DRPFits.covariance_matrix"><code class="xref py py-func docutils literal notranslate"><span class="pre">covariance_matrix()</span></code></a> on the ‘CUBE’ file, which will raise
 an exception if the parameters defining the dimensions of the
 reconstructed image and kernel are not the defaults.</p>
 <p>In general, this function should <strong>not</strong> be used with ‘RSS’
@@ -617,24 +620,24 @@ in arcseconds.</li>
 to approximate the trend of the correlation coefficient
 with pixel separation.</li>
 <li><strong>csr</strong> (<em>bool</em>) – (<strong>Optional</strong>) Instead of reaturning a
-<a class="reference internal" href="mangadap.util.covariance.html#mangadap.util.covariance.Covariance" title="mangadap.util.covariance.Covariance"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.covariance.Covariance</span></code></a> object,
+<a class="reference internal" href="mangadap.util.covariance.html#mangadap.util.covariance.Covariance" title="mangadap.util.covariance.Covariance"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.covariance.Covariance</span></code></a> object,
 return the covariance matrix as a
 <a class="reference external" href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html">scipy.sparse.csr_matrix</a> object.  Primarily used by
-<a class="reference internal" href="#mangadap.drpfits.DRPFits.covariance_cube" title="mangadap.drpfits.DRPFits.covariance_cube"><code class="xref py py-func docutils literal"><span class="pre">covariance_cube()</span></code></a> for collating the covariance
+<a class="reference internal" href="#mangadap.drpfits.DRPFits.covariance_cube" title="mangadap.drpfits.DRPFits.covariance_cube"><code class="xref py py-func docutils literal notranslate"><span class="pre">covariance_cube()</span></code></a> for collating the covariance
 matrix of each wavelength channel before combining them
 into a single
-<a class="reference internal" href="mangadap.util.covariance.html#mangadap.util.covariance.Covariance" title="mangadap.util.covariance.Covariance"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.covariance.Covariance</span></code></a> object</li>
+<a class="reference internal" href="mangadap.util.covariance.html#mangadap.util.covariance.Covariance" title="mangadap.util.covariance.Covariance"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.covariance.Covariance</span></code></a> object</li>
 <li><strong>quiet</strong> (<em>bool</em>) – (<strong>Optional</strong>) Suppress terminal output</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><a class="reference internal" href="mangadap.util.covariance.html#mangadap.util.covariance.Covariance" title="mangadap.util.covariance.Covariance"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.covariance.Covariance</span></code></a> or
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><a class="reference internal" href="mangadap.util.covariance.html#mangadap.util.covariance.Covariance" title="mangadap.util.covariance.Covariance"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.covariance.Covariance</span></code></a> or
 <a class="reference external" href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html">scipy.sparse.csr_matrix</a>: The covariance matrix for the
 designated wavelength channel.  The return type depends on
 <cite>csr</cite>.</p>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised for ‘CUBE’ files when the input
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised for ‘CUBE’ files when the input
 parameters are not the same as the defaults.</p>
 </td>
 </tr>
@@ -665,7 +668,7 @@ compute the statistics on a per pixel basis.</li>
 <li><strong>flag</strong> (<em>str</em><em> or </em><em>list</em>) – (<strong>Optional</strong>) (List of) Flag names that
 are considered when deciding if a pixel should be
 masked.  The names <em>must</em> be a valid bit name as defined
-by <a class="reference internal" href="#mangadap.drpfits.DRPFits.bitmask" title="mangadap.drpfits.DRPFits.bitmask"><code class="xref py py-attr docutils literal"><span class="pre">bitmask</span></code></a> (see <a class="reference internal" href="#mangadap.drpfits.DRPFitsBitMask" title="mangadap.drpfits.DRPFitsBitMask"><code class="xref py py-class docutils literal"><span class="pre">DRPFitsBitMask</span></code></a>).</li>
+by <a class="reference internal" href="#mangadap.drpfits.DRPFits.bitmask" title="mangadap.drpfits.DRPFits.bitmask"><code class="xref py py-attr docutils literal notranslate"><span class="pre">bitmask</span></code></a> (see <a class="reference internal" href="#mangadap.drpfits.DRPFitsBitMask" title="mangadap.drpfits.DRPFitsBitMask"><code class="xref py py-class docutils literal notranslate"><span class="pre">DRPFitsBitMask</span></code></a>).</li>
 </ul>
 </td>
 </tr>
@@ -685,8 +688,8 @@ covariance matrix is calculated.</p>
 <dt id="mangadap.drpfits.DRPFits._cube_dimensions">
 <code class="descname">_cube_dimensions</code><span class="sig-paren">(</span><em>pixelscale=None</em>, <em>recenter=None</em>, <em>width_buffer=None</em>, <em>redo=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/drpfits.html#DRPFits._cube_dimensions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.drpfits.DRPFits._cube_dimensions" title="Permalink to this definition">¶</a></dt>
 <dd><p>Determine the on-sky dimensions of the reconstructed image for
-all wavelength channels and save them in <code class="xref py py-attr docutils literal"><span class="pre">xs</span></code>, <code class="xref py py-attr docutils literal"><span class="pre">ys</span></code>,
-<code class="xref py py-attr docutils literal"><span class="pre">nx</span></code>, and <code class="xref py py-attr docutils literal"><span class="pre">ny</span></code>.</p>
+all wavelength channels and save them in <code class="xref py py-attr docutils literal notranslate"><span class="pre">xs</span></code>, <code class="xref py py-attr docutils literal notranslate"><span class="pre">ys</span></code>,
+<code class="xref py py-attr docutils literal notranslate"><span class="pre">nx</span></code>, and <code class="xref py py-attr docutils literal notranslate"><span class="pre">ny</span></code>.</p>
 <p>For CUBE files, these dimensions are drawn directly from the WCS
 keywords in the header of the FLUX extension of the DRP fits
 file.  In this case, <strong>any entered parameters are ignored and
@@ -701,7 +704,7 @@ coordinate system has no rotation.</p>
 the ‘XPOS’ and ‘YPOS’ extensions and the same algorithm used by
 the DRP; however, it is possible to provide different parameters
 that will alter the dimensions.</p>
-<p>See: <a class="reference internal" href="#mangadap.drpfits.DRPFits.pixelscale" title="mangadap.drpfits.DRPFits.pixelscale"><code class="xref py py-attr docutils literal"><span class="pre">pixelscale</span></code></a>, <a class="reference internal" href="#mangadap.drpfits.DRPFits.recenter" title="mangadap.drpfits.DRPFits.recenter"><code class="xref py py-attr docutils literal"><span class="pre">recenter</span></code></a>, <a class="reference internal" href="#mangadap.drpfits.DRPFits.width_buffer" title="mangadap.drpfits.DRPFits.width_buffer"><code class="xref py py-attr docutils literal"><span class="pre">width_buffer</span></code></a>.</p>
+<p>See: <a class="reference internal" href="#mangadap.drpfits.DRPFits.pixelscale" title="mangadap.drpfits.DRPFits.pixelscale"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pixelscale</span></code></a>, <a class="reference internal" href="#mangadap.drpfits.DRPFits.recenter" title="mangadap.drpfits.DRPFits.recenter"><code class="xref py py-attr docutils literal notranslate"><span class="pre">recenter</span></code></a>, <a class="reference internal" href="#mangadap.drpfits.DRPFits.width_buffer" title="mangadap.drpfits.DRPFits.width_buffer"><code class="xref py py-attr docutils literal notranslate"><span class="pre">width_buffer</span></code></a>.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -760,13 +763,13 @@ the image reconstruction</li>
 <code class="descname">_fix_header</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/drpfits.html#DRPFits._fix_header"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.drpfits.DRPFits._fix_header" title="Permalink to this definition">¶</a></dt>
 <dd><p>Use of ‘degrees’ in early versions of the DRP did not adhere to
 the fits standard causing the <a class="reference external" href="http://docs.astropy.org/en/v1.0.2/api/astropy.wcs.WCS.html">astropy.wcs.wcs.WCS</a> to fail
-when initialized; see, e.g., <a class="reference internal" href="#mangadap.drpfits.DRPFits.world_mesh" title="mangadap.drpfits.DRPFits.world_mesh"><code class="xref py py-func docutils literal"><span class="pre">world_mesh()</span></code></a>. This changes
+when initialized; see, e.g., <a class="reference internal" href="#mangadap.drpfits.DRPFits.world_mesh" title="mangadap.drpfits.DRPFits.world_mesh"><code class="xref py py-func docutils literal notranslate"><span class="pre">world_mesh()</span></code></a>. This changes
 the units to be ‘deg’ instead.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p class="last">This function is <em>obsolete</em> as of v1_5_1 of the DRP and is
 not actively called in this implementation; see source for
-<a class="reference internal" href="#mangadap.drpfits.DRPFits.world_mesh" title="mangadap.drpfits.DRPFits.world_mesh"><code class="xref py py-func docutils literal"><span class="pre">world_mesh()</span></code></a>.</p>
+<a class="reference internal" href="#mangadap.drpfits.DRPFits.world_mesh" title="mangadap.drpfits.DRPFits.world_mesh"><code class="xref py py-func docutils literal notranslate"><span class="pre">world_mesh()</span></code></a>.</p>
 </div>
 </dd></dl>
 
@@ -774,13 +777,13 @@ not actively called in this implementation; see source for
 <dt id="mangadap.drpfits.DRPFits._formal_covariance_matrix">
 <code class="descname">_formal_covariance_matrix</code><span class="sig-paren">(</span><em>channel</em>, <em>pixelscale</em>, <em>recenter</em>, <em>width_buffer</em>, <em>rlim</em>, <em>sigma</em>, <em>csr=False</em>, <em>quiet=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/drpfits.html#DRPFits._formal_covariance_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.drpfits.DRPFits._formal_covariance_matrix" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the formal covariance matrix as defined by</p>
-<div class="math">
+<div class="math notranslate nohighlight">
 \[{\mathbf C} = {\mathbf T} \times {\mathbf \Sigma} \times
 {\mathbf T}^{\rm T},\]</div>
-<p>where <span class="math">\({\mathbf \Sigma}\)</span> is the covariance matrix for the
+<p>where <span class="math notranslate nohighlight">\({\mathbf \Sigma}\)</span> is the covariance matrix for the
 ‘RSS’ spectra for the specified wavelength channel.  For ‘CUBE’
 files, the function will attempt to use the ‘RSS’ counterpart of
-the file to produce the transfer matrix, <span class="math">\({\mathbf T}\)</span>.
+the file to produce the transfer matrix, <span class="math notranslate nohighlight">\({\mathbf T}\)</span>.
 In this case, the input parameters <em>must</em> be the defaults.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
@@ -808,24 +811,24 @@ reconstruction kernel in arcseconds.</li>
 <li><strong>sigma</strong> (<em>float</em>) – The sigma of the image reconstruction kernel
 in arcseconds.</li>
 <li><strong>csr</strong> (<em>bool</em>) – (<strong>Optional</strong>) Instead of reaturning a
-<a class="reference internal" href="mangadap.util.covariance.html#mangadap.util.covariance.Covariance" title="mangadap.util.covariance.Covariance"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.covariance.Covariance</span></code></a> object,
+<a class="reference internal" href="mangadap.util.covariance.html#mangadap.util.covariance.Covariance" title="mangadap.util.covariance.Covariance"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.covariance.Covariance</span></code></a> object,
 return the covariance matrix as a
 <a class="reference external" href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html">scipy.sparse.csr_matrix</a> object.  Primarily used by
-<a class="reference internal" href="#mangadap.drpfits.DRPFits.covariance_cube" title="mangadap.drpfits.DRPFits.covariance_cube"><code class="xref py py-func docutils literal"><span class="pre">covariance_cube()</span></code></a> for collating the covariance
+<a class="reference internal" href="#mangadap.drpfits.DRPFits.covariance_cube" title="mangadap.drpfits.DRPFits.covariance_cube"><code class="xref py py-func docutils literal notranslate"><span class="pre">covariance_cube()</span></code></a> for collating the covariance
 matrix of each wavelength channel before combining them
 into a single
-<a class="reference internal" href="mangadap.util.covariance.html#mangadap.util.covariance.Covariance" title="mangadap.util.covariance.Covariance"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.covariance.Covariance</span></code></a> object</li>
+<a class="reference internal" href="mangadap.util.covariance.html#mangadap.util.covariance.Covariance" title="mangadap.util.covariance.Covariance"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.covariance.Covariance</span></code></a> object</li>
 <li><strong>quiet</strong> (<em>bool</em>) – (<strong>Optional</strong>) Suppress terminal output</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><a class="reference internal" href="mangadap.util.covariance.html#mangadap.util.covariance.Covariance" title="mangadap.util.covariance.Covariance"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.covariance.Covariance</span></code></a> or
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><a class="reference internal" href="mangadap.util.covariance.html#mangadap.util.covariance.Covariance" title="mangadap.util.covariance.Covariance"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.covariance.Covariance</span></code></a> or
 <a class="reference external" href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html">scipy.sparse.csr_matrix</a>: The covariance matrix for the
 designated wavelength channel.  The return type depends on
 <em>csr</em>.</p>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised for ‘CUBE’ files when the input
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised for ‘CUBE’ files when the input
 parameters are not the same as the defaults.</p>
 </td>
 </tr>
@@ -837,7 +840,7 @@ parameters are not the same as the defaults.</p>
 <dt id="mangadap.drpfits.DRPFits._generate_spatial_index">
 <code class="descname">_generate_spatial_index</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/drpfits.html#DRPFits._generate_spatial_index"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.drpfits.DRPFits._generate_spatial_index" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generate the tuples with the list of original indices in the
-input DRP file; see <a class="reference internal" href="#mangadap.drpfits.DRPFits.spatial_index" title="mangadap.drpfits.DRPFits.spatial_index"><code class="xref py py-attr docutils literal"><span class="pre">spatial_index</span></code></a>.</p>
+input DRP file; see <a class="reference internal" href="#mangadap.drpfits.DRPFits.spatial_index" title="mangadap.drpfits.DRPFits.spatial_index"><code class="xref py py-attr docutils literal notranslate"><span class="pre">spatial_index</span></code></a>.</p>
 </dd></dl>
 
 <dl class="method">
@@ -846,11 +849,11 @@ input DRP file; see <a class="reference internal" href="#mangadap.drpfits.DRPFit
 <dd><p>Return the regridding parameters.  If provided on input, the
 same value is returned.  Otherwise, the returned values are the
 defaults.  See the defaults defined in
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_cube_pixelscale" title="mangadap.config.defaults.default_cube_pixelscale"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_cube_pixelscale()</span></code></a>,
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_cube_recenter" title="mangadap.config.defaults.default_cube_recenter"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_cube_recenter()</span></code></a>,
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_cube_width_buffer" title="mangadap.config.defaults.default_cube_width_buffer"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_cube_width_buffer()</span></code></a>,
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_regrid_rlim" title="mangadap.config.defaults.default_regrid_rlim"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_regrid_rlim()</span></code></a>, and
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_regrid_sigma" title="mangadap.config.defaults.default_regrid_sigma"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_regrid_sigma()</span></code></a>.</p>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_cube_pixelscale" title="mangadap.config.defaults.default_cube_pixelscale"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_cube_pixelscale()</span></code></a>,
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_cube_recenter" title="mangadap.config.defaults.default_cube_recenter"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_cube_recenter()</span></code></a>,
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_cube_width_buffer" title="mangadap.config.defaults.default_cube_width_buffer"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_cube_width_buffer()</span></code></a>,
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_regrid_rlim" title="mangadap.config.defaults.default_regrid_rlim"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_regrid_rlim()</span></code></a>, and
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_regrid_sigma" title="mangadap.config.defaults.default_regrid_sigma"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_regrid_sigma()</span></code></a>.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -889,11 +892,11 @@ arguments.</p>
 <code class="descname">_regrid_defaults</code><span class="sig-paren">(</span><em>pixelscale</em>, <em>recenter</em>, <em>width_buffer</em>, <em>rlim</em>, <em>sigma</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/drpfits.html#DRPFits._regrid_defaults"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.drpfits.DRPFits._regrid_defaults" title="Permalink to this definition">¶</a></dt>
 <dd><p>Check that the saved regridding parameters are the same as the
 defaults.  See
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_cube_pixelscale" title="mangadap.config.defaults.default_cube_pixelscale"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_cube_pixelscale()</span></code></a>,
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_cube_recenter" title="mangadap.config.defaults.default_cube_recenter"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_cube_recenter()</span></code></a>,
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_cube_width_buffer" title="mangadap.config.defaults.default_cube_width_buffer"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_cube_width_buffer()</span></code></a>,
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_regrid_rlim" title="mangadap.config.defaults.default_regrid_rlim"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_regrid_rlim()</span></code></a>, and
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_regrid_sigma" title="mangadap.config.defaults.default_regrid_sigma"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_regrid_sigma()</span></code></a>.</p>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_cube_pixelscale" title="mangadap.config.defaults.default_cube_pixelscale"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_cube_pixelscale()</span></code></a>,
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_cube_recenter" title="mangadap.config.defaults.default_cube_recenter"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_cube_recenter()</span></code></a>,
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_cube_width_buffer" title="mangadap.config.defaults.default_cube_width_buffer"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_cube_width_buffer()</span></code></a>,
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_regrid_rlim" title="mangadap.config.defaults.default_regrid_rlim"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_regrid_rlim()</span></code></a>, and
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_regrid_sigma" title="mangadap.config.defaults.default_regrid_sigma"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_regrid_sigma()</span></code></a>.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -952,7 +955,7 @@ in arcseconds.</li>
 <dt id="mangadap.drpfits.DRPFits._regrid_transfer_correct">
 <code class="descname">_regrid_transfer_correct</code><span class="sig-paren">(</span><em>channel</em>, <em>pixelscale</em>, <em>rlim</em>, <em>sigma</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/drpfits.html#DRPFits._regrid_transfer_correct"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.drpfits.DRPFits._regrid_transfer_correct" title="Permalink to this definition">¶</a></dt>
 <dd><p>Check that the saved parameters used to construct the transfer
-matrix, <span class="math">\({\mathbf T}\)</span>, are the same as the desired values.</p>
+matrix, <span class="math notranslate nohighlight">\({\mathbf T}\)</span>, are the same as the desired values.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -981,7 +984,7 @@ in arcseconds.</li>
 <dl class="method">
 <dt id="mangadap.drpfits.DRPFits._regrid_transfer_undefined">
 <code class="descname">_regrid_transfer_undefined</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/drpfits.html#DRPFits._regrid_transfer_undefined"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.drpfits.DRPFits._regrid_transfer_undefined" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return True if <a class="reference internal" href="#mangadap.drpfits.DRPFits.regrid_T" title="mangadap.drpfits.DRPFits.regrid_T"><code class="xref py py-attr docutils literal"><span class="pre">regrid_T</span></code></a> is None.</p>
+<dd><p>Return True if <a class="reference internal" href="#mangadap.drpfits.DRPFits.regrid_T" title="mangadap.drpfits.DRPFits.regrid_T"><code class="xref py py-attr docutils literal notranslate"><span class="pre">regrid_T</span></code></a> is None.</p>
 </dd></dl>
 
 <dl class="method">
@@ -993,17 +996,17 @@ in arcseconds.</li>
 <dl class="method">
 <dt id="mangadap.drpfits.DRPFits._set_variance_correlation">
 <code class="descname">_set_variance_correlation</code><span class="sig-paren">(</span><em>sigma_rho</em>, <em>pixelscale=None</em>, <em>recenter=None</em>, <em>width_buffer=None</em>, <em>rlim=None</em>, <em>sigma=None</em>, <em>redo=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/drpfits.html#DRPFits._set_variance_correlation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.drpfits.DRPFits._set_variance_correlation" title="Permalink to this definition">¶</a></dt>
-<dd><p>Produce <a class="reference internal" href="#mangadap.drpfits.DRPFits.cov_rho" title="mangadap.drpfits.DRPFits.cov_rho"><code class="xref py py-attr docutils literal"><span class="pre">cov_rho</span></code></a> based on the provided <em>sigma_rho</em>.</p>
+<dd><p>Produce <a class="reference internal" href="#mangadap.drpfits.DRPFits.cov_rho" title="mangadap.drpfits.DRPFits.cov_rho"><code class="xref py py-attr docutils literal notranslate"><span class="pre">cov_rho</span></code></a> based on the provided <em>sigma_rho</em>.</p>
 <p>By default, the details of the cube dimensions should be the
 same as the DRP used to produce the ‘CUBE’ files from the ‘RSS’
 spectra; however, these can be changed.</p>
-<p>The resulting <a class="reference internal" href="#mangadap.drpfits.DRPFits.cov_rho" title="mangadap.drpfits.DRPFits.cov_rho"><code class="xref py py-attr docutils literal"><span class="pre">cov_rho</span></code></a> is independent of wavelength and
+<p>The resulting <a class="reference internal" href="#mangadap.drpfits.DRPFits.cov_rho" title="mangadap.drpfits.DRPFits.cov_rho"><code class="xref py py-attr docutils literal notranslate"><span class="pre">cov_rho</span></code></a> is independent of wavelength and
 can be used in combination with the inverse-variance produced by
 the DRP to yield a wavelength-dependent covariance matrix that
 is close to the formal calculation.</p>
-<p>See: <a class="reference internal" href="#mangadap.drpfits.DRPFits.cov_rho" title="mangadap.drpfits.DRPFits.cov_rho"><code class="xref py py-attr docutils literal"><span class="pre">cov_rho</span></code></a>, attr:<cite>sigma_rho</cite>, <a class="reference internal" href="#mangadap.drpfits.DRPFits.pixelscale" title="mangadap.drpfits.DRPFits.pixelscale"><code class="xref py py-attr docutils literal"><span class="pre">pixelscale</span></code></a>,
-<a class="reference internal" href="#mangadap.drpfits.DRPFits.recenter" title="mangadap.drpfits.DRPFits.recenter"><code class="xref py py-attr docutils literal"><span class="pre">recenter</span></code></a>, <a class="reference internal" href="#mangadap.drpfits.DRPFits.width_buffer" title="mangadap.drpfits.DRPFits.width_buffer"><code class="xref py py-attr docutils literal"><span class="pre">width_buffer</span></code></a>, <code class="xref py py-attr docutils literal"><span class="pre">rlim</span></code>,
-<code class="xref py py-attr docutils literal"><span class="pre">sigma</span></code>.</p>
+<p>See: <a class="reference internal" href="#mangadap.drpfits.DRPFits.cov_rho" title="mangadap.drpfits.DRPFits.cov_rho"><code class="xref py py-attr docutils literal notranslate"><span class="pre">cov_rho</span></code></a>, attr:<cite>sigma_rho</cite>, <a class="reference internal" href="#mangadap.drpfits.DRPFits.pixelscale" title="mangadap.drpfits.DRPFits.pixelscale"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pixelscale</span></code></a>,
+<a class="reference internal" href="#mangadap.drpfits.DRPFits.recenter" title="mangadap.drpfits.DRPFits.recenter"><code class="xref py py-attr docutils literal notranslate"><span class="pre">recenter</span></code></a>, <a class="reference internal" href="#mangadap.drpfits.DRPFits.width_buffer" title="mangadap.drpfits.DRPFits.width_buffer"><code class="xref py py-attr docutils literal notranslate"><span class="pre">width_buffer</span></code></a>, <code class="xref py py-attr docutils literal notranslate"><span class="pre">rlim</span></code>,
+<code class="xref py py-attr docutils literal notranslate"><span class="pre">sigma</span></code>.</p>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
 <p class="last"><em>sigma</em> is not actually used by this function.</p>
@@ -1041,10 +1044,16 @@ cube dimensions if they are already defined.</li>
 </dd></dl>
 
 <dl class="method">
+<dt id="mangadap.drpfits.DRPFits._spectral_resolution_extension">
+<code class="descname">_spectral_resolution_extension</code><span class="sig-paren">(</span><em>ext=None</em>, <em>pre=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/drpfits.html#DRPFits._spectral_resolution_extension"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.drpfits.DRPFits._spectral_resolution_extension" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine the spectral resolution channel to use.</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="mangadap.drpfits.DRPFits._variance_correlation_correct">
 <code class="descname">_variance_correlation_correct</code><span class="sig-paren">(</span><em>sigma_rho</em>, <em>pixelscale</em>, <em>rlim</em>, <em>sigma</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/drpfits.html#DRPFits._variance_correlation_correct"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.drpfits.DRPFits._variance_correlation_correct" title="Permalink to this definition">¶</a></dt>
 <dd><p>Check that the saved parameters used to construct the
-correlation coefficient matrix, <span class="math">\({\mathbf R}\)</span>, are the
+correlation coefficient matrix, <span class="math notranslate nohighlight">\({\mathbf R}\)</span>, are the
 same as the desired values.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -1075,7 +1084,7 @@ in arcseconds.</li>
 <dl class="method">
 <dt id="mangadap.drpfits.DRPFits._variance_correlation_undefined">
 <code class="descname">_variance_correlation_undefined</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/drpfits.html#DRPFits._variance_correlation_undefined"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.drpfits.DRPFits._variance_correlation_undefined" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return True if <a class="reference internal" href="#mangadap.drpfits.DRPFits.cov_rho" title="mangadap.drpfits.DRPFits.cov_rho"><code class="xref py py-attr docutils literal"><span class="pre">cov_rho</span></code></a> is None.</p>
+<dd><p>Return True if <a class="reference internal" href="#mangadap.drpfits.DRPFits.cov_rho" title="mangadap.drpfits.DRPFits.cov_rho"><code class="xref py py-attr docutils literal notranslate"><span class="pre">cov_rho</span></code></a> is None.</p>
 </dd></dl>
 
 <dl class="method">
@@ -1083,7 +1092,7 @@ in arcseconds.</li>
 <code class="descname">binned_on_sky_area</code><span class="sig-paren">(</span><em>bin_indx</em>, <em>x=None</em>, <em>y=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/drpfits.html#DRPFits.binned_on_sky_area"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.drpfits.DRPFits.binned_on_sky_area" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute the on-sky area of a set of binned spectra.  For CUBE
 files, this is just the number of spaxels in the bin times the
-spaxel area (as given by <a class="reference internal" href="#mangadap.drpfits.DRPFits.pixelscale" title="mangadap.drpfits.DRPFits.pixelscale"><code class="xref py py-attr docutils literal"><span class="pre">pixelscale</span></code></a>).</p>
+spaxel area (as given by <a class="reference internal" href="#mangadap.drpfits.DRPFits.pixelscale" title="mangadap.drpfits.DRPFits.pixelscale"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pixelscale</span></code></a>).</p>
 <p>For RSS files, this will try to calculate the overlapping area
 of the fibers using the <a class="reference external" href="https://pypi.python.org/pypi/Shapely">shapely</a> python package:</p>
 <blockquote>
@@ -1099,15 +1108,15 @@ integration-weighted effective area.</li>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>bin_indx</strong> (<em>array-like</em>) – A vector with size <span class="math">\(N_{\rm
+<li><strong>bin_indx</strong> (<em>array-like</em>) – A vector with size <span class="math notranslate nohighlight">\(N_{\rm
 spec}\)</span> the gives which spaxels or fibers were included
-in each bin.  Valid bins have indices of <span class="math">\(\geq 0\)</span>.</li>
-<li><strong>x</strong> (<em>array-like</em>) – (<strong>Optional</strong>) On-sky <span class="math">\(x\)</span> coordinate.
-Default is to calculate <span class="math">\(x\)</span> and <span class="math">\(y\)</span> using
-<a class="reference internal" href="#mangadap.drpfits.DRPFits.mean_sky_coordinates" title="mangadap.drpfits.DRPFits.mean_sky_coordinates"><code class="xref py py-func docutils literal"><span class="pre">mean_sky_coordinates()</span></code></a> with no arguments.</li>
-<li><strong>y</strong> (<em>array-like</em>) – (<strong>Optional</strong>) On-sky <span class="math">\(y\)</span> coordinate.
-Default is to calculate <span class="math">\(x\)</span> and <span class="math">\(y\)</span> using
-<a class="reference internal" href="#mangadap.drpfits.DRPFits.mean_sky_coordinates" title="mangadap.drpfits.DRPFits.mean_sky_coordinates"><code class="xref py py-func docutils literal"><span class="pre">mean_sky_coordinates()</span></code></a> with no arguments.</li>
+in each bin.  Valid bins have indices of <span class="math notranslate nohighlight">\(\geq 0\)</span>.</li>
+<li><strong>x</strong> (<em>array-like</em>) – (<strong>Optional</strong>) On-sky <span class="math notranslate nohighlight">\(x\)</span> coordinate.
+Default is to calculate <span class="math notranslate nohighlight">\(x\)</span> and <span class="math notranslate nohighlight">\(y\)</span> using
+<a class="reference internal" href="#mangadap.drpfits.DRPFits.mean_sky_coordinates" title="mangadap.drpfits.DRPFits.mean_sky_coordinates"><code class="xref py py-func docutils literal notranslate"><span class="pre">mean_sky_coordinates()</span></code></a> with no arguments.</li>
+<li><strong>y</strong> (<em>array-like</em>) – (<strong>Optional</strong>) On-sky <span class="math notranslate nohighlight">\(y\)</span> coordinate.
+Default is to calculate <span class="math notranslate nohighlight">\(x\)</span> and <span class="math notranslate nohighlight">\(y\)</span> using
+<a class="reference internal" href="#mangadap.drpfits.DRPFits.mean_sky_coordinates" title="mangadap.drpfits.DRPFits.mean_sky_coordinates"><code class="xref py py-func docutils literal notranslate"><span class="pre">mean_sky_coordinates()</span></code></a> with no arguments.</li>
 </ul>
 </td>
 </tr>
@@ -1120,6 +1129,11 @@ Default is to calculate <span class="math">\(x\)</span> and <span class="math">\
 </tbody>
 </table>
 </dd></dl>
+
+<dl class="attribute">
+<dt id="mangadap.drpfits.DRPFits.can_compute_covariance">
+<code class="descname">can_compute_covariance</code><a class="headerlink" href="#mangadap.drpfits.DRPFits.can_compute_covariance" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="staticmethod">
 <dt id="mangadap.drpfits.DRPFits.check_mode">
@@ -1142,23 +1156,23 @@ Default is to calculate <span class="math">\(x\)</span> and <span class="math">\
 <dl class="method">
 <dt id="mangadap.drpfits.DRPFits.copy_to_array">
 <code class="descname">copy_to_array</code><span class="sig-paren">(</span><em>ext='FLUX'</em>, <em>waverange=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/drpfits.html#DRPFits.copy_to_array"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.drpfits.DRPFits.copy_to_array" title="Permalink to this definition">¶</a></dt>
-<dd><p>Wrapper for <a class="reference internal" href="mangadap.util.fitsutil.html#mangadap.util.fitsutil.DAPFitsUtil.copy_to_array" title="mangadap.util.fitsutil.DAPFitsUtil.copy_to_array"><code class="xref py py-func docutils literal"><span class="pre">mangadap.util.fitsutil.DAPFitsUtil.copy_to_array()</span></code></a>
-specific for <a class="reference internal" href="#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal"><span class="pre">DRPFits</span></code></a>.</p>
+<dd><p>Wrapper for <a class="reference internal" href="mangadap.util.fitsutil.html#mangadap.util.fitsutil.DAPFitsUtil.copy_to_array" title="mangadap.util.fitsutil.DAPFitsUtil.copy_to_array"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.util.fitsutil.DAPFitsUtil.copy_to_array()</span></code></a>
+specific for <a class="reference internal" href="#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal notranslate"><span class="pre">DRPFits</span></code></a>.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="mangadap.drpfits.DRPFits.copy_to_masked_array">
 <code class="descname">copy_to_masked_array</code><span class="sig-paren">(</span><em>ext='FLUX'</em>, <em>flag=None</em>, <em>waverange=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/drpfits.html#DRPFits.copy_to_masked_array"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.drpfits.DRPFits.copy_to_masked_array" title="Permalink to this definition">¶</a></dt>
 <dd><p>Wrapper for
-<a class="reference internal" href="mangadap.util.fitsutil.html#mangadap.util.fitsutil.DAPFitsUtil.copy_to_masked_array" title="mangadap.util.fitsutil.DAPFitsUtil.copy_to_masked_array"><code class="xref py py-func docutils literal"><span class="pre">mangadap.util.fitsutil.DAPFitsUtil.copy_to_masked_array()</span></code></a>
-specific for <a class="reference internal" href="#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal"><span class="pre">DRPFits</span></code></a>.</p>
+<a class="reference internal" href="mangadap.util.fitsutil.html#mangadap.util.fitsutil.DAPFitsUtil.copy_to_masked_array" title="mangadap.util.fitsutil.DAPFitsUtil.copy_to_masked_array"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.util.fitsutil.DAPFitsUtil.copy_to_masked_array()</span></code></a>
+specific for <a class="reference internal" href="#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal notranslate"><span class="pre">DRPFits</span></code></a>.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="mangadap.drpfits.DRPFits.covariance_cube">
 <code class="descname">covariance_cube</code><span class="sig-paren">(</span><em>channels=None</em>, <em>pixelscale=None</em>, <em>recenter=None</em>, <em>width_buffer=None</em>, <em>rlim=None</em>, <em>sigma=None</em>, <em>sigma_rho=None</em>, <em>csr=False</em>, <em>quiet=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/drpfits.html#DRPFits.covariance_cube"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.drpfits.DRPFits.covariance_cube" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the covariance matrices for all wavelength channels; see
-<a class="reference internal" href="#mangadap.drpfits.DRPFits.covariance_matrix" title="mangadap.drpfits.DRPFits.covariance_matrix"><code class="xref py py-func docutils literal"><span class="pre">covariance_matrix()</span></code></a>.</p>
+<a class="reference internal" href="#mangadap.drpfits.DRPFits.covariance_matrix" title="mangadap.drpfits.DRPFits.covariance_matrix"><code class="xref py py-func docutils literal notranslate"><span class="pre">covariance_matrix()</span></code></a>.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -1178,24 +1192,24 @@ reconstruction kernel in arcseconds.</li>
 function used to approximate the trend of the
 correlation coefficient with pixel separation.</li>
 <li><strong>csr</strong> (<em>bool</em>) – (<strong>Optional</strong>) Instead of reaturning a
-<a class="reference internal" href="mangadap.util.covariance.html#mangadap.util.covariance.Covariance" title="mangadap.util.covariance.Covariance"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.covariance.Covariance</span></code></a> object,
+<a class="reference internal" href="mangadap.util.covariance.html#mangadap.util.covariance.Covariance" title="mangadap.util.covariance.Covariance"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.covariance.Covariance</span></code></a> object,
 return a numpy.ndarray of the covariance matrices for
 each channel, which are <a class="reference external" href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html">scipy.sparse.csr_matrix</a>
-objects.  Primarily used by <a class="reference internal" href="#mangadap.drpfits.DRPFits.covariance_cube" title="mangadap.drpfits.DRPFits.covariance_cube"><code class="xref py py-func docutils literal"><span class="pre">covariance_cube()</span></code></a> for
+objects.  Primarily used by <a class="reference internal" href="#mangadap.drpfits.DRPFits.covariance_cube" title="mangadap.drpfits.DRPFits.covariance_cube"><code class="xref py py-func docutils literal notranslate"><span class="pre">covariance_cube()</span></code></a> for
 collating the covariance matrix of each wavelength
 channel before combining them into a single
-<a class="reference internal" href="mangadap.util.covariance.html#mangadap.util.covariance.Covariance" title="mangadap.util.covariance.Covariance"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.covariance.Covariance</span></code></a> object</li>
+<a class="reference internal" href="mangadap.util.covariance.html#mangadap.util.covariance.Covariance" title="mangadap.util.covariance.Covariance"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.covariance.Covariance</span></code></a> object</li>
 <li><strong>quiet</strong> (<em>bool</em>) – (<strong>Optional</strong>) Suppress terminal output</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><a class="reference internal" href="mangadap.util.covariance.html#mangadap.util.covariance.Covariance" title="mangadap.util.covariance.Covariance"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.covariance.Covariance</span></code></a> or
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><a class="reference internal" href="mangadap.util.covariance.html#mangadap.util.covariance.Covariance" title="mangadap.util.covariance.Covariance"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.covariance.Covariance</span></code></a> or
 numpy.ndarray: The return type depends on <cite>csr</cite>: if True,
 the returned object is an ndarray of
 <a class="reference external" href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html">scipy.sparse.csr_matrix</a> types.</p>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">Exception</span></code> – Raised for ‘CUBE’ files when the input parameters
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal notranslate"><span class="pre">Exception</span></code> – Raised for ‘CUBE’ files when the input parameters
 are not the same as the defaults.</p>
 </td>
 </tr>
@@ -1208,40 +1222,40 @@ are not the same as the defaults.</p>
 <code class="descname">covariance_matrix</code><span class="sig-paren">(</span><em>channel</em>, <em>pixelscale=None</em>, <em>recenter=None</em>, <em>width_buffer=None</em>, <em>rlim=None</em>, <em>sigma=None</em>, <em>sigma_rho=None</em>, <em>csr=False</em>, <em>quiet=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/drpfits.html#DRPFits.covariance_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.drpfits.DRPFits.covariance_matrix" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the covariance matrix for the specified wavelength
 channel.</p>
-<p>For a regrided cube image with <span class="math">\(N_x\times N_y\)</span> pixels, the
-covariance matrix has a size that is <span class="math">\((N_x N_y)\times (N_x
+<p>For a regrided cube image with <span class="math notranslate nohighlight">\(N_x\times N_y\)</span> pixels, the
+covariance matrix has a size that is <span class="math notranslate nohighlight">\((N_x N_y)\times (N_x
 N_y)\)</span>; however, the majority of these pixels will be zero.
 Therefore, the covariance matrix is stored as a sparse matrix
 and interfaced with using the
-<a class="reference internal" href="mangadap.util.covariance.html#mangadap.util.covariance.Covariance" title="mangadap.util.covariance.Covariance"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.covariance.Covariance</span></code></a> object class.</p>
-<p>The value of the covariance matrix at pixel <span class="math">\((i,j)\)</span> is the
-covariance between pixels <span class="math">\((n_{x,0},n_{y,0})\)</span> and
-<span class="math">\((n_{x,1},n_{y,1})\)</span> at the specified wavelength channel of
+<a class="reference internal" href="mangadap.util.covariance.html#mangadap.util.covariance.Covariance" title="mangadap.util.covariance.Covariance"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.covariance.Covariance</span></code></a> object class.</p>
+<p>The value of the covariance matrix at pixel <span class="math notranslate nohighlight">\((i,j)\)</span> is the
+covariance between pixels <span class="math notranslate nohighlight">\((n_{x,0},n_{y,0})\)</span> and
+<span class="math notranslate nohighlight">\((n_{x,1},n_{y,1})\)</span> at the specified wavelength channel of
 the reconstructed CUBE image, where</p>
-<div class="math">
+<div class="math notranslate nohighlight">
 \[\begin{split}n_{x,0} &amp;= \lfloor i / N_y \rfloor \\
 n_{y,0} &amp;= i - n_{x,0} N_y \\
 n_{x,1} &amp;= \lfloor j / N_y \rfloor \\
 n_{y,1} &amp;= j - n_{x,1} N_y\end{split}\]</div>
-<p>and <span class="math">\(\lfloor m\rfloor\)</span> is the “floor” of <span class="math">\(m\)</span>.  The
-diagonal of the covariance matrix (<span class="math">\(i=j\)</span>) should directly
+<p>and <span class="math notranslate nohighlight">\(\lfloor m\rfloor\)</span> is the “floor” of <span class="math notranslate nohighlight">\(m\)</span>.  The
+diagonal of the covariance matrix (<span class="math notranslate nohighlight">\(i=j\)</span>) should directly
 provide the inverse of the IVAR values provided by the DRP.</p>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
 <p class="last">THIS IS IMPORTANT.  Because the sense of the pixel
-coordinates, <span class="math">\((n_x,n_y)\)</span>, is flipped with respect to a
+coordinates, <span class="math notranslate nohighlight">\((n_x,n_y)\)</span>, is flipped with respect to a
 direct read of the DRP fits file using <a class="reference external" href="http://docs.astropy.org/en/stable/io/fits/index.html">astropy.io.fits</a>,
 it is important that you appreciate this ordering in
 handling the coordinates in the output covariance matrix
 using the equation above.  I.e., if you want to get the
 covariance between two pixels in the DRP file, make sure you
-understand which is the <span class="math">\(x\)</span> pixel and which is the
-<span class="math">\(y\)</span> pixel!</p>
+understand which is the <span class="math notranslate nohighlight">\(x\)</span> pixel and which is the
+<span class="math notranslate nohighlight">\(y\)</span> pixel!</p>
 </div>
 <p>You can compare the CUBE provide inverse variance matrix and the
 inverse variance matrix provided along the diagonal of a
 covariance matrix calculated using this function as follows:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">matplotlib</span> <span class="k">import</span> <span class="n">pyplot</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">matplotlib</span> <span class="k">import</span> <span class="n">pyplot</span>
 <span class="kn">from</span> <span class="nn">mangadap.drpfits</span> <span class="k">import</span> <span class="n">DRPFits</span>
 <span class="kn">from</span> <span class="nn">astropy.io</span> <span class="k">import</span> <span class="n">fits</span>
 
@@ -1273,18 +1287,18 @@ covariance matrix calculated using this function as follows:</p>
 </pre></div>
 </div>
 <p>Differences between the inverse variance values should be small
-(<span class="math">\(\approx 10^{-3}\)</span>, which is about 1 part in
-<span class="math">\(10^7\)</span>).</p>
+(<span class="math notranslate nohighlight">\(\approx 10^{-3}\)</span>, which is about 1 part in
+<span class="math notranslate nohighlight">\(10^7\)</span>).</p>
 <p>The covariance matrix can be generated in one of two ways:</p>
 <p>1. If <em>sigma_rho</em> is None, the returned matrix is the formal
 covariance matrix defined as</p>
-<div class="math">
+<div class="math notranslate nohighlight">
 \[{\mathbf C} = {\mathbf T} \times {\mathbf \Sigma} \times
 {\mathbf T}^{\rm T},\]</div>
-<p>where <span class="math">\({\mathbf \Sigma}\)</span> is the covariance matrix for the
+<p>where <span class="math notranslate nohighlight">\({\mathbf \Sigma}\)</span> is the covariance matrix for the
 ‘RSS’ spectra for the specified wavelength channel.  For ‘CUBE’
 files, the function will attempt to use the ‘RSS’ counterpart of
-the file to produce the transfer matrix, <span class="math">\({\mathbf T}\)</span>.
+the file to produce the transfer matrix, <span class="math notranslate nohighlight">\({\mathbf T}\)</span>.
 In this case, the input parameters <em>must</em> be the defaults.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
@@ -1296,12 +1310,12 @@ in the ‘IVAR’ extension.</p>
 </div>
 <p>2. If <em>sigma_rho</em> is not None, the returned matrix is an
 approximation of the covariance matrix determined by
-<em>sigma_rho</em>.  See the description of <a class="reference internal" href="#mangadap.drpfits.DRPFits.cov_rho" title="mangadap.drpfits.DRPFits.cov_rho"><code class="xref py py-attr docutils literal"><span class="pre">cov_rho</span></code></a> and
-<a class="reference internal" href="#mangadap.drpfits.DRPFits.sigma_rho" title="mangadap.drpfits.DRPFits.sigma_rho"><code class="xref py py-attr docutils literal"><span class="pre">sigma_rho</span></code></a>.  For this to work, the variance matrix of the
+<em>sigma_rho</em>.  See the description of <a class="reference internal" href="#mangadap.drpfits.DRPFits.cov_rho" title="mangadap.drpfits.DRPFits.cov_rho"><code class="xref py py-attr docutils literal notranslate"><span class="pre">cov_rho</span></code></a> and
+<a class="reference internal" href="#mangadap.drpfits.DRPFits.sigma_rho" title="mangadap.drpfits.DRPFits.sigma_rho"><code class="xref py py-attr docutils literal notranslate"><span class="pre">sigma_rho</span></code></a>.  For this to work, the variance matrix of the
 reconstructed image must have been already calculated, meaning
 that this approach is most appropriately used with the ‘CUBE’
 files.  For ‘RSS’ files, the covariance matrix is determined in
-this case by calling <a class="reference internal" href="#mangadap.drpfits.DRPFits.covariance_matrix" title="mangadap.drpfits.DRPFits.covariance_matrix"><code class="xref py py-func docutils literal"><span class="pre">covariance_matrix()</span></code></a> on the ‘CUBE’
+this case by calling <a class="reference internal" href="#mangadap.drpfits.DRPFits.covariance_matrix" title="mangadap.drpfits.DRPFits.covariance_matrix"><code class="xref py py-func docutils literal notranslate"><span class="pre">covariance_matrix()</span></code></a> on the ‘CUBE’
 file, which will raise an exception if the parameters defining
 the dimensions of the reconstructed image and kernel are not the
 defaults.</p>
@@ -1329,24 +1343,24 @@ reconstruction kernel in arcseconds.</li>
 function used to approximate the trend of the
 correlation coefficient with pixel separation.</li>
 <li><strong>csr</strong> (<em>bool</em>) – (<strong>Optional</strong>) Instead of reaturning a
-<a class="reference internal" href="mangadap.util.covariance.html#mangadap.util.covariance.Covariance" title="mangadap.util.covariance.Covariance"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.covariance.Covariance</span></code></a> object,
+<a class="reference internal" href="mangadap.util.covariance.html#mangadap.util.covariance.Covariance" title="mangadap.util.covariance.Covariance"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.covariance.Covariance</span></code></a> object,
 return the covariance matrix as a
 <a class="reference external" href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html">scipy.sparse.csr_matrix</a> object.  Primarily used by
-<a class="reference internal" href="#mangadap.drpfits.DRPFits.covariance_cube" title="mangadap.drpfits.DRPFits.covariance_cube"><code class="xref py py-func docutils literal"><span class="pre">covariance_cube()</span></code></a> for collating the covariance
+<a class="reference internal" href="#mangadap.drpfits.DRPFits.covariance_cube" title="mangadap.drpfits.DRPFits.covariance_cube"><code class="xref py py-func docutils literal notranslate"><span class="pre">covariance_cube()</span></code></a> for collating the covariance
 matrix of each wavelength channel before combining them
 into a single
-<a class="reference internal" href="mangadap.util.covariance.html#mangadap.util.covariance.Covariance" title="mangadap.util.covariance.Covariance"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.covariance.Covariance</span></code></a> object</li>
+<a class="reference internal" href="mangadap.util.covariance.html#mangadap.util.covariance.Covariance" title="mangadap.util.covariance.Covariance"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.covariance.Covariance</span></code></a> object</li>
 <li><strong>quiet</strong> (<em>bool</em>) – (<strong>Optional</strong>) Suppress terminal output</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><a class="reference internal" href="mangadap.util.covariance.html#mangadap.util.covariance.Covariance" title="mangadap.util.covariance.Covariance"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.covariance.Covariance</span></code></a> or
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><a class="reference internal" href="mangadap.util.covariance.html#mangadap.util.covariance.Covariance" title="mangadap.util.covariance.Covariance"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.covariance.Covariance</span></code></a> or
 <a class="reference external" href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html">scipy.sparse.csr_matrix</a>: The covariance matrix for the
 designated wavelength channel.  The return type depends on
 <cite>csr</cite>.</p>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised for ‘CUBE’ files when the input
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised for ‘CUBE’ files when the input
 parameters are not the same as the defaults.</p>
 </td>
 </tr>
@@ -1384,17 +1398,17 @@ mode (str): 3D mode of the DRP file; must be either ‘RSS’ or</p>
 <div>‘CUBE’</div></blockquote>
 <dl class="docutils">
 <dt>drpver (str): (<strong>Optional</strong>) DRP version.  Default set by</dt>
-<dd><a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_drp_version" title="mangadap.config.defaults.default_drp_version"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_drp_version()</span></code></a>.</dd>
+<dd><a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_drp_version" title="mangadap.config.defaults.default_drp_version"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_drp_version()</span></code></a>.</dd>
 <dt>redux_path (str): (<strong>Optional</strong>) The path to the top level</dt>
 <dd>directory containing the DRP output files for a given
 DRP version.  Default is defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_redux_path" title="mangadap.config.defaults.default_redux_path"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_redux_path()</span></code></a>.</dd>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_redux_path" title="mangadap.config.defaults.default_redux_path"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_redux_path()</span></code></a>.</dd>
 <dt>directory_path (str): (<strong>Optional</strong>) The exact path to the</dt>
 <dd>DAP reduction assessments file.  Default set by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_common_path" title="mangadap.config.defaults.default_dap_common_path"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_common_path()</span></code></a>.</dd>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_common_path" title="mangadap.config.defaults.default_dap_common_path"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_dap_common_path()</span></code></a>.</dd>
 <dt>output_file (str): (<strong>Optional</strong>) The name of the file with</dt>
 <dd>the DRP data.  Default set by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_manga_fits_root" title="mangadap.config.defaults.default_manga_fits_root"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_manga_fits_root()</span></code></a>.</dd>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_manga_fits_root" title="mangadap.config.defaults.default_manga_fits_root"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_manga_fits_root()</span></code></a>.</dd>
 </dl>
 </div></blockquote>
 <table class="docutils field-list" frame="void" rules="none">
@@ -1457,7 +1471,7 @@ full spectral range.</p>
 <p>If an RSS file, no covariance is calculated.</p>
 <p>If a CUBE file and covar is True, the code will calculate the
 covariance matrix at the specified wavelength (see
-<a class="reference internal" href="#mangadap.drpfits.DRPFits.covariance_matrix" title="mangadap.drpfits.DRPFits.covariance_matrix"><code class="xref py py-func docutils literal"><span class="pre">covariance_matrix()</span></code></a>).  If covar_wave is not provided, the
+<a class="reference internal" href="#mangadap.drpfits.DRPFits.covariance_matrix" title="mangadap.drpfits.DRPFits.covariance_matrix"><code class="xref py py-func docutils literal notranslate"><span class="pre">covariance_matrix()</span></code></a>).  If covar_wave is not provided, the
 covariance is calculated at the center wavelength of the
 provided wavelength range.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -1478,7 +1492,7 @@ compute the statistics on a per pixel basis.</li>
 <li><strong>flag</strong> (<em>str</em><em> or </em><em>list</em>) – (<strong>Optional</strong>) (List of) Flag names that
 are considered when deciding if a pixel should be
 masked.  The names <em>must</em> be a valid bit name as defined
-by <a class="reference internal" href="#mangadap.drpfits.DRPFits.bitmask" title="mangadap.drpfits.DRPFits.bitmask"><code class="xref py py-attr docutils literal"><span class="pre">bitmask</span></code></a> (see <a class="reference internal" href="#mangadap.drpfits.DRPFitsBitMask" title="mangadap.drpfits.DRPFitsBitMask"><code class="xref py py-class docutils literal"><span class="pre">DRPFitsBitMask</span></code></a>).</li>
+by <a class="reference internal" href="#mangadap.drpfits.DRPFits.bitmask" title="mangadap.drpfits.DRPFits.bitmask"><code class="xref py py-attr docutils literal notranslate"><span class="pre">bitmask</span></code></a> (see <a class="reference internal" href="#mangadap.drpfits.DRPFitsBitMask" title="mangadap.drpfits.DRPFitsBitMask"><code class="xref py py-class docutils literal notranslate"><span class="pre">DRPFitsBitMask</span></code></a>).</li>
 <li><strong>covar</strong> (<em>bool</em>) – (<strong>Optional</strong>) Flag to calculate covariance
 matrix.</li>
 <li><strong>correlation</strong> (<em>bool</em>) – (<strong>Optional</strong>) Flag to convert the
@@ -1498,7 +1512,7 @@ calculation is requested, the last returned object is None.</p>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">numpy.ndarray</p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised of a provided wavelength range object
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised of a provided wavelength range object
 does not have two elements.</p>
 </td>
 </tr>
@@ -1540,45 +1554,45 @@ files (before MPL-6).</p>
 files.</li>
 </ul>
 </div>
-<p>For ‘RSS’ files, the transfer matrix, <span class="math">\({\mathbf T}\)</span>, is
-first calculated using <a class="reference internal" href="#mangadap.drpfits.DRPFits.regrid_transfer_matrix" title="mangadap.drpfits.DRPFits.regrid_transfer_matrix"><code class="xref py py-func docutils literal"><span class="pre">regrid_transfer_matrix()</span></code></a>.  The
+<p>For ‘RSS’ files, the transfer matrix, <span class="math notranslate nohighlight">\({\mathbf T}\)</span>, is
+first calculated using <a class="reference internal" href="#mangadap.drpfits.DRPFits.regrid_transfer_matrix" title="mangadap.drpfits.DRPFits.regrid_transfer_matrix"><code class="xref py py-func docutils literal notranslate"><span class="pre">regrid_transfer_matrix()</span></code></a>.  The
 transfer matrix is used to construct the ‘CUBE’ wavelength plane
-image, <span class="math">\({\mathbf I}\)</span>, by computing <span class="math">\({\mathbf T}
-\times {\mathbf F} = {\mathbf I}\)</span>, where <span class="math">\({\mathbf F}\)</span> is
+image, <span class="math notranslate nohighlight">\({\mathbf I}\)</span>, by computing <span class="math notranslate nohighlight">\({\mathbf T}
+\times {\mathbf F} = {\mathbf I}\)</span>, where <span class="math notranslate nohighlight">\({\mathbf F}\)</span> is
 the vector of the fiber fluxes.  Under the assumption that the
 line-spread-function (LSF) is Gaussian, we determine the
 instrumental dispersion for the data in the wavelength channel
 of the reconstructed CUBE by calculating the second moment of
 the weighted sum of Gaussians of the appropriate dispersion.
 Assuming all the Gaussians have the normalized form:</p>
-<div class="math">
+<div class="math notranslate nohighlight">
 \[\mathcal{N}(x|\mu=0,\sigma) = \frac{1}{\sqrt{2\pi}\sigma}
 \exp\left(-\frac{x^2}{2\sigma^2}\right),\]</div>
 <p>the combined instrumental dispersion becomes</p>
-<div class="math">
+<div class="math notranslate nohighlight">
 \[\sigma_{\rm inst,j}^2 = \frac{\sum_i T_{ij}
 \sigma^2_i}{\sum_i T_{ij}},\]</div>
-<p>where <span class="math">\(T_{ij}\)</span> are the elements of the transfer matrix.
+<p>where <span class="math notranslate nohighlight">\(T_{ij}\)</span> are the elements of the transfer matrix.
 In terms of matrix multiplications, this can be written as</p>
-<div class="math">
+<div class="math notranslate nohighlight">
 \[{\mathbf S} = \frac{ {\mathbf T} \times {\mathbf V} }{
 {\mathbf T_c} },\]</div>
-<p>where <span class="math">\({\mathbf T_c} = {\mathbf T_c} \times {\mathbf 1}\)</span>
-is the vector with the sum <span class="math">\(\sum_j T_{ij}\)</span>,
-<span class="math">\({\mathbf V}\)</span> is the instrumental variance for all fibers
-at the designated wavelength plane, and <span class="math">\({\mathbf S}\)</span> is
+<p>where <span class="math notranslate nohighlight">\({\mathbf T_c} = {\mathbf T_c} \times {\mathbf 1}\)</span>
+is the vector with the sum <span class="math notranslate nohighlight">\(\sum_j T_{ij}\)</span>,
+<span class="math notranslate nohighlight">\({\mathbf V}\)</span> is the instrumental variance for all fibers
+at the designated wavelength plane, and <span class="math notranslate nohighlight">\({\mathbf S}\)</span> is
 the variance for all the spaxels in the reconstructed wavelength
-image; the division by <span class="math">\({\mathbf T_c}\)</span> is element-wise.</p>
+image; the division by <span class="math notranslate nohighlight">\({\mathbf T_c}\)</span> is element-wise.</p>
 <p>The returned matrix is the element-wise square-root of
-<span class="math">\({\mathbf S}\)</span>, rearranged into a 2D array of size
-<code class="xref py py-attr docutils literal"><span class="pre">ny</span></code> by <code class="xref py py-attr docutils literal"><span class="pre">nx</span></code>.</p>
+<span class="math notranslate nohighlight">\({\mathbf S}\)</span>, rearranged into a 2D array of size
+<code class="xref py py-attr docutils literal notranslate"><span class="pre">ny</span></code> by <code class="xref py py-attr docutils literal notranslate"><span class="pre">nx</span></code>.</p>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
 <p class="last">Because the internal data structure is transposed with
 respect to the DRP file, the result is transposed on output
 so that it will match the pixel coordinates in the
 reconstructed image pulled directly from a DRP file.  See
-<code class="xref py py-func docutils literal"><span class="pre">regrid_wavelength_channel()</span></code>.</p>
+<code class="xref py py-func docutils literal notranslate"><span class="pre">regrid_wavelength_channel()</span></code>.</p>
 </div>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -1614,7 +1628,7 @@ wavelength channel.</p>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">numpy.ndarray</p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised for ‘CUBE’ files when the input parameters
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised for ‘CUBE’ files when the input parameters
 are not the same as the defaults.</p>
 </td>
 </tr>
@@ -1628,13 +1642,13 @@ are not the same as the defaults.</p>
 <dd><p>Compute the mean sky coordinates for each spectrum.</p>
 <p>For CUBE files, this just returns the spaxel coordinates in
 arcseconds relative to the object center, where the object
-center is <span class="math">\((\alpha_0,\delta_0) = ({\rm OBJRA},{\rm
+center is <span class="math notranslate nohighlight">\((\alpha_0,\delta_0) = ({\rm OBJRA},{\rm
 OBJDEC)\)</span> as provided in the primary header, and</p>
-<div class="math">
+<div class="math notranslate nohighlight">
 \[\begin{split}x &amp;= (\alpha - \alpha_0) \cos \delta_0 \\
 y &amp;= (\delta - \delta_0)\end{split}\]</div>
-<p>The coordinate grid, <span class="math">\((\alpha, \delta)\)</span> is based on the
-WCS coordinates in the header as returned by <a class="reference internal" href="#mangadap.drpfits.DRPFits.world_mesh" title="mangadap.drpfits.DRPFits.world_mesh"><code class="xref py py-func docutils literal"><span class="pre">world_mesh()</span></code></a>.</p>
+<p>The coordinate grid, <span class="math notranslate nohighlight">\((\alpha, \delta)\)</span> is based on the
+WCS coordinates in the header as returned by <a class="reference internal" href="#mangadap.drpfits.DRPFits.world_mesh" title="mangadap.drpfits.DRPFits.world_mesh"><code class="xref py py-func docutils literal notranslate"><span class="pre">world_mesh()</span></code></a>.</p>
 <p>For RSS files, this returns either the unweighted or
 flux-weighted XPOS and YPOS values.  For observations where the
 pointing center is different from the object center, the
@@ -1666,7 +1680,7 @@ coordinates.</li>
 <li><strong>flag</strong> (<em>str</em><em> or </em><em>list</em>) – (<strong>Optional</strong>) (List of) Flag names that
 are considered when deciding if a pixel should be
 masked.  The names <em>must</em> be a valid bit name as defined
-by <a class="reference internal" href="#mangadap.drpfits.DRPFits.bitmask" title="mangadap.drpfits.DRPFits.bitmask"><code class="xref py py-attr docutils literal"><span class="pre">bitmask</span></code></a> (see <a class="reference internal" href="#mangadap.drpfits.DRPFitsBitMask" title="mangadap.drpfits.DRPFitsBitMask"><code class="xref py py-class docutils literal"><span class="pre">DRPFitsBitMask</span></code></a>).</li>
+by <a class="reference internal" href="#mangadap.drpfits.DRPFits.bitmask" title="mangadap.drpfits.DRPFits.bitmask"><code class="xref py py-attr docutils literal notranslate"><span class="pre">bitmask</span></code></a> (see <a class="reference internal" href="#mangadap.drpfits.DRPFitsBitMask" title="mangadap.drpfits.DRPFitsBitMask"><code class="xref py py-class docutils literal notranslate"><span class="pre">DRPFitsBitMask</span></code></a>).</li>
 <li><strong>fluxwgt</strong> (<em>bool</em>) – (<strong>Optional</strong>) Flag to weight by the flux
 when determining the mean coordinates for the RSS spectra.</li>
 </ul>
@@ -1674,7 +1688,7 @@ when determining the mean coordinates for the RSS spectra.</li>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A 1D array with the coordinates of each
 spectrum.  The index of the vector matches the index in
-<a class="reference internal" href="#mangadap.drpfits.DRPFits.spatial_index" title="mangadap.drpfits.DRPFits.spatial_index"><code class="xref py py-attr docutils literal"><span class="pre">spatial_index</span></code></a> in case you want to recreate the a map
+<a class="reference internal" href="#mangadap.drpfits.DRPFits.spatial_index" title="mangadap.drpfits.DRPFits.spatial_index"><code class="xref py py-attr docutils literal notranslate"><span class="pre">spatial_index</span></code></a> in case you want to recreate the a map
 for the CUBE files.</p>
 </td>
 </tr>
@@ -1743,7 +1757,7 @@ already.</p>
 <code class="descname">open_hdu</code><span class="sig-paren">(</span><em>checksum=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/drpfits.html#DRPFits.open_hdu"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.drpfits.DRPFits.open_hdu" title="Permalink to this definition">¶</a></dt>
 <dd><p>Read the fits file.</p>
 <p>For security purposes, the fits file is <em>always</em> opened as read
-only.  If <a class="reference internal" href="#mangadap.drpfits.DRPFits.hdu" title="mangadap.drpfits.DRPFits.hdu"><code class="xref py py-attr docutils literal"><span class="pre">hdu</span></code></a> is not None, this function assumes the
+only.  If <a class="reference internal" href="#mangadap.drpfits.DRPFits.hdu" title="mangadap.drpfits.DRPFits.hdu"><code class="xref py py-attr docutils literal notranslate"><span class="pre">hdu</span></code></a> is not None, this function assumes the
 data has already been read and returns to the calling process.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -1751,7 +1765,7 @@ data has already been read and returns to the calling process.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>checksum</strong> (<em>bool</em>) – (<strong>Optional</strong>) Check for file corruption.</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal"><span class="pre">FileNotFoundError</span></code> – Raised if the DRP file does not exist.</td>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal notranslate"><span class="pre">FileNotFoundError</span></code> – Raised if the DRP file does not exist.</td>
 </tr>
 </tbody>
 </table>
@@ -1777,11 +1791,11 @@ the ‘XPOS’ and ‘YPOS’ extensions and the same algorithm used by
 the DRP; however, it is possible to provide different parameters
 that will alter the dimensions.</p>
 <p>If <em>extent</em> is True, the returned mesh is of the pixel <em>edges</em>.
-That is, for a grid of size <span class="math">\(N\)</span>, there are <span class="math">\(N\)</span> pixel
-centers that run from 1 to <span class="math">\(N\)</span>; however, there are
-<span class="math">\(N+1\)</span> pixel edges that run from from <span class="math">\(0.5\)</span> to
-<span class="math">\(N+0.5\)</span>.</p>
-<p>See: <a class="reference internal" href="#mangadap.drpfits.DRPFits.pixelscale" title="mangadap.drpfits.DRPFits.pixelscale"><code class="xref py py-attr docutils literal"><span class="pre">pixelscale</span></code></a>, <a class="reference internal" href="#mangadap.drpfits.DRPFits.recenter" title="mangadap.drpfits.DRPFits.recenter"><code class="xref py py-attr docutils literal"><span class="pre">recenter</span></code></a>, <a class="reference internal" href="#mangadap.drpfits.DRPFits.width_buffer" title="mangadap.drpfits.DRPFits.width_buffer"><code class="xref py py-attr docutils literal"><span class="pre">width_buffer</span></code></a>.</p>
+That is, for a grid of size <span class="math notranslate nohighlight">\(N\)</span>, there are <span class="math notranslate nohighlight">\(N\)</span> pixel
+centers that run from 1 to <span class="math notranslate nohighlight">\(N\)</span>; however, there are
+<span class="math notranslate nohighlight">\(N+1\)</span> pixel edges that run from from <span class="math notranslate nohighlight">\(0.5\)</span> to
+<span class="math notranslate nohighlight">\(N+0.5\)</span>.</p>
+<p>See: <a class="reference internal" href="#mangadap.drpfits.DRPFits.pixelscale" title="mangadap.drpfits.DRPFits.pixelscale"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pixelscale</span></code></a>, <a class="reference internal" href="#mangadap.drpfits.DRPFits.recenter" title="mangadap.drpfits.DRPFits.recenter"><code class="xref py py-attr docutils literal notranslate"><span class="pre">recenter</span></code></a>, <a class="reference internal" href="#mangadap.drpfits.DRPFits.width_buffer" title="mangadap.drpfits.DRPFits.width_buffer"><code class="xref py py-attr docutils literal notranslate"><span class="pre">width_buffer</span></code></a>.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -1800,7 +1814,7 @@ as buffer for the image reconstruction</li>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><p>Two arrays with the pixel indices;
 <a class="reference external" href="http://docs.scipy.org/doc/numpy/reference/generated/numpy.meshgrid.html">numpy.meshgrid</a> is run using:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">indexing</span><span class="o">=</span><span class="s1">&#39;ij&#39;</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">indexing</span><span class="o">=</span><span class="s1">&#39;ij&#39;</span>
 </pre></div>
 </div>
 </p>
@@ -1817,9 +1831,9 @@ as buffer for the image reconstruction</li>
 <dt id="mangadap.drpfits.DRPFits.pix_mesh_range">
 <code class="descname">pix_mesh_range</code><span class="sig-paren">(</span><em>pixelscale=None</em>, <em>recenter=None</em>, <em>width_buffer=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/drpfits.html#DRPFits.pix_mesh_range"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.drpfits.DRPFits.pix_mesh_range" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the range in x and y of the reconstructed image pixels,
-including the size of the pixel.  Coordinate <span class="math">\((1,1)\)</span> is
+including the size of the pixel.  Coordinate <span class="math notranslate nohighlight">\((1,1)\)</span> is
 the center of the first pixel, so its bottom corner is at
-<span class="math">\((0.5,0.5)\)</span>.</p>
+<span class="math notranslate nohighlight">\((0.5,0.5)\)</span>.</p>
 <p>For CUBE files, these dimensions are drawn directly from the WCS
 keywords in the header of the FLUX extension of the DRP fits
 file.  In this case, <strong>any entered parameters are ignored and
@@ -1834,7 +1848,7 @@ coordinate system has no rotation.</p>
 the ‘XPOS’ and ‘YPOS’ extensions and the same algorithm used by
 the DRP; however, it is possible to provide different parameters
 that will alter the dimensions.</p>
-<p>See: <a class="reference internal" href="#mangadap.drpfits.DRPFits.pixelscale" title="mangadap.drpfits.DRPFits.pixelscale"><code class="xref py py-attr docutils literal"><span class="pre">pixelscale</span></code></a>, <a class="reference internal" href="#mangadap.drpfits.DRPFits.recenter" title="mangadap.drpfits.DRPFits.recenter"><code class="xref py py-attr docutils literal"><span class="pre">recenter</span></code></a>, <a class="reference internal" href="#mangadap.drpfits.DRPFits.width_buffer" title="mangadap.drpfits.DRPFits.width_buffer"><code class="xref py py-attr docutils literal"><span class="pre">width_buffer</span></code></a>.</p>
+<p>See: <a class="reference internal" href="#mangadap.drpfits.DRPFits.pixelscale" title="mangadap.drpfits.DRPFits.pixelscale"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pixelscale</span></code></a>, <a class="reference internal" href="#mangadap.drpfits.DRPFits.recenter" title="mangadap.drpfits.DRPFits.recenter"><code class="xref py py-attr docutils literal notranslate"><span class="pre">recenter</span></code></a>, <a class="reference internal" href="#mangadap.drpfits.DRPFits.width_buffer" title="mangadap.drpfits.DRPFits.width_buffer"><code class="xref py py-attr docutils literal notranslate"><span class="pre">width_buffer</span></code></a>.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -1884,7 +1898,7 @@ the DRP fits file.</p>
 <code class="descname">regrid_transfer_matrix</code><span class="sig-paren">(</span><em>channel</em>, <em>pixelscale=None</em>, <em>recenter=None</em>, <em>width_buffer=None</em>, <em>rlim=None</em>, <em>sigma=None</em>, <em>quiet=False</em>, <em>rej_flag='3DREJECT'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/drpfits.html#DRPFits.regrid_transfer_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.drpfits.DRPFits.regrid_transfer_matrix" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calculate the transfer matrix used to produce a reconstructed
 image of the fiber data at the specified wavelength channel.
-See: <a class="reference internal" href="#mangadap.drpfits.DRPFits.regrid_T" title="mangadap.drpfits.DRPFits.regrid_T"><code class="xref py py-attr docutils literal"><span class="pre">regrid_T</span></code></a>.</p>
+See: <a class="reference internal" href="#mangadap.drpfits.DRPFits.regrid_T" title="mangadap.drpfits.DRPFits.regrid_T"><code class="xref py py-attr docutils literal notranslate"><span class="pre">regrid_T</span></code></a>.</p>
 <p>For ‘RSS’ files, this is done directly using the available
 on-sky x and y coordinates of each fiber as a function of
 wavelength taken from the ‘XPOS’ and ‘YPOS’ extensions.</p>
@@ -1893,14 +1907,14 @@ counterpart of the file to produce transfer matrix.  In this
 case, the input parameters <em>must</em> be the defaults.</p>
 <p>The default behavior is to use the same parameters as used by
 the DRP.  For the defaults, see
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_cube_pixelscale" title="mangadap.config.defaults.default_cube_pixelscale"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_cube_pixelscale()</span></code></a>,
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_cube_recenter" title="mangadap.config.defaults.default_cube_recenter"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_cube_recenter()</span></code></a>,
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_cube_width_buffer" title="mangadap.config.defaults.default_cube_width_buffer"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_cube_width_buffer()</span></code></a>,
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_regrid_rlim" title="mangadap.config.defaults.default_regrid_rlim"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_regrid_rlim()</span></code></a>, and
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_regrid_sigma" title="mangadap.config.defaults.default_regrid_sigma"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_regrid_sigma()</span></code></a>.  However,
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_cube_pixelscale" title="mangadap.config.defaults.default_cube_pixelscale"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_cube_pixelscale()</span></code></a>,
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_cube_recenter" title="mangadap.config.defaults.default_cube_recenter"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_cube_recenter()</span></code></a>,
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_cube_width_buffer" title="mangadap.config.defaults.default_cube_width_buffer"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_cube_width_buffer()</span></code></a>,
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_regrid_rlim" title="mangadap.config.defaults.default_regrid_rlim"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_regrid_rlim()</span></code></a>, and
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_regrid_sigma" title="mangadap.config.defaults.default_regrid_sigma"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_regrid_sigma()</span></code></a>.  However,
 the code allows the parameters to be freely chosen by the user.</p>
-<p>See: <a class="reference internal" href="#mangadap.drpfits.DRPFits.pixelscale" title="mangadap.drpfits.DRPFits.pixelscale"><code class="xref py py-attr docutils literal"><span class="pre">pixelscale</span></code></a>, <a class="reference internal" href="#mangadap.drpfits.DRPFits.recenter" title="mangadap.drpfits.DRPFits.recenter"><code class="xref py py-attr docutils literal"><span class="pre">recenter</span></code></a>, <a class="reference internal" href="#mangadap.drpfits.DRPFits.width_buffer" title="mangadap.drpfits.DRPFits.width_buffer"><code class="xref py py-attr docutils literal"><span class="pre">width_buffer</span></code></a>,
-<a class="reference internal" href="#mangadap.drpfits.DRPFits.regrid_rlim" title="mangadap.drpfits.DRPFits.regrid_rlim"><code class="xref py py-attr docutils literal"><span class="pre">regrid_rlim</span></code></a>, <a class="reference internal" href="#mangadap.drpfits.DRPFits.regrid_sigma" title="mangadap.drpfits.DRPFits.regrid_sigma"><code class="xref py py-attr docutils literal"><span class="pre">regrid_sigma</span></code></a>, <a class="reference internal" href="#mangadap.drpfits.DRPFits.regrid_T" title="mangadap.drpfits.DRPFits.regrid_T"><code class="xref py py-attr docutils literal"><span class="pre">regrid_T</span></code></a>.</p>
+<p>See: <a class="reference internal" href="#mangadap.drpfits.DRPFits.pixelscale" title="mangadap.drpfits.DRPFits.pixelscale"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pixelscale</span></code></a>, <a class="reference internal" href="#mangadap.drpfits.DRPFits.recenter" title="mangadap.drpfits.DRPFits.recenter"><code class="xref py py-attr docutils literal notranslate"><span class="pre">recenter</span></code></a>, <a class="reference internal" href="#mangadap.drpfits.DRPFits.width_buffer" title="mangadap.drpfits.DRPFits.width_buffer"><code class="xref py py-attr docutils literal notranslate"><span class="pre">width_buffer</span></code></a>,
+<a class="reference internal" href="#mangadap.drpfits.DRPFits.regrid_rlim" title="mangadap.drpfits.DRPFits.regrid_rlim"><code class="xref py py-attr docutils literal notranslate"><span class="pre">regrid_rlim</span></code></a>, <a class="reference internal" href="#mangadap.drpfits.DRPFits.regrid_sigma" title="mangadap.drpfits.DRPFits.regrid_sigma"><code class="xref py py-attr docutils literal notranslate"><span class="pre">regrid_sigma</span></code></a>, <a class="reference internal" href="#mangadap.drpfits.DRPFits.regrid_T" title="mangadap.drpfits.DRPFits.regrid_T"><code class="xref py py-attr docutils literal notranslate"><span class="pre">regrid_T</span></code></a>.</p>
 <div class="admonition-todo admonition" id="index-5">
 <p class="first admonition-title">Todo</p>
 <ul class="last">
@@ -1929,7 +1943,7 @@ This means you can use this function and apply the result to
 a separate read of the RSS file (not that you would ever
 want to do that).  But after doing that, the output will be
 transposed wrt the CUBE file spatial orientation!  See
-<a class="reference internal" href="#mangadap.drpfits.DRPFits.regrid_wavelength_plane" title="mangadap.drpfits.DRPFits.regrid_wavelength_plane"><code class="xref py py-func docutils literal"><span class="pre">regrid_wavelength_plane()</span></code></a>.</p>
+<a class="reference internal" href="#mangadap.drpfits.DRPFits.regrid_wavelength_plane" title="mangadap.drpfits.DRPFits.regrid_wavelength_plane"><code class="xref py py-func docutils literal notranslate"><span class="pre">regrid_wavelength_plane()</span></code></a>.</p>
 </div>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -1952,14 +1966,14 @@ reconstruction kernel in arcseconds.</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Transfer matrix <span class="math">\({\mathbf
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Transfer matrix <span class="math notranslate nohighlight">\({\mathbf
 T}\)</span></p>
 </td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first"><a class="reference external" href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html">scipy.sparse.csr_matrix</a></p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised for ‘CUBE’ files if the input parameters
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised for ‘CUBE’ files if the input parameters
 are not the defaults.</p>
 </td>
 </tr>
@@ -1976,12 +1990,12 @@ channel.</p>
 defaults.  If they are, the function simply returns the selected
 2D array from the ‘FLUX’ extension.</p>
 <p>For ‘RSS’ files, the transfer matrix is first calculated using
-<a class="reference internal" href="#mangadap.drpfits.DRPFits.regrid_transfer_matrix" title="mangadap.drpfits.DRPFits.regrid_transfer_matrix"><code class="xref py py-func docutils literal"><span class="pre">regrid_transfer_matrix()</span></code></a> and then used to calculate:</p>
-<div class="math">
+<a class="reference internal" href="#mangadap.drpfits.DRPFits.regrid_transfer_matrix" title="mangadap.drpfits.DRPFits.regrid_transfer_matrix"><code class="xref py py-func docutils literal notranslate"><span class="pre">regrid_transfer_matrix()</span></code></a> and then used to calculate:</p>
+<div class="math notranslate nohighlight">
 \[{\mathbf T} \times {\mathbf F} = {\mathbf I}\]</div>
-<p>where <span class="math">\({\mathbf F}\)</span> is the vector of fluxes in the
+<p>where <span class="math notranslate nohighlight">\({\mathbf F}\)</span> is the vector of fluxes in the
 selected wavelength channel for all the fiber measurements in
-the field of view and <span class="math">\({\mathbf I}\)</span> is the pre-formatted
+the field of view and <span class="math notranslate nohighlight">\({\mathbf I}\)</span> is the pre-formatted
 (flattened) reconstructed image of that wavelength channel.</p>
 <p><strong>On output, :math:`{mathbf I}` is rearranged into a 2D array
 of size :attr:`nx` by :attr:`ny`.</strong></p>
@@ -2023,7 +2037,7 @@ wavelength channel.</p>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">numpy.ndarray</p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">Exception</span></code> – Raised for ‘CUBE’ files when the input parameters
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal notranslate"><span class="pre">Exception</span></code> – Raised for ‘CUBE’ files when the input parameters
 are not the same as the defaults.</p>
 </td>
 </tr>
@@ -2052,11 +2066,11 @@ modes.</td>
 <dt id="mangadap.drpfits.DRPFits.select">
 <code class="descname">select</code><span class="sig-paren">(</span><em>t</em>, <em>ext='FLUX'</em>, <em>order='xy'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/drpfits.html#DRPFits.select"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.drpfits.DRPFits.select" title="Permalink to this definition">¶</a></dt>
 <dd><p>Select a specific vector from the fits data arrays.  The spatial
-position within the original file accessed by index <code class="docutils literal"><span class="pre">i</span></code> is
-given by <a class="reference internal" href="#mangadap.drpfits.DRPFits.spatial_index" title="mangadap.drpfits.DRPFits.spatial_index"><code class="xref py py-attr docutils literal"><span class="pre">spatial_index</span></code></a>.  For CUBE files this is a tuple
+position within the original file accessed by index <code class="docutils literal notranslate"><span class="pre">i</span></code> is
+given by <a class="reference internal" href="#mangadap.drpfits.DRPFits.spatial_index" title="mangadap.drpfits.DRPFits.spatial_index"><code class="xref py py-attr docutils literal notranslate"><span class="pre">spatial_index</span></code></a>.  For CUBE files this is a tuple
 with the relevant pixel indices from the original DRP file.
 This function is setup such that, e.g.:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">mangadap.drpfits</span> <span class="k">import</span> <span class="n">DRPFits</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">mangadap.drpfits</span> <span class="k">import</span> <span class="n">DRPFits</span>
 <span class="kn">from</span> <span class="nn">astropy.io</span> <span class="k">import</span> <span class="n">fits</span>
 <span class="kn">import</span> <span class="nn">numpy</span>
 <span class="n">drpf</span> <span class="o">=</span> <span class="n">DRPFits</span><span class="p">(</span><span class="mi">7495</span><span class="p">,</span> <span class="mi">1901</span><span class="p">,</span> <span class="s1">&#39;CUBE&#39;</span><span class="p">,</span> <span class="n">read</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -2105,8 +2119,8 @@ the position <em>within the original DRP file</em> for the
 non-spectral axes.  See the examples above.</li>
 <li><strong>ext</strong> (<em>str</em>) – (<strong>Optional</strong>) Name of the extension from which
 to draw the data.  Must be allowed for the current
-<a class="reference internal" href="#mangadap.drpfits.DRPFits.mode" title="mangadap.drpfits.DRPFits.mode"><code class="xref py py-attr docutils literal"><span class="pre">mode</span></code></a>; see <a class="reference internal" href="#mangadap.drpfits.DRPFits.spectral_arrays" title="mangadap.drpfits.DRPFits.spectral_arrays"><code class="xref py py-attr docutils literal"><span class="pre">spectral_arrays</span></code></a>.  Default is
-<code class="docutils literal"><span class="pre">'FLUX'</span></code>.</li>
+<a class="reference internal" href="#mangadap.drpfits.DRPFits.mode" title="mangadap.drpfits.DRPFits.mode"><code class="xref py py-attr docutils literal notranslate"><span class="pre">mode</span></code></a>; see <a class="reference internal" href="#mangadap.drpfits.DRPFits.spectral_arrays" title="mangadap.drpfits.DRPFits.spectral_arrays"><code class="xref py py-attr docutils literal notranslate"><span class="pre">spectral_arrays</span></code></a>.  Default is
+<code class="docutils literal notranslate"><span class="pre">'FLUX'</span></code>.</li>
 </ul>
 </td>
 </tr>
@@ -2118,8 +2132,8 @@ wavelength.</p>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
-<li><code class="xref py py-exc docutils literal"><span class="pre">KeyError</span></code> – Raised if the selected extension cannot be used.</li>
-<li><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if the input selection object is not an
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">KeyError</span></code> – Raised if the selected extension cannot be used.</li>
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if the input selection object is not an
 int or a tuple.</li>
 </ul>
 </td>
@@ -2146,21 +2160,21 @@ to ‘PREDISP’ and pre=True, it will try to find the extension
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>ext</strong> (<code class="xref py py-obj docutils literal"><span class="pre">str</span></code>, optional) – Specify the extension with the spectral estimate to use.
+<li><strong>ext</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">str</span></code>, optional) – Specify the extension with the spectral estimate to use.
 Should be in [ None, ‘DISP’, ‘SPECRES’].  The default is
 None, which means it will return, in order of
 precedence, the data in ‘DISP’, ‘SPECRES’, or a None
 value if neither are present.</li>
-<li><strong>toarray</strong> (<code class="xref py py-obj docutils literal"><span class="pre">bool</span></code>, optiional) – Return the spectral resolution as a 2D array: Nspec x
+<li><strong>toarray</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">bool</span></code>, optiional) – Return the spectral resolution as a 2D array: Nspec x
 Nwave, even if the DRP file is a CUBE object, similar to
-<a class="reference internal" href="#mangadap.drpfits.DRPFits.copy_to_array" title="mangadap.drpfits.DRPFits.copy_to_array"><code class="xref py py-func docutils literal"><span class="pre">DRPFits.copy_to_array()</span></code></a>.  Default is to return an
+<a class="reference internal" href="#mangadap.drpfits.DRPFits.copy_to_array" title="mangadap.drpfits.DRPFits.copy_to_array"><code class="xref py py-func docutils literal notranslate"><span class="pre">DRPFits.copy_to_array()</span></code></a>.  Default is to return an
 object with the same shape as the flux array.</li>
-<li><strong>fill</strong> (<code class="xref py py-obj docutils literal"><span class="pre">bool</span></code>, optional) – Fill masked values by interpolation.  Default is to
+<li><strong>fill</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">bool</span></code>, optional) – Fill masked values by interpolation.  Default is to
 leave masked pixels in returned array.</li>
-<li><strong>pre</strong> (<code class="xref py py-obj docutils literal"><span class="pre">bool</span></code>, optional) – Read the pre-pixelized version of the spectral
+<li><strong>pre</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">bool</span></code>, optional) – Read the pre-pixelized version of the spectral
 resolution, instead of the post-pixelized version.  This
 prepends ‘PRE’ to the extension name.</li>
-<li><strong>median</strong> (<code class="xref py py-obj docutils literal"><span class="pre">bool</span></code>, optional) – Return a single vector with the median spectral
+<li><strong>median</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">bool</span></code>, optional) – Return a single vector with the median spectral
 resolution instead of a per spectrum array.  When using
 the <cite>SPECRES</cite> extension, this just returns the vector
 provided by the DRP file; when using the <cite>DISP</cite>
@@ -2173,7 +2187,7 @@ masked in all vectors.</li>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Even if interpolated such that
 there should be not masked values, the function returns a
 masked array.  Array contains the spectral resolution
-(<span class="math">\(R = \lambda/\Delta\lambda\)</span>) pulled from the DRP
+(<span class="math notranslate nohighlight">\(R = \lambda/\Delta\lambda\)</span>) pulled from the DRP
 file.</p>
 </td>
 </tr>
@@ -2212,12 +2226,12 @@ version.  This prepends ‘PRE’ to the extension name.</li>
 <dl class="method">
 <dt id="mangadap.drpfits.DRPFits.world_mesh">
 <code class="descname">world_mesh</code><span class="sig-paren">(</span><em>skyright=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/drpfits.html#DRPFits.world_mesh"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.drpfits.DRPFits.world_mesh" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return the world X and Y coordinate for the <code class="xref py py-attr docutils literal"><span class="pre">nx</span></code> by
-<code class="xref py py-attr docutils literal"><span class="pre">ny</span></code> mesh of the reconstructed image.  The pixel
-coordinates are first determined using <a class="reference internal" href="#mangadap.drpfits.DRPFits.pix_mesh" title="mangadap.drpfits.DRPFits.pix_mesh"><code class="xref py py-func docutils literal"><span class="pre">pix_mesh()</span></code></a> and then
+<dd><p>Return the world X and Y coordinate for the <code class="xref py py-attr docutils literal notranslate"><span class="pre">nx</span></code> by
+<code class="xref py py-attr docutils literal notranslate"><span class="pre">ny</span></code> mesh of the reconstructed image.  The pixel
+coordinates are first determined using <a class="reference internal" href="#mangadap.drpfits.DRPFits.pix_mesh" title="mangadap.drpfits.DRPFits.pix_mesh"><code class="xref py py-func docutils literal notranslate"><span class="pre">pix_mesh()</span></code></a> and then
 converted to the world coordinate system.</p>
 <p>For ‘CUBE’ files, this is done using the WCS information in the
-header of the ‘FLUX’ extension.  See <a class="reference internal" href="#mangadap.drpfits.DRPFits.wcs" title="mangadap.drpfits.DRPFits.wcs"><code class="xref py py-attr docutils literal"><span class="pre">wcs</span></code></a>.</p>
+header of the ‘FLUX’ extension.  See <a class="reference internal" href="#mangadap.drpfits.DRPFits.wcs" title="mangadap.drpfits.DRPFits.wcs"><code class="xref py py-attr docutils literal notranslate"><span class="pre">wcs</span></code></a>.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p class="last">Prior to v1_5_1 of the DRP, this function required a
@@ -2238,14 +2252,14 @@ arcseconds as determined by the dimensions of the reconstructed
 image.  The <em>skyright</em> option will force the mesh to have a
 <em>decreasing</em> x coordinate as a function of increasing index.
 I.e.; the front edge of the first pixel is set to:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">x0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xs</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">nx</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">pixelscale</span> <span class="k">if</span> <span class="n">skyright</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">xs</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">x0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xs</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">nx</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">pixelscale</span> <span class="k">if</span> <span class="n">skyright</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">xs</span>
 </pre></div>
 </div>
 <p>and the offset per pixel is set to:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">dx</span> <span class="o">=</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">pixelscale</span> <span class="k">if</span> <span class="n">skyright</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">pixelscale</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dx</span> <span class="o">=</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">pixelscale</span> <span class="k">if</span> <span class="n">skyright</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">pixelscale</span>
 </pre></div>
 </div>
-<p>Recall that <code class="xref py py-attr docutils literal"><span class="pre">xs</span></code> and <code class="xref py py-attr docutils literal"><span class="pre">ys</span></code> are defined at the
+<p>Recall that <code class="xref py py-attr docutils literal notranslate"><span class="pre">xs</span></code> and <code class="xref py py-attr docutils literal notranslate"><span class="pre">ys</span></code> are defined at the
 bottom-left edge of the first image pixel.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -2268,12 +2282,12 @@ coordinates.</td>
 <code class="descname">world_mesh_range</code><span class="sig-paren">(</span><em>skyright=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/drpfits.html#DRPFits.world_mesh_range"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.drpfits.DRPFits.world_mesh_range" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the range in the world X and Y coordinates including the
 size of the pixel.</p>
-<p>For ‘RSS’ files, converts the result of <a class="reference internal" href="#mangadap.drpfits.DRPFits.pix_mesh_range" title="mangadap.drpfits.DRPFits.pix_mesh_range"><code class="xref py py-func docutils literal"><span class="pre">pix_mesh_range()</span></code></a>
+<p>For ‘RSS’ files, converts the result of <a class="reference internal" href="#mangadap.drpfits.DRPFits.pix_mesh_range" title="mangadap.drpfits.DRPFits.pix_mesh_range"><code class="xref py py-func docutils literal notranslate"><span class="pre">pix_mesh_range()</span></code></a>
 to world coordinates using the same calculation as in
-<a class="reference internal" href="#mangadap.drpfits.DRPFits.world_mesh" title="mangadap.drpfits.DRPFits.world_mesh"><code class="xref py py-func docutils literal"><span class="pre">world_mesh()</span></code></a>.</p>
-<p>For ‘CUBE’ files, converts the result of <a class="reference internal" href="#mangadap.drpfits.DRPFits.pix_mesh" title="mangadap.drpfits.DRPFits.pix_mesh"><code class="xref py py-func docutils literal"><span class="pre">pix_mesh()</span></code></a> with
+<a class="reference internal" href="#mangadap.drpfits.DRPFits.world_mesh" title="mangadap.drpfits.DRPFits.world_mesh"><code class="xref py py-func docutils literal notranslate"><span class="pre">world_mesh()</span></code></a>.</p>
+<p>For ‘CUBE’ files, converts the result of <a class="reference internal" href="#mangadap.drpfits.DRPFits.pix_mesh" title="mangadap.drpfits.DRPFits.pix_mesh"><code class="xref py py-func docutils literal notranslate"><span class="pre">pix_mesh()</span></code></a> with
 <em>extent=True</em> to world coordinates using the same calculation as
-in <a class="reference internal" href="#mangadap.drpfits.DRPFits.world_mesh" title="mangadap.drpfits.DRPFits.world_mesh"><code class="xref py py-func docutils literal"><span class="pre">world_mesh()</span></code></a>.  The returned arrays give the range in X
+in <a class="reference internal" href="#mangadap.drpfits.DRPFits.world_mesh" title="mangadap.drpfits.DRPFits.world_mesh"><code class="xref py py-func docutils literal notranslate"><span class="pre">world_mesh()</span></code></a>.  The returned arrays give the range in X
 and Y respectively.</p>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
@@ -2317,14 +2331,14 @@ fix is necessary.</li>
 <dl class="class">
 <dt id="mangadap.drpfits.DRPFitsBitMask">
 <em class="property">class </em><code class="descclassname">mangadap.drpfits.</code><code class="descname">DRPFitsBitMask</code><span class="sig-paren">(</span><em>sdss_maskbits=None</em>, <em>mode='CUBE'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/drpfits.html#DRPFitsBitMask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.drpfits.DRPFitsBitMask" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="mangadap.util.bitmask.html#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.bitmask.BitMask</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="mangadap.util.bitmask.html#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.bitmask.BitMask</span></code></a></p>
 <p>Structure with the DRP mask bits.</p>
 </dd></dl>
 
 <dl class="class">
 <dt id="mangadap.drpfits.DRPQuality3DBitMask">
 <em class="property">class </em><code class="descclassname">mangadap.drpfits.</code><code class="descname">DRPQuality3DBitMask</code><span class="sig-paren">(</span><em>sdss_maskbits=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/drpfits.html#DRPQuality3DBitMask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.drpfits.DRPQuality3DBitMask" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="mangadap.util.bitmask.html#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.bitmask.BitMask</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="mangadap.util.bitmask.html#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.bitmask.BitMask</span></code></a></p>
 <p>Structure with the definition of the DRP3QUAL mask bits.</p>
 </dd></dl>
 
@@ -2352,10 +2366,10 @@ possible combinations.</li>
 a single string value used for all DRP files.</li>
 <li><strong>redux_path</strong> (<em>str</em>) – (<strong>Optional</strong>) The path to the top level
 directory containing the DRP output files; this is the same
-as the <em>redux_path</em> in the <a class="reference internal" href="#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal"><span class="pre">DRPFits</span></code></a> class.</li>
+as the <em>redux_path</em> in the <a class="reference internal" href="#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal notranslate"><span class="pre">DRPFits</span></code></a> class.</li>
 <li><strong>directory_path</strong> (<em>str</em>) – (<strong>Optional</strong>) The exact path to the DRP
 file.  Default is defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_drp_directory_path" title="mangadap.config.defaults.default_drp_directory_path"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_drp_directory_path()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_drp_directory_path" title="mangadap.config.defaults.default_drp_directory_path"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_drp_directory_path()</span></code></a>.</li>
 </ul>
 </td>
 </tr>
@@ -2366,8 +2380,8 @@ file.  Default is defined by
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
-<li><code class="xref py py-exc docutils literal"><span class="pre">Exception</span></code> – Raised if <em>drpver</em> or <em>redux_path</em> are not strings.</li>
-<li><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if the <em>platelist</em>, <em>ifudesignlist</em>, or
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">Exception</span></code> – Raised if <em>drpver</em> or <em>redux_path</em> are not strings.</li>
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if the <em>platelist</em>, <em>ifudesignlist</em>, or
 <em>modelist</em> are None.</li>
 </ul>
 </td>

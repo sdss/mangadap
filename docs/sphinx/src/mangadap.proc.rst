@@ -1,5 +1,5 @@
-mangadap\.proc package
-======================
+mangadap.proc package
+=====================
 
 Submodules
 ----------

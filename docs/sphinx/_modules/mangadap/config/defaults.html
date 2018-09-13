@@ -36,7 +36,7 @@
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
     <link rel="top" title="mangadap 2.2.2 documentation" href="../../../index.html"/>
-        <link rel="up" title="Module code" href="../../index.html"/> 
+        <link rel="up" title="mangadap" href="../../mangadap.html"/> 
 
   
   <script src="../../../_static/js/modernizr.min.js"></script>
@@ -138,6 +138,8 @@
         
           <li><a href="../../index.html">Module code</a> &raquo;</li>
         
+          <li><a href="../../mangadap.html">mangadap</a> &raquo;</li>
+        
       <li>mangadap.config.defaults</li>
     
     
@@ -181,8 +183,7 @@
 <span class="sd">        if sys.version &gt; &#39;3&#39;:</span>
 <span class="sd">            long = int</span>
 <span class="sd">    </span>
-<span class="sd">        import os.path</span>
-<span class="sd">        from os import environ</span>
+<span class="sd">        import os</span>
 <span class="sd">        import glob</span>
 <span class="sd">        import numpy</span>
 <span class="sd">        from mangadap.util.exception_tools import check_environment_variable</span>
@@ -238,20 +239,37 @@
 <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version</span> <span class="o">&gt;</span> <span class="s1">&#39;3&#39;</span><span class="p">:</span>
     <span class="n">long</span> <span class="o">=</span> <span class="nb">int</span>
 
-<span class="kn">import</span> <span class="nn">os.path</span>
-<span class="kn">from</span> <span class="nn">os</span> <span class="k">import</span> <span class="n">environ</span>
+<span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">glob</span>
 <span class="kn">import</span> <span class="nn">numpy</span>
 
 <span class="kn">from</span> <span class="nn">..util.exception_tools</span> <span class="k">import</span> <span class="n">check_environment_variable</span>
-<span class="kn">from</span> <span class="nn">..util.version</span> <span class="k">import</span> <span class="n">__version__</span>
+<span class="kn">from</span> <span class="nn">mangadap</span> <span class="k">import</span> <span class="n">__version__</span><span class="p">,</span> <span class="n">dap_source_dir</span>
 
-<div class="viewcode-block" id="default_idlutils_dir"><a class="viewcode-back" href="../../../mangadap.config.defaults.html#mangadap.config.defaults.default_idlutils_dir">[docs]</a><span class="k">def</span> <span class="nf">default_idlutils_dir</span><span class="p">():</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Return the default IDLUTILS directory.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="dap_source_dir"><a class="viewcode-back" href="../../../mangadap.config.defaults.html#mangadap.config.defaults.dap_source_dir">[docs]</a><span class="k">def</span> <span class="nf">dap_source_dir</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Return the root path to the DAP source directory.&quot;&quot;&quot;</span>
+    <span class="n">dirlist</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)[:</span><span class="o">-</span><span class="mi">3</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">sep</span><span class="p">,</span> <span class="o">*</span><span class="n">dirlist</span><span class="p">)</span> <span class="k">if</span> <span class="n">dirlist</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span> <span class="k">else</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="o">*</span><span class="n">dirlist</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="idlutils_dir"><a class="viewcode-back" href="../../../mangadap.config.defaults.html#mangadap.config.defaults.idlutils_dir">[docs]</a><span class="k">def</span> <span class="nf">idlutils_dir</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Return the default IDLUTILS directory.&quot;&quot;&quot;</span>
     <span class="n">check_environment_variable</span><span class="p">(</span><span class="s1">&#39;IDLUTILS_DIR&#39;</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">environ</span><span class="p">[</span><span class="s1">&#39;IDLUTILS_DIR&#39;</span><span class="p">]</span></div>
+    <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;IDLUTILS_DIR&#39;</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="sdss_maskbits_file"><a class="viewcode-back" href="../../../mangadap.config.defaults.html#mangadap.config.defaults.sdss_maskbits_file">[docs]</a><span class="k">def</span> <span class="nf">sdss_maskbits_file</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Return the path to the sdss maskbits yanny file.&quot;&quot;&quot;</span>
+    <span class="n">maskbits_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dap_source_dir</span><span class="p">(),</span> <span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="s1">&#39;sdss&#39;</span><span class="p">,</span> <span class="s1">&#39;sdssMaskbits.par&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">maskbits_file</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">maskbits_file</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">maskbits_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">idlutils_dir</span><span class="p">(),</span> <span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="s1">&#39;sdss&#39;</span><span class="p">,</span> <span class="s1">&#39;sdssMaskbits.par&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">maskbits_file</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">maskbits_file</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
 
 
 <div class="viewcode-block" id="default_drp_version"><a class="viewcode-back" href="../../../mangadap.config.defaults.html#mangadap.config.defaults.default_drp_version">[docs]</a><span class="k">def</span> <span class="nf">default_drp_version</span><span class="p">():</span>
@@ -260,7 +278,7 @@
 <span class="sd">    MANGADRP_VER.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">check_environment_variable</span><span class="p">(</span><span class="s1">&#39;MANGADRP_VER&#39;</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">environ</span><span class="p">[</span><span class="s1">&#39;MANGADRP_VER&#39;</span><span class="p">]</span></div>
+    <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;MANGADRP_VER&#39;</span><span class="p">]</span></div>
 
 
 <div class="viewcode-block" id="default_redux_path"><a class="viewcode-back" href="../../../mangadap.config.defaults.html#mangadap.config.defaults.default_redux_path">[docs]</a><span class="k">def</span> <span class="nf">default_redux_path</span><span class="p">(</span><span class="n">drpver</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
@@ -279,7 +297,7 @@
     <span class="k">if</span> <span class="n">drpver</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">drpver</span> <span class="o">=</span> <span class="n">default_drp_version</span><span class="p">()</span>
     <span class="n">check_environment_variable</span><span class="p">(</span><span class="s1">&#39;MANGA_SPECTRO_REDUX&#39;</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;MANGA_SPECTRO_REDUX&#39;</span><span class="p">],</span> <span class="n">drpver</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;MANGA_SPECTRO_REDUX&#39;</span><span class="p">],</span> <span class="n">drpver</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="default_drp_directory_path"><a class="viewcode-back" href="../../../mangadap.config.defaults.html#mangadap.config.defaults.default_drp_directory_path">[docs]</a><span class="k">def</span> <span class="nf">default_drp_directory_path</span><span class="p">(</span><span class="n">plate</span><span class="p">,</span> <span class="n">drpver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">redux_path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
@@ -342,15 +360,6 @@
     <span class="k">return</span> <span class="mf">0.7</span></div>
 
 
-<div class="viewcode-block" id="default_dap_source"><a class="viewcode-back" href="../../../mangadap.config.defaults.html#mangadap.config.defaults.default_dap_source">[docs]</a><span class="k">def</span> <span class="nf">default_dap_source</span><span class="p">():</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Return the root path to the DAP source directory using the</span>
-<span class="sd">    environmental variable MANGADAP_DIR.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">check_environment_variable</span><span class="p">(</span><span class="s1">&#39;MANGADAP_DIR&#39;</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">environ</span><span class="p">[</span><span class="s1">&#39;MANGADAP_DIR&#39;</span><span class="p">]</span></div>
-
-
 <div class="viewcode-block" id="default_dap_version"><a class="viewcode-back" href="../../../mangadap.config.defaults.html#mangadap.config.defaults.default_dap_version">[docs]</a><span class="k">def</span> <span class="nf">default_dap_version</span><span class="p">():</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Return the DAP version defined by the environmental variable</span>
@@ -363,7 +372,7 @@
     <span class="k">except</span> <span class="ne">EnvironmentError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;$MANGADAP_VER undefined in environment; returning internal version&#39;</span><span class="p">)</span>
         <span class="n">no_environ_var</span> <span class="o">=</span> <span class="kc">True</span>
-    <span class="k">return</span> <span class="n">__version__</span> <span class="k">if</span> <span class="n">no_environ_var</span> <span class="k">else</span> <span class="n">environ</span><span class="p">[</span><span class="s1">&#39;MANGADAP_VER&#39;</span><span class="p">]</span></div>
+    <span class="k">return</span> <span class="n">__version__</span> <span class="k">if</span> <span class="n">no_environ_var</span> <span class="k">else</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;MANGADAP_VER&#39;</span><span class="p">]</span></div>
 
 
 <div class="viewcode-block" id="default_analysis_path"><a class="viewcode-back" href="../../../mangadap.config.defaults.html#mangadap.config.defaults.default_analysis_path">[docs]</a><span class="k">def</span> <span class="nf">default_analysis_path</span><span class="p">(</span><span class="n">drpver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dapver</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
@@ -387,7 +396,7 @@
     <span class="k">if</span> <span class="n">dapver</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">dapver</span> <span class="o">=</span> <span class="n">default_dap_version</span><span class="p">()</span>
     <span class="n">check_environment_variable</span><span class="p">(</span><span class="s1">&#39;MANGA_SPECTRO_ANALYSIS&#39;</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;MANGA_SPECTRO_ANALYSIS&#39;</span><span class="p">],</span> <span class="n">drpver</span><span class="p">,</span> <span class="n">dapver</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;MANGA_SPECTRO_ANALYSIS&#39;</span><span class="p">],</span> <span class="n">drpver</span><span class="p">,</span> <span class="n">dapver</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="default_dap_common_path"><a class="viewcode-back" href="../../../mangadap.config.defaults.html#mangadap.config.defaults.default_dap_common_path">[docs]</a><span class="k">def</span> <span class="nf">default_dap_common_path</span><span class="p">(</span><span class="n">plate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ifudesign</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">drpver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dapver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -661,7 +670,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Default search string</span>
     <span class="n">check_environment_variable</span><span class="p">(</span><span class="s1">&#39;MANGACORE_DIR&#39;</span><span class="p">)</span>
-    <span class="n">search_str</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;MANGACORE_DIR&#39;</span><span class="p">],</span> <span class="s1">&#39;platedesign&#39;</span><span class="p">,</span> <span class="s1">&#39;platetargets&#39;</span><span class="p">,</span>
+    <span class="n">search_str</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;MANGACORE_DIR&#39;</span><span class="p">],</span> <span class="s1">&#39;platedesign&#39;</span><span class="p">,</span> <span class="s1">&#39;platetargets&#39;</span><span class="p">,</span>
                               <span class="s1">&#39;plateTargets*.par&#39;</span><span class="p">)</span>
     <span class="n">file_list</span> <span class="o">=</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">search_str</span><span class="p">)</span>                       <span class="c1"># List of files</span>
     <span class="n">nfiles</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">file_list</span><span class="p">)</span>
@@ -682,8 +691,8 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># Default search string</span>
-    <span class="n">check_environment_variable</span><span class="p">(</span><span class="s1">&#39;MANGADAP_DIR&#39;</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;MANGADAP_DIR&#39;</span><span class="p">],</span> <span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="s1">&#39;fix&#39;</span><span class="p">,</span> <span class="s1">&#39;redshift_fix.par&#39;</span><span class="p">)</span></div>
+    <span class="n">dapsrc</span> <span class="o">=</span> <span class="n">dap_source_dir</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="s1">&#39;fix&#39;</span><span class="p">,</span> <span class="s1">&#39;redshift_fix.par&#39;</span><span class="p">)</span></div>
 
 </pre></div>
 

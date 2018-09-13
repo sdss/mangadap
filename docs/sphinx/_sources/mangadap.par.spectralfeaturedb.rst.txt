@@ -1,5 +1,5 @@
-mangadap\.par\.spectralfeaturedb module
-=======================================
+mangadap.par.spectralfeaturedb module
+=====================================
 
 .. automodule:: mangadap.par.spectralfeaturedb
     :members:

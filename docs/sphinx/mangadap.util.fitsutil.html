@@ -100,7 +100,7 @@
 <li class="toctree-l3"><a class="reference internal" href="mangadap.par.html">mangadap.par package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.proc.html">mangadap.proc package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.survey.html">mangadap.survey package</a></li>
-<li class="toctree-l3"><a class="reference internal" href="mangadap.test.html">mangadap.test package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.tests.html">mangadap.tests package</a></li>
 <li class="toctree-l3 current"><a class="reference internal" href="mangadap.util.html">mangadap.util package</a><ul class="current">
 <li class="toctree-l4 current"><a class="reference internal" href="mangadap.util.html#submodules">Submodules</a></li>
 <li class="toctree-l4"><a class="reference internal" href="mangadap.util.html#module-mangadap.util">Module contents</a></li>
@@ -194,7 +194,7 @@ higher-level classes).</p>
 <dt><em>Source location</em>:</dt>
 <dd>$MANGADAP_DIR/python/mangadap/util/fitsutil.py</dd>
 <dt><em>Imports and python version compliance</em>:</dt>
-<dd><div class="first last highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<dd><div class="first last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
 
@@ -216,7 +216,7 @@ higher-level classes).</p>
 <dd><div class="first last line-block">
 <div class="line"><strong>17 May 2016</strong>: Original implementation by K. Westfall (KBW)</div>
 <div class="line"><strong>02 Dec 2016</strong>: (KBW) Added
-<a class="reference internal" href="#mangadap.util.fitsutil.DAPFitsUtil.reconstruct_cube" title="mangadap.util.fitsutil.DAPFitsUtil.reconstruct_cube"><code class="xref py py-func docutils literal"><span class="pre">mangadap.util.fitsutil.DAPFitsUtil.reconstruct_cube()</span></code></a></div>
+<a class="reference internal" href="#mangadap.util.fitsutil.DAPFitsUtil.reconstruct_cube" title="mangadap.util.fitsutil.DAPFitsUtil.reconstruct_cube"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.util.fitsutil.DAPFitsUtil.reconstruct_cube()</span></code></a></div>
 <div class="line"><strong>23 Feb 2016</strong>: (KBW) Added functionality that deals with the
 transpose of the data arrays provided by astropy.io.fits.</div>
 </div>
@@ -225,7 +225,7 @@ transpose of the data arrays provided by astropy.io.fits.</div>
 <dl class="class">
 <dt id="mangadap.util.fitsutil.DAPFitsUtil">
 <em class="property">class </em><code class="descclassname">mangadap.util.fitsutil.</code><code class="descname">DAPFitsUtil</code><a class="reference internal" href="_modules/mangadap/util/fitsutil.html#DAPFitsUtil"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.fitsutil.DAPFitsUtil" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>An abstract class that only implements a set of static methods for
 interaction with MaNGA fits files.</p>
 <div class="admonition-todo admonition" id="index-0">
@@ -275,11 +275,11 @@ the DAP?</li>
 <dt id="mangadap.util.fitsutil.DAPFitsUtil.copy_to_array">
 <em class="property">static </em><code class="descname">copy_to_array</code><span class="sig-paren">(</span><em>hdu</em>, <em>ext='FLUX'</em>, <em>allowed_ext=None</em>, <em>waverange=None</em>, <em>select_bins=None</em>, <em>missing_bins=None</em>, <em>nbins=None</em>, <em>unique_bins=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/fitsutil.html#DAPFitsUtil.copy_to_array"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.fitsutil.DAPFitsUtil.copy_to_array" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return a copy of the selected data array.  The array size is
-always <span class="math">\(N_{\rm spec} \times N_{\rm wavelength}\)</span>; i.e., the
+always <span class="math notranslate nohighlight">\(N_{\rm spec} \times N_{\rm wavelength}\)</span>; i.e., the
 CUBE files are flattened to two dimensions, matching the
 dimensionality of the RSS files.  The spatial positions within
 the original DRP file for each spectrum are given by tuples in
-<code class="xref py py-attr docutils literal"><span class="pre">spatial_index</span></code>.  See <a class="reference internal" href="#mangadap.util.fitsutil.DAPFitsUtil.copy_to_masked_array" title="mangadap.util.fitsutil.DAPFitsUtil.copy_to_masked_array"><code class="xref py py-func docutils literal"><span class="pre">copy_to_masked_array()</span></code></a> for
+<code class="xref py py-attr docutils literal notranslate"><span class="pre">spatial_index</span></code>.  See <a class="reference internal" href="#mangadap.util.fitsutil.DAPFitsUtil.copy_to_masked_array" title="mangadap.util.fitsutil.DAPFitsUtil.copy_to_masked_array"><code class="xref py py-func docutils literal notranslate"><span class="pre">copy_to_masked_array()</span></code></a> for
 arguments.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -298,7 +298,7 @@ selected extension.</td>
 <dt id="mangadap.util.fitsutil.DAPFitsUtil.copy_to_masked_array">
 <em class="property">static </em><code class="descname">copy_to_masked_array</code><span class="sig-paren">(</span><em>hdu</em>, <em>ext='FLUX'</em>, <em>mask_ext=None</em>, <em>flag=None</em>, <em>bitmask=None</em>, <em>allowed_ext=None</em>, <em>waverange=None</em>, <em>select_bins=None</em>, <em>missing_bins=None</em>, <em>nbins=None</em>, <em>unique_bins=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/fitsutil.html#DAPFitsUtil.copy_to_masked_array"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.fitsutil.DAPFitsUtil.copy_to_masked_array" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return a copy of the selected data array as a masked array.
-This is functionally identical to <code class="xref py py-func docutils literal"><span class="pre">DRPFits.copy_to_array()</span></code>,
+This is functionally identical to <code class="xref py py-func docutils literal notranslate"><span class="pre">DRPFits.copy_to_array()</span></code>,
 except the output format is a <a class="reference external" href="http://docs.scipy.org/doc/numpy-1.10.1/reference/maskedarray.baseclass.html#numpy.ma.MaskedArray">numpy.ma.MaskedArray</a>.  The
 pixels that are considered to be masked can be specified using
 the <cite>flag</cite> option.</p>
@@ -313,19 +313,19 @@ computation.  Default is to use the full wavelength
 range.</li>
 <li><strong>ext</strong> (<em>str</em>) – (<strong>Optional</strong>) Name of the extension from which
 to draw the data.  Must be allowed for the current
-<code class="xref py py-attr docutils literal"><span class="pre">mode</span></code>; see <code class="xref py py-attr docutils literal"><span class="pre">spectral_arrays</span></code>.  Default is
+<code class="xref py py-attr docutils literal notranslate"><span class="pre">mode</span></code>; see <code class="xref py py-attr docutils literal notranslate"><span class="pre">spectral_arrays</span></code>.  Default is
 <cite>‘FLUX’</cite>.</li>
 <li><strong>mask_ext</strong> (<em>str</em>) – (<strong>Optional</strong>) Name of the extension with
 the mask bit data.  Must be allowed for the current
-<code class="xref py py-attr docutils literal"><span class="pre">mode</span></code>; see <code class="xref py py-attr docutils literal"><span class="pre">spectral_arrays</span></code>.  Default is
+<code class="xref py py-attr docutils literal notranslate"><span class="pre">mode</span></code>; see <code class="xref py py-attr docutils literal notranslate"><span class="pre">spectral_arrays</span></code>.  Default is
 <cite>‘MASK’</cite>.</li>
 <li><strong>flag</strong> (<em>str</em><em> or </em><em>list</em>) – (<strong>Optional</strong>) (List of) Flag names that
 are considered when deciding if a pixel should be
 masked.  The names <em>must</em> be a valid bit name as defined
 by the provided bitmask (see
-<a class="reference internal" href="mangadap.util.bitmask.html#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.bitmask.BitMask</span></code></a>).  If not
+<a class="reference internal" href="mangadap.util.bitmask.html#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.bitmask.BitMask</span></code></a>).  If not
 provided, <em>ANY</em> non-zero mask bit is omitted.</li>
-<li><strong>bitmask</strong> (<a class="reference internal" href="mangadap.util.bitmask.html#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.bitmask.BitMask</span></code></a>) – (<strong>Optional</strong>) BitMask object used to determine if pixel
+<li><strong>bitmask</strong> (<a class="reference internal" href="mangadap.util.bitmask.html#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.bitmask.BitMask</span></code></a>) – (<strong>Optional</strong>) BitMask object used to determine if pixel
 is flagged as being masked by a specific maskbit.</li>
 <li><strong>allowed_ext</strong> (<em>array-like</em>) – (<strong>Optional</strong>) List of allowed
 extenstions that can be copied to an array; the mask
@@ -334,7 +334,7 @@ extension <strong>must</strong> be one of these.</li>
 array with the valid wavelength range.  Anything outside
 of this range is masked.</li>
 <li><strong>select_bins</strong> (<em>array-like</em>) – (<strong>Optional</strong>) A list of spectra
-in the flattened cube (with shape <span class="math">\(N_{\rm spec}
+in the flattened cube (with shape <span class="math notranslate nohighlight">\(N_{\rm spec}
 \times N_\lambda\)</span>) to return.</li>
 <li><strong>missing_bins</strong> (<em>list</em>) – (<strong>Optional</strong>) A list of bin numbers
 that are missing from the output selection and that will
@@ -355,7 +355,7 @@ selected extension.</p>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">numpy.ndarray</p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">KeyError</span></code> – Raised if <cite>ext</cite> is not a valid extension.</p>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal notranslate"><span class="pre">KeyError</span></code> – Raised if <cite>ext</cite> is not a valid extension.</p>
 </td>
 </tr>
 </tbody>
@@ -444,11 +444,11 @@ WCS system!</p>
 <em class="property">static </em><code class="descname">reconstruct_cube</code><span class="sig-paren">(</span><em>cube_shape</em>, <em>bin_indx</em>, <em>arr</em>, <em>dtype=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/fitsutil.html#DAPFitsUtil.reconstruct_cube"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.fitsutil.DAPFitsUtil.reconstruct_cube" title="Permalink to this definition">¶</a></dt>
 <dd><p>Reconstruct a set of cubes with the specified shape based on a
 set of input 2D arrays.  The cube shape is expected to be
-<span class="math">\((N_x,N_y,N_\lamba)\)</span> and the array shapes are expected to
-be <span class="math">\((N_{\rm spec},N_\lambda)\)</span>, where <span class="math">\(N_{\rm spec}\)</span>
+<span class="math notranslate nohighlight">\((N_x,N_y,N_\lamba)\)</span> and the array shapes are expected to
+be <span class="math notranslate nohighlight">\((N_{\rm spec},N_\lambda)\)</span>, where <span class="math notranslate nohighlight">\(N_{\rm spec}\)</span>
 does <em>not</em> have to match the number of unique bins.  The
 bin_indx array is expected to be a vector with length
-<span class="math">\(N_x\timesN_y\)</span>.</p>
+<span class="math notranslate nohighlight">\(N_x\timesN_y\)</span>.</p>
 <p>The data type of the output arrays is set by the input type if
 the provided dtype is None; otherwise, the code attempts to case
 each output cube accordint to each element of dtype.</p>
@@ -461,10 +461,10 @@ that they can be caught by individual variables.</p>
 <em class="property">static </em><code class="descname">reconstruct_map</code><span class="sig-paren">(</span><em>map_shape</em>, <em>bin_indx</em>, <em>arr</em>, <em>dtype=None</em>, <em>quiet=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/fitsutil.html#DAPFitsUtil.reconstruct_map"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.fitsutil.DAPFitsUtil.reconstruct_map" title="Permalink to this definition">¶</a></dt>
 <dd><p>Reconstruct a set of maps with the specified shape based on a
 set of input 1D arrays.  The map shape is expected to be
-<span class="math">\((N_x,N_y)\)</span> and the array shapes are expected to be
-<span class="math">\((N_{\rm pix},)\)</span>, where <span class="math">\(N_{\rm pix}\)</span> does <em>not</em>
+<span class="math notranslate nohighlight">\((N_x,N_y)\)</span> and the array shapes are expected to be
+<span class="math notranslate nohighlight">\((N_{\rm pix},)\)</span>, where <span class="math notranslate nohighlight">\(N_{\rm pix}\)</span> does <em>not</em>
 have to match the number of unique bins.  The bin_indx array is
-expected to be a vector with length <span class="math">\(N_x\timesN_y\)</span>.</p>
+expected to be a vector with length <span class="math notranslate nohighlight">\(N_x\timesN_y\)</span>.</p>
 <p>The data type of the output arrays is set by the input type if
 the provided dtype is None; otherwise, the code attempts to case
 each output map according to each element of dtype.</p>
@@ -505,16 +505,16 @@ shapes like (…, NAXIS3, NAXIS2, NAXIS1).  This function
 reorders the data arrays to have shapes like (NAXIS1, NAXIS2,
 NAXIS3, …), and ensures that the NAXISn header keywords
 reflect this.  Typically, one would do:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">hdu</span> <span class="o">=</span> <span class="n">transpose_image_data</span><span class="p">(</span><span class="n">fits</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s1">&#39;test.fits&#39;</span><span class="p">))</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hdu</span> <span class="o">=</span> <span class="n">transpose_image_data</span><span class="p">(</span><span class="n">fits</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s1">&#39;test.fits&#39;</span><span class="p">))</span>
 </pre></div>
 </div>
 <p>To prepare the image data for writing to a new fits file, one
 would do:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">transpose_image_data</span><span class="p">(</span><span class="n">hdu</span><span class="p">)</span><span class="o">.</span><span class="n">writeto</span><span class="p">(</span><span class="s1">&#39;new.fits&#39;</span><span class="p">)</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">transpose_image_data</span><span class="p">(</span><span class="n">hdu</span><span class="p">)</span><span class="o">.</span><span class="n">writeto</span><span class="p">(</span><span class="s1">&#39;new.fits&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>If you just want to ensure that the NAXISn keywords refect the
-python native ordering, then use <a class="reference internal" href="#mangadap.util.fitsutil.DAPFitsUtil.match_image_naxis" title="mangadap.util.fitsutil.DAPFitsUtil.match_image_naxis"><code class="xref py py-func docutils literal"><span class="pre">match_image_naxis()</span></code></a>.</p>
+python native ordering, then use <a class="reference internal" href="#mangadap.util.fitsutil.DAPFitsUtil.match_image_naxis" title="mangadap.util.fitsutil.DAPFitsUtil.match_image_naxis"><code class="xref py py-func docutils literal notranslate"><span class="pre">match_image_naxis()</span></code></a>.</p>
 <p>Note that any WCS information will <strong>not</strong> be transposed, which
 you will have to account for if you need the WCS information.</p>
 <div class="admonition-todo admonition" id="index-2">
@@ -527,7 +527,7 @@ WCS system!</p>
 <dl class="staticmethod">
 <dt id="mangadap.util.fitsutil.DAPFitsUtil.unique_bins">
 <em class="property">static </em><code class="descname">unique_bins</code><span class="sig-paren">(</span><em>bin_indx</em>, <em>return_index=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/fitsutil.html#DAPFitsUtil.unique_bins"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.fitsutil.DAPFitsUtil.unique_bins" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the unique bins andthe indices of the unique bins in the
+<dd><p>Get the unique bins and the indices of the unique bins in the
 flattened spatial dimension, ignoring the bins with indices of
 -1.</p>
 </dd></dl>
@@ -536,8 +536,8 @@ flattened spatial dimension, ignoring the bins with indices of
 <dt id="mangadap.util.fitsutil.DAPFitsUtil.write">
 <em class="property">static </em><code class="descname">write</code><span class="sig-paren">(</span><em>hdu</em>, <em>ofile</em>, <em>clobber=False</em>, <em>checksum=False</em>, <em>symlink_dir=None</em>, <em>relative_symlink=True</em>, <em>loggers=None</em>, <em>quiet=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/fitsutil.html#DAPFitsUtil.write"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.fitsutil.DAPFitsUtil.write" title="Permalink to this definition">¶</a></dt>
 <dd><p>Write an HDUList to an output file.  It is expected that the hdu
-was either read by the <a class="reference internal" href="#mangadap.util.fitsutil.DAPFitsUtil.read" title="mangadap.util.fitsutil.DAPFitsUtil.read"><code class="xref py py-func docutils literal"><span class="pre">read()</span></code></a> function, or that the hdu
-was passed through <a class="reference internal" href="#mangadap.util.fitsutil.DAPFitsUtil.transpose_image_data" title="mangadap.util.fitsutil.DAPFitsUtil.transpose_image_data"><code class="xref py py-func docutils literal"><span class="pre">transpose_image_data()</span></code></a> such that
+was either read by the <a class="reference internal" href="#mangadap.util.fitsutil.DAPFitsUtil.read" title="mangadap.util.fitsutil.DAPFitsUtil.read"><code class="xref py py-func docutils literal notranslate"><span class="pre">read()</span></code></a> function, or that the hdu
+was passed through <a class="reference internal" href="#mangadap.util.fitsutil.DAPFitsUtil.transpose_image_data" title="mangadap.util.fitsutil.DAPFitsUtil.transpose_image_data"><code class="xref py py-func docutils literal notranslate"><span class="pre">transpose_image_data()</span></code></a> such that
 HDUList data arrays use C-contiguous memory but with the natural
 array ordering of the axes that follow the NAXIS keywords in the
 header.</p>

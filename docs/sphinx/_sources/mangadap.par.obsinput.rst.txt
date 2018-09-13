@@ -1,5 +1,5 @@
-mangadap\.par\.obsinput module
-==============================
+mangadap.par.obsinput module
+============================
 
 .. automodule:: mangadap.par.obsinput
     :members:

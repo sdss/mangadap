@@ -36,7 +36,7 @@
               href="../../genindex.html"/>
         <link rel="search" title="Search" href="../../search.html"/>
     <link rel="top" title="mangadap 2.2.2 documentation" href="../../index.html"/>
-        <link rel="up" title="Module code" href="../index.html"/> 
+        <link rel="up" title="mangadap" href="../mangadap.html"/> 
 
   
   <script src="../../_static/js/modernizr.min.js"></script>
@@ -138,6 +138,8 @@
         
           <li><a href="../index.html">Module code</a> &raquo;</li>
         
+          <li><a href="../mangadap.html">mangadap</a> &raquo;</li>
+        
       <li>mangadap.dapfits</li>
     
     
@@ -198,7 +200,7 @@
 <span class="sd">        from .util.fileio import channel_dictionary</span>
 <span class="sd">        from .util.exception_tools import print_frame</span>
 <span class="sd">        from .par.obsinput import ObsInputPar</span>
-<span class="sd">        from .config.defaults import default_drp_version, default_dap_source, default_dap_version</span>
+<span class="sd">        from .config.defaults import default_drp_version, dap_source_dir, default_dap_version</span>
 <span class="sd">        from .config.defaults import default_dap_par_file, default_analysis_path</span>
 <span class="sd">        from .config.defaults import default_dap_method, default_dap_method_path</span>
 <span class="sd">        from .config.defaults import default_dap_file_name</span>
@@ -264,8 +266,10 @@
 <span class="kn">from</span> <span class="nn">.util.log</span> <span class="k">import</span> <span class="n">log_output</span>
 <span class="kn">from</span> <span class="nn">.util.fileio</span> <span class="k">import</span> <span class="n">channel_dictionary</span>
 <span class="kn">from</span> <span class="nn">.util.exception_tools</span> <span class="k">import</span> <span class="n">print_frame</span>
+<span class="kn">from</span> <span class="nn">.util.geometry</span> <span class="k">import</span> <span class="n">SemiMajorAxisCoo</span>
+<span class="kn">from</span> <span class="nn">.util.covariance</span> <span class="k">import</span> <span class="n">Covariance</span>
 <span class="kn">from</span> <span class="nn">.par.obsinput</span> <span class="k">import</span> <span class="n">ObsInputPar</span>
-<span class="kn">from</span> <span class="nn">.config.defaults</span> <span class="k">import</span> <span class="n">default_drp_version</span><span class="p">,</span> <span class="n">default_dap_source</span><span class="p">,</span> <span class="n">default_dap_version</span>
+<span class="kn">from</span> <span class="nn">.config.defaults</span> <span class="k">import</span> <span class="n">default_drp_version</span><span class="p">,</span> <span class="n">dap_source_dir</span><span class="p">,</span> <span class="n">default_dap_version</span>
 <span class="kn">from</span> <span class="nn">.config.defaults</span> <span class="k">import</span> <span class="n">default_dap_par_file</span><span class="p">,</span> <span class="n">default_analysis_path</span>
 <span class="kn">from</span> <span class="nn">.config.defaults</span> <span class="k">import</span> <span class="n">default_dap_method</span><span class="p">,</span> <span class="n">default_dap_method_path</span>
 <span class="kn">from</span> <span class="nn">.config.defaults</span> <span class="k">import</span> <span class="n">default_dap_file_name</span>
@@ -285,7 +289,7 @@
 <span class="sd">        - Force read IDLUTILS version as opposed to internal one?</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dapsrc</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="n">_dapsrc</span> <span class="o">=</span> <span class="n">default_dap_source</span><span class="p">()</span> <span class="k">if</span> <span class="n">dapsrc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">)</span>
+        <span class="n">_dapsrc</span> <span class="o">=</span> <span class="n">dap_source_dir</span><span class="p">()</span> <span class="k">if</span> <span class="n">dapsrc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">)</span>
         <span class="n">BitMask</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ini_file</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">_dapsrc</span><span class="p">,</span> <span class="s1">&#39;python&#39;</span><span class="p">,</span> <span class="s1">&#39;mangadap&#39;</span><span class="p">,</span> <span class="s1">&#39;config&#39;</span><span class="p">,</span>
                                                      <span class="s1">&#39;bitmasks&#39;</span><span class="p">,</span> <span class="s1">&#39;dap_quality_bits.ini&#39;</span><span class="p">))</span></div>
 
@@ -296,7 +300,7 @@
 <span class="sd">        - Force read IDLUTILS version as opposed to internal one?</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dapsrc</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="n">_dapsrc</span> <span class="o">=</span> <span class="n">default_dap_source</span><span class="p">()</span> <span class="k">if</span> <span class="n">dapsrc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">)</span>
+        <span class="n">_dapsrc</span> <span class="o">=</span> <span class="n">dap_source_dir</span><span class="p">()</span> <span class="k">if</span> <span class="n">dapsrc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">)</span>
         <span class="n">BitMask</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ini_file</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">_dapsrc</span><span class="p">,</span> <span class="s1">&#39;python&#39;</span><span class="p">,</span> <span class="s1">&#39;mangadap&#39;</span><span class="p">,</span> <span class="s1">&#39;config&#39;</span><span class="p">,</span>
                                                      <span class="s1">&#39;bitmasks&#39;</span><span class="p">,</span> <span class="s1">&#39;dap_maps_bits.ini&#39;</span><span class="p">))</span></div>
 
@@ -307,7 +311,7 @@
 <span class="sd">        - Force read IDLUTILS version as opposed to internal one?</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dapsrc</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="n">_dapsrc</span> <span class="o">=</span> <span class="n">default_dap_source</span><span class="p">()</span> <span class="k">if</span> <span class="n">dapsrc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">)</span>
+        <span class="n">_dapsrc</span> <span class="o">=</span> <span class="n">dap_source_dir</span><span class="p">()</span> <span class="k">if</span> <span class="n">dapsrc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">)</span>
         <span class="n">BitMask</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ini_file</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">_dapsrc</span><span class="p">,</span> <span class="s1">&#39;python&#39;</span><span class="p">,</span> <span class="s1">&#39;mangadap&#39;</span><span class="p">,</span> <span class="s1">&#39;config&#39;</span><span class="p">,</span>
                                                      <span class="s1">&#39;bitmasks&#39;</span><span class="p">,</span> <span class="s1">&#39;dap_cube_bits.ini&#39;</span><span class="p">))</span></div>
 
@@ -917,6 +921,8 @@
                                   <span class="o">*</span><span class="n">sindxlist</span>
                                 <span class="p">])</span>
 
+        <span class="n">extensions</span> <span class="o">=</span> <span class="p">[</span> <span class="n">h</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span> <span class="p">]</span>
+
 <span class="c1">#        print(&#39;maps&#39;)</span>
 <span class="c1">#        pyplot.imshow(self.hdu[&#39;STELLAR_VEL&#39;].data, origin=&#39;lower&#39;, interpolation=&#39;nearest&#39;)</span>
 <span class="c1">#        pyplot.show()</span>
@@ -966,6 +972,11 @@
         <span class="n">ext</span> <span class="o">=</span> <span class="p">[</span> <span class="s1">&#39;BIN_MFLUX&#39;</span><span class="p">,</span> <span class="s1">&#39;STELLAR_VEL&#39;</span><span class="p">,</span> <span class="s1">&#39;STELLAR_SIGMA&#39;</span><span class="p">,</span> <span class="s1">&#39;EMLINE_SFLUX&#39;</span><span class="p">,</span> <span class="s1">&#39;EMLINE_SEW&#39;</span><span class="p">,</span>
                 <span class="s1">&#39;EMLINE_GFLUX&#39;</span><span class="p">,</span> <span class="s1">&#39;EMLINE_GEW&#39;</span><span class="p">,</span> <span class="s1">&#39;EMLINE_GVEL&#39;</span><span class="p">,</span> <span class="s1">&#39;EMLINE_GSIGMA&#39;</span><span class="p">,</span> <span class="s1">&#39;SPECINDEX&#39;</span> <span class="p">]</span>
         <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">ext</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s1">&#39;</span><span class="si">{0}</span><span class="s1">_MASK&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">extensions</span> \
+                    <span class="ow">or</span> <span class="s1">&#39;</span><span class="si">{0}</span><span class="s1">_IVAR&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">extensions</span> \
+                    <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1">_MASK&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">e</span><span class="p">)]</span><span class="o">.</span><span class="n">data</span> <span class="ow">is</span> <span class="kc">None</span> \
+                    <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1">_IVAR&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">e</span><span class="p">)]</span><span class="o">.</span><span class="n">data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>
             <span class="n">indx</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">flagged</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1">_MASK&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">e</span><span class="p">)]</span><span class="o">.</span><span class="n">data</span><span class="p">))</span> \
                             <span class="o">&amp;</span> <span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1">_IVAR&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">e</span><span class="p">)]</span><span class="o">.</span><span class="n">data</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">indx</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
@@ -1116,7 +1127,7 @@
 
 <span class="sd">        MAIN_INCOMP, BLUE_INCOMP, RED_INCOMP propagated to UNRELIABLE</span>
 
-<span class="sd">        NO_ABSORPTION_CORRECTION propaged to NOCORRECTION</span>
+<span class="sd">        NO_ABSORPTION_CORRECTION propagated to NOCORRECTION</span>
 
 <span class="sd">        DIVBYZERO propagated to MATHERROR</span>
 
@@ -1482,9 +1493,10 @@
                                                     <span class="o">-</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">filled</span><span class="p">(</span><span class="mf">0.0</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">nsa_redshift</span><span class="p">,</span> <span class="n">ivar</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
                 <span class="n">stellar_continuum</span><span class="p">[</span><span class="s1">&#39;PAR&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;KIN&#39;</span><span class="p">][:,</span><span class="mi">1</span><span class="p">],</span>
                 <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">stellar_continuum</span><span class="p">[</span><span class="s1">&#39;PAR&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;KINERR&#39;</span><span class="p">][:,</span><span class="mi">1</span><span class="p">],</span> <span class="o">-</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">filled</span><span class="p">(</span><span class="mf">0.0</span><span class="p">),</span>
-<span class="c1"># Only provide the empirical correction</span>
-<span class="c1">#                stellar_continuum[&#39;PAR&#39;].data[&#39;SIGMACORR_SRES&#39;],</span>
-                <span class="n">stellar_continuum</span><span class="p">[</span><span class="s1">&#39;PAR&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;SIGMACORR_EMP&#39;</span><span class="p">],</span>
+<span class="c1"># Error in empirical correction, only output difference in resolution</span>
+<span class="c1"># vectors</span>
+<span class="c1">#                stellar_continuum[&#39;PAR&#39;].data[&#39;SIGMACORR_EMP&#39;],</span>
+                <span class="n">stellar_continuum</span><span class="p">[</span><span class="s1">&#39;PAR&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;SIGMACORR_SRES&#39;</span><span class="p">],</span>
                 <span class="n">stellar_continuum</span><span class="p">[</span><span class="s1">&#39;PAR&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;FABSRESID&#39;</span><span class="p">][:,</span><span class="mi">1</span><span class="p">],</span>
                 <span class="n">stellar_continuum</span><span class="p">[</span><span class="s1">&#39;PAR&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;FABSRESID&#39;</span><span class="p">][:,</span><span class="mi">3</span><span class="p">],</span>
                 <span class="n">stellar_continuum</span><span class="p">[</span><span class="s1">&#39;PAR&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;RCHI2&#39;</span><span class="p">],</span>
@@ -1953,14 +1965,21 @@
 
         <span class="c1">#---------------------------------------------------------------</span>
         <span class="c1"># Construct the hdu list for each input object.</span>
-        <span class="c1"># Binned and model spectra:</span>
-        <span class="n">prihdr</span><span class="p">,</span> <span class="n">speclist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_and_data_cube</span><span class="p">(</span><span class="n">prihdr</span><span class="p">,</span> <span class="n">binned_spectra</span><span class="p">,</span> <span class="n">binned_spectra_3d_hdu</span><span class="p">,</span>
-                                                    <span class="n">stellar_continuum</span><span class="p">,</span> <span class="n">stellar_continuum_3d_hdu</span><span class="p">,</span>
-                                                    <span class="n">emission_line_model</span><span class="p">,</span> <span class="n">emission_line_model_3d_hdu</span><span class="p">)</span>
-        <span class="c1"># Emission-line only models:</span>
-        <span class="n">prihdr</span><span class="p">,</span> <span class="n">elmodlist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">emission_line_model_cube</span><span class="p">(</span><span class="n">prihdr</span><span class="p">,</span> <span class="n">binned_spectra</span><span class="p">,</span>
-                                                          <span class="n">emission_line_model</span><span class="p">,</span>
-                                                          <span class="n">emission_line_model_3d_hdu</span><span class="p">)</span>
+        <span class="c1"># Binned spectra: [&#39;FLUX&#39;, &#39;IVAR&#39;, &#39;WAVE&#39;, &#39;REDCORR&#39;]</span>
+        <span class="n">prihdr</span><span class="p">,</span> <span class="n">binlist</span><span class="p">,</span> <span class="n">mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">binned_data_cube</span><span class="p">(</span><span class="n">prihdr</span><span class="p">,</span> <span class="n">binned_spectra</span><span class="p">,</span> <span class="n">binned_spectra_3d_hdu</span><span class="p">)</span>
+
+        <span class="c1"># Model spectra: [ &#39;MODEL&#39;, &#39;EMLINE&#39;, &#39;EMLINE_BASE&#39;,</span>
+        <span class="c1"># &#39;EMLINE_MASK&#39;]</span>
+        <span class="n">prihdr</span><span class="p">,</span> <span class="n">modlist</span><span class="p">,</span> <span class="n">mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_cubes</span><span class="p">(</span><span class="n">prihdr</span><span class="p">,</span> <span class="n">binned_spectra</span><span class="p">,</span> <span class="n">stellar_continuum</span><span class="p">,</span>
+                                                 <span class="n">stellar_continuum_3d_hdu</span><span class="p">,</span> <span class="n">emission_line_model</span><span class="p">,</span>
+                                                 <span class="n">emission_line_model_3d_hdu</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
+
+        <span class="c1"># Finalize the (stellar-continuum) mask</span>
+        <span class="n">masklist</span> <span class="o">=</span> <span class="n">DAPFitsUtil</span><span class="o">.</span><span class="n">list_of_image_hdus</span><span class="p">([</span><span class="n">mask</span><span class="p">],</span>
+                        <span class="p">[</span> <span class="n">DAPFitsUtil</span><span class="o">.</span><span class="n">finalize_dap_header</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_cubehdr</span><span class="p">,</span> <span class="s1">&#39;FLUX&#39;</span><span class="p">,</span>
+                                                          <span class="n">hduclas2</span><span class="o">=</span><span class="s1">&#39;QUALITY&#39;</span><span class="p">,</span> <span class="n">err</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                                          <span class="n">bit_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">minimum_dtype</span><span class="p">(),</span>
+                                                          <span class="n">prepend</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="p">],</span> <span class="p">[</span><span class="s1">&#39;MASK&#39;</span><span class="p">])</span>
 
         <span class="c1"># Get the BINIDs</span>
         <span class="n">binidlist</span> <span class="o">=</span> <span class="n">combine_binid_extensions</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">drpf</span><span class="p">,</span> <span class="n">binned_spectra</span><span class="p">,</span> <span class="n">stellar_continuum</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span>
@@ -1972,12 +1991,14 @@
                                              <span class="n">stellar_continuum</span><span class="p">,</span> <span class="n">dapsrc</span><span class="o">=</span><span class="n">dapsrc</span><span class="p">,</span>
                                              <span class="n">loggers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">loggers</span><span class="p">,</span> <span class="n">quiet</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">quiet</span><span class="p">)</span>
 
+        <span class="c1"># Ensure extensions are in the correct order</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">HDUList</span><span class="p">([</span> <span class="n">fits</span><span class="o">.</span><span class="n">PrimaryHDU</span><span class="p">(</span><span class="n">header</span><span class="o">=</span><span class="n">prihdr</span><span class="p">),</span>
-                                  <span class="o">*</span><span class="n">speclist</span><span class="p">,</span>
-                                  <span class="o">*</span><span class="n">elmodlist</span><span class="p">,</span>
+                                  <span class="o">*</span><span class="p">(</span><span class="n">binlist</span><span class="p">[:</span><span class="mi">2</span><span class="p">]),</span>
+                                  <span class="o">*</span><span class="n">masklist</span><span class="p">,</span>
+                                  <span class="o">*</span><span class="p">(</span><span class="n">binlist</span><span class="p">[</span><span class="mi">2</span><span class="p">:]),</span>
+                                  <span class="o">*</span><span class="n">modlist</span><span class="p">,</span>
                                   <span class="o">*</span><span class="n">binidlist</span>
                                 <span class="p">])</span>
-
         <span class="c1">#---------------------------------------------------------------</span>
 
         <span class="c1"># Check that the path exists</span>
@@ -1989,12 +2010,6 @@
         <span class="c1"># End</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">quiet</span><span class="p">:</span>
             <span class="n">log_output</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">loggers</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="s1">&#39;-&#39;</span><span class="o">*</span><span class="mi">50</span><span class="p">)</span>
-
-<span class="c1">#        # Restructure the cubes before writing</span>
-<span class="c1">#        DAPFitsUtil.restructure_cube(self.hdu, ext=self.cube_arrays, inverse=True)</span>
-<span class="c1">#        # Write the file</span>
-<span class="c1">#        write_hdu(self.hdu, ofile, clobber=clobber, checksum=True, loggers=self.loggers,</span>
-<span class="c1">#                  quiet=self.quiet)</span>
 
 
 <div class="viewcode-block" id="construct_cube_file._set_paths"><a class="viewcode-back" href="../../mangadap.dapfits.html#mangadap.dapfits.construct_cube_file._set_paths">[docs]</a>    <span class="k">def</span> <span class="nf">_set_paths</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">directory_path</span><span class="p">,</span> <span class="n">dapver</span><span class="p">,</span> <span class="n">analysis_path</span><span class="p">,</span> <span class="n">output_file</span><span class="p">,</span> <span class="n">binned_spectra</span><span class="p">,</span>
@@ -2028,10 +2043,10 @@
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Initialize the mask based on the DRP cube mask.</span>
 
-<span class="sd">        IVAR_INVALID:  Test of invalid inverse variance based on the DRP</span>
-<span class="sd">        file.  THIS SHOULD BE A TEST THAT IS INCLUDED IN THE</span>
-<span class="sd">        BINNED_SPECTRA OBJECT.  This should match the flags from the</span>
-<span class="sd">        stellar continuum model object.</span>
+<span class="sd">        Set IVARINVALID by testing for invalid inverse variance data.</span>
+<span class="sd">        THIS SHOULD BE A TEST THAT IS INCLUDED IN THE BINNED_SPECTRA</span>
+<span class="sd">        OBJECT.  This should match the flags from the stellar continuum</span>
+<span class="sd">        model object.</span>
 
 <span class="sd">        Copy the FORESTAR flags from the DRP file to the this one</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -2049,74 +2064,22 @@
         <span class="k">return</span> <span class="n">mask</span></div>
 
 
-<span class="c1">#    def _include_stellar_continuum_mask(self, mask, stellar_continuum):</span>
+<span class="c1">#    def _assign_cube_arrays(self):</span>
 <span class="c1">#        &quot;&quot;&quot;</span>
-<span class="c1">#        From the stellar continuum model object:</span>
-<span class="c1">#            - copy ARTIFACT</span>
-<span class="c1">#            - copy INVALID_ERROR into IVAR_INVALID</span>
-<span class="c1">#            - consolidate DIDNOTUSE, LOW_SNR, OUTSIDE_RANGE, EML_REGION,</span>
-<span class="c1">#              TPL_PIXELS, TRUNCATED, PPXF_REJECT, INVALID_ERROR into SC_IGNORED</span>
-<span class="c1">#            - copy FIT_FAILED, NEAR_BOUND into SC_FAILED</span>
+<span class="c1">#        Set :attr:`cube_arrays`, which contains the list of extensions in</span>
+<span class="c1">#        :attr:`hdu` that contain spectral data.</span>
 <span class="c1">#        &quot;&quot;&quot;</span>
-<span class="c1">#        indx = self.bitmask.flagged(self.drpf[&#39;MASK&#39;].data, flag=&#39;ARTIFACT&#39;)</span>
-<span class="c1">#        mask[indx] = self.bitmask.turn_on(mask[indx], &#39;ARTIFACT&#39;)</span>
-<span class="c1">#</span>
-<span class="c1">#        indx = self.bitmask.flagged(self.drpf[&#39;MASK&#39;].data, flag=&#39;INVALID_ERROR&#39;)</span>
-<span class="c1">#        mask[indx] = self.bitmask.turn_on(mask[indx], &#39;IVAR_INVALID&#39;)</span>
-<span class="c1">#</span>
-<span class="c1">#        flags = [ &#39;DIDNOTUSE&#39;, &#39;LOW_SNR&#39;, &#39;OUTSIDE_RANGE&#39;, &#39;EML_REGION&#39;, &#39;TPL_PIXELS&#39;, &#39;TRUNCATED&#39;,</span>
-<span class="c1">#                  &#39;PPXF_REJECT&#39;, &#39;INVALID_ERROR&#39; ]</span>
-<span class="c1">#        indx = self.bitmask.flagged(self.drpf[&#39;MASK&#39;].data, flag=flags)</span>
-<span class="c1">#        mask[indx] = self.bitmask.turn_on(mask[indx], &#39;SC_IGNORED&#39;)</span>
-<span class="c1">#</span>
-<span class="c1">#        indx = self.bitmask.flagged(self.drpf[&#39;MASK&#39;].data, flag=&#39;FIT_FAILED&#39;)</span>
-<span class="c1">#        mask[indx] = self.bitmask.turn_on(mask[indx], &#39;SC_FAILED&#39;)</span>
-<span class="c1">#</span>
-<span class="c1">#        return mask</span>
+<span class="c1">#        self.cube_arrays = [ &#39;FLUX&#39;, &#39;IVAR&#39;, &#39;MASK&#39;, &#39;MODEL&#39;, &#39;EMLINE&#39;, &#39;EMLINE_BASE&#39;,</span>
+<span class="c1">#                             &#39;EMLINE_MASK&#39;, &#39;BINID&#39; ]</span>
 
 
-<div class="viewcode-block" id="construct_cube_file._assign_cube_arrays"><a class="viewcode-back" href="../../mangadap.dapfits.html#mangadap.dapfits.construct_cube_file._assign_cube_arrays">[docs]</a>    <span class="k">def</span> <span class="nf">_assign_cube_arrays</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Set :attr:`cube_arrays`, which contains the list of extensions in</span>
-<span class="sd">        :attr:`hdu` that contain spectral data.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">cube_arrays</span> <span class="o">=</span> <span class="p">[</span> <span class="s1">&#39;FLUX&#39;</span><span class="p">,</span> <span class="s1">&#39;IVAR&#39;</span><span class="p">,</span> <span class="s1">&#39;MASK&#39;</span><span class="p">,</span> <span class="s1">&#39;MODEL&#39;</span><span class="p">,</span> <span class="s1">&#39;EMLINE&#39;</span><span class="p">,</span> <span class="s1">&#39;EMLINE_BASE&#39;</span><span class="p">,</span>
-                             <span class="s1">&#39;EMLINE_MASK&#39;</span><span class="p">,</span> <span class="s1">&#39;BINID&#39;</span> <span class="p">]</span></div>
-
-
-<div class="viewcode-block" id="construct_cube_file._get_model_and_data_mask"><a class="viewcode-back" href="../../mangadap.dapfits.html#mangadap.dapfits.construct_cube_file._get_model_and_data_mask">[docs]</a>    <span class="k">def</span> <span class="nf">_get_model_and_data_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">binned_spectra</span><span class="p">,</span> <span class="n">binned_spectra_3d_hdu</span><span class="p">,</span> <span class="n">stellar_continuum</span><span class="p">,</span>
-                                 <span class="n">stellar_continuum_3d_hdu</span><span class="p">,</span> <span class="n">emission_line_model</span><span class="p">,</span>
-                                 <span class="n">emission_line_model_3d_hdu</span><span class="p">):</span>
+<div class="viewcode-block" id="construct_cube_file._get_data_mask"><a class="viewcode-back" href="../../mangadap.dapfits.html#mangadap.dapfits.construct_cube_file._get_data_mask">[docs]</a>    <span class="k">def</span> <span class="nf">_get_data_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">binned_spectra</span><span class="p">,</span> <span class="n">binned_spectra_3d_hdu</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        For the binned spectra:</span>
 <span class="sd">            - consolidate DIDNOTUSE, LOW_SPECCOV, LOW_SNR from</span>
 <span class="sd">              binned_spectra into IGNORED</span>
 <span class="sd">            - consolidate NONE_IN_STACK from binned_spectra into</span>
 <span class="sd">              FLUXINVALID</span>
-
-<span class="sd">        For the model spectra:</span>
-<span class="sd">            - copy INVALID_ERROR from stellar_continuum into</span>
-<span class="sd">              IVARINVALID</span>
-
-<span class="sd">            - copy ARTIFACTs from both stellar_continuum and</span>
-<span class="sd">              emission_line_model</span>
-
-<span class="sd">            - from stellar_continuum, consolidate DIDNOTUSE, LOW_SNR,</span>
-<span class="sd">              OUTSIDE_RANGE, EML_REGION, TPL_PIXELS, TRUNCATED,</span>
-<span class="sd">              PPXF_REJECT, INVALID_ERROR into a list of pixels ignored</span>
-<span class="sd">              by the stellar-continuum fit</span>
-<span class="sd">            - from emission_line_model, consolidate DIDNOTUSE, LOW_SNR,</span>
-<span class="sd">              OUTSIDE_RANGE into a list of pixels ignored by the</span>
-<span class="sd">              emission-line fit</span>
-<span class="sd">            - flag pixels as FITIGNORED if the pixel is ignored by</span>
-<span class="sd">              **both** the stellar-continuum and emission-line fits</span>
-
-<span class="sd">            - from stellar_continuum, consolidate FIT_FAILED and</span>
-<span class="sd">              NEAR_BOUND into a list of failed pixels from the</span>
-<span class="sd">              stellar-continuum fit</span>
-<span class="sd">            - do the same for the emission-line fitting mask</span>
-<span class="sd">            - flag pixels as FIT_FAILED if the pixel failed in</span>
-<span class="sd">              **either** the stellar-continuum or emission-line fits</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Copy the base-level mask</span>
         <span class="n">mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bin_mask</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
@@ -2130,60 +2093,94 @@
                                               <span class="n">flag</span><span class="o">=</span><span class="s1">&#39;NONE_IN_STACK&#39;</span><span class="p">)</span>
         <span class="n">mask</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">turn_on</span><span class="p">(</span><span class="n">mask</span><span class="p">[</span><span class="n">indx</span><span class="p">],</span> <span class="s1">&#39;FLUXINVALID&#39;</span><span class="p">)</span>
 
-        <span class="c1"># Draw from stellar_continuum</span>
-        <span class="n">indx</span> <span class="o">=</span> <span class="n">stellar_continuum</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">flagged</span><span class="p">(</span><span class="n">stellar_continuum_3d_hdu</span><span class="p">[</span><span class="s1">&#39;MASK&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
-                                                 <span class="n">flag</span><span class="o">=</span><span class="s1">&#39;INVALID_ERROR&#39;</span><span class="p">)</span>
-        <span class="n">mask</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">turn_on</span><span class="p">(</span><span class="n">mask</span><span class="p">[</span><span class="n">indx</span><span class="p">],</span> <span class="s1">&#39;IVARINVALID&#39;</span><span class="p">)</span>
-
-        <span class="c1"># Draw from stellar_continuum and emission_line_model</span>
-        <span class="n">indx</span> <span class="o">=</span> <span class="n">stellar_continuum</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">flagged</span><span class="p">(</span><span class="n">stellar_continuum_3d_hdu</span><span class="p">[</span><span class="s1">&#39;MASK&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
-                                                 <span class="n">flag</span><span class="o">=</span><span class="s1">&#39;ARTIFACT&#39;</span><span class="p">)</span> \
-                    <span class="o">|</span> <span class="n">emission_line_model</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">flagged</span><span class="p">(</span><span class="n">emission_line_model_3d_hdu</span><span class="p">[</span><span class="s1">&#39;MASK&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
-                                                          <span class="n">flag</span><span class="o">=</span><span class="s1">&#39;ARTIFACT&#39;</span><span class="p">)</span>
-        <span class="n">mask</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">turn_on</span><span class="p">(</span><span class="n">mask</span><span class="p">[</span><span class="n">indx</span><span class="p">],</span> <span class="s1">&#39;ARTIFACT&#39;</span><span class="p">)</span>
-
-        <span class="n">flags</span> <span class="o">=</span> <span class="p">[</span> <span class="s1">&#39;DIDNOTUSE&#39;</span><span class="p">,</span> <span class="s1">&#39;LOW_SNR&#39;</span><span class="p">,</span> <span class="s1">&#39;OUTSIDE_RANGE&#39;</span><span class="p">,</span> <span class="s1">&#39;EML_REGION&#39;</span><span class="p">,</span> <span class="s1">&#39;TPL_PIXELS&#39;</span><span class="p">,</span>
-                  <span class="s1">&#39;TRUNCATED&#39;</span><span class="p">,</span> <span class="s1">&#39;PPXF_REJECT&#39;</span><span class="p">,</span> <span class="s1">&#39;INVALID_ERROR&#39;</span> <span class="p">]</span>
-        <span class="n">sc_indx</span> <span class="o">=</span> <span class="n">stellar_continuum</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">flagged</span><span class="p">(</span><span class="n">stellar_continuum_3d_hdu</span><span class="p">[</span><span class="s1">&#39;MASK&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
-                                                    <span class="n">flag</span><span class="o">=</span><span class="n">flags</span><span class="p">)</span>
-        <span class="n">flags</span> <span class="o">=</span> <span class="p">[</span> <span class="s1">&#39;DIDNOTUSE&#39;</span><span class="p">,</span> <span class="s1">&#39;LOW_SNR&#39;</span><span class="p">,</span> <span class="s1">&#39;OUTSIDE_RANGE&#39;</span><span class="p">,</span> <span class="s1">&#39;TPL_PIXELS&#39;</span><span class="p">,</span>
-                  <span class="s1">&#39;TRUNCATED&#39;</span><span class="p">,</span> <span class="s1">&#39;PPXF_REJECT&#39;</span><span class="p">,</span> <span class="s1">&#39;INVALID_ERROR&#39;</span> <span class="p">]</span>
-        <span class="n">el_indx</span> <span class="o">=</span> <span class="n">emission_line_model</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">flagged</span><span class="p">(</span><span class="n">emission_line_model_3d_hdu</span><span class="p">[</span><span class="s1">&#39;MASK&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
-                                                      <span class="n">flag</span><span class="o">=</span><span class="n">flags</span><span class="p">)</span>
-
-        <span class="n">mask</span><span class="p">[</span><span class="n">sc_indx</span> <span class="o">&amp;</span> <span class="n">el_indx</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">turn_on</span><span class="p">(</span><span class="n">mask</span><span class="p">[</span><span class="n">sc_indx</span> <span class="o">&amp;</span> <span class="n">el_indx</span><span class="p">],</span> <span class="s1">&#39;FITIGNORED&#39;</span><span class="p">)</span>
-
-<span class="c1">#        pyplot.imshow(numpy.log10(mask[binned_spectra[&#39;BINID&#39;].data &gt; -1,:].reshape(-1,4563)),</span>
-<span class="c1">#                        interpolation=&#39;nearest&#39;, aspect=&#39;auto&#39;)</span>
-<span class="c1">#        pyplot.show()</span>
-
-        <span class="c1"># TODO: What do I do with BAD_SIGMA?</span>
-        <span class="n">sc_indx</span> <span class="o">=</span> <span class="n">stellar_continuum</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">flagged</span><span class="p">(</span><span class="n">stellar_continuum_3d_hdu</span><span class="p">[</span><span class="s1">&#39;MASK&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
-                                                    <span class="n">flag</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;FIT_FAILED&#39;</span><span class="p">,</span> <span class="s1">&#39;NEAR_BOUND&#39;</span><span class="p">])</span>
-        <span class="n">el_indx</span> <span class="o">=</span> <span class="n">emission_line_model</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">flagged</span><span class="p">(</span><span class="n">emission_line_model_3d_hdu</span><span class="p">[</span><span class="s1">&#39;MASK&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
-                                                      <span class="n">flag</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;FIT_FAILED&#39;</span><span class="p">,</span> <span class="s1">&#39;NEAR_BOUND&#39;</span><span class="p">])</span>
-        <span class="n">mask</span><span class="p">[</span><span class="n">sc_indx</span> <span class="o">|</span> <span class="n">el_indx</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">turn_on</span><span class="p">(</span><span class="n">mask</span><span class="p">[</span><span class="n">sc_indx</span> <span class="o">|</span> <span class="n">el_indx</span><span class="p">],</span> <span class="s1">&#39;FITFAILED&#39;</span><span class="p">)</span>
-
-<span class="c1">#        pyplot.imshow(numpy.log10(mask[binned_spectra[&#39;BINID&#39;].data &gt; -1,:].reshape(-1,4563)),</span>
-<span class="c1">#                        interpolation=&#39;nearest&#39;, aspect=&#39;auto&#39;)</span>
-<span class="c1">#        pyplot.show()</span>
-
         <span class="k">return</span> <span class="n">mask</span></div>
 
 
-<div class="viewcode-block" id="construct_cube_file.model_and_data_cube"><a class="viewcode-back" href="../../mangadap.dapfits.html#mangadap.dapfits.construct_cube_file.model_and_data_cube">[docs]</a>    <span class="k">def</span> <span class="nf">model_and_data_cube</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prihdr</span><span class="p">,</span> <span class="n">binned_spectra</span><span class="p">,</span> <span class="n">binned_spectra_3d_hdu</span><span class="p">,</span> <span class="n">stellar_continuum</span><span class="p">,</span>
-                            <span class="n">stellar_continuum_3d_hdu</span><span class="p">,</span> <span class="n">emission_line_model</span><span class="p">,</span>
-                            <span class="n">emission_line_model_3d_hdu</span><span class="p">):</span>
+<div class="viewcode-block" id="construct_cube_file._get_stellar_continuum_mask"><a class="viewcode-back" href="../../mangadap.dapfits.html#mangadap.dapfits.construct_cube_file._get_stellar_continuum_mask">[docs]</a>    <span class="k">def</span> <span class="nf">_get_stellar_continuum_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stellar_continuum</span><span class="p">,</span> <span class="n">stellar_continuum_3d_hdu</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Constructs the &#39;FLUX&#39;, &#39;IVAR&#39;, &#39;MASK&#39;, &#39;WAVE&#39;, &#39;REDCORR&#39;, and</span>
-<span class="sd">        &#39;MODEL&#39; model cube extensions.</span>
+<span class="sd">        For the stellar continuum models:</span>
+<span class="sd">            - copy INVALID_ERROR into IVARINVALID</span>
+<span class="sd">            - copy ARTIFACTs</span>
+<span class="sd">            - consolidate DIDNOTUSE, LOW_SNR, OUTSIDE_RANGE, EML_REGION, TPL_PIXELS, TRUNCATED,</span>
+<span class="sd">              PPXF_REJECT, INVALID_ERROR, ARTIFACT into FITIGNORED</span>
+<span class="sd">            - consolidate FIT_FAILED and NEAR_BOUND into FITFAILED</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Copy the base-level mask</span>
+        <span class="n">_mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bin_mask</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="k">if</span> <span class="n">mask</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">mask</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="c1"># Flag invalid errors and artifacts</span>
+        <span class="n">indx</span> <span class="o">=</span> <span class="n">stellar_continuum</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">flagged</span><span class="p">(</span><span class="n">stellar_continuum_3d_hdu</span><span class="p">[</span><span class="s1">&#39;MASK&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+                                                 <span class="n">flag</span><span class="o">=</span><span class="s1">&#39;INVALID_ERROR&#39;</span><span class="p">)</span>
+        <span class="n">_mask</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">turn_on</span><span class="p">(</span><span class="n">_mask</span><span class="p">[</span><span class="n">indx</span><span class="p">],</span> <span class="s1">&#39;IVARINVALID&#39;</span><span class="p">)</span>
+        <span class="n">indx</span> <span class="o">=</span> <span class="n">stellar_continuum</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">flagged</span><span class="p">(</span><span class="n">stellar_continuum_3d_hdu</span><span class="p">[</span><span class="s1">&#39;MASK&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+                                                 <span class="n">flag</span><span class="o">=</span><span class="s1">&#39;ARTIFACT&#39;</span><span class="p">)</span>
+        <span class="n">_mask</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">turn_on</span><span class="p">(</span><span class="n">_mask</span><span class="p">[</span><span class="n">indx</span><span class="p">],</span> <span class="s1">&#39;ARTIFACT&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Set which pixel were ignored in the fit</span>
+        <span class="n">flags</span> <span class="o">=</span> <span class="p">[</span> <span class="s1">&#39;DIDNOTUSE&#39;</span><span class="p">,</span> <span class="s1">&#39;LOW_SNR&#39;</span><span class="p">,</span> <span class="s1">&#39;OUTSIDE_RANGE&#39;</span><span class="p">,</span> <span class="s1">&#39;EML_REGION&#39;</span><span class="p">,</span> <span class="s1">&#39;TPL_PIXELS&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;TRUNCATED&#39;</span><span class="p">,</span> <span class="s1">&#39;PPXF_REJECT&#39;</span><span class="p">,</span> <span class="s1">&#39;INVALID_ERROR&#39;</span><span class="p">,</span> <span class="s1">&#39;ARTIFACT&#39;</span> <span class="p">]</span>
+        <span class="n">indx</span> <span class="o">=</span> <span class="n">stellar_continuum</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">flagged</span><span class="p">(</span><span class="n">stellar_continuum_3d_hdu</span><span class="p">[</span><span class="s1">&#39;MASK&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">flag</span><span class="o">=</span><span class="n">flags</span><span class="p">)</span>
+        <span class="n">_mask</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">turn_on</span><span class="p">(</span><span class="n">_mask</span><span class="p">[</span><span class="n">indx</span><span class="p">],</span> <span class="s1">&#39;FITIGNORED&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Set which pixels failed during the fit</span>
+        <span class="c1"># TODO: What do I do with BAD_SIGMA?</span>
+        <span class="n">indx</span> <span class="o">=</span> <span class="n">stellar_continuum</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">flagged</span><span class="p">(</span><span class="n">stellar_continuum_3d_hdu</span><span class="p">[</span><span class="s1">&#39;MASK&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+                                                 <span class="n">flag</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;FIT_FAILED&#39;</span><span class="p">,</span> <span class="s1">&#39;NEAR_BOUND&#39;</span><span class="p">])</span>
+        <span class="n">_mask</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">turn_on</span><span class="p">(</span><span class="n">_mask</span><span class="p">[</span><span class="n">indx</span><span class="p">],</span> <span class="s1">&#39;FITFAILED&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_include_no_model_mask</span><span class="p">(</span><span class="n">_mask</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="construct_cube_file._get_emission_line_model_mask"><a class="viewcode-back" href="../../mangadap.dapfits.html#mangadap.dapfits.construct_cube_file._get_emission_line_model_mask">[docs]</a>    <span class="k">def</span> <span class="nf">_get_emission_line_model_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">emission_line_model</span><span class="p">,</span> <span class="n">emission_line_model_3d_hdu</span><span class="p">,</span>
+                                      <span class="n">mask</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        For the emission-line models:</span>
+<span class="sd">            - copy INVALID_ERROR into IVARINVALID</span>
+<span class="sd">            - copy ARTIFACTs</span>
+<span class="sd">            - consolidate DIDNOTUSE, LOW_SNR, OUTSIDE_RANGE, EML_REGION, TPL_PIXELS, TRUNCATED,</span>
+<span class="sd">              PPXF_REJECT, INVALID_ERROR, ARTIFACT into ELIGNORED</span>
+<span class="sd">            - consolidate FIT_FAILED and NEAR_BOUND into ELFAILED</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Copy the base-level mask</span>
+        <span class="n">_mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bin_mask</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="k">if</span> <span class="n">mask</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">mask</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="c1"># Flag invalid errors and artifacts</span>
+        <span class="n">indx</span> <span class="o">=</span> <span class="n">emission_line_model</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">flagged</span><span class="p">(</span><span class="n">emission_line_model_3d_hdu</span><span class="p">[</span><span class="s1">&#39;MASK&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+                                                   <span class="n">flag</span><span class="o">=</span><span class="s1">&#39;INVALID_ERROR&#39;</span><span class="p">)</span>
+        <span class="n">_mask</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">turn_on</span><span class="p">(</span><span class="n">_mask</span><span class="p">[</span><span class="n">indx</span><span class="p">],</span> <span class="s1">&#39;IVARINVALID&#39;</span><span class="p">)</span>
+        <span class="n">indx</span> <span class="o">=</span> <span class="n">emission_line_model</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">flagged</span><span class="p">(</span><span class="n">emission_line_model_3d_hdu</span><span class="p">[</span><span class="s1">&#39;MASK&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+                                                   <span class="n">flag</span><span class="o">=</span><span class="s1">&#39;ARTIFACT&#39;</span><span class="p">)</span>
+        <span class="n">_mask</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">turn_on</span><span class="p">(</span><span class="n">_mask</span><span class="p">[</span><span class="n">indx</span><span class="p">],</span> <span class="s1">&#39;ARTIFACT&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Set which pixel were ignored in the fit</span>
+        <span class="n">flags</span> <span class="o">=</span> <span class="p">[</span> <span class="s1">&#39;DIDNOTUSE&#39;</span><span class="p">,</span> <span class="s1">&#39;LOW_SNR&#39;</span><span class="p">,</span> <span class="s1">&#39;OUTSIDE_RANGE&#39;</span><span class="p">,</span> <span class="s1">&#39;TPL_PIXELS&#39;</span><span class="p">,</span>
+                  <span class="s1">&#39;TRUNCATED&#39;</span><span class="p">,</span> <span class="s1">&#39;PPXF_REJECT&#39;</span><span class="p">,</span> <span class="s1">&#39;INVALID_ERROR&#39;</span><span class="p">,</span> <span class="s1">&#39;ARTIFACT&#39;</span> <span class="p">]</span>
+        <span class="n">indx</span> <span class="o">=</span> <span class="n">emission_line_model</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">flagged</span><span class="p">(</span><span class="n">emission_line_model_3d_hdu</span><span class="p">[</span><span class="s1">&#39;MASK&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+                                                   <span class="n">flag</span><span class="o">=</span><span class="n">flags</span><span class="p">)</span>
+        <span class="n">_mask</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">turn_on</span><span class="p">(</span><span class="n">_mask</span><span class="p">[</span><span class="n">indx</span><span class="p">],</span> <span class="s1">&#39;ELIGNORED&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Set which pixels failed during the fit</span>
+        <span class="n">indx</span> <span class="o">=</span> <span class="n">emission_line_model</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">flagged</span><span class="p">(</span><span class="n">emission_line_model_3d_hdu</span><span class="p">[</span><span class="s1">&#39;MASK&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+                                                   <span class="n">flag</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;FIT_FAILED&#39;</span><span class="p">,</span> <span class="s1">&#39;NEAR_BOUND&#39;</span><span class="p">])</span>
+        <span class="n">_mask</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">turn_on</span><span class="p">(</span><span class="n">_mask</span><span class="p">[</span><span class="n">indx</span><span class="p">],</span> <span class="s1">&#39;ELFAILED&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_include_no_model_mask</span><span class="p">(</span><span class="n">_mask</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="construct_cube_file.binned_data_cube"><a class="viewcode-back" href="../../mangadap.dapfits.html#mangadap.dapfits.construct_cube_file.binned_data_cube">[docs]</a>    <span class="k">def</span> <span class="nf">binned_data_cube</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prihdr</span><span class="p">,</span> <span class="n">binned_spectra</span><span class="p">,</span> <span class="n">binned_spectra_3d_hdu</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Constructs the &#39;FLUX&#39;, &#39;IVAR&#39;, &#39;WAVE&#39;, and &#39;REDCORR&#39; model cube</span>
+<span class="sd">        extensions, and begins the construction of the &#39;MASK&#39;.</span>
+
+<span class="sd">        Returns the primary header, a list of ImageHDUs, and the mask</span>
+<span class="sd">        array.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1">#---------------------------------------------------------------</span>
-        <span class="n">ext</span> <span class="o">=</span> <span class="p">[</span> <span class="s1">&#39;FLUX&#39;</span><span class="p">,</span> <span class="s1">&#39;IVAR&#39;</span><span class="p">,</span> <span class="s1">&#39;MASK&#39;</span><span class="p">,</span> <span class="s1">&#39;WAVE&#39;</span><span class="p">,</span> <span class="s1">&#39;REDCORR&#39;</span><span class="p">,</span> <span class="s1">&#39;MODEL&#39;</span> <span class="p">]</span>
+        <span class="n">ext</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;FLUX&#39;</span><span class="p">,</span> <span class="s1">&#39;IVAR&#39;</span><span class="p">,</span> <span class="s1">&#39;WAVE&#39;</span><span class="p">,</span> <span class="s1">&#39;REDCORR&#39;</span><span class="p">]</span>
 
-        <span class="k">if</span> <span class="n">binned_spectra</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">stellar_continuum</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">emission_line_model</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">binned_spectra</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="c1"># Construct and return the empty hdus</span>
-            <span class="k">return</span> <span class="n">prihdr</span><span class="p">,</span> <span class="n">DAPFitsUtil</span><span class="o">.</span><span class="n">empty_hdus</span><span class="p">(</span><span class="n">ext</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">prihdr</span><span class="p">,</span> <span class="n">DAPFitsUtil</span><span class="o">.</span><span class="n">empty_hdus</span><span class="p">(</span><span class="n">ext</span><span class="p">),</span> <span class="kc">None</span>
 
         <span class="c1">#---------------------------------------------------------------</span>
         <span class="c1"># Add data to the primary header</span>
@@ -2192,6 +2189,51 @@
         <span class="n">prihdr</span> <span class="o">=</span> <span class="n">binned_spectra</span><span class="o">.</span><span class="n">_initialize_primary_header</span><span class="p">(</span><span class="n">hdr</span><span class="o">=</span><span class="n">prihdr</span><span class="p">)</span>
         <span class="n">prihdr</span> <span class="o">=</span> <span class="n">binned_spectra</span><span class="o">.</span><span class="n">_add_method_header</span><span class="p">(</span><span class="n">prihdr</span><span class="p">)</span>
         <span class="n">prihdr</span> <span class="o">=</span> <span class="n">binned_spectra</span><span class="o">.</span><span class="n">_add_reddening_header</span><span class="p">(</span><span class="n">prihdr</span><span class="p">)</span>
+
+        <span class="c1">#---------------------------------------------------------------</span>
+        <span class="c1"># Get the extension headers; The WAVE and REDCORR extensions</span>
+        <span class="c1"># have no header.</span>
+        <span class="n">hdr</span> <span class="o">=</span> <span class="p">[</span> <span class="n">DAPFitsUtil</span><span class="o">.</span><span class="n">finalize_dap_header</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_cubehdr</span><span class="p">,</span> <span class="s1">&#39;FLUX&#39;</span><span class="p">,</span>
+                                                <span class="n">bunit</span><span class="o">=</span><span class="s1">&#39;1E-17 erg/s/cm^2/ang/spaxel&#39;</span><span class="p">,</span> <span class="n">err</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                                <span class="n">qual</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+                <span class="n">DAPFitsUtil</span><span class="o">.</span><span class="n">finalize_dap_header</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_cubehdr</span><span class="p">,</span> <span class="s1">&#39;FLUX&#39;</span><span class="p">,</span> <span class="n">hduclas2</span><span class="o">=</span><span class="s1">&#39;ERROR&#39;</span><span class="p">,</span>
+                                                <span class="n">bunit</span><span class="o">=</span><span class="s1">&#39;(1E-17 erg/s/cm^2/ang/spaxel)^{-2}&#39;</span><span class="p">,</span>
+                                                <span class="n">qual</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">prepend</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+                <span class="kc">None</span><span class="p">,</span>
+                <span class="kc">None</span>
+              <span class="p">]</span>
+
+        <span class="c1">#---------------------------------------------------------------</span>
+        <span class="c1"># Get the data arrays</span>
+        <span class="c1"># Reddened flux data</span>
+        <span class="n">flux</span><span class="p">,</span> <span class="n">ivar</span> <span class="o">=</span> <span class="n">binned_spectra</span><span class="o">.</span><span class="n">galext</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">binned_spectra_3d_hdu</span><span class="p">[</span><span class="s1">&#39;FLUX&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+                                                 <span class="n">deredden</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                                 <span class="n">ivar</span><span class="o">=</span><span class="n">binned_spectra_3d_hdu</span><span class="p">[</span><span class="s1">&#39;IVAR&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="c1"># Return the primary header, the list of ImageHDUs, and the mask</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">[</span> <span class="n">flux</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">float_dtype</span><span class="p">),</span> <span class="n">ivar</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">float_dtype</span><span class="p">),</span>
+                 <span class="n">binned_spectra</span><span class="p">[</span><span class="s1">&#39;WAVE&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">float_dtype</span><span class="p">),</span>
+                 <span class="n">binned_spectra</span><span class="p">[</span><span class="s1">&#39;REDCORR&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">float_dtype</span><span class="p">)</span> <span class="p">]</span>
+        <span class="k">return</span> <span class="n">prihdr</span><span class="p">,</span> <span class="n">DAPFitsUtil</span><span class="o">.</span><span class="n">list_of_image_hdus</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">hdr</span><span class="p">,</span> <span class="n">ext</span><span class="p">),</span> \
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_get_data_mask</span><span class="p">(</span><span class="n">binned_spectra</span><span class="p">,</span> <span class="n">binned_spectra_3d_hdu</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="construct_cube_file.model_cubes"><a class="viewcode-back" href="../../mangadap.dapfits.html#mangadap.dapfits.construct_cube_file.model_cubes">[docs]</a>    <span class="k">def</span> <span class="nf">model_cubes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prihdr</span><span class="p">,</span> <span class="n">binned_spectra</span><span class="p">,</span> <span class="n">stellar_continuum</span><span class="p">,</span> <span class="n">stellar_continuum_3d_hdu</span><span class="p">,</span>
+                    <span class="n">emission_line_model</span><span class="p">,</span> <span class="n">emission_line_model_3d_hdu</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Constructs the &#39;MODEL&#39;, &#39;EMLINE&#39;, &#39;EMLINE_BASE&#39;, and</span>
+<span class="sd">        &#39;EMLINE_MASK&#39; model cube extensions, adds the model information</span>
+<span class="sd">        to the header, and construct the stellar-continuum mask.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1">#---------------------------------------------------------------</span>
+        <span class="n">ext</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;MODEL&#39;</span><span class="p">,</span> <span class="s1">&#39;EMLINE&#39;</span><span class="p">,</span> <span class="s1">&#39;EMLINE_BASE&#39;</span><span class="p">,</span> <span class="s1">&#39;EMLINE_MASK&#39;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">binned_spectra</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">stellar_continuum</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">emission_line_model</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Construct and return empty hdus</span>
+            <span class="k">return</span> <span class="n">prihdr</span><span class="p">,</span> <span class="n">DAPFitsUtil</span><span class="o">.</span><span class="n">empty_hdus</span><span class="p">(</span><span class="n">ext</span><span class="p">),</span> <span class="n">mask</span>
+
+        <span class="c1">#---------------------------------------------------------------</span>
+        <span class="c1"># Add the model data to the primary header</span>
         <span class="n">prihdr</span> <span class="o">=</span> <span class="n">stellar_continuum</span><span class="o">.</span><span class="n">_initialize_primary_header</span><span class="p">(</span><span class="n">hdr</span><span class="o">=</span><span class="n">prihdr</span><span class="p">)</span>
         <span class="n">prihdr</span> <span class="o">=</span> <span class="n">stellar_continuum</span><span class="o">.</span><span class="n">_add_method_header</span><span class="p">(</span><span class="n">prihdr</span><span class="p">)</span>
         <span class="n">prihdr</span> <span class="o">=</span> <span class="n">emission_line_model</span><span class="o">.</span><span class="n">_initialize_primary_header</span><span class="p">(</span><span class="n">hdr</span><span class="o">=</span><span class="n">prihdr</span><span class="p">)</span>
@@ -2199,114 +2241,62 @@
 
         <span class="c1">#---------------------------------------------------------------</span>
         <span class="c1"># Get the extension headers</span>
-        <span class="n">hdr</span> <span class="o">=</span> <span class="p">[</span> <span class="n">DAPFitsUtil</span><span class="o">.</span><span class="n">finalize_dap_header</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_cubehdr</span><span class="p">,</span> <span class="s1">&#39;FLUX&#39;</span><span class="p">,</span>
-                                                <span class="n">bunit</span><span class="o">=</span><span class="s1">&#39;1E-17 erg/s/cm^2/ang/spaxel&#39;</span><span class="p">,</span> <span class="n">err</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                                                <span class="n">qual</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
-                <span class="n">DAPFitsUtil</span><span class="o">.</span><span class="n">finalize_dap_header</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_cubehdr</span><span class="p">,</span> <span class="s1">&#39;FLUX&#39;</span><span class="p">,</span> <span class="n">hduclas2</span><span class="o">=</span><span class="s1">&#39;ERROR&#39;</span><span class="p">,</span>
-                                                <span class="n">bunit</span><span class="o">=</span><span class="s1">&#39;(1E-17 erg/s/cm^2/ang/spaxel)^{-2}&#39;</span><span class="p">,</span>
-                                                <span class="n">qual</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">prepend</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
-                <span class="n">DAPFitsUtil</span><span class="o">.</span><span class="n">finalize_dap_header</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_cubehdr</span><span class="p">,</span> <span class="s1">&#39;FLUX&#39;</span><span class="p">,</span> <span class="n">hduclas2</span><span class="o">=</span><span class="s1">&#39;QUALITY&#39;</span><span class="p">,</span>
-                                                 <span class="n">err</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">bit_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">minimum_dtype</span><span class="p">(),</span>
-                                                 <span class="n">prepend</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
-                <span class="kc">None</span><span class="p">,</span>
-                <span class="kc">None</span><span class="p">,</span>
-                <span class="n">DAPFitsUtil</span><span class="o">.</span><span class="n">finalize_dap_header</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_cubehdr</span><span class="p">,</span> <span class="s1">&#39;MODEL&#39;</span><span class="p">,</span>
-                                                 <span class="n">bunit</span><span class="o">=</span><span class="s1">&#39;1E-17 erg/s/cm^2/ang/spaxel&#39;</span><span class="p">,</span> <span class="n">qual</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                                                 <span class="n">prepend</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">hdr</span> <span class="o">=</span> <span class="p">[</span> <span class="n">DAPFitsUtil</span><span class="o">.</span><span class="n">finalize_dap_header</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_cubehdr</span><span class="p">,</span> <span class="s1">&#39;MODEL&#39;</span><span class="p">,</span>
+                                                <span class="n">bunit</span><span class="o">=</span><span class="s1">&#39;1E-17 erg/s/cm^2/ang/spaxel&#39;</span><span class="p">,</span> <span class="n">qual</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                                <span class="n">prepend</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+                <span class="n">DAPFitsUtil</span><span class="o">.</span><span class="n">finalize_dap_header</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_cubehdr</span><span class="p">,</span> <span class="s1">&#39;EMLINE&#39;</span><span class="p">,</span>
+                                                <span class="n">bunit</span><span class="o">=</span><span class="s1">&#39;1E-17 erg/s/cm^2/ang/spaxel&#39;</span><span class="p">,</span> <span class="n">qual</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+                <span class="n">DAPFitsUtil</span><span class="o">.</span><span class="n">finalize_dap_header</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_cubehdr</span><span class="p">,</span> <span class="s1">&#39;EMLINE&#39;</span><span class="p">,</span>
+                                                <span class="n">bunit</span><span class="o">=</span><span class="s1">&#39;1E-17 erg/s/cm^2/ang/spaxel&#39;</span><span class="p">,</span> <span class="n">qual</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+                <span class="n">DAPFitsUtil</span><span class="o">.</span><span class="n">finalize_dap_header</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_cubehdr</span><span class="p">,</span> <span class="s1">&#39;EMLINE&#39;</span><span class="p">,</span> <span class="n">hduclas2</span><span class="o">=</span><span class="s1">&#39;QUALITY&#39;</span><span class="p">,</span>
+                                                 <span class="n">bit_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">minimum_dtype</span><span class="p">())</span>
               <span class="p">]</span>
 
         <span class="c1">#---------------------------------------------------------------</span>
         <span class="c1"># Get the data arrays</span>
-        <span class="c1"># Reddened flux data</span>
-        <span class="n">flux</span><span class="p">,</span> <span class="n">ivar</span> <span class="o">=</span> <span class="n">binned_spectra</span><span class="o">.</span><span class="n">galext</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">binned_spectra_3d_hdu</span><span class="p">[</span><span class="s1">&#39;FLUX&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">deredden</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                                                 <span class="n">ivar</span><span class="o">=</span><span class="n">binned_spectra_3d_hdu</span><span class="p">[</span><span class="s1">&#39;IVAR&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
-        <span class="n">flux</span> <span class="o">=</span> <span class="n">flux</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">float_dtype</span><span class="p">)</span>
-        <span class="n">ivar</span> <span class="o">=</span> <span class="n">ivar</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">float_dtype</span><span class="p">)</span>
         <span class="c1"># Best-fitting composite model</span>
         <span class="n">model</span> <span class="o">=</span> <span class="n">stellar_continuum_3d_hdu</span><span class="p">[</span><span class="s1">&#39;FLUX&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span> <span class="o">+</span> <span class="n">emission_line_model_3d_hdu</span><span class="p">[</span><span class="s1">&#39;FLUX&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span> \
                     <span class="o">+</span> <span class="n">emission_line_model_3d_hdu</span><span class="p">[</span><span class="s1">&#39;BASE&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
         <span class="c1"># with reddening</span>
-        <span class="n">model</span> <span class="o">=</span> <span class="n">binned_spectra</span><span class="o">.</span><span class="n">galext</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">deredden</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">float_dtype</span><span class="p">)</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">binned_spectra</span><span class="o">.</span><span class="n">galext</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">deredden</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">line</span> <span class="o">=</span> <span class="n">binned_spectra</span><span class="o">.</span><span class="n">galext</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">emission_line_model_3d_hdu</span><span class="p">[</span><span class="s1">&#39;FLUX&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">deredden</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">base</span> <span class="o">=</span> <span class="n">binned_spectra</span><span class="o">.</span><span class="n">galext</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">emission_line_model_3d_hdu</span><span class="p">[</span><span class="s1">&#39;BASE&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">deredden</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
-        <span class="c1"># Spectral mask</span>
-        <span class="n">mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_model_and_data_mask</span><span class="p">(</span><span class="n">binned_spectra</span><span class="p">,</span> <span class="n">binned_spectra_3d_hdu</span><span class="p">,</span>
-                                             <span class="n">stellar_continuum</span><span class="p">,</span> <span class="n">stellar_continuum_3d_hdu</span><span class="p">,</span>
-                                             <span class="n">emission_line_model</span><span class="p">,</span> <span class="n">emission_line_model_3d_hdu</span><span class="p">)</span>
+        <span class="c1"># Stellar continuum mask</span>
+        <span class="n">scmask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_stellar_continuum_mask</span><span class="p">(</span><span class="n">stellar_continuum</span><span class="p">,</span> <span class="n">stellar_continuum_3d_hdu</span><span class="p">,</span>
+                                                  <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
+        <span class="c1"># Emission-line Mask</span>
+        <span class="n">elmask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_emission_line_model_mask</span><span class="p">(</span><span class="n">emission_line_model</span><span class="p">,</span>
+                                                    <span class="n">emission_line_model_3d_hdu</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
 
-        <span class="n">data</span> <span class="o">=</span> <span class="p">[</span> <span class="n">flux</span><span class="p">,</span> <span class="n">ivar</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">binned_spectra</span><span class="p">[</span><span class="s1">&#39;WAVE&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">float_dtype</span><span class="p">),</span>
-                 <span class="n">binned_spectra</span><span class="p">[</span><span class="s1">&#39;REDCORR&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">float_dtype</span><span class="p">),</span> <span class="n">model</span> <span class="p">]</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">[</span><span class="n">model</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">float_dtype</span><span class="p">),</span> <span class="n">line</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">float_dtype</span><span class="p">),</span>
+                <span class="n">base</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">float_dtype</span><span class="p">),</span> <span class="n">elmask</span><span class="p">]</span>
 
         <span class="c1"># Return the primary header and the list of HDUs</span>
-        <span class="k">return</span> <span class="n">prihdr</span><span class="p">,</span> <span class="n">DAPFitsUtil</span><span class="o">.</span><span class="n">list_of_image_hdus</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">hdr</span><span class="p">,</span> <span class="n">ext</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">prihdr</span><span class="p">,</span> <span class="n">DAPFitsUtil</span><span class="o">.</span><span class="n">list_of_image_hdus</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">hdr</span><span class="p">,</span> <span class="n">ext</span><span class="p">),</span> <span class="n">scmask</span></div>
 
 
-<div class="viewcode-block" id="construct_cube_file._get_emission_line_model_mask"><a class="viewcode-back" href="../../mangadap.dapfits.html#mangadap.dapfits.construct_cube_file._get_emission_line_model_mask">[docs]</a>    <span class="k">def</span> <span class="nf">_get_emission_line_model_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">emission_line_model</span><span class="p">,</span> <span class="n">emission_line_model_3d_hdu</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        From the emission-line model object:</span>
-<span class="sd">            - copy ARTIFACT</span>
-<span class="sd">            - consolidate DIDNOTUSE, LOW_SNR, OUTSIDE_RANGE into IGNORED_EL</span>
-<span class="sd">            - copy FIT_FAILED, NEAR_BOUND into ELFAILED</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># Copy the base-level mask</span>
-        <span class="n">mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bin_mask</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-
-        <span class="c1"># Include the emission-line masks</span>
-        <span class="n">indx</span> <span class="o">=</span> <span class="n">emission_line_model</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">flagged</span><span class="p">(</span><span class="n">emission_line_model_3d_hdu</span><span class="p">[</span><span class="s1">&#39;MASK&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
-                                                   <span class="n">flag</span><span class="o">=</span><span class="s1">&#39;ARTIFACT&#39;</span><span class="p">)</span>
-        <span class="n">mask</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">turn_on</span><span class="p">(</span><span class="n">mask</span><span class="p">[</span><span class="n">indx</span><span class="p">],</span> <span class="s1">&#39;ARTIFACT&#39;</span><span class="p">)</span>
-
-        <span class="n">indx</span> <span class="o">=</span> <span class="n">emission_line_model</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">flagged</span><span class="p">(</span><span class="n">emission_line_model_3d_hdu</span><span class="p">[</span><span class="s1">&#39;MASK&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
-                                                   <span class="n">flag</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;DIDNOTUSE&#39;</span><span class="p">,</span> <span class="s1">&#39;LOW_SNR&#39;</span><span class="p">,</span> <span class="s1">&#39;OUTSIDE_RANGE&#39;</span><span class="p">,</span>
-                                                         <span class="s1">&#39;TPL_PIXELS&#39;</span><span class="p">,</span> <span class="s1">&#39;TRUNCATED&#39;</span><span class="p">,</span> <span class="s1">&#39;PPXF_REJECT&#39;</span><span class="p">,</span>
-                                                         <span class="s1">&#39;INVALID_ERROR&#39;</span><span class="p">])</span>
-        <span class="n">mask</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">turn_on</span><span class="p">(</span><span class="n">mask</span><span class="p">[</span><span class="n">indx</span><span class="p">],</span> <span class="s1">&#39;ELIGNORED&#39;</span><span class="p">)</span>
-
-        <span class="n">indx</span> <span class="o">=</span> <span class="n">emission_line_model</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">flagged</span><span class="p">(</span><span class="n">emission_line_model_3d_hdu</span><span class="p">[</span><span class="s1">&#39;MASK&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
-                                                   <span class="n">flag</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;FIT_FAILED&#39;</span><span class="p">,</span> <span class="s1">&#39;NEAR_BOUND&#39;</span><span class="p">])</span>
-        <span class="n">mask</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">turn_on</span><span class="p">(</span><span class="n">mask</span><span class="p">[</span><span class="n">indx</span><span class="p">],</span> <span class="s1">&#39;ELFAILED&#39;</span><span class="p">)</span>
-
+<div class="viewcode-block" id="construct_cube_file._set_no_model"><a class="viewcode-back" href="../../mangadap.dapfits.html#mangadap.dapfits.construct_cube_file._set_no_model">[docs]</a>    <span class="k">def</span> <span class="nf">_set_no_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mask</span><span class="p">):</span>
+        <span class="n">indx</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">mask</span><span class="p">))[</span><span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">mask</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">indx</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">mask</span>
+        <span class="n">mask</span><span class="p">[:</span><span class="n">indx</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">turn_on</span><span class="p">(</span><span class="n">mask</span><span class="p">[:</span><span class="n">indx</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span> <span class="s1">&#39;NOMODEL&#39;</span><span class="p">)</span>
+        <span class="n">mask</span><span class="p">[</span><span class="n">indx</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">turn_on</span><span class="p">(</span><span class="n">mask</span><span class="p">[</span><span class="n">indx</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:],</span> <span class="s1">&#39;NOMODEL&#39;</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">mask</span></div>
 
 
-<div class="viewcode-block" id="construct_cube_file.emission_line_model_cube"><a class="viewcode-back" href="../../mangadap.dapfits.html#mangadap.dapfits.construct_cube_file.emission_line_model_cube">[docs]</a>    <span class="k">def</span> <span class="nf">emission_line_model_cube</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prihdr</span><span class="p">,</span> <span class="n">binned_spectra</span><span class="p">,</span> <span class="n">emission_line_model</span><span class="p">,</span>
-                                 <span class="n">emission_line_model_3d_hdu</span><span class="p">):</span>
+<div class="viewcode-block" id="construct_cube_file._include_no_model_mask"><a class="viewcode-back" href="../../mangadap.dapfits.html#mangadap.dapfits.construct_cube_file._include_no_model_mask">[docs]</a>    <span class="k">def</span> <span class="nf">_include_no_model_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mask</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Constructs the &#39;EMLINE&#39;, &#39;EMLINE_BASE&#39;, and &#39;EMLINE_MASK&#39; model</span>
-<span class="sd">        cube extensions.</span>
+<span class="sd">        Assign the NOMODEL bit to spectral regions outside of the fitted</span>
+<span class="sd">        spectral range.</span>
+
+<span class="sd">        Modeled off of StellarContiuumModel.reset_continuum_mask_window.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1">#---------------------------------------------------------------</span>
-        <span class="n">ext</span> <span class="o">=</span> <span class="p">[</span> <span class="s1">&#39;EMLINE&#39;</span><span class="p">,</span> <span class="s1">&#39;EMLINE_BASE&#39;</span><span class="p">,</span> <span class="s1">&#39;EMLINE_MASK&#39;</span> <span class="p">]</span>
+        <span class="c1"># No pixels are masked!</span>
+        <span class="k">if</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">mask</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">mask</span>
 
-        <span class="k">if</span> <span class="n">emission_line_model</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">prihdr</span><span class="p">,</span> <span class="n">DAPFitsUtil</span><span class="o">.</span><span class="n">empty_hdus</span><span class="p">(</span><span class="n">ext</span><span class="p">)</span>
-
-        <span class="c1"># Add data to the primary header (Repeated from</span>
-        <span class="c1"># model_and_data_cube</span>
-<span class="c1">#        prihdr = emission_line_model._initialize_primary_header(hdr=prihdr)</span>
-<span class="c1">#        prihdr = emission_line_model._add_method_header(prihdr)</span>
-
-        <span class="c1">#---------------------------------------------------------------</span>
-        <span class="c1"># Get the extension headers</span>
-        <span class="n">hdr</span> <span class="o">=</span> <span class="p">[</span> <span class="n">DAPFitsUtil</span><span class="o">.</span><span class="n">finalize_dap_header</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_cubehdr</span><span class="p">,</span> <span class="s1">&#39;EMLINE&#39;</span><span class="p">,</span>
-                                                 <span class="n">bunit</span><span class="o">=</span><span class="s1">&#39;1E-17 erg/s/cm^2/ang/spaxel&#39;</span><span class="p">,</span> <span class="n">qual</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
-                <span class="n">DAPFitsUtil</span><span class="o">.</span><span class="n">finalize_dap_header</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_cubehdr</span><span class="p">,</span> <span class="s1">&#39;EMLINE&#39;</span><span class="p">,</span>
-                                                 <span class="n">bunit</span><span class="o">=</span><span class="s1">&#39;1E-17 erg/s/cm^2/ang/spaxel&#39;</span><span class="p">,</span> <span class="n">qual</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
-                <span class="n">DAPFitsUtil</span><span class="o">.</span><span class="n">finalize_dap_header</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_cubehdr</span><span class="p">,</span> <span class="s1">&#39;EMLINE&#39;</span><span class="p">,</span> <span class="n">hduclas2</span><span class="o">=</span><span class="s1">&#39;QUALITY&#39;</span><span class="p">,</span>
-                                                 <span class="n">bit_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">minimum_dtype</span><span class="p">()),</span>
-              <span class="p">]</span>
-
-        <span class="c1">#---------------------------------------------------------------</span>
-        <span class="c1"># Get the data arrays</span>
-        <span class="c1"># Get the reddened line model and baselines</span>
-        <span class="n">model</span> <span class="o">=</span> <span class="n">binned_spectra</span><span class="o">.</span><span class="n">galext</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">emission_line_model_3d_hdu</span><span class="p">[</span><span class="s1">&#39;FLUX&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">deredden</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-        <span class="n">base</span> <span class="o">=</span> <span class="n">binned_spectra</span><span class="o">.</span><span class="n">galext</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">emission_line_model_3d_hdu</span><span class="p">[</span><span class="s1">&#39;BASE&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">deredden</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-
-        <span class="c1"># Get the mask data</span>
-        <span class="n">mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_emission_line_model_mask</span><span class="p">(</span><span class="n">emission_line_model</span><span class="p">,</span> <span class="n">emission_line_model_3d_hdu</span><span class="p">)</span>
-
-        <span class="n">data</span> <span class="o">=</span> <span class="p">[</span> <span class="n">model</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">float_dtype</span><span class="p">),</span> <span class="n">base</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">float_dtype</span><span class="p">),</span> <span class="n">mask</span> <span class="p">]</span>
-
-        <span class="k">return</span> <span class="n">prihdr</span><span class="p">,</span> <span class="n">DAPFitsUtil</span><span class="o">.</span><span class="n">list_of_image_hdus</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">hdr</span><span class="p">,</span> <span class="n">ext</span><span class="p">)</span></div></div>
+        <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">apply_along_axis</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_set_no_model</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span></div></div>
 
 
 <span class="c1">#-----------------------------------------------------------------------</span>
@@ -2448,7 +2438,7 @@
 <span class="sd">        FileNotFoundError: Raised if any of the response function files</span>
 <span class="sd">            cannot be found.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">_dapsrc</span> <span class="o">=</span> <span class="n">default_dap_source</span><span class="p">()</span> <span class="k">if</span> <span class="n">dapsrc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">)</span>
+    <span class="n">_dapsrc</span> <span class="o">=</span> <span class="n">dap_source_dir</span><span class="p">()</span> <span class="k">if</span> <span class="n">dapsrc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">)</span>
     <span class="n">filter_response_file</span> <span class="o">=</span> <span class="p">[</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">_dapsrc</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="s1">&#39;filter_response&#39;</span><span class="p">,</span>
                                            <span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="p">[</span> <span class="s1">&#39;gunn_2001_g_response.db&#39;</span><span class="p">,</span>
                                                          <span class="s1">&#39;gunn_2001_r_response.db&#39;</span><span class="p">,</span>
@@ -2481,6 +2471,10 @@
             <span class="n">hdr</span><span class="p">[</span><span class="n">key_med</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="n">com_med</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
             <span class="n">hdr</span><span class="p">[</span><span class="n">key_ring</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="n">com_ring</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
             <span class="k">continue</span>
+
+        <span class="k">if</span> <span class="n">covar</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Covariance not available!  Continuing without it.&#39;</span><span class="p">)</span>
+            <span class="n">covar</span> <span class="o">=</span> <span class="n">Covariance</span><span class="o">.</span><span class="n">from_variance</span><span class="p">(</span><span class="n">variance</span><span class="p">,</span> <span class="n">correlation</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
             
         <span class="c1"># Get the appropriate covariance pixels to select</span>
         <span class="n">ci</span><span class="p">,</span> <span class="n">cj</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">numpy</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">indx</span><span class="p">,</span> <span class="n">indx</span><span class="p">)</span> <span class="p">)</span>
@@ -2488,7 +2482,8 @@
         <span class="c1"># Use the covariance matrix from the single wavelength channel</span>
         <span class="c1"># calculation, but renormalize it to the mean variance over the</span>
         <span class="c1"># response function</span>
-        <span class="n">covar</span> <span class="o">=</span> <span class="n">covar</span><span class="o">.</span><span class="n">apply_new_variance</span><span class="p">(</span><span class="n">variance</span><span class="p">)</span><span class="o">.</span><span class="n">toarray</span><span class="p">()</span>
+        <span class="n">covar</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">identity</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">variance</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span> <span class="k">if</span> <span class="n">covar</span> <span class="ow">is</span> <span class="kc">None</span> \
+                        <span class="k">else</span> <span class="n">covar</span><span class="o">.</span><span class="n">apply_new_variance</span><span class="p">(</span><span class="n">variance</span><span class="p">)</span><span class="o">.</span><span class="n">toarray</span><span class="p">()</span>
         <span class="c1"># Set the median S/N ...</span>
         <span class="n">hdr</span><span class="p">[</span><span class="n">key_med</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="o">=</span> <span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">snr</span><span class="p">[</span><span class="n">indx</span><span class="p">]),</span> <span class="n">com_med</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
         <span class="c1"># ... and the combined S/N</span>

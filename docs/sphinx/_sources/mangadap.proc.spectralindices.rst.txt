@@ -1,5 +1,5 @@
-mangadap\.proc\.spectralindices module
-======================================
+mangadap.proc.spectralindices module
+====================================
 
 .. automodule:: mangadap.proc.spectralindices
     :members:

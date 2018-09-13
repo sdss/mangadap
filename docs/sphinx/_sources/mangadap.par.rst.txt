@@ -1,5 +1,5 @@
-mangadap\.par package
-=====================
+mangadap.par package
+====================
 
 Submodules
 ----------

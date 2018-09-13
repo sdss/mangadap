@@ -1,5 +1,5 @@
-mangadap\.survey\.dapall module
-===============================
+mangadap.survey.dapall module
+=============================
 
 .. automodule:: mangadap.survey.dapall
     :members:

@@ -1,5 +1,5 @@
-mangadap\.util\.bitmask module
-==============================
+mangadap.util.bitmask module
+============================
 
 .. automodule:: mangadap.util.bitmask
     :members:

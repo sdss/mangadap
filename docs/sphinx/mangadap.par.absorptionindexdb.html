@@ -104,7 +104,7 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.proc.html">mangadap.proc package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.survey.html">mangadap.survey package</a></li>
-<li class="toctree-l3"><a class="reference internal" href="mangadap.test.html">mangadap.test package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.tests.html">mangadap.tests package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.util.html">mangadap.util package</a></li>
 </ul>
 </li>
@@ -192,7 +192,7 @@
 <dt><em>Source location</em>:</dt>
 <dd>$MANGADAP_DIR/python/mangadap/par/absorptionindexdb.py</dd>
 <dt><em>Imports and python version compliance</em>:</dt>
-<dd><div class="first last highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<dd><div class="first last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
@@ -218,25 +218,25 @@
 <dd><p class="first">Absorption-line index databases are defined using SDSS parameter
 files.  To define a database, you can use one of the default set of
 available absorption-line index databases (see
-<a class="reference internal" href="#mangadap.par.absorptionindexdb.available_absorption_index_databases" title="mangadap.par.absorptionindexdb.available_absorption_index_databases"><code class="xref py py-func docutils literal"><span class="pre">available_absorption_index_databases()</span></code></a>):</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">mangadap.par.absorptionindexdb</span> <span class="k">import</span> <span class="n">AbsorptionIndexDB</span>
+<a class="reference internal" href="#mangadap.par.absorptionindexdb.available_absorption_index_databases" title="mangadap.par.absorptionindexdb.available_absorption_index_databases"><code class="xref py py-func docutils literal notranslate"><span class="pre">available_absorption_index_databases()</span></code></a>):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">mangadap.par.absorptionindexdb</span> <span class="k">import</span> <span class="n">AbsorptionIndexDB</span>
 <span class="n">p</span> <span class="o">=</span> <span class="n">AbsorptionIndexDB</span><span class="p">(</span><span class="s1">&#39;LICK&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>The above call requires that the <code class="docutils literal"><span class="pre">$MANGADAP_DIR</span></code> environmental
+<p>The above call requires that the <code class="docutils literal notranslate"><span class="pre">$MANGADAP_DIR</span></code> environmental
 variable is set.  If it is not, you can define it’s location, as
 in:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">mangadap.par.absorptionindexdb</span> <span class="k">import</span> <span class="n">AbsorptionIndexDB</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">mangadap.par.absorptionindexdb</span> <span class="k">import</span> <span class="n">AbsorptionIndexDB</span>
 <span class="n">p</span> <span class="o">=</span> <span class="n">AbsorptionIndexDB</span><span class="p">(</span><span class="s1">&#39;LICK&#39;</span><span class="p">,</span> <span class="n">dapsrc</span><span class="o">=</span><span class="s1">&#39;/path/to/dap/source&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Finally, you can create your own <a class="reference external" href="http://www.sdss.org/dr12/software/par/">SDSS-style parameter file</a> with
 your own absorption-line indices to use.  Example files are provided
-in <code class="docutils literal"><span class="pre">$MANGADAP_DIR/data/absorption_indices</span></code> with a companion
-<code class="docutils literal"><span class="pre">README</span></code> file.  With your own file, you have to point to the file
-using <code class="xref py py-class docutils literal"><span class="pre">SpectralFeatureDBDef</span></code>, which you can then pass to
-<a class="reference internal" href="#mangadap.par.absorptionindexdb.AbsorptionIndexDB" title="mangadap.par.absorptionindexdb.AbsorptionIndexDB"><code class="xref py py-class docutils literal"><span class="pre">AbsorptionIndexDB</span></code></a>:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">mangadap.par.spectralfeaturedb</span> <span class="k">import</span> <span class="n">SpectralFeatureDBDef</span>
+in <code class="docutils literal notranslate"><span class="pre">$MANGADAP_DIR/data/absorption_indices</span></code> with a companion
+<code class="docutils literal notranslate"><span class="pre">README</span></code> file.  With your own file, you have to point to the file
+using <code class="xref py py-class docutils literal notranslate"><span class="pre">SpectralFeatureDBDef</span></code>, which you can then pass to
+<a class="reference internal" href="#mangadap.par.absorptionindexdb.AbsorptionIndexDB" title="mangadap.par.absorptionindexdb.AbsorptionIndexDB"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbsorptionIndexDB</span></code></a>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">mangadap.par.spectralfeaturedb</span> <span class="k">import</span> <span class="n">SpectralFeatureDBDef</span>
 <span class="kn">from</span> <span class="nn">mangadap.par.absorptionindexdb</span> <span class="k">import</span> <span class="n">AbsorptionIndexDB</span>
 <span class="n">d</span> <span class="o">=</span> <span class="n">SpectralFeatureDBDef</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s1">&#39;USER&#39;</span><span class="p">,</span>
                          <span class="n">file_path</span><span class="o">=</span><span class="s1">&#39;/path/to/parameter/file&#39;</span><span class="p">)</span>
@@ -246,9 +246,9 @@ using <code class="xref py py-class docutils literal"><span class="pre">Spectral
 <p class="last">The reference frame of the absorption-line index can be different
 <em>for each index</em>; a column in the SDSS parameter file is used to
 specify either air or vacuum wavelengths.  When reading the input
-parameter file, <a class="reference internal" href="#mangadap.par.absorptionindexdb.AbsorptionIndexDB" title="mangadap.par.absorptionindexdb.AbsorptionIndexDB"><code class="xref py py-class docutils literal"><span class="pre">AbsorptionIndexDB</span></code></a> will convert the input
+parameter file, <a class="reference internal" href="#mangadap.par.absorptionindexdb.AbsorptionIndexDB" title="mangadap.par.absorptionindexdb.AbsorptionIndexDB"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbsorptionIndexDB</span></code></a> will convert the input
 index definition to vacuum on a case-by-case basis based on the SDSS
-parameter file entries, meaning <a class="reference internal" href="#mangadap.par.absorptionindexdb.AbsorptionIndexDB" title="mangadap.par.absorptionindexdb.AbsorptionIndexDB"><code class="xref py py-class docutils literal"><span class="pre">AbsorptionIndexDB</span></code></a> only
+parameter file entries, meaning <a class="reference internal" href="#mangadap.par.absorptionindexdb.AbsorptionIndexDB" title="mangadap.par.absorptionindexdb.AbsorptionIndexDB"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbsorptionIndexDB</span></code></a> only
 provides vacuum wavelengths.</p>
 </dd>
 <dt><em>Revision history</em>:</dt>
@@ -264,9 +264,9 @@ provides vacuum wavelengths.</p>
 <dl class="class">
 <dt id="mangadap.par.absorptionindexdb.AbsorptionIndexDB">
 <em class="property">class </em><code class="descclassname">mangadap.par.absorptionindexdb.</code><code class="descname">AbsorptionIndexDB</code><span class="sig-paren">(</span><em>database_key</em>, <em>indxdb_list=None</em>, <em>dapsrc=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/par/absorptionindexdb.html#AbsorptionIndexDB"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.par.absorptionindexdb.AbsorptionIndexDB" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParDatabase" title="mangadap.par.parset.ParDatabase"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.parset.ParDatabase</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParDatabase" title="mangadap.par.parset.ParDatabase"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.par.parset.ParDatabase</span></code></a></p>
 <p>Basic container class for the database of absorption-line index
-parameters.  See <code class="xref py py-class docutils literal"><span class="pre">mangadap.parset.ParDatabase</span></code> for additional
+parameters.  See <code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.parset.ParDatabase</span></code> for additional
 attributes.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -275,13 +275,13 @@ attributes.</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>database_key</strong> (<em>str</em>) – Keyword selecting the database to use.</li>
 <li><strong>indxdb_list</strong> (<em>list</em>) – (<strong>Optional</strong>) List of
-<code class="xref py py-class docutils literal"><span class="pre">SpectralFeatureDBDef</span></code> objects that define the
+<code class="xref py py-class docutils literal notranslate"><span class="pre">SpectralFeatureDBDef</span></code> objects that define the
 parameters required to setup the absorption-line index
 database.  The <em>database_key</em> must select one of the objects
 in this list.</li>
 <li><strong>dapsrc</strong> (<em>str</em>) – (<strong>Optional</strong>) Root path to the DAP source
 directory.  If not provided, the default is defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_source" title="mangadap.config.defaults.default_dap_source"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_source()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.dap_source_dir" title="mangadap.config.defaults.dap_source_dir"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.dap_source_dir()</span></code></a>.</li>
 </ul>
 </td>
 </tr>
@@ -290,7 +290,7 @@ directory.  If not provided, the default is defined by
 <dl class="attribute">
 <dt id="mangadap.par.absorptionindexdb.AbsorptionIndexDB.database">
 <code class="descname">database</code><a class="headerlink" href="#mangadap.par.absorptionindexdb.AbsorptionIndexDB.database" title="Permalink to this definition">¶</a></dt>
-<dd><p><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.ParSet</span></code> – Database parameters.</p>
+<dd><p><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.par.ParSet</span></code> – Database parameters.</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -338,18 +338,18 @@ IMF-sensitive indices</td>
 </tbody>
 </table>
 <p>This is a simple wrapper for
-<a class="reference internal" href="mangadap.par.spectralfeaturedb.html#mangadap.par.spectralfeaturedb.available_spectral_feature_databases" title="mangadap.par.spectralfeaturedb.available_spectral_feature_databases"><code class="xref py py-func docutils literal"><span class="pre">mangadap.par.spectralfeaturedb.available_spectral_feature_databases()</span></code></a>.</p>
+<a class="reference internal" href="mangadap.par.spectralfeaturedb.html#mangadap.par.spectralfeaturedb.available_spectral_feature_databases" title="mangadap.par.spectralfeaturedb.available_spectral_feature_databases"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.par.spectralfeaturedb.available_spectral_feature_databases()</span></code></a>.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>dapsrc</strong> (<em>str</em>) – (<strong>Optional</strong>) Root path to the DAP source
 directory.  If not provided, the default is defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_source" title="mangadap.config.defaults.default_dap_source"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_source()</span></code></a>.</td>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.dap_source_dir" title="mangadap.config.defaults.dap_source_dir"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.dap_source_dir()</span></code></a>.</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">An list of <code class="xref py py-class docutils literal"><span class="pre">SpectralFeatureDBDef</span></code> objects, each of
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">An list of <code class="xref py py-class docutils literal notranslate"><span class="pre">SpectralFeatureDBDef</span></code> objects, each of
 which defines a unique set of absorption-line indices (see
-<a class="reference internal" href="mangadap.proc.bandpassfilter.html#mangadap.proc.bandpassfilter.BandPassFilterPar" title="mangadap.proc.bandpassfilter.BandPassFilterPar"><code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.bandpassfilter.BandPassFilterPar</span></code></a>).</td>
+<a class="reference internal" href="mangadap.proc.bandpassfilter.html#mangadap.proc.bandpassfilter.BandPassFilterPar" title="mangadap.proc.bandpassfilter.BandPassFilterPar"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.proc.bandpassfilter.BandPassFilterPar</span></code></a>).</td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">list</td>
 </tr>

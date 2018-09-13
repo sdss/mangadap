@@ -182,7 +182,7 @@ the MaNGA Data Analysis Pipeline (DAP).</p>
 <dt><em>Source location</em>:</dt>
 <dd>$MANGADAP_DIR/python/mangadap/dapfits.py</dd>
 <dt><em>Imports and python version compliance</em>:</dt>
-<dd><div class="first last highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+<dd><div class="first last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
@@ -208,7 +208,7 @@ the MaNGA Data Analysis Pipeline (DAP).</p>
 <span class="kn">from</span> <span class="nn">.util.fileio</span> <span class="k">import</span> <span class="n">channel_dictionary</span>
 <span class="kn">from</span> <span class="nn">.util.exception_tools</span> <span class="k">import</span> <span class="n">print_frame</span>
 <span class="kn">from</span> <span class="nn">.par.obsinput</span> <span class="k">import</span> <span class="n">ObsInputPar</span>
-<span class="kn">from</span> <span class="nn">.config.defaults</span> <span class="k">import</span> <span class="n">default_drp_version</span><span class="p">,</span> <span class="n">default_dap_source</span><span class="p">,</span> <span class="n">default_dap_version</span>
+<span class="kn">from</span> <span class="nn">.config.defaults</span> <span class="k">import</span> <span class="n">default_drp_version</span><span class="p">,</span> <span class="n">dap_source_dir</span><span class="p">,</span> <span class="n">default_dap_version</span>
 <span class="kn">from</span> <span class="nn">.config.defaults</span> <span class="k">import</span> <span class="n">default_dap_par_file</span><span class="p">,</span> <span class="n">default_analysis_path</span>
 <span class="kn">from</span> <span class="nn">.config.defaults</span> <span class="k">import</span> <span class="n">default_dap_method</span><span class="p">,</span> <span class="n">default_dap_method_path</span>
 <span class="kn">from</span> <span class="nn">.config.defaults</span> <span class="k">import</span> <span class="n">default_dap_file_name</span>
@@ -226,8 +226,8 @@ the MaNGA Data Analysis Pipeline (DAP).</p>
 <dt><em>Revision history</em>:</dt>
 <dd><div class="first last line-block">
 <div class="line"><strong>08 Jun 2016</strong>: Original Implementation by K. Westfall (KBW)</div>
-<div class="line"><strong>25 Aug 2016</strong>: (KBW) Added <a class="reference internal" href="#mangadap.dapfits.DAPFits.unique_indices" title="mangadap.dapfits.DAPFits.unique_indices"><code class="xref py py-func docutils literal"><span class="pre">DAPFits.unique_indices()</span></code></a>,
-<a class="reference internal" href="#mangadap.dapfits.DAPFits.unique_mask" title="mangadap.dapfits.DAPFits.unique_mask"><code class="xref py py-func docutils literal"><span class="pre">DAPFits.unique_mask()</span></code></a>, and <a class="reference internal" href="#mangadap.dapfits.DAPFits.channel_map" title="mangadap.dapfits.DAPFits.channel_map"><code class="xref py py-func docutils literal"><span class="pre">DAPFits.channel_map()</span></code></a></div>
+<div class="line"><strong>25 Aug 2016</strong>: (KBW) Added <a class="reference internal" href="#mangadap.dapfits.DAPFits.unique_indices" title="mangadap.dapfits.DAPFits.unique_indices"><code class="xref py py-func docutils literal notranslate"><span class="pre">DAPFits.unique_indices()</span></code></a>,
+<a class="reference internal" href="#mangadap.dapfits.DAPFits.unique_mask" title="mangadap.dapfits.DAPFits.unique_mask"><code class="xref py py-func docutils literal notranslate"><span class="pre">DAPFits.unique_mask()</span></code></a>, and <a class="reference internal" href="#mangadap.dapfits.DAPFits.channel_map" title="mangadap.dapfits.DAPFits.channel_map"><code class="xref py py-func docutils literal notranslate"><span class="pre">DAPFits.channel_map()</span></code></a></div>
 <div class="line"><strong>Feb 2017</strong>: (KBW) Merged construct maps and cube functions here
 and removed dapmaps.py and dapcube.py.</div>
 <div class="line">** 3 May 2017**: (KBW) Allow output maps and cube types to be
@@ -235,7 +235,7 @@ single-precision (float32) floats, and changed BINID from int
 (defaults to 64-bit) to int32.</div>
 <div class="line"><strong>24 Aug 2017</strong>: (KBW) Added BADGEOM DAPQUAL bit; signifies
 invalid photometric geometry parameters used when instantiating
-the <a class="reference internal" href="mangadap.par.obsinput.html#mangadap.par.obsinput.ObsInputPar" title="mangadap.par.obsinput.ObsInputPar"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.obsinput.ObsInputPar</span></code></a> object.</div>
+the <a class="reference internal" href="mangadap.par.obsinput.html#mangadap.par.obsinput.ObsInputPar" title="mangadap.par.obsinput.ObsInputPar"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.par.obsinput.ObsInputPar</span></code></a> object.</div>
 <div class="line"><strong>29 Aug 2017</strong>: (KBW) Add S/N metrics to the MAPS primary header</div>
 <div class="line"><strong>30 Aug 2017</strong>: (KBW) Convert some changes from Xihan Ji.</div>
 <div class="line"><strong>19 Mar 2018</strong>: (KBW) Mask spectral indices with incomplete band
@@ -253,7 +253,7 @@ not just the former.</li>
 <dl class="class">
 <dt id="mangadap.dapfits.DAPCubeBitMask">
 <em class="property">class </em><code class="descclassname">mangadap.dapfits.</code><code class="descname">DAPCubeBitMask</code><span class="sig-paren">(</span><em>dapsrc=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/dapfits.html#DAPCubeBitMask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.dapfits.DAPCubeBitMask" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="mangadap.util.bitmask.html#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.bitmask.BitMask</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="mangadap.util.bitmask.html#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.bitmask.BitMask</span></code></a></p>
 <div class="admonition-todo admonition" id="index-1">
 <p class="first admonition-title">Todo</p>
 <ul class="last simple">
@@ -265,7 +265,7 @@ not just the former.</li>
 <dl class="class">
 <dt id="mangadap.dapfits.DAPFits">
 <em class="property">class </em><code class="descclassname">mangadap.dapfits.</code><code class="descname">DAPFits</code><span class="sig-paren">(</span><em>plate</em>, <em>ifudesign</em>, <em>method</em>, <em>drpver=None</em>, <em>dapver=None</em>, <em>analysis_path=None</em>, <em>directory_path=None</em>, <em>reference_path=None</em>, <em>par_file=None</em>, <em>read=True</em>, <em>checksum=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/dapfits.html#DAPFits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.dapfits.DAPFits" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Object used to hold properties of and read data from a DAP-produced file.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -274,26 +274,26 @@ not just the former.</li>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>plate</strong> (<em>int</em>) – Plate number</li>
 <li><strong>ifudesign</strong> (<em>int</em>) – IFU design</li>
-<li><strong>method</strong> (<em>str</em>) – Method type (e.g., <code class="docutils literal"><span class="pre">'SPX-GAU-MILESTHIN'</span></code>)</li>
+<li><strong>method</strong> (<em>str</em>) – Method type (e.g., <code class="docutils literal notranslate"><span class="pre">'SPX-GAU-MILESTHIN'</span></code>)</li>
 <li><strong>drpver</strong> (<em>str</em>) – (<strong>Optional</strong>) DRP version, which is used to
 define the default DAP analysis path.  Default is defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_drp_version" title="mangadap.config.defaults.default_drp_version"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_drp_version()</span></code></a></li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_drp_version" title="mangadap.config.defaults.default_drp_version"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_drp_version()</span></code></a></li>
 <li><strong>dapver</strong> (<em>str</em>) – (<strong>Optional</strong>) DAP version, which is used to define
 the default DAP analysis path.  Default is defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_version" title="mangadap.config.defaults.default_dap_version"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_version()</span></code></a></li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_version" title="mangadap.config.defaults.default_dap_version"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_dap_version()</span></code></a></li>
 <li><strong>analysis_path</strong> (<em>str</em>) – (<strong>Optional</strong>) The path to the top level
 directory containing the DAP output files for a given DRP
 and DAP version.  Default is defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_analysis_path" title="mangadap.config.defaults.default_analysis_path"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_analysis_path()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_analysis_path" title="mangadap.config.defaults.default_analysis_path"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_analysis_path()</span></code></a>.</li>
 <li><strong>directory_path</strong> (<em>str</em>) – (<strong>Optional</strong>) The exact path to the DAP
 file.  Default is defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_method_path" title="mangadap.config.defaults.default_dap_method_path"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_method_path()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_method_path" title="mangadap.config.defaults.default_dap_method_path"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_dap_method_path()</span></code></a>.</li>
 <li><strong>reference_path</strong> (<em>str</em>) – (<strong>Optional</strong>) The exact path of the DAP
 reference directory.  Default is defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_method_path" title="mangadap.config.defaults.default_dap_method_path"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_method_path()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_method_path" title="mangadap.config.defaults.default_dap_method_path"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_dap_method_path()</span></code></a>.</li>
 <li><strong>par_file</strong> (<em>str</em>) – (<strong>Optional</strong>) SDSS parameter file used to
 provide input parameters for the DAP.  Default is defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_par_file" title="mangadap.config.defaults.default_dap_par_file"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_par_file()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_par_file" title="mangadap.config.defaults.default_dap_par_file"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_dap_par_file()</span></code></a>.</li>
 <li><strong>read</strong> (<em>bool</em>) – (<strong>Optional</strong>) Read the DAP file upon
 instantiation of the object.</li>
 <li><strong>checksum</strong> (<em>bool</em>) – (<strong>Optional</strong>) Flag for <a class="reference external" href="http://docs.astropy.org/en/stable/io/fits/api/files.html#astropy.io.fits.open">astropy.io.fits.open</a>
@@ -363,14 +363,14 @@ parameters for the DAP.</p>
 <dl class="attribute">
 <dt id="mangadap.dapfits.DAPFits.dapqual">
 <code class="descname">dapqual</code><a class="headerlink" href="#mangadap.dapfits.DAPFits.dapqual" title="Permalink to this definition">¶</a></dt>
-<dd><p><code class="xref py py-class docutils literal"><span class="pre">mangadap.dapmaps.DAPQualityBitMask</span></code> – Global
+<dd><p><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.dapmaps.DAPQualityBitMask</span></code> – Global
 quality bit</p>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="mangadap.dapfits.DAPFits.bitmask">
 <code class="descname">bitmask</code><a class="headerlink" href="#mangadap.dapfits.DAPFits.bitmask" title="Permalink to this definition">¶</a></dt>
-<dd><p><code class="xref py py-class docutils literal"><span class="pre">mangadap.dapmaps.DAPMapsBitMask</span></code> – Map mask
+<dd><p><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.dapmaps.DAPMapsBitMask</span></code> – Map mask
 bits</p>
 </dd></dl>
 
@@ -384,7 +384,7 @@ the DRP file</p>
 <dl class="attribute">
 <dt id="mangadap.dapfits.DAPFits.par">
 <code class="descname">par</code><a class="headerlink" href="#mangadap.dapfits.DAPFits.par" title="Permalink to this definition">¶</a></dt>
-<dd><p><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.ObsInputPar</span></code> – List of parameters used
+<dd><p><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.par.ObsInputPar</span></code> – List of parameters used
 by the DAP.</p>
 </dd></dl>
 
@@ -430,12 +430,12 @@ by the DAP.</p>
 <code class="descname">guess_inclination</code><span class="sig-paren">(</span><em>q0=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/dapfits.html#DAPFits.guess_inclination"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.dapfits.DAPFits.guess_inclination" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return a guess inclination based on the isophotal ellipticity
 from the input parameter file using the equation:</p>
-<div class="math">
+<div class="math notranslate nohighlight">
 \[\cos^2 i = \frac{ q^2 - q_0^2 }{ 1 - q_0^2 },\]</div>
-<p>where <span class="math">\(q\)</span> is the observed oblateness (the semi-minor to
-semi-major axis ratio, <span class="math">\(q = 1-\epsilon = b/a\)</span>) and
-<span class="math">\(q_0\)</span> is the intrinsic oblateness.</p>
-<p>If <span class="math">\(q &lt; q_0\)</span>, the function returns a 90 degree
+<p>where <span class="math notranslate nohighlight">\(q\)</span> is the observed oblateness (the semi-minor to
+semi-major axis ratio, <span class="math notranslate nohighlight">\(q = 1-\epsilon = b/a\)</span>) and
+<span class="math notranslate nohighlight">\(q_0\)</span> is the intrinsic oblateness.</p>
+<p>If <span class="math notranslate nohighlight">\(q &lt; q_0\)</span>, the function returns a 90 degree
 inclination.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -445,7 +445,7 @@ inclination.</p>
 system.  If not provided, the system is assumed to be
 infinitely thin.</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal"><span class="pre">Exception</span></code> – Raised if the input intrinsic oblatenss is not
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal notranslate"><span class="pre">Exception</span></code> – Raised if the input intrinsic oblatenss is not
 less than one and greater than 0.</td>
 </tr>
 </tbody>
@@ -476,7 +476,7 @@ angle by 180 deg.</td>
 <dl class="method">
 <dt id="mangadap.dapfits.DAPFits.open_hdu">
 <code class="descname">open_hdu</code><span class="sig-paren">(</span><em>permissions='readonly'</em>, <em>checksum=False</em>, <em>quiet=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/dapfits.html#DAPFits.open_hdu"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.dapfits.DAPFits.open_hdu" title="Permalink to this definition">¶</a></dt>
-<dd><p>Open the fits file and save it to <a class="reference internal" href="#mangadap.dapfits.DAPFits.hdu" title="mangadap.dapfits.DAPFits.hdu"><code class="xref py py-attr docutils literal"><span class="pre">hdu</span></code></a>; if <a class="reference internal" href="#mangadap.dapfits.DAPFits.hdu" title="mangadap.dapfits.DAPFits.hdu"><code class="xref py py-attr docutils literal"><span class="pre">hdu</span></code></a> is
+<dd><p>Open the fits file and save it to <a class="reference internal" href="#mangadap.dapfits.DAPFits.hdu" title="mangadap.dapfits.DAPFits.hdu"><code class="xref py py-attr docutils literal notranslate"><span class="pre">hdu</span></code></a>; if <a class="reference internal" href="#mangadap.dapfits.DAPFits.hdu" title="mangadap.dapfits.DAPFits.hdu"><code class="xref py py-attr docutils literal notranslate"><span class="pre">hdu</span></code></a> is
 not None, the function returns without re-reading the data.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -487,13 +487,13 @@ not None, the function returns without re-reading the data.</p>
 these read/write permissions.</li>
 <li><strong>checksum</strong> (<em>bool</em>) – (<strong>Optional</strong>) Flag for
 <a class="reference external" href="http://docs.astropy.org/en/stable/io/fits/api/files.html#astropy.io.fits.open">astropy.io.fits.open</a> checksum operation.  This
-overrides the internal <a class="reference internal" href="#mangadap.dapfits.DAPFits.checksum" title="mangadap.dapfits.DAPFits.checksum"><code class="xref py py-attr docutils literal"><span class="pre">checksum</span></code></a> attribute <strong>for
+overrides the internal <a class="reference internal" href="#mangadap.dapfits.DAPFits.checksum" title="mangadap.dapfits.DAPFits.checksum"><code class="xref py py-attr docutils literal notranslate"><span class="pre">checksum</span></code></a> attribute <strong>for
 the current operation only</strong>.</li>
 <li><strong>quiet</strong> (<em>bool</em>) – (<strong>Optional</strong>) Suppress terminal output</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">FileNotFoundError</span></code> – Raised if the DAP file doesn’t exist.</p>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal notranslate"><span class="pre">FileNotFoundError</span></code> – Raised if the DAP file doesn’t exist.</p>
 </td>
 </tr>
 </tbody>
@@ -503,8 +503,8 @@ the current operation only</strong>.</li>
 <dl class="method">
 <dt id="mangadap.dapfits.DAPFits.read_par">
 <code class="descname">read_par</code><span class="sig-paren">(</span><em>quiet=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/dapfits.html#DAPFits.read_par"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.dapfits.DAPFits.read_par" title="Permalink to this definition">¶</a></dt>
-<dd><p>Open the parameter file and save it to <a class="reference internal" href="#mangadap.dapfits.DAPFits.par" title="mangadap.dapfits.DAPFits.par"><code class="xref py py-attr docutils literal"><span class="pre">par</span></code></a>; if
-<a class="reference internal" href="#mangadap.dapfits.DAPFits.par" title="mangadap.dapfits.DAPFits.par"><code class="xref py py-attr docutils literal"><span class="pre">par</span></code></a> is not None, the function returns without re-reading
+<dd><p>Open the parameter file and save it to <a class="reference internal" href="#mangadap.dapfits.DAPFits.par" title="mangadap.dapfits.DAPFits.par"><code class="xref py py-attr docutils literal notranslate"><span class="pre">par</span></code></a>; if
+<a class="reference internal" href="#mangadap.dapfits.DAPFits.par" title="mangadap.dapfits.DAPFits.par"><code class="xref py py-attr docutils literal notranslate"><span class="pre">par</span></code></a> is not None, the function returns without re-reading
 the data.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -520,14 +520,14 @@ the data.</p>
 <dt id="mangadap.dapfits.DAPFits.thin_disk_polar_coo">
 <code class="descname">thin_disk_polar_coo</code><span class="sig-paren">(</span><em>xc=None</em>, <em>yc=None</em>, <em>rot=None</em>, <em>pa=None</em>, <em>inc=None</em>, <em>flip=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/dapfits.html#DAPFits.thin_disk_polar_coo"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.dapfits.DAPFits.thin_disk_polar_coo" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calculate the disk-plane coordinates for all the binned spectra
-using <a class="reference internal" href="mangadap.util.geometry.html#mangadap.util.geometry.SemiMajorAxisCoo" title="mangadap.util.geometry.SemiMajorAxisCoo"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.geometry.SemiMajorAxisCoo</span></code></a>.  See the
+using <a class="reference internal" href="mangadap.util.geometry.html#mangadap.util.geometry.SemiMajorAxisCoo" title="mangadap.util.geometry.SemiMajorAxisCoo"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.geometry.SemiMajorAxisCoo</span></code></a>.  See the
 documentation their for further information regarding the
 calculations.</p>
 <p>If not provided, the default position angle and inclination will
 be taken from the input parameter file, if available.  If the
 parameter file cannot be read, the default values for the
 position angle and ellipticity in
-<a class="reference internal" href="mangadap.util.geometry.html#mangadap.util.geometry.SemiMajorAxisCoo" title="mangadap.util.geometry.SemiMajorAxisCoo"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.geometry.SemiMajorAxisCoo</span></code></a> are used.</p>
+<a class="reference internal" href="mangadap.util.geometry.html#mangadap.util.geometry.SemiMajorAxisCoo" title="mangadap.util.geometry.SemiMajorAxisCoo"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.geometry.SemiMajorAxisCoo</span></code></a> are used.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -554,7 +554,7 @@ be defined along the receding major axis.</li>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><dl class="docutils">
 <dt>Two numpy arrays with the projected polar</dt>
-<dd><p class="first last">coordinates: <span class="math">\(R, \theta\)</span>.</p>
+<dd><p class="first last">coordinates: <span class="math notranslate nohighlight">\(R, \theta\)</span>.</p>
 </dd>
 </dl>
 </p>
@@ -597,7 +597,7 @@ bin, Fals otherwise.</p>
 <dl class="class">
 <dt id="mangadap.dapfits.DAPMapsBitMask">
 <em class="property">class </em><code class="descclassname">mangadap.dapfits.</code><code class="descname">DAPMapsBitMask</code><span class="sig-paren">(</span><em>dapsrc=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/dapfits.html#DAPMapsBitMask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.dapfits.DAPMapsBitMask" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="mangadap.util.bitmask.html#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.bitmask.BitMask</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="mangadap.util.bitmask.html#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.bitmask.BitMask</span></code></a></p>
 <div class="admonition-todo admonition" id="index-2">
 <p class="first admonition-title">Todo</p>
 <ul class="last simple">
@@ -609,7 +609,7 @@ bin, Fals otherwise.</p>
 <dl class="class">
 <dt id="mangadap.dapfits.DAPQualityBitMask">
 <em class="property">class </em><code class="descclassname">mangadap.dapfits.</code><code class="descname">DAPQualityBitMask</code><span class="sig-paren">(</span><em>dapsrc=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/dapfits.html#DAPQualityBitMask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.dapfits.DAPQualityBitMask" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="mangadap.util.bitmask.html#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.bitmask.BitMask</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="mangadap.util.bitmask.html#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.bitmask.BitMask</span></code></a></p>
 <div class="admonition-todo admonition" id="index-3">
 <p class="first admonition-title">Todo</p>
 <ul class="last simple">
@@ -642,7 +642,7 @@ correlation within the broad band.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>hdr</strong> (<a class="reference external" href="http://docs.astropy.org/en/stable/io/fits/api/headers.html">astropy.io.fits.Header</a>) – Header object to edit</li>
-<li><strong>drpf</strong> (<a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal"><span class="pre">mangadap.drpfits.DRPFits</span></code></a>) – DRP fits cube</li>
+<li><strong>drpf</strong> (<a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.drpfits.DRPFits</span></code></a>) – DRP fits cube</li>
 <li><strong>r_re</strong> (<em>numpy.ndarray</em>) – <em>Flattened</em> array with the semi-major axis
 radius in units of the effective radius for all spaxels in
 the datacube.  Shape should be (Nx*Ny,), where the shape of
@@ -656,7 +656,7 @@ the datacube is (Nx,Ny,Nwave).</li>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first"><a class="reference external" href="http://docs.astropy.org/en/stable/io/fits/api/headers.html">astropy.io.fits.Header</a></p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">FileNotFoundError</span></code> – Raised if any of the response function files
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal notranslate"><span class="pre">FileNotFoundError</span></code> – Raised if any of the response function files
 cannot be found.</p>
 </td>
 </tr>
@@ -679,35 +679,14 @@ multichannel extension.</p>
 <dl class="class">
 <dt id="mangadap.dapfits.construct_cube_file">
 <em class="property">class </em><code class="descclassname">mangadap.dapfits.</code><code class="descname">construct_cube_file</code><span class="sig-paren">(</span><em>drpf</em>, <em>obs=None</em>, <em>binned_spectra=None</em>, <em>stellar_continuum=None</em>, <em>emission_line_model=None</em>, <em>dapsrc=None</em>, <em>dapver=None</em>, <em>analysis_path=None</em>, <em>directory_path=None</em>, <em>output_file=None</em>, <em>clobber=True</em>, <em>loggers=None</em>, <em>quiet=False</em>, <em>single_precision=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/dapfits.html#construct_cube_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.dapfits.construct_cube_file" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Construct a DAP cube file based on the input data.</p>
 <p>Set as a class for coherency reasons, but should not be used as an
 object!</p>
 <p>Should force all intermediate objects to be provided.</p>
 <dl class="method">
-<dt id="mangadap.dapfits.construct_cube_file._assign_cube_arrays">
-<code class="descname">_assign_cube_arrays</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/dapfits.html#construct_cube_file._assign_cube_arrays"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.dapfits.construct_cube_file._assign_cube_arrays" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set <code class="xref py py-attr docutils literal"><span class="pre">cube_arrays</span></code>, which contains the list of extensions in
-<code class="xref py py-attr docutils literal"><span class="pre">hdu</span></code> that contain spectral data.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="mangadap.dapfits.construct_cube_file._get_emission_line_model_mask">
-<code class="descname">_get_emission_line_model_mask</code><span class="sig-paren">(</span><em>emission_line_model</em>, <em>emission_line_model_3d_hdu</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/dapfits.html#construct_cube_file._get_emission_line_model_mask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.dapfits.construct_cube_file._get_emission_line_model_mask" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="docutils">
-<dt>From the emission-line model object:</dt>
-<dd><ul class="first last simple">
-<li>copy ARTIFACT</li>
-<li>consolidate DIDNOTUSE, LOW_SNR, OUTSIDE_RANGE into IGNORED_EL</li>
-<li>copy FIT_FAILED, NEAR_BOUND into ELFAILED</li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="mangadap.dapfits.construct_cube_file._get_model_and_data_mask">
-<code class="descname">_get_model_and_data_mask</code><span class="sig-paren">(</span><em>binned_spectra</em>, <em>binned_spectra_3d_hdu</em>, <em>stellar_continuum</em>, <em>stellar_continuum_3d_hdu</em>, <em>emission_line_model</em>, <em>emission_line_model_3d_hdu</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/dapfits.html#construct_cube_file._get_model_and_data_mask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.dapfits.construct_cube_file._get_model_and_data_mask" title="Permalink to this definition">¶</a></dt>
+<dt id="mangadap.dapfits.construct_cube_file._get_data_mask">
+<code class="descname">_get_data_mask</code><span class="sig-paren">(</span><em>binned_spectra</em>, <em>binned_spectra_3d_hdu</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/dapfits.html#construct_cube_file._get_data_mask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.dapfits.construct_cube_file._get_data_mask" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="docutils">
 <dt>For the binned spectra:</dt>
 <dd><ul class="first last simple">
@@ -717,42 +696,64 @@ binned_spectra into IGNORED</li>
 FLUXINVALID</li>
 </ul>
 </dd>
-<dt>For the model spectra:</dt>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.dapfits.construct_cube_file._get_emission_line_model_mask">
+<code class="descname">_get_emission_line_model_mask</code><span class="sig-paren">(</span><em>emission_line_model</em>, <em>emission_line_model_3d_hdu</em>, <em>mask=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/dapfits.html#construct_cube_file._get_emission_line_model_mask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.dapfits.construct_cube_file._get_emission_line_model_mask" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>For the emission-line models:</dt>
 <dd><ul class="first last simple">
-<li>copy INVALID_ERROR from stellar_continuum into
-IVARINVALID</li>
-<li>copy ARTIFACTs from both stellar_continuum and
-emission_line_model</li>
-<li>from stellar_continuum, consolidate DIDNOTUSE, LOW_SNR,
-OUTSIDE_RANGE, EML_REGION, TPL_PIXELS, TRUNCATED,
-PPXF_REJECT, INVALID_ERROR into a list of pixels ignored
-by the stellar-continuum fit</li>
-<li>from emission_line_model, consolidate DIDNOTUSE, LOW_SNR,
-OUTSIDE_RANGE into a list of pixels ignored by the
-emission-line fit</li>
-<li>flag pixels as FITIGNORED if the pixel is ignored by
-<strong>both</strong> the stellar-continuum and emission-line fits</li>
-<li>from stellar_continuum, consolidate FIT_FAILED and
-NEAR_BOUND into a list of failed pixels from the
-stellar-continuum fit</li>
-<li>do the same for the emission-line fitting mask</li>
-<li>flag pixels as FIT_FAILED if the pixel failed in
-<strong>either</strong> the stellar-continuum or emission-line fits</li>
+<li>copy INVALID_ERROR into IVARINVALID</li>
+<li>copy ARTIFACTs</li>
+<li>consolidate DIDNOTUSE, LOW_SNR, OUTSIDE_RANGE, EML_REGION, TPL_PIXELS, TRUNCATED,
+PPXF_REJECT, INVALID_ERROR, ARTIFACT into ELIGNORED</li>
+<li>consolidate FIT_FAILED and NEAR_BOUND into ELFAILED</li>
 </ul>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="method">
+<dt id="mangadap.dapfits.construct_cube_file._get_stellar_continuum_mask">
+<code class="descname">_get_stellar_continuum_mask</code><span class="sig-paren">(</span><em>stellar_continuum</em>, <em>stellar_continuum_3d_hdu</em>, <em>mask=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/dapfits.html#construct_cube_file._get_stellar_continuum_mask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.dapfits.construct_cube_file._get_stellar_continuum_mask" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>For the stellar continuum models:</dt>
+<dd><ul class="first last simple">
+<li>copy INVALID_ERROR into IVARINVALID</li>
+<li>copy ARTIFACTs</li>
+<li>consolidate DIDNOTUSE, LOW_SNR, OUTSIDE_RANGE, EML_REGION, TPL_PIXELS, TRUNCATED,
+PPXF_REJECT, INVALID_ERROR, ARTIFACT into FITIGNORED</li>
+<li>consolidate FIT_FAILED and NEAR_BOUND into FITFAILED</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="mangadap.dapfits.construct_cube_file._include_no_model_mask">
+<code class="descname">_include_no_model_mask</code><span class="sig-paren">(</span><em>mask</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/dapfits.html#construct_cube_file._include_no_model_mask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.dapfits.construct_cube_file._include_no_model_mask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Assign the NOMODEL bit to spectral regions outside of the fitted
+spectral range.</p>
+<p>Modeled off of StellarContiuumModel.reset_continuum_mask_window.</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="mangadap.dapfits.construct_cube_file._initialize_mask">
 <code class="descname">_initialize_mask</code><span class="sig-paren">(</span><em>binned_spectra</em>, <em>binned_spectra_3d_hdu</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/dapfits.html#construct_cube_file._initialize_mask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.dapfits.construct_cube_file._initialize_mask" title="Permalink to this definition">¶</a></dt>
 <dd><p>Initialize the mask based on the DRP cube mask.</p>
-<p>IVAR_INVALID:  Test of invalid inverse variance based on the DRP
-file.  THIS SHOULD BE A TEST THAT IS INCLUDED IN THE
-BINNED_SPECTRA OBJECT.  This should match the flags from the
-stellar continuum model object.</p>
+<p>Set IVARINVALID by testing for invalid inverse variance data.
+THIS SHOULD BE A TEST THAT IS INCLUDED IN THE BINNED_SPECTRA
+OBJECT.  This should match the flags from the stellar continuum
+model object.</p>
 <p>Copy the FORESTAR flags from the DRP file to the this one</p>
 </dd></dl>
+
+<dl class="method">
+<dt id="mangadap.dapfits.construct_cube_file._set_no_model">
+<code class="descname">_set_no_model</code><span class="sig-paren">(</span><em>mask</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/dapfits.html#construct_cube_file._set_no_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.dapfits.construct_cube_file._set_no_model" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="method">
 <dt id="mangadap.dapfits.construct_cube_file._set_paths">
@@ -761,17 +762,20 @@ stellar continuum model object.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="mangadap.dapfits.construct_cube_file.emission_line_model_cube">
-<code class="descname">emission_line_model_cube</code><span class="sig-paren">(</span><em>prihdr</em>, <em>binned_spectra</em>, <em>emission_line_model</em>, <em>emission_line_model_3d_hdu</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/dapfits.html#construct_cube_file.emission_line_model_cube"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.dapfits.construct_cube_file.emission_line_model_cube" title="Permalink to this definition">¶</a></dt>
-<dd><p>Constructs the ‘EMLINE’, ‘EMLINE_BASE’, and ‘EMLINE_MASK’ model
-cube extensions.</p>
+<dt id="mangadap.dapfits.construct_cube_file.binned_data_cube">
+<code class="descname">binned_data_cube</code><span class="sig-paren">(</span><em>prihdr</em>, <em>binned_spectra</em>, <em>binned_spectra_3d_hdu</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/dapfits.html#construct_cube_file.binned_data_cube"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.dapfits.construct_cube_file.binned_data_cube" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructs the ‘FLUX’, ‘IVAR’, ‘WAVE’, and ‘REDCORR’ model cube
+extensions, and begins the construction of the ‘MASK’.</p>
+<p>Returns the primary header, a list of ImageHDUs, and the mask
+array.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="mangadap.dapfits.construct_cube_file.model_and_data_cube">
-<code class="descname">model_and_data_cube</code><span class="sig-paren">(</span><em>prihdr</em>, <em>binned_spectra</em>, <em>binned_spectra_3d_hdu</em>, <em>stellar_continuum</em>, <em>stellar_continuum_3d_hdu</em>, <em>emission_line_model</em>, <em>emission_line_model_3d_hdu</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/dapfits.html#construct_cube_file.model_and_data_cube"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.dapfits.construct_cube_file.model_and_data_cube" title="Permalink to this definition">¶</a></dt>
-<dd><p>Constructs the ‘FLUX’, ‘IVAR’, ‘MASK’, ‘WAVE’, ‘REDCORR’, and
-‘MODEL’ model cube extensions.</p>
+<dt id="mangadap.dapfits.construct_cube_file.model_cubes">
+<code class="descname">model_cubes</code><span class="sig-paren">(</span><em>prihdr</em>, <em>binned_spectra</em>, <em>stellar_continuum</em>, <em>stellar_continuum_3d_hdu</em>, <em>emission_line_model</em>, <em>emission_line_model_3d_hdu</em>, <em>mask=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/dapfits.html#construct_cube_file.model_cubes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.dapfits.construct_cube_file.model_cubes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructs the ‘MODEL’, ‘EMLINE’, ‘EMLINE_BASE’, and
+‘EMLINE_MASK’ model cube extensions, adds the model information
+to the header, and construct the stellar-continuum mask.</p>
 </dd></dl>
 
 </dd></dl>
@@ -779,7 +783,7 @@ cube extensions.</p>
 <dl class="class">
 <dt id="mangadap.dapfits.construct_maps_file">
 <em class="property">class </em><code class="descclassname">mangadap.dapfits.</code><code class="descname">construct_maps_file</code><span class="sig-paren">(</span><em>drpf</em>, <em>obs=None</em>, <em>rdxqa=None</em>, <em>binned_spectra=None</em>, <em>stellar_continuum=None</em>, <em>emission_line_moments=None</em>, <em>emission_line_model=None</em>, <em>spectral_indices=None</em>, <em>nsa_redshift=None</em>, <em>dapsrc=None</em>, <em>dapver=None</em>, <em>analysis_path=None</em>, <em>directory_path=None</em>, <em>output_file=None</em>, <em>clobber=True</em>, <em>loggers=None</em>, <em>quiet=False</em>, <em>single_precision=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/dapfits.html#construct_maps_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.dapfits.construct_maps_file" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Construct a DAP MAPS file.</p>
 <p>Set as a class for coherency reasons, but should not be used as an
 object!</p>
@@ -814,7 +818,7 @@ pixel mask.</p>
 <p>MAIN_EMPTY, BLUE_EMPTY, RED_EMPTY, UNDEFINED_BANDS propagated to NOVALUE</p>
 <p>MAIN_JUMP, BLUE_JUMP, RED_JUMP, JUMP_BTWN_SIDEBANDS propagated to FITFAILED</p>
 <p>MAIN_INCOMP, BLUE_INCOMP, RED_INCOMP propagated to UNRELIABLE</p>
-<p>NO_ABSORPTION_CORRECTION propaged to NOCORRECTION</p>
+<p>NO_ABSORPTION_CORRECTION propagated to NOCORRECTION</p>
 <p>DIVBYZERO propagated to MATHERROR</p>
 <p>Second moments not provided so no need to include UNDEFINED_MOM2</p>
 </dd></dl>

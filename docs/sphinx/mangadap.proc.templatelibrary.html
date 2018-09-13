@@ -104,7 +104,7 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.survey.html">mangadap.survey package</a></li>
-<li class="toctree-l3"><a class="reference internal" href="mangadap.test.html">mangadap.test package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.tests.html">mangadap.tests package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.util.html">mangadap.util package</a></li>
 </ul>
 </li>
@@ -183,7 +183,7 @@
 <span id="mangadap-proc-templatelibrary-module"></span><h1>mangadap.proc.templatelibrary module<a class="headerlink" href="#module-mangadap.proc.templatelibrary" title="Permalink to this headline">¶</a></h1>
 <p>Class that reads and prepares template libraries for use in fitting the
 stellar-continuum of a spectrum.  See
-<a class="reference internal" href="#mangadap.proc.templatelibrary.available_template_libraries" title="mangadap.proc.templatelibrary.available_template_libraries"><code class="xref py py-func docutils literal"><span class="pre">available_template_libraries()</span></code></a> for the list of default template
+<a class="reference internal" href="#mangadap.proc.templatelibrary.available_template_libraries" title="mangadap.proc.templatelibrary.available_template_libraries"><code class="xref py py-func docutils literal notranslate"><span class="pre">available_template_libraries()</span></code></a> for the list of default template
 libraries.</p>
 <p>The “raw” template libraries are expected to consist of 1D fits files.
 The wavelength sampling can be either linear or logarithmic in
@@ -194,16 +194,16 @@ template spectra for analysis, this class will use
 <a class="reference external" href="http://pydl.readthedocs.io/en/stable/api/pydl.goddard.astro.airtovac.html#pydl.goddard.astro.airtovac">pydl.goddard.astro.airtovac</a> to convert the template wavelengths to
 vacuum.  Finally, one can specify that the template library is only
 valid within a certain wavelength range and above a certian flux limit;
-see <a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibraryDef" title="mangadap.proc.templatelibrary.TemplateLibraryDef"><code class="xref py py-class docutils literal"><span class="pre">TemplateLibraryDef</span></code></a>.</p>
+see <a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibraryDef" title="mangadap.proc.templatelibrary.TemplateLibraryDef"><code class="xref py py-class docutils literal notranslate"><span class="pre">TemplateLibraryDef</span></code></a>.</p>
 <p>Preparation of the template library for use in stellar-continuum fitting
 consists of a number of steps as described in the documentation of
-<a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary.process_template_library" title="mangadap.proc.templatelibrary.TemplateLibrary.process_template_library"><code class="xref py py-func docutils literal"><span class="pre">TemplateLibrary.process_template_library()</span></code></a>.</p>
+<a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary.process_template_library" title="mangadap.proc.templatelibrary.TemplateLibrary.process_template_library"><code class="xref py py-func docutils literal notranslate"><span class="pre">TemplateLibrary.process_template_library()</span></code></a>.</p>
 <p>A template library that has been prepared for analysis is automatically
 written to disk for later recovery.</p>
 <p>Two support classes are also provided.  One is a derived
-<a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet" title="mangadap.par.parset.ParSet"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.parset.ParSet</span></code></a> instance that provides the defining
+<a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet" title="mangadap.par.parset.ParSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.par.parset.ParSet</span></code></a> instance that provides the defining
 parameters of a DAP template library.  The second is a derived
-<a class="reference internal" href="mangadap.util.bitmask.html#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.bitmask.BitMask</span></code></a> instance that defines the
+<a class="reference internal" href="mangadap.util.bitmask.html#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.bitmask.BitMask</span></code></a> instance that defines the
 bitmasks for the template library spectra.</p>
 <dl class="docutils">
 <dt><em>License</em>:</dt>
@@ -214,45 +214,9 @@ bitmasks for the template library spectra.</p>
 </dd>
 <dt><em>Source location</em>:</dt>
 <dd>$MANGADAP_DIR/python/mangadap/proc/templatelibrary.py</dd>
-<dt><em>Imports and python version compliance</em>:</dt>
-<dd><div class="first last highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
-<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
-<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
-<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
-
-<span class="kn">import</span> <span class="nn">sys</span>
-<span class="kn">import</span> <span class="nn">warnings</span>
-<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version</span> <span class="o">&gt;</span> <span class="s1">&#39;3&#39;</span><span class="p">:</span>
-    <span class="n">long</span> <span class="o">=</span> <span class="nb">int</span>
-
-<span class="kn">import</span> <span class="nn">glob</span>
-<span class="kn">import</span> <span class="nn">os</span>
-<span class="kn">import</span> <span class="nn">time</span>
-<span class="kn">import</span> <span class="nn">logging</span>
-
-<span class="kn">import</span> <span class="nn">numpy</span>
-<span class="kn">from</span> <span class="nn">scipy</span> <span class="k">import</span> <span class="n">sparse</span>
-<span class="kn">from</span> <span class="nn">scipy.interpolate</span> <span class="k">import</span> <span class="n">InterpolatedUnivariateSpline</span>
-<span class="kn">from</span> <span class="nn">astropy.io</span> <span class="k">import</span> <span class="n">fits</span>
-<span class="kn">import</span> <span class="nn">astropy.constants</span>
-<span class="kn">from</span> <span class="nn">pydl.goddard.astro</span> <span class="k">import</span> <span class="n">airtovac</span>
-
-<span class="kn">from</span> <span class="nn">..util.bitmask</span> <span class="k">import</span> <span class="n">BitMask</span>
-<span class="kn">from</span> <span class="nn">..par.parset</span> <span class="k">import</span> <span class="n">ParSet</span>
-<span class="kn">from</span> <span class="nn">..config.defaults</span> <span class="k">import</span> <span class="n">default_dap_source</span><span class="p">,</span> <span class="n">default_dap_common_path</span>
-<span class="kn">from</span> <span class="nn">..config.defaults</span> <span class="k">import</span> <span class="n">default_dap_file_name</span>
-<span class="kn">from</span> <span class="nn">..util.log</span> <span class="k">import</span> <span class="n">log_output</span>
-<span class="kn">from</span> <span class="nn">..util.fileio</span> <span class="k">import</span> <span class="n">readfits_1dspec</span><span class="p">,</span> <span class="n">read_template_spectrum</span><span class="p">,</span> <span class="n">writefits_1dspec</span>
-<span class="kn">from</span> <span class="nn">..util.instrument</span> <span class="k">import</span> <span class="n">resample1d</span><span class="p">,</span> <span class="n">resample_vector_npix</span><span class="p">,</span> <span class="n">SpectralResolution</span>
-<span class="kn">from</span> <span class="nn">..util.instrument</span> <span class="k">import</span> <span class="n">match_spectral_resolution</span><span class="p">,</span> <span class="n">spectral_coordinate_step</span>
-<span class="kn">from</span> <span class="nn">..util.parser</span> <span class="k">import</span> <span class="n">DefaultConfig</span>
-<span class="kn">from</span> <span class="nn">.util</span> <span class="k">import</span> <span class="n">select_proc_method</span><span class="p">,</span> <span class="n">HDUList_mask_wavelengths</span>
-</pre></div>
-</div>
-</dd>
 <dt><em>Class usage examples</em>:</dt>
 <dd><p class="first">Assuming you have the default directory structure setup, you can do:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="c1"># Imports</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Imports</span>
 <span class="kn">from</span> <span class="nn">mangadap.drpfits</span> <span class="k">import</span> <span class="n">DRPFits</span>
 <span class="kn">from</span> <span class="nn">mangadap.proc.templatelibrary</span> <span class="k">import</span> <span class="n">TemplateLibrary</span>
 <span class="kn">from</span> <span class="nn">matplotlib</span> <span class="k">import</span> <span class="n">pyplot</span>
@@ -269,17 +233,17 @@ bitmasks for the template library spectra.</p>
 <span class="n">pyplot</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
-<p>As part of the instantiation of the <a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary" title="mangadap.proc.templatelibrary.TemplateLibrary"><code class="xref py py-class docutils literal"><span class="pre">TemplateLibrary</span></code></a> object
+<p>As part of the instantiation of the <a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary" title="mangadap.proc.templatelibrary.TemplateLibrary"><code class="xref py py-class docutils literal notranslate"><span class="pre">TemplateLibrary</span></code></a> object
 in the above call, the template library is prepared for use in
 fitting the specified DRP file.  If the required processing has
-already been done, the instantiation of the <a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary" title="mangadap.proc.templatelibrary.TemplateLibrary"><code class="xref py py-class docutils literal"><span class="pre">TemplateLibrary</span></code></a>
+already been done, the instantiation of the <a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary" title="mangadap.proc.templatelibrary.TemplateLibrary"><code class="xref py py-class docutils literal notranslate"><span class="pre">TemplateLibrary</span></code></a>
 object simply reads the existing file.  If you do not have the
 default directory structure setup, you’ll need to define the paths
-to, e.g., the DRP file; see <code class="xref py py-class docutils literal"><span class="pre">mangadap.dapfile.dapfile</span></code>.</p>
+to, e.g., the DRP file; see <code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.dapfile.dapfile</span></code>.</p>
 <p>If you do not want to process the template (match the spectral
 resolution and sampling to that of the DRP data), you can force the
-<a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary" title="mangadap.proc.templatelibrary.TemplateLibrary"><code class="xref py py-class docutils literal"><span class="pre">TemplateLibrary</span></code></a> object to only provide the “raw” spectra:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="c1"># Imports</span>
+<a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary" title="mangadap.proc.templatelibrary.TemplateLibrary"><code class="xref py py-class docutils literal notranslate"><span class="pre">TemplateLibrary</span></code></a> object to only provide the “raw” spectra:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Imports</span>
 <span class="kn">from</span> <span class="nn">mangadap.proc.templatelibrary</span> <span class="k">import</span> <span class="n">TemplateLibrary</span>
 <span class="kn">from</span> <span class="nn">matplotlib</span> <span class="k">import</span> <span class="n">pyplot</span>
 
@@ -298,20 +262,20 @@ can be spectrum-dependent.</p>
 <p>In the above examples, the user has not provided a list of template
 libraries, meaning that the default set available to the DAP is
 used.  The default set is defined in
-<a class="reference internal" href="#mangadap.proc.templatelibrary.available_template_libraries" title="mangadap.proc.templatelibrary.available_template_libraries"><code class="xref py py-func docutils literal"><span class="pre">available_template_libraries()</span></code></a>.  If you want to use your own
+<a class="reference internal" href="#mangadap.proc.templatelibrary.available_template_libraries" title="mangadap.proc.templatelibrary.available_template_libraries"><code class="xref py py-func docutils literal notranslate"><span class="pre">available_template_libraries()</span></code></a>.  If you want to use your own
 template library, you have to define its parameters using
-<a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibraryDef" title="mangadap.proc.templatelibrary.TemplateLibraryDef"><code class="xref py py-class docutils literal"><span class="pre">TemplateLibraryDef</span></code></a>.  Currently, the template library
+<a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibraryDef" title="mangadap.proc.templatelibrary.TemplateLibraryDef"><code class="xref py py-class docutils literal notranslate"><span class="pre">TemplateLibraryDef</span></code></a>.  Currently, the template library
 spectra are expected to be 1D fits files with WCS header keywords
 defining the wavelength solution; see above.  Using an existing DAP
 library as an example:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="c1"># Imports</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Imports</span>
 <span class="kn">from</span> <span class="nn">mangadap.proc.templatelibrary</span> <span class="k">import</span> <span class="n">TemplateLibraryDef</span>
 <span class="kn">from</span> <span class="nn">mangadap.proc.templatelibrary</span> <span class="k">import</span> <span class="n">TemplateLibrary</span>
-<span class="kn">from</span> <span class="nn">mangadap.config.defaults</span> <span class="k">import</span> <span class="n">default_dap_source</span>
+<span class="kn">from</span> <span class="nn">mangadap.config.defaults</span> <span class="k">import</span> <span class="n">dap_source_dir</span>
 <span class="kn">from</span> <span class="nn">matplotlib</span> <span class="k">import</span> <span class="n">pyplot</span>
 
 <span class="c1"># Define the search string for the library</span>
-<span class="n">search_str</span> <span class="o">=</span> <span class="n">default_dap_source</span><span class="p">()</span><span class="o">+</span><span class="s1">&#39;/data/stellar_templates/miles/*.fits&#39;</span>
+<span class="n">search_str</span> <span class="o">=</span> <span class="n">dap_source_dir</span><span class="p">()</span><span class="o">+</span><span class="s1">&#39;/data/stellar_templates/miles/*.fits&#39;</span>
 
 <span class="c1"># Define the template library parameters</span>
 <span class="n">tpl_par</span> <span class="o">=</span> <span class="n">TemplateLibraryDef</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s1">&#39;MILES&#39;</span><span class="p">,</span>    <span class="c1"># Unique keyword for the library</span>
@@ -331,14 +295,14 @@ library as an example:</p>
 </pre></div>
 </div>
 <p>Note that the keyword you use must be provided both to the parameter
-set and when instantiating the <a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary" title="mangadap.proc.templatelibrary.TemplateLibrary"><code class="xref py py-class docutils literal"><span class="pre">TemplateLibrary</span></code></a> object.  In
+set and when instantiating the <a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary" title="mangadap.proc.templatelibrary.TemplateLibrary"><code class="xref py py-class docutils literal notranslate"><span class="pre">TemplateLibrary</span></code></a> object.  In
 the example above, I have not processed the library, but you can by
 following a similar approach to the first example.</p>
 <p class="last">You can also process the spectra to a user-provided resolution and
 pixel sampling, toggle on/off the renormalization of the library to
 a mean flux of unity and define various paths if you’re not working
 within the nominal DAP directory structure.  See the optional
-instantiation arguments for <a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary" title="mangadap.proc.templatelibrary.TemplateLibrary"><code class="xref py py-class docutils literal"><span class="pre">TemplateLibrary</span></code></a>.</p>
+instantiation arguments for <a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary" title="mangadap.proc.templatelibrary.TemplateLibrary"><code class="xref py py-class docutils literal notranslate"><span class="pre">TemplateLibrary</span></code></a>.</p>
 </dd>
 <dt><em>Revision history</em>:</dt>
 <dd><div class="first last line-block">
@@ -346,29 +310,29 @@ instantiation arguments for <a class="reference internal" href="#mangadap.proc.t
 <div class="line"><strong>26 May 2015</strong>: (KBW) Added some Sphinx documentation.</div>
 <div class="line"><strong>17 Jun 2015</strong>: (KBW) Added flexibility in definition of template
 libraries from which to choose using the new
-<a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibraryDef" title="mangadap.proc.templatelibrary.TemplateLibraryDef"><code class="xref py py-class docutils literal"><span class="pre">TemplateLibraryDef</span></code></a> class.</div>
+<a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibraryDef" title="mangadap.proc.templatelibrary.TemplateLibraryDef"><code class="xref py py-class docutils literal notranslate"><span class="pre">TemplateLibraryDef</span></code></a> class.</div>
 <div class="line"><strong>23 Jun 2015</strong>: (KBW) Allow user to provided non-DRP input
 spectra, meaning they need to provide the velocity scale and the
 wavelength and spectral resolution vectors.  They must also
 directly set the name of the output processed file.</div>
 <div class="line"><strong>01 Feb 2016</strong>: (KBW) Propagated changes to
-<a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibraryDef" title="mangadap.proc.templatelibrary.TemplateLibraryDef"><code class="xref py py-class docutils literal"><span class="pre">TemplateLibraryDef</span></code></a> and changed procedure for reading
+<a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibraryDef" title="mangadap.proc.templatelibrary.TemplateLibraryDef"><code class="xref py py-class docutils literal notranslate"><span class="pre">TemplateLibraryDef</span></code></a> and changed procedure for reading
 raw template library.</div>
 <div class="line"><strong>04 Feb 2016</strong>: (KBW) Converted from
-<code class="xref py py-func docutils literal"><span class="pre">mangadap.util.instrument.log_rebin()</span></code> to
-<a class="reference internal" href="mangadap.util.instrument.html#mangadap.util.instrument.resample_vector" title="mangadap.util.instrument.resample_vector"><code class="xref py py-func docutils literal"><span class="pre">mangadap.util.instrument.resample_vector()</span></code></a>.  Allows input
+<code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.util.instrument.log_rebin()</span></code> to
+<code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.util.instrument.resample_vector()</span></code>.  Allows input
 library to be logarithmically sampled and provides a different
 approach to subsampling spectra.  Implemented other convenience
 operations, such as selecting a certain wavelength range for the
 processed library.</div>
 <div class="line"><strong>19 May 2016</strong>: (KBW) Added loggers and quiet keyword arguments
-to <a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary" title="mangadap.proc.templatelibrary.TemplateLibrary"><code class="xref py py-class docutils literal"><span class="pre">TemplateLibrary</span></code></a></div>
+to <a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary" title="mangadap.proc.templatelibrary.TemplateLibrary"><code class="xref py py-class docutils literal notranslate"><span class="pre">TemplateLibrary</span></code></a></div>
 <div class="line"><strong>22 Jun 2016</strong>: (KBW) Included MILESHC library in documentation.
 Allow to specify how the resolution and sampling are matched to
-the DRP data.  The <a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary" title="mangadap.proc.templatelibrary.TemplateLibrary"><code class="xref py py-class docutils literal"><span class="pre">TemplateLibrary</span></code></a> class should be
+the DRP data.  The <a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary" title="mangadap.proc.templatelibrary.TemplateLibrary"><code class="xref py py-class docutils literal notranslate"><span class="pre">TemplateLibrary</span></code></a> class should be
 generalized to make this more transparent (and unnecessary).</div>
 <div class="line"><strong>03 Apr 2017</strong>: (KBW) Include arguments for
-<a class="reference internal" href="mangadap.util.instrument.html#mangadap.util.instrument.match_spectral_resolution" title="mangadap.util.instrument.match_spectral_resolution"><code class="xref py py-func docutils literal"><span class="pre">mangadap.util.instrument.match_spectral_resolution()</span></code></a> that
+<code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.util.instrument.match_spectral_resolution()</span></code> that
 specify the minimum sigma in pixels for the convolution kernel
 and any offset in the resolution required in the call for the
 template library.  Check that the resampling of the spectrum
@@ -376,32 +340,34 @@ does not reach the two-pixel resolution limit; flag the spectrum
 in those regions that do and change the resolution to the two
 pixel limit.</div>
 <div class="line"><strong>30 Aug 2017</strong>: (KBW) Switch from using
-<a class="reference internal" href="mangadap.util.instrument.html#mangadap.util.instrument.resample_vector" title="mangadap.util.instrument.resample_vector"><code class="xref py py-func docutils literal"><span class="pre">mangadap.util.instrument.resample_vector()</span></code></a> to
-<a class="reference internal" href="mangadap.util.instrument.html#mangadap.util.instrument.resample1d" title="mangadap.util.instrument.resample1d"><code class="xref py py-func docutils literal"><span class="pre">mangadap.util.instrument.resample1d()</span></code></a></div>
+<code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.util.instrument.resample_vector()</span></code> to
+<code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.util.instrument.resample1d()</span></code></div>
+<div class="line"><strong>30 Aug 2018</strong>: (KBW) Switch from using resample1d to
+<a class="reference internal" href="mangadap.util.sampling.html#mangadap.util.sampling.Resample" title="mangadap.util.sampling.Resample"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.sampling.Resample</span></code></a>.</div>
 </div>
 </dd>
 </dl>
 <dl class="class">
 <dt id="mangadap.proc.templatelibrary.TemplateLibrary">
 <em class="property">class </em><code class="descclassname">mangadap.proc.templatelibrary.</code><code class="descname">TemplateLibrary</code><span class="sig-paren">(</span><em>library_key</em>, <em>tpllib_list=None</em>, <em>dapsrc=None</em>, <em>drpf=None</em>, <em>match_to_drp_resolution=True</em>, <em>velscale_ratio=None</em>, <em>sres=None</em>, <em>velocity_offset=0.0</em>, <em>min_sig_pix=0.0</em>, <em>no_offset=True</em>, <em>spectral_step=None</em>, <em>log=True</em>, <em>wavelength_range=None</em>, <em>renormalize=True</em>, <em>dapver=None</em>, <em>analysis_path=None</em>, <em>directory_path=None</em>, <em>processed_file=None</em>, <em>read=True</em>, <em>process=True</em>, <em>hardcopy=True</em>, <em>symlink_dir=None</em>, <em>clobber=False</em>, <em>checksum=False</em>, <em>loggers=None</em>, <em>quiet=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/templatelibrary.html#TemplateLibrary"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.templatelibrary.TemplateLibrary" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Object used to read, store, and prepare template libraries for use
 in analyzing object spectra.</p>
 <p>The default list of available libraries provided by the MaNGA DAP
-defined in <a class="reference internal" href="#mangadap.proc.templatelibrary.available_template_libraries" title="mangadap.proc.templatelibrary.available_template_libraries"><code class="xref py py-func docutils literal"><span class="pre">available_template_libraries()</span></code></a>.  The user can
+defined in <a class="reference internal" href="#mangadap.proc.templatelibrary.available_template_libraries" title="mangadap.proc.templatelibrary.available_template_libraries"><code class="xref py py-func docutils literal notranslate"><span class="pre">available_template_libraries()</span></code></a>.  The user can
 provide their own library for use with this class provided they are
 contained in 1D fits spectra, sampled linearly in wavelength with
 the wavelength coordinates available via the WCS keywords (CRPIX1,
 CRVAL1, CDELT1), and they have an appropriately defined spectral
 resolution (FWHM in angstroms that is constant as a function of
-wavelength).  See <a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibraryDef" title="mangadap.proc.templatelibrary.TemplateLibraryDef"><code class="xref py py-class docutils literal"><span class="pre">TemplateLibraryDef</span></code></a> and
-<a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary._build_raw_hdu" title="mangadap.proc.templatelibrary.TemplateLibrary._build_raw_hdu"><code class="xref py py-func docutils literal"><span class="pre">_build_raw_hdu()</span></code></a>.</p>
+wavelength).  See <a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibraryDef" title="mangadap.proc.templatelibrary.TemplateLibraryDef"><code class="xref py py-class docutils literal notranslate"><span class="pre">TemplateLibraryDef</span></code></a> and
+<a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary._build_raw_hdu" title="mangadap.proc.templatelibrary.TemplateLibrary._build_raw_hdu"><code class="xref py py-func docutils literal notranslate"><span class="pre">_build_raw_hdu()</span></code></a>.</p>
 <p>The class is optimized for use in analyzing MaNGA DRP files;
 however, one can provide the necessary information so that the class
 can be used with a non-DRP spectrum.  In the latter case, the user
 must supply the velocity scale of the pixel for the logarithmically
 resampled template library, and a
-<a class="reference internal" href="mangadap.util.instrument.html#mangadap.util.instrument.SpectralResolution" title="mangadap.util.instrument.SpectralResolution"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.instrument.SpectralResolution</span></code></a> object the
+<a class="reference internal" href="mangadap.util.resolution.html#mangadap.util.resolution.SpectralResolution" title="mangadap.util.resolution.SpectralResolution"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.resolution.SpectralResolution</span></code></a> object the
 defines the instrumental resolution of the spectrum/spectra to be
 analyzed.</p>
 <div class="admonition-todo admonition" id="index-0">
@@ -432,27 +398,27 @@ the library already exists.</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>library_key</strong> (<em>str</em>) – Keyword selecting the library to use.</li>
 <li><strong>tpllib_list</strong> (<em>list</em>) – (<strong>Optional</strong>) List of
-<a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibraryDef" title="mangadap.proc.templatelibrary.TemplateLibraryDef"><code class="xref py py-class docutils literal"><span class="pre">TemplateLibraryDef</span></code></a> objects that define the
+<a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibraryDef" title="mangadap.proc.templatelibrary.TemplateLibraryDef"><code class="xref py py-class docutils literal notranslate"><span class="pre">TemplateLibraryDef</span></code></a> objects that define the
 parameters required to read and interpret a template
 library.  The <em>library_key</em> must select one of the objects
 in this list.</li>
 <li><strong>dapsrc</strong> (<em>str</em>) – (<strong>Optional</strong>) Root path to the DAP source
 directory.  If not provided, the default is defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_source" title="mangadap.config.defaults.default_dap_source"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_source()</span></code></a>.</li>
-<li><strong>drpf</strong> (<a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal"><span class="pre">mangadap.drpfits.DRPFits</span></code></a>) – (<strong>Optional</strong>) DRP
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.dap_source_dir" title="mangadap.config.defaults.dap_source_dir"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.dap_source_dir()</span></code></a>.</li>
+<li><strong>drpf</strong> (<a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.drpfits.DRPFits</span></code></a>) – (<strong>Optional</strong>) DRP
 file (object) with which the template library is associated
 for analysis</li>
 <li><strong>match_to_drp_resolution</strong> (<em>bool</em>) – (<strong>Optional</strong>) Match the
 spectral resolution of the template library to the
-resolution provided by the <a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal"><span class="pre">mangadap.drpfits.DRPFits</span></code></a>
+resolution provided by the <a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.drpfits.DRPFits</span></code></a>
 object; the latter must be provided for this argument to
 have any use.</li>
 <li><strong>velscale_ratio</strong> (<em>int</em>) – (<strong>Optional</strong>) Resample the template
 spectra such that the ratio of the pixel scale in the
-provided <a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal"><span class="pre">mangadap.drpfits.DRPFits</span></code></a> object is this
+provided <a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.drpfits.DRPFits</span></code></a> object is this
 many times larger than the pixels in the resampled template
 spectrum.</li>
-<li><strong>sres</strong> (<a class="reference internal" href="mangadap.util.instrument.html#mangadap.util.instrument.SpectralResolution" title="mangadap.util.instrument.SpectralResolution"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.instrument.SpectralResolution</span></code></a>) – (<strong>Optional</strong>) The object is used simply to access the
+<li><strong>sres</strong> (<a class="reference internal" href="mangadap.util.resolution.html#mangadap.util.resolution.SpectralResolution" title="mangadap.util.resolution.SpectralResolution"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.resolution.SpectralResolution</span></code></a>) – (<strong>Optional</strong>) The object is used simply to access the
 spectral resolution and associated wavelength coordinate
 vector needed when matching the spectral resolution of the
 template library; this is used in place of the attributes in
@@ -472,21 +438,21 @@ Unobserved spectral regions will be flagged.</li>
 renormalize the flux to unity.</li>
 <li><strong>dapver</strong> (<em>str</em>) – (<strong>Optional</strong>) DAP version, which is used to
 define the default DAP analysis path.  Default is defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_version" title="mangadap.config.defaults.default_dap_version"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_version()</span></code></a></li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_version" title="mangadap.config.defaults.default_dap_version"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_dap_version()</span></code></a></li>
 <li><strong>analysis_path</strong> (<em>str</em>) – (<strong>Optional</strong>) The path to the top level
 directory containing the DAP output files for a given DRP
 and DAP version.  Default is defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_analysis_path" title="mangadap.config.defaults.default_analysis_path"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_analysis_path()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_analysis_path" title="mangadap.config.defaults.default_analysis_path"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_analysis_path()</span></code></a>.</li>
 <li><strong>directory_path</strong> (<em>str</em>) – (<strong>Optional</strong>) The exact path to the
 processed template library file.  Default is defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_common_path" title="mangadap.config.defaults.default_dap_common_path"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_common_path()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_common_path" title="mangadap.config.defaults.default_dap_common_path"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_dap_common_path()</span></code></a>.</li>
 <li><strong>processed_file</strong> (<em>str</em>) – (<strong>Optional</strong>) The name of the file
 containing the prepared template library output file.  The
 file should be found at
-<a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary.directory_path" title="mangadap.proc.templatelibrary.TemplateLibrary.directory_path"><code class="xref py py-attr docutils literal"><span class="pre">directory_path</span></code></a>/<a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary.processed_file" title="mangadap.proc.templatelibrary.TemplateLibrary.processed_file"><code class="xref py py-attr docutils literal"><span class="pre">processed_file</span></code></a>.  Default is
+<a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary.directory_path" title="mangadap.proc.templatelibrary.TemplateLibrary.directory_path"><code class="xref py py-attr docutils literal notranslate"><span class="pre">directory_path</span></code></a>/<a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary.processed_file" title="mangadap.proc.templatelibrary.TemplateLibrary.processed_file"><code class="xref py py-attr docutils literal notranslate"><span class="pre">processed_file</span></code></a>.  Default is
 defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_file_name" title="mangadap.config.defaults.default_dap_file_name"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_file_name()</span></code></a>.</li>
-<li><strong>process</strong> (<em>bool</em>) – (<strong>Optional</strong>) If <a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary.drpf" title="mangadap.proc.templatelibrary.TemplateLibrary.drpf"><code class="xref py py-attr docutils literal"><span class="pre">drpf</span></code></a> is defined and
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_file_name" title="mangadap.config.defaults.default_dap_file_name"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_dap_file_name()</span></code></a>.</li>
+<li><strong>process</strong> (<em>bool</em>) – (<strong>Optional</strong>) If <a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary.drpf" title="mangadap.proc.templatelibrary.TemplateLibrary.drpf"><code class="xref py py-attr docutils literal notranslate"><span class="pre">drpf</span></code></a> is defined and
 the prepared template library does not exist, this will
 process the template library in preparation for use in
 fitting the provided DRP file.</li>
@@ -494,7 +460,7 @@ fitting the provided DRP file.</li>
 processed template library.  Default is True.</li>
 <li><strong>symlink_dir</strong> (<em>str</em>) – (<strong>Optional</strong>) Create a symlink to the file
 in this directory.  Default is for no symlink.</li>
-<li><strong>clobber</strong> (<em>bool</em>) – (<strong>Optional</strong>) If <a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary.drpf" title="mangadap.proc.templatelibrary.TemplateLibrary.drpf"><code class="xref py py-attr docutils literal"><span class="pre">drpf</span></code></a> is define and
+<li><strong>clobber</strong> (<em>bool</em>) – (<strong>Optional</strong>) If <a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary.drpf" title="mangadap.proc.templatelibrary.TemplateLibrary.drpf"><code class="xref py py-attr docutils literal notranslate"><span class="pre">drpf</span></code></a> is define and
 <em>process</em> is True, this will clobber any existing processed
 template library.</li>
 </ul>
@@ -506,13 +472,13 @@ template library.</li>
 <dt id="mangadap.proc.templatelibrary.TemplateLibrary.bitmask">
 <code class="descname">bitmask</code><a class="headerlink" href="#mangadap.proc.templatelibrary.TemplateLibrary.bitmask" title="Permalink to this definition">¶</a></dt>
 <dd><p><em>BitMask</em> – A BitMask object used to toggle mask values;
-see <a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibraryBitMask" title="mangadap.proc.templatelibrary.TemplateLibraryBitMask"><code class="xref py py-func docutils literal"><span class="pre">TemplateLibraryBitMask()</span></code></a>.</p>
+see <a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibraryBitMask" title="mangadap.proc.templatelibrary.TemplateLibraryBitMask"><code class="xref py py-func docutils literal notranslate"><span class="pre">TemplateLibraryBitMask()</span></code></a>.</p>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="mangadap.proc.templatelibrary.TemplateLibrary.library">
 <code class="descname">library</code><a class="headerlink" href="#mangadap.proc.templatelibrary.TemplateLibrary.library" title="Permalink to this definition">¶</a></dt>
-<dd><p><a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibraryDef" title="mangadap.proc.templatelibrary.TemplateLibraryDef"><code class="xref py py-class docutils literal"><span class="pre">TemplateLibraryDef</span></code></a> – Parameter set required to
+<dd><p><a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibraryDef" title="mangadap.proc.templatelibrary.TemplateLibraryDef"><code class="xref py py-class docutils literal notranslate"><span class="pre">TemplateLibraryDef</span></code></a> – Parameter set required to
 read and prepare the library.</p>
 </dd></dl>
 
@@ -520,7 +486,7 @@ read and prepare the library.</p>
 <dt id="mangadap.proc.templatelibrary.TemplateLibrary.file_list">
 <code class="descname">file_list</code><a class="headerlink" href="#mangadap.proc.templatelibrary.TemplateLibrary.file_list" title="Permalink to this definition">¶</a></dt>
 <dd><p><em>list</em> – The list of files found using <a class="reference external" href="https://docs.python.org/3.4/library/glob.html">glob.glob</a> and
-<code class="xref py py-attr docutils literal"><span class="pre">file_search</span></code>.</p>
+<code class="xref py py-attr docutils literal notranslate"><span class="pre">file_search</span></code>.</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -532,14 +498,14 @@ read and prepare the library.</p>
 <dl class="attribute">
 <dt id="mangadap.proc.templatelibrary.TemplateLibrary.drpf">
 <code class="descname">drpf</code><a class="headerlink" href="#mangadap.proc.templatelibrary.TemplateLibrary.drpf" title="Permalink to this definition">¶</a></dt>
-<dd><p><a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal"><span class="pre">mangadap.drpfits.DRPFits</span></code></a> – DRP file (object) with
+<dd><p><a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.drpfits.DRPFits</span></code></a> – DRP file (object) with
 which the template library is associated for analysis</p>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="mangadap.proc.templatelibrary.TemplateLibrary.sres">
 <code class="descname">sres</code><a class="headerlink" href="#mangadap.proc.templatelibrary.TemplateLibrary.sres" title="Permalink to this definition">¶</a></dt>
-<dd><p><a class="reference internal" href="mangadap.util.instrument.html#mangadap.util.instrument.SpectralResolution" title="mangadap.util.instrument.SpectralResolution"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.instrument.SpectralResolution</span></code></a> – The object is used simply to access the spectral resolution
+<dd><p><a class="reference internal" href="mangadap.util.resolution.html#mangadap.util.resolution.SpectralResolution" title="mangadap.util.resolution.SpectralResolution"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.resolution.SpectralResolution</span></code></a> – The object is used simply to access the spectral resolution
 and associated wavelength coordinate vector needed when
 matching the spectral resolution of the template library;
 this is used in place of the attributes in any provided DRP
@@ -575,7 +541,7 @@ logarithmically sampled in wavelength.</p>
 <code class="descname">directory_path</code><a class="headerlink" href="#mangadap.proc.templatelibrary.TemplateLibrary.directory_path" title="Permalink to this definition">¶</a></dt>
 <dd><p><em>str</em> – The exact path to the processed template
 library file.  Default is defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_common_path" title="mangadap.config.defaults.default_dap_common_path"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_common_path()</span></code></a>.</p>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_common_path" title="mangadap.config.defaults.default_dap_common_path"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_dap_common_path()</span></code></a>.</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -584,7 +550,7 @@ library file.  Default is defined by
 <dd><p><em>str</em> – The name of the file containing (to
 contain) the prepared template library output file.  The
 file should be found at
-<a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary.directory_path" title="mangadap.proc.templatelibrary.TemplateLibrary.directory_path"><code class="xref py py-attr docutils literal"><span class="pre">directory_path</span></code></a>/<a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary.processed_file" title="mangadap.proc.templatelibrary.TemplateLibrary.processed_file"><code class="xref py py-attr docutils literal"><span class="pre">processed_file</span></code></a>.</p>
+<a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary.directory_path" title="mangadap.proc.templatelibrary.TemplateLibrary.directory_path"><code class="xref py py-attr docutils literal notranslate"><span class="pre">directory_path</span></code></a>/<a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary.processed_file" title="mangadap.proc.templatelibrary.TemplateLibrary.processed_file"><code class="xref py py-attr docutils literal notranslate"><span class="pre">processed_file</span></code></a>.</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -619,19 +585,19 @@ the DAP file</p>
 <code class="descname">_build_raw_hdu</code><span class="sig-paren">(</span><em>npix</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/templatelibrary.html#TemplateLibrary._build_raw_hdu"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.templatelibrary.TemplateLibrary._build_raw_hdu" title="Permalink to this definition">¶</a></dt>
 <dd><p>Build the “raw” template library arrays.  This simply reads the
 provided list of fits files and puts them into arrays of size
-<span class="math">\(N_{\rm tpl} \times N_{\rm pix}\)</span>.</p>
-<p>This will <em>force</em> reading of the data, even if the <a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary.hdu" title="mangadap.proc.templatelibrary.TemplateLibrary.hdu"><code class="xref py py-attr docutils literal"><span class="pre">hdu</span></code></a>
+<span class="math notranslate nohighlight">\(N_{\rm tpl} \times N_{\rm pix}\)</span>.</p>
+<p>This will <em>force</em> reading of the data, even if the <a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary.hdu" title="mangadap.proc.templatelibrary.TemplateLibrary.hdu"><code class="xref py py-attr docutils literal notranslate"><span class="pre">hdu</span></code></a>
 is already initialized.</p>
-<p>The <a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary.hdu" title="mangadap.proc.templatelibrary.TemplateLibrary.hdu"><code class="xref py py-attr docutils literal"><span class="pre">hdu</span></code></a> will contain the appropriate extensions, but it
+<p>The <a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary.hdu" title="mangadap.proc.templatelibrary.TemplateLibrary.hdu"><code class="xref py py-attr docutils literal notranslate"><span class="pre">hdu</span></code></a> will contain the appropriate extensions, but it
 is important to note that the wavelength vectors will <strong>not</strong>
 necessarily be the same.  That is, reading of the raw template
 spectra can accommodate spectra that have different wavelength
 coordinates.  Any pixels that have no data are masked using the
 ‘NO_DATA’ bitmask flag; see
-<a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibraryBitMask" title="mangadap.proc.templatelibrary.TemplateLibraryBitMask"><code class="xref py py-func docutils literal"><span class="pre">TemplateLibraryBitMask()</span></code></a>.</p>
-<p>The spectral resolution is set using <code class="xref py py-attr docutils literal"><span class="pre">fwhm</span></code>, and the
+<a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibraryBitMask" title="mangadap.proc.templatelibrary.TemplateLibraryBitMask"><code class="xref py py-func docutils literal notranslate"><span class="pre">TemplateLibraryBitMask()</span></code></a>.</p>
+<p>The spectral resolution is set using <code class="xref py py-attr docutils literal notranslate"><span class="pre">fwhm</span></code>, and the
 spectral resolution offset is initialized to zero (see
-<code class="xref py py-func docutils literal"><span class="pre">mangadap.util.instrument.GaussianKernelDifference()</span></code>).</p>
+<code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.util.resolution.GaussianKernelDifference()</span></code>).</p>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
 <p class="last">Currently no errors are saved because none are expected for
@@ -657,8 +623,8 @@ arrays</td>
 <dt id="mangadap.proc.templatelibrary.TemplateLibrary._define_library">
 <code class="descname">_define_library</code><span class="sig-paren">(</span><em>library_key</em>, <em>tpllib_list=None</em>, <em>dapsrc=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/templatelibrary.html#TemplateLibrary._define_library"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.templatelibrary.TemplateLibrary._define_library" title="Permalink to this definition">¶</a></dt>
 <dd><p>Select the library from the provided list.  Used to set
-<a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary.library" title="mangadap.proc.templatelibrary.TemplateLibrary.library"><code class="xref py py-attr docutils literal"><span class="pre">library</span></code></a>; see
-<a class="reference internal" href="mangadap.proc.util.html#mangadap.proc.util.select_proc_method" title="mangadap.proc.util.select_proc_method"><code class="xref py py-func docutils literal"><span class="pre">mangadap.proc.util.select_proc_method()</span></code></a>.</p>
+<a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary.library" title="mangadap.proc.templatelibrary.TemplateLibrary.library"><code class="xref py py-attr docutils literal notranslate"><span class="pre">library</span></code></a>; see
+<a class="reference internal" href="mangadap.proc.util.html#mangadap.proc.util.select_proc_method" title="mangadap.proc.util.select_proc_method"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.proc.util.select_proc_method()</span></code></a>.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -666,14 +632,14 @@ arrays</td>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>library_key</strong> (<em>str</em>) – Keyword of the selected library.
 Available libraries are proved by
-<code class="xref py py-func docutils literal"><span class="pre">available__template_libraries()</span></code></li>
+<code class="xref py py-func docutils literal notranslate"><span class="pre">available__template_libraries()</span></code></li>
 <li><strong>tpllib_list</strong> (<em>list</em>) – (<strong>Optional</strong>) List of
-<a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibraryDef" title="mangadap.proc.templatelibrary.TemplateLibraryDef"><code class="xref py py-class docutils literal"><span class="pre">TemplateLibraryDef</span></code></a>
+<a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibraryDef" title="mangadap.proc.templatelibrary.TemplateLibraryDef"><code class="xref py py-class docutils literal notranslate"><span class="pre">TemplateLibraryDef</span></code></a>
 objects that define the parameters required to read and
 interpret a template library.</li>
 <li><strong>dapsrc</strong> (<em>str</em>) – (<strong>Optional</strong>) Root path to the DAP source
 directory.  If not provided, the default is defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_source" title="mangadap.config.defaults.default_dap_source"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_source()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.dap_source_dir" title="mangadap.config.defaults.dap_source_dir"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.dap_source_dir()</span></code></a>.</li>
 </ul>
 </td>
 </tr>
@@ -706,7 +672,7 @@ extension?</li>
 </tr>
 <tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">int</td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if the input template spectra are not
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if the input template spectra are not
 one-dimensional.</td>
 </tr>
 </tbody>
@@ -734,7 +700,7 @@ library has been processed) wavelength vectors.</td>
 <dt id="mangadap.proc.templatelibrary.TemplateLibrary._modify_spectral_resolution">
 <code class="descname">_modify_spectral_resolution</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/templatelibrary.html#TemplateLibrary._modify_spectral_resolution"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.templatelibrary.TemplateLibrary._modify_spectral_resolution" title="Permalink to this definition">¶</a></dt>
 <dd><p>Modify the spectral resolution to match the provided
-<a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary.sres" title="mangadap.proc.templatelibrary.TemplateLibrary.sres"><code class="xref py py-attr docutils literal"><span class="pre">sres</span></code></a>.</p>
+<a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary.sres" title="mangadap.proc.templatelibrary.TemplateLibrary.sres"><code class="xref py py-attr docutils literal notranslate"><span class="pre">sres</span></code></a>.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -751,12 +717,15 @@ library has been processed) wavelength vectors.</td>
 <dt id="mangadap.proc.templatelibrary.TemplateLibrary._process_library">
 <code class="descname">_process_library</code><span class="sig-paren">(</span><em>wavelength_range=None</em>, <em>renormalize=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/templatelibrary.html#TemplateLibrary._process_library"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.templatelibrary.TemplateLibrary._process_library" title="Permalink to this definition">¶</a></dt>
 <dd><p>Process the template library for use in analyzing object
-spectra.   See <a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary.process_template_library" title="mangadap.proc.templatelibrary.TemplateLibrary.process_template_library"><code class="xref py py-func docutils literal"><span class="pre">process_template_library()</span></code></a>.</p>
+spectra.   See <a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary.process_template_library" title="mangadap.proc.templatelibrary.TemplateLibrary.process_template_library"><code class="xref py py-func docutils literal notranslate"><span class="pre">process_template_library()</span></code></a>.</p>
 <div class="admonition-todo admonition" id="index-2">
 <p class="first admonition-title">Todo</p>
 <ul class="last simple">
 <li>Add wavelength coordinate WCS information to the
 appropriate extension headers.</li>
+<li>Include ‘step’ as an argument</li>
+<li>Include limit on covering fraction used to mask data as an
+argument</li>
 </ul>
 </div>
 </dd></dl>
@@ -789,7 +758,7 @@ a specific flag.</p>
 <li><strong>i</strong> (<em>int</em>) – Index of the spectrum to be rebinned.</li>
 <li><strong>flag</strong> (<em>str</em><em> or </em><em>list</em>) – Flags to consider when determining which
 pixels to mask; see
-<code class="xref py py-func docutils literal"><span class="pre">mangadap.util.bitmasks.BitMask.flagged()</span></code>.</li>
+<code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.util.bitmasks.BitMask.flagged()</span></code>.</li>
 <li><strong>fullRange</strong> (<em>numpy.ndarray</em>) – Two-element array with the
 wavelength range for the rebinned spectrum.</li>
 <li><strong>rmsk_lim</strong> (<em>float</em>) – Limit of the rebinned mask value that is
@@ -797,11 +766,11 @@ allowed before considering the pixel as masked.</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The indices of the pixels in the rebinned spectrum
-that should be masked.</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Boolean array indicating which pixels in the
+rebinned spectrum should be masked.</p>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">tuple</p>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">numpy.ndarray</p>
 </td>
 </tr>
 </tbody>
@@ -811,7 +780,7 @@ that should be masked.</p>
 <dl class="method">
 <dt id="mangadap.proc.templatelibrary.TemplateLibrary._reset_hdu">
 <code class="descname">_reset_hdu</code><span class="sig-paren">(</span><em>wave</em>, <em>flux</em>, <em>mask</em>, <em>sres</em>, <em>soff</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/templatelibrary.html#TemplateLibrary._reset_hdu"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.templatelibrary.TemplateLibrary._reset_hdu" title="Permalink to this definition">¶</a></dt>
-<dd><p>(Re)Set <a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary.hdu" title="mangadap.proc.templatelibrary.TemplateLibrary.hdu"><code class="xref py py-attr docutils literal"><span class="pre">hdu</span></code></a> to a new HDUList object using the input
+<dd><p>(Re)Set <a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary.hdu" title="mangadap.proc.templatelibrary.TemplateLibrary.hdu"><code class="xref py py-attr docutils literal notranslate"><span class="pre">hdu</span></code></a> to a new HDUList object using the input
 arrays.  Also sets the header items indicating the version of
 the template reader and the keyword for the library.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -824,10 +793,10 @@ pixel.</li>
 <li><strong>flux</strong> (<em>numpy.ndarray</em>) – Array with the flux in each pixel.</li>
 <li><strong>mask</strong> (<em>numpy.ndarray</em>) – Bitmask values for each pixel.</li>
 <li><strong>sres</strong> (<em>numpy.ndarray</em>) – Spectral resolution,
-<span class="math">\(R=\lambda/\delta\lambda\)</span>, at each pixel.</li>
+<span class="math notranslate nohighlight">\(R=\lambda/\delta\lambda\)</span>, at each pixel.</li>
 <li><strong>soff</strong> (<em>numpy.ndarray</em>) – The spectral resolution offset for
 each spectrum (see
-<code class="xref py py-func docutils literal"><span class="pre">mangadap.util.instrument.GaussianKernelDifference()</span></code>).</li>
+<code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.util.resolution.GaussianKernelDifference()</span></code>).</li>
 </ul>
 </td>
 </tr>
@@ -839,26 +808,26 @@ each spectrum (see
 <dt id="mangadap.proc.templatelibrary.TemplateLibrary._set_paths">
 <code class="descname">_set_paths</code><span class="sig-paren">(</span><em>directory_path</em>, <em>dapver</em>, <em>analysis_path</em>, <em>drpf</em>, <em>processed_file</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/templatelibrary.html#TemplateLibrary._set_paths"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.templatelibrary.TemplateLibrary._set_paths" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set the I/O path to the processed template library.  Used to set
-<a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary.directory_path" title="mangadap.proc.templatelibrary.TemplateLibrary.directory_path"><code class="xref py py-attr docutils literal"><span class="pre">directory_path</span></code></a> and <a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary.processed_file" title="mangadap.proc.templatelibrary.TemplateLibrary.processed_file"><code class="xref py py-attr docutils literal"><span class="pre">processed_file</span></code></a>.  If not
+<a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary.directory_path" title="mangadap.proc.templatelibrary.TemplateLibrary.directory_path"><code class="xref py py-attr docutils literal notranslate"><span class="pre">directory_path</span></code></a> and <a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary.processed_file" title="mangadap.proc.templatelibrary.TemplateLibrary.processed_file"><code class="xref py py-attr docutils literal notranslate"><span class="pre">processed_file</span></code></a>.  If not
 provided, the defaults are set using, respectively,
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_common_path" title="mangadap.config.defaults.default_dap_common_path"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_common_path()</span></code></a> and
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_file_name" title="mangadap.config.defaults.default_dap_file_name"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_file_name()</span></code></a>.</p>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_common_path" title="mangadap.config.defaults.default_dap_common_path"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_dap_common_path()</span></code></a> and
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_file_name" title="mangadap.config.defaults.default_dap_file_name"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_dap_file_name()</span></code></a>.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>directory_path</strong> (<em>str</em>) – The exact path to the DAP template
-library file.  See <a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary.directory_path" title="mangadap.proc.templatelibrary.TemplateLibrary.directory_path"><code class="xref py py-attr docutils literal"><span class="pre">directory_path</span></code></a>.</li>
+library file.  See <a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary.directory_path" title="mangadap.proc.templatelibrary.TemplateLibrary.directory_path"><code class="xref py py-attr docutils literal notranslate"><span class="pre">directory_path</span></code></a>.</li>
 <li><strong>dapver</strong> (<em>str</em>) – DAP version.</li>
 <li><strong>analysis_path</strong> (<em>str</em>) – The path to the top-level directory
 containing the DAP output files for a given DRP and DAP
 version.</li>
-<li><strong>drpf</strong> (<a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal"><span class="pre">mangadap.drpfits.DRPFits</span></code></a>) – The container
+<li><strong>drpf</strong> (<a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.drpfits.DRPFits</span></code></a>) – The container
 object of the DRP file that is used to construct the
 path for the processed template library.</li>
 <li><strong>processed_file</strong> (<em>str</em>) – The name of the file with the prepared
-template library.  See <a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary.processed_file" title="mangadap.proc.templatelibrary.TemplateLibrary.processed_file"><code class="xref py py-attr docutils literal"><span class="pre">processed_file</span></code></a>.</li>
+template library.  See <a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary.processed_file" title="mangadap.proc.templatelibrary.TemplateLibrary.processed_file"><code class="xref py py-attr docutils literal notranslate"><span class="pre">processed_file</span></code></a>.</li>
 </ul>
 </td>
 </tr>
@@ -878,7 +847,7 @@ not considered.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>flag</strong> (<em>str</em><em> or </em><em>list</em>) – (<strong>Optional</strong>) Flags to consider when
 determining the wavelength range; see
-<code class="xref py py-func docutils literal"><span class="pre">mangadap.util.bitmasks.BitMask.flagged()</span></code>.</td>
+<code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.util.bitmasks.BitMask.flagged()</span></code>.</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Two-element vector with wavelengths of the
 first and last valid pixels.</td>
@@ -908,24 +877,24 @@ first and last valid pixels.</td>
 spectra.  Primary steps are to:</p>
 <blockquote>
 <div><ul class="simple">
-<li>Read the raw 1D fits files; see <a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary._read_raw" title="mangadap.proc.templatelibrary.TemplateLibrary._read_raw"><code class="xref py py-func docutils literal"><span class="pre">_read_raw()</span></code></a>.</li>
+<li>Read the raw 1D fits files; see <a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary._read_raw" title="mangadap.proc.templatelibrary.TemplateLibrary._read_raw"><code class="xref py py-func docutils literal notranslate"><span class="pre">_read_raw()</span></code></a>.</li>
 <li>Convert the wavelengths to vacuum, if necessary; see
-<code class="xref py py-func docutils literal"><span class="pre">mangadap.util.idlutils.airtovac()</span></code>.</li>
+<code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.util.idlutils.airtovac()</span></code>.</li>
 <li>Mask wavelengths outside the rest wavelength range of the
 DRP spectrum, due to need to extrapolate these values; see
-<code class="xref py py-func docutils literal"><span class="pre">mangadap.util.bitmasks.HDUList_mask_wavelengths()</span></code>.</li>
+<code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.util.bitmasks.HDUList_mask_wavelengths()</span></code>.</li>
 <li>Match the spectral resolution of the template to that of
 the DRP spectra; see
-<a class="reference internal" href="mangadap.util.instrument.html#mangadap.util.instrument.match_spectral_resolution" title="mangadap.util.instrument.match_spectral_resolution"><code class="xref py py-func docutils literal"><span class="pre">mangadap.util.instrument.match_spectral_resolution()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.util.resolution.html#mangadap.util.resolution.match_spectral_resolution" title="mangadap.util.resolution.match_spectral_resolution"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.util.resolution.match_spectral_resolution()</span></code></a>.</li>
 <li>Mask the template pixels where the spectral resolution was
 too low to match to the DRP spectra; see
-<code class="xref py py-func docutils literal"><span class="pre">mangadap.util.bitmasks.BitMask.turn_on()</span></code>.</li>
+<code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.util.bitmasks.BitMask.turn_on()</span></code>.</li>
 <li>Force a common wavelength range and sampling for all
 templates, where the sampling is forced to match the
 sampling of the DRP spectra; see
-<code class="xref py py-func docutils literal"><span class="pre">mangadap.util.instrument.resample_vector_pix()</span></code>.  The masks
-are appropriately resampled as well; see
-<a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary._rebin_masked" title="mangadap.proc.templatelibrary.TemplateLibrary._rebin_masked"><code class="xref py py-func docutils literal"><span class="pre">_rebin_masked()</span></code></a>.</li>
+<code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.util.sampling.resample_vector_pix()</span></code>.  The
+masks are appropriately resampled as well; see
+<a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary._rebin_masked" title="mangadap.proc.templatelibrary.TemplateLibrary._rebin_masked"><code class="xref py py-func docutils literal notranslate"><span class="pre">_rebin_masked()</span></code></a>.</li>
 </ul>
 </div></blockquote>
 <div class="admonition warning">
@@ -941,17 +910,17 @@ input.  If unsure, use clobber=True.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>library_key</strong> (<em>str</em>) – (<strong>Optional</strong>) Keyword selecting the library
-to use; default is to use existing <a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary.library" title="mangadap.proc.templatelibrary.TemplateLibrary.library"><code class="xref py py-attr docutils literal"><span class="pre">library</span></code></a>.</li>
+to use; default is to use existing <a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary.library" title="mangadap.proc.templatelibrary.TemplateLibrary.library"><code class="xref py py-attr docutils literal notranslate"><span class="pre">library</span></code></a>.</li>
 <li><strong>tpllib_list</strong> (<em>list</em>) – (<strong>Optional</strong>) List of
-<a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibraryDef" title="mangadap.proc.templatelibrary.TemplateLibraryDef"><code class="xref py py-class docutils literal"><span class="pre">TemplateLibraryDef</span></code></a>
+<a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibraryDef" title="mangadap.proc.templatelibrary.TemplateLibraryDef"><code class="xref py py-class docutils literal notranslate"><span class="pre">TemplateLibraryDef</span></code></a>
 objects that define the parameters required to read and
 interpret a template library.  Input ignored if
 <em>library_key</em> is None.</li>
 <li><strong>dapsrc</strong> (<em>str</em>) – (<strong>Optional</strong>) Root path to the DAP source
 directory.  If not provided, the default is defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_source" title="mangadap.config.defaults.default_dap_source"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_source()</span></code></a>.
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.dap_source_dir" title="mangadap.config.defaults.dap_source_dir"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.dap_source_dir()</span></code></a>.
 Input ignored if <em>library_key</em> is None.</li>
-<li><strong>drpf</strong> (<a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal"><span class="pre">mangadap.drpfits.DRPFits</span></code></a>) – (<strong>Optional</strong>) DRP
+<li><strong>drpf</strong> (<a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.drpfits.DRPFits</span></code></a>) – (<strong>Optional</strong>) DRP
 file (object) with which the template library is
 associated for analysis.  <strong>If not provided</strong>, the user
 must define <em>velscale</em> and <em>sres</em> such that the library
@@ -961,14 +930,14 @@ output file can be written.</li>
 <li><strong>match_to_drp_resolution</strong> (<em>bool</em>) – (<strong>Optional</strong>) Match the
 spectral resolution of the template library to the
 resolution provided by the
-<a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal"><span class="pre">mangadap.drpfits.DRPFits</span></code></a> object; the latter
+<a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.drpfits.DRPFits</span></code></a> object; the latter
 must be provided for this argument to have any use.</li>
 <li><strong>velscale_ratio</strong> (<em>int</em>) – (<strong>Optional</strong>) Resample the template
 spectra such that the ratio of the pixel scale in the
-provided <a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal"><span class="pre">mangadap.drpfits.DRPFits</span></code></a> object is
+provided <a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.drpfits.DRPFits</span></code></a> object is
 this many times larger than the pixels in the resampled
 template spectrum.</li>
-<li><strong>sres</strong> (<a class="reference internal" href="mangadap.util.instrument.html#mangadap.util.instrument.SpectralResolution" title="mangadap.util.instrument.SpectralResolution"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.instrument.SpectralResolution</span></code></a>) – (<strong>Optional</strong>) The object is used simply to access the
+<li><strong>sres</strong> (<a class="reference internal" href="mangadap.util.resolution.html#mangadap.util.resolution.SpectralResolution" title="mangadap.util.resolution.SpectralResolution"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.resolution.SpectralResolution</span></code></a>) – (<strong>Optional</strong>) The object is used simply to access the
 spectral resolution and associated wavelength coordinate
 vector needed when matching the spectral resolution of
 the template library.  This takes prededence over the
@@ -989,20 +958,20 @@ the flux to unity.</li>
 <li><strong>dapver</strong> (<em>str</em>) – (<strong>Optional</strong>) DAP version, which is used to
 define the default DAP analysis path.  Default is
 defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_version" title="mangadap.config.defaults.default_dap_version"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_version()</span></code></a></li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_version" title="mangadap.config.defaults.default_dap_version"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_dap_version()</span></code></a></li>
 <li><strong>analysis_path</strong> (<em>str</em>) – (<strong>Optional</strong>) The path to the top level
 directory containing the DAP output files for a given
 DRP and DAP version.  Default is defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_analysis_path" title="mangadap.config.defaults.default_analysis_path"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_analysis_path()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_analysis_path" title="mangadap.config.defaults.default_analysis_path"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_analysis_path()</span></code></a>.</li>
 <li><strong>directory_path</strong> (<em>str</em>) – (<strong>Optional</strong>) The exact path for the
 processed template library file.  Default is defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_common_path" title="mangadap.config.defaults.default_dap_common_path"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_common_path()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_common_path" title="mangadap.config.defaults.default_dap_common_path"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_dap_common_path()</span></code></a>.</li>
 <li><strong>processed_file</strong> (<em>str</em>) – (<strong>Optional</strong>) The name of the file
 containing (to contain) the prepared template library
 output file.  The file should be found at
-<a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary.directory_path" title="mangadap.proc.templatelibrary.TemplateLibrary.directory_path"><code class="xref py py-attr docutils literal"><span class="pre">directory_path</span></code></a>/<a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary.processed_file" title="mangadap.proc.templatelibrary.TemplateLibrary.processed_file"><code class="xref py py-attr docutils literal"><span class="pre">processed_file</span></code></a>.  Default
+<a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary.directory_path" title="mangadap.proc.templatelibrary.TemplateLibrary.directory_path"><code class="xref py py-attr docutils literal notranslate"><span class="pre">directory_path</span></code></a>/<a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibrary.processed_file" title="mangadap.proc.templatelibrary.TemplateLibrary.processed_file"><code class="xref py py-attr docutils literal notranslate"><span class="pre">processed_file</span></code></a>.  Default
 is defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_file_name" title="mangadap.config.defaults.default_dap_file_name"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_file_name()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_file_name" title="mangadap.config.defaults.default_dap_file_name"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_dap_file_name()</span></code></a>.</li>
 <li><strong>hardcopy</strong> (<em>bool</em>) – (<strong>Optional</strong>) Flag to keep a hardcopy of
 the processed template library.  Default is True.</li>
 <li><strong>symlink_dir</strong> (<em>str</em>) – (<strong>Optional</strong>) Create a symlink to the
@@ -1012,7 +981,7 @@ library.</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – If the velocity scale, spectral resolution, or
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – If the velocity scale, spectral resolution, or
 file name for the processed data are not define.</p>
 </td>
 </tr>
@@ -1025,7 +994,7 @@ file name for the processed data are not define.</p>
 <li>If a DRP file is provided, the processing to a logarithmic
 binning is done by default (log=True).  But linearly
 sampled DRP data are available, so need to have
-<a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal"><span class="pre">mangadap.drpfits.DRPFits</span></code></a> return the spectral
+<a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.drpfits.DRPFits</span></code></a> return the spectral
 sampling type.</li>
 <li>Documentation needs updating!</li>
 </ul>
@@ -1046,12 +1015,12 @@ the object are used.</p>
 <li><strong>library_key</strong> (<em>str</em>) – (<strong>Optional</strong>) Keyword selecting the library
 to use.</li>
 <li><strong>tpllib_list</strong> (<em>list</em>) – (<strong>Optional</strong>) List of
-<a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibraryDef" title="mangadap.proc.templatelibrary.TemplateLibraryDef"><code class="xref py py-class docutils literal"><span class="pre">TemplateLibraryDef</span></code></a>
+<a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibraryDef" title="mangadap.proc.templatelibrary.TemplateLibraryDef"><code class="xref py py-class docutils literal notranslate"><span class="pre">TemplateLibraryDef</span></code></a>
 objects that define the parameters required to read and
 interpret a template library.</li>
 <li><strong>dapsrc</strong> (<em>str</em>) – (<strong>Optional</strong>) Root path to the DAP source
 directory.  If not provided, the default is defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_source" title="mangadap.config.defaults.default_dap_source"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_source()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.dap_source_dir" title="mangadap.config.defaults.dap_source_dir"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.dap_source_dir()</span></code></a>.</li>
 </ul>
 </td>
 </tr>
@@ -1079,7 +1048,7 @@ file of the same name.</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if the selected index is not available.</p>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if the selected index is not available.</p>
 </td>
 </tr>
 </tbody>
@@ -1091,12 +1060,12 @@ file of the same name.</li>
 <dl class="class">
 <dt id="mangadap.proc.templatelibrary.TemplateLibraryBitMask">
 <em class="property">class </em><code class="descclassname">mangadap.proc.templatelibrary.</code><code class="descname">TemplateLibraryBitMask</code><span class="sig-paren">(</span><em>dapsrc=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/templatelibrary.html#TemplateLibraryBitMask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.templatelibrary.TemplateLibraryBitMask" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="mangadap.util.bitmask.html#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.bitmask.BitMask</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="mangadap.util.bitmask.html#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.bitmask.BitMask</span></code></a></p>
 <p>Derived class that specifies the mask bits for the template library
-data.  See <a class="reference internal" href="mangadap.util.bitmask.html#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.bitmask.BitMask</span></code></a> for attributes.</p>
+data.  See <a class="reference internal" href="mangadap.util.bitmask.html#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.bitmask.BitMask</span></code></a> for attributes.</p>
 <p>A list of the bits and meanings are provided by the base class
-function <a class="reference internal" href="mangadap.util.bitmask.html#mangadap.util.bitmask.BitMask.info" title="mangadap.util.bitmask.BitMask.info"><code class="xref py py-func docutils literal"><span class="pre">mangadap.util.bitmask.BitMask.info()</span></code></a>; i.e.,:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">mangadap.proc.templatelibrary</span> <span class="k">import</span> <span class="n">TemplateLibraryBitMask</span>
+function <a class="reference internal" href="mangadap.util.bitmask.html#mangadap.util.bitmask.BitMask.info" title="mangadap.util.bitmask.BitMask.info"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.util.bitmask.BitMask.info()</span></code></a>; i.e.,:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">mangadap.proc.templatelibrary</span> <span class="k">import</span> <span class="n">TemplateLibraryBitMask</span>
 <span class="n">t</span> <span class="o">=</span> <span class="n">TemplateLibraryBitMask</span><span class="p">()</span>
 <span class="n">t</span><span class="o">.</span><span class="n">info</span><span class="p">()</span>
 </pre></div>
@@ -1106,9 +1075,9 @@ function <a class="reference internal" href="mangadap.util.bitmask.html#mangadap
 <dl class="class">
 <dt id="mangadap.proc.templatelibrary.TemplateLibraryDef">
 <em class="property">class </em><code class="descclassname">mangadap.proc.templatelibrary.</code><code class="descname">TemplateLibraryDef</code><span class="sig-paren">(</span><em>key=None</em>, <em>file_search=None</em>, <em>fwhm=None</em>, <em>sres_ext=None</em>, <em>in_vacuum=False</em>, <em>wave_limit=None</em>, <em>lower_flux_limit=None</em>, <em>log10=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/templatelibrary.html#TemplateLibraryDef"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.templatelibrary.TemplateLibraryDef" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet" title="mangadap.par.parset.ParSet"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.parset.ParSet</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet" title="mangadap.par.parset.ParSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.par.parset.ParSet</span></code></a></p>
 <p>Class with parameters used to define the template library.
-See <a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet" title="mangadap.par.parset.ParSet"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.parset.ParSet</span></code></a> for attributes.</p>
+See <a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet" title="mangadap.par.parset.ParSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.par.parset.ParSet</span></code></a> for attributes.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -1250,11 +1219,11 @@ Limit</th>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>dapsrc</strong> (<em>str</em>) – (<strong>Optional</strong>) Root path to the DAP source
 directory.  If not provided, the default is defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_source" title="mangadap.config.defaults.default_dap_source"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_source()</span></code></a>.</p>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.dap_source_dir" title="mangadap.config.defaults.dap_source_dir"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.dap_source_dir()</span></code></a>.</p>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A list of
-<a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibraryDef" title="mangadap.proc.templatelibrary.TemplateLibraryDef"><code class="xref py py-func docutils literal"><span class="pre">mangadap.proc.templatelibrary.TemplateLibraryDef()</span></code></a>
+<a class="reference internal" href="#mangadap.proc.templatelibrary.TemplateLibraryDef" title="mangadap.proc.templatelibrary.TemplateLibraryDef"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.proc.templatelibrary.TemplateLibraryDef()</span></code></a>
 objects, each defining a separate template library.</p>
 </td>
 </tr>
@@ -1262,11 +1231,11 @@ objects, each defining a separate template library.</p>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
-<li><code class="xref py py-exc docutils literal"><span class="pre">NotADirectoryError</span></code> – Raised if the provided or default
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">NotADirectoryError</span></code> – Raised if the provided or default
 <em>dapsrc</em> is not a directory.</li>
-<li><code class="xref py py-exc docutils literal"><span class="pre">OSError/IOError</span></code> – Raised if no template configuration files could
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">OSError/IOError</span></code> – Raised if no template configuration files could
 be found.</li>
-<li><code class="xref py py-exc docutils literal"><span class="pre">KeyError</span></code> – Raised if the template-library keywords are not all
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">KeyError</span></code> – Raised if the template-library keywords are not all
 unique.</li>
 </ul>
 </td>
@@ -1288,19 +1257,19 @@ available databases.</li>
 <dl class="function">
 <dt id="mangadap.proc.templatelibrary.validate_spectral_template_config">
 <code class="descclassname">mangadap.proc.templatelibrary.</code><code class="descname">validate_spectral_template_config</code><span class="sig-paren">(</span><em>cnfg</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/templatelibrary.html#validate_spectral_template_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.templatelibrary.validate_spectral_template_config" title="Permalink to this definition">¶</a></dt>
-<dd><p>Validate the <a class="reference internal" href="mangadap.util.parser.html#mangadap.util.parser.DefaultConfig" title="mangadap.util.parser.DefaultConfig"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.parser.DefaultConfig</span></code></a> object with
+<dd><p>Validate the <a class="reference internal" href="mangadap.util.parser.html#mangadap.util.parser.DefaultConfig" title="mangadap.util.parser.DefaultConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.parser.DefaultConfig</span></code></a> object with
 the template library parameters.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>cnfg</strong> (<a class="reference internal" href="mangadap.util.parser.html#mangadap.util.parser.DefaultConfig" title="mangadap.util.parser.DefaultConfig"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.parser.DefaultConfig</span></code></a>) – Object with
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>cnfg</strong> (<a class="reference internal" href="mangadap.util.parser.html#mangadap.util.parser.DefaultConfig" title="mangadap.util.parser.DefaultConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.parser.DefaultConfig</span></code></a>) – Object with
 the template library parameters to validate.</p>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
-<li><code class="xref py py-exc docutils literal"><span class="pre">KeyError</span></code> – Raised if required keyword does not exist.</li>
-<li><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if key has unacceptable value.</li>
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">KeyError</span></code> – Raised if required keyword does not exist.</li>
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if key has unacceptable value.</li>
 </ul>
 </td>
 </tr>

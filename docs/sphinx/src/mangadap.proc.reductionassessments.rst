@@ -1,5 +1,5 @@
-mangadap\.proc\.reductionassessments module
-===========================================
+mangadap.proc.reductionassessments module
+=========================================
 
 .. automodule:: mangadap.proc.reductionassessments
     :members:
