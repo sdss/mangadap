@@ -36,7 +36,7 @@
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
     <link rel="top" title="mangadap 2.2.2 documentation" href="../../../index.html"/>
-        <link rel="up" title="Module code" href="../../index.html"/> 
+        <link rel="up" title="mangadap" href="../../mangadap.html"/> 
 
   
   <script src="../../../_static/js/modernizr.min.js"></script>
@@ -138,6 +138,8 @@
         
           <li><a href="../../index.html">Module code</a> &raquo;</li>
         
+          <li><a href="../../mangadap.html">mangadap</a> &raquo;</li>
+        
       <li>mangadap.proc.bandpassfilter</li>
     
     
@@ -218,7 +220,7 @@
 <span class="kn">import</span> <span class="nn">warnings</span>
 <span class="kn">import</span> <span class="nn">numpy</span>
 <span class="kn">from</span> <span class="nn">..par.parset</span> <span class="k">import</span> <span class="n">ParSet</span>
-<span class="kn">from</span> <span class="nn">..util.instrument</span> <span class="k">import</span> <span class="n">_pixel_borders</span>
+<span class="kn">from</span> <span class="nn">..util.sampling</span> <span class="k">import</span> <span class="n">_pixel_borders</span>
 
 <span class="kn">from</span> <span class="nn">matplotlib</span> <span class="k">import</span> <span class="n">pyplot</span>
 
@@ -387,140 +389,373 @@
     <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span> <span class="mf">0.0</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ii</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">numpy</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">_y</span><span class="p">[</span><span class="n">ii</span><span class="p">])</span> <span class="k">for</span> <span class="n">ii</span> <span class="ow">in</span> <span class="n">indx</span> <span class="p">])</span></div>
 
 
-<div class="viewcode-block" id="pixel_fraction_in_passband"><a class="viewcode-back" href="../../../mangadap.proc.bandpassfilter.html#mangadap.proc.bandpassfilter.pixel_fraction_in_passband">[docs]</a><span class="k">def</span> <span class="nf">pixel_fraction_in_passband</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">passband</span><span class="p">,</span> <span class="n">dx</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Get the width of each x interval to include in the passband</span>
-<span class="sd">    integral.</span>
+<div class="viewcode-block" id="pixel_fraction_in_passband"><a class="viewcode-back" href="../../../mangadap.proc.bandpassfilter.html#mangadap.proc.bandpassfilter.pixel_fraction_in_passband">[docs]</a><span class="k">def</span> <span class="nf">pixel_fraction_in_passband</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">passband</span><span class="p">,</span> <span class="n">dx</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Determine the width of each x interval to include in one or more</span>
+<span class="sd">    passband integrals.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        x (1D array-like):</span>
+<span class="sd">            Borders of pixels.</span>
+<span class="sd">        passband (1D or 2D array-like):</span>
+<span class="sd">            Passbands to integrate over.  If more than one, the shape of</span>
+<span class="sd">            the input should be :math:`(N_{\rm passband},2)`.</span>
+<span class="sd">        dx (1D array-like, optional):</span>
+<span class="sd">            The size of each pixel.  If not provided, calculated from</span>
+<span class="sd">            `x`.  Can be provided to speed calculations for multiple</span>
+<span class="sd">            calls.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        numpy.ndarray: The array with the fraction of each pixel within</span>
+<span class="sd">        each passband.  The output shape is :math:`(N_{\rm pixel},N_{\rm</span>
+<span class="sd">        passband})`, where :math:`N_{\rm pixel}` is the 1 less than the</span>
+<span class="sd">        number of pixel borders.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="p">((</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span><span class="o">-</span><span class="n">passband</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">/</span><span class="n">dx</span><span class="p">)</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="p">((</span><span class="n">passband</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">x</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="n">dx</span><span class="p">)</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="mf">1.0</span></div>
+    <span class="n">_x</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">_x</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Pixel coordinates must be a 1D vector.&#39;</span><span class="p">)</span>
+    <span class="n">_dx</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">_x</span><span class="p">)</span> <span class="k">if</span> <span class="n">dx</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">numpy</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">dx</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">_dx</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Pixel sizes must be a 1D vector.&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">_x</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="n">_dx</span><span class="o">.</span><span class="n">size</span><span class="o">+</span><span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Input coordinates must be the pixel borders.&#39;</span><span class="p">)</span>
+    <span class="n">_passband</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">passband</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">_passband</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">((</span><span class="n">_x</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span><span class="o">-</span><span class="n">_passband</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">/</span><span class="n">_dx</span><span class="p">)</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span><span class="o">+</span><span class="p">((</span><span class="n">_passband</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">_x</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="n">_dx</span><span class="p">)</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span><span class="o">-</span><span class="mf">1.0</span>
+    
+    <span class="k">return</span> <span class="p">((</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">:,</span><span class="kc">None</span><span class="p">]</span><span class="o">-</span><span class="n">passband</span><span class="p">[</span><span class="kc">None</span><span class="p">,:,</span><span class="mi">0</span><span class="p">])</span><span class="o">/</span><span class="n">dx</span><span class="p">[:,</span><span class="kc">None</span><span class="p">])</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> \
+                <span class="o">+</span> <span class="p">((</span><span class="n">passband</span><span class="p">[</span><span class="kc">None</span><span class="p">,:,</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">x</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="kc">None</span><span class="p">])</span><span class="o">/</span><span class="n">dx</span><span class="p">[:,</span><span class="kc">None</span><span class="p">])</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="mf">1.0</span></div>
 
 
-<div class="viewcode-block" id="passband_integral"><a class="viewcode-back" href="../../../mangadap.proc.bandpassfilter.html#mangadap.proc.bandpassfilter.passband_integral">[docs]</a><span class="k">def</span> <span class="nf">passband_integral</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">borders</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="mf">10.0</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<div class="viewcode-block" id="passband_integral"><a class="viewcode-back" href="../../../mangadap.proc.bandpassfilter.html#mangadap.proc.bandpassfilter.passband_integral">[docs]</a><span class="k">def</span> <span class="nf">passband_integral</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">borders</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">quad</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Determine the integral of a discrete set of data over a passband</span>
 <span class="sd">    accounting for fractional pixels.</span>
 
-<span class="sd">    If borders = True, the x values are the borders of the interval over</span>
-<span class="sd">    which y is measured.  These can be non-uniform.  In this case, the</span>
-<span class="sd">    number of x values must be N+1 for N y values.</span>
+<span class="sd">    The integral is done by a simple sum:</span>
 <span class="sd">    </span>
-<span class="sd">    Otherwise, the x values are expected to be uniformly sampled either</span>
-<span class="sd">    linearly or geometrically.  In this case, x can be either a two</span>
-<span class="sd">    element vector giving the (geometric) centers of the first and last</span>
-<span class="sd">    sample interval or a vector with the N samples.  In either case,</span>
-<span class="sd">    :func:`mangadap.util.instrument._pixel_borders` is used to determine</span>
-<span class="sd">    the borders of the sample intervals.</span>
+<span class="sd">    .. math::</span>
+<span class="sd">        S(y) = \sum_i \delta_i y_i {\rm d}x_i</span>
+<span class="sd">        </span>
+<span class="sd">    where :math:`\delta_i` is the fraction of pixel :math:`i` within the</span>
+<span class="sd">    integration limits as determined by</span>
+<span class="sd">    :func:`pixel_fraction_in_passband`.  Given the errors in :math:`y`</span>
+<span class="sd">    (:math:`\epsilon_i`), the propagated error in :math:`S` is</span>
 
-<span class="sd">    If the passband is None, the integral is determined across all data.</span>
+<span class="sd">    .. math::</span>
+
+<span class="sd">        [\epsilon S(y)]^2 = \sum_i (\delta_i \epsilon_i {\rm d}x_i)^2, </span>
+
+<span class="sd">    which can be calculated using the `quad` keyword.  For example,</span>
+<span class="sd">    given values to integrate, `y`, and errors, `e`, calculate the</span>
+<span class="sd">    passband integral and its error as follows::</span>
+
+<span class="sd">        integral = passband_integral(x, y)</span>
+<span class="sd">        integral_error = passband_integral(x, e, quad=True)</span>
+
+<span class="sd">    .. warning::</span>
+
+<span class="sd">        Although the equation for the formal error propagation is</span>
+<span class="sd">        correct, a comparison of the formal errors to errors from a</span>
+<span class="sd">        Monte Carlo simulation show that the former are pretty poor</span>
+<span class="sd">        estimates of the latter.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        x (1D array-like):</span>
+<span class="sd">            The array of x coordinates for the integration.  If</span>
+<span class="sd">            borders=True, this array provides the borders of the</span>
+<span class="sd">            interval over which y is measured.  These can be</span>
+<span class="sd">            non-uniform.  In this case, the number of x values must be</span>
+<span class="sd">            :math:`N+1` for :math:`N` 1D `y` values (see below).</span>
+<span class="sd">            Otherwise, the `x` values are expected to be uniformly</span>
+<span class="sd">            sampled either linearly or geometrically.  In this case, `x`</span>
+<span class="sd">            can be either a two element vector giving the (geometric)</span>
+<span class="sd">            centers of the first and last sample interval or a vector</span>
+<span class="sd">            with the :math:`N` samples.  In either case,</span>
+<span class="sd">            :func:`mangadap.util.sampling._pixel_borders` is used to</span>
+<span class="sd">            determine the borders of the sample intervals.</span>
+<span class="sd">        y (1D or 2D array-like):</span>
+<span class="sd">            The measured values to be integrated.  The first axis must</span>
+<span class="sd">            always provide the values to be integrated.  If those values</span>
+<span class="sd">            are specific to the passband, `y` should be 2D with shape</span>
+<span class="sd">            :math:`(N_y,N_{\rm passband})`.</span>
+<span class="sd">        passband (1D or 2D array-like, optional):</span>
+<span class="sd">            The list of passbands (in units of x) to integrate.  The</span>
+<span class="sd">            length of the last dimension must always be 2 for that</span>
+<span class="sd">            starting and ending x coordinate.  If 2D, the array must</span>
+<span class="sd">            have shape :math:`(N_{\rm passband},2)`.  If not provided,</span>
+<span class="sd">            the integral is just performed over the full :math:`y`</span>
+<span class="sd">            vector.  If `y` is 2D, the last axis of `y` and the first</span>
+<span class="sd">            axis here must match.</span>
+<span class="sd">        borders (:obj:`bool`, optional):</span>
+<span class="sd">            The :math:`x` values provided are the border coordinates</span>
+<span class="sd">            over which the :math:`y` values have been determined.</span>
+<span class="sd">        log (:obj:`bool`, optional):</span>
+<span class="sd">            The coordinates are logarithmically sampled.  Ignored if</span>
+<span class="sd">            `borders` is True.</span>
+<span class="sd">        base (:obj:`float`, optional):</span>
+<span class="sd">            The base of the logarithm used in the geometric sampling if</span>
+<span class="sd">            `log` is True.</span>
+<span class="sd">        quad (:obj:`bool`, optional):</span>
+<span class="sd">            Perform the quadrature sum instead of the direct sum.  This</span>
+<span class="sd">            is used for error calculations.</span>
+<span class="sd">        </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        float, numpy.ndarray: The passband integral for each passband.</span>
+
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Ensure that y is a numpy array, fill any masked values with 0s,</span>
     <span class="c1"># and check its shape</span>
     <span class="n">_y</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">filled</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">)</span> <span class="k">else</span> <span class="n">numpy</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> 
+
+    <span class="k">if</span> <span class="n">passband</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">_y</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;If no passbands provided, must provide single vector to integrate.&#39;</span><span class="p">)</span>
+
+    <span class="n">ny</span> <span class="o">=</span> <span class="n">_y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="c1"># Check the input coordinates and calculate the borders</span>
     <span class="n">_x</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">_x</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">_y</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Can only provide one-dimensional vectors.&#39;</span><span class="p">)</span>
-    <span class="c1"># Check the input and calculate the pixel borders</span>
-    <span class="k">if</span> <span class="n">borders</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">_x</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">_y</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">:</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">_x</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Coordinates must be a 1D vector.&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">borders</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">_x</span><span class="p">)</span> <span class="o">!=</span> <span class="n">ny</span><span class="o">+</span><span class="mi">1</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Must provide N+1 borders for N samples.&#39;</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">borders</span><span class="p">:</span>
-        <span class="n">_x</span><span class="p">,</span> <span class="n">dx</span> <span class="o">=</span> <span class="n">_pixel_borders</span><span class="p">(</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">x</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]),</span> <span class="n">_y</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="n">log</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">)</span>
+        <span class="n">_x</span><span class="p">,</span> <span class="n">dx</span> <span class="o">=</span> <span class="n">_pixel_borders</span><span class="p">(</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">x</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]),</span> <span class="n">ny</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="n">log</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">)</span>
+
     <span class="k">if</span> <span class="n">passband</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">_y</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">_x</span><span class="p">))</span>
-    <span class="n">_passband</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">passband</span><span class="p">)</span>
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">_passband</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="c1"># No passband, so just get the full integral; y is checked to</span>
+        <span class="c1"># be 1D above</span>
+        <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">_y</span><span class="p">),</span> <span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">_x</span><span class="p">))))</span> <span class="k">if</span> <span class="n">quad</span> \
+                    <span class="k">else</span> <span class="n">numpy</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">_y</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">_x</span><span class="p">))</span>
+
+    <span class="c1"># Check the input passbands</span>
+    <span class="n">_passband</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">atleast_2d</span><span class="p">(</span><span class="n">passband</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">_passband</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Can only handle passband arrays of 1 or 2 dimensions.&#39;</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">_passband</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Passband(s) must have shape N_bands x 2.&#39;</span><span class="p">)</span>
+    
+    <span class="c1"># Reshape y if necessary</span>
+    <span class="n">_y</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">atleast_2d</span><span class="p">(</span><span class="n">_y</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">_y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">_y</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">_y</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">(</span><span class="n">_passband</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">T</span>
 
-    <span class="c1"># Interval for each sample</span>
+    <span class="c1"># Check its shape</span>
+    <span class="k">if</span> <span class="n">_y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="n">_passband</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;For 2D array input, second axis must match the number of passbands.&#39;</span><span class="p">)</span>
+        
+    <span class="c1"># Get the (fractional) interval of each pixel in each passband</span>
     <span class="n">dx</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">_x</span><span class="p">)</span>
+    <span class="n">inband_dx</span> <span class="o">=</span> <span class="n">pixel_fraction_in_passband</span><span class="p">(</span><span class="n">_x</span><span class="p">,</span> <span class="n">_passband</span><span class="p">,</span> <span class="n">dx</span><span class="p">)</span><span class="o">*</span><span class="n">dx</span><span class="p">[:,</span><span class="kc">None</span><span class="p">]</span>
 
-    <span class="c1"># Get the integral over a single passband</span>
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">_passband</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="n">inband_dx</span> <span class="o">=</span> <span class="n">pixel_fraction_in_passband</span><span class="p">(</span><span class="n">_x</span><span class="p">,</span> <span class="n">_passband</span><span class="p">,</span> <span class="n">dx</span><span class="p">)</span><span class="o">*</span><span class="n">dx</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="c1"># Get the integral over all passbands</span>
-        <span class="n">inband_dx</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">_passband</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">y</span><span class="o">.</span><span class="n">size</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">pb</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">_passband</span><span class="p">):</span>
-            <span class="n">inband_dx</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">pixel_fraction_in_passband</span><span class="p">(</span><span class="n">_x</span><span class="p">,</span> <span class="n">pb</span><span class="p">,</span> <span class="n">dx</span><span class="p">)</span><span class="o">*</span><span class="n">dx</span>
-    <span class="c1"># Sum of y*dx</span>
-    <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">_y</span><span class="p">,</span> <span class="n">inband_dx</span><span class="o">.</span><span class="n">T</span><span class="p">)</span></div>
+    <span class="c1"># Sum of y*dx, or sqrt(sum((y*dx)^2))</span>
+    <span class="n">integral</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">_y</span><span class="o">*</span><span class="n">inband_dx</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span> <span class="k">if</span> <span class="n">quad</span> \
+                    <span class="k">else</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">_y</span><span class="o">*</span><span class="n">inband_dx</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="c1"># Reshape the returned array if only one passband provided</span>
+    <span class="k">return</span> <span class="n">integral</span> <span class="k">if</span> <span class="n">numpy</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">passband</span><span class="p">)</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span> <span class="k">else</span> <span class="n">integral</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span></div>
 
 
-<div class="viewcode-block" id="passband_integrated_width"><a class="viewcode-back" href="../../../mangadap.proc.bandpassfilter.html#mangadap.proc.bandpassfilter.passband_integrated_width">[docs]</a><span class="k">def</span> <span class="nf">passband_integrated_width</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="mf">10.0</span><span class="p">):</span>
+<div class="viewcode-block" id="passband_integrated_width"><a class="viewcode-back" href="../../../mangadap.proc.bandpassfilter.html#mangadap.proc.bandpassfilter.passband_integrated_width">[docs]</a><span class="k">def</span> <span class="nf">passband_integrated_width</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">borders</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="mf">10.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Determine the integrated width of the passband, accounting for masked pixels.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">unity</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
     <span class="n">unity</span><span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">getmaskarray</span><span class="p">(</span><span class="n">y</span><span class="p">))]</span> <span class="o">=</span> <span class="mf">1.0</span>
-    <span class="k">return</span> <span class="n">passband_integral</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">unity</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="n">passband</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="n">log</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">passband_integral</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">unity</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="n">passband</span><span class="p">,</span> <span class="n">borders</span><span class="o">=</span><span class="n">borders</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="n">log</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="passband_integrated_mean"><a class="viewcode-back" href="../../../mangadap.proc.bandpassfilter.html#mangadap.proc.bandpassfilter.passband_integrated_mean">[docs]</a><span class="k">def</span> <span class="nf">passband_integrated_mean</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">err</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="mf">10.0</span><span class="p">):</span>
+<div class="viewcode-block" id="passband_integrated_mean"><a class="viewcode-back" href="../../../mangadap.proc.bandpassfilter.html#mangadap.proc.bandpassfilter.passband_integrated_mean">[docs]</a><span class="k">def</span> <span class="nf">passband_integrated_mean</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">err</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">borders</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="mf">10.0</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Determine the integrated mean over a (set of) passband(s).  Nominal</span>
 <span class="sd">    errors are returned if err is provided.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Get the passband interval, accounting for masked pixels</span>
-    <span class="n">interval</span> <span class="o">=</span> <span class="n">passband_integrated_width</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="n">passband</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="n">log</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">)</span>
+    <span class="n">interval</span> <span class="o">=</span> <span class="n">passband_integrated_width</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="n">passband</span><span class="p">,</span> <span class="n">borders</span><span class="o">=</span><span class="n">borders</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="n">log</span><span class="p">,</span>
+                                         <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">)</span>
     <span class="n">interval</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">(</span><span class="n">interval</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">absolute</span><span class="p">(</span><span class="n">interval</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">))</span>
 
     <span class="c1"># Get the integral of y over the passband</span>
-    <span class="n">integral</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">(</span><span class="n">passband_integral</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="n">passband</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="n">log</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">))</span>
-    
-    <span class="c1"># Return the integrated mean, and the error if possible</span>
+    <span class="n">integral</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">(</span><span class="n">passband_integral</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="n">passband</span><span class="p">,</span> <span class="n">borders</span><span class="o">=</span><span class="n">borders</span><span class="p">,</span>
+                                                      <span class="n">log</span><span class="o">=</span><span class="n">log</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">))</span>
     <span class="k">if</span> <span class="n">err</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">integral</span><span class="o">/</span><span class="n">interval</span><span class="p">,</span> <span class="kc">None</span>
-    <span class="n">err_integral</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">(</span><span class="n">passband_integral</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">err</span><span class="p">),</span> <span class="n">passband</span><span class="o">=</span><span class="n">passband</span><span class="p">,</span>
-                                        <span class="n">log</span><span class="o">=</span><span class="n">log</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">))</span>
-    <span class="k">return</span> <span class="n">integral</span><span class="o">/</span><span class="n">interval</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">err_integral</span><span class="p">)</span><span class="o">/</span><span class="n">interval</span></div>
+        <span class="c1"># No error</span>
+        <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span><span class="n">integral</span><span class="p">,</span> <span class="n">interval</span><span class="p">),</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">err</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Value and error have different sizes.&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Return the integrated mean and error</span>
+    <span class="n">integral_err</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">(</span><span class="n">passband_integral</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">err</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="n">passband</span><span class="p">,</span>
+                                                          <span class="n">borders</span><span class="o">=</span><span class="n">borders</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="n">log</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">,</span>
+                                                          <span class="n">quad</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span><span class="n">integral</span><span class="p">,</span> <span class="n">interval</span><span class="p">),</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span><span class="n">integral_err</span><span class="p">,</span> <span class="n">interval</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="passband_weighted_mean"><a class="viewcode-back" href="../../../mangadap.proc.bandpassfilter.html#mangadap.proc.bandpassfilter.passband_weighted_mean">[docs]</a><span class="k">def</span> <span class="nf">passband_weighted_mean</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">yerr</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">zerr</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="mf">10.0</span><span class="p">):</span>
+<div class="viewcode-block" id="passband_weighted_mean"><a class="viewcode-back" href="../../../mangadap.proc.bandpassfilter.html#mangadap.proc.bandpassfilter.passband_weighted_mean">[docs]</a><span class="k">def</span> <span class="nf">passband_weighted_mean</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">borders</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">yerr</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">zerr</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                           <span class="n">base</span><span class="o">=</span><span class="mf">10.0</span><span class="p">):</span>
     <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Determine the y-weighted integral of z over the passband; i.e.,</span>
+<span class="sd">    Determine the y-weighted mean of z over the passband; i.e.,</span>
 
 <span class="sd">    .. math::</span>
 
-<span class="sd">        \frac{\int_{x_1}^{x_2} y z dx}{\int_{x_1}_{x_2} y dx}.</span>
-<span class="sd">    </span>
-<span class="sd">    Nominal errors are returned if err is provided.</span>
+<span class="sd">        \mu = \frac{\int_{x_1}^{x_2} y z dx}{\int_{x_1}_{x_2} y dx},</span>
+<span class="sd">        </span>
+<span class="sd">    where the integrals are determined by the discrete sum; i.e.,</span>
+<span class="sd">    :math:`\mu = S(y z)/S(y)` where :math:`S(y)` is provided by</span>
+<span class="sd">    :func:`passband_integral`.</span>
+
+<span class="sd">    Because the error in the numerator and denominator of :math:`\mu`</span>
+<span class="sd">    are correlated, they are calculated here by explicit error</span>
+<span class="sd">    propagation:</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        \epsilon_\mu^2 = \frac{1}{S(y)^2} (S((z-\mu)^2 \epsilon_y^2) +</span>
+<span class="sd">        S(y^2\epsilon_z^2)).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        numpy.ma.MaskedArray: Two masked arrays with the</span>
+<span class="sd">        passband-weighted mean and its error.  The error is returned as</span>
+<span class="sd">        `None` if no errors are provided.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Get the passband interval, accounting for masked pixels</span>
-    <span class="n">weighted_integral</span> <span class="o">=</span> <span class="n">passband_integral</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">z</span><span class="o">*</span><span class="n">y</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="n">passband</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="n">log</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">)</span>
-    <span class="n">integral</span> <span class="o">=</span> <span class="n">passband_integral</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="n">passband</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="n">log</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">)</span>
+    <span class="n">weighted_integral</span> <span class="o">=</span> <span class="n">passband_integral</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">z</span><span class="o">*</span><span class="n">y</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="n">passband</span><span class="p">,</span> <span class="n">borders</span><span class="o">=</span><span class="n">borders</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="n">log</span><span class="p">,</span>
+                                          <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">)</span>
+    <span class="n">integral</span> <span class="o">=</span> <span class="n">passband_integral</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="n">passband</span><span class="p">,</span> <span class="n">borders</span><span class="o">=</span><span class="n">borders</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="n">log</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">)</span>
     <span class="n">integral</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">(</span><span class="n">integral</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">absolute</span><span class="p">(</span><span class="n">integral</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">))</span>
 
     <span class="k">if</span> <span class="n">yerr</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">zerr</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">weighted_integral</span><span class="o">/</span><span class="n">integral</span><span class="p">,</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span><span class="n">weighted_integral</span><span class="p">,</span><span class="n">integral</span><span class="p">),</span> <span class="kc">None</span>
 
-    <span class="n">weighted_integral</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">(</span><span class="n">weighted_integral</span><span class="p">,</span>
-                                        <span class="n">mask</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">absolute</span><span class="p">(</span><span class="n">weighted_integral</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">))</span>
+    <span class="c1"># Construct error</span>
+    <span class="n">weighted_integral_err</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">weighted_integral</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
 
-    <span class="n">werr</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">z</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="c1"># Get the integrand for the y errors</span>
     <span class="k">if</span> <span class="n">yerr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">werr</span> <span class="o">+=</span> <span class="n">z</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">yerr</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">zerr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">werr</span> <span class="o">+=</span> <span class="n">y</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">zerr</span><span class="p">)</span>
-    <span class="n">weighted_integral_err</span> <span class="o">=</span> <span class="n">passband_integral</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">werr</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="n">passband</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="n">log</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">yerr</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Incorrect shape for y errors.&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">integral</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+            <span class="kn">import</span> <span class="nn">pdb</span>
+            <span class="n">pdb</span><span class="o">.</span><span class="n">set_trace</span><span class="p">()</span>
+        <span class="n">ye_integrand</span> <span class="o">=</span> <span class="p">(</span><span class="n">z</span><span class="p">[:,</span><span class="kc">None</span><span class="p">]</span><span class="o">-</span><span class="n">numpy</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">integral</span><span class="p">)[</span><span class="kc">None</span><span class="p">,:])</span><span class="o">*</span><span class="n">yerr</span><span class="p">[:,</span><span class="kc">None</span><span class="p">]</span>
+        <span class="n">weighted_integral_err</span> <span class="o">+=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">passband_integral</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">ye_integrand</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="n">passband</span><span class="p">,</span>
+                                                                <span class="n">borders</span><span class="o">=</span><span class="n">borders</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="n">log</span><span class="p">,</span>
+                                                                <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">,</span> <span class="n">quad</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
 
-    <span class="n">integral_err</span> <span class="o">=</span> <span class="mi">0</span> <span class="k">if</span> <span class="n">yerr</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">passband_integral</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">yerr</span><span class="p">),</span>
-                                                            <span class="n">passband</span><span class="o">=</span><span class="n">passband</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="n">log</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">)</span>
-    <span class="n">weighted_mean</span> <span class="o">=</span> <span class="n">weighted_integral</span><span class="o">/</span><span class="n">integral</span>
-    <span class="n">weighted_mean_err</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span>
-                            <span class="n">weighted_integral_err</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">weighted_mean</span><span class="o">/</span><span class="n">weighted_integral</span><span class="p">)</span> \
-                                    <span class="o">+</span> <span class="n">integral_err</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">weighted_mean</span><span class="o">/</span><span class="n">integral</span><span class="p">))</span>
-    <span class="k">return</span> <span class="n">weighted_mean</span><span class="p">,</span> <span class="n">weighted_mean_err</span></div>
+    <span class="c1"># Get the integrand for the z errors</span>
+    <span class="k">if</span> <span class="n">zerr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">zerr</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">z</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Incorrect shape for z errors.&#39;</span><span class="p">)</span>
+        <span class="n">ze_integrand</span> <span class="o">=</span> <span class="n">_zerr</span><span class="o">*</span><span class="n">y</span>
+        <span class="n">weighted_integral_err</span> <span class="o">+=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">passband_integral</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">ze_integrand</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="n">passband</span><span class="p">,</span>
+                                                                <span class="n">borders</span><span class="o">=</span><span class="n">borders</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="n">log</span><span class="p">,</span>
+                                                                <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">,</span> <span class="n">quad</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+    
+    <span class="c1"># Finalize the error</span>
+    <span class="n">weighted_integral_err</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">weighted_integral_err</span><span class="p">)</span>
+
+    <span class="c1"># Return the passband weighted mean and its error</span>
+    <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span><span class="n">weighted_integral</span><span class="p">,</span> <span class="n">integral</span><span class="p">),</span> \
+                <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span><span class="n">weighted_integral_err</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">absolute</span><span class="p">(</span><span class="n">integral</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="passband_weighted_sdev"><a class="viewcode-back" href="../../../mangadap.proc.bandpassfilter.html#mangadap.proc.bandpassfilter.passband_weighted_sdev">[docs]</a><span class="k">def</span> <span class="nf">passband_weighted_sdev</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">borders</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">yerr</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">zerr</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                           <span class="n">base</span><span class="o">=</span><span class="mf">10.0</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Determine the y-weighted standard deviation of z over the passband;</span>
+<span class="sd">    i.e.,</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        \sigma^2 = \frac{\int_{x_1}^{x_2} y z^2 dx}{\int_{x_1}_{x_2} y</span>
+<span class="sd">        dx} - \mu^2,</span>
+<span class="sd">        </span>
+<span class="sd">    where :math:`\mu` is the y-weighted mean of z over the passband (see</span>
+<span class="sd">    :func:`passband_weighted_mean`) and the integrals are determined by</span>
+<span class="sd">    the discrete sum; i.e., :math:`\sigma^2 = S(y z^2)/S(y) - \mu^2`</span>
+<span class="sd">    where :math:`S(y)` is provided by :func:`passband_integral`.</span>
+
+<span class="sd">    Because the error in the various components of the :math:`\sigma`</span>
+<span class="sd">    calculation are correlated, they are calculated here by explicit</span>
+<span class="sd">    error propagation:</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        \epsilon_{\sigma^2}^2 = \frac{1}{S(y)^2} (S([(z-\mu)^2 + \mu^2 -</span>
+<span class="sd">        \mu_2]^2 \epsilon_y^2) + S(4 (z-\mu)^2 y^2\epsilon_z^2)),</span>
+<span class="sd">        </span>
+<span class="sd">    where :math:`\mu_2` is the first term in the :math:`\sigma^2`</span>
+<span class="sd">    calculation above and</span>
+<span class="sd">    </span>
+<span class="sd">    .. math::</span>
+
+<span class="sd">        \epsilon_\sigma = \frac{\epsilon_{\sigma^2}}{2 \sigma}.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        numpy.ma.MaskedArray: Two masked arrays with the</span>
+<span class="sd">        passband-weighted standard deviation and its error.  The error</span>
+<span class="sd">        is returned as `None` if no errors are provided.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">mu</span> <span class="o">=</span> <span class="n">passband_weighted_mean</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="n">passband</span><span class="p">,</span> <span class="n">borders</span><span class="o">=</span><span class="n">borders</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="n">log</span><span class="p">,</span>
+                                <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">mu2</span> <span class="o">=</span> <span class="n">passband_weighted_mean</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="o">*</span><span class="n">z</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="n">passband</span><span class="p">,</span> <span class="n">borders</span><span class="o">=</span><span class="n">borders</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="n">log</span><span class="p">,</span>
+                                 <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">sigma</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">mu2</span> <span class="o">-</span> <span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">mu</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">yerr</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">zerr</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">sigma</span><span class="p">,</span> <span class="kc">None</span>
+
+    <span class="c1"># Construct error</span>
+    <span class="n">sigma_error</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">sigma</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sigma</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="k">else</span> <span class="mf">0.</span>
+
+    <span class="c1"># Get the integrand for the y errors</span>
+    <span class="k">if</span> <span class="n">yerr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">yerr</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Incorrect shape for y errors.&#39;</span><span class="p">)</span>
+        <span class="n">ye_integrand</span> <span class="o">=</span> <span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">z</span><span class="p">[:,</span><span class="kc">None</span><span class="p">]</span><span class="o">-</span><span class="n">numpy</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">mu</span><span class="p">)[</span><span class="kc">None</span><span class="p">,:])</span>
+                            <span class="o">+</span> <span class="n">numpy</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">mu</span><span class="p">)</span><span class="o">-</span><span class="n">mu2</span><span class="p">)[</span><span class="kc">None</span><span class="p">,:])</span><span class="o">*</span><span class="n">yerr</span><span class="p">[:,</span><span class="kc">None</span><span class="p">]</span>
+        <span class="n">sigma_error</span> <span class="o">+=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">passband_integral</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">ye_integrand</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="n">passband</span><span class="p">,</span>
+                                                      <span class="n">borders</span><span class="o">=</span><span class="n">borders</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="n">log</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">,</span>
+                                                      <span class="n">quad</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+
+    <span class="c1"># Get the integrand for the z errors</span>
+    <span class="k">if</span> <span class="n">zerr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">zerr</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">z</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Incorrect shape for z errors.&#39;</span><span class="p">)</span>
+        <span class="n">ze_integrand</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="p">(</span><span class="n">z</span><span class="p">[:,</span><span class="kc">None</span><span class="p">]</span><span class="o">-</span><span class="n">numpy</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">mu</span><span class="p">)[</span><span class="kc">None</span><span class="p">,:])</span><span class="o">*</span><span class="p">(</span><span class="n">y</span><span class="o">*</span><span class="n">zerr</span><span class="p">)[:,</span><span class="kc">None</span><span class="p">]</span>
+        <span class="n">sigma_error</span> <span class="o">+=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">passband_integral</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">ze_integrand</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="n">passband</span><span class="p">,</span>
+                                                      <span class="n">borders</span><span class="o">=</span><span class="n">borders</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="n">log</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">,</span>
+                                                      <span class="n">quad</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+
+    <span class="c1"># Finalize the error in sigma</span>
+    <span class="n">sigma_error</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">sigma_error</span><span class="p">)</span> \
+                        <span class="o">/</span> <span class="n">numpy</span><span class="o">.</span><span class="n">absolute</span><span class="p">(</span><span class="n">passband_integral</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="n">passband</span><span class="p">,</span>
+                                         <span class="n">borders</span><span class="o">=</span><span class="n">borders</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="n">log</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">)</span> <span class="o">*</span> <span class="mi">2</span><span class="o">*</span><span class="n">sigma</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sigma</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">pdb</span>
+        <span class="n">pdb</span><span class="o">.</span><span class="n">set_trace</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">sigma_error</span></div>
 
 
 <div class="viewcode-block" id="pseudocontinuum"><a class="viewcode-back" href="../../../mangadap.proc.bandpassfilter.html#mangadap.proc.bandpassfilter.pseudocontinuum">[docs]</a><span class="k">def</span> <span class="nf">pseudocontinuum</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">err</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">weighted_center</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Get the pseudocontinua in a set of passbands for a single vector (y)</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        float, numpy.ndarray: Return five arrays or floats: (1) The</span>
+<span class="sd">        center of each passband, (2) the mean continuum level, (3) the</span>
+<span class="sd">        propagated error in the continuum level (will be None if no</span>
+<span class="sd">        errors are provided), (4) flag that part of the passband was</span>
+<span class="sd">        masked, (5) flag that the passband was fully masked or empty.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Calculate the pseudo-continua in the sidebands</span>
-    <span class="n">continuum</span><span class="p">,</span> <span class="n">continuum_error</span> <span class="o">=</span> <span class="n">passband_integrated_mean</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="n">passband</span><span class="p">,</span> <span class="n">err</span><span class="o">=</span><span class="n">err</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="n">log</span><span class="p">)</span>
+    <span class="n">continuum</span><span class="p">,</span> <span class="n">continuum_error</span> <span class="o">=</span> <span class="n">passband_integrated_mean</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">err</span><span class="o">=</span><span class="n">err</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="n">passband</span><span class="p">,</span>
+                                                          <span class="n">log</span><span class="o">=</span><span class="n">log</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">weighted_center</span><span class="p">:</span>
-        <span class="n">band_center</span><span class="p">,</span> <span class="n">_wc_err</span> <span class="o">=</span> <span class="n">passband_weighted_mean</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="n">passband</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="n">log</span><span class="p">)</span>
+        <span class="n">band_center</span> <span class="o">=</span> <span class="n">passband_weighted_mean</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="n">passband</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="n">log</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">band_center</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">if</span> <span class="n">passband</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">numpy</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">passband</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 
@@ -528,11 +763,6 @@
     <span class="c1"># pixels</span>
     <span class="n">interval_frac</span> <span class="o">=</span> <span class="n">passband_integrated_width</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="n">passband</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="n">log</span><span class="p">)</span> \
                             <span class="o">/</span> <span class="n">numpy</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">passband</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
-
-<span class="c1">#    pyplot.step(x, y, where=&#39;mid&#39;, color=&#39;k&#39;, lw=0.5, zorder=1)</span>
-<span class="c1">#    pyplot.scatter(band_center, continuum, marker=&#39;.&#39;, s=50,</span>
-<span class="c1">#                   color=&#39;b&#39;, lw=0, zorder=3)</span>
-<span class="c1">#    pyplot.show()</span>
 
     <span class="k">return</span> <span class="n">band_center</span><span class="p">,</span> <span class="n">continuum</span><span class="p">,</span> <span class="n">continuum_error</span><span class="p">,</span> <span class="n">interval_frac</span> <span class="o">&lt;</span> <span class="mf">1.0</span><span class="p">,</span> \
                 <span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">interval_frac</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">)</span></div>

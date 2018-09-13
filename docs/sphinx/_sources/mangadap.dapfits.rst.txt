@@ -1,5 +1,5 @@
-mangadap\.dapfits module
-========================
+mangadap.dapfits module
+=======================
 
 .. automodule:: mangadap.dapfits
     :members:

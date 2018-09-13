@@ -1,5 +1,5 @@
-mangadap\.config package
-========================
+mangadap.config package
+=======================
 
 Submodules
 ----------

@@ -1,5 +1,5 @@
-mangadap\.proc\.emissionlinemoments module
-==========================================
+mangadap.proc.emissionlinemoments module
+========================================
 
 .. automodule:: mangadap.proc.emissionlinemoments
     :members:

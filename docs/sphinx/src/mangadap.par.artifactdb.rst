@@ -1,5 +1,5 @@
-mangadap\.par\.artifactdb module
-================================
+mangadap.par.artifactdb module
+==============================
 
 .. automodule:: mangadap.par.artifactdb
     :members:

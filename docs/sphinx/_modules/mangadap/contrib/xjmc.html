@@ -36,7 +36,7 @@
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
     <link rel="top" title="mangadap 2.2.2 documentation" href="../../../index.html"/>
-        <link rel="up" title="Module code" href="../../index.html"/> 
+        <link rel="up" title="mangadap" href="../../mangadap.html"/> 
 
   
   <script src="../../../_static/js/modernizr.min.js"></script>
@@ -138,6 +138,8 @@
         
           <li><a href="../../index.html">Module code</a> &raquo;</li>
         
+          <li><a href="../../mangadap.html">mangadap</a> &raquo;</li>
+        
       <li>mangadap.contrib.xjmc</li>
     
     
@@ -168,28 +170,6 @@
 <span class="sd">*Source location*:</span>
 <span class="sd">    $MANGADAP_DIR/python/mangadap/contrib/xjmc.py</span>
 
-<span class="sd">*Imports and python version compliance*:</span>
-<span class="sd">    ::</span>
-
-<span class="sd">        from __future__ import division</span>
-<span class="sd">        from __future__ import print_function</span>
-<span class="sd">        from __future__ import absolute_import</span>
-<span class="sd">        from __future__ import unicode_literals</span>
-
-<span class="sd">        import sys</span>
-<span class="sd">        if sys.version &gt; &#39;3&#39;:</span>
-<span class="sd">            long = int</span>
-
-<span class="sd">        import warnings</span>
-<span class="sd">        import numpy as np</span>
-
-<span class="sd">        from scipy import fftpack</span>
-<span class="sd">        from scipy.ndimage import rank_filter</span>
-
-<span class="sd">        import astropy.constants</span>
-
-<span class="sd">        from captools import ppxf, capfit</span>
-
 <span class="sd">*Class usage examples*:</span>
 <span class="sd">        Add examples</span>
 
@@ -199,7 +179,9 @@
 <span class="sd">    | **09 Feb 2018**: (KBW) Return the bin matching vector</span>
 <span class="sd">    | **20 Mar 2018**: (KBW) Correct error in carrying around pixels</span>
 <span class="sd">        rejected during fit</span>
-
+<span class="sd">    | **22 May 2018**: (KBW) Change import to ppxf package.</span>
+<span class="sd">    | **29 May 2018**: (KBW) Remove original function from Xihan and</span>
+<span class="sd">        rename *_edit function.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
@@ -219,7 +201,7 @@
 
 <span class="kn">import</span> <span class="nn">astropy.constants</span>
 
-<span class="kn">from</span> <span class="nn">captools</span> <span class="k">import</span> <span class="n">ppxf</span><span class="p">,</span> <span class="n">capfit</span>
+<span class="kn">from</span> <span class="nn">ppxf</span> <span class="k">import</span> <span class="n">ppxf</span><span class="p">,</span> <span class="n">capfit</span>
 
 <span class="c1"># For debugging</span>
 <span class="kn">from</span> <span class="nn">matplotlib</span> <span class="k">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
@@ -574,7 +556,7 @@
     <span class="n">new_start</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">new_error</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">ncomp</span><span class="p">):</span>
-        <span class="n">indx</span> <span class="o">=</span> <span class="p">[</span><span class="n">component_map</span> <span class="o">==</span> <span class="n">i</span><span class="p">]</span>
+        <span class="n">indx</span> <span class="o">=</span> <span class="n">component_map</span> <span class="o">==</span> <span class="n">i</span>
         <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">indx</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">new_start</span> <span class="o">+=</span> <span class="p">([[</span><span class="n">fill_value</span><span class="p">]</span><span class="o">*</span><span class="nb">abs</span><span class="p">(</span><span class="n">moments</span><span class="p">[</span><span class="n">i</span><span class="p">])]</span> <span class="k">if</span> <span class="n">start</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[</span><span class="n">start</span><span class="p">[</span><span class="n">i</span><span class="p">]])</span>
             <span class="n">new_error</span> <span class="o">+=</span> <span class="p">[[</span><span class="n">fill_value</span><span class="p">]</span><span class="o">*</span><span class="nb">abs</span><span class="p">(</span><span class="n">moments</span><span class="p">[</span><span class="n">i</span><span class="p">])]</span>
@@ -587,7 +569,8 @@
 
 <div class="viewcode-block" id="_fit_iteration"><a class="viewcode-back" href="../../../mangadap.contrib.xjmc.html#mangadap.contrib.xjmc._fit_iteration">[docs]</a><span class="k">def</span> <span class="nf">_fit_iteration</span><span class="p">(</span><span class="n">templates</span><span class="p">,</span> <span class="n">wave</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">noise</span><span class="p">,</span> <span class="n">velscale</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">moments</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">gas_template</span><span class="p">,</span>
                    <span class="n">tpl_to_use</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">reject_boxcar</span><span class="o">=</span><span class="mi">101</span><span class="p">,</span> <span class="n">velscale_ratio</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">degree</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">mdegree</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-                   <span class="n">reddening</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tied</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">vsyst</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">quiet</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+                   <span class="n">reddening</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tied</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">vsyst</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">quiet</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                   <span class="n">sigma_rej</span><span class="o">=</span><span class="mf">3.</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Run a single fit+rejection iteration of the pPXF fit for all input</span>
 <span class="sd">    spectra with the provided set of constraints/options.</span>
@@ -638,7 +621,9 @@
 <span class="sd">            iteration.  Default is to skip the plot.</span>
 <span class="sd">        quiet (bool): (**Optional**) Suppress output to the terminal</span>
 <span class="sd">            (default).</span>
-
+<span class="sd">        sigma_rej (float): (**Optional**) Sigma values used for the rejection.</span>
+<span class="sd">            Default is 3.</span>
+<span class="sd">            </span>
 <span class="sd">    Returns:</span>
 <span class="sd">        numpy.ndarray: Eleven arrays are returned: (1) The best-fitting</span>
 <span class="sd">        model for each spectrum [shape is (NSPEC,NPIX)]; (2) the</span>
@@ -719,7 +704,7 @@
             <span class="c1"># - Calculate the 1-sigma confidence interval</span>
             <span class="n">NOISE</span> <span class="o">=</span> <span class="n">calculate_noise</span><span class="p">(</span><span class="n">resid</span><span class="p">[</span><span class="n">reject_pixels</span><span class="p">],</span> <span class="n">width</span><span class="o">=</span><span class="n">reject_boxcar</span><span class="p">)</span>
             <span class="c1"># - Reject pixels with &gt; 3-sigma residuals</span>
-            <span class="n">model_mask</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">reject_pixels</span><span class="p">]</span> <span class="o">&amp;=</span> <span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">resid</span><span class="p">[</span><span class="n">reject_pixels</span><span class="p">])</span> <span class="o">&lt;</span> <span class="p">(</span><span class="mi">3</span><span class="o">*</span><span class="n">NOISE</span><span class="p">))</span>
+            <span class="n">model_mask</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">reject_pixels</span><span class="p">]</span> <span class="o">&amp;=</span> <span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">resid</span><span class="p">[</span><span class="n">reject_pixels</span><span class="p">])</span> <span class="o">&lt;</span> <span class="p">(</span><span class="n">sigma_rej</span><span class="o">*</span><span class="n">NOISE</span><span class="p">))</span>
         
             <span class="c1"># Reorder the output; sets any omitted components to have</span>
             <span class="c1"># the starting values from the original input</span>
@@ -742,33 +727,6 @@
                            <span class="n">gas_component</span><span class="o">=</span><span class="n">_gas_template</span><span class="p">,</span> <span class="n">quiet</span><span class="o">=</span><span class="n">quiet</span><span class="p">,</span> <span class="n">linear</span><span class="o">=</span><span class="n">linear</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">plot</span><span class="p">:</span>
                 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
-
-<span class="c1">#        # npoly assumed to be zero</span>
-<span class="c1">#        print(&#39;GAS TEMPLATE SUM:&#39;)</span>
-<span class="c1">#        print(pp.matrix.shape)</span>
-<span class="c1">#        print(pp.lam.shape)</span>
-<span class="c1">#        s = np.sum(pp.matrix[:,pp.gas_component], axis=0)</span>
-<span class="c1">#        ws = np.sum(pp.matrix[:,pp.gas_component]*pp.weights[pp.gas_component], axis=0)</span>
-<span class="c1">#        wi = np.sum((pp.matrix[:,pp.gas_component]*pp.weights[None,pp.gas_component])[:-1,:]</span>
-<span class="c1">#                            * np.diff(pp.lam)[:,None], axis=0)</span>
-<span class="c1">#</span>
-<span class="c1">#        mw = np.ma.divide(np.sum((pp.lam[:,None] * pp.matrix[:,pp.gas_component] </span>
-<span class="c1">#                                    * pp.weights[None,pp.gas_component])[:-1,:]</span>
-<span class="c1">#                                        * np.diff(pp.lam)[:,None], axis=0),wi)</span>
-<span class="c1">#        fmw = np.mean(pp.lam)</span>
-<span class="c1">#        gc = np.unique(pp.component[pp.gas_component]).astype(int)</span>
-<span class="c1">#        print(gc)</span>
-<span class="c1">#        print([np.exp(pp.sol[i][0]/astropy.constants.c.to(&#39;km/s&#39;).value) for i in gc])</span>
-<span class="c1">#        print(s)</span>
-<span class="c1">#        print(ws)</span>
-<span class="c1">#        print(wi)</span>
-<span class="c1">#        print(np.ma.divide(wi,ws))</span>
-<span class="c1">#        print(mw)</span>
-<span class="c1">#        print(mw/fmw)</span>
-<span class="c1">#        print(np.ma.divide(wi,ws)*(fmw/mw))</span>
-<span class="c1">#</span>
-<span class="c1">#        print(&#39;GAS FLUXES:&#39;)</span>
-<span class="c1">#        print(pp.gas_flux)</span>
 
         <span class="c1"># Reorder the output; sets any omitted components to a default</span>
         <span class="c1"># value of -999.</span>
@@ -793,12 +751,6 @@
         <span class="n">kin</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">sol</span><span class="p">))</span>
         <span class="n">kin_err</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">err</span><span class="p">))</span>
         
-<span class="c1">#        plt.plot(flux[i,:], color=&#39;b&#39;, lw=2)</span>
-<span class="c1">#        plt.plot(np.ma.MaskedArray(flux[i,:], mask=np.invert(model_mask[i,:])), color=&#39;k&#39;, lw=2)</span>
-<span class="c1">#        plt.plot(model[i,:], color=&#39;C3&#39;, lw=1)</span>
-<span class="c1">#        plt.plot(model[i,:]-eml_model[i,:], color=&#39;C2&#39;, lw=1)</span>
-<span class="c1">#        plt.show()</span>
-
     <span class="c1"># Done</span>
     <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Fitting spectrum: </span><span class="si">{0}</span><span class="s1">/</span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">nspec</span><span class="p">))</span>
 
@@ -863,12 +815,12 @@
     <span class="k">return</span> <span class="n">stellar_wgts</span><span class="p">,</span> <span class="n">_templates</span><span class="p">,</span> <span class="n">_gas_template</span><span class="p">,</span> <span class="n">_tpl_to_use</span><span class="p">,</span> <span class="n">_component</span></div>
 
 
-<div class="viewcode-block" id="emline_fitter_with_ppxf_edit"><a class="viewcode-back" href="../../../mangadap.contrib.xjmc.html#mangadap.contrib.xjmc.emline_fitter_with_ppxf_edit">[docs]</a><span class="k">def</span> <span class="nf">emline_fitter_with_ppxf_edit</span><span class="p">(</span><span class="n">templates</span><span class="p">,</span> <span class="n">wave</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">noise</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">velscale</span><span class="p">,</span> <span class="n">velscale_ratio</span><span class="p">,</span>
-                                 <span class="n">inp_component</span><span class="p">,</span> <span class="n">gas_template</span><span class="p">,</span> <span class="n">inp_moments</span><span class="p">,</span> <span class="n">inp_start</span><span class="p">,</span>
-                                 <span class="n">tied</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">degree</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">mdegree</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">reddening</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                                 <span class="n">reject_boxcar</span><span class="o">=</span><span class="mi">101</span><span class="p">,</span> <span class="n">vsyst</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">tpl_to_use</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">flux_binned</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                                 <span class="n">noise_binned</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mask_binned</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">x_binned</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">y_binned</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                                 <span class="n">x</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">quiet</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="emline_fitter_with_ppxf"><a class="viewcode-back" href="../../../mangadap.contrib.xjmc.html#mangadap.contrib.xjmc.emline_fitter_with_ppxf">[docs]</a><span class="k">def</span> <span class="nf">emline_fitter_with_ppxf</span><span class="p">(</span><span class="n">templates</span><span class="p">,</span> <span class="n">wave</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">noise</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">velscale</span><span class="p">,</span> <span class="n">velscale_ratio</span><span class="p">,</span>
+                            <span class="n">inp_component</span><span class="p">,</span> <span class="n">gas_template</span><span class="p">,</span> <span class="n">inp_moments</span><span class="p">,</span> <span class="n">inp_start</span><span class="p">,</span> <span class="n">tied</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                            <span class="n">degree</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">mdegree</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">reddening</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">reject_boxcar</span><span class="o">=</span><span class="mi">101</span><span class="p">,</span> <span class="n">vsyst</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                            <span class="n">tpl_to_use</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">flux_binned</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">noise_binned</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mask_binned</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                            <span class="n">x_binned</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">y_binned</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">quiet</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                            <span class="n">debug</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">sigma_rej</span><span class="o">=</span><span class="mf">3.</span><span class="p">):</span>
 
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Main calling function for fitting stellar-continuum and nebular</span>
@@ -922,75 +874,96 @@
 <span class="sd">    template, instead of basing the optimal template on the initial fit</span>
 <span class="sd">    to the binned spectrum.</span>
 
+<span class="sd">    .. todo::</span>
+<span class="sd">        - Allow a pre-assignment of each remapped spectrum to the binned</span>
+<span class="sd">          spectra.</span>
+<span class="sd">        - Allow mask(s) to be optional</span>
+
 <span class="sd">    Args:</span>
-<span class="sd">        templates (numpy.ndarray): Templates library to use for fitting.</span>
-<span class="sd">            Shape is (NTPLPIX,NTPL).</span>
-<span class="sd">        wave (numpy.ndarray): Wavelength vector.  Shape is (NPIX,).</span>
-<span class="sd">        flux (numpy.ndarray): Object spectra to fit.  Shape is</span>
-<span class="sd">            (NSPEC,NPIX).</span>
-<span class="sd">        noise (numpy.ndarray): Error in the object spectra to fit.</span>
-<span class="sd">            Shape is (NSPEC,NPIX).</span>
-<span class="sd">        mask (numpy.ndarray): Boolean vector that selects the pixels in</span>
-<span class="sd">            the object spectra to fit (i.e., mask=True for pixels to fit</span>
-<span class="sd">            and mask=False for pixels to ignore).  Shape is</span>
-<span class="sd">            (NSPEC,NPIX).  All pixels are fit by default.</span>
-<span class="sd">        velscale (float): The pixel scale of the object spectra in km/s.</span>
-<span class="sd">        velscale_ratio (int): The ratio between the object and template</span>
-<span class="sd">            pixel scale; must be an integer.</span>
-<span class="sd">        inp_component (numpy.ndarray): Integer vector identifying the</span>
-<span class="sd">            kinematic component for each template.  Shape is (NTPL,).</span>
-<span class="sd">        gas_template (numpy.ndarray): Boolean vector that selects the</span>
-<span class="sd">            gas templates.  Shape is (NTPL,).</span>
-<span class="sd">        inp_moments (numpy.ndarray): Integer vector with the number of</span>
-<span class="sd">            kinematic moments for each component.  Shape is (NCOMP,).</span>
-<span class="sd">        inp_start (list, numpy.ndarray): The starting kinematics to use</span>
-<span class="sd">            for each spectrum.  Shape is (NSPEC,); each element has</span>
-<span class="sd">            shape (NCOMP,); each component element has shape (NMOM,),</span>
-<span class="sd">            such that the number of moments can be different for each</span>
-<span class="sd">            component.  NCOMP and NMOM should be the same for all object</span>
-<span class="sd">            spectra.</span>
-<span class="sd">        tied (list): (**Optional**) List of parameters to tie during the</span>
-<span class="sd">            fit.  Shape is (NCOMP,).</span>
-<span class="sd">        degree (int): (**Optional**) Order of the additive polynomial to</span>
-<span class="sd">            include in the fit.  Not included by default.</span>
-<span class="sd">        mdegree (int): (**Optional**) Order of the multiplicative</span>
-<span class="sd">            polynomial to fit.  Not included by default.</span>
-<span class="sd">        reddening (float): (**Optional**) Initial E(B-V) guess for</span>
-<span class="sd">            reddening (uses ppxf-default Calzetti 2000 model).  No</span>
-<span class="sd">            attentuation fit by default.</span>
-<span class="sd">        reject_boxcar (int): (**Optional**) Size of the window for the</span>
-<span class="sd">            rejection statistics.  Should be an odd number and larger</span>
-<span class="sd">            and 10.  Default is 101.  If None, no rejection iterations</span>
-<span class="sd">            are performed.</span>
-<span class="sd">        vsyst (float): (**Optional**) The pseudo velocity shift between</span>
-<span class="sd">            the template and object spectra just due to the difference</span>
-<span class="sd">            in the starting wavelength. Default is 0 km/s.</span>
-<span class="sd">        tpl_to_use (numpy.ndarray):  (**Optional**) Boolean vector</span>
-<span class="sd">            selecting templates to consider during the fit.  If None,</span>
-<span class="sd">            all templates are used in the fit.  If provided, the shape</span>
-<span class="sd">            must be (NBIN,NTPL) when providing the binned data and</span>
-<span class="sd">            (NSPEC,NTPL) when no binned data are provided.</span>
-<span class="sd">        flux_binned (numpy.ndarray): (**Optional**) Binned spectra with</span>
-<span class="sd">            previous fits to the stellar kinematics.  See purpose above.</span>
-<span class="sd">        noise_binned (numpy.ndarray): (**Optional**) Error in the binned</span>
-<span class="sd">            spectra.</span>
-<span class="sd">        mask_binned (numpy.ndarray): (**Optional**) Mask for the binned</span>
-<span class="sd">            spectra.</span>
-<span class="sd">        x_binned (numpy.ndarray): (**Optional**) On-sky bin x</span>
-<span class="sd">            coordinate; shape is (NBIN,).</span>
-<span class="sd">        y_binned (numpy.ndarray): (**Optional**) On-sky bin y</span>
-<span class="sd">            coordinate; shape is (NBIN,).</span>
-<span class="sd">        x (numpy.ndarray): (**Optional**) On-sky spectrum x coordinates;</span>
-<span class="sd">            shape is (NSPEC,)</span>
-<span class="sd">        y (numpy.ndarray): (**Optional**) On-sky spectrum y coordinates;</span>
-<span class="sd">            shape is (NSPEC,).</span>
-<span class="sd">        plot (bool): (**Optional**) Show the pPXF fit plot at each</span>
-<span class="sd">            iteration.  Default is to skip the plot.</span>
-<span class="sd">        quiet (bool): (**Optional**) Suppress output to the terminal</span>
-<span class="sd">            (default).</span>
-<span class="sd">        debug (bool): (**Optional**) Run in debugging mode.  Currently,</span>
-<span class="sd">            all this does is perform the initial setup and then return</span>
-<span class="sd">            empty vectors of the correct shape.  No fits are performed.</span>
+<span class="sd">        templates (numpy.ndarray):</span>
+<span class="sd">            Templates library to use for fitting.  Shape is</span>
+<span class="sd">            (NTPLPIX,NTPL).</span>
+<span class="sd">        wave (numpy.ndarray):</span>
+<span class="sd">            Wavelength vector.  Shape is (NPIX,).</span>
+<span class="sd">        flux (numpy.ndarray):</span>
+<span class="sd">            Object spectra to fit.  Shape is (NSPEC,NPIX).</span>
+<span class="sd">        noise (numpy.ndarray):</span>
+<span class="sd">            Error in the object spectra to fit.  Shape is (NSPEC,NPIX).</span>
+<span class="sd">        mask (numpy.ndarray):</span>
+<span class="sd">            Boolean vector that selects the pixels in the object spectra</span>
+<span class="sd">            to fit (i.e., mask=True for pixels to fit and mask=False for</span>
+<span class="sd">            pixels to ignore).  Shape is (NSPEC,NPIX).  All pixels are</span>
+<span class="sd">            fit by default.</span>
+<span class="sd">        velscale (float):</span>
+<span class="sd">            The pixel scale of the object spectra in km/s.</span>
+<span class="sd">        velscale_ratio (int):</span>
+<span class="sd">            The ratio between the object and template pixel scale; must</span>
+<span class="sd">            be an integer.</span>
+<span class="sd">        inp_component (numpy.ndarray):</span>
+<span class="sd">            Integer vector identifying the kinematic component for each</span>
+<span class="sd">            template.  Shape is (NTPL,).</span>
+<span class="sd">        gas_template (numpy.ndarray):</span>
+<span class="sd">            Boolean vector that selects the gas templates.  Shape is</span>
+<span class="sd">            (NTPL,).</span>
+<span class="sd">        inp_moments (numpy.ndarray):</span>
+<span class="sd">            Integer vector with the number of kinematic moments for each</span>
+<span class="sd">            component.  Shape is (NCOMP,).</span>
+<span class="sd">        inp_start (list, numpy.ndarray):</span>
+<span class="sd">            The starting kinematics to use for each spectrum.  Shape is</span>
+<span class="sd">            (NSPEC,); each element has shape (NCOMP,); each component</span>
+<span class="sd">            element has shape (NMOM,), such that the number of moments</span>
+<span class="sd">            can be different for each component.  NCOMP and NMOM should</span>
+<span class="sd">            be the same for all object spectra.</span>
+<span class="sd">        tied (:obj:`list`, optional):</span>
+<span class="sd">            List of parameters to tie during the fit.  Shape is</span>
+<span class="sd">            (NCOMP,).</span>
+<span class="sd">        degree (:obj:`int`, optional):</span>
+<span class="sd">            Order of the additive polynomial to include in the fit.  Not</span>
+<span class="sd">            included by default.</span>
+<span class="sd">        mdegree (:obj:`int`, optional):</span>
+<span class="sd">            Order of the multiplicative polynomial to fit.  Not included</span>
+<span class="sd">            by default.</span>
+<span class="sd">        reddening (:obj:`float`, optional):</span>
+<span class="sd">            Initial E(B-V) guess for reddening (uses ppxf-default</span>
+<span class="sd">            Calzetti 2000 model).  No attentuation fit by default.</span>
+<span class="sd">        reject_boxcar (:obj:`int`, optional):</span>
+<span class="sd">            Size of the window for the rejection statistics.  Should be</span>
+<span class="sd">            an odd number and larger and 10.  Default is 101.  If None,</span>
+<span class="sd">            no rejection iterations are performed.</span>
+<span class="sd">        vsyst (:obj:`float`, optional):</span>
+<span class="sd">            The pseudo velocity shift between the template and object</span>
+<span class="sd">            spectra just due to the difference in the starting</span>
+<span class="sd">            wavelength. Default is 0 km/s.</span>
+<span class="sd">        tpl_to_use (numpy.ndarray, optional):</span>
+<span class="sd">            Boolean vector selecting templates to consider during the</span>
+<span class="sd">            fit.  If None, all templates are used in the fit.  If</span>
+<span class="sd">            provided, the shape must be (NBIN,NTPL) when providing the</span>
+<span class="sd">            binned data and (NSPEC,NTPL) when no binned data are</span>
+<span class="sd">            provided.</span>
+<span class="sd">        flux_binned (numpy.ndarray, optional):</span>
+<span class="sd">            Binned spectra with previous fits to the stellar kinematics.</span>
+<span class="sd">            See purpose above.</span>
+<span class="sd">        noise_binned (numpy.ndarray, optional):</span>
+<span class="sd">            Error in the binned spectra.</span>
+<span class="sd">        mask_binned (numpy.ndarray, optional):</span>
+<span class="sd">            Mask for the binned spectra.</span>
+<span class="sd">        x_binned (numpy.ndarray, optional):</span>
+<span class="sd">            On-sky bin x coordinate; shape is (NBIN,).</span>
+<span class="sd">        y_binned (numpy.ndarray, optional):</span>
+<span class="sd">            On-sky bin y coordinate; shape is (NBIN,).</span>
+<span class="sd">        x (numpy.ndarray, optional):</span>
+<span class="sd">            On-sky spectrum x coordinates; shape is (NSPEC,)</span>
+<span class="sd">        y (numpy.ndarray, optional):</span>
+<span class="sd">            On-sky spectrum y coordinates; shape is (NSPEC,).</span>
+<span class="sd">        plot (:obj:`bool`, optional):</span>
+<span class="sd">            Show the pPXF fit plot at each iteration.  Default is to</span>
+<span class="sd">            skip the plot.</span>
+<span class="sd">        quiet (:obj:`bool`, optional):</span>
+<span class="sd">            Suppress output to the terminal (default).</span>
+<span class="sd">        debug (:obj:`bool`, optional):</span>
+<span class="sd">            Run in debugging mode.  Currently, all this does is perform</span>
+<span class="sd">            the initial setup and then return empty vectors of the</span>
+<span class="sd">            correct shape.  No fits are performed.</span>
 <span class="sd">   </span>
 <span class="sd">    Returns:</span>
 <span class="sd">        numpy.ndarray: Eleven arrays are returned: (1) The best-fitting</span>
@@ -1012,13 +985,15 @@
 <span class="sd">        kinematics for each fit [shape is (NSPEC,sum(MOMENTS)].</span>
 
 <span class="sd">    Raises:</span>
-<span class="sd">        NotImplementedError: Raised if the number of stellar components</span>
-<span class="sd">            is larger than 1.</span>
-<span class="sd">        ValueError: Raised if: (1) some of the necessary bin-remapping</span>
-<span class="sd">            data has not been provided (see function description); (2)</span>
-<span class="sd">            the template flag object does not have the correct shape;</span>
-<span class="sd">            (3) the wavelength and flux vectors do not match; and (4)</span>
-<span class="sd">            the input list of kinematics does not have the correct</span>
+<span class="sd">        NotImplementedError:</span>
+<span class="sd">            Raised if the number of stellar components is larger than 1.</span>
+<span class="sd">        ValueError:</span>
+<span class="sd">            Raised if: (1) only some of the necessary bin-remapping data</span>
+<span class="sd">            has not been provided (see function description); (2) the</span>
+<span class="sd">            template flag object does not have the correct shape; (3)</span>
+<span class="sd">            the wavelength and flux vectors do not match; (4) any of the</span>
+<span class="sd">            spectra are fully masked (i.e., there&#39;s nothing to fit); or</span>
+<span class="sd">            (5) the input list of kinematics does not have the correct</span>
 <span class="sd">            length.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -1033,6 +1008,10 @@
     <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">binned_data_provided</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">binned_data_provided</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;To use bin-remapping mode, must provide all of the following: &#39;</span>
                          <span class="s1">&#39;flux_binned, noise_binned, x_binned, y_binned, x, y&#39;</span><span class="p">)</span>
+
+    <span class="c1"># There must be data for all spectra to proceed</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;All spectra must have at least some pixels to fit!&#39;</span><span class="p">)</span>
 
     <span class="c1"># Set the fitting mode</span>
     <span class="n">mode</span> <span class="o">=</span> <span class="s1">&#39;fitBins&#39;</span> <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">binned_data_provided</span><span class="p">)</span> <span class="k">else</span> <span class="s1">&#39;noBins&#39;</span>
@@ -1109,7 +1088,8 @@
                                      <span class="n">moments</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">gas_template</span><span class="p">,</span> <span class="n">tpl_to_use</span><span class="o">=</span><span class="n">tpl_to_use</span><span class="p">,</span>
                                      <span class="n">reject_boxcar</span><span class="o">=</span><span class="n">reject_boxcar</span><span class="p">,</span> <span class="n">velscale_ratio</span><span class="o">=</span><span class="n">velscale_ratio</span><span class="p">,</span>
                                      <span class="n">degree</span><span class="o">=</span><span class="n">degree</span><span class="p">,</span> <span class="n">mdegree</span><span class="o">=</span><span class="n">mdegree</span><span class="p">,</span> <span class="n">reddening</span><span class="o">=</span><span class="n">reddening</span><span class="p">,</span>
-                                     <span class="n">mask</span><span class="o">=</span><span class="n">mask_binned</span><span class="p">,</span> <span class="n">vsyst</span><span class="o">=</span><span class="n">vsyst</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="n">plot</span><span class="p">,</span> <span class="n">quiet</span><span class="o">=</span><span class="n">quiet</span><span class="p">)</span>
+                                     <span class="n">mask</span><span class="o">=</span><span class="n">mask_binned</span><span class="p">,</span> <span class="n">vsyst</span><span class="o">=</span><span class="n">vsyst</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="n">plot</span><span class="p">,</span> <span class="n">quiet</span><span class="o">=</span><span class="n">quiet</span><span class="p">,</span>
+                                     <span class="n">sigma_rej</span><span class="o">=</span><span class="n">sigma_rej</span><span class="p">)</span>
 
         <span class="n">valid_bin_str_fit</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">binned_tpl_wgts</span><span class="p">[:,</span><span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">gas_template</span><span class="p">)],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
         <span class="n">valid_bin_fit</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">binned_tpl_wgts</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
@@ -1169,7 +1149,7 @@
                              <span class="n">_gas_template</span><span class="p">,</span> <span class="n">tpl_to_use</span><span class="o">=</span><span class="n">_tpl_to_use</span><span class="p">,</span> <span class="n">reject_boxcar</span><span class="o">=</span><span class="n">reject_boxcar</span><span class="p">,</span>
                              <span class="n">velscale_ratio</span><span class="o">=</span><span class="n">velscale_ratio</span><span class="p">,</span> <span class="n">degree</span><span class="o">=</span><span class="n">degree</span><span class="p">,</span> <span class="n">mdegree</span><span class="o">=</span><span class="n">mdegree</span><span class="p">,</span>
                              <span class="n">reddening</span><span class="o">=</span><span class="n">reddening</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">model_mask</span><span class="p">,</span> <span class="n">vsyst</span><span class="o">=</span><span class="n">vsyst</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="n">plot</span><span class="p">,</span>
-                             <span class="n">quiet</span><span class="o">=</span><span class="n">quiet</span><span class="p">)</span>
+                             <span class="n">quiet</span><span class="o">=</span><span class="n">quiet</span><span class="p">,</span> <span class="n">sigma_rej</span><span class="o">=</span><span class="n">sigma_rej</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;noBins&#39;</span><span class="p">:</span>
         <span class="c1"># - If no previous fit to binned spectra, create new template</span>
@@ -1195,7 +1175,7 @@
                                                   <span class="n">velscale_ratio</span><span class="o">=</span><span class="n">velscale_ratio</span><span class="p">,</span> <span class="n">degree</span><span class="o">=</span><span class="n">degree</span><span class="p">,</span>
                                                   <span class="n">mdegree</span><span class="o">=</span><span class="n">mdegree</span><span class="p">,</span> <span class="n">reddening</span><span class="o">=</span><span class="n">reddening</span><span class="p">,</span> <span class="n">tied</span><span class="o">=</span><span class="n">tied</span><span class="p">,</span>
                                                   <span class="n">mask</span><span class="o">=</span><span class="n">model_mask</span><span class="p">,</span> <span class="n">vsyst</span><span class="o">=</span><span class="n">vsyst</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="n">plot</span><span class="p">,</span>
-                                                  <span class="n">quiet</span><span class="o">=</span><span class="n">quiet</span><span class="p">)</span>
+                                                  <span class="n">quiet</span><span class="o">=</span><span class="n">quiet</span><span class="p">,</span> <span class="n">sigma_rej</span><span class="o">=</span><span class="n">sigma_rej</span><span class="p">)</span>
 
     <span class="c1"># - Use the single output weight to renormalize the individual</span>
     <span class="c1">#   stellar template weights (only one of the weights for the</span>
@@ -1208,479 +1188,6 @@
 
     <span class="k">return</span> <span class="n">model_flux</span><span class="p">,</span> <span class="n">model_eml_flux</span><span class="p">,</span> <span class="n">model_mask</span><span class="p">,</span> <span class="n">_tpl_wgts</span><span class="p">,</span> <span class="n">_tpl_wgts_err</span><span class="p">,</span> <span class="n">addcoef</span><span class="p">,</span> <span class="n">multcoef</span><span class="p">,</span> \
                     <span class="n">ebv</span><span class="p">,</span> <span class="n">kininp</span><span class="p">,</span> <span class="n">kin</span><span class="p">,</span> <span class="n">kin_err</span><span class="p">,</span> <span class="n">nearest_bin</span></div>
-
-    
-
-
-<span class="c1"># Function: emline_fitter_with_ppxf</span>
-<span class="c1"># Input is:</span>
-<span class="c1">#   - wave0: wavelength vector (in vacuum); shape is (Nwave,)</span>
-<span class="c1">#   - flux: observed, unbinned flux; masked array with shape</span>
-<span class="c1">#     (Nspaxel,Nwave)</span>
-<span class="c1">#   - noise: error in observed, unbinned flux; masked array with</span>
-<span class="c1">#     shape (Nspaxel,Nwave)</span>
-<span class="c1">#   - sres: spectral resolution (R=lambda/delta lambda) as a</span>
-<span class="c1">#     function of wavelength for each unbinned spectrum; shape</span>
-<span class="c1">#     is (Nspaxel,Nwave)</span>
-<span class="c1">#   - flux_binned: binned flux; masked array with shape</span>
-<span class="c1">#     (Nbin,Nwave)</span>
-<span class="c1">#   - noise_binned: noise in binned flux; masked array with</span>
-<span class="c1">#     shape (Nbin,Nwave)</span>
-<span class="c1">#   - sres_binned: spectral resolution (R=lambda/delta lambda)</span>
-<span class="c1">#     as a function of wavelength for each binned spectrum;</span>
-<span class="c1">#     shape is (Nbin,Nwave)</span>
-<span class="c1">#   - velscale: Velocity step per pixel</span>
-<span class="c1">#   - velscale_ratio: Ratio of velocity step per pixel in the</span>
-<span class="c1">#     observed data versus in the template data</span>
-<span class="c1">#   - dv: Velocity offset between the galaxy and template data</span>
-<span class="c1">#     due to the difference in the initial wavelength of the</span>
-<span class="c1">#     spectra</span>
-<span class="c1">#   - stars_vel: Velocity of the stellar component; shape is</span>
-<span class="c1">#     (Nbins,)</span>
-<span class="c1">#   - stars_sig: Velocity dispersion of the stellar component;</span>
-<span class="c1">#     shape is (Nbins,)</span>
-<span class="c1">#   - templates: Template flux; shape is (Ntpl,Ntplwave)</span>
-<span class="c1">#   - gas_tpl: Boolean array for extracting gas templates; shape</span>
-<span class="c1">#     is (Ntpl,)</span>
-<span class="c1">#   - guess_vel: Initial guess velocity for the gas components;</span>
-<span class="c1">#     shape is (Nbins,)</span>
-<span class="c1">#   - guess_sig: Initial guess velocity dispersion for the gas</span>
-<span class="c1">#     components; shape is (Nbins,)</span>
-<span class="c1">#   - gas_names: Name of the gas templats; shape is (Ngastpl,)</span>
-<span class="c1">#   - eml_wave: Rest wavelength of gas templates (in vacuum);</span>
-<span class="c1">#     shape is (Ngastpl,)</span>
-<span class="c1">#   - eml_component: Component vector for ppxf (each kinimatic</span>
-<span class="c1">#     group has a unique index, and an index below zero will</span>
-<span class="c1">#     automatically fix the moments); shape is (Nkin_group,)</span>
-<span class="c1">#   - eml_tied: Tied vector for ppxf (to decide the tying </span>
-<span class="c1">#     relations among gas components); shape is (Nkin_group,</span>
-<span class="c1">#     Nmoment)</span>
-<span class="c1">#   - template_sres: spectral resolution (R=lambda/delta</span>
-<span class="c1">#     lambda) as a function of wavelength for all the templates</span>
-<span class="c1">#     templates; shape is (Ntplwave,)</span>
-<span class="c1">#   - degree: Additive polynomial order</span>
-<span class="c1">#   - mdegree: Multiplicative polynomial order</span>
-<span class="c1">#   - x: On-sky spaxel x coordinates; shape is (Nspaxel,)</span>
-<span class="c1">#   - y: On-sky spaxel y coordinates; shape is (Nspaxel,)</span>
-<span class="c1">#   - x_binned: On-sky bin x coordinate; shape is (Nbin,)</span>
-<span class="c1">#   - y_binned: On-sky bin y coordinate; shape is (Nbin,)</span>
-<span class="c1">#   - mask_binned: Masks for binned spectra; shape is (Nbin,</span>
-<span class="c1">#     Nwave)</span>
-<span class="c1">#   - mask_drp: Masks for unbinned spectra; shape is (Nbin,</span>
-<span class="c1">#     Nwave)</span>
-<span class="c1">#   - nsa_z: NSA (or guess) redshift of the galaxy</span>
-<span class="c1">#</span>
-<span class="c1"># Output is:</span>
-<span class="c1">#   - model_flux: stellar-continuum + emission-line model; shape</span>
-<span class="c1">#     is (Nmod, Nwave); first axis is ordered by model ID number</span>
-<span class="c1">#   - model_eml_flux: model emission-line flux only; shape is</span>
-<span class="c1">#     (Nmod, Nwave); first axis is ordered by model ID number</span>
-<span class="c1">#   - model_mask: boolean or bit mask for fitted models; shape</span>
-<span class="c1">#     is (Nmod, Nwave); first axis is ordered by model ID number</span>
-<span class="c1">#   - model_binid: ID numbers assigned to each spaxel with a</span>
-<span class="c1">#     fitted model; any spaxel without a model should have</span>
-<span class="c1">#     model_binid = -1; the number of &gt;-1 IDs must be Nmod;</span>
-<span class="c1">#     shape is (Nspaxel,)</span>
-<span class="c1">#   - weights: weights of the templates (the best fit template </span>
-<span class="c1">#     can be obtained by setting: bestemp = templates @ weights);</span>
-<span class="c1">#     shape is (Nmod, Ntpl)</span>
-<span class="c1">#   - weights_err: 1 sigma formal error of weights; shape is</span>
-<span class="c1">#     (Nmod, Ntpl)</span>
-<span class="c1">#   - mweights: coefficients of multiplicative Legendre polynomials</span>
-<span class="c1">#     of order &gt; 0; shape is (Nmod, mdegree)</span>
-<span class="c1">#   - eml_kin: Kinematics (velocity and velocity dispersion) of</span>
-<span class="c1">#     each emission line; shape is (Nmod,Neml,Nkin)</span>
-<span class="c1">#   - eml_kinerr: Error in the kinematics of each emission line</span>
-<span class="c1">#   - eml_sigmacorr: Quadrature corrections required to obtain</span>
-<span class="c1">#     the astrophysical velocity dispersion; shape is</span>
-<span class="c1">#     (Nmod,Neml); corrections are expected to be applied as</span>
-<span class="c1">#     follows:</span>
-<span class="c1">#       sigma = numpy.ma.sqrt( numpy.square(eml_kin[:,:,1])</span>
-<span class="c1">#                               - eml_sigmacorr)</span>
-<span class="c1">#     NOTE THAT: eml_sigmacorr here are actually in unit of </span>
-<span class="c1">#     (km/s)^2 and could have negative values</span>
-<span class="c1"># --------------------------------------------------------------</span>
-
-<div class="viewcode-block" id="emline_fitter_with_ppxf"><a class="viewcode-back" href="../../../mangadap.contrib.xjmc.html#mangadap.contrib.xjmc.emline_fitter_with_ppxf">[docs]</a><span class="k">def</span> <span class="nf">emline_fitter_with_ppxf</span><span class="p">(</span><span class="n">wave0</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">noise</span><span class="p">,</span> <span class="n">sres</span><span class="p">,</span> <span class="n">flux_binned</span><span class="p">,</span> <span class="n">noise_bin</span><span class="p">,</span>
-                            <span class="n">velscale</span><span class="p">,</span> <span class="n">velscale_ratio</span><span class="p">,</span> <span class="n">dv</span><span class="p">,</span> <span class="n">vel</span><span class="p">,</span> <span class="n">sig</span><span class="p">,</span> <span class="n">templates</span><span class="p">,</span> <span class="n">gas_tpl</span><span class="p">,</span> 
-                            <span class="n">vel_gas</span><span class="p">,</span> <span class="n">sig_gas</span><span class="p">,</span> <span class="n">gas_names</span><span class="p">,</span> <span class="n">eml_wave</span><span class="p">,</span> <span class="n">eml_component</span><span class="p">,</span> 
-                            <span class="n">eml_tied</span><span class="p">,</span> <span class="n">templates_sres</span><span class="p">,</span> <span class="n">degree</span><span class="p">,</span> <span class="n">mdegree</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">xbin</span><span class="p">,</span> 
-                            <span class="n">ybin</span><span class="p">,</span> <span class="n">mask_binned</span><span class="p">,</span> <span class="n">mask_drp</span><span class="p">,</span> <span class="n">nsa_z</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                            <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;bin_to_spaxel&#39;</span><span class="p">):</span>
-
-    <span class="k">if</span> <span class="n">debug</span><span class="p">:</span>
-        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;JUST DEBUGGING.  NO EMISSION-LINE FITS PERFORMED!!&#39;</span><span class="p">)</span>
-        <span class="n">n_spaxels</span><span class="p">,</span> <span class="n">nwave</span> <span class="o">=</span> <span class="n">flux</span><span class="o">.</span><span class="n">shape</span>
-        <span class="n">n_eml</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">gas_tpl</span><span class="p">)</span>
-        <span class="n">masked_fraction</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">mask_drp</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="n">nwave</span>
-        <span class="n">indx</span> <span class="o">=</span> <span class="n">masked_fraction</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="o">/</span><span class="mi">3</span>
-        <span class="n">model_binid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">n_spaxels</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
-        <span class="n">model_binid</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">indx</span><span class="p">))</span>
-
-        <span class="n">model_flux</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">flux</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
-        <span class="n">model_eml_flux</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">flux</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
-        <span class="n">model_mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">flux</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
-        
-        <span class="n">eml_flux</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">n_spaxels</span><span class="p">,</span><span class="n">n_eml</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
-        <span class="n">eml_fluxerr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">n_spaxels</span><span class="p">,</span><span class="n">n_eml</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
-        <span class="n">eml_kin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">n_spaxels</span><span class="p">,</span><span class="n">n_eml</span><span class="p">,</span><span class="mi">2</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
-        <span class="n">eml_kinerr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">n_spaxels</span><span class="p">,</span><span class="n">n_eml</span><span class="p">,</span><span class="mi">2</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
-    
-        <span class="n">eml_sigmacorr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">n_spaxels</span><span class="p">,</span><span class="n">n_eml</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">model_flux</span><span class="p">,</span> <span class="n">model_eml_flux</span><span class="p">,</span> <span class="n">model_mask</span><span class="p">,</span> <span class="n">model_binid</span><span class="p">,</span> <span class="n">eml_flux</span><span class="p">,</span> <span class="n">eml_fluxerr</span><span class="p">,</span> \
-                    <span class="n">eml_kin</span><span class="p">,</span> <span class="n">eml_kinerr</span><span class="p">,</span> <span class="n">eml_sigmacorr</span>
-
-    <span class="c1"># templates should have the shape (Nwave, Ntpl) for ppxf</span>
-    <span class="n">templates</span> <span class="o">=</span> <span class="n">templates</span><span class="o">.</span><span class="n">T</span>
-    
-    <span class="c1"># Total number of bins</span>
-    <span class="n">n_binnum</span> <span class="o">=</span> <span class="n">flux_binned</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-    
-    <span class="c1"># Total number of spaxels</span>
-    <span class="n">n_spaxels</span> <span class="o">=</span> <span class="n">flux</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-    
-    <span class="c1"># Total number of emission lines</span>
-    <span class="n">n_eml</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">gas_tpl</span><span class="p">)</span>
-    
-    <span class="c1"># Total number of stellar templates</span>
-    <span class="n">n_temps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="o">~</span><span class="n">gas_tpl</span><span class="p">)</span>
-
-    <span class="n">gas_vel</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n_binnum</span><span class="p">)</span>
-    <span class="n">gas_sig</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n_binnum</span><span class="p">)</span>
-    <span class="n">gas_flux_binned</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">n_binnum</span><span class="p">,</span><span class="n">n_eml</span><span class="p">])</span>
-    <span class="n">star_weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">n_binnum</span><span class="p">,</span> <span class="n">n_temps</span><span class="p">])</span>
-    <span class="n">star_weights_err</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">n_binnum</span><span class="p">,</span> <span class="n">n_temps</span><span class="p">])</span>
-    <span class="n">bestfit_template</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">n_binnum</span><span class="p">,</span> <span class="n">templates</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span>
-    
-    <span class="c1"># Testing use</span>
-    <span class="c1">#beg = n_binnum if os.path.isfile(npz_file) else 0</span>
-    
-    <span class="c1"># &#39;bin&#39; mode contains only one iteration, fitting the binned data</span>
-    <span class="c1"># &#39;bin_to_spaxel&#39; mode contains two iterations, fitting both the binned and</span>
-    <span class="c1"># unbinned data</span>
-    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mode</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;bin&#39;</span><span class="p">:</span>
-        <span class="n">beg1</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="n">beg2</span> <span class="o">=</span> <span class="n">n_spaxels</span>
-        <span class="n">n</span> <span class="o">=</span> <span class="n">n_binnum</span>
-        <span class="n">model_shape</span> <span class="o">=</span> <span class="n">flux_binned</span><span class="o">.</span><span class="n">shape</span>
-        <span class="n">model_binid</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mode</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;bin_to_spaxel&#39;</span><span class="p">:</span>
-        <span class="n">beg1</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="n">beg2</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="n">n</span> <span class="o">=</span> <span class="n">n_spaxels</span>
-        <span class="n">model_shape</span> <span class="o">=</span> <span class="n">flux</span><span class="o">.</span><span class="n">shape</span>
-        <span class="n">model_binid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n_spaxels</span><span class="p">)</span>
-        <span class="n">id_num</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="c1"># Get the index of the nearest bin for every spaxel</span>
-        <span class="n">nearest_bin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">((</span><span class="n">x</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">-</span> <span class="n">xbin</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">y</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">-</span> <span class="n">ybin</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-    
-    <span class="c1"># Initialize output arrays</span>
-    <span class="n">eml_flux</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">n</span><span class="p">,</span><span class="n">n_eml</span><span class="p">])</span>
-    <span class="n">eml_fluxerr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">n</span><span class="p">,</span><span class="n">n_eml</span><span class="p">])</span>
-    <span class="n">eml_kin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">n</span><span class="p">,</span><span class="n">n_eml</span><span class="p">,</span><span class="mi">2</span><span class="p">])</span>
-    <span class="n">eml_kinerr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">n</span><span class="p">,</span><span class="n">n_eml</span><span class="p">,</span><span class="mi">2</span><span class="p">])</span>
-    <span class="n">weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">n</span><span class="p">,</span><span class="n">templates</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]])</span>
-    <span class="n">weights_err</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">n</span><span class="p">,</span><span class="n">templates</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]])</span>
-    <span class="n">mweights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">n</span><span class="p">,</span><span class="n">mdegree</span><span class="p">])</span>
-
-    <span class="n">eml_sigmacorr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">n</span><span class="p">,</span><span class="n">n_eml</span><span class="p">])</span>
-
-    <span class="n">model_flux</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">model_shape</span><span class="p">)</span>
-    <span class="n">model_eml_flux</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">model_shape</span><span class="p">)</span>
-    <span class="n">model_mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">model_shape</span><span class="p">)</span>
-    
-    <span class="c1"># First iteration</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">beg1</span><span class="p">,</span> <span class="n">n_binnum</span><span class="p">):</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Fitting bin: </span><span class="si">{0}</span><span class="s1">/</span><span class="si">{1}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="n">n_binnum</span><span class="p">))</span>
-        
-        <span class="c1"># Normalize spectrum to avoid numerical issues</span>
-        <span class="n">galaxy</span> <span class="o">=</span> <span class="n">flux_binned</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">flux_binned</span><span class="p">[</span><span class="n">i</span><span class="p">,:])</span>
-        
-        <span class="n">noise_binned</span> <span class="o">=</span> <span class="n">noise_bin</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">flux_binned</span><span class="p">[</span><span class="n">i</span><span class="p">,:])</span>
-        
-        <span class="c1"># Use the first moment of Halpha line as the initial velocity</span>
-        <span class="c1"># guess, and use the stellar velocity dispersion as initial</span>
-        <span class="c1"># sigma guess for gas components</span>
-        <span class="c1">#kin = [vel_gas[i], 100.]</span>
-        <span class="n">kin</span> <span class="o">=</span> <span class="p">[</span><span class="n">vel_gas</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">sig</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
-        
-        <span class="c1"># Assign all emission lines with single component to tie their</span>
-        <span class="c1"># kinematics (and the same for stellar templates)</span>
-        <span class="n">component</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">n_temps</span> <span class="o">+</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">n_eml</span><span class="p">)</span> <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;bin_to_spaxel&#39;</span>\
-        <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n_temps</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">),</span> <span class="n">eml_component</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
-        
-        <span class="c1"># The negative moments automatically fix the stellar kinematics</span>
-        <span class="n">moments</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span> <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;bin_to_spaxel&#39;</span>\
-        <span class="k">else</span> <span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">component</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
-        
-        <span class="c1"># Tie emission lines if one selects the &#39;bin&#39; mode</span>
-        <span class="n">tied</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;bin_to_spaxel&#39;</span> <span class="k">else</span> <span class="n">eml_tied</span>
-        
-        <span class="c1"># Initial guess for components (for stellar components, these</span>
-        <span class="c1"># are fixed values)</span>
-        <span class="n">start</span> <span class="o">=</span> <span class="p">[[</span><span class="n">vel</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">sig</span><span class="p">[</span><span class="n">i</span><span class="p">]]]</span>
-        <span class="n">start</span> <span class="o">+=</span> <span class="p">[</span><span class="n">kin</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">moments</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)]</span>
-        
-        <span class="c1"># Tie kinematics of all emission lines while fixing the stellar kinematics in the first</span>
-        <span class="c1"># fit</span>
-        <span class="n">pp</span> <span class="o">=</span> <span class="n">ppxf</span><span class="o">.</span><span class="n">ppxf</span><span class="p">(</span><span class="n">templates</span><span class="p">,</span> <span class="n">galaxy</span><span class="p">,</span> <span class="n">noise_binned</span><span class="p">,</span> <span class="n">velscale</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span>
-                       <span class="n">velscale_ratio</span><span class="o">=</span><span class="n">velscale_ratio</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">moments</span><span class="o">=</span><span class="n">moments</span><span class="p">,</span> <span class="n">degree</span><span class="o">=</span><span class="n">degree</span><span class="p">,</span>
-                       <span class="n">mdegree</span><span class="o">=</span><span class="n">mdegree</span><span class="p">,</span> <span class="n">tied</span><span class="o">=</span><span class="n">tied</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask_binned</span><span class="p">[</span><span class="n">i</span><span class="p">,:],</span> <span class="n">vsyst</span><span class="o">=</span><span class="n">dv</span><span class="p">,</span> <span class="n">lam</span><span class="o">=</span><span class="n">wave0</span><span class="p">,</span>
-                       <span class="n">component</span><span class="o">=</span><span class="n">component</span><span class="p">,</span> <span class="n">quiet</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">gas_component</span><span class="o">=</span><span class="n">component</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">,</span>
-                       <span class="n">gas_names</span><span class="o">=</span><span class="n">gas_names</span><span class="p">)</span>
-        
-        <span class="c1"># Calculate the residuals</span>
-        <span class="n">resid</span> <span class="o">=</span> <span class="n">galaxy</span> <span class="o">-</span> <span class="n">pp</span><span class="o">.</span><span class="n">bestfit</span>
-        
-        <span class="c1"># Calculate the noises</span>
-        <span class="n">NOISE</span> <span class="o">=</span> <span class="n">calculate_noise</span><span class="p">(</span><span class="n">resid</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="n">reject_boxcar</span><span class="p">)</span>
-        
-        <span class="c1"># Mask out pixels with residuals &gt; 3 sigmas</span>
-        <span class="n">mask</span> <span class="o">=</span> <span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">resid</span><span class="p">)</span> <span class="o">&lt;</span> <span class="p">(</span><span class="mi">3</span><span class="o">*</span><span class="n">NOISE</span><span class="p">))</span> <span class="o">&amp;</span> <span class="n">mask_binned</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span>
-        
-        <span class="c1"># Add a three-sigma cut in the second fit while tying the kinematics as the first one</span>
-        <span class="n">pp</span> <span class="o">=</span> <span class="n">ppxf</span><span class="o">.</span><span class="n">ppxf</span><span class="p">(</span><span class="n">templates</span><span class="p">,</span> <span class="n">galaxy</span><span class="p">,</span> <span class="n">noise_binned</span><span class="p">,</span> <span class="n">velscale</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span>
-                       <span class="n">velscale_ratio</span><span class="o">=</span><span class="n">velscale_ratio</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">moments</span><span class="o">=</span><span class="n">moments</span><span class="p">,</span>
-                       <span class="n">degree</span><span class="o">=</span><span class="n">degree</span><span class="p">,</span> <span class="n">mdegree</span><span class="o">=</span><span class="n">mdegree</span><span class="p">,</span> <span class="n">vsyst</span><span class="o">=</span><span class="n">dv</span><span class="p">,</span> <span class="n">lam</span><span class="o">=</span><span class="n">wave0</span><span class="p">,</span> <span class="n">component</span><span class="o">=</span><span class="n">component</span><span class="p">,</span>
-                       <span class="n">quiet</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">tied</span><span class="o">=</span><span class="n">tied</span><span class="p">,</span> <span class="n">gas_component</span><span class="o">=</span><span class="n">component</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">,</span> <span class="n">gas_names</span><span class="o">=</span><span class="n">gas_names</span><span class="p">)</span>
-        
-        <span class="n">gas_vel</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">sol</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">gas_sig</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">sol</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
-        <span class="c1"># Scale back the fluxes; note that the fluxes here are caculated by direct summing rather</span>
-        <span class="c1"># than integration! If one uses ppxf_util to construct input templates, the ouput fluxes</span>
-        <span class="c1"># should be corrected using pixel step near the lines</span>
-        <span class="n">gas_flux_binned</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">gas_flux</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">flux_binned</span><span class="p">[</span><span class="n">i</span><span class="p">,:])</span>
-        <span class="n">star_weights</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">weights</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">n_temps</span><span class="p">]</span>
-        <span class="n">bestfit_template</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">templates</span><span class="p">[:,</span><span class="o">~</span><span class="n">gas_tpl</span><span class="p">]</span> <span class="o">@</span> <span class="n">star_weights</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-        
-        <span class="n">design_matrix</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">matrix</span><span class="o">/</span><span class="n">pp</span><span class="o">.</span><span class="n">noise</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span>
-        <span class="n">star_weights_err</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">capfit</span><span class="o">.</span><span class="n">cov_err</span><span class="p">(</span><span class="n">design_matrix</span><span class="p">)[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">:</span><span class="n">n_temps</span><span class="p">]</span>
-        
-        <span class="c1"># The ouput of the fitting are parsed in the following lines</span>
-        <span class="c1"># (for &#39;bin&#39; mode)</span>
-        <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;bin&#39;</span><span class="p">:</span>
-            <span class="n">eml_kin</span><span class="p">[</span><span class="n">i</span><span class="p">][:,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">eml_kin</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">pp</span><span class="o">.</span><span class="n">sol</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
-            <span class="n">eml_kin</span><span class="p">[</span><span class="n">i</span><span class="p">][:,</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">sol</span><span class="p">[:,</span><span class="mi">1</span><span class="p">][</span><span class="n">eml_component</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
-
-            <span class="c1"># The errors are calculated according to docstring in ppxf.py</span>
-            <span class="n">eml_kinerr</span><span class="p">[</span><span class="n">i</span><span class="p">][:,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">eml_kin</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">pp</span><span class="o">.</span><span class="n">error</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">pp</span><span class="o">.</span><span class="n">chi2</span><span class="p">)</span>
-            <span class="n">eml_kinerr</span><span class="p">[</span><span class="n">i</span><span class="p">][:,</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">error</span><span class="p">[:,</span><span class="mi">1</span><span class="p">][</span><span class="n">eml_component</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">pp</span><span class="o">.</span><span class="n">chi2</span><span class="p">)</span>
-
-            <span class="c1"># Full models of flux and models of emission lines</span>
-            <span class="n">model_flux</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">bestfit</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">flux_binned</span><span class="p">[</span><span class="n">i</span><span class="p">,:])</span>
-
-            <span class="n">spectra</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">matrix</span><span class="p">[:,</span><span class="n">degree</span><span class="o">+</span><span class="mi">1</span><span class="p">:]</span>
-            <span class="n">gas_spectrum</span> <span class="o">=</span> <span class="n">spectra</span><span class="p">[:,</span><span class="n">pp</span><span class="o">.</span><span class="n">gas_component</span><span class="p">]</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pp</span><span class="o">.</span><span class="n">weights</span><span class="p">[</span><span class="n">pp</span><span class="o">.</span><span class="n">gas_component</span><span class="p">])</span>
-            <span class="n">model_eml_flux</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">gas_spectrum</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">flux_binned</span><span class="p">[</span><span class="n">i</span><span class="p">,:])</span>
-
-            <span class="c1"># Masks for models</span>
-            <span class="n">model_mask</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">mask</span>
-
-            <span class="c1"># Calculate the sigma corrections</span>
-            <span class="n">FWHM</span> <span class="o">=</span> <span class="n">wave0</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">sres</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-            <span class="n">eml_wave_new</span> <span class="o">=</span> <span class="n">eml_wave</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">pp</span><span class="o">.</span><span class="n">sol</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="n">astropy</span><span class="o">.</span><span class="n">constants</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;km/s&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
-            <span class="n">index_new</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">wave0</span><span class="o">-</span><span class="n">eml_wave_new</span><span class="p">[:,</span><span class="kc">None</span><span class="p">]),</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-            <span class="n">FWHM_diff2</span> <span class="o">=</span> <span class="n">FWHM</span><span class="p">[</span><span class="n">index_new</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="n">FWHM</span><span class="p">[</span><span class="n">index</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span>
-            <span class="n">eml_sigmacorr</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">FWHM_diff2</span><span class="o">/</span><span class="p">((</span><span class="mf">2.355</span><span class="o">*</span><span class="n">step</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">velscale</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
-
-            <span class="c1"># Weights and weight errors of gas tempaltes</span>
-            <span class="c1"># Note that the star weights errors should never be used</span>
-            <span class="n">weights</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">star_weights</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">pp</span><span class="o">.</span><span class="n">weights</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
-            <span class="n">weights_err</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">star_weights_err</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">pp</span><span class="o">.</span><span class="n">gas_flux_error</span><span class="p">)</span>
-
-            <span class="c1"># Coefficients of multiplicative Legendre polynomials of order &gt; 0</span>
-            <span class="n">mweights</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">mpolyweights</span>
-        
-        <span class="c1">#plt.clf()</span>
-        <span class="c1">#pp.plot()</span>
-        <span class="c1">#plt.show()</span>
-    
-<span class="c1">#    # Save the results (only for testing)</span>
-<span class="c1">#    np.savez_compressed(&#39;/Users/mac/Documents/New_test_results/first_&#39;+plate+&#39;_&#39;+ifu+&#39;.npz&#39;, </span>
-<span class="c1">#                        gas_vel = gas_vel, gas_sig = gas_sig,</span>
-<span class="c1">#                        gas_flux_binned = gas_flux_binned,</span>
-<span class="c1">#                        bestfit_template = bestfit_template)</span>
-
-    <span class="c1"># Second iteration</span>
-    <span class="c1"># Load data from the first iteration (only for testing)</span>
-<span class="c1">#    first_iter = np.load(&#39;/Users/mac/Documents/New_test_results/first_&#39;+plate+&#39;_&#39;+ifu+&#39;.npz&#39;)</span>
-<span class="c1">#    gas_vel = first_iter[&#39;gas_vel&#39;]</span>
-<span class="c1">#    gas_sig = first_iter[&#39;gas_sig&#39;]</span>
-<span class="c1">#    bestfit_template = first_iter[&#39;bestfit_template&#39;]</span>
-    
-     <span class="c1"># Testing use</span>
-<span class="c1">#    if beg == 0:</span>
-<span class="c1">#        print(&#39;writing {0}&#39;.format(npz_file))</span>
-<span class="c1">#        np.savez_compressed(npz_file, gas_vel = gas_vel, gas_sig = gas_sig,</span>
-<span class="c1">#                            gas_flux_binned = gas_flux_binned, bestfit_template = bestfit_template)</span>
-<span class="c1">#    else:</span>
-<span class="c1">#        print(&#39;reading {0}&#39;.format(npz_file))</span>
-<span class="c1">#        inp = np.load(npz_file)</span>
-<span class="c1">#        gas_vel = inp[&#39;gas_vel&#39;]</span>
-<span class="c1">#        gas_sig = inp[&#39;gas_sig&#39;]</span>
-<span class="c1">#        bestfit_template = inp[&#39;bestfit_template&#39;]</span>
-    
-<span class="c1">#    for i in range(1084,n_spaxels):</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">beg2</span><span class="p">,</span> <span class="n">n_spaxels</span><span class="p">):</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Fitting spaxel: </span><span class="si">{0}</span><span class="s1">/</span><span class="si">{1}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="n">n_spaxels</span><span class="p">))</span>
-        
-        <span class="c1"># Here start the first half of the second iteration</span>
-        
-        <span class="n">mask_DRP</span> <span class="o">=</span> <span class="n">mask_drp</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span>
-        
-        <span class="c1"># Continue the loop if the current spaxel has no spectrum</span>
-        <span class="c1"># TODO: decide if 1/3 is appropriate to indicate insufficient</span>
-        <span class="c1"># pixels?</span>
-        <span class="k">if</span> <span class="nb">sum</span><span class="p">(</span><span class="o">~</span><span class="n">mask_DRP</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">flux</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="mi">3</span><span class="p">:</span>
-            <span class="n">model_binid</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
-            <span class="k">continue</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">model_binid</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">id_num</span>
-            <span class="n">id_num</span> <span class="o">+=</span> <span class="mi">1</span>
-        
-        <span class="c1"># Normalize spectrum to avoid numerical issues</span>
-        <span class="n">galaxy</span> <span class="o">=</span> <span class="n">flux</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">flux</span><span class="p">[</span><span class="n">i</span><span class="p">,:])</span>
-                
-        <span class="n">noise_spaxel</span> <span class="o">=</span> <span class="n">noise</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">flux</span><span class="p">[</span><span class="n">i</span><span class="p">,:])</span>
-        <span class="n">noise_spaxel</span><span class="p">[(</span><span class="n">noise_spaxel</span><span class="o">&lt;=</span><span class="mf">0.</span><span class="p">)</span><span class="o">|</span><span class="p">(</span><span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">noise_spaxel</span><span class="p">))]</span> <span class="o">=</span> <span class="mf">1.</span>
-        
-        <span class="c1"># This is the index of the nearest bin to the spaxel being used</span>
-        <span class="n">k</span> <span class="o">=</span> <span class="n">nearest_bin</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-        
-        <span class="n">gas_templates</span> <span class="o">=</span> <span class="n">templates</span><span class="p">[</span><span class="n">gas_tpl</span><span class="p">]</span>
-        <span class="n">templates_sec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">([</span><span class="n">bestfit_template</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">gas_templates</span><span class="p">])</span>
-        
-        <span class="c1"># Only one stellar template is used in the second iteration</span>
-        <span class="n">n_temps</span> <span class="o">=</span> <span class="mi">1</span>
-        
-        <span class="c1"># This is the gas kinematics [V, sigma] of the nearest bin which</span>
-        <span class="c1"># will be used as the initial guess for emission-line fitting</span>
-        <span class="n">kin</span> <span class="o">=</span> <span class="p">[</span><span class="n">gas_vel</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">gas_sig</span><span class="p">[</span><span class="n">k</span><span class="p">]]</span>
-        
-        <span class="c1"># Combine the input gas components and stellar ones</span>
-        <span class="n">component</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">([</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">n_temps</span> <span class="o">+</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">n_eml</span><span class="p">)</span>
-        
-        <span class="n">moments</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span>
-        
-        <span class="c1"># Adopt the same value in the first iteration for star component</span>
-        <span class="n">start</span> <span class="o">=</span> <span class="p">[[</span><span class="n">vel</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">sig</span><span class="p">[</span><span class="n">k</span><span class="p">]]]</span>
-        <span class="c1"># Adopt the same starting value for all gas component</span>
-        <span class="n">start</span> <span class="o">+=</span> <span class="p">[</span><span class="n">kin</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">moments</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)]</span>
-        
-        <span class="c1"># In the third fit, the tying of kinematics is the same as the first two while the initial</span>
-        <span class="c1"># guess for gas components, input noise and mask are different</span>
-        <span class="n">pp</span> <span class="o">=</span> <span class="n">ppxf</span><span class="o">.</span><span class="n">ppxf</span><span class="p">(</span><span class="n">templates_sec</span><span class="p">,</span> <span class="n">galaxy</span><span class="p">,</span> <span class="n">noise_spaxel</span><span class="p">,</span> <span class="n">velscale</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span>
-                       <span class="n">velscale_ratio</span><span class="o">=</span><span class="n">velscale_ratio</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask_DRP</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">moments</span><span class="o">=</span><span class="n">moments</span><span class="p">,</span>
-                       <span class="n">degree</span><span class="o">=</span><span class="n">degree</span><span class="p">,</span> <span class="n">mdegree</span><span class="o">=</span><span class="n">mdegree</span><span class="p">,</span> <span class="n">vsyst</span><span class="o">=</span><span class="n">dv</span><span class="p">,</span> <span class="n">lam</span><span class="o">=</span><span class="n">wave0</span><span class="p">,</span> <span class="n">component</span><span class="o">=</span><span class="n">component</span><span class="p">,</span>
-                       <span class="n">quiet</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">gas_component</span><span class="o">=</span><span class="n">component</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">,</span> <span class="n">gas_names</span><span class="o">=</span><span class="n">gas_names</span><span class="p">)</span>
-        
-        <span class="c1"># Calculate the residuals</span>
-        <span class="n">resid</span> <span class="o">=</span> <span class="n">galaxy</span> <span class="o">-</span> <span class="n">pp</span><span class="o">.</span><span class="n">bestfit</span>
-        
-        <span class="c1"># Calculate the noises</span>
-        <span class="n">NOISE</span> <span class="o">=</span> <span class="n">calculate_noise</span><span class="p">(</span><span class="n">resid</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="n">reject_boxcar</span><span class="p">)</span>
-        
-        <span class="c1"># Mask out pixels with residuals &gt; 3 sigmas</span>
-        <span class="n">mask</span> <span class="o">=</span> <span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">resid</span><span class="p">)</span> <span class="o">&lt;</span> <span class="p">(</span><span class="mi">3</span><span class="o">*</span><span class="n">NOISE</span><span class="p">))</span><span class="o">&amp;</span><span class="n">mask_DRP</span>
-        <span class="c1">#print(&#39;Outliers: &#39;+str(3109 - sum(mask)))</span>
-        
-        <span class="c1"># The forth fit adds a three-sigma cut after the third one</span>
-        <span class="n">pp</span> <span class="o">=</span> <span class="n">ppxf</span><span class="o">.</span><span class="n">ppxf</span><span class="p">(</span><span class="n">templates_sec</span><span class="p">,</span> <span class="n">galaxy</span><span class="p">,</span> <span class="n">noise_spaxel</span><span class="p">,</span> <span class="n">velscale</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span>
-                       <span class="n">velscale_ratio</span><span class="o">=</span><span class="n">velscale_ratio</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">moments</span><span class="o">=</span><span class="n">moments</span><span class="p">,</span>
-                       <span class="n">degree</span><span class="o">=</span><span class="n">degree</span><span class="p">,</span> <span class="n">mdegree</span><span class="o">=</span><span class="n">mdegree</span><span class="p">,</span> <span class="n">vsyst</span><span class="o">=</span><span class="n">dv</span><span class="p">,</span> <span class="n">lam</span><span class="o">=</span><span class="n">wave0</span><span class="p">,</span> <span class="n">component</span><span class="o">=</span><span class="n">component</span><span class="p">,</span>
-                       <span class="n">quiet</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">gas_component</span><span class="o">=</span><span class="n">component</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">,</span> <span class="n">gas_names</span><span class="o">=</span><span class="n">gas_names</span><span class="p">)</span>
-        
-        <span class="c1"># Here start the second half of the second iteration</span>
-        
-        <span class="c1"># This is the gas kinematics [V, sigma] of the current spaxel from the last </span>
-        <span class="c1"># call of ppxf which will be used as the initial guess for emission-line fitting</span>
-        <span class="n">kin</span> <span class="o">=</span> <span class="p">[</span><span class="n">pp</span><span class="o">.</span><span class="n">sol</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">pp</span><span class="o">.</span><span class="n">sol</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]]</span>
-        
-        <span class="c1"># Combine the input gas components and stellar ones</span>
-        <span class="c1"># Now each kinematic group has a unique component index (&gt;0)</span>
-        <span class="n">component</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n_temps</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">),</span> <span class="n">eml_component</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
-        
-        <span class="n">moments</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">component</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
-        
-        <span class="c1"># Adopt the same value in the first iteration for star component</span>
-        <span class="n">start</span> <span class="o">=</span> <span class="p">[[</span><span class="n">vel</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">sig</span><span class="p">[</span><span class="n">k</span><span class="p">]]]</span>
-        <span class="c1"># Adopt the same starting value for all gas component</span>
-        <span class="n">start</span> <span class="o">+=</span> <span class="p">[</span><span class="n">kin</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">moments</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)]</span>
-        
-        <span class="c1"># In the fifth fit, the velocities and sigmas of emission lines are tied as desired</span>
-        <span class="n">pp</span> <span class="o">=</span> <span class="n">ppxf</span><span class="o">.</span><span class="n">ppxf</span><span class="p">(</span><span class="n">templates_sec</span><span class="p">,</span> <span class="n">galaxy</span><span class="p">,</span> <span class="n">noise_spaxel</span><span class="p">,</span> <span class="n">velscale</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span>
-                       <span class="n">velscale_ratio</span><span class="o">=</span><span class="n">velscale_ratio</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask_DRP</span><span class="p">,</span> <span class="n">quiet</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                       <span class="n">moments</span><span class="o">=</span><span class="n">moments</span><span class="p">,</span> <span class="n">degree</span><span class="o">=</span><span class="n">degree</span><span class="p">,</span> <span class="n">mdegree</span><span class="o">=</span><span class="n">mdegree</span><span class="p">,</span> <span class="n">vsyst</span><span class="o">=</span><span class="n">dv</span><span class="p">,</span> <span class="n">lam</span><span class="o">=</span><span class="n">wave0</span><span class="p">,</span>
-                       <span class="n">component</span><span class="o">=</span><span class="n">component</span><span class="p">,</span> <span class="n">tied</span><span class="o">=</span><span class="n">eml_tied</span><span class="p">,</span> <span class="n">gas_component</span><span class="o">=</span><span class="n">component</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">,</span>
-                       <span class="n">gas_names</span><span class="o">=</span><span class="n">gas_names</span><span class="p">)</span>
-        
-        <span class="c1"># The ouput of the fitting are parsed in the following lines</span>
-        
-        <span class="n">eml_kin</span><span class="p">[</span><span class="n">i</span><span class="p">][:,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">eml_kin</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">pp</span><span class="o">.</span><span class="n">sol</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
-        <span class="n">eml_kin</span><span class="p">[</span><span class="n">i</span><span class="p">][:,</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">sol</span><span class="p">[:,</span><span class="mi">1</span><span class="p">][</span><span class="n">eml_component</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
-        
-        <span class="c1"># The errors are calculated according to docstring in ppxf.py</span>
-        <span class="n">eml_kinerr</span><span class="p">[</span><span class="n">i</span><span class="p">][:,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">eml_kin</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">pp</span><span class="o">.</span><span class="n">error</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">pp</span><span class="o">.</span><span class="n">chi2</span><span class="p">)</span>
-        <span class="n">eml_kinerr</span><span class="p">[</span><span class="n">i</span><span class="p">][:,</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">error</span><span class="p">[:,</span><span class="mi">1</span><span class="p">][</span><span class="n">eml_component</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">pp</span><span class="o">.</span><span class="n">chi2</span><span class="p">)</span>
-        
-        <span class="c1"># Integral fluxes and their errors of all emission lines (not in the final output)</span>
-        <span class="c1"># Reset pixel-step for each emline (since ppxf returns flux caculated by direct summing)</span>
-        <span class="n">eml_wave0</span> <span class="o">=</span> <span class="n">eml_wave</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">nsa_z</span><span class="p">)</span>
-        <span class="n">index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">wave0</span><span class="o">-</span><span class="n">eml_wave0</span><span class="p">[:,</span><span class="kc">None</span><span class="p">]),</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-        <span class="n">step</span> <span class="o">=</span> <span class="n">wave0</span><span class="p">[</span><span class="n">index</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">wave0</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
-        <span class="c1"># Remain to be examined if /(1+nsa_z) correction is needed...</span>
-        <span class="n">eml_flux</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">gas_flux</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">flux</span><span class="p">[</span><span class="n">i</span><span class="p">,:])</span><span class="o">*</span><span class="n">step</span>
-        <span class="n">eml_fluxerr</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">gas_flux_error</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">pp</span><span class="o">.</span><span class="n">chi2</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">flux</span><span class="p">[</span><span class="n">i</span><span class="p">,:])</span><span class="o">*</span><span class="n">step</span>
-        
-        <span class="c1"># Full models of flux and models of emission lines</span>
-        <span class="n">model_flux</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">bestfit</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">flux</span><span class="p">[</span><span class="n">i</span><span class="p">,:])</span>
-        
-        <span class="n">spectra</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">matrix</span><span class="p">[:,</span><span class="n">degree</span><span class="o">+</span><span class="mi">1</span><span class="p">:]</span>
-        <span class="n">gas_spectrum</span> <span class="o">=</span> <span class="n">spectra</span><span class="p">[:,</span><span class="n">pp</span><span class="o">.</span><span class="n">gas_component</span><span class="p">]</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">pp</span><span class="o">.</span><span class="n">weights</span><span class="p">[</span><span class="n">pp</span><span class="o">.</span><span class="n">gas_component</span><span class="p">])</span>
-        <span class="n">model_eml_flux</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">gas_spectrum</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">flux</span><span class="p">[</span><span class="n">i</span><span class="p">,:])</span>
-        
-        <span class="c1"># Masks for models</span>
-        <span class="n">model_mask</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">mask</span>
-        
-        <span class="c1"># Calculate the sigma corrections</span>
-        <span class="n">FWHM</span> <span class="o">=</span> <span class="n">wave0</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">sres</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-        <span class="n">eml_wave_new</span> <span class="o">=</span> <span class="n">eml_wave</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">pp</span><span class="o">.</span><span class="n">sol</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="n">astropy</span><span class="o">.</span><span class="n">constants</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;km/s&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
-        <span class="n">index_new</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">wave0</span><span class="o">-</span><span class="n">eml_wave_new</span><span class="p">[:,</span><span class="kc">None</span><span class="p">]),</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-        <span class="n">FWHM_diff2</span> <span class="o">=</span> <span class="n">FWHM</span><span class="p">[</span><span class="n">index_new</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="n">FWHM</span><span class="p">[</span><span class="n">index</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span>
-        <span class="n">eml_sigmacorr</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">FWHM_diff2</span><span class="o">/</span><span class="p">((</span><span class="mf">2.355</span><span class="o">*</span><span class="n">step</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">velscale</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
-        
-        <span class="c1"># Weights and weight errors of gas tempaltes</span>
-        <span class="c1"># Note that the star weights errors should never be used</span>
-        <span class="n">weights</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">star_weights</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">*</span><span class="n">pp</span><span class="o">.</span><span class="n">weights</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">pp</span><span class="o">.</span><span class="n">weights</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
-        <span class="n">weights_err</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">star_weights_err</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">*</span><span class="n">pp</span><span class="o">.</span><span class="n">weights</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">pp</span><span class="o">.</span><span class="n">gas_flux_error</span><span class="p">)</span>
-        
-        <span class="c1"># Coefficients of multiplicative Legendre polynomials of order &gt; 0</span>
-        <span class="n">mweights</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">mpolyweights</span>
-        
-        <span class="c1">#plt.clf()</span>
-        <span class="c1">#pp.plot()</span>
-        <span class="c1">#plt.show()</span>
-    
-<span class="c1">#    # Save the results (only for testing)</span>
-<span class="c1">#    np.savez_compressed(&#39;/Users/mac/Documents/New_test_results/second_new&#39;+plate+&#39;_&#39;+ifu+&#39;.npz&#39;, </span>
-<span class="c1">#                        model_flux = model_flux, model_eml_flux = model_eml_flux, model_mask = model_mask,</span>
-<span class="c1">#                        model_binid = model_binid, eml_flux = eml_flux, eml_fluxerr = eml_fluxerr,</span>
-<span class="c1">#                        eml_kin = eml_kin, eml_kinerr = eml_kinerr, eml_sigmacorr = eml_sigmacorr)</span>
-<span class="c1">#    </span>
-<span class="c1">#    second_iter = np.load(&#39;/Users/mac/Documents/New_test_results/second_new&#39;+plate+&#39;_&#39;+ifu+&#39;.npz&#39;)</span>
-<span class="c1">#    model_flux = second_iter[&#39;model_flux&#39;]</span>
-<span class="c1">#    model_eml_flux = second_iter[&#39;model_eml_flux&#39;]</span>
-<span class="c1">#    model_mask = second_iter[&#39;model_mask&#39;]</span>
-<span class="c1">#    model_binid = second_iter[&#39;model_binid&#39;]</span>
-<span class="c1">#    eml_flux = second_iter[&#39;eml_flux&#39;]</span>
-<span class="c1">#    eml_fluxerr = second_iter[&#39;eml_fluxerr&#39;]</span>
-<span class="c1">#    eml_kin = second_iter[&#39;eml_kin&#39;]</span>
-<span class="c1">#    eml_kinerr = second_iter[&#39;eml_kinerr&#39;]</span>
-<span class="c1">#    eml_sigmacorr = second_iter[&#39;eml_sigmacorr&#39;]</span>
-    
-    <span class="k">return</span> <span class="n">model_flux</span><span class="p">,</span> <span class="n">model_eml_flux</span><span class="p">,</span> <span class="n">model_mask</span><span class="p">,</span> <span class="n">model_binid</span><span class="p">,</span> <span class="n">weights</span><span class="p">,</span> <span class="n">weights_err</span><span class="p">,</span> <span class="n">mweights</span><span class="p">,</span>\
-           <span class="n">eml_kin</span><span class="p">,</span> <span class="n">eml_kinerr</span><span class="p">,</span> <span class="n">eml_sigmacorr</span></div>
-
 
 </pre></div>
 

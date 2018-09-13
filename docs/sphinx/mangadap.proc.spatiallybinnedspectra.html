@@ -104,7 +104,7 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.survey.html">mangadap.survey package</a></li>
-<li class="toctree-l3"><a class="reference internal" href="mangadap.test.html">mangadap.test package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.tests.html">mangadap.tests package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.util.html">mangadap.util package</a></li>
 </ul>
 </li>
@@ -195,7 +195,7 @@ procedures.</p>
 <dt><em>Source location</em>:</dt>
 <dd>$MANGADAP_DIR/python/mangadap/proc/spatiallybinnedspectra.py</dd>
 <dt><em>Imports and python version compliance</em>:</dt>
-<dd><div class="first last highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<dd><div class="first last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
@@ -214,7 +214,7 @@ procedures.</p>
 <span class="kn">import</span> <span class="nn">numpy</span>
 
 <span class="kn">from</span> <span class="nn">..par.parset</span> <span class="k">import</span> <span class="n">ParSet</span>
-<span class="kn">from</span> <span class="nn">..config.defaults</span> <span class="k">import</span> <span class="n">default_dap_source</span><span class="p">,</span> <span class="n">default_dap_common_path</span>
+<span class="kn">from</span> <span class="nn">..config.defaults</span> <span class="k">import</span> <span class="n">dap_source_dir</span><span class="p">,</span> <span class="n">default_dap_common_path</span>
 <span class="kn">from</span> <span class="nn">..config.defaults</span> <span class="k">import</span> <span class="n">default_dap_file_name</span>
 <span class="kn">from</span> <span class="nn">..util.geometry</span> <span class="k">import</span> <span class="n">SemiMajorAxisCoo</span>
 <span class="kn">from</span> <span class="nn">..util.fileio</span> <span class="k">import</span> <span class="n">init_record_array</span>
@@ -237,15 +237,15 @@ procedures.</p>
 <div class="line"><strong>01 Apr 2016</strong>: Implementation begun by K. Westfall (KBW)</div>
 <div class="line"><strong>19 May 2016</strong>: (KBW) Include SPECRES and SPECRESD extensions
 from DRP file in output. Added loggers and quiet keyword
-arguments to <a class="reference internal" href="#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra" title="mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra"><code class="xref py py-class docutils literal"><span class="pre">SpatiallyBinnedSpectra</span></code></a>, removed verbose</div>
+arguments to <a class="reference internal" href="#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra" title="mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra"><code class="xref py py-class docutils literal notranslate"><span class="pre">SpatiallyBinnedSpectra</span></code></a>, removed verbose</div>
 <div class="line"><strong>06 Jul 2016</strong>: (KBW) Make the application of a reddening
 correction an input parameter.</div>
 <div class="line"><strong>25 Aug 2016</strong>: (KBW) Fixed error in bin area when calling
-<code class="xref py py-func docutils literal"><span class="pre">SpatiallyBinnedSpetra._unbinned_data_table()</span></code></div>
+<code class="xref py py-func docutils literal notranslate"><span class="pre">SpatiallyBinnedSpetra._unbinned_data_table()</span></code></div>
 <div class="line"><strong>01 Dec 2016</strong>: (KBW) Include keyword that describes how to
 handle the spectral resolution.</div>
 <div class="line"><strong>02 Dec 2016</strong>: (KBW) Incorporate
-<a class="reference internal" href="mangadap.util.extinction.html#mangadap.util.extinction.GalacticExtinction" title="mangadap.util.extinction.GalacticExtinction"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.extinction.GalacticExtinction</span></code></a>.  Revert
+<a class="reference internal" href="mangadap.util.extinction.html#mangadap.util.extinction.GalacticExtinction" title="mangadap.util.extinction.GalacticExtinction"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.extinction.GalacticExtinction</span></code></a>.  Revert
 main file structure to be bin-based instead of cube-based;
 include convenience functions that construct the cube for each
 extension as requested.</div>
@@ -265,7 +265,7 @@ the LSF.</div>
 <dl class="class">
 <dt id="mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra">
 <em class="property">class </em><code class="descclassname">mangadap.proc.spatiallybinnedspectra.</code><code class="descname">SpatiallyBinnedSpectra</code><span class="sig-paren">(</span><em>method_key</em>, <em>drpf</em>, <em>rdxqa</em>, <em>reff=None</em>, <em>method_list=None</em>, <em>dapsrc=None</em>, <em>dapver=None</em>, <em>analysis_path=None</em>, <em>directory_path=None</em>, <em>output_file=None</em>, <em>hardcopy=True</em>, <em>symlink_dir=None</em>, <em>clobber=False</em>, <em>checksum=False</em>, <em>loggers=None</em>, <em>quiet=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/spatiallybinnedspectra.html#SpatiallyBinnedSpectra"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Class that holds spatially binned spectra.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -274,32 +274,32 @@ the LSF.</div>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>method_key</strong> (<em>str</em>) – The keyword that designates which method,
 provided in <em>method_list</em>, to use for the binning procedure.</li>
-<li><strong>drpf</strong> (<a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal"><span class="pre">mangadap.drpfits.DRPFits</span></code></a>) – The DRP datacube with
+<li><strong>drpf</strong> (<a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.drpfits.DRPFits</span></code></a>) – The DRP datacube with
 the spectra to bin.</li>
-<li><strong>rdxqa</strong> (<code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.reductionassessments.ReductionAssessments</span></code>) – The basic assessments of the DRP data that are needed for
+<li><strong>rdxqa</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.proc.reductionassessments.ReductionAssessments</span></code>) – The basic assessments of the DRP data that are needed for
 the binning procedures.</li>
 <li><strong>reff</strong> (<em>float</em>) – (<strong>Optional</strong>) The effective radius of the galaxy.</li>
 <li><strong>method_list</strong> (<em>list</em>) – (<strong>Optional</strong>) List of
-<a class="reference internal" href="#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectraDef" title="mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectraDef"><code class="xref py py-class docutils literal"><span class="pre">SpatiallyBinnedSpectraDef</span></code></a> objects that define one
+<a class="reference internal" href="#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectraDef" title="mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectraDef"><code class="xref py py-class docutils literal notranslate"><span class="pre">SpatiallyBinnedSpectraDef</span></code></a> objects that define one
 or more methods to use for the spatial binning.  Default is
 to use the config files in the DAP source directory to
 construct the available methods using
-<a class="reference internal" href="#mangadap.proc.spatiallybinnedspectra.available_spatial_binning_methods" title="mangadap.proc.spatiallybinnedspectra.available_spatial_binning_methods"><code class="xref py py-func docutils literal"><span class="pre">available_spatial_binning_methods()</span></code></a>.</li>
+<a class="reference internal" href="#mangadap.proc.spatiallybinnedspectra.available_spatial_binning_methods" title="mangadap.proc.spatiallybinnedspectra.available_spatial_binning_methods"><code class="xref py py-func docutils literal notranslate"><span class="pre">available_spatial_binning_methods()</span></code></a>.</li>
 <li><strong>dapsrc</strong> (<em>str</em>) – (<strong>Optional</strong>) Root path to the DAP source
 directory.  If not provided, the default is defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_source" title="mangadap.config.defaults.default_dap_source"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_source()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.dap_source_dir" title="mangadap.config.defaults.dap_source_dir"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.dap_source_dir()</span></code></a>.</li>
 <li><strong>dapver</strong> (<em>str</em>) – (<strong>Optional</strong>) The DAP version to use for the
 analysis, used to override the default defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_version" title="mangadap.config.defaults.default_dap_version"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_version()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_version" title="mangadap.config.defaults.default_dap_version"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_dap_version()</span></code></a>.</li>
 <li><strong>analysis_path</strong> (<em>str</em>) – (<strong>Optional</strong>) The top-level path for the
 DAP output files, used to override the default defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_analysis_path" title="mangadap.config.defaults.default_analysis_path"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_analysis_path()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_analysis_path" title="mangadap.config.defaults.default_analysis_path"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_analysis_path()</span></code></a>.</li>
 <li><strong>directory_path</strong> (<em>str</em>) – The exact path to the directory with DAP
 output that is common to number DAP “methods”.  See
-<code class="xref py py-attr docutils literal"><span class="pre">directory_path</span></code>.</li>
+<code class="xref py py-attr docutils literal notranslate"><span class="pre">directory_path</span></code>.</li>
 <li><strong>output_file</strong> (<em>str</em>) – (<strong>Optional</strong>) Exact name for the output
 file.  The default is to use
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_file_name" title="mangadap.config.defaults.default_dap_file_name"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_file_name()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_file_name" title="mangadap.config.defaults.default_dap_file_name"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_dap_file_name()</span></code></a>.</li>
 <li><strong>hardcopy</strong> (<em>bool</em>) – (<strong>Optional</strong>) Flag to write the HDUList
 attribute to disk.  Default is True; if False, the HDUList
 is only kept in memory and would have to be reconstructed.</li>
@@ -316,7 +316,7 @@ file is created; this argument does not toggle that
 functionality.</li>
 <li><strong>loggers</strong> (<em>list</em>) – (<strong>Optional</strong>) List of <a class="reference external" href="https://docs.python.org/3/library/logging.html">logging.Logger</a> objects
 to log progress; ignored if quiet=True.  Logging is done
-using <a class="reference internal" href="mangadap.util.log.html#mangadap.util.log.log_output" title="mangadap.util.log.log_output"><code class="xref py py-func docutils literal"><span class="pre">mangadap.util.log.log_output()</span></code></a>.  Default is no
+using <a class="reference internal" href="mangadap.util.log.html#mangadap.util.log.log_output" title="mangadap.util.log.log_output"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.util.log.log_output()</span></code></a>.  Default is no
 logging.</li>
 <li><strong>quiet</strong> (<em>bool</em>) – (<strong>Optional</strong>) Suppress all terminal and logging
 output.  Default is False.</li>
@@ -330,7 +330,7 @@ output.  Default is False.</li>
 <code class="descname">loggers</code><a class="headerlink" href="#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra.loggers" title="Permalink to this definition">¶</a></dt>
 <dd><p><em>list</em> – List of <a class="reference external" href="https://docs.python.org/3/library/logging.html">logging.Logger</a> objects to log
 progress; ignored if quiet=True.  Logging is done using
-<a class="reference internal" href="mangadap.util.log.html#mangadap.util.log.log_output" title="mangadap.util.log.log_output"><code class="xref py py-func docutils literal"><span class="pre">mangadap.util.log.log_output()</span></code></a>.</p>
+<a class="reference internal" href="mangadap.util.log.html#mangadap.util.log.log_output" title="mangadap.util.log.log_output"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.util.log.log_output()</span></code></a>.</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -377,15 +377,15 @@ progress; ignored if quiet=True.  Logging is done using
 <dl class="method">
 <dt id="mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra._assign_image_arrays">
 <code class="descname">_assign_image_arrays</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/spatiallybinnedspectra.html#SpatiallyBinnedSpectra._assign_image_arrays"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra._assign_image_arrays" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set <code class="xref py py-attr docutils literal"><span class="pre">image_arrays</span></code>, which contains the list of extensions
-in <code class="xref py py-attr docutils literal"><span class="pre">hdu</span></code> that are on-sky image data.</p>
+<dd><p>Set <code class="xref py py-attr docutils literal notranslate"><span class="pre">image_arrays</span></code>, which contains the list of extensions
+in <code class="xref py py-attr docutils literal notranslate"><span class="pre">hdu</span></code> that are on-sky image data.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra._assign_spectral_arrays">
 <code class="descname">_assign_spectral_arrays</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/spatiallybinnedspectra.html#SpatiallyBinnedSpectra._assign_spectral_arrays"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra._assign_spectral_arrays" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set <code class="xref py py-attr docutils literal"><span class="pre">spectral_arrays</span></code>, which contains the list of
-extensions in <code class="xref py py-attr docutils literal"><span class="pre">hdu</span></code> that contain spectral data.</p>
+<dd><p>Set <code class="xref py py-attr docutils literal notranslate"><span class="pre">spectral_arrays</span></code>, which contains the list of
+extensions in <code class="xref py py-attr docutils literal notranslate"><span class="pre">hdu</span></code> that contain spectral data.</p>
 </dd></dl>
 
 <dl class="method">
@@ -401,14 +401,14 @@ extensions in <code class="xref py py-attr docutils literal"><span class="pre">h
 associated with each spectrum in the DRP cube.  This is
 the flattened BINID array.</li>
 <li><strong>stack_flux</strong> (<em>numpy.ndarray</em>) – The stacked spectra, organized
-as <span class="math">\(N_{\rm spec}\times\N_\lambda}\)</span>.</li>
+as <span class="math notranslate nohighlight">\(N_{\rm spec}\times\N_\lambda}\)</span>.</li>
 <li><strong>stack_flux</strong> – The stacked inverse variance,
-organized as <span class="math">\(N_{\rm spec}\times\N_\lambda}\)</span>.</li>
+organized as <span class="math notranslate nohighlight">\(N_{\rm spec}\times\N_\lambda}\)</span>.</li>
 </ul>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The record array that is put in the BINS
-extension of <code class="xref py py-attr docutils literal"><span class="pre">hdu</span></code>.</p>
+extension of <code class="xref py py-attr docutils literal notranslate"><span class="pre">hdu</span></code>.</p>
 </td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">numpy.recarray</p>
@@ -421,8 +421,8 @@ extension of <code class="xref py py-attr docutils literal"><span class="pre">hd
 <dl class="method">
 <dt id="mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra._check_snr">
 <code class="descname">_check_snr</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/spatiallybinnedspectra.html#SpatiallyBinnedSpectra._check_snr"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra._check_snr" title="Permalink to this definition">¶</a></dt>
-<dd><p>Determine which spectra in <code class="xref py py-attr docutils literal"><span class="pre">rdxqa</span></code> have a S/N greater than
-the minimum set by <code class="xref py py-attr docutils literal"><span class="pre">method</span></code>.  Only these spectra will be
+<dd><p>Determine which spectra in <code class="xref py py-attr docutils literal notranslate"><span class="pre">rdxqa</span></code> have a S/N greater than
+the minimum set by <code class="xref py py-attr docutils literal notranslate"><span class="pre">method</span></code>.  Only these spectra will be
 included in the binning.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -440,8 +440,8 @@ the criterion.</td>
 <dl class="method">
 <dt id="mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra._construct_2d_hdu">
 <code class="descname">_construct_2d_hdu</code><span class="sig-paren">(</span><em>bin_indx</em>, <em>good_fgoodpix</em>, <em>good_snr</em>, <em>bin_data</em>, <em>stack_flux</em>, <em>stack_sdev</em>, <em>stack_ivar</em>, <em>stack_npix</em>, <em>stack_mask</em>, <em>stack_sres</em>, <em>stack_covar</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/spatiallybinnedspectra.html#SpatiallyBinnedSpectra._construct_2d_hdu"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra._construct_2d_hdu" title="Permalink to this definition">¶</a></dt>
-<dd><p>Construct <code class="xref py py-attr docutils literal"><span class="pre">hdu</span></code> that is held in memory for manipulation of
-the object.  See <a class="reference internal" href="#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra.construct_3d_hdu" title="mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra.construct_3d_hdu"><code class="xref py py-func docutils literal"><span class="pre">construct_3d_hdu()</span></code></a> if you want to convert
+<dd><p>Construct <code class="xref py py-attr docutils literal notranslate"><span class="pre">hdu</span></code> that is held in memory for manipulation of
+the object.  See <a class="reference internal" href="#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra.construct_3d_hdu" title="mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra.construct_3d_hdu"><code class="xref py py-func docutils literal notranslate"><span class="pre">construct_3d_hdu()</span></code></a> if you want to convert
 the object into a DRP-like datacube.</p>
 <p>bin_indx is 2d</p>
 <p>stack_sres is expected to be a MaskedArray</p>
@@ -465,8 +465,8 @@ angle.  Set scale radius to the effective radius if desired.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>good_spec</strong> (<em>numpy.ndarray</em>) – List of spectra to include in
-the binning.  See <a class="reference internal" href="#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra.check_fgoodpix" title="mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra.check_fgoodpix"><code class="xref py py-func docutils literal"><span class="pre">check_fgoodpix()</span></code></a> and
-<a class="reference internal" href="#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra._check_snr" title="mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra._check_snr"><code class="xref py py-func docutils literal"><span class="pre">_check_snr()</span></code></a>.</td>
+the binning.  See <a class="reference internal" href="#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra.check_fgoodpix" title="mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra.check_fgoodpix"><code class="xref py py-func docutils literal notranslate"><span class="pre">check_fgoodpix()</span></code></a> and
+<a class="reference internal" href="#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra._check_snr" title="mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra._check_snr"><code class="xref py py-func docutils literal notranslate"><span class="pre">_check_snr()</span></code></a>.</td>
 </tr>
 </tbody>
 </table>
@@ -498,7 +498,7 @@ based on the input boolean arrays.</p>
 <dl class="method">
 <dt id="mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra._initialize_primary_header">
 <code class="descname">_initialize_primary_header</code><span class="sig-paren">(</span><em>hdr=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/spatiallybinnedspectra.html#SpatiallyBinnedSpectra._initialize_primary_header"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra._initialize_primary_header" title="Permalink to this definition">¶</a></dt>
-<dd><p>Initialize the header of <code class="xref py py-attr docutils literal"><span class="pre">hdu</span></code>.</p>
+<dd><p>Initialize the header of <code class="xref py py-attr docutils literal notranslate"><span class="pre">hdu</span></code>.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -538,10 +538,10 @@ for the binned spectra.</p>
 <dt id="mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra._set_paths">
 <code class="descname">_set_paths</code><span class="sig-paren">(</span><em>directory_path</em>, <em>dapver</em>, <em>analysis_path</em>, <em>output_file</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/spatiallybinnedspectra.html#SpatiallyBinnedSpectra._set_paths"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra._set_paths" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set the I/O path to the processed template library.  Used to set
-<code class="xref py py-attr docutils literal"><span class="pre">directory_path</span></code> and <code class="xref py py-attr docutils literal"><span class="pre">output_file</span></code>.  If not
+<code class="xref py py-attr docutils literal notranslate"><span class="pre">directory_path</span></code> and <code class="xref py py-attr docutils literal notranslate"><span class="pre">output_file</span></code>.  If not
 provided, the defaults are set using, respectively,
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_common_path" title="mangadap.config.defaults.default_dap_common_path"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_common_path()</span></code></a> and
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_file_name" title="mangadap.config.defaults.default_dap_file_name"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_file_name()</span></code></a>.</p>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_common_path" title="mangadap.config.defaults.default_dap_common_path"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_dap_common_path()</span></code></a> and
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_file_name" title="mangadap.config.defaults.default_dap_file_name"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_dap_file_name()</span></code></a>.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -549,13 +549,13 @@ provided, the defaults are set using, respectively,
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>directory_path</strong> (<em>str</em>) – The exact path to the directory with
 DAP output that is common to number DAP “methods”.  See
-<code class="xref py py-attr docutils literal"><span class="pre">directory_path</span></code>.</li>
+<code class="xref py py-attr docutils literal notranslate"><span class="pre">directory_path</span></code>.</li>
 <li><strong>dapver</strong> (<em>str</em>) – DAP version.</li>
 <li><strong>analysis_path</strong> (<em>str</em>) – The path to the top-level directory
 containing the DAP output files for a given DRP and DAP
 version.</li>
 <li><strong>output_file</strong> (<em>str</em>) – The name of the file with the reduction assessments.
-See <code class="xref py py-func docutils literal"><span class="pre">compute()</span></code>.</li>
+See <code class="xref py py-func docutils literal notranslate"><span class="pre">compute()</span></code>.</li>
 </ul>
 </td>
 </tr>
@@ -576,7 +576,7 @@ associated with each spectrum in the DRP cube.  This is
 the flattened BINID array.</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The record array that is put in the BINS
-extension of <code class="xref py py-attr docutils literal"><span class="pre">hdu</span></code>.</td>
+extension of <code class="xref py py-attr docutils literal notranslate"><span class="pre">hdu</span></code>.</td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">numpy.recarray</td>
 </tr>
@@ -599,25 +599,25 @@ extension of <code class="xref py py-attr docutils literal"><span class="pre">hd
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>drpf</strong> (<a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal"><span class="pre">mangadap.drpfits.DRPFits</span></code></a>) – The DRP datacube
+<li><strong>drpf</strong> (<a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.drpfits.DRPFits</span></code></a>) – The DRP datacube
 with the spectra to bin.</li>
-<li><strong>rdxqa</strong> (<code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.reductionassessments.ReductionAssessments</span></code>) – The basic assessments of the DRP data that are needed
+<li><strong>rdxqa</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.proc.reductionassessments.ReductionAssessments</span></code>) – The basic assessments of the DRP data that are needed
 for the binning procedures.</li>
 <li><strong>reff</strong> (<em>float</em>) – (<strong>Optional</strong>) The effective radius of the
 galaxy.</li>
 <li><strong>dapver</strong> (<em>str</em>) – (<strong>Optional</strong>) The DAP version to use for the
 analysis, used to override the default defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_version" title="mangadap.config.defaults.default_dap_version"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_version()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_version" title="mangadap.config.defaults.default_dap_version"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_dap_version()</span></code></a>.</li>
 <li><strong>analysis_path</strong> (<em>str</em>) – (<strong>Optional</strong>) The top-level path for
 the DAP output files, used to override the default
 defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_analysis_path" title="mangadap.config.defaults.default_analysis_path"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_analysis_path()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_analysis_path" title="mangadap.config.defaults.default_analysis_path"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_analysis_path()</span></code></a>.</li>
 <li><strong>directory_path</strong> (<em>str</em>) – The exact path to the directory with
 DAP output that is common to number DAP “methods”.  See
-<code class="xref py py-attr docutils literal"><span class="pre">directory_path</span></code>.</li>
+<code class="xref py py-attr docutils literal notranslate"><span class="pre">directory_path</span></code>.</li>
 <li><strong>output_file</strong> (<em>str</em>) – (<strong>Optional</strong>) Exact name for the output
 file.  The default is to use
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_file_name" title="mangadap.config.defaults.default_dap_file_name"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_file_name()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_file_name" title="mangadap.config.defaults.default_dap_file_name"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_dap_file_name()</span></code></a>.</li>
 <li><strong>hardcopy</strong> (<em>bool</em>) – (<strong>Optional</strong>) Flag to write the HDUList
 attribute to disk.  Default is True; if False, the
 HDUList is only kept in memory and would have to be
@@ -630,7 +630,7 @@ Default is to use any existing file instead of redoing
 the analysis and overwriting the existing output.</li>
 <li><strong>loggers</strong> (<em>list</em>) – (<strong>Optional</strong>) List of <a class="reference external" href="https://docs.python.org/3/library/logging.html">logging.Logger</a>
 objects to log progress; ignored if quiet=True.  Logging
-is done using <a class="reference internal" href="mangadap.util.log.html#mangadap.util.log.log_output" title="mangadap.util.log.log_output"><code class="xref py py-func docutils literal"><span class="pre">mangadap.util.log.log_output()</span></code></a>.
+is done using <a class="reference internal" href="mangadap.util.log.html#mangadap.util.log.log_output" title="mangadap.util.log.log_output"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.util.log.log_output()</span></code></a>.
 Default is no logging.</li>
 <li><strong>quiet</strong> (<em>bool</em>) – (<strong>Optional</strong>) Suppress all terminal and
 logging output.  Default is False.</li>
@@ -644,7 +644,7 @@ logging output.  Default is False.</li>
 <dl class="method">
 <dt id="mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra.check_fgoodpix">
 <code class="descname">check_fgoodpix</code><span class="sig-paren">(</span><em>minimum_fraction=0.8</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/spatiallybinnedspectra.html#SpatiallyBinnedSpectra.check_fgoodpix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra.check_fgoodpix" title="Permalink to this definition">¶</a></dt>
-<dd><p>Determine which spectra in <code class="xref py py-attr docutils literal"><span class="pre">rdxqa</span></code> have a fractional
+<dd><p>Determine which spectra in <code class="xref py py-attr docutils literal notranslate"><span class="pre">rdxqa</span></code> have a fractional
 spectral coverage of greater than the provided minimum fraction.
 Only these spectra will be included in the binning.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -674,10 +674,10 @@ the DRP fits file from which it was derived.</p>
 <dl class="method">
 <dt id="mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra.copy_to_array">
 <code class="descname">copy_to_array</code><span class="sig-paren">(</span><em>ext='FLUX'</em>, <em>waverange=None</em>, <em>include_missing=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/spatiallybinnedspectra.html#SpatiallyBinnedSpectra.copy_to_array"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra.copy_to_array" title="Permalink to this definition">¶</a></dt>
-<dd><p>Wrapper for <a class="reference internal" href="mangadap.util.fitsutil.html#mangadap.util.fitsutil.DAPFitsUtil.copy_to_array" title="mangadap.util.fitsutil.DAPFitsUtil.copy_to_array"><code class="xref py py-func docutils literal"><span class="pre">mangadap.util.fitsutil.DAPFitsUtil.copy_to_array()</span></code></a>
-specific for <a class="reference internal" href="#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra" title="mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra"><code class="xref py py-class docutils literal"><span class="pre">SpatiallyBinnedSpectra</span></code></a>.</p>
+<dd><p>Wrapper for <a class="reference internal" href="mangadap.util.fitsutil.html#mangadap.util.fitsutil.DAPFitsUtil.copy_to_array" title="mangadap.util.fitsutil.DAPFitsUtil.copy_to_array"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.util.fitsutil.DAPFitsUtil.copy_to_array()</span></code></a>
+specific for <a class="reference internal" href="#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra" title="mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra"><code class="xref py py-class docutils literal notranslate"><span class="pre">SpatiallyBinnedSpectra</span></code></a>.</p>
 <p>Return a copy of the selected data array.  The array size is
-always <span class="math">\(N_{\rm models} \times N_{\rm wavelength}\)</span>; i.e., the
+always <span class="math notranslate nohighlight">\(N_{\rm models} \times N_{\rm wavelength}\)</span>; i.e., the
 data is always flattened to two dimensions and the unique
 spectra are selected.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -687,8 +687,8 @@ spectra are selected.</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>ext</strong> (<em>str</em>) – (<strong>Optional</strong>) Name of the extension from which
 to draw the data.  Must be allowed for the current
-<code class="xref py py-attr docutils literal"><span class="pre">mode</span></code>; see <code class="xref py py-attr docutils literal"><span class="pre">data_arrays</span></code>.  Default is
-<code class="docutils literal"><span class="pre">'FLUX'</span></code>.</li>
+<code class="xref py py-attr docutils literal notranslate"><span class="pre">mode</span></code>; see <code class="xref py py-attr docutils literal notranslate"><span class="pre">data_arrays</span></code>.  Default is
+<code class="docutils literal notranslate"><span class="pre">'FLUX'</span></code>.</li>
 <li><strong>waverange</strong> (<em>array-like</em>) – (<strong>Optional</strong>) Two-element array
 with the first and last wavelength to include in the
 computation.  Default is to use the full wavelength
@@ -713,10 +713,10 @@ selected extension.</p>
 <dt id="mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra.copy_to_masked_array">
 <code class="descname">copy_to_masked_array</code><span class="sig-paren">(</span><em>ext='FLUX'</em>, <em>flag=None</em>, <em>waverange=None</em>, <em>include_missing=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/spatiallybinnedspectra.html#SpatiallyBinnedSpectra.copy_to_masked_array"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra.copy_to_masked_array" title="Permalink to this definition">¶</a></dt>
 <dd><p>Wrapper for
-<a class="reference internal" href="mangadap.util.fitsutil.html#mangadap.util.fitsutil.DAPFitsUtil.copy_to_masked_array" title="mangadap.util.fitsutil.DAPFitsUtil.copy_to_masked_array"><code class="xref py py-func docutils literal"><span class="pre">mangadap.util.fitsutil.DAPFitsUtil.copy_to_masked_array()</span></code></a>
-specific for <a class="reference internal" href="#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra" title="mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra"><code class="xref py py-class docutils literal"><span class="pre">SpatiallyBinnedSpectra</span></code></a>.</p>
+<a class="reference internal" href="mangadap.util.fitsutil.html#mangadap.util.fitsutil.DAPFitsUtil.copy_to_masked_array" title="mangadap.util.fitsutil.DAPFitsUtil.copy_to_masked_array"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.util.fitsutil.DAPFitsUtil.copy_to_masked_array()</span></code></a>
+specific for <a class="reference internal" href="#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra" title="mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra"><code class="xref py py-class docutils literal notranslate"><span class="pre">SpatiallyBinnedSpectra</span></code></a>.</p>
 <p>Return a copy of the selected data array as a masked array.
-This is functionally identical to <a class="reference internal" href="#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra.copy_to_array" title="mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra.copy_to_array"><code class="xref py py-func docutils literal"><span class="pre">copy_to_array()</span></code></a>,
+This is functionally identical to <a class="reference internal" href="#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra.copy_to_array" title="mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra.copy_to_array"><code class="xref py py-func docutils literal notranslate"><span class="pre">copy_to_array()</span></code></a>,
 except the output format is a <a class="reference external" href="http://docs.scipy.org/doc/numpy-1.10.1/reference/maskedarray.baseclass.html#numpy.ma.MaskedArray">numpy.ma.MaskedArray</a>.  The
 pixels that are considered to be masked can be specified using
 <cite>flag</cite>.</p>
@@ -727,12 +727,12 @@ pixels that are considered to be masked can be specified using
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>ext</strong> (<em>str</em>) – (<strong>Optional</strong>) Name of the extension from which
 to draw the data.  Must be allowed for the current
-<code class="xref py py-attr docutils literal"><span class="pre">mode</span></code>; see <code class="xref py py-attr docutils literal"><span class="pre">data_arrays</span></code>.  Default is
+<code class="xref py py-attr docutils literal notranslate"><span class="pre">mode</span></code>; see <code class="xref py py-attr docutils literal notranslate"><span class="pre">data_arrays</span></code>.  Default is
 <cite>‘FLUX’</cite>.</li>
 <li><strong>flag</strong> (<em>str</em><em> or </em><em>list</em>) – (<strong>Optional</strong>) (List of) Flag names that
 are considered when deciding if a pixel should be
 masked.  The names <em>must</em> be a valid bit name as defined
-by <code class="xref py py-attr docutils literal"><span class="pre">bitmask</span></code>.  If not provided, <em>ANY</em> non-zero
+by <code class="xref py py-attr docutils literal notranslate"><span class="pre">bitmask</span></code>.  If not provided, <em>ANY</em> non-zero
 mask bit is omitted.</li>
 <li><strong>waverange</strong> (<em>array-like</em>) – (<strong>Optional</strong>) Two-element array
 with the first and last wavelength to include in the
@@ -754,9 +754,9 @@ selected extension.</p>
 </table>
 </dd></dl>
 
-<dl class="method">
+<dl class="staticmethod">
 <dt id="mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra.do_not_fit_flags">
-<code class="descname">do_not_fit_flags</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/spatiallybinnedspectra.html#SpatiallyBinnedSpectra.do_not_fit_flags"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra.do_not_fit_flags" title="Permalink to this definition">¶</a></dt>
+<em class="property">static </em><code class="descname">do_not_fit_flags</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/spatiallybinnedspectra.html#SpatiallyBinnedSpectra.do_not_fit_flags"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra.do_not_fit_flags" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
@@ -794,14 +794,14 @@ nearest bins instead of their ID number (default).</li>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The bin IDs, one per input bin, of the bin
 closest to each input bin.  Any bins that are in
-<code class="xref py py-attr docutils literal"><span class="pre">missing_bins</span></code> have a return value of -1; there are no
+<code class="xref py py-attr docutils literal notranslate"><span class="pre">missing_bins</span></code> have a return value of -1; there are no
 coordinates for these bins.</p>
 </td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">numpy.ndarray</p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if the set of input bins is not unique or
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if the set of input bins is not unique or
 contains bin IDs that are not present.</p>
 </td>
 </tr>
@@ -850,12 +850,12 @@ the BINID columns of the BINS extension.</td>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>ifile</strong> (<em>str</em>) – (<strong>Optional</strong>) Name of the file with the data.
 Default is to use the name provided by
-<a class="reference internal" href="#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra.file_path" title="mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra.file_path"><code class="xref py py-func docutils literal"><span class="pre">file_path()</span></code></a>.</li>
+<a class="reference internal" href="#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra.file_path" title="mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra.file_path"><code class="xref py py-func docutils literal notranslate"><span class="pre">file_path()</span></code></a>.</li>
 <li><strong>strict</strong> (<em>bool</em>) – (<strong>Optional</strong>) Force a strict reading of the
 file to make sure that it adheres to the expected
 format.  At the moment, this only checks to make sure
 the method keyword printed in the header matches the
-expected value in <code class="xref py py-attr docutils literal"><span class="pre">method</span></code>.</li>
+expected value in <code class="xref py py-attr docutils literal notranslate"><span class="pre">method</span></code>.</li>
 <li><strong>checksum</strong> (<em>bool</em>) – (<strong>Optional</strong>) Use the checksum in the
 header to check for corruption of the data.  Default is
 False.</li>
@@ -863,8 +863,8 @@ False.</li>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
-<li><code class="xref py py-exc docutils literal"><span class="pre">FileNotFoundError</span></code> – Raised if the file does not exist.</li>
-<li><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if strict is true and the header keyword
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">FileNotFoundError</span></code> – Raised if the file does not exist.</li>
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if strict is true and the header keyword
 ‘BINKEY’ does not match the method keyword.</li>
 </ul>
 </td>
@@ -884,7 +884,7 @@ the nearest good bin.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>data</strong> (<em>array-like</em>) – Data for each bin.  The length must be
-the same as <code class="xref py py-attr docutils literal"><span class="pre">nbins</span></code>.</li>
+the same as <code class="xref py py-attr docutils literal notranslate"><span class="pre">nbins</span></code>.</li>
 <li><strong>bad_bins</strong> (<em>array-like</em>) – The list of indices (must not be a
 boolean array) with bad values to be replaced.</li>
 </ul>
@@ -897,7 +897,7 @@ data from the nearest bin.</p>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">numpy.ndarray</p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if the input array doesn’t have the
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if the input array doesn’t have the
 correct shape or if the list of bad bins has numbers
 outside the viable range (0,self.nbins-1).</p>
 </td>
@@ -944,12 +944,12 @@ raised if this extension does not exist!</p>
 <dl class="class">
 <dt id="mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectraBitMask">
 <em class="property">class </em><code class="descclassname">mangadap.proc.spatiallybinnedspectra.</code><code class="descname">SpatiallyBinnedSpectraBitMask</code><span class="sig-paren">(</span><em>dapsrc=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/spatiallybinnedspectra.html#SpatiallyBinnedSpectraBitMask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectraBitMask" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="mangadap.util.bitmask.html#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.bitmask.BitMask</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="mangadap.util.bitmask.html#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.bitmask.BitMask</span></code></a></p>
 <p>Derived class that specifies the mask bits for the spatially binned
-spectra.  See <a class="reference internal" href="mangadap.util.bitmask.html#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.bitmask.BitMask</span></code></a> for attributes.</p>
+spectra.  See <a class="reference internal" href="mangadap.util.bitmask.html#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.bitmask.BitMask</span></code></a> for attributes.</p>
 <p>A list of the bits and meanings are provided by the base class
-function <a class="reference internal" href="mangadap.util.bitmask.html#mangadap.util.bitmask.BitMask.info" title="mangadap.util.bitmask.BitMask.info"><code class="xref py py-func docutils literal"><span class="pre">mangadap.util.bitmask.BitMask.info()</span></code></a>; i.e.,:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">mangadap.proc.spatiallybinnedspectra</span> <span class="k">import</span> <span class="n">SpatiallyBinnedSpectraBitMask</span>
+function <a class="reference internal" href="mangadap.util.bitmask.html#mangadap.util.bitmask.BitMask.info" title="mangadap.util.bitmask.BitMask.info"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.util.bitmask.BitMask.info()</span></code></a>; i.e.,:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">mangadap.proc.spatiallybinnedspectra</span> <span class="k">import</span> <span class="n">SpatiallyBinnedSpectraBitMask</span>
 <span class="n">bm</span> <span class="o">=</span> <span class="n">SpatiallyBinnedSpectraBitMask</span><span class="p">()</span>
 <span class="n">bm</span><span class="o">.</span><span class="n">info</span><span class="p">()</span>
 </pre></div>
@@ -959,25 +959,25 @@ function <a class="reference internal" href="mangadap.util.bitmask.html#mangadap
 <dl class="class">
 <dt id="mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectraDef">
 <em class="property">class </em><code class="descclassname">mangadap.proc.spatiallybinnedspectra.</code><code class="descname">SpatiallyBinnedSpectraDef</code><span class="sig-paren">(</span><em>key</em>, <em>galactic_reddening</em>, <em>galactic_rv</em>, <em>minimum_snr</em>, <em>binpar</em>, <em>binclass</em>, <em>binfunc</em>, <em>stackpar</em>, <em>stackclass</em>, <em>stackfunc</em>, <em>spec_res</em>, <em>prepixel_sres</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/spatiallybinnedspectra.html#SpatiallyBinnedSpectraDef"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectraDef" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet" title="mangadap.par.parset.ParSet"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.parset.ParSet</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet" title="mangadap.par.parset.ParSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.par.parset.ParSet</span></code></a></p>
 <p>A class that holds the two parameter sets and the key designator for
 the binning scheme.</p>
 <p>binfunc must be able to function properly with the following call:</p>
 <blockquote>
 <div>id = bin(x, y, par=par)</div></blockquote>
-<p>where <code class="docutils literal"><span class="pre">x</span></code> and <code class="docutils literal"><span class="pre">y</span></code> are the on-sky Cartesian coordiantes provided
+<p>where <code class="docutils literal notranslate"><span class="pre">x</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code> are the on-sky Cartesian coordiantes provided
 by:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">x</span> <span class="o">=</span> <span class="n">ReductionAssessment</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;SPECTRUM&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;SKY_COO&#39;</span><span class="p">][:,</span><span class="mi">0</span><span class="p">]</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">x</span> <span class="o">=</span> <span class="n">ReductionAssessment</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;SPECTRUM&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;SKY_COO&#39;</span><span class="p">][:,</span><span class="mi">0</span><span class="p">]</span>
 <span class="n">y</span> <span class="o">=</span> <span class="n">ReductionAssessment</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;SPECTRUM&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;SKY_COO&#39;</span><span class="p">][:,</span><span class="mi">1</span><span class="p">]</span>
 </pre></div>
 </div>
 <p>id is the index of the bin to place each spectrum.</p>
 <p>stackfunc must be able to function properly with the following
 call:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">stack_wave</span><span class="p">,</span> <span class="n">stack_flux</span><span class="p">,</span> <span class="n">stack_sdev</span><span class="p">,</span> <span class="n">stack_npix</span><span class="p">,</span> <span class="n">stack_ivar</span><span class="p">,</span>                 <span class="n">stack_sres</span><span class="p">,</span> <span class="n">stack_covar</span> <span class="o">=</span> <span class="n">stack</span><span class="p">(</span><span class="n">drpf</span><span class="p">,</span> <span class="nb">id</span><span class="p">,</span> <span class="n">par</span><span class="o">=</span><span class="n">par</span><span class="p">)</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">stack_wave</span><span class="p">,</span> <span class="n">stack_flux</span><span class="p">,</span> <span class="n">stack_sdev</span><span class="p">,</span> <span class="n">stack_npix</span><span class="p">,</span> <span class="n">stack_ivar</span><span class="p">,</span>                 <span class="n">stack_sres</span><span class="p">,</span> <span class="n">stack_covar</span> <span class="o">=</span> <span class="n">stack</span><span class="p">(</span><span class="n">drpf</span><span class="p">,</span> <span class="nb">id</span><span class="p">,</span> <span class="n">par</span><span class="o">=</span><span class="n">par</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>where <cite>drpf</cite> is a <a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal"><span class="pre">mangadap.drpfits.DRPFits</span></code></a> object.  Note
+<p>where <cite>drpf</cite> is a <a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.drpfits.DRPFits</span></code></a> object.  Note
 that the input and output wavelength ranges are expected to be the
 same!  This is why the wavelengths are not returned!</p>
 <p>As long as they are mutable, the values in par can change, meaning
@@ -1000,14 +1000,14 @@ reddening.</li>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>key</strong> (<em>str</em>) – Keyword used to distinguish between different spatial
 binning schemes.</li>
-<li><strong>binpar</strong> (<a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet" title="mangadap.par.parset.ParSet"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.parset.ParSet</span></code></a> or dict) – The
+<li><strong>binpar</strong> (<a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet" title="mangadap.par.parset.ParSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.par.parset.ParSet</span></code></a> or dict) – The
 parameter set defining how to place each spectrum in a bin.</li>
 <li><strong>binclass</strong> (<em>object</em>) – Instance of class object to use for the
 binning.  Needed in case binfunc is a non-static member
 function of the class.</li>
 <li><strong>binfunc</strong> (<em>callable</em>) – The function that determines which spectra
 go into each bin.</li>
-<li><strong>stackpar</strong> (<a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet" title="mangadap.par.parset.ParSet"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.parset.ParSet</span></code></a> or dict) – The parameter
+<li><strong>stackpar</strong> (<a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet" title="mangadap.par.parset.ParSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.par.parset.ParSet</span></code></a> or dict) – The parameter
 set defining how to stack the spectra in each bin.</li>
 <li><strong>stackclass</strong> (<em>object</em>) – Instance of class object to used to stack
 the spectra.  Needed in case stackfunc is a non-static
@@ -1016,7 +1016,7 @@ member function of the class.</li>
 given bin.</li>
 <li><strong>spec_res</strong> (<em>str</em>) – Keyword defining the treatment of the spectral
 resolution.  See
-<a class="reference internal" href="#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra.spectral_resolution_options" title="mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra.spectral_resolution_options"><code class="xref py py-func docutils literal"><span class="pre">SpatiallyBinnedSpectra.spectral_resolution_options()</span></code></a>
+<a class="reference internal" href="#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra.spectral_resolution_options" title="mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra.spectral_resolution_options"><code class="xref py py-func docutils literal notranslate"><span class="pre">SpatiallyBinnedSpectra.spectral_resolution_options()</span></code></a>
 for a list of the options.</li>
 <li><strong>prepixel_sres</strong> (<em>bool</em>) – Use the prepixelized version of the LSF
 measurements.</li>
@@ -1033,7 +1033,7 @@ measurements.</li>
 <dd><p>Return the list of available binning schemes.</p>
 <p>The list of available binning schemes is defined by the set of
 configuration files at:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">config_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">,</span> <span class="s1">&#39;python&#39;</span><span class="p">,</span> <span class="s1">&#39;mangadap&#39;</span><span class="p">,</span> <span class="s1">&#39;config&#39;</span><span class="p">,</span> <span class="s1">&#39;spatial_binning&#39;</span><span class="p">)</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">config_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">,</span> <span class="s1">&#39;python&#39;</span><span class="p">,</span> <span class="s1">&#39;mangadap&#39;</span><span class="p">,</span> <span class="s1">&#39;config&#39;</span><span class="p">,</span> <span class="s1">&#39;spatial_binning&#39;</span><span class="p">)</span>
 <span class="n">ini_files</span> <span class="o">=</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">config_path</span><span class="p">,</span> <span class="s1">&#39;/*.ini&#39;</span><span class="p">))</span>
 </pre></div>
 </div>
@@ -1043,11 +1043,11 @@ configuration files at:</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>dapsrc</strong> (<em>str</em>) – (<strong>Optional</strong>) Root path to the DAP source
 directory.  If not provided, the default is defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_source" title="mangadap.config.defaults.default_dap_source"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_source()</span></code></a>.</p>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.dap_source_dir" title="mangadap.config.defaults.dap_source_dir"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.dap_source_dir()</span></code></a>.</p>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A list of
-<a class="reference internal" href="#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectraDef" title="mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectraDef"><code class="xref py py-func docutils literal"><span class="pre">mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectraDef()</span></code></a>
+<a class="reference internal" href="#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectraDef" title="mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectraDef"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectraDef()</span></code></a>
 objects, each defining a separate binning method.</p>
 </td>
 </tr>
@@ -1055,11 +1055,11 @@ objects, each defining a separate binning method.</p>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
-<li><code class="xref py py-exc docutils literal"><span class="pre">NotADirectoryError</span></code> – Raised if the provided or default
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">NotADirectoryError</span></code> – Raised if the provided or default
 <em>dapsrc</em> is not a directory.</li>
-<li><code class="xref py py-exc docutils literal"><span class="pre">OSError/IOError</span></code> – Raised if no binning scheme configuration files
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">OSError/IOError</span></code> – Raised if no binning scheme configuration files
 could be found.</li>
-<li><code class="xref py py-exc docutils literal"><span class="pre">KeyError</span></code> – Raised if the binning method keywords are not all
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">KeyError</span></code> – Raised if the binning method keywords are not all
 unique.</li>
 </ul>
 </td>
@@ -1080,21 +1080,21 @@ available databases.</li>
 <dl class="function">
 <dt id="mangadap.proc.spatiallybinnedspectra.validate_spatial_binning_scheme_config">
 <code class="descclassname">mangadap.proc.spatiallybinnedspectra.</code><code class="descname">validate_spatial_binning_scheme_config</code><span class="sig-paren">(</span><em>cnfg</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/spatiallybinnedspectra.html#validate_spatial_binning_scheme_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.spatiallybinnedspectra.validate_spatial_binning_scheme_config" title="Permalink to this definition">¶</a></dt>
-<dd><p>Validate the <a class="reference internal" href="mangadap.util.parser.html#mangadap.util.parser.DefaultConfig" title="mangadap.util.parser.DefaultConfig"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.parser.DefaultConfig</span></code></a> object with
+<dd><p>Validate the <a class="reference internal" href="mangadap.util.parser.html#mangadap.util.parser.DefaultConfig" title="mangadap.util.parser.DefaultConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.parser.DefaultConfig</span></code></a> object with
 spatial-binning scheme parameters.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>cnfg</strong> (<a class="reference internal" href="mangadap.util.parser.html#mangadap.util.parser.DefaultConfig" title="mangadap.util.parser.DefaultConfig"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.parser.DefaultConfig</span></code></a>) – Object with
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>cnfg</strong> (<a class="reference internal" href="mangadap.util.parser.html#mangadap.util.parser.DefaultConfig" title="mangadap.util.parser.DefaultConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.parser.DefaultConfig</span></code></a>) – Object with
 the spatial-binning method parameters as needed by
-<a class="reference internal" href="#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectraDef" title="mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectraDef"><code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectraDef</span></code></a>.</p>
+<a class="reference internal" href="#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectraDef" title="mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectraDef"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectraDef</span></code></a>.</p>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
-<li><code class="xref py py-exc docutils literal"><span class="pre">KeyError</span></code> – Raised if any required keywords do not exist.</li>
-<li><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if keys have unacceptable values.</li>
-<li><code class="xref py py-exc docutils literal"><span class="pre">FileNotFoundError</span></code> – Raised if a file is specified but could not
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">KeyError</span></code> – Raised if any required keywords do not exist.</li>
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if keys have unacceptable values.</li>
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">FileNotFoundError</span></code> – Raised if a file is specified but could not
 be found.</li>
 </ul>
 </td>

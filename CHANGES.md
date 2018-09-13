@@ -18,6 +18,7 @@
  - Fix FORESTAR bug in spectral indices.
  - Fix some bugs in the bandpass integral functions introduced during
    recent testing.
+ - Add spectral indices test
 
 TODO:
  - Documentation of config examples are out of date!

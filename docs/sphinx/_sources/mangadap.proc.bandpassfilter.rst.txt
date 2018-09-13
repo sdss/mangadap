@@ -1,5 +1,5 @@
-mangadap\.proc\.bandpassfilter module
-=====================================
+mangadap.proc.bandpassfilter module
+===================================
 
 .. automodule:: mangadap.proc.bandpassfilter
     :members:

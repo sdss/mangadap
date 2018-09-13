@@ -104,7 +104,7 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.survey.html">mangadap.survey package</a></li>
-<li class="toctree-l3"><a class="reference internal" href="mangadap.test.html">mangadap.test package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.tests.html">mangadap.tests package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.util.html">mangadap.util package</a></li>
 </ul>
 </li>
@@ -192,7 +192,7 @@
 <dt><em>Source location</em>:</dt>
 <dd>$MANGADAP_DIR/python/mangadap/proc/util.py</dd>
 <dt><em>Imports and python version compliance</em>:</dt>
-<dd><div class="first last highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<dd><div class="first last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
@@ -223,7 +223,7 @@ value in the specified extention in a provided HDUList object.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>hdu</strong> (<a class="reference external" href="http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html">astropy.io.fits.hdu.hdulist.HDUList</a>) – HDUList to alter</li>
-<li><strong>(</strong><strong>class</strong> (<a class="reference internal" href="mangadap.dapfits.html#mangadap.dapfits.DAPFits.bitmask" title="mangadap.dapfits.DAPFits.bitmask"><em>bitmask</em></a>) – <cite>BitMask</cite>): Bit mask object used to turn on the
+<li><strong>(</strong><strong>class</strong> (<em>bitmask</em>) – <cite>BitMask</cite>): Bit mask object used to turn on the
 named bit mask.</li>
 <li><strong>bitmask_flag</strong> (<em>str</em>) – Name of the bit to turn on.</li>
 <li><strong>wave_limits</strong> (<em>list</em><em> or </em><em>numpy.ndarray</em>) – Two-element array with the
@@ -244,7 +244,7 @@ object.</p>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first"><a class="reference external" href="http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html">astropy.io.fits.hdu.hdulist.HDUList</a></p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">Exception</span></code> – Raised if <em>wave_limits</em> does not have a length of
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal notranslate"><span class="pre">Exception</span></code> – Raised if <em>wave_limits</em> does not have a length of
 two.</p>
 </td>
 </tr>
@@ -257,15 +257,15 @@ two.</p>
 <code class="descclassname">mangadap.proc.util.</code><code class="descname">flux_to_fnu</code><span class="sig-paren">(</span><em>wave</em>, <em>flambda</em>, <em>unit_norm=1e-17</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/util.html#flux_to_fnu"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.util.flux_to_fnu" title="Permalink to this definition">¶</a></dt>
 <dd><p>Convert a spectrum with flux per unit wavelength to flux per unit
 frequency; i.e., calculate</p>
-<div class="math">
+<div class="math notranslate nohighlight">
 \[F_{\nu} = F_{\lambda} \frac{d\lambda}{d\nu} = F_{\lambda}
 \frac{\lambda^2}{c},\]</div>
-<p>where the first two arguments of the function are <span class="math">\(\lambda\)</span>
-and <span class="math">\(F_{\lambda}\)</span>.  The input wavelength units are expected to
-be angstroms, and the input flux units are expected to be <span class="math">\(n\
-{\rm erg\ s}^{-1}\ {\rm cm}^{-2}\ {\rm A}^{-1}\)</span>, where <span class="math">\(n\)</span> is the
+<p>where the first two arguments of the function are <span class="math notranslate nohighlight">\(\lambda\)</span>
+and <span class="math notranslate nohighlight">\(F_{\lambda}\)</span>.  The input wavelength units are expected to
+be angstroms, and the input flux units are expected to be <span class="math notranslate nohighlight">\(n\
+{\rm erg\ s}^{-1}\ {\rm cm}^{-2}\ {\rm A}^{-1}\)</span>, where <span class="math notranslate nohighlight">\(n\)</span> is the
 value of <em>unit_norm</em>.  The output flux units are microjanskys,
-<span class="math">\(10^{-29} {\rm erg\ s}^{-1}\ {\rm cm}^{-2}\ {\rm Hz}^{-1}\)</span>.</p>
+<span class="math notranslate nohighlight">\(10^{-29} {\rm erg\ s}^{-1}\ {\rm cm}^{-2}\ {\rm Hz}^{-1}\)</span>.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -276,8 +276,8 @@ angstroms.</li>
 <li><strong>flambda</strong> (<em>numpy.ndarray</em><em>, </em><em>list</em>) – The vector with the flux per unit
 wavelength (angstroms).</li>
 <li><strong>unit_norm</strong> (<em>float</em>) – (<strong>Optional</strong>) The unit normalization of the
-flux.  For example, this is <span class="math">\(10^{-17}\)</span> when the flux
-units are <span class="math">\(10^{-17} {\rm erg\ s}^{-1}\ {\rm cm}^{-2}\
+flux.  For example, this is <span class="math notranslate nohighlight">\(10^{-17}\)</span> when the flux
+units are <span class="math notranslate nohighlight">\(10^{-17} {\rm erg\ s}^{-1}\ {\rm cm}^{-2}\
 {\rm A}^{-1}\)</span>.</li>
 </ul>
 </td>
@@ -288,7 +288,7 @@ units are <span class="math">\(10^{-17} {\rm erg\ s}^{-1}\ {\rm cm}^{-2}\
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">float,numpy.ndarray</p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if the arguments do not have the same shape.</p>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if the arguments do not have the same shape.</p>
 </td>
 </tr>
 </tbody>
@@ -333,13 +333,13 @@ in <cite>a</cite>.</p>
 <dd><p>Calculate the optimal scaling of an input model that minimizes the
 weighted root-mean-square difference between a set of data and a
 model.  When defining the weighted RMS as:</p>
-<div class="math">
+<div class="math notranslate nohighlight">
 \[{\rm RMS}^2 = \frac{1}{N} \sum_i w_i^2(d_i - f m_i)^2\]</div>
 <p>The optimal renormalization factor that minimizes the RMS is:</p>
-<div class="math">
+<div class="math notranslate nohighlight">
 \[f = \frac{\mathbf{d}^\prime \dot
     \mathbf{m}^\prime}{||\mathbf{m}^\prime||^2}\]</div>
-<p>where <span class="math">\(d^\prime_i = w_i d_i\)</span> and <span class="math">\(m^\prime_i = w_i m_i\)</span>.</p>
+<p>where <span class="math notranslate nohighlight">\(d^\prime_i = w_i d_i\)</span> and <span class="math notranslate nohighlight">\(m^\prime_i = w_i m_i\)</span>.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -359,7 +359,7 @@ root-mean-square difference betwen the data and the model.</p>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">float</p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if the array sizes do not match.</p>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if the array sizes do not match.</p>
 </td>
 </tr>
 </tbody>
@@ -391,7 +391,7 @@ replaced with the nearest data set.</p>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">numpy.ndarray</p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if the array sizes are inappropriate.</p>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if the array sizes are inappropriate.</p>
 </td>
 </tr>
 </tbody>
@@ -422,14 +422,14 @@ find the selection keyword.  If none is provided,
 <li><strong>available_func</strong> (<em>callable</em>) – (<strong>Optional</strong>) Callable function that
 returns a list of default methods in place of <em>method_list</em>.
 For example, see
-<a class="reference internal" href="mangadap.proc.templatelibrary.html#mangadap.proc.templatelibrary.available_template_libraries" title="mangadap.proc.templatelibrary.available_template_libraries"><code class="xref py py-func docutils literal"><span class="pre">mangadap.proc.templatelibrary.available_template_libraries()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.proc.templatelibrary.html#mangadap.proc.templatelibrary.available_template_libraries" title="mangadap.proc.templatelibrary.available_template_libraries"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.proc.templatelibrary.available_template_libraries()</span></code></a>.</li>
 <li><strong>dapsrc</strong> (<em>str</em>) – (<strong>Optional</strong>) Root path to the DAP source
 directory.  If not provided, the default is defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_source" title="mangadap.config.defaults.default_dap_source"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_source()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.dap_source_dir" title="mangadap.config.defaults.dap_source_dir"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.dap_source_dir()</span></code></a>.</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">An object with base class <code class="xref py py-class docutils literal"><span class="pre">mangadap.par.ParSet</span></code>,
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">An object with base class <code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.par.ParSet</span></code>,
 containing a set of parameters used to define a method or
 database.</p>
 </td>
@@ -438,10 +438,10 @@ database.</p>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
-<li><code class="xref py py-exc docutils literal"><span class="pre">KeyError</span></code> – Raised if the selected keyword is not among the
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">KeyError</span></code> – Raised if the selected keyword is not among the
 provided list or if the provided list has more than one
 identical keyword.</li>
-<li><code class="xref py py-exc docutils literal"><span class="pre">TypeError</span></code> – Raised if the input <em>method_list</em> object is not a
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">TypeError</span></code> – Raised if the input <em>method_list</em> object is not a
 list or <em>method_type</em>, or if available function is not a
 callable function.</li>
 </ul>

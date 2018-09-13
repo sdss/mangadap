@@ -36,7 +36,7 @@
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
     <link rel="top" title="mangadap 2.2.2 documentation" href="../../../index.html"/>
-        <link rel="up" title="Module code" href="../../index.html"/> 
+        <link rel="up" title="mangadap" href="../../mangadap.html"/> 
 
   
   <script src="../../../_static/js/modernizr.min.js"></script>
@@ -138,6 +138,8 @@
         
           <li><a href="../../index.html">Module code</a> &raquo;</li>
         
+          <li><a href="../../mangadap.html">mangadap</a> &raquo;</li>
+        
       <li>mangadap.proc.ppxffit</li>
     
     
@@ -167,34 +169,6 @@
 
 <span class="sd">*Source location*:</span>
 <span class="sd">    $MANGADAP_DIR/python/mangadap/proc/ppxffit.py</span>
-
-<span class="sd">*Imports and python version compliance*:</span>
-<span class="sd">    ::</span>
-
-<span class="sd">        from __future__ import division</span>
-<span class="sd">        from __future__ import print_function</span>
-<span class="sd">        from __future__ import absolute_import</span>
-<span class="sd">        from __future__ import unicode_literals</span>
-
-<span class="sd">        import sys</span>
-<span class="sd">        import warnings</span>
-<span class="sd">        if sys.version &gt; &#39;3&#39;:</span>
-<span class="sd">            long = int</span>
-
-<span class="sd">        import numpy</span>
-<span class="sd">        import scipy.interpolate</span>
-<span class="sd">        import scipy.signal</span>
-<span class="sd">        import astropy.constants</span>
-
-<span class="sd">        from ..par.parset import ParSet</span>
-<span class="sd">        from ..util.bitmask import BitMask</span>
-<span class="sd">        from ..util.fileio import init_record_array</span>
-<span class="sd">        from ..util.instrument import spectrum_velocity_scale, resample1d, SpectralResolution</span>
-<span class="sd">        from ..contrib.ppxf import ppxf</span>
-<span class="sd">        from .spatiallybinnedspectra import SpatiallyBinnedSpectra</span>
-<span class="sd">        from .templatelibrary import TemplateLibrary</span>
-<span class="sd">        from .pixelmask import PixelMask</span>
-<span class="sd">        from .spectralfitting import StellarKinematicsFit</span>
 
 <span class="sd">*Class usage examples*:</span>
 <span class="sd">        Add examples</span>
@@ -226,6 +200,9 @@
 <span class="sd">        :func:`mangadap.util.instrument.resample_vector` to</span>
 <span class="sd">        :func:`mangadap.util.instrument.resample1d`.</span>
 <span class="sd">    | **05 Feb 2018**: (KBW) Added :class:`PPXFModel`.</span>
+<span class="sd">    | **22 May 2018**: (KBW) Change import to ppxf package.</span>
+<span class="sd">    | **30 Aug 2018**: (KBW) Changed from resample1d to</span>
+<span class="sd">        :class:`mangadap.util.sampling.Resample`.</span>
 
 <span class="sd">.. todo::</span>
 
@@ -257,7 +234,7 @@
 <span class="kn">from</span> <span class="nn">scipy</span> <span class="k">import</span> <span class="n">interpolate</span><span class="p">,</span> <span class="n">fftpack</span>
 <span class="kn">import</span> <span class="nn">astropy.constants</span>
 
-<span class="kn">from</span> <span class="nn">captools</span> <span class="k">import</span> <span class="n">ppxf</span><span class="p">,</span> <span class="n">capfit</span>
+<span class="kn">from</span> <span class="nn">ppxf</span> <span class="k">import</span> <span class="n">ppxf</span><span class="p">,</span> <span class="n">capfit</span>
 
 <span class="kn">from</span> <span class="nn">..par.parset</span> <span class="k">import</span> <span class="n">ParSet</span>
 <span class="kn">from</span> <span class="nn">..util.bitmask</span> <span class="k">import</span> <span class="n">BitMask</span>
@@ -265,8 +242,8 @@
 <span class="kn">from</span> <span class="nn">..util.fileio</span> <span class="k">import</span> <span class="n">init_record_array</span>
 <span class="kn">from</span> <span class="nn">..util.filter</span> <span class="k">import</span> <span class="n">BoxcarFilter</span>
 <span class="kn">from</span> <span class="nn">..util.log</span> <span class="k">import</span> <span class="n">log_output</span>
-<span class="kn">from</span> <span class="nn">..util.instrument</span> <span class="k">import</span> <span class="n">spectrum_velocity_scale</span><span class="p">,</span> <span class="n">resample1d</span><span class="p">,</span> <span class="n">SpectralResolution</span>
-<span class="kn">from</span> <span class="nn">..util.instrument</span> <span class="k">import</span> <span class="n">match_spectral_resolution</span><span class="p">,</span> <span class="n">angstroms_per_pixel</span>
+<span class="kn">from</span> <span class="nn">..util.sampling</span> <span class="k">import</span> <span class="n">spectrum_velocity_scale</span><span class="p">,</span> <span class="n">angstroms_per_pixel</span><span class="p">,</span> <span class="n">Resample</span>
+<span class="kn">from</span> <span class="nn">..util.resolution</span> <span class="k">import</span> <span class="n">match_spectral_resolution</span><span class="p">,</span> <span class="n">SpectralResolution</span>
 <span class="kn">from</span> <span class="nn">..util.constants</span> <span class="k">import</span> <span class="n">DAPConstants</span>
 <span class="kn">from</span> <span class="nn">.spatiallybinnedspectra</span> <span class="k">import</span> <span class="n">SpatiallyBinnedSpectra</span>
 <span class="kn">from</span> <span class="nn">.templatelibrary</span> <span class="k">import</span> <span class="n">TemplateLibrary</span>
@@ -463,7 +440,6 @@
 <span class="c1">#            print(self.status)</span>
 <span class="c1">#            print(ppxf_fit.sol)</span>
 <span class="c1">#            print(ppxf_fit.error)</span>
-<span class="c1">#            exit()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tplwgterr</span> <span class="o">=</span> <span class="kc">None</span>
 
         <span class="c1"># Set status</span>
@@ -1819,7 +1795,7 @@
                 <span class="k">continue</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">_obj_to_fit</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="ow">or</span> <span class="n">result</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">result</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">fit_failed</span><span class="p">():</span>
                 <span class="k">continue</span>
-            <span class="n">v</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">PPXFFit</span><span class="o">.</span><span class="n">convert_velocity</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">kin</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">]))</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="n">PPXFFit</span><span class="o">.</span><span class="n">convert_velocity</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">kin</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mf">0.0</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
             <span class="n">nominal_redshift</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span><span class="o">/</span><span class="n">astropy</span><span class="o">.</span><span class="n">constants</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;km/s&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
             <span class="n">nominal_dispersion</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">kin</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">baseline_dispersion</span> <span class="ow">is</span> <span class="kc">None</span> \
                                         <span class="k">else</span> <span class="n">baseline_dispersion</span>
@@ -1863,11 +1839,6 @@
 <span class="c1">#                pyplot.plot(self.tpl_wave, tmp_wlosvd)</span>
 <span class="c1">#                pyplot.show()</span>
 
-<span class="c1">#                pyplot.plot(self.tpl_wave, self.tpl_sres.sres())</span>
-<span class="c1">#                pyplot.plot(self.obj_wave[result[i].start:result[i].end],</span>
-<span class="c1">#                            self.obj_sres[i,result[i].start:result[i].end])</span>
-<span class="c1">#                pyplot.show()</span>
-
 <span class="c1">#                obj_sres_obj = spectral_resolution(self.obj_wave/(1+nominal_redshift[i]),</span>
 <span class="c1">#                                                   self.obj_sres[i,:])</span>
 <span class="c1">#                self.tpl_sres.match(obj_sres_obj)</span>
@@ -1888,6 +1859,28 @@
                                                    <span class="bp">self</span><span class="o">.</span><span class="n">obj_sres</span><span class="p">[</span><span class="n">i</span><span class="p">,:],</span> <span class="n">min_sig_pix</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">log10</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                                                    <span class="n">new_log10</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">quiet</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">no_offset</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
+<span class="c1">#                s = numpy.sqrt(8*numpy.log(2))</span>
+<span class="c1">#                c = astropy.constants.c.to(&#39;km/s&#39;).value</span>
+<span class="c1">#                pyplot.plot(self.tpl_wave, c/s/self.tpl_sres.sres(), label=r&#39;MILES $R$&#39;)</span>
+<span class="c1">#                pyplot.plot(self.obj_wave[result[i].start:result[i].end]/(1+nominal_redshift[i]),</span>
+<span class="c1">#                            c/s/self.obj_sres[i,result[i].start:result[i].end], label=r&#39;MaNGA $R$&#39;)</span>
+<span class="c1">#                pyplot.plot(self.tpl_wave, c/s/sres, label=r&#39;Matched $R$&#39;)</span>
+<span class="c1">#</span>
+<span class="c1">#                diff2 = numpy.square(c/s/self.obj_sres[i,result[i].start:result[i].end]) \</span>
+<span class="c1">#                        - numpy.square(c/s/self.tpl_sres(</span>
+<span class="c1">#                            self.obj_wave[result[i].start:result[i].end]/(1+nominal_redshift[i])))</span>
+<span class="c1">#                pyplot.plot(self.obj_wave[result[i].start:result[i].end]/(1+nominal_redshift[i]),</span>
+<span class="c1">#                            numpy.ma.sqrt(diff2), label=r&#39;$\sigma_{\rm diff}$&#39;)</span>
+<span class="c1">#                pyplot.plot(self.obj_wave[result[i].start:result[i].end]/(1+nominal_redshift[i]),</span>
+<span class="c1">#                            numpy.ma.sqrt(diff2+numpy.square(res_match_offset[i]))</span>
+<span class="c1">#                            , label=r&#39;$\sigma_{\rm diff,off}$&#39;)</span>
+
+<span class="c1">#                pyplot.legend()</span>
+<span class="c1">#                pyplot.xlabel(r&#39;$\lambda\ [\AA]$&#39;)</span>
+<span class="c1">#                pyplot.ylabel(r&#39;$\sigma_{\rm inst}$ [km/s]&#39;) #r&#39;$R=\lambda/\Delta\lambda$&#39;)</span>
+<span class="c1">#                pyplot.plot(self.tpl_wave, mask)</span>
+<span class="c1">#                pyplot.show()</span>
+
                 <span class="c1"># Check 2-pixel resolution limit in resolution-matched</span>
                 <span class="c1"># spectrum</span>
 <span class="c1">#                pix_per_fwhm = numpy.ma.divide(numpy.ma.divide(self.tpl_wave, sres),</span>
@@ -1898,8 +1891,13 @@
 <span class="c1">#                print(&#39;Resolution match offset: &#39;, res_match_offset[i])</span>
 <span class="c1">#                print(&#39;Masked pixels: {0}/{1}&#39;.format(numpy.sum(mask), len(mask)))</span>
 <span class="c1">#                pyplot.plot(self.tpl_wave, model_template[i,:])</span>
-<span class="c1">#                pyplot.plot(self.tpl_wave, tmp_wlosvd)</span>
-<span class="c1">#                pyplot.plot(self.tpl_wave, tmp_wlosvd_msres)</span>
+<span class="c1">#                pyplot.plot(self.tpl_wave, tmp_wlosvd, lw=1, label=r&#39;MILES $R$&#39;)</span>
+<span class="c1">#                pyplot.plot(self.tpl_wave, tmp_wlosvd_msres, lw=0.5, label=r&#39;MaNGA $R$&#39;)</span>
+<span class="c1">#                pyplot.plot(self.tpl_wave, tmp_wlosvd_msres-tmp_wlosvd, color=&#39;0.5&#39;, lw=0.5,</span>
+<span class="c1">#                            label=r&#39;Difference&#39;)</span>
+<span class="c1">#                pyplot.legend()</span>
+<span class="c1">#                pyplot.xlabel(r&#39;$\lambda\ [\AA]$&#39;)</span>
+<span class="c1">#                pyplot.ylabel(r&#39;Flux&#39;)</span>
 <span class="c1">#                pyplot.plot(self.tpl_wave, mask)</span>
 <span class="c1">##                pyplot.plot(self.tpl_wave, tmp_wlosvd_msres - model_template[i,:])</span>
 <span class="c1">#                pyplot.show()</span>
@@ -1907,23 +1905,14 @@
 
                 <span class="c1"># Resample to match the object spectra</span>
                 <span class="n">inRange</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tpl_wave</span><span class="p">[[</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">nominal_redshift</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
-                <span class="n">_</span><span class="p">,</span> <span class="n">model_wlosvd</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">resample1d</span><span class="p">(</span><span class="n">tmp_wlosvd</span><span class="p">,</span>
-                                                  <span class="n">x</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tpl_wave</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">nominal_redshift</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span>
-                                                  <span class="n">inLog</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">newRange</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">obj_wave</span><span class="p">[[</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">]],</span>
-                                                  <span class="n">newpix</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">obj_wave</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">newLog</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-                <span class="n">_</span><span class="p">,</span> <span class="n">model_wlosvd_msres</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">resample1d</span><span class="p">(</span><span class="n">tmp_wlosvd_msres</span><span class="p">,</span>
-                                                        <span class="n">x</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tpl_wave</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">nominal_redshift</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span>
-                                                        <span class="n">inLog</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">newRange</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">obj_wave</span><span class="p">[[</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">]],</span>
-                                                        <span class="n">newpix</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">obj_wave</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">newLog</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="c1">#                _, model_wlosvd[i,:] = resample_vector(tmp_wlosvd, xRange=inRange, inLog=True,</span>
-<span class="c1">#                                                       newRange=self.obj_wave[[0,-1]],</span>
-<span class="c1">#                                                       newpix=self.obj_wave.size, newLog=True,</span>
-<span class="c1">#                                                       flat=False)</span>
-<span class="c1">#                _, model_wlosvd_msres[i,:] = resample_vector(tmp_wlosvd_msres, xRange=inRange,</span>
-<span class="c1">#                                                             inLog=True,</span>
-<span class="c1">#                                                             newRange=self.obj_wave[[0,-1]],</span>
-<span class="c1">#                                                             newpix=self.obj_wave.size,</span>
-<span class="c1">#                                                             newLog=True, flat=False)</span>
+                <span class="n">model_wlosvd</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">Resample</span><span class="p">(</span><span class="n">tmp_wlosvd</span><span class="p">,</span>
+                                             <span class="n">x</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tpl_wave</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">nominal_redshift</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span>
+                                             <span class="n">inLog</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">newRange</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">obj_wave</span><span class="p">[[</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">]],</span>
+                                             <span class="n">newpix</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">obj_wave</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">newLog</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">outy</span>
+                <span class="n">model_wlosvd_msres</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">Resample</span><span class="p">(</span><span class="n">tmp_wlosvd_msres</span><span class="p">,</span>
+                                                   <span class="n">x</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tpl_wave</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">nominal_redshift</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span>
+                                                   <span class="n">inLog</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">newRange</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">obj_wave</span><span class="p">[[</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">]],</span>
+                                                   <span class="n">newpix</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">obj_wave</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">newLog</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">outy</span>
 
                 <span class="c1"># Check 2-pixel resolution limit in resampled data</span>
 <span class="c1">#                _, npix = resample_vector(unity, xRange=inRange, inLog=True,</span>
@@ -1957,6 +1946,18 @@
                 <span class="n">model_wlosvd_msres</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">end</span><span class="p">[</span><span class="n">i</span><span class="p">]:]</span> <span class="o">=</span> <span class="mf">0.0</span>
                 <span class="n">model_wlosvd_msres</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">end</span><span class="p">[</span><span class="n">i</span><span class="p">]:]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">masked</span>
 
+<span class="c1">#                pyplot.plot(self.obj_wave[start[i]:end[i]], model_wlosvd[i,start[i]:end[i]],</span>
+<span class="c1">#                            lw=1, label=r&#39;MILES $R$&#39;)</span>
+<span class="c1">#                pyplot.plot(self.obj_wave[start[i]:end[i]],</span>
+<span class="c1">#                            model_wlosvd_msres[i,start[i]:end[i]], lw=0.5, label=r&#39;MaNGA $R$&#39;)</span>
+<span class="c1">#                pyplot.plot(self.obj_wave[start[i]:end[i]],</span>
+<span class="c1">#                    10*(model_wlosvd_msres[i,start[i]:end[i]]-model_wlosvd[i,start[i]:end[i]]),</span>
+<span class="c1">#                            color=&#39;0.5&#39;, lw=0.5, label=r&#39;$10\times\Delta$&#39;)</span>
+<span class="c1">#                pyplot.legend()</span>
+<span class="c1">#                pyplot.xlabel(r&#39;$\lambda\ [\AA]$&#39;)</span>
+<span class="c1">#                pyplot.ylabel(r&#39;Flux&#39;)</span>
+<span class="c1">#                pyplot.show()</span>
+
                 <span class="c1"># Set the guess kinematics</span>
                 <span class="n">guess_kin</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">nominal_redshift</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> \
                                     <span class="o">*</span> <span class="n">astropy</span><span class="o">.</span><span class="n">constants</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;km/s&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
@@ -1979,6 +1980,10 @@
                                                           <span class="n">tpl_to_use</span><span class="o">=</span><span class="n">model_tpl_to_use</span><span class="p">)</span><span class="c1">#,</span>
                                                           <span class="c1">#plot=True)</span>
 
+<span class="c1">#            print(res_match_offset)</span>
+<span class="c1">#            print([ s.kin[1] for s in result_wlosvd])</span>
+<span class="c1">#            print([ s.kin[1] for s in result_wlosvd_msres])</span>
+
             <span class="n">dispersion_correction_err</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span> <span class="n">rcl</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">rcl</span><span class="o">.</span><span class="n">fit_failed</span><span class="p">()</span>
                                                         <span class="ow">or</span> <span class="n">rcl</span><span class="o">.</span><span class="n">reached_maxiter</span><span class="p">()</span>
                                                     <span class="ow">or</span> <span class="n">rcls</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">rcls</span><span class="o">.</span><span class="n">fit_failed</span><span class="p">()</span>
@@ -1995,6 +2000,9 @@
                                             <span class="k">for</span> <span class="n">rc</span><span class="p">,</span> <span class="n">sigoff</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">result_wlosvd_msres</span><span class="p">[</span><span class="n">indx</span><span class="p">],</span>
                                                                   <span class="n">res_match_offset</span><span class="p">[</span><span class="n">indx</span><span class="p">])])</span>
             <span class="n">disp_wlosvd_msres</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">disp_wlosvd_msres</span><span class="p">)</span><span class="o">.</span><span class="n">filled</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span>
+
+<span class="c1">#            print(disp_wlosvd)</span>
+<span class="c1">#            print(disp_wlosvd_msres)</span>
 
 <span class="c1">#            pyplot.scatter(disp_wlosvd[indx], disp_wlosvd_msres[indx], marker=&#39;.&#39;, s=30, color=&#39;k&#39;)</span>
 <span class="c1">#            pyplot.plot([0,300], [0,300], color=&#39;C3&#39;)</span>
@@ -2013,11 +2021,16 @@
             <span class="n">dispersion_correction</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nobj</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
             <span class="n">dispersion_correction</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">disp_wlosvd_msres</span><span class="p">[</span><span class="n">indx</span><span class="p">])</span>
                                             <span class="o">-</span><span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">disp_wlosvd</span><span class="p">[</span><span class="n">indx</span><span class="p">]))</span><span class="o">.</span><span class="n">filled</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span> 
+<span class="c1">#            print(dispersion_correction)</span>
 
+            <span class="c1"># TODO: The looping and this update should probably be</span>
+            <span class="c1"># removed</span>
             <span class="k">if</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">niter</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
                 <span class="n">nominal_dispersion</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span> <span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">nominal_dispersion</span><span class="p">[</span><span class="n">indx</span><span class="p">])</span>
                                             <span class="o">-</span> <span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">dispersion_correction</span><span class="p">[</span><span class="n">indx</span><span class="p">]))</span><span class="o">.</span><span class="n">filled</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Dispersion corrections larger than measurement: </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">quiet</span><span class="p">:</span>
+                    <span class="n">log_output</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">loggers</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
+                               <span class="s1">&#39;Dispersion corrections larger than measurement: </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
                                         <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dispersion_correction</span> <span class="o">&gt;</span> <span class="n">nominal_dispersion</span><span class="p">)))</span>
                 <span class="n">nominal_dispersion</span><span class="p">[</span><span class="n">dispersion_correction</span> <span class="o">&gt;</span> <span class="n">nominal_dispersion</span><span class="p">]</span> \
                         <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigma_limits</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -2042,14 +2055,15 @@
         <span class="k">return</span> <span class="n">dispersion_correction</span><span class="p">,</span> <span class="n">dispersion_correction_err</span></div>
 
 
-<div class="viewcode-block" id="PPXFFit._nominal_dispersion_correction"><a class="viewcode-back" href="../../../mangadap.proc.ppxffit.html#mangadap.proc.ppxffit.PPXFFit._nominal_dispersion_correction">[docs]</a>    <span class="k">def</span> <span class="nf">_nominal_dispersion_correction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj_sres</span><span class="p">,</span> <span class="n">gpm</span><span class="p">):</span>
+<div class="viewcode-block" id="PPXFFit._nominal_dispersion_correction"><a class="viewcode-back" href="../../../mangadap.proc.ppxffit.html#mangadap.proc.ppxffit.PPXFFit._nominal_dispersion_correction">[docs]</a>    <span class="k">def</span> <span class="nf">_nominal_dispersion_correction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj_sres</span><span class="p">,</span> <span class="n">gpm</span><span class="p">,</span> <span class="n">cz</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Calculate the dispersion corrections as the quadrature</span>
 <span class="sd">        difference between the spectral resolution of the template and</span>
 <span class="sd">        object spectra.  Returns a masked array!</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">fwhm_inst_obj</span> <span class="o">=</span> <span class="n">astropy</span><span class="o">.</span><span class="n">constants</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;km/s&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="o">/</span><span class="n">obj_sres</span><span class="p">[</span><span class="n">gpm</span><span class="p">]</span>
-        <span class="n">fwhm_inst_tpl</span> <span class="o">=</span> <span class="n">astropy</span><span class="o">.</span><span class="n">constants</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;km/s&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">tpl_sres</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obj_wave</span><span class="p">[</span><span class="n">gpm</span><span class="p">])</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">astropy</span><span class="o">.</span><span class="n">constants</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;km/s&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
+        <span class="n">fwhm_inst_obj</span> <span class="o">=</span> <span class="n">c</span><span class="o">/</span><span class="n">obj_sres</span><span class="p">[</span><span class="n">gpm</span><span class="p">]</span>
+        <span class="n">fwhm_inst_tpl</span> <span class="o">=</span> <span class="n">c</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">tpl_sres</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obj_wave</span><span class="p">[</span><span class="n">gpm</span><span class="p">]</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">cz</span><span class="o">/</span><span class="n">c</span><span class="p">))</span>
         <span class="n">mean_fwhm_sqr_diff</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">fwhm_inst_obj</span><span class="p">)</span> <span class="o">-</span> <span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">fwhm_inst_tpl</span><span class="p">))</span>
         <span class="k">if</span> <span class="n">mean_fwhm_sqr_diff</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">return</span> <span class="mf">0.</span><span class="p">,</span> <span class="kc">True</span>
@@ -2132,20 +2146,20 @@
         <span class="n">model_par</span><span class="p">[</span><span class="s1">&#39;MASK&#39;</span><span class="p">][</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">turn_on</span><span class="p">(</span><span class="n">model_par</span><span class="p">[</span><span class="s1">&#39;MASK&#39;</span><span class="p">][</span><span class="n">indx</span><span class="p">],</span> <span class="s1">&#39;BAD_SIGMA&#39;</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="PPXFFit._save_results"><a class="viewcode-back" href="../../../mangadap.proc.ppxffit.html#mangadap.proc.ppxffit.PPXFFit._save_results">[docs]</a>    <span class="k">def</span> <span class="nf">_save_results</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">global_fit_result</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">model_flux</span><span class="p">,</span> <span class="n">model_mask</span><span class="p">,</span> <span class="n">model_par</span><span class="p">):</span>
+<div class="viewcode-block" id="PPXFFit._save_results"><a class="viewcode-back" href="../../../mangadap.proc.ppxffit.html#mangadap.proc.ppxffit.PPXFFit._save_results">[docs]</a>    <span class="k">def</span> <span class="nf">_save_results</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">global_fit_result</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">model_mask</span><span class="p">,</span> <span class="n">model_par</span><span class="p">):</span>
 
         <span class="c1">#---------------------------------------------------------------</span>
         <span class="c1"># Get the model spectra</span>
         <span class="n">model_flux</span> <span class="o">=</span> <span class="n">PPXFFit</span><span class="o">.</span><span class="n">compile_model_flux</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obj_flux</span><span class="p">,</span> <span class="n">result</span><span class="p">)</span>
-        <span class="c1"># Calculate the model residuals; both should be masked where the</span>
-        <span class="c1"># data were not fit</span>
+
+        <span class="c1"># Calculate the model residuals.  They still need to be masked</span>
+        <span class="c1"># in regions that were *not* included in the fit; see the</span>
+        <span class="c1"># iterations below</span>
         <span class="n">residual</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">obj_flux</span> <span class="o">-</span> <span class="n">model_flux</span>
         <span class="n">fractional_residual</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obj_flux</span> <span class="o">-</span> <span class="n">model_flux</span><span class="p">,</span> <span class="n">model_flux</span><span class="p">)</span>
-        <span class="c1"># Get the chi-square for each spectrum</span>
-        <span class="n">model_par</span><span class="p">[</span><span class="s1">&#39;CHI2&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">residual</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">obj_ferr</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-        <span class="c1"># Get the (fractional) residual RMS for each spectrum</span>
-        <span class="n">model_par</span><span class="p">[</span><span class="s1">&#39;RMS&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">residual</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
-        <span class="n">model_par</span><span class="p">[</span><span class="s1">&#39;FRMS&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">fractional_residual</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+
+        <span class="c1"># Instantiate a bad pixel mask to be used</span>
+        <span class="n">bpm</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obj_wave</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
 
         <span class="c1"># Flag the pixels that were not used</span>
         <span class="n">model_mask</span><span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">getmaskarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obj_flux</span><span class="p">)]</span> \
@@ -2211,6 +2225,7 @@
 
             <span class="c1">#-----------------------------------------------------------</span>
             <span class="c1"># Save the model parameters and figures of merit</span>
+
             <span class="c1"># Number of fitted pixels</span>
             <span class="n">model_par</span><span class="p">[</span><span class="s1">&#39;NPIXFIT&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">gpm</span><span class="p">)</span>
             <span class="c1"># Template weights and errors</span>
@@ -2236,6 +2251,22 @@
             <span class="n">model_par</span><span class="p">[</span><span class="s1">&#39;KIN&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">kin</span>
             <span class="c1"># Kinematic errors</span>
             <span class="n">model_par</span><span class="p">[</span><span class="s1">&#39;KINERR&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">kinerr</span>
+
+            <span class="c1"># Mask the residuals according to the pixel fit for this</span>
+            <span class="c1"># spectrum</span>
+            <span class="n">bpm</span><span class="p">[:]</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">bpm</span><span class="p">[</span><span class="n">result</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">start</span><span class="o">+</span><span class="n">result</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">gpm</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">residual</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">bpm</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">masked</span>
+            <span class="n">fractional_residual</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">bpm</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">masked</span>
+
+            <span class="c1"># Get the chi-square and rms metrics</span>
+            <span class="n">model_par</span><span class="p">[</span><span class="s1">&#39;CHI2&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span> <span class="k">if</span> <span class="n">numpy</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">residual</span><span class="o">.</span><span class="n">mask</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">|</span> <span class="bp">self</span><span class="o">.</span><span class="n">obj_ferr</span><span class="o">.</span><span class="n">mask</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> \
+                                    <span class="k">else</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">residual</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">obj_ferr</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+            <span class="n">model_par</span><span class="p">[</span><span class="s1">&#39;RMS&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span> <span class="k">if</span> <span class="n">numpy</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">residual</span><span class="o">.</span><span class="n">mask</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> \
+                                    <span class="k">else</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">residual</span><span class="p">[</span><span class="n">i</span><span class="p">])))</span>
+            <span class="n">model_par</span><span class="p">[</span><span class="s1">&#39;FRMS&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span> <span class="k">if</span> <span class="n">numpy</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">fractional_residual</span><span class="o">.</span><span class="n">mask</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> \
+                            <span class="k">else</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">fractional_residual</span><span class="p">[</span><span class="n">i</span><span class="p">])))</span>
+
             <span class="c1"># Chi-square</span>
             <span class="n">model_par</span><span class="p">[</span><span class="s1">&#39;RCHI2&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">model_par</span><span class="p">[</span><span class="s1">&#39;CHI2&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> \
                                         <span class="o">/</span> <span class="p">(</span><span class="n">model_par</span><span class="p">[</span><span class="s1">&#39;NPIXFIT&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> 
@@ -2243,10 +2274,6 @@
             <span class="n">model_par</span><span class="p">[</span><span class="s1">&#39;ROBUST_RCHI2&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">robust_rchi2</span>
 
             <span class="c1"># Get growth statistics for the residuals</span>
-<span class="c1">#            model_par[&#39;ABSRESID&#39;][i] = residual_growth((residual[i,:]).compressed(),</span>
-<span class="c1">#                                                       [0.68, 0.95, 0.99])</span>
-<span class="c1">#            model_par[&#39;FABSRESID&#39;][i] = residual_growth(fractional_residual[i,:].compressed(),</span>
-<span class="c1">#                                                        [0.68, 0.95, 0.99])</span>
             <span class="n">model_par</span><span class="p">[</span><span class="s1">&#39;ABSRESID&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">sample_growth</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">absolute</span><span class="p">(</span><span class="n">residual</span><span class="p">[</span><span class="n">i</span><span class="p">,:]),</span>
                                                      <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.68</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">,</span> <span class="mf">0.99</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">])</span>
             <span class="n">model_par</span><span class="p">[</span><span class="s1">&#39;FABSRESID&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">sample_growth</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">absolute</span><span class="p">(</span><span class="n">fractional_residual</span><span class="p">[</span><span class="n">i</span><span class="p">,:]),</span>
@@ -2255,7 +2282,8 @@
             <span class="c1"># Calculate the dispersion correction if necessary</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">matched_resolution</span><span class="p">:</span>
                 <span class="n">model_par</span><span class="p">[</span><span class="s1">&#39;SIGMACORR_SRES&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">],</span> <span class="n">err</span> \
-                        <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nominal_dispersion_correction</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obj_sres</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">result</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">gpm</span><span class="p">)</span>
+                        <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nominal_dispersion_correction</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obj_sres</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">result</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">gpm</span><span class="p">,</span>
+                                        <span class="n">PPXFFit</span><span class="o">.</span><span class="n">convert_velocity</span><span class="p">(</span><span class="n">model_par</span><span class="p">[</span><span class="s1">&#39;KIN&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
                 <span class="k">if</span> <span class="n">err</span><span class="p">:</span>
                     <span class="n">model_par</span><span class="p">[</span><span class="s1">&#39;MASK&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">turn_on</span><span class="p">(</span><span class="n">model_par</span><span class="p">[</span><span class="s1">&#39;MASK&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">],</span>
                                                                 <span class="s1">&#39;BAD_SIGMACORR_SRES&#39;</span><span class="p">)</span>
@@ -2273,8 +2301,7 @@
 
         <span class="c1">#---------------------------------------------------------------</span>
         <span class="c1"># Test if kinematics are reliable</span>
-        <span class="c1"># TODO: Skipped for now because unreliable flag not defined for</span>
-        <span class="c1"># MPL-6</span>
+        <span class="c1"># TODO: Skipped for now because unreliable flag not well defined</span>
 <span class="c1">#        self._validate_kinematics(model_mask, model_par)</span>
 
         <span class="c1">#---------------------------------------------------------------</span>
@@ -2821,7 +2848,7 @@
         <span class="c1">#---------------------------------------------------------------</span>
         <span class="c1"># Save the results</span>
         <span class="n">model_flux</span><span class="p">,</span> <span class="n">model_mask</span><span class="p">,</span> <span class="n">model_par</span> \
-                <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_save_results</span><span class="p">(</span><span class="n">global_fit_result</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">model_flux</span><span class="p">,</span> <span class="n">model_mask</span><span class="p">,</span> <span class="n">model_par</span><span class="p">)</span>
+                <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_save_results</span><span class="p">(</span><span class="n">global_fit_result</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">model_mask</span><span class="p">,</span> <span class="n">model_par</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">quiet</span><span class="p">:</span>
             <span class="n">log_output</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">loggers</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="s1">&#39;pPXF finished&#39;</span><span class="p">)</span>
@@ -3210,9 +3237,13 @@
 <div class="viewcode-block" id="PPXFFit.compile_model_flux"><a class="viewcode-back" href="../../../mangadap.proc.ppxffit.html#mangadap.proc.ppxffit.PPXFFit.compile_model_flux">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">compile_model_flux</span><span class="p">(</span><span class="n">obj_flux</span><span class="p">,</span> <span class="n">ppxf_result</span><span class="p">,</span> <span class="n">rescale</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Return the model flux, masked where the data were not fit.  The</span>
-<span class="sd">        function does *not* reconstruct the model based on the ppxf</span>
-<span class="sd">        parameters.</span>
+<span class="sd">        Return the model flux but pulling the models out of the ppxf</span>
+<span class="sd">        results.  The model can be rescaled to the data based on the</span>
+<span class="sd">        fitted pixels if rescale is True.</span>
+
+<span class="sd">        The output array is masked in the spectral regions below and</span>
+<span class="sd">        above the fitted wavelength range; any intervening pixels are</span>
+<span class="sd">        *not* masked, even if they&#39;re not included in the fit.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">model_flux</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">obj_flux</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">),</span>
                                           <span class="n">mask</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">obj_flux</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">))</span>
@@ -3337,12 +3368,8 @@
         <span class="k">if</span> <span class="n">_redshift_only</span><span class="p">:</span>
             <span class="c1"># Resample the redshifted template to the wavelength grid of</span>
             <span class="c1"># the binned spectra</span>
-            <span class="n">_</span><span class="p">,</span> <span class="n">model</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">resample1d</span><span class="p">(</span><span class="n">composite_template</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">tpl_wave</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">redshift</span><span class="p">),</span> <span class="n">inLog</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                                     <span class="n">newRange</span><span class="o">=</span><span class="n">obj_wave</span><span class="p">[[</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">]],</span> <span class="n">newpix</span><span class="o">=</span><span class="n">obj_wave</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">newLog</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="c1">#            inRange = tpl_wave[[0,-1]] * (1.0 + redshift)</span>
-<span class="c1">#            _, model[:] = resample_vector(composite_template, xRange=inRange, inLog=True,</span>
-<span class="c1">#                                          newRange=obj_wave[[0,-1]], newpix=obj_wave.size,</span>
-<span class="c1">#                                          newLog=True, flat=False)</span>
+            <span class="n">model</span> <span class="o">=</span> <span class="n">Resample</span><span class="p">(</span><span class="n">composite_template</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">tpl_wave</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">redshift</span><span class="p">),</span> <span class="n">inLog</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                             <span class="n">newRange</span><span class="o">=</span><span class="n">obj_wave</span><span class="p">[[</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">]],</span> <span class="n">newpix</span><span class="o">=</span><span class="n">obj_wave</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">newLog</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">outy</span>
             <span class="n">model</span><span class="p">[:</span><span class="n">_start</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
             <span class="n">model</span><span class="p">[:</span><span class="n">_start</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">masked</span>
             <span class="n">model</span><span class="p">[</span><span class="n">_end</span><span class="p">:]</span> <span class="o">=</span> <span class="mf">0.0</span>

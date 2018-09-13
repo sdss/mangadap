@@ -100,7 +100,7 @@
 <li class="toctree-l3"><a class="reference internal" href="mangadap.par.html">mangadap.par package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.proc.html">mangadap.proc package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.survey.html">mangadap.survey package</a></li>
-<li class="toctree-l3"><a class="reference internal" href="mangadap.test.html">mangadap.test package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.tests.html">mangadap.tests package</a></li>
 <li class="toctree-l3 current"><a class="reference internal" href="mangadap.util.html">mangadap.util package</a><ul class="current">
 <li class="toctree-l4 current"><a class="reference internal" href="mangadap.util.html#submodules">Submodules</a></li>
 <li class="toctree-l4"><a class="reference internal" href="mangadap.util.html#module-mangadap.util">Module contents</a></li>
@@ -192,7 +192,7 @@
 <dt><em>Source location</em>:</dt>
 <dd>$MANGADAP_DIR/python/mangadap/util/filter.py</dd>
 <dt><em>Imports and python version compliance</em>:</dt>
-<dd><div class="first last highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<dd><div class="first last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
@@ -209,16 +209,16 @@
 <dd><div class="first last line-block">
 <div class="line"><strong>26 Jan 2017</strong>: Original implementation by K. Westfall (KBW)</div>
 <div class="line"><strong>06 Apr 2017</strong>: Interpolate sigma vectors as well as the smoothed
-vectors in <a class="reference internal" href="#mangadap.util.filter.BoxcarFilter" title="mangadap.util.filter.BoxcarFilter"><code class="xref py py-class docutils literal"><span class="pre">BoxcarFilter</span></code></a>.</div>
+vectors in <a class="reference internal" href="#mangadap.util.filter.BoxcarFilter" title="mangadap.util.filter.BoxcarFilter"><code class="xref py py-class docutils literal notranslate"><span class="pre">BoxcarFilter</span></code></a>.</div>
 <div class="line"><strong>21 Dec 2017</strong>: Add weighting functionality to
-<a class="reference internal" href="#mangadap.util.filter.BoxcarFilter" title="mangadap.util.filter.BoxcarFilter"><code class="xref py py-class docutils literal"><span class="pre">BoxcarFilter</span></code></a>.</div>
+<a class="reference internal" href="#mangadap.util.filter.BoxcarFilter" title="mangadap.util.filter.BoxcarFilter"><code class="xref py py-class docutils literal notranslate"><span class="pre">BoxcarFilter</span></code></a>.</div>
 </div>
 </dd>
 </dl>
 <dl class="class">
 <dt id="mangadap.util.filter.BoxcarFilter">
 <em class="property">class </em><code class="descclassname">mangadap.util.filter.</code><code class="descname">BoxcarFilter</code><span class="sig-paren">(</span><em>boxcar</em>, <em>lo=None</em>, <em>hi=None</em>, <em>niter=None</em>, <em>y=None</em>, <em>wgt=None</em>, <em>mask=None</em>, <em>local_sigma=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/filter.html#BoxcarFilter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.filter.BoxcarFilter" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <dl class="method">
 <dt id="mangadap.util.filter.BoxcarFilter._apply">
 <code class="descname">_apply</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/filter.html#BoxcarFilter._apply"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.filter.BoxcarFilter._apply" title="Permalink to this definition">¶</a></dt>
@@ -284,7 +284,7 @@ last pix_buffer pixels in the coordinate vector.</p>
 <p>The mask is instantiated as fully unmasked, unless a default mask is
 provided.</p>
 <p>To mask specified ranges in x, provide mask_x with a shape
-<span class="math">\(N_{\rm mask}\times 2\)</span> where each mask is defined by the
+<span class="math notranslate nohighlight">\(N_{\rm mask}\times 2\)</span> where each mask is defined by the
 starting and ending value of x to exclude.</p>
 </dd></dl>
 
@@ -306,8 +306,8 @@ interpolation.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>y</strong> (<em>numpy.ma.MaskedArray</em>) – Vector to interpolate.</li>
-<li><strong>quiet</strong> (<code class="xref py py-obj docutils literal"><span class="pre">bool</span></code>, optional) – Suppress standard output (default is True).</li>
-<li><strong>extrap_with_median</strong> (<code class="xref py py-obj docutils literal"><span class="pre">bool</span></code>, optional) – Instead of linear extrapolation, use the median of the
+<li><strong>quiet</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">bool</span></code>, optional) – Suppress standard output (default is True).</li>
+<li><strong>extrap_with_median</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">bool</span></code>, optional) – Instead of linear extrapolation, use the median of the
 interpolated vector.  Defaults to linear extrapolation.</li>
 </ul>
 </td>
@@ -331,13 +331,13 @@ interpolated vector.  Defaults to linear extrapolation.</li>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>size</strong> (<em>int</em>) – Size for the square matrix; i.e., <span class="math">\(N\)</span> for the
-<span class="math">\(N\timesN\)</span> matrix.</li>
+<li><strong>size</strong> (<em>int</em>) – Size for the square matrix; i.e., <span class="math notranslate nohighlight">\(N\)</span> for the
+<span class="math notranslate nohighlight">\(N\timesN\)</span> matrix.</li>
 <li><strong>win</strong> (<em>int</em>) – Number of ones in each row along the diagonal.</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if the window is larger than 2*size-1.</p>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if the window is larger than 2*size-1.</p>
 </td>
 </tr>
 </tbody>

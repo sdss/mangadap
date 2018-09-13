@@ -1,5 +1,5 @@
-mangadap\.drpfits module
-========================
+mangadap.drpfits module
+=======================
 
 .. automodule:: mangadap.drpfits
     :members:

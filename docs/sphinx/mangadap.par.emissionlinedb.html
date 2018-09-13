@@ -104,7 +104,7 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.proc.html">mangadap.proc package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.survey.html">mangadap.survey package</a></li>
-<li class="toctree-l3"><a class="reference internal" href="mangadap.test.html">mangadap.test package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.tests.html">mangadap.tests package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.util.html">mangadap.util package</a></li>
 </ul>
 </li>
@@ -193,7 +193,7 @@ support classes and functions.</p>
 <dt><em>Source location</em>:</dt>
 <dd>$MANGADAP_DIR/python/mangadap/par/emissionlinedb.py</dd>
 <dt><em>Imports and python version compliance</em>:</dt>
-<dd><div class="first last highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<dd><div class="first last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
@@ -213,13 +213,13 @@ support classes and functions.</p>
 <span class="kn">from</span> <span class="nn">.parset</span> <span class="k">import</span> <span class="n">ParSet</span><span class="p">,</span> <span class="n">ParDatabase</span>
 <span class="kn">from</span> <span class="nn">.spectralfeaturedb</span> <span class="k">import</span> <span class="n">available_spectral_feature_databases</span><span class="p">,</span> <span class="n">SpectralFeatureDBDef</span>
 <span class="kn">from</span> <span class="nn">..proc.util</span> <span class="k">import</span> <span class="n">select_proc_method</span>
-<span class="kn">from</span> <span class="nn">..config.defaults</span> <span class="k">import</span> <span class="n">default_dap_source</span>
+<span class="kn">from</span> <span class="nn">..config.defaults</span> <span class="k">import</span> <span class="n">dap_source_dir</span>
 </pre></div>
 </div>
 </dd>
 <dt><em>Class usage examples</em>:</dt>
 <dd><p class="first">To define an emission line:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">mangadap.par.emissionlinedb</span> <span class="k">import</span> <span class="n">EmissionLinePar</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">mangadap.par.emissionlinedb</span> <span class="k">import</span> <span class="n">EmissionLinePar</span>
 <span class="n">p</span> <span class="o">=</span> <span class="n">EmissionLinePar</span><span class="p">(</span><span class="mi">44</span><span class="p">,</span> <span class="s1">&#39;Ha&#39;</span><span class="p">,</span> <span class="mf">6564.632</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;f&#39;</span><span class="p">,</span> <span class="n">line</span><span class="o">=</span><span class="s1">&#39;l&#39;</span><span class="p">,</span>
                     <span class="n">flux</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">vel</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">sig</span><span class="o">=</span><span class="mf">10.</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;f&#39;</span><span class="p">)</span>
 </pre></div>
@@ -227,25 +227,25 @@ support classes and functions.</p>
 <p>More often, however, you will want to define an emission-line
 database using an SDSS parameter file.  To do so, you can use one of
 the default set of available emission-line databases (see
-<a class="reference internal" href="#mangadap.par.emissionlinedb.available_emission_line_databases" title="mangadap.par.emissionlinedb.available_emission_line_databases"><code class="xref py py-func docutils literal"><span class="pre">available_emission_line_databases()</span></code></a>):</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">mangadap.par.emissionlinedb</span> <span class="k">import</span> <span class="n">EmissionLineDB</span>
+<a class="reference internal" href="#mangadap.par.emissionlinedb.available_emission_line_databases" title="mangadap.par.emissionlinedb.available_emission_line_databases"><code class="xref py py-func docutils literal notranslate"><span class="pre">available_emission_line_databases()</span></code></a>):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">mangadap.par.emissionlinedb</span> <span class="k">import</span> <span class="n">EmissionLineDB</span>
 <span class="n">p</span> <span class="o">=</span> <span class="n">EmissionLineDB</span><span class="p">(</span><span class="s1">&#39;STRONG&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>The above call requires that the <code class="docutils literal"><span class="pre">$MANGADAP_DIR</span></code> environmental
+<p>The above call requires that the <code class="docutils literal notranslate"><span class="pre">$MANGADAP_DIR</span></code> environmental
 variable is set.  If it is not, you can define it’s location, as
 in:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">mangadap.par.emissionlinedb</span> <span class="k">import</span> <span class="n">EmissionLineDB</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">mangadap.par.emissionlinedb</span> <span class="k">import</span> <span class="n">EmissionLineDB</span>
 <span class="n">p</span> <span class="o">=</span> <span class="n">EmissionLineDB</span><span class="p">(</span><span class="s1">&#39;STRONG&#39;</span><span class="p">,</span> <span class="n">dapsrc</span><span class="o">=</span><span class="s1">&#39;/path/to/dap/source&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Finally, you can create your own <a class="reference external" href="http://www.sdss.org/dr12/software/par/">SDSS-style parameter file</a> with
 your own emission lines to fit.  Example files are provided in
-<code class="docutils literal"><span class="pre">$MANGADAP_DIR/data/emission_lines</span></code> with a companion
-<code class="docutils literal"><span class="pre">README</span></code> file.  With your own file, you have to point to the file
-using <code class="xref py py-class docutils literal"><span class="pre">EmissionLineDBDef</span></code>, which you can then pass to
-<a class="reference internal" href="#mangadap.par.emissionlinedb.EmissionLineDB" title="mangadap.par.emissionlinedb.EmissionLineDB"><code class="xref py py-class docutils literal"><span class="pre">EmissionLineDB</span></code></a>:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">mangadap.par.emissionlinedb</span> <span class="k">import</span> <span class="n">EmissionLineDBDef</span>
+<code class="docutils literal notranslate"><span class="pre">$MANGADAP_DIR/data/emission_lines</span></code> with a companion
+<code class="docutils literal notranslate"><span class="pre">README</span></code> file.  With your own file, you have to point to the file
+using <code class="xref py py-class docutils literal notranslate"><span class="pre">EmissionLineDBDef</span></code>, which you can then pass to
+<a class="reference internal" href="#mangadap.par.emissionlinedb.EmissionLineDB" title="mangadap.par.emissionlinedb.EmissionLineDB"><code class="xref py py-class docutils literal notranslate"><span class="pre">EmissionLineDB</span></code></a>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">mangadap.par.emissionlinedb</span> <span class="k">import</span> <span class="n">EmissionLineDBDef</span>
 <span class="kn">from</span> <span class="nn">mangadap.par.emissionlinedb</span> <span class="k">import</span> <span class="n">EmissionLineDB</span>
 <span class="n">d</span> <span class="o">=</span> <span class="n">EmissionLineDBDef</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s1">&#39;USER&#39;</span><span class="p">,</span>
                       <span class="n">file_path</span><span class="o">=</span><span class="s1">&#39;/path/to/parameter/file&#39;</span><span class="p">,</span>
@@ -257,7 +257,7 @@ using <code class="xref py py-class docutils literal"><span class="pre">Emission
 as either vacuum or air, using ‘in_vacuum’.  It is expected that the
 object spectra to be fit are calibrated to vacuum wavelengths.  If
 ‘in_vacuum’ is false, this class will use
-<code class="xref py py-func docutils literal"><span class="pre">mangadap.util.idlutils.airtovac()</span></code> to convert the emission-line
+<code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.util.idlutils.airtovac()</span></code> to convert the emission-line
 wavelengths to vacuum.</p>
 </dd>
 <dt><em>Revision history</em>:</dt>
@@ -274,9 +274,9 @@ in database.</div>
 <dl class="class">
 <dt id="mangadap.par.emissionlinedb.EmissionLineDB">
 <em class="property">class </em><code class="descclassname">mangadap.par.emissionlinedb.</code><code class="descname">EmissionLineDB</code><span class="sig-paren">(</span><em>database_key</em>, <em>emldb_list=None</em>, <em>dapsrc=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/par/emissionlinedb.html#EmissionLineDB"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.par.emissionlinedb.EmissionLineDB" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParDatabase" title="mangadap.par.parset.ParDatabase"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.parset.ParDatabase</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParDatabase" title="mangadap.par.parset.ParDatabase"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.par.parset.ParDatabase</span></code></a></p>
 <p>Basic container class for the database of emission-line parameters.
-See <code class="xref py py-class docutils literal"><span class="pre">mangadap.parset.ParDatabase</span></code> for additional attributes.</p>
+See <code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.parset.ParDatabase</span></code> for additional attributes.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -284,12 +284,12 @@ See <code class="xref py py-class docutils literal"><span class="pre">mangadap.p
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>database_key</strong> (<em>str</em>) – Keyword selecting the database to use.</li>
 <li><strong>emldb_list</strong> (<em>list</em>) – (<strong>Optional</strong>) List of
-<code class="xref py py-class docutils literal"><span class="pre">SpectralFeatureDBDef</span></code> objects that defines the
+<code class="xref py py-class docutils literal notranslate"><span class="pre">SpectralFeatureDBDef</span></code> objects that defines the
 unique key for the database and the path to the source SDSS
 parameter file.</li>
 <li><strong>dapsrc</strong> (<em>str</em>) – (<strong>Optional</strong>) Root path to the DAP source
 directory.  If not provided, the default is defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_source" title="mangadap.config.defaults.default_dap_source"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_source()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.dap_source_dir" title="mangadap.config.defaults.dap_source_dir"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.dap_source_dir()</span></code></a>.</li>
 </ul>
 </td>
 </tr>
@@ -317,7 +317,7 @@ directory.  If not provided, the default is defined by
 <dl class="class">
 <dt id="mangadap.par.emissionlinedb.EmissionLinePar">
 <em class="property">class </em><code class="descclassname">mangadap.par.emissionlinedb.</code><code class="descname">EmissionLinePar</code><span class="sig-paren">(</span><em>index</em>, <em>name</em>, <em>restwave</em>, <em>action=None</em>, <em>flux=None</em>, <em>mode=None</em>, <em>profile=None</em>, <em>ncomp=None</em>, <em>output_model=None</em>, <em>par=None</em>, <em>fix=None</em>, <em>lobnd=None</em>, <em>hibnd=None</em>, <em>log_bnd=None</em>, <em>blueside=None</em>, <em>redside=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/par/emissionlinedb.html#EmissionLinePar"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.par.emissionlinedb.EmissionLinePar" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet" title="mangadap.par.parset.ParSet"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.parset.ParSet</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet" title="mangadap.par.parset.ParSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.par.parset.ParSet</span></code></a></p>
 <p>Parameter object that defines a set of emission-line parameters used
 by various algorithms in the DAP.</p>
 <div class="admonition-todo admonition" id="index-0">
@@ -328,7 +328,7 @@ by various algorithms in the DAP.</p>
 interaction</li>
 </ul>
 </div>
-<p>See <a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet" title="mangadap.par.parset.ParSet"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.parset.ParSet</span></code></a> for attributes and raised
+<p>See <a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet" title="mangadap.par.parset.ParSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.par.parset.ParSet</span></code></a> for attributes and raised
 exceptions.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -341,41 +341,41 @@ and <em>mode</em> attributes.</li>
 <li><strong>restwave</strong> (<em>float</em>) – The rest wavelength of the line in angstroms
 <em>in vacuum</em>.</li>
 <li><strong>action</strong> (<em>str</em>) – <p>(<strong>Optional</strong>) Describes how the line should be
-treated; default is <code class="docutils literal"><span class="pre">'f'</span></code>.  Possible values are:</p>
+treated; default is <code class="docutils literal notranslate"><span class="pre">'f'</span></code>.  Possible values are:</p>
 <ul>
-<li><code class="docutils literal"><span class="pre">'i'</span></code>: ignore the line, as if the line were commented
+<li><code class="docutils literal notranslate"><span class="pre">'i'</span></code>: ignore the line, as if the line were commented
 out.</li>
-<li><code class="docutils literal"><span class="pre">'f'</span></code>’: fit the line and/or mask the line when fitting
+<li><code class="docutils literal notranslate"><span class="pre">'f'</span></code>’: fit the line and/or mask the line when fitting
 the stellar continuum.</li>
-<li><code class="docutils literal"><span class="pre">'m'</span></code>’: mask the line when fitting the stellar continuum
+<li><code class="docutils literal notranslate"><span class="pre">'m'</span></code>’: mask the line when fitting the stellar continuum
 but do NOT fit the line itself</li>
-<li><code class="docutils literal"><span class="pre">'s'</span></code>: defines a sky line that should be masked.  When
+<li><code class="docutils literal notranslate"><span class="pre">'s'</span></code>: defines a sky line that should be masked.  When
 masked, the wavelength of the line is NOT adjusted for the
 redshift of the object spectrum.</li>
 </ul>
 </li>
 <li><strong>flux</strong> (<em>float</em>) – (<strong>Optional</strong>) <strong>Relative</strong> flux of the emission
 (positive) or absorption (negative) lines.  This should most
-often be unity if <code class="docutils literal"><span class="pre">line='l'</span></code> and indicates the ratio of
-line flux if <code class="docutils literal"><span class="pre">line='dN'</span></code>.  Default is 1.0.</li>
+often be unity if <code class="docutils literal notranslate"><span class="pre">line='l'</span></code> and indicates the ratio of
+line flux if <code class="docutils literal notranslate"><span class="pre">line='dN'</span></code>.  Default is 1.0.</li>
 <li><strong>mode</strong> (<em>float</em>) – <p>(<strong>Optional</strong>) Fitting mode for the line; default
-is <code class="docutils literal"><span class="pre">'f'</span></code>.  Possible values are:</p>
+is <code class="docutils literal notranslate"><span class="pre">'f'</span></code>.  Possible values are:</p>
 <blockquote>
 <div><ul>
-<li><code class="docutils literal"><span class="pre">'f'</span></code>: Fit the line independently of all others in
+<li><code class="docutils literal notranslate"><span class="pre">'f'</span></code>: Fit the line independently of all others in
 its own window.</li>
-<li><code class="docutils literal"><span class="pre">'wN'</span></code>: Fit the line with untied parameters, but use
+<li><code class="docutils literal notranslate"><span class="pre">'wN'</span></code>: Fit the line with untied parameters, but use
 a window that includes both this line and the line
 with index N.</li>
-<li><code class="docutils literal"><span class="pre">'xN'</span></code>: Fit the line with its flux tied to the line
+<li><code class="docutils literal notranslate"><span class="pre">'xN'</span></code>: Fit the line with its flux tied to the line
 with index N.</li>
-<li><code class="docutils literal"><span class="pre">'vN'</span></code>: Fit the line with the velocity tied to the
+<li><code class="docutils literal notranslate"><span class="pre">'vN'</span></code>: Fit the line with the velocity tied to the
 line with index N.</li>
-<li><code class="docutils literal"><span class="pre">'sN'</span></code>: Fit the line with the velocity dispersion
+<li><code class="docutils literal notranslate"><span class="pre">'sN'</span></code>: Fit the line with the velocity dispersion
 tied to the line with index N.</li>
-<li><code class="docutils literal"><span class="pre">'kN'</span></code>: Fit the line with the velocity and velocity
+<li><code class="docutils literal notranslate"><span class="pre">'kN'</span></code>: Fit the line with the velocity and velocity
 dispersion tied to the line with index N.</li>
-<li><code class="docutils literal"><span class="pre">'aN'</span></code>: Fit the line with the flux, velocity, and
+<li><code class="docutils literal notranslate"><span class="pre">'aN'</span></code>: Fit the line with the flux, velocity, and
 velocity dispersion tied to the line with index N.</li>
 </ul>
 </div></blockquote>
@@ -383,11 +383,11 @@ velocity dispersion tied to the line with index N.</li>
 <li><strong>profile</strong> (<em>str</em>) – <p>(<strong>Optional</strong>)  The class definition of the
 profile shape.  This is kept as a string until it is used.
 Once it is used, it is converted to the class name using:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="nb">eval</span><span class="p">(</span><span class="n">profile</span><span class="p">)</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">eval</span><span class="p">(</span><span class="n">profile</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>This line will fail if the profile type has not been
-defined.  Default is <code class="docutils literal"><span class="pre">'GaussianLineProfile'</span></code>.</p>
+defined.  Default is <code class="docutils literal notranslate"><span class="pre">'GaussianLineProfile'</span></code>.</p>
 </li>
 <li><strong>ncomp</strong> (<em>int</em>) – (<strong>Optional</strong>) The number of components (number of
 separate line profiles) to use when fitting the line.
@@ -402,23 +402,23 @@ The initial parameters are automatically adjusted to provide
 any designated flux ratios, and the center is automatically
 adjusted to the provided redshift for the spectrum.  For
 example, for a GaussianLineProfile, this is typically set to
-<code class="docutils literal"><span class="pre">[1.0,</span> <span class="pre">0.0,</span> <span class="pre">100.0]</span></code>.</li>
+<code class="docutils literal notranslate"><span class="pre">[1.0,</span> <span class="pre">0.0,</span> <span class="pre">100.0]</span></code>.</li>
 <li><strong>fix</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) A list of flags for fixing
 the input guess parameters during the fit.  Use 0 for a free
 parameter, 1 for a fixed parameter.  The parameter value is
 only fixed <strong>after</strong> adjusted in the flux and or center
 based on the redshift and the implied tied parameters.  For
 a free set of parameters using a GaussianLineProfile, this
-is set to <code class="docutils literal"><span class="pre">[</span> <span class="pre">0,</span> <span class="pre">0,</span> <span class="pre">0</span> <span class="pre">]</span></code>.</li>
+is set to <code class="docutils literal notranslate"><span class="pre">[</span> <span class="pre">0,</span> <span class="pre">0,</span> <span class="pre">0</span> <span class="pre">]</span></code>.</li>
 <li><strong>lobnd</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) A list of lower bounds for
 the parameters.  For each parameter, use None to indicate no
 lower bound.  For a GaussianLineProfile with positive flux
-and standard deviation, this is set to <code class="docutils literal"><span class="pre">[</span> <span class="pre">0.0,</span> <span class="pre">None,</span> <span class="pre">0.0</span>
+and standard deviation, this is set to <code class="docutils literal notranslate"><span class="pre">[</span> <span class="pre">0.0,</span> <span class="pre">None,</span> <span class="pre">0.0</span>
 <span class="pre">]</span></code>.</li>
 <li><strong>hibnd</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) A list of upper bounds for
 the parameters.  For each parameter, use None to indicate no
 upper bound.  For a GaussianLineProfile with maximum
-standard deviation of 500 km/s, this is set to <code class="docutils literal"><span class="pre">[</span> <span class="pre">None,</span>
+standard deviation of 500 km/s, this is set to <code class="docutils literal notranslate"><span class="pre">[</span> <span class="pre">None,</span>
 <span class="pre">None,</span> <span class="pre">500.0</span> <span class="pre">]</span></code>.</li>
 <li><strong>log_bnd</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) A list of flags used
 when determining if a fit parameter is near the imposed
@@ -446,8 +446,8 @@ equivalent width.</li>
 <blockquote>
 <div><ul class="simple">
 <li>Amplitude has to be larger than zero.</li>
-<li><em>mode</em> must be either <code class="docutils literal"><span class="pre">'f'</span></code>, <code class="docutils literal"><span class="pre">'wN'</span></code>, <code class="docutils literal"><span class="pre">'xN'</span></code>,
-<code class="docutils literal"><span class="pre">'vN'</span></code>, <code class="docutils literal"><span class="pre">'sN'</span></code>, <code class="docutils literal"><span class="pre">'kN'</span></code>, <code class="docutils literal"><span class="pre">'aN'</span></code></li>
+<li><em>mode</em> must be either <code class="docutils literal notranslate"><span class="pre">'f'</span></code>, <code class="docutils literal notranslate"><span class="pre">'wN'</span></code>, <code class="docutils literal notranslate"><span class="pre">'xN'</span></code>,
+<code class="docutils literal notranslate"><span class="pre">'vN'</span></code>, <code class="docutils literal notranslate"><span class="pre">'sN'</span></code>, <code class="docutils literal notranslate"><span class="pre">'kN'</span></code>, <code class="docutils literal notranslate"><span class="pre">'aN'</span></code></li>
 </ul>
 </div></blockquote>
 <div class="admonition-todo admonition" id="index-1">
@@ -461,7 +461,7 @@ equivalent width.</li>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if one of the conditions above are not
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if one of the conditions above are not
 met.</td>
 </tr>
 </tbody>
@@ -504,16 +504,16 @@ all strong and weak lines</td>
 </tbody>
 </table>
 <p>This is a simple wrapper for
-<a class="reference internal" href="mangadap.par.spectralfeaturedb.html#mangadap.par.spectralfeaturedb.available_spectral_feature_databases" title="mangadap.par.spectralfeaturedb.available_spectral_feature_databases"><code class="xref py py-func docutils literal"><span class="pre">mangadap.par.spectralfeaturedb.available_spectral_feature_databases()</span></code></a>.</p>
+<a class="reference internal" href="mangadap.par.spectralfeaturedb.html#mangadap.par.spectralfeaturedb.available_spectral_feature_databases" title="mangadap.par.spectralfeaturedb.available_spectral_feature_databases"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.par.spectralfeaturedb.available_spectral_feature_databases()</span></code></a>.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>dapsrc</strong> (<em>str</em>) – (<strong>Optional</strong>) Root path to the DAP source
 directory.  If not provided, the default is defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_source" title="mangadap.config.defaults.default_dap_source"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_source()</span></code></a>.</td>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.dap_source_dir" title="mangadap.config.defaults.dap_source_dir"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.dap_source_dir()</span></code></a>.</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">An list of <code class="xref py py-func docutils literal"><span class="pre">SpectralFeatureDBDef()</span></code> objects, each of
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">An list of <code class="xref py py-func docutils literal notranslate"><span class="pre">SpectralFeatureDBDef()</span></code> objects, each of
 which defines a unique emission-line database.</td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">list</td>

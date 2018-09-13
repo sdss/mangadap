@@ -1,5 +1,5 @@
-mangadap\.proc\.emissionlinemodel module
-========================================
+mangadap.proc.emissionlinemodel module
+======================================
 
 .. automodule:: mangadap.proc.emissionlinemodel
     :members:

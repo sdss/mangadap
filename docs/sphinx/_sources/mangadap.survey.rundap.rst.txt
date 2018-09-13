@@ -1,5 +1,5 @@
-mangadap\.survey\.rundap module
-===============================
+mangadap.survey.rundap module
+=============================
 
 .. automodule:: mangadap.survey.rundap
     :members:

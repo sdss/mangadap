@@ -36,7 +36,7 @@
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
     <link rel="top" title="mangadap 2.2.2 documentation" href="../../../index.html"/>
-        <link rel="up" title="Module code" href="../../index.html"/> 
+        <link rel="up" title="mangadap" href="../../mangadap.html"/> 
 
   
   <script src="../../../_static/js/modernizr.min.js"></script>
@@ -138,6 +138,8 @@
         
           <li><a href="../../index.html">Module code</a> &raquo;</li>
         
+          <li><a href="../../mangadap.html">mangadap</a> &raquo;</li>
+        
       <li>mangadap.proc.emissionlinemoments</li>
     
     
@@ -189,7 +191,7 @@
 <span class="sd">        from astropy.io import fits</span>
 <span class="sd">        import astropy.constants</span>
 
-<span class="sd">        from ..config.defaults import default_dap_source, default_dap_file_name</span>
+<span class="sd">        from ..config.defaults import dap_source_dir, default_dap_file_name</span>
 <span class="sd">        from ..config.defaults import default_dap_method, default_dap_method_path</span>
 <span class="sd">        from ..util.fileio import init_record_array, rec_to_fits_type</span>
 <span class="sd">        from ..util.bitmask import BitMask</span>
@@ -253,7 +255,7 @@
 <span class="kn">from</span> <span class="nn">astropy.io</span> <span class="k">import</span> <span class="n">fits</span>
 <span class="kn">import</span> <span class="nn">astropy.constants</span>
 
-<span class="kn">from</span> <span class="nn">..config.defaults</span> <span class="k">import</span> <span class="n">default_dap_source</span><span class="p">,</span> <span class="n">default_dap_file_name</span>
+<span class="kn">from</span> <span class="nn">..config.defaults</span> <span class="k">import</span> <span class="n">dap_source_dir</span><span class="p">,</span> <span class="n">default_dap_file_name</span>
 <span class="kn">from</span> <span class="nn">..config.defaults</span> <span class="k">import</span> <span class="n">default_dap_method</span><span class="p">,</span> <span class="n">default_dap_method_path</span>
 <span class="kn">from</span> <span class="nn">..util.fitsutil</span> <span class="k">import</span> <span class="n">DAPFitsUtil</span>
 <span class="kn">from</span> <span class="nn">..util.fileio</span> <span class="k">import</span> <span class="n">init_record_array</span><span class="p">,</span> <span class="n">rec_to_fits_type</span>
@@ -266,8 +268,8 @@
 <span class="kn">from</span> <span class="nn">..par.emissionmomentsdb</span> <span class="k">import</span> <span class="n">EmissionMomentsDB</span>
 <span class="kn">from</span> <span class="nn">.spatiallybinnedspectra</span> <span class="k">import</span> <span class="n">SpatiallyBinnedSpectra</span>
 <span class="kn">from</span> <span class="nn">.stellarcontinuummodel</span> <span class="k">import</span> <span class="n">StellarContinuumModel</span>
-<span class="kn">from</span> <span class="nn">.bandpassfilter</span> <span class="k">import</span> <span class="n">passband_integral</span><span class="p">,</span> <span class="n">passband_integrated_width</span><span class="p">,</span> <span class="n">passband_median</span>
-<span class="kn">from</span> <span class="nn">.bandpassfilter</span> <span class="k">import</span> <span class="n">passband_integrated_mean</span><span class="p">,</span> <span class="n">passband_weighted_mean</span><span class="p">,</span> <span class="n">pseudocontinuum</span>
+<span class="kn">from</span> <span class="nn">.bandpassfilter</span> <span class="k">import</span> <span class="n">passband_integral</span><span class="p">,</span> <span class="n">passband_integrated_width</span>
+<span class="kn">from</span> <span class="nn">.bandpassfilter</span> <span class="k">import</span> <span class="n">passband_weighted_mean</span><span class="p">,</span> <span class="n">passband_weighted_sdev</span><span class="p">,</span> <span class="n">pseudocontinuum</span>
 <span class="kn">from</span> <span class="nn">.bandpassfilter</span> <span class="k">import</span> <span class="n">emission_line_equivalent_width</span>
 <span class="kn">from</span> <span class="nn">.spectralfitting</span> <span class="k">import</span> <span class="n">EmissionLineFit</span>
 <span class="kn">from</span> <span class="nn">.util</span> <span class="k">import</span> <span class="n">select_proc_method</span>
@@ -338,7 +340,7 @@
 <span class="sd">    Args:</span>
 <span class="sd">        dapsrc (str): (**Optional**) Root path to the DAP source</span>
 <span class="sd">            directory.  If not provided, the default is defined by</span>
-<span class="sd">            :func:`mangadap.config.defaults.default_dap_source`.</span>
+<span class="sd">            :func:`mangadap.config.defaults.dap_source_dir`.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        list: A list of :func:`EmissionLineMomentsDef` objects, each</span>
@@ -360,7 +362,7 @@
 <span class="sd">        </span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Check the source directory exists</span>
-    <span class="n">dapsrc</span> <span class="o">=</span> <span class="n">default_dap_source</span><span class="p">()</span> <span class="k">if</span> <span class="n">dapsrc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">)</span>
+    <span class="n">dapsrc</span> <span class="o">=</span> <span class="n">dap_source_dir</span><span class="p">()</span> <span class="k">if</span> <span class="n">dapsrc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">NotADirectoryError</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1"> does not exist!&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">))</span>
 
@@ -411,7 +413,7 @@
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dapsrc</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="n">dapsrc</span> <span class="o">=</span> <span class="n">default_dap_source</span><span class="p">()</span> <span class="k">if</span> <span class="n">dapsrc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">)</span>
+        <span class="n">dapsrc</span> <span class="o">=</span> <span class="n">dap_source_dir</span><span class="p">()</span> <span class="k">if</span> <span class="n">dapsrc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">)</span>
         <span class="n">BitMask</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ini_file</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">,</span> <span class="s1">&#39;python&#39;</span><span class="p">,</span> <span class="s1">&#39;mangadap&#39;</span><span class="p">,</span> <span class="s1">&#39;config&#39;</span><span class="p">,</span>
                                                      <span class="s1">&#39;bitmasks&#39;</span><span class="p">,</span> <span class="s1">&#39;emission_line_moments_bits.ini&#39;</span><span class="p">))</span></div>
 
@@ -815,9 +817,17 @@
 <span class="sd">        Get the side-band integrals.</span>
 
 <span class="sd">        err is a single vector that is the same for all spec!</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            float, numpy.ndarray: Return five arrays or floats: (1) The</span>
+<span class="sd">            center of each passband, (2) the mean continuum level, (3)</span>
+<span class="sd">            the propagated error in the continuum level (will be None if</span>
+<span class="sd">            no errors are provided), (4) flag that part of the passband</span>
+<span class="sd">            was masked, (5) flag that the passband was fully masked or</span>
+<span class="sd">            empty.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">spec</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">pseudocontinuum</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">spec</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="n">sidebands</span><span class="p">,</span> <span class="n">err</span><span class="o">=</span><span class="n">err</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="n">log</span><span class="p">,</span>
                                    <span class="n">weighted_center</span><span class="o">=</span><span class="n">weighted_center</span><span class="p">)</span>
 
@@ -831,7 +841,7 @@
         <span class="c1"># allow the code to continue but issue a warning</span>
         <span class="k">if</span> <span class="n">spec_n</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Multiple spectra entered, but no designation for which to use!&#39;</span><span class="p">)</span>
-            <span class="n">_spec_n</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nbands</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">int</span><span class="p">)</span>
+            <span class="n">_spec_n</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nbands</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">_spec_n</span> <span class="o">=</span> <span class="n">spec_n</span>
         
@@ -840,9 +850,9 @@
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Selected spectrum not provided!&#39;</span><span class="p">)</span>
 
         <span class="c1"># Instantiate the arrays</span>
-        <span class="n">continuum</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nbands</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
-        <span class="n">continuum_error</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">err</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nbands</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
-        <span class="n">band_center</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nbands</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+        <span class="n">continuum</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nbands</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="n">continuum_error</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">err</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nbands</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="n">band_center</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nbands</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
         <span class="n">band_incomplete</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nbands</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
         <span class="n">band_empty</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nbands</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
 
@@ -864,6 +874,19 @@
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Measure the moments for a single band.</span>
 
+<span class="sd">        If spectrum errors are not provided, moment errors are returned</span>
+<span class="sd">        as 0.0.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            wave (numpy.ndarray):</span>
+<span class="sd">                Wavelengths in angstroms</span>
+<span class="sd">            spec (numpy.ndarray):</span>
+<span class="sd">                Flux in flux density (per angstrom)</span>
+<span class="sd">            restwave (float):</span>
+<span class="sd">                The rest wavelength of the line.</span>
+<span class="sd">            err (numpy.ndarray):</span>
+<span class="sd">                The 1-sigma errors in the flux density.</span>
+
 <span class="sd">        Returns:</span>
 <span class="sd">            flux</span>
 <span class="sd">            fluxerr</span>
@@ -874,7 +897,9 @@
 <span class="sd">            incomplete band</span>
 <span class="sd">            empty band</span>
 <span class="sd">            division by zero</span>
+<span class="sd">            undefined 1st moment</span>
 <span class="sd">            undefined 2nd moment</span>
+
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Get the fraction of the passband that is unmasked</span>
         <span class="n">interval_frac</span> <span class="o">=</span> <span class="n">passband_integrated_width</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">spec</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="n">passband</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> \
@@ -882,55 +907,43 @@
         <span class="n">incomplete</span> <span class="o">=</span> <span class="n">interval_frac</span> <span class="o">&lt;</span> <span class="mf">1.0</span>
         <span class="n">empty</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">interval_frac</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">empty</span><span class="p">:</span>
-            <span class="k">return</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">incomplete</span><span class="p">,</span> <span class="n">empty</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">False</span>
+            <span class="k">return</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">incomplete</span><span class="p">,</span> <span class="n">empty</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span>
 
         <span class="c1"># Get the redshift vector</span>
         <span class="n">cz</span> <span class="o">=</span> <span class="n">astropy</span><span class="o">.</span><span class="n">constants</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;km/s&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="o">*</span><span class="p">(</span><span class="n">wave</span><span class="o">/</span><span class="n">restwave</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
 
         <span class="c1"># Get the integrated flux</span>
         <span class="n">flux</span> <span class="o">=</span> <span class="n">passband_integral</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">spec</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="n">passband</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="n">fluxerr</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">err</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> \
-                    <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span> <span class="n">passband_integral</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">err</span><span class="p">),</span> <span class="n">passband</span><span class="o">=</span><span class="n">passband</span><span class="p">,</span>
-                                                     <span class="n">log</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+        <span class="n">fluxerr</span> <span class="o">=</span> <span class="mf">0.0</span> <span class="k">if</span> <span class="n">err</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> \
+                    <span class="n">passband_integral</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">err</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="n">passband</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">quad</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
         <span class="c1"># No flux in the passband, meaning division by zero will occur!</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">numpy</span><span class="o">.</span><span class="n">absolute</span><span class="p">(</span><span class="n">flux</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">flux</span><span class="p">,</span> <span class="n">fluxerr</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">incomplete</span><span class="p">,</span> <span class="n">empty</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">False</span>
+            <span class="k">return</span> <span class="n">flux</span><span class="p">,</span> <span class="n">fluxerr</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">incomplete</span><span class="p">,</span> <span class="n">empty</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span>
 
-        <span class="c1"># Get the first and second moments; saved to a temporary</span>
-        <span class="c1"># variable for use in the error calculations (if possible)</span>
-        <span class="n">mom1</span> <span class="o">=</span> <span class="n">passband_integral</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">cz</span><span class="o">*</span><span class="n">spec</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="n">passband</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="n">_mom1</span> <span class="o">=</span> <span class="n">mom1</span> <span class="o">/</span> <span class="n">flux</span>
-        <span class="n">mom2</span> <span class="o">=</span> <span class="n">passband_integral</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">cz</span><span class="p">)</span><span class="o">*</span><span class="n">spec</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="n">passband</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="n">_mom2</span> <span class="o">=</span> <span class="n">mom2</span> <span class="o">/</span> <span class="n">flux</span>
+        <span class="c1"># Get the first and second moments:</span>
+        <span class="n">mom1</span><span class="p">,</span> <span class="n">mom1err</span> <span class="o">=</span> <span class="n">passband_weighted_mean</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">spec</span><span class="p">,</span> <span class="n">cz</span><span class="p">,</span> <span class="n">yerr</span><span class="o">=</span><span class="n">err</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="n">passband</span><span class="p">,</span>
+                                               <span class="n">log</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">mom2</span><span class="p">,</span> <span class="n">mom2err</span> <span class="o">=</span> <span class="n">passband_weighted_sdev</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">spec</span><span class="p">,</span> <span class="n">cz</span><span class="p">,</span> <span class="n">yerr</span><span class="o">=</span><span class="n">err</span><span class="p">,</span> <span class="n">passband</span><span class="o">=</span><span class="n">passband</span><span class="p">,</span>
+                                               <span class="n">log</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
-        <span class="c1"># Perform the error calculations</span>
+        <span class="c1"># If no errors provided, set errors to 0</span>
         <span class="k">if</span> <span class="n">err</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">mom1</span> <span class="o">=</span> <span class="n">_mom1</span>
-            <span class="n">mom1err</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">mom1err</span> <span class="o">=</span> <span class="mf">0.0</span>
+            <span class="n">mom2err</span> <span class="o">=</span> <span class="mf">0.0</span>
 
-            <span class="k">if</span> <span class="n">_mom2</span> <span class="o">&lt;</span> <span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">mom1</span><span class="p">):</span>
-                <span class="k">return</span> <span class="n">flux</span><span class="p">,</span> <span class="n">fluxerr</span><span class="p">,</span> <span class="n">mom1</span><span class="p">,</span> <span class="n">mom1err</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">incomplete</span><span class="p">,</span> <span class="n">empty</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">True</span>
-
-            <span class="n">mom2</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">_mom2</span> <span class="o">-</span> <span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">mom1</span><span class="p">))</span>
-            <span class="n">mom2err</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">mom1err</span> <span class="o">=</span> <span class="n">passband_integral</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">cz</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">err</span><span class="p">),</span> <span class="n">passband</span><span class="o">=</span><span class="n">passband</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-            <span class="n">mom1err</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">mom1err</span> <span class="o">*</span> <span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">_mom1</span><span class="o">/</span><span class="n">mom1</span><span class="p">)</span>
-                                        <span class="o">+</span> <span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">fluxerr</span> <span class="o">*</span> <span class="n">_mom1</span><span class="o">/</span><span class="n">flux</span><span class="p">))</span>
-            <span class="n">mom1</span> <span class="o">=</span> <span class="n">_mom1</span>
-                
-            <span class="k">if</span> <span class="n">_mom2</span> <span class="o">&lt;</span> <span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">mom1</span><span class="p">):</span>
-                <span class="k">return</span> <span class="n">flux</span><span class="p">,</span> <span class="n">fluxerr</span><span class="p">,</span> <span class="n">mom1</span><span class="p">,</span> <span class="n">mom1err</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">incomplete</span><span class="p">,</span> <span class="n">empty</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">True</span>
-
-            <span class="n">mom2err</span> <span class="o">=</span> <span class="n">passband_integral</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">cz</span><span class="o">*</span><span class="n">err</span><span class="p">),</span> <span class="n">passband</span><span class="o">=</span><span class="n">passband</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-            <span class="n">mom2err</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">mom2err</span> <span class="o">*</span> <span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">_mom2</span><span class="o">/</span><span class="n">mom2</span><span class="p">)</span>
-                                        <span class="o">+</span> <span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">fluxerr</span> <span class="o">*</span> <span class="n">_mom2</span><span class="o">/</span><span class="n">flux</span><span class="p">))</span>
-            <span class="n">mom2err</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">mom2err</span><span class="p">)</span> <span class="o">+</span> <span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">mom1</span><span class="o">*</span><span class="n">mom1err</span><span class="p">))</span>
-            <span class="n">mom2</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">_mom2</span> <span class="o">-</span> <span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">mom1</span><span class="p">))</span>
-            <span class="n">mom2err</span> <span class="o">/=</span> <span class="p">(</span><span class="mf">2.0</span><span class="o">*</span><span class="n">mom2</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">flux</span><span class="p">,</span> <span class="n">fluxerr</span><span class="p">,</span> <span class="n">mom1</span><span class="p">,</span> <span class="n">mom1err</span><span class="p">,</span> <span class="n">mom2</span><span class="p">,</span> <span class="n">mom2err</span><span class="p">,</span> <span class="n">incomplete</span><span class="p">,</span> <span class="n">empty</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">False</span></div>
+        <span class="c1"># Set masked values to 0.0</span>
+        <span class="n">undefined_mom1</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mom1</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">)</span> <span class="ow">and</span> <span class="n">mom1</span><span class="o">.</span><span class="n">mask</span><span class="p">:</span>
+            <span class="n">mom1</span> <span class="o">=</span> <span class="mf">0.0</span>
+            <span class="n">undefined_mom1</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">undefined_mom2</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mom2</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">)</span> <span class="ow">and</span> <span class="n">mom2</span><span class="o">.</span><span class="n">mask</span><span class="p">:</span>
+            <span class="n">mom2</span> <span class="o">=</span> <span class="mf">0.0</span>
+            <span class="n">undefined_mom2</span> <span class="o">=</span> <span class="kc">True</span>
+        
+        <span class="k">return</span> <span class="n">flux</span><span class="p">,</span> <span class="n">fluxerr</span><span class="p">,</span> <span class="n">mom1</span><span class="p">,</span> <span class="n">mom1err</span><span class="p">,</span> <span class="n">mom2</span><span class="p">,</span> <span class="n">mom2err</span><span class="p">,</span> <span class="n">incomplete</span><span class="p">,</span> <span class="n">empty</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> \
+                    <span class="n">undefined_mom1</span><span class="p">,</span> <span class="n">undefined_mom2</span></div>
 
 
 <div class="viewcode-block" id="EmissionLineMoments.continuum_subtracted_moments"><a class="viewcode-back" href="../../../mangadap.proc.emissionlinemoments.html#mangadap.proc.emissionlinemoments.EmissionLineMoments.continuum_subtracted_moments">[docs]</a>    <span class="nd">@staticmethod</span>
@@ -960,16 +973,17 @@
         <span class="c1"># Get the parameters for the linear continuum across the</span>
         <span class="c1"># primary passband</span>
         <span class="n">nbands</span> <span class="o">=</span> <span class="n">mainbands</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">flux</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nbands</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
-        <span class="n">fluxerr</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nbands</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
-        <span class="n">mom1</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nbands</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
-        <span class="n">mom1err</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nbands</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
-        <span class="n">mom2</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nbands</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
-        <span class="n">mom2err</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nbands</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
-        <span class="n">incomplete</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nbands</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">bool</span><span class="p">)</span>
-        <span class="n">empty</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nbands</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">bool</span><span class="p">)</span>
-        <span class="n">divbyzero</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nbands</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">bool</span><span class="p">)</span>
-        <span class="n">undefined_mom2</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nbands</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">bool</span><span class="p">)</span>
+        <span class="n">flux</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nbands</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="n">fluxerr</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nbands</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="n">mom1</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nbands</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="n">mom1err</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nbands</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="n">mom2</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nbands</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="n">mom2err</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nbands</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="n">incomplete</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nbands</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+        <span class="n">empty</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nbands</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+        <span class="n">divbyzero</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nbands</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+        <span class="n">undefined_mom1</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nbands</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+        <span class="n">undefined_mom2</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nbands</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">numpy</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">rcen</span><span class="o">-</span><span class="n">bcen</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
             <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;band centers are the same!&#39;</span><span class="p">)</span>
@@ -983,7 +997,7 @@
             <span class="c1"># the code to continue with a warning</span>
             <span class="k">if</span> <span class="n">spec_n</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Multiple spectra entered, but no designation for which to use!&#39;</span><span class="p">)</span>
-                <span class="n">_spec_n</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nmom</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">int</span><span class="p">)</span>
+                <span class="n">_spec_n</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nmom</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">_spec_n</span> <span class="o">=</span> <span class="n">spec_n</span>
 
@@ -993,17 +1007,17 @@
             <span class="n">_spec</span> <span class="o">=</span> <span class="n">spec</span> <span class="o">-</span> <span class="n">cont</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">spec</span><span class="p">[</span><span class="n">_spec_n</span><span class="p">[</span><span class="n">i</span><span class="p">],:]</span> <span class="o">-</span> <span class="n">cont</span>
 
             <span class="n">flux</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">fluxerr</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">mom1</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">mom1err</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">mom2</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">mom2err</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">incomplete</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> \
-                    <span class="n">empty</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">divbyzero</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">undefined_mom2</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> \
+                    <span class="n">empty</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">divbyzero</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">undefined_mom1</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">undefined_mom2</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> \
                         <span class="o">=</span> <span class="n">EmissionLineMoments</span><span class="o">.</span><span class="n">single_band_moments</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">_spec</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">restwave</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
                                                                   <span class="n">err</span><span class="o">=</span><span class="n">err</span><span class="p">)</span>
 
         <span class="c1"># Get the instrumental dispersion at the position of the line</span>
         <span class="c1"># center</span>
-        <span class="n">sinst</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nbands</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">)</span> <span class="k">if</span> <span class="n">sres</span> <span class="ow">is</span> <span class="kc">None</span> \
+        <span class="n">sinst</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nbands</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span> <span class="k">if</span> <span class="n">sres</span> <span class="ow">is</span> <span class="kc">None</span> \
                         <span class="k">else</span> <span class="n">EmissionLineFit</span><span class="o">.</span><span class="n">instrumental_dispersion</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">sres</span><span class="p">,</span> <span class="n">restwave</span><span class="p">,</span> <span class="n">mom1</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">cntm</span><span class="p">,</span> <span class="n">cntb</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">fluxerr</span><span class="p">,</span> <span class="n">mom1</span><span class="p">,</span> <span class="n">mom1err</span><span class="p">,</span> <span class="n">mom2</span><span class="p">,</span> <span class="n">mom2err</span><span class="p">,</span> <span class="n">sinst</span><span class="p">,</span> <span class="n">incomplete</span><span class="p">,</span> <span class="n">empty</span><span class="p">,</span> \
-                    <span class="n">divbyzero</span><span class="p">,</span> <span class="n">undefined_mom2</span></div>
+                    <span class="n">divbyzero</span><span class="p">,</span> <span class="n">undefined_mom1</span><span class="p">,</span> <span class="n">undefined_mom2</span></div>
 
 
 <div class="viewcode-block" id="EmissionLineMoments.measure_moments"><a class="viewcode-back" href="../../../mangadap.proc.emissionlinemoments.html#mangadap.proc.emissionlinemoments.EmissionLineMoments.measure_moments">[docs]</a>    <span class="nd">@staticmethod</span>
@@ -1029,7 +1043,8 @@
                                                            <span class="n">redshift</span><span class="o">=</span><span class="n">redshift</span><span class="p">)</span>
 
         <span class="c1"># Subtract the continuum and determine where the continuum is</span>
-        <span class="c1"># undefined</span>
+        <span class="c1"># undefined.  If _continuum is None, this just returns _fluxnc =</span>
+        <span class="c1"># _flux and no_continuum = None.</span>
         <span class="n">_fluxnc</span><span class="p">,</span> <span class="n">no_continuum</span> <span class="o">=</span> <span class="n">EmissionLineFit</span><span class="o">.</span><span class="n">subtract_continuum</span><span class="p">(</span><span class="n">_flux</span><span class="p">,</span> <span class="n">_continuum</span><span class="p">)</span>
 
         <span class="c1"># Initialize the output data</span>
@@ -1037,6 +1052,9 @@
         <span class="n">nmom</span> <span class="o">=</span> <span class="n">momdb</span><span class="o">.</span><span class="n">nsets</span>
         <span class="n">measurements</span> <span class="o">=</span> <span class="n">init_record_array</span><span class="p">(</span><span class="n">nspec</span><span class="p">,</span> <span class="n">EmissionLineMoments</span><span class="o">.</span><span class="n">output_dtype</span><span class="p">(</span><span class="n">nmom</span><span class="p">,</span>
                                                                                  <span class="n">bitmask</span><span class="o">=</span><span class="n">bitmask</span><span class="p">))</span>
+
+        <span class="c1"># Save the redshift used</span>
+        <span class="n">measurements</span><span class="p">[</span><span class="s1">&#39;REDSHIFT&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_redshift</span>
 
         <span class="c1"># Mask dummy lines</span>
         <span class="k">if</span> <span class="n">numpy</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">momdb</span><span class="o">.</span><span class="n">dummy</span><span class="p">):</span>
@@ -1048,13 +1066,14 @@
             <span class="k">return</span> <span class="n">measurements</span>
 
         <span class="c1"># Common arrays used for each spectrum</span>
-        <span class="n">blue_fraction</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nmom</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
-        <span class="n">red_fraction</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nmom</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+        <span class="n">blue_fraction</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nmom</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="n">red_fraction</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nmom</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
 
-        <span class="n">incomplete</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nmom</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">bool</span><span class="p">)</span>
-        <span class="n">empty</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nmom</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">bool</span><span class="p">)</span>
-        <span class="n">divbyzero</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nmom</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">bool</span><span class="p">)</span>
-        <span class="n">undefined_mom2</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nmom</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">bool</span><span class="p">)</span>
+        <span class="n">incomplete</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nmom</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+        <span class="n">empty</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nmom</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+        <span class="n">divbyzero</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nmom</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+        <span class="n">undefined_mom1</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nmom</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+        <span class="n">undefined_mom2</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nmom</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
 
         <span class="c1"># Perform the measurements for each spectrum</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nspec</span><span class="p">):</span>
@@ -1064,6 +1083,7 @@
             <span class="n">incomplete</span><span class="p">[:]</span> <span class="o">=</span> <span class="kc">False</span>
             <span class="n">empty</span><span class="p">[:]</span> <span class="o">=</span> <span class="kc">False</span>
             <span class="n">divbyzero</span><span class="p">[:]</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">undefined_mom1</span><span class="p">[:]</span> <span class="o">=</span> <span class="kc">False</span>
             <span class="n">undefined_mom2</span><span class="p">[:]</span> <span class="o">=</span> <span class="kc">False</span>
 
             <span class="c1"># Shift the sidebands to the appropriate redshift</span>
@@ -1076,15 +1096,14 @@
             <span class="c1"># the sidebands, or if the model was subtracted in one</span>
             <span class="c1"># sideband but not the other</span>
             <span class="k">if</span> <span class="n">no_continuum</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">spec</span> <span class="o">=</span> <span class="n">_flux</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span> <span class="k">if</span> <span class="n">_fluxnc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_fluxnc</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span>
+                <span class="n">spec</span> <span class="o">=</span> <span class="n">_flux</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span>
                 <span class="n">spec_n</span> <span class="o">=</span> <span class="kc">None</span>
 
-                <span class="c1"># Flag moment calculations as having not corrected for</span>
-                <span class="c1"># stellar aborption</span>
-                <span class="k">if</span> <span class="n">_fluxnc</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="n">measurements</span><span class="p">[</span><span class="s1">&#39;MASK&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">,:]</span> <span class="o">=</span> <span class="kc">True</span> <span class="k">if</span> <span class="n">bitmask</span> <span class="ow">is</span> <span class="kc">None</span> \
-                                <span class="k">else</span> <span class="n">bitmask</span><span class="o">.</span><span class="n">turn_on</span><span class="p">(</span><span class="n">measurements</span><span class="p">[</span><span class="s1">&#39;MASK&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">,:],</span>
-                                                     <span class="s1">&#39;NO_ABSORPTION_CORRECTION&#39;</span><span class="p">)</span>
+                <span class="c1"># Flag moment calculations without a stellar-absorption</span>
+                <span class="c1"># correction</span>
+                <span class="n">measurements</span><span class="p">[</span><span class="s1">&#39;MASK&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">,:]</span> <span class="o">=</span> <span class="kc">True</span> <span class="k">if</span> <span class="n">bitmask</span> <span class="ow">is</span> <span class="kc">None</span> \
+                                                <span class="k">else</span> <span class="n">bitmask</span><span class="o">.</span><span class="n">turn_on</span><span class="p">(</span><span class="n">measurements</span><span class="p">[</span><span class="s1">&#39;MASK&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">,:],</span>
+                                                                     <span class="s1">&#39;NO_ABSORPTION_CORRECTION&#39;</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">blue_fraction</span><span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">momdb</span><span class="o">.</span><span class="n">dummy</span><span class="p">)]</span> \
                         <span class="o">=</span> <span class="n">passband_integrated_width</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">no_continuum</span><span class="p">[</span><span class="n">i</span><span class="p">,:],</span> <span class="n">passband</span><span class="o">=</span><span class="n">_bluebands</span><span class="p">,</span>
@@ -1113,7 +1132,7 @@
                                                        <span class="s1">&#39;JUMP_BTWN_SIDEBANDS&#39;</span><span class="p">])</span>
 
                 <span class="n">spec</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_flux</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="n">_fluxnc</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-                <span class="n">spec_n</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nmom</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">int</span><span class="p">)</span>
+                <span class="n">spec_n</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nmom</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
                 <span class="n">spec_n</span><span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">jumps</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">1</span>
 
                 <span class="c1"># Flag moment calculations as having not been corrected</span>
@@ -1127,7 +1146,8 @@
                 <span class="n">measurements</span><span class="p">[</span><span class="s1">&#39;BCONT&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">,</span><span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">momdb</span><span class="o">.</span><span class="n">dummy</span><span class="p">)],</span> <span class="n">conterr</span><span class="p">,</span> \
                 <span class="n">incomplete</span><span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">momdb</span><span class="o">.</span><span class="n">dummy</span><span class="p">)],</span> <span class="n">empty</span><span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">momdb</span><span class="o">.</span><span class="n">dummy</span><span class="p">)]</span> \
                     <span class="o">=</span> <span class="n">EmissionLineMoments</span><span class="o">.</span><span class="n">sideband_pseudocontinua</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">spec</span><span class="p">,</span> <span class="n">_bluebands</span><span class="p">,</span>
-                                                        <span class="n">spec_n</span><span class="o">=</span><span class="n">spec_n</span><span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">momdb</span><span class="o">.</span><span class="n">dummy</span><span class="p">)],</span>
+                                                                  <span class="n">spec_n</span><span class="o">=</span><span class="kc">None</span> <span class="k">if</span> <span class="n">spec_n</span> <span class="ow">is</span> <span class="kc">None</span>
+                                                            <span class="k">else</span> <span class="n">spec_n</span><span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">momdb</span><span class="o">.</span><span class="n">dummy</span><span class="p">)],</span>
                                                                   <span class="n">err</span><span class="o">=</span><span class="n">__err</span><span class="p">,</span> <span class="n">weighted_center</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">__err</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">measurements</span><span class="p">[</span><span class="s1">&#39;BCONTERR&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">,</span><span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">momdb</span><span class="o">.</span><span class="n">dummy</span><span class="p">)]</span> <span class="o">=</span> <span class="n">conterr</span>
@@ -1143,7 +1163,8 @@
                 <span class="n">measurements</span><span class="p">[</span><span class="s1">&#39;RCONT&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">,</span><span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">momdb</span><span class="o">.</span><span class="n">dummy</span><span class="p">)],</span> <span class="n">conterr</span><span class="p">,</span> \
                 <span class="n">incomplete</span><span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">momdb</span><span class="o">.</span><span class="n">dummy</span><span class="p">)],</span> <span class="n">empty</span><span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">momdb</span><span class="o">.</span><span class="n">dummy</span><span class="p">)]</span> \
                     <span class="o">=</span> <span class="n">EmissionLineMoments</span><span class="o">.</span><span class="n">sideband_pseudocontinua</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">spec</span><span class="p">,</span> <span class="n">_redbands</span><span class="p">,</span>
-                                                          <span class="n">spec_n</span><span class="o">=</span><span class="n">spec_n</span><span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">momdb</span><span class="o">.</span><span class="n">dummy</span><span class="p">)],</span>
+                                                                  <span class="n">spec_n</span><span class="o">=</span><span class="kc">None</span> <span class="k">if</span> <span class="n">spec_n</span> <span class="ow">is</span> <span class="kc">None</span>
+                                                            <span class="k">else</span> <span class="n">spec_n</span><span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">momdb</span><span class="o">.</span><span class="n">dummy</span><span class="p">)],</span>
                                                                   <span class="n">err</span><span class="o">=</span><span class="n">__err</span><span class="p">,</span> <span class="n">weighted_center</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">__err</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">measurements</span><span class="p">[</span><span class="s1">&#39;RCONTERR&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">,</span><span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">momdb</span><span class="o">.</span><span class="n">dummy</span><span class="p">)]</span> <span class="o">=</span> <span class="n">conterr</span>
@@ -1168,14 +1189,16 @@
                     <span class="n">measurements</span><span class="p">[</span><span class="s1">&#39;FLUXERR&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">,</span><span class="n">indx</span><span class="p">],</span> <span class="n">measurements</span><span class="p">[</span><span class="s1">&#39;MOM1&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">,</span><span class="n">indx</span><span class="p">],</span> \
                     <span class="n">measurements</span><span class="p">[</span><span class="s1">&#39;MOM1ERR&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">,</span><span class="n">indx</span><span class="p">],</span> <span class="n">measurements</span><span class="p">[</span><span class="s1">&#39;MOM2&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">,</span><span class="n">indx</span><span class="p">],</span> \
                     <span class="n">measurements</span><span class="p">[</span><span class="s1">&#39;MOM2ERR&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">,</span><span class="n">indx</span><span class="p">],</span> <span class="n">measurements</span><span class="p">[</span><span class="s1">&#39;SINST&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">,</span><span class="n">indx</span><span class="p">],</span> \
-                    <span class="n">incomplete</span><span class="p">[</span><span class="n">indx</span><span class="p">],</span> <span class="n">empty</span><span class="p">[</span><span class="n">indx</span><span class="p">],</span> <span class="n">divbyzero</span><span class="p">[</span><span class="n">indx</span><span class="p">],</span> <span class="n">undefined_mom2</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> \
+                    <span class="n">incomplete</span><span class="p">[</span><span class="n">indx</span><span class="p">],</span> <span class="n">empty</span><span class="p">[</span><span class="n">indx</span><span class="p">],</span> <span class="n">divbyzero</span><span class="p">[</span><span class="n">indx</span><span class="p">],</span> <span class="n">undefined_mom1</span><span class="p">[</span><span class="n">indx</span><span class="p">],</span> \
+                    <span class="n">undefined_mom2</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> \
                             <span class="n">EmissionLineMoments</span><span class="o">.</span><span class="n">continuum_subtracted_moments</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">spec</span><span class="p">,</span>
                                                                <span class="n">_mainbands</span><span class="p">,</span> <span class="n">momdb</span><span class="p">[</span><span class="s1">&#39;restwave&#39;</span><span class="p">][</span><span class="n">indx</span><span class="p">],</span>
                                                                <span class="n">measurements</span><span class="p">[</span><span class="s1">&#39;BCEN&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">,</span><span class="n">indx</span><span class="p">],</span>
                                                                <span class="n">measurements</span><span class="p">[</span><span class="s1">&#39;BCONT&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">,</span><span class="n">indx</span><span class="p">],</span>
                                                                <span class="n">measurements</span><span class="p">[</span><span class="s1">&#39;RCEN&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">,</span><span class="n">indx</span><span class="p">],</span>
                                                                <span class="n">measurements</span><span class="p">[</span><span class="s1">&#39;RCONT&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">,</span><span class="n">indx</span><span class="p">],</span>
-                                                               <span class="n">spec_n</span><span class="o">=</span><span class="n">spec_n</span><span class="p">[</span><span class="n">indx</span><span class="p">],</span> <span class="n">err</span><span class="o">=</span><span class="n">__err</span><span class="p">,</span>
+                                                               <span class="n">spec_n</span><span class="o">=</span><span class="kc">None</span> <span class="k">if</span> <span class="n">spec_n</span> <span class="ow">is</span> <span class="kc">None</span> 
+                                                                    <span class="k">else</span> <span class="n">spec_n</span><span class="p">[</span><span class="n">indx</span><span class="p">],</span> <span class="n">err</span><span class="o">=</span><span class="n">__err</span><span class="p">,</span>
                                                                <span class="n">sres</span><span class="o">=</span><span class="n">__sres</span><span class="p">)</span> 
 
             <span class="c1"># Turn on any necessary bits</span>
@@ -1185,6 +1208,9 @@
                         <span class="k">else</span> <span class="n">bitmask</span><span class="o">.</span><span class="n">turn_on</span><span class="p">(</span><span class="n">measurements</span><span class="p">[</span><span class="s1">&#39;MASK&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">,</span><span class="n">empty</span><span class="p">],</span> <span class="s1">&#39;MAIN_EMPTY&#39;</span><span class="p">)</span>
             <span class="n">measurements</span><span class="p">[</span><span class="s1">&#39;MASK&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">,</span><span class="n">divbyzero</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span> <span class="k">if</span> <span class="n">bitmask</span> <span class="ow">is</span> <span class="kc">None</span> \
                         <span class="k">else</span> <span class="n">bitmask</span><span class="o">.</span><span class="n">turn_on</span><span class="p">(</span><span class="n">measurements</span><span class="p">[</span><span class="s1">&#39;MASK&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">,</span><span class="n">divbyzero</span><span class="p">],</span> <span class="s1">&#39;DIVBYZERO&#39;</span><span class="p">)</span>
+            <span class="n">measurements</span><span class="p">[</span><span class="s1">&#39;MASK&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">,</span><span class="n">undefined_mom1</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span> <span class="k">if</span> <span class="n">bitmask</span> <span class="ow">is</span> <span class="kc">None</span> \
+                        <span class="k">else</span> <span class="n">bitmask</span><span class="o">.</span><span class="n">turn_on</span><span class="p">(</span><span class="n">measurements</span><span class="p">[</span><span class="s1">&#39;MASK&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">,</span><span class="n">undefined_mom1</span><span class="p">],</span>
+                                             <span class="s1">&#39;UNDEFINED_MOM1&#39;</span><span class="p">)</span>
             <span class="n">measurements</span><span class="p">[</span><span class="s1">&#39;MASK&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">,</span><span class="n">undefined_mom2</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span> <span class="k">if</span> <span class="n">bitmask</span> <span class="ow">is</span> <span class="kc">None</span> \
                         <span class="k">else</span> <span class="n">bitmask</span><span class="o">.</span><span class="n">turn_on</span><span class="p">(</span><span class="n">measurements</span><span class="p">[</span><span class="s1">&#39;MASK&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">,</span><span class="n">undefined_mom2</span><span class="p">],</span>
                                              <span class="s1">&#39;UNDEFINED_MOM2&#39;</span><span class="p">)</span>
@@ -1438,6 +1464,8 @@
                                                          <span class="n">measurements</span><span class="p">[</span><span class="s1">&#39;FLUX&#39;</span><span class="p">],</span> <span class="n">redshift</span><span class="o">=</span><span class="n">_redshift</span><span class="p">,</span>
                                                          <span class="n">line_flux_err</span><span class="o">=</span><span class="n">measurements</span><span class="p">[</span><span class="s1">&#39;FLUXERR&#39;</span><span class="p">],</span>
                                                          <span class="n">include_band</span><span class="o">=</span><span class="n">include_band</span><span class="p">)</span>
+
+        <span class="c1"># TODO: This is also now set in measure_moments; remove this?</span>
         <span class="n">measurements</span><span class="p">[</span><span class="s1">&#39;REDSHIFT&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_redshift</span>
 
         <span class="c1"># Flag non-positive measurements</span>

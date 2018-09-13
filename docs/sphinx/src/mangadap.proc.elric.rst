@@ -1,5 +1,5 @@
-mangadap\.proc\.elric module
-============================
+mangadap.proc.elric module
+==========================
 
 .. automodule:: mangadap.proc.elric
     :members:

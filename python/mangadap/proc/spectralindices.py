@@ -421,8 +421,6 @@ class BandheadIndices:
         # Calculate the index in the correct order
         blue_n = order == 'b_r'
         self.index = numpy.ma.zeros(self.nindx, dtype=numpy.float)
-#        import pdb
-#        pdb.set_trace()
         self.index[blue_n] = numpy.ma.divide(self.blue_continuum[blue_n],
                                              self.red_continuum[blue_n]).filled(0.0)
         self.divbyzero[blue_n] = numpy.invert(numpy.absolute(self.red_continuum[blue_n])>0.0)
@@ -1558,8 +1556,10 @@ class SpectralIndices:
 
         # Mask any dummy indices
         dummy = numpy.zeros(nindx, dtype=numpy.bool)
-        dummy[:nabs] = absdb.dummy
-        dummy[nabs:] = bhddb.dummy
+        if absdb is not None:
+            dummy[:nabs] = absdb.dummy
+        if bhddb is not None:
+            dummy[nabs:] = bhddb.dummy
         if numpy.any(dummy):
             measurements['MASK'][:,dummy] = True if bitmask is None else \
                     bitmask.turn_on(measurements['MASK'][:,dummy], 'UNDEFINED_BANDS')

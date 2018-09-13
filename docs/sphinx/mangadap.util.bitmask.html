@@ -100,7 +100,7 @@
 <li class="toctree-l3"><a class="reference internal" href="mangadap.par.html">mangadap.par package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.proc.html">mangadap.proc package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.survey.html">mangadap.survey package</a></li>
-<li class="toctree-l3"><a class="reference internal" href="mangadap.test.html">mangadap.test package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.tests.html">mangadap.tests package</a></li>
 <li class="toctree-l3 current"><a class="reference internal" href="mangadap.util.html">mangadap.util package</a><ul class="current">
 <li class="toctree-l4 current"><a class="reference internal" href="mangadap.util.html#submodules">Submodules</a></li>
 <li class="toctree-l4"><a class="reference internal" href="mangadap.util.html#module-mangadap.util">Module contents</a></li>
@@ -192,7 +192,7 @@
 <dt><em>Source location</em>:</dt>
 <dd>$MANGADAP_DIR/python/mangadap/util/bitmask.py</dd>
 <dt><em>Imports and python version compliance</em>:</dt>
-<dd><div class="first last highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<dd><div class="first last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
@@ -221,7 +221,7 @@
 <dd><p class="first">Here is an example of reading/creating a TemplateLibrary, then
 creating a plot that shows the full spectrum (blue) and the unmasked
 spectrum (green):</p>
-<div class="last highlight-default"><div class="highlight"><pre><span></span><span class="c1"># Imports</span>
+<div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Imports</span>
 <span class="kn">import</span> <span class="nn">numpy</span>
 <span class="kn">from</span> <span class="nn">mangadap.drpfits</span> <span class="k">import</span> <span class="n">DRPFits</span>
 <span class="kn">from</span> <span class="nn">mangadap.proc.TemplateLibrary</span> <span class="k">import</span> <span class="n">TemplateLibrary</span><span class="p">,</span> <span class="n">TemplateLibraryBitMask</span>
@@ -253,22 +253,22 @@ spectrum (green):</p>
 <dd><div class="first last line-block">
 <div class="line"><strong>01 Jun 2015</strong>: Original implementation by K. Westfall (KBW)</div>
 <div class="line"><strong>07 Oct 2015</strong>: (KBW) Added a usage case</div>
-<div class="line"><strong>29 Jan 2016</strong>: (KBW) Changed attributes of <a class="reference internal" href="#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal"><span class="pre">BitMask</span></code></a> and
+<div class="line"><strong>29 Jan 2016</strong>: (KBW) Changed attributes of <a class="reference internal" href="#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal notranslate"><span class="pre">BitMask</span></code></a> and
 added functionality to print a description of the bits.  Convert
-<a class="reference internal" href="mangadap.proc.templatelibrary.html#mangadap.proc.templatelibrary.TemplateLibraryBitMask" title="mangadap.proc.templatelibrary.TemplateLibraryBitMask"><code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.templatelibrary.TemplateLibraryBitMask</span></code></a> to
+<a class="reference internal" href="mangadap.proc.templatelibrary.html#mangadap.proc.templatelibrary.TemplateLibraryBitMask" title="mangadap.proc.templatelibrary.TemplateLibraryBitMask"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.proc.templatelibrary.TemplateLibraryBitMask</span></code></a> to
 new format where the bits are read from a configuration file.</div>
 <div class="line"><strong>17 Feb 2016</strong>: (KBW) Minor edit to documentation</div>
 <div class="line"><strong>16 Mar 2016</strong>: (KBW) Moved TemplateLibraryBitMask to
-<a class="reference internal" href="mangadap.proc.templatelibrary.html#mangadap.proc.templatelibrary.TemplateLibraryBitMask" title="mangadap.proc.templatelibrary.TemplateLibraryBitMask"><code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.templatelibrary.TemplateLibraryBitMask</span></code></a>;
+<a class="reference internal" href="mangadap.proc.templatelibrary.html#mangadap.proc.templatelibrary.TemplateLibraryBitMask" title="mangadap.proc.templatelibrary.TemplateLibraryBitMask"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.proc.templatelibrary.TemplateLibraryBitMask</span></code></a>;
 moved HDUList_mask_wavelengths to
-<a class="reference internal" href="mangadap.proc.util.html#mangadap.proc.util.HDUList_mask_wavelengths" title="mangadap.proc.util.HDUList_mask_wavelengths"><code class="xref py py-func docutils literal"><span class="pre">mangadap.proc.util.HDUList_mask_wavelengths()</span></code></a>.</div>
-<div class="line"><strong>27 Mar 2016</strong>: (KBW) Added <a class="reference internal" href="#mangadap.util.bitmask.BitMask.from_ini_file" title="mangadap.util.bitmask.BitMask.from_ini_file"><code class="xref py py-func docutils literal"><span class="pre">BitMask.from_ini_file()</span></code></a> and
-<a class="reference internal" href="#mangadap.util.bitmask.BitMask.from_par_file" title="mangadap.util.bitmask.BitMask.from_par_file"><code class="xref py py-func docutils literal"><span class="pre">BitMask.from_par_file()</span></code></a> class methods.  Added
-<a class="reference internal" href="#mangadap.util.bitmask.BitMask._fill_sequence" title="mangadap.util.bitmask.BitMask._fill_sequence"><code class="xref py py-func docutils literal"><span class="pre">BitMask._fill_sequence()</span></code></a> static method.  This allows for
-<a class="reference internal" href="#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal"><span class="pre">BitMask</span></code></a> objects to be declared directly from the files,
+<a class="reference internal" href="mangadap.proc.util.html#mangadap.proc.util.HDUList_mask_wavelengths" title="mangadap.proc.util.HDUList_mask_wavelengths"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.proc.util.HDUList_mask_wavelengths()</span></code></a>.</div>
+<div class="line"><strong>27 Mar 2016</strong>: (KBW) Added <a class="reference internal" href="#mangadap.util.bitmask.BitMask.from_ini_file" title="mangadap.util.bitmask.BitMask.from_ini_file"><code class="xref py py-func docutils literal notranslate"><span class="pre">BitMask.from_ini_file()</span></code></a> and
+<a class="reference internal" href="#mangadap.util.bitmask.BitMask.from_par_file" title="mangadap.util.bitmask.BitMask.from_par_file"><code class="xref py py-func docutils literal notranslate"><span class="pre">BitMask.from_par_file()</span></code></a> class methods.  Added
+<a class="reference internal" href="#mangadap.util.bitmask.BitMask._fill_sequence" title="mangadap.util.bitmask.BitMask._fill_sequence"><code class="xref py py-func docutils literal notranslate"><span class="pre">BitMask._fill_sequence()</span></code></a> static method.  This allows for
+<a class="reference internal" href="#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal notranslate"><span class="pre">BitMask</span></code></a> objects to be declared directly from the files,
 and allows the bit values to take on any number.</div>
 <div class="line"><strong>05 Apr 2016</strong>: (KBW) Added parameters to initialization of
-<a class="reference internal" href="#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal"><span class="pre">BitMask</span></code></a> objects to clean up some of the derived class
+<a class="reference internal" href="#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal notranslate"><span class="pre">BitMask</span></code></a> objects to clean up some of the derived class
 initialization.</div>
 <div class="line"><strong>11 May 2016</strong>: (KBW) Switch to using <a class="reference external" href="http://pydl.readthedocs.io/en/stable/api/pydl.pydlutils.yanny.yanny.html">pydl.pydlutils.yanny</a>
 instead of internal yanny reader</div>
@@ -279,12 +279,12 @@ instead of internal yanny reader</div>
 <dl class="class">
 <dt id="mangadap.util.bitmask.BitMask">
 <em class="property">class </em><code class="descclassname">mangadap.util.bitmask.</code><code class="descname">BitMask</code><span class="sig-paren">(</span><em>keys=None</em>, <em>descr=None</em>, <em>ini_file=None</em>, <em>par_file=None</em>, <em>par_grp=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/bitmask.html#BitMask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.bitmask.BitMask" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Generic class to handle and manipulate bitmasks.  The input list of
 bit names (keys) must be unique, except that values of ‘NULL’ are
 ignored.  The index in the input keys determines the bit value;
 ‘NULL’ keys are included in the count.  For example:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">mangadap.util.bitmask</span> <span class="k">import</span> <span class="n">BitMask</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">mangadap.util.bitmask</span> <span class="k">import</span> <span class="n">BitMask</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">keys</span> <span class="o">=</span> <span class="p">[</span> <span class="s1">&#39;key1&#39;</span><span class="p">,</span> <span class="s1">&#39;key2&#39;</span><span class="p">,</span> <span class="s1">&#39;NULL&#39;</span><span class="p">,</span> <span class="s1">&#39;NULL&#39;</span><span class="p">,</span> <span class="s1">&#39;key3&#39;</span> <span class="p">]</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">bm</span> <span class="o">=</span> <span class="n">BitMask</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">bm</span><span class="o">.</span><span class="n">info</span><span class="p">()</span>
@@ -306,13 +306,13 @@ number ranging from 0..N-1.  If <strong>not</strong> provided, one of
 either <em>ini_file</em> or <em>par_file</em> must be provided.</li>
 <li><strong>descr</strong> (<em>str</em><em>, </em><em>list</em><em>, </em><em>numpy.ndarray</em>) – (<strong>Optional</strong>) List of
 descriptions (or single discription) provided by
-<a class="reference internal" href="#mangadap.util.bitmask.BitMask.info" title="mangadap.util.bitmask.BitMask.info"><code class="xref py py-func docutils literal"><span class="pre">info()</span></code></a> for each bit.</li>
+<a class="reference internal" href="#mangadap.util.bitmask.BitMask.info" title="mangadap.util.bitmask.BitMask.info"><code class="xref py py-func docutils literal notranslate"><span class="pre">info()</span></code></a> for each bit.</li>
 </ul>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
-<li><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if more than 64 bits are provided.</li>
-<li><code class="xref py py-exc docutils literal"><span class="pre">TypeError</span></code> – Raised if the provided <cite>keys</cite> do not have the correct
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if more than 64 bits are provided.</li>
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">TypeError</span></code> – Raised if the provided <cite>keys</cite> do not have the correct
 type.</li>
 </ul>
 </td>
@@ -347,16 +347,16 @@ number of bits.</p>
 <dl class="staticmethod">
 <dt id="mangadap.util.bitmask.BitMask._fill_sequence">
 <em class="property">static </em><code class="descname">_fill_sequence</code><span class="sig-paren">(</span><em>keys</em>, <em>vals</em>, <em>descr</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/bitmask.html#BitMask._fill_sequence"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.bitmask.BitMask._fill_sequence" title="Permalink to this definition">¶</a></dt>
-<dd><p>The instantiation of <a class="reference internal" href="#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal"><span class="pre">BitMask</span></code></a> does not include the value
+<dd><p>The instantiation of <a class="reference internal" href="#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal notranslate"><span class="pre">BitMask</span></code></a> does not include the value
 of the bit, it just assumes that the bits should be in sequence
 such that the first key has a value of 0, and the last key has a
 value of N-1.  Unfortunately, not all the bits the DAP follow a
 sequence.  This function finds the range of the bits and then
 slots in NULL keywords and empty descriptions where necessary to
 fill in the full complement of bits.  NULL keywords are ignored
-by the <a class="reference internal" href="#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal"><span class="pre">BitMask</span></code></a> object.</p>
+by the <a class="reference internal" href="#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal notranslate"><span class="pre">BitMask</span></code></a> object.</p>
 <p>This is a static method because it doesn’t depend on any of the
-attributes of <a class="reference internal" href="#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal"><span class="pre">BitMask</span></code></a>.</p>
+attributes of <a class="reference internal" href="#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal notranslate"><span class="pre">BitMask</span></code></a>.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -375,7 +375,7 @@ and descriptions.</p>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">numpy.ndarray</p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if a bit value is less than 0.</p>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if a bit value is less than 0.</p>
 </td>
 </tr>
 </tbody>
@@ -400,7 +400,7 @@ any one of many bits is on.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>value</strong> (<em>uint</em><em>, </em><em>int</em><em>, </em><em>array</em>) – Bitmask value.  It should be less
-than or equal to <a class="reference internal" href="#mangadap.util.bitmask.BitMask.max_value" title="mangadap.util.bitmask.BitMask.max_value"><code class="xref py py-attr docutils literal"><span class="pre">max_value</span></code></a>; however, that is not
+than or equal to <a class="reference internal" href="#mangadap.util.bitmask.BitMask.max_value" title="mangadap.util.bitmask.BitMask.max_value"><code class="xref py py-attr docutils literal notranslate"><span class="pre">max_value</span></code></a>; however, that is not
 checked.</li>
 <li><strong>flag</strong> (<em>string</em><em>, </em><em>array</em>) – (<strong>Optional</strong>) Bit names to check.  If
 None, then it checks if any bit is on.</li>
@@ -415,9 +415,9 @@ is on for the provided bitmask value.</p>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
-<li><code class="xref py py-exc docutils literal"><span class="pre">KeyError</span></code> – Raised by the dict data type if the input <em>flag</em>
-is not one of the valid <code class="xref py py-attr docutils literal"><span class="pre">flags</span></code>.</li>
-<li><code class="xref py py-exc docutils literal"><span class="pre">TypeError</span></code> – Raised if the provided <em>flag</em> does not contain
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">KeyError</span></code> – Raised by the dict data type if the input <em>flag</em>
+is not one of the valid <code class="xref py py-attr docutils literal notranslate"><span class="pre">flags</span></code>.</li>
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">TypeError</span></code> – Raised if the provided <em>flag</em> does not contain
 one or more strings.</li>
 </ul>
 </td>
@@ -435,7 +435,7 @@ one or more strings.</li>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>value</strong> (<em>int</em><em>, </em><em>uint</em>) – Bitmask value.  It should be less than or
-equal to <a class="reference internal" href="#mangadap.util.bitmask.BitMask.max_value" title="mangadap.util.bitmask.BitMask.max_value"><code class="xref py py-attr docutils literal"><span class="pre">max_value</span></code></a>; however, that is not
+equal to <a class="reference internal" href="#mangadap.util.bitmask.BitMask.max_value" title="mangadap.util.bitmask.BitMask.max_value"><code class="xref py py-attr docutils literal notranslate"><span class="pre">max_value</span></code></a>; however, that is not
 checked.</p>
 </td>
 </tr>
@@ -446,9 +446,9 @@ checked.</p>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
-<li><code class="xref py py-exc docutils literal"><span class="pre">KeyError</span></code> – Raised by the dict data type if the input <em>flag</em>
-is not one of the valid <code class="xref py py-attr docutils literal"><span class="pre">flags</span></code>.</li>
-<li><code class="xref py py-exc docutils literal"><span class="pre">TypeError</span></code> – Raised if the provided <em>flag</em> does not contain
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">KeyError</span></code> – Raised by the dict data type if the input <em>flag</em>
+is not one of the valid <code class="xref py py-attr docutils literal notranslate"><span class="pre">flags</span></code>.</li>
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">TypeError</span></code> – Raised if the provided <em>flag</em> does not contain
 one or more strings.</li>
 </ul>
 </td>
@@ -465,7 +465,7 @@ of the configuration file define the keys, and each section is
 expected to have <cite>value</cite> and <cite>descr</cite> components that define the
 bit value and provided a description of the bit.  An example ini
 file might look like this:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">NO_DATA</span><span class="p">]</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">NO_DATA</span><span class="p">]</span>
  <span class="n">value</span> <span class="o">=</span> <span class="mi">0</span>
  <span class="n">descr</span> <span class="o">=</span> <span class="n">Pixel</span> <span class="n">has</span> <span class="n">no</span> <span class="n">data</span>
 
@@ -475,21 +475,21 @@ file might look like this:</p>
 </pre></div>
 </div>
 <p>See
-<a class="reference internal" href="mangadap.proc.templatelibrary.html#mangadap.proc.templatelibrary.TemplateLibraryBitMask" title="mangadap.proc.templatelibrary.TemplateLibraryBitMask"><code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.templatelibrary.TemplateLibraryBitMask</span></code></a>
+<a class="reference internal" href="mangadap.proc.templatelibrary.html#mangadap.proc.templatelibrary.TemplateLibraryBitMask" title="mangadap.proc.templatelibrary.TemplateLibraryBitMask"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.proc.templatelibrary.TemplateLibraryBitMask</span></code></a>
 for an example that uses this function.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>f</strong> (<em>str</em>) – File name to use for defining the
-<a class="reference internal" href="#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal"><span class="pre">BitMask</span></code></a>.</td>
+<a class="reference internal" href="#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal notranslate"><span class="pre">BitMask</span></code></a>.</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Object with bitmasks defined by the ini
 file.</td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal"><span class="pre">BitMask</span></code></a></td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal notranslate"><span class="pre">BitMask</span></code></a></td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal"><span class="pre">FileNotFoundError</span></code> – Raised if the input file does not exist.</td>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal notranslate"><span class="pre">FileNotFoundError</span></code> – Raised if the input file does not exist.</td>
 </tr>
 </tbody>
 </table>
@@ -501,7 +501,7 @@ file.</td>
 <dd><p>Define the object using an <a class="reference external" href="http://www.sdss.org/dr12/software/par/">SDSS-style parameter file</a>.  This
 has been tailored to work with the sdssMaskbits.par file in
 IDLUTILS; however, it can work with other like files.</p>
-<p>See <a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFitsBitMask" title="mangadap.drpfits.DRPFitsBitMask"><code class="xref py py-class docutils literal"><span class="pre">mangadap.drpfits.DRPFitsBitMask</span></code></a> for an example that
+<p>See <a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFitsBitMask" title="mangadap.drpfits.DRPFitsBitMask"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.drpfits.DRPFitsBitMask</span></code></a> for an example that
 uses this function.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -509,9 +509,9 @@ uses this function.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>f</strong> (<em>str</em>) – File name to use for defining the
-<a class="reference internal" href="#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal"><span class="pre">BitMask</span></code></a>.</li>
+<a class="reference internal" href="#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal notranslate"><span class="pre">BitMask</span></code></a>.</li>
 <li><strong>name</strong> (<em>str</em>) – The designation of the bits to assign.  For
-example, in <a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFitsBitMask" title="mangadap.drpfits.DRPFitsBitMask"><code class="xref py py-class docutils literal"><span class="pre">mangadap.drpfits.DRPFitsBitMask</span></code></a>
+example, in <a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFitsBitMask" title="mangadap.drpfits.DRPFitsBitMask"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.drpfits.DRPFitsBitMask</span></code></a>
 this is <cite>‘MANGA_DRP3PIXMASK’</cite>.</li>
 </ul>
 </td>
@@ -520,10 +520,10 @@ this is <cite>‘MANGA_DRP3PIXMASK’</cite>.</li>
 parameter file.</p>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first"><a class="reference internal" href="#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal"><span class="pre">BitMask</span></code></a></p>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first"><a class="reference internal" href="#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal notranslate"><span class="pre">BitMask</span></code></a></p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">FileNotFoundError</span></code> – Raised if the input file does not exist.</p>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal notranslate"><span class="pre">FileNotFoundError</span></code> – Raised if the input file does not exist.</p>
 </td>
 </tr>
 </tbody>
@@ -575,7 +575,7 @@ int8 values.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>value</strong> (<em>uint</em><em>, </em><em>int</em><em>, </em><em>array</em>) – Bitmask value.  It should be less
-than or equal to <a class="reference internal" href="#mangadap.util.bitmask.BitMask.max_value" title="mangadap.util.bitmask.BitMask.max_value"><code class="xref py py-attr docutils literal"><span class="pre">max_value</span></code></a>; however, that is not
+than or equal to <a class="reference internal" href="#mangadap.util.bitmask.BitMask.max_value" title="mangadap.util.bitmask.BitMask.max_value"><code class="xref py py-attr docutils literal notranslate"><span class="pre">max_value</span></code></a>; however, that is not
 checked.</li>
 <li><strong>flag</strong> (<em>list</em><em>, </em><em>numpy.ndarray</em><em>, or </em><em>str</em>) – Bit name(s) to toggle.</li>
 </ul>
@@ -588,9 +588,9 @@ checked.</li>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
-<li><code class="xref py py-exc docutils literal"><span class="pre">KeyError</span></code> – Raised by the dict data type if the input <em>flag</em>
-is not one of the valid <code class="xref py py-attr docutils literal"><span class="pre">flags</span></code>.</li>
-<li><code class="xref py py-exc docutils literal"><span class="pre">Exception</span></code> – Raised if the provided <em>flag</em> is not a string.</li>
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">KeyError</span></code> – Raised by the dict data type if the input <em>flag</em>
+is not one of the valid <code class="xref py py-attr docutils literal notranslate"><span class="pre">flags</span></code>.</li>
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">Exception</span></code> – Raised if the provided <em>flag</em> is not a string.</li>
 </ul>
 </td>
 </tr>
@@ -608,7 +608,7 @@ is not one of the valid <code class="xref py py-attr docutils literal"><span cla
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>value</strong> (<em>uint</em><em> or </em><em>array</em>) – Bitmask value.  It should be less
-than or equal to <a class="reference internal" href="#mangadap.util.bitmask.BitMask.max_value" title="mangadap.util.bitmask.BitMask.max_value"><code class="xref py py-attr docutils literal"><span class="pre">max_value</span></code></a>; however, that is not
+than or equal to <a class="reference internal" href="#mangadap.util.bitmask.BitMask.max_value" title="mangadap.util.bitmask.BitMask.max_value"><code class="xref py py-attr docutils literal notranslate"><span class="pre">max_value</span></code></a>; however, that is not
 checked.</li>
 <li><strong>flag</strong> (<em>list</em><em>, </em><em>numpy.ndarray</em><em>, or </em><em>str</em>) – Bit name(s) to turn off.</li>
 </ul>
@@ -621,9 +621,9 @@ checked.</li>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
-<li><code class="xref py py-exc docutils literal"><span class="pre">KeyError</span></code> – Raised by the dict data type if the input <em>flag</em>
-is not one of the valid <code class="xref py py-attr docutils literal"><span class="pre">flags</span></code>.</li>
-<li><code class="xref py py-exc docutils literal"><span class="pre">Exception</span></code> – Raised if the provided <em>flag</em> is not a string.</li>
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">KeyError</span></code> – Raised by the dict data type if the input <em>flag</em>
+is not one of the valid <code class="xref py py-attr docutils literal notranslate"><span class="pre">flags</span></code>.</li>
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">Exception</span></code> – Raised if the provided <em>flag</em> is not a string.</li>
 </ul>
 </td>
 </tr>
@@ -641,7 +641,7 @@ is not one of the valid <code class="xref py py-attr docutils literal"><span cla
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>value</strong> (<em>uint</em><em> or </em><em>array</em>) – Bitmask value.  It should be less
-than or equal to <a class="reference internal" href="#mangadap.util.bitmask.BitMask.max_value" title="mangadap.util.bitmask.BitMask.max_value"><code class="xref py py-attr docutils literal"><span class="pre">max_value</span></code></a>; however, that is not
+than or equal to <a class="reference internal" href="#mangadap.util.bitmask.BitMask.max_value" title="mangadap.util.bitmask.BitMask.max_value"><code class="xref py py-attr docutils literal notranslate"><span class="pre">max_value</span></code></a>; however, that is not
 checked.</li>
 <li><strong>flag</strong> (<em>list</em><em>, </em><em>numpy.ndarray</em><em>, or </em><em>str</em>) – Bit name(s) to turn on.</li>
 </ul>
@@ -654,9 +654,9 @@ checked.</li>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
-<li><code class="xref py py-exc docutils literal"><span class="pre">KeyError</span></code> – Raised by the dict data type if the input <em>flag</em>
-is not one of the valid <code class="xref py py-attr docutils literal"><span class="pre">flags</span></code>.</li>
-<li><code class="xref py py-exc docutils literal"><span class="pre">Exception</span></code> – Raised if the provided <em>flag</em> is not a string.</li>
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">KeyError</span></code> – Raised by the dict data type if the input <em>flag</em>
+is not one of the valid <code class="xref py py-attr docutils literal notranslate"><span class="pre">flags</span></code>.</li>
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">Exception</span></code> – Raised if the provided <em>flag</em> is not a string.</li>
 </ul>
 </td>
 </tr>

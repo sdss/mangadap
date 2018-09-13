@@ -104,7 +104,7 @@
 <li class="toctree-l3"><a class="reference internal" href="mangadap.par.html">mangadap.par package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.proc.html">mangadap.proc package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.survey.html">mangadap.survey package</a></li>
-<li class="toctree-l3"><a class="reference internal" href="mangadap.test.html">mangadap.test package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.tests.html">mangadap.tests package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.util.html">mangadap.util package</a></li>
 </ul>
 </li>
@@ -191,28 +191,6 @@
 </dd>
 <dt><em>Source location</em>:</dt>
 <dd>$MANGADAP_DIR/python/mangadap/contrib/xjmc.py</dd>
-<dt><em>Imports and python version compliance</em>:</dt>
-<dd><div class="first last highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
-<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
-<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
-<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
-
-<span class="kn">import</span> <span class="nn">sys</span>
-<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version</span> <span class="o">&gt;</span> <span class="s1">&#39;3&#39;</span><span class="p">:</span>
-    <span class="n">long</span> <span class="o">=</span> <span class="nb">int</span>
-
-<span class="kn">import</span> <span class="nn">warnings</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-
-<span class="kn">from</span> <span class="nn">scipy</span> <span class="k">import</span> <span class="n">fftpack</span>
-<span class="kn">from</span> <span class="nn">scipy.ndimage</span> <span class="k">import</span> <span class="n">rank_filter</span>
-
-<span class="kn">import</span> <span class="nn">astropy.constants</span>
-
-<span class="kn">from</span> <span class="nn">captools</span> <span class="k">import</span> <span class="n">ppxf</span><span class="p">,</span> <span class="n">capfit</span>
-</pre></div>
-</div>
-</dd>
 <dt><em>Class usage examples</em>:</dt>
 <dd>Add examples</dd>
 <dt><em>Revision history</em>:</dt>
@@ -222,6 +200,9 @@
 <div class="line"><strong>09 Feb 2018</strong>: (KBW) Return the bin matching vector</div>
 <div class="line"><strong>20 Mar 2018</strong>: (KBW) Correct error in carrying around pixels
 rejected during fit</div>
+<div class="line"><strong>22 May 2018</strong>: (KBW) Change import to ppxf package.</div>
+<div class="line"><strong>29 May 2018</strong>: (KBW) Remove original function from Xihan and
+rename <a href="#id1"><span class="problematic" id="id2">*</span></a>_edit function.</div>
 </div>
 </dd>
 </dl>
@@ -259,7 +240,7 @@ associated with each template [shape is (NSPEC+NGASTPL)].</p>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">numpy.ndarray</p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if there is more than one stellar component.</p>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if there is more than one stellar component.</p>
 </td>
 </tr>
 </tbody>
@@ -268,7 +249,7 @@ associated with each template [shape is (NSPEC+NGASTPL)].</p>
 
 <dl class="function">
 <dt id="mangadap.contrib.xjmc._fit_iteration">
-<code class="descclassname">mangadap.contrib.xjmc.</code><code class="descname">_fit_iteration</code><span class="sig-paren">(</span><em>templates</em>, <em>wave</em>, <em>flux</em>, <em>noise</em>, <em>velscale</em>, <em>start</em>, <em>moments</em>, <em>component</em>, <em>gas_template</em>, <em>tpl_to_use=None</em>, <em>reject_boxcar=101</em>, <em>velscale_ratio=None</em>, <em>degree=-1</em>, <em>mdegree=0</em>, <em>reddening=None</em>, <em>tied=None</em>, <em>mask=None</em>, <em>vsyst=0</em>, <em>plot=False</em>, <em>quiet=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/contrib/xjmc.html#_fit_iteration"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.contrib.xjmc._fit_iteration" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">mangadap.contrib.xjmc.</code><code class="descname">_fit_iteration</code><span class="sig-paren">(</span><em>templates</em>, <em>wave</em>, <em>flux</em>, <em>noise</em>, <em>velscale</em>, <em>start</em>, <em>moments</em>, <em>component</em>, <em>gas_template</em>, <em>tpl_to_use=None</em>, <em>reject_boxcar=101</em>, <em>velscale_ratio=None</em>, <em>degree=-1</em>, <em>mdegree=0</em>, <em>reddening=None</em>, <em>tied=None</em>, <em>mask=None</em>, <em>vsyst=0</em>, <em>plot=False</em>, <em>quiet=True</em>, <em>sigma_rej=3.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/contrib/xjmc.html#_fit_iteration"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.contrib.xjmc._fit_iteration" title="Permalink to this definition">¶</a></dt>
 <dd><p>Run a single fit+rejection iteration of the pPXF fit for all input
 spectra with the provided set of constraints/options.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -321,6 +302,8 @@ in the starting wavelength.</li>
 iteration.  Default is to skip the plot.</li>
 <li><strong>quiet</strong> (<em>bool</em>) – (<strong>Optional</strong>) Suppress output to the terminal
 (default).</li>
+<li><strong>sigma_rej</strong> (<em>float</em>) – (<strong>Optional</strong>) Sigma values used for the rejection.
+Default is 3.</li>
 </ul>
 </td>
 </tr>
@@ -358,7 +341,7 @@ ppxf-fitting interation.</p>
 component if requested.  It also restructures the moment and
 starting point arrays as necessary to reflect this change.</p>
 <p>..warning:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">This</span> <span class="n">function</span> <span class="n">requires</span> <span class="n">that</span> <span class="nb">all</span> <span class="n">stellar</span> <span class="n">components</span> <span class="n">have</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">This</span> <span class="n">function</span> <span class="n">requires</span> <span class="n">that</span> <span class="nb">all</span> <span class="n">stellar</span> <span class="n">components</span> <span class="n">have</span>
 <span class="n">component</span> <span class="n">numbers</span> <span class="n">that</span> <span class="n">are</span> <span class="o">**</span><span class="n">less</span> <span class="n">than</span><span class="o">**</span> <span class="nb">any</span> <span class="n">gas</span> <span class="n">components</span><span class="o">.</span>
 <span class="n">However</span><span class="p">,</span> <span class="n">this</span> <span class="o">**</span><span class="ow">is</span> <span class="ow">not</span> <span class="n">checked</span><span class="o">**</span> <span class="n">by</span> <span class="n">the</span> <span class="n">function</span><span class="o">.</span>
 </pre></div>
@@ -396,7 +379,7 @@ each component.</p>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">numpy.ndarray</p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if the provided gas starting kinematics is
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if the provided gas starting kinematics is
 not correct.</p>
 </td>
 </tr>
@@ -514,7 +497,7 @@ tying object reordered as necessary for the new component list
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">numpy.ndarray</p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if no templates are valid.</p>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if no templates are valid.</p>
 </td>
 </tr>
 </tbody>
@@ -548,7 +531,7 @@ a box of size <cite>width</cite> centered at each position.</p>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">numpy.ndarray</p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if the width is not an odd number or if it is
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if the width is not an odd number or if it is
 less than 11 elements.</p>
 </td>
 </tr>
@@ -558,15 +541,10 @@ less than 11 elements.</p>
 
 <dl class="function">
 <dt id="mangadap.contrib.xjmc.emline_fitter_with_ppxf">
-<code class="descclassname">mangadap.contrib.xjmc.</code><code class="descname">emline_fitter_with_ppxf</code><span class="sig-paren">(</span><em>wave0</em>, <em>flux</em>, <em>noise</em>, <em>sres</em>, <em>flux_binned</em>, <em>noise_bin</em>, <em>velscale</em>, <em>velscale_ratio</em>, <em>dv</em>, <em>vel</em>, <em>sig</em>, <em>templates</em>, <em>gas_tpl</em>, <em>vel_gas</em>, <em>sig_gas</em>, <em>gas_names</em>, <em>eml_wave</em>, <em>eml_component</em>, <em>eml_tied</em>, <em>templates_sres</em>, <em>degree</em>, <em>mdegree</em>, <em>x</em>, <em>y</em>, <em>xbin</em>, <em>ybin</em>, <em>mask_binned</em>, <em>mask_drp</em>, <em>nsa_z</em>, <em>debug=False</em>, <em>mode='bin_to_spaxel'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/contrib/xjmc.html#emline_fitter_with_ppxf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.contrib.xjmc.emline_fitter_with_ppxf" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="function">
-<dt id="mangadap.contrib.xjmc.emline_fitter_with_ppxf_edit">
-<code class="descclassname">mangadap.contrib.xjmc.</code><code class="descname">emline_fitter_with_ppxf_edit</code><span class="sig-paren">(</span><em>templates</em>, <em>wave</em>, <em>flux</em>, <em>noise</em>, <em>mask</em>, <em>velscale</em>, <em>velscale_ratio</em>, <em>inp_component</em>, <em>gas_template</em>, <em>inp_moments</em>, <em>inp_start</em>, <em>tied=None</em>, <em>degree=-1</em>, <em>mdegree=0</em>, <em>reddening=None</em>, <em>reject_boxcar=101</em>, <em>vsyst=0</em>, <em>tpl_to_use=None</em>, <em>flux_binned=None</em>, <em>noise_binned=None</em>, <em>mask_binned=None</em>, <em>x_binned=None</em>, <em>y_binned=None</em>, <em>x=None</em>, <em>y=None</em>, <em>plot=False</em>, <em>quiet=False</em>, <em>debug=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/contrib/xjmc.html#emline_fitter_with_ppxf_edit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.contrib.xjmc.emline_fitter_with_ppxf_edit" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">mangadap.contrib.xjmc.</code><code class="descname">emline_fitter_with_ppxf</code><span class="sig-paren">(</span><em>templates</em>, <em>wave</em>, <em>flux</em>, <em>noise</em>, <em>mask</em>, <em>velscale</em>, <em>velscale_ratio</em>, <em>inp_component</em>, <em>gas_template</em>, <em>inp_moments</em>, <em>inp_start</em>, <em>tied=None</em>, <em>degree=-1</em>, <em>mdegree=0</em>, <em>reddening=None</em>, <em>reject_boxcar=101</em>, <em>vsyst=0</em>, <em>tpl_to_use=None</em>, <em>flux_binned=None</em>, <em>noise_binned=None</em>, <em>mask_binned=None</em>, <em>x_binned=None</em>, <em>y_binned=None</em>, <em>x=None</em>, <em>y=None</em>, <em>plot=False</em>, <em>quiet=False</em>, <em>debug=False</em>, <em>sigma_rej=3.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/contrib/xjmc.html#emline_fitter_with_ppxf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.contrib.xjmc.emline_fitter_with_ppxf" title="Permalink to this definition">¶</a></dt>
 <dd><p>Main calling function for fitting stellar-continuum and nebular
 emission lines in many spectra using pPXF.</p>
-<p>This is a generalization of <a class="reference internal" href="#mangadap.contrib.xjmc.emline_fitter_with_ppxf" title="mangadap.contrib.xjmc.emline_fitter_with_ppxf"><code class="xref py py-func docutils literal"><span class="pre">emline_fitter_with_ppxf()</span></code></a> provided
+<p>This is a generalization of <a class="reference internal" href="#mangadap.contrib.xjmc.emline_fitter_with_ppxf" title="mangadap.contrib.xjmc.emline_fitter_with_ppxf"><code class="xref py py-func docutils literal notranslate"><span class="pre">emline_fitter_with_ppxf()</span></code></a> provided
 by Xihan Ji and Michele Cappellari.</p>
 <p>The function <em>does not</em> fit for the stellar kinematics; these are
 fixed during the fit (as provided in <cite>inp_start</cite>) and should have
@@ -575,7 +553,7 @@ number of stellar kinematic moments must have been the same for all
 spectra, and there can only be one stellar component.</p>
 <p>The templates are expected to be an integer number of velscale_ratio
 in length; see
-<a class="reference internal" href="mangadap.proc.ppxffit.html#mangadap.proc.ppxffit.PPXFFit.check_templates" title="mangadap.proc.ppxffit.PPXFFit.check_templates"><code class="xref py py-func docutils literal"><span class="pre">mangadap.proc.ppxffit.PPXFFit.check_templates()</span></code></a>.</p>
+<a class="reference internal" href="mangadap.proc.ppxffit.html#mangadap.proc.ppxffit.PPXFFit.check_templates" title="mangadap.proc.ppxffit.PPXFFit.check_templates"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.proc.ppxffit.PPXFFit.check_templates()</span></code></a>.</p>
 <p>The fitting procedure can be performed for a single set of spectra,
 or a set of spectra that are remapped from an input set of binned
 spectra.  The latter operation is selected by providing the binned
@@ -612,79 +590,75 @@ same except the initial fit to the binned spectra is skipped.  An
 initial fit to the spectra is performed to construct the optimal
 template, instead of basing the optimal template on the initial fit
 to the binned spectrum.</p>
+<div class="admonition-todo admonition" id="index-0">
+<p class="first admonition-title">Todo</p>
+<ul class="last simple">
+<li>Allow a pre-assignment of each remapped spectrum to the binned
+spectra.</li>
+<li>Allow mask(s) to be optional</li>
+</ul>
+</div>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>templates</strong> (<em>numpy.ndarray</em>) – Templates library to use for fitting.
-Shape is (NTPLPIX,NTPL).</li>
+<li><strong>templates</strong> (<em>numpy.ndarray</em>) – Templates library to use for fitting.  Shape is
+(NTPLPIX,NTPL).</li>
 <li><strong>wave</strong> (<em>numpy.ndarray</em>) – Wavelength vector.  Shape is (NPIX,).</li>
-<li><strong>flux</strong> (<em>numpy.ndarray</em>) – Object spectra to fit.  Shape is
-(NSPEC,NPIX).</li>
-<li><strong>noise</strong> (<em>numpy.ndarray</em>) – Error in the object spectra to fit.
-Shape is (NSPEC,NPIX).</li>
-<li><strong>mask</strong> (<em>numpy.ndarray</em>) – Boolean vector that selects the pixels in
-the object spectra to fit (i.e., mask=True for pixels to fit
-and mask=False for pixels to ignore).  Shape is
-(NSPEC,NPIX).  All pixels are fit by default.</li>
+<li><strong>flux</strong> (<em>numpy.ndarray</em>) – Object spectra to fit.  Shape is (NSPEC,NPIX).</li>
+<li><strong>noise</strong> (<em>numpy.ndarray</em>) – Error in the object spectra to fit.  Shape is (NSPEC,NPIX).</li>
+<li><strong>mask</strong> (<em>numpy.ndarray</em>) – Boolean vector that selects the pixels in the object spectra
+to fit (i.e., mask=True for pixels to fit and mask=False for
+pixels to ignore).  Shape is (NSPEC,NPIX).  All pixels are
+fit by default.</li>
 <li><strong>velscale</strong> (<em>float</em>) – The pixel scale of the object spectra in km/s.</li>
-<li><strong>velscale_ratio</strong> (<em>int</em>) – The ratio between the object and template
-pixel scale; must be an integer.</li>
-<li><strong>inp_component</strong> (<em>numpy.ndarray</em>) – Integer vector identifying the
-kinematic component for each template.  Shape is (NTPL,).</li>
-<li><strong>gas_template</strong> (<em>numpy.ndarray</em>) – Boolean vector that selects the
-gas templates.  Shape is (NTPL,).</li>
-<li><strong>inp_moments</strong> (<em>numpy.ndarray</em>) – Integer vector with the number of
-kinematic moments for each component.  Shape is (NCOMP,).</li>
-<li><strong>inp_start</strong> (<em>list</em><em>, </em><em>numpy.ndarray</em>) – The starting kinematics to use
-for each spectrum.  Shape is (NSPEC,); each element has
-shape (NCOMP,); each component element has shape (NMOM,),
-such that the number of moments can be different for each
-component.  NCOMP and NMOM should be the same for all object
-spectra.</li>
-<li><strong>tied</strong> (<em>list</em>) – (<strong>Optional</strong>) List of parameters to tie during the
-fit.  Shape is (NCOMP,).</li>
-<li><strong>degree</strong> (<em>int</em>) – (<strong>Optional</strong>) Order of the additive polynomial to
-include in the fit.  Not included by default.</li>
-<li><strong>mdegree</strong> (<em>int</em>) – (<strong>Optional</strong>) Order of the multiplicative
-polynomial to fit.  Not included by default.</li>
-<li><strong>reddening</strong> (<em>float</em>) – (<strong>Optional</strong>) Initial E(B-V) guess for
-reddening (uses ppxf-default Calzetti 2000 model).  No
-attentuation fit by default.</li>
-<li><strong>reject_boxcar</strong> (<em>int</em>) – (<strong>Optional</strong>) Size of the window for the
-rejection statistics.  Should be an odd number and larger
-and 10.  Default is 101.  If None, no rejection iterations
-are performed.</li>
-<li><strong>vsyst</strong> (<em>float</em>) – (<strong>Optional</strong>) The pseudo velocity shift between
-the template and object spectra just due to the difference
-in the starting wavelength. Default is 0 km/s.</li>
-<li><strong>tpl_to_use</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) Boolean vector
-selecting templates to consider during the fit.  If None,
-all templates are used in the fit.  If provided, the shape
-must be (NBIN,NTPL) when providing the binned data and
-(NSPEC,NTPL) when no binned data are provided.</li>
-<li><strong>flux_binned</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) Binned spectra with
-previous fits to the stellar kinematics.  See purpose above.</li>
-<li><strong>noise_binned</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) Error in the binned
-spectra.</li>
-<li><strong>mask_binned</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) Mask for the binned
-spectra.</li>
-<li><strong>x_binned</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) On-sky bin x
-coordinate; shape is (NBIN,).</li>
-<li><strong>y_binned</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) On-sky bin y
-coordinate; shape is (NBIN,).</li>
-<li><strong>x</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) On-sky spectrum x coordinates;
-shape is (NSPEC,)</li>
-<li><strong>y</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) On-sky spectrum y coordinates;
-shape is (NSPEC,).</li>
-<li><strong>plot</strong> (<em>bool</em>) – (<strong>Optional</strong>) Show the pPXF fit plot at each
-iteration.  Default is to skip the plot.</li>
-<li><strong>quiet</strong> (<em>bool</em>) – (<strong>Optional</strong>) Suppress output to the terminal
-(default).</li>
-<li><strong>debug</strong> (<em>bool</em>) – (<strong>Optional</strong>) Run in debugging mode.  Currently,
-all this does is perform the initial setup and then return
-empty vectors of the correct shape.  No fits are performed.</li>
+<li><strong>velscale_ratio</strong> (<em>int</em>) – The ratio between the object and template pixel scale; must
+be an integer.</li>
+<li><strong>inp_component</strong> (<em>numpy.ndarray</em>) – Integer vector identifying the kinematic component for each
+template.  Shape is (NTPL,).</li>
+<li><strong>gas_template</strong> (<em>numpy.ndarray</em>) – Boolean vector that selects the gas templates.  Shape is
+(NTPL,).</li>
+<li><strong>inp_moments</strong> (<em>numpy.ndarray</em>) – Integer vector with the number of kinematic moments for each
+component.  Shape is (NCOMP,).</li>
+<li><strong>inp_start</strong> (<em>list</em><em>, </em><em>numpy.ndarray</em>) – The starting kinematics to use for each spectrum.  Shape is
+(NSPEC,); each element has shape (NCOMP,); each component
+element has shape (NMOM,), such that the number of moments
+can be different for each component.  NCOMP and NMOM should
+be the same for all object spectra.</li>
+<li><strong>tied</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">list</span></code>, optional) – List of parameters to tie during the fit.  Shape is
+(NCOMP,).</li>
+<li><strong>degree</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">int</span></code>, optional) – Order of the additive polynomial to include in the fit.  Not
+included by default.</li>
+<li><strong>mdegree</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">int</span></code>, optional) – Order of the multiplicative polynomial to fit.  Not included
+by default.</li>
+<li><strong>reddening</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">float</span></code>, optional) – Initial E(B-V) guess for reddening (uses ppxf-default
+Calzetti 2000 model).  No attentuation fit by default.</li>
+<li><strong>reject_boxcar</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">int</span></code>, optional) – Size of the window for the rejection statistics.  Should be
+an odd number and larger and 10.  Default is 101.  If None,
+no rejection iterations are performed.</li>
+<li><strong>vsyst</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">float</span></code>, optional) – The pseudo velocity shift between the template and object
+spectra just due to the difference in the starting
+wavelength. Default is 0 km/s.</li>
+<li><strong>tpl_to_use</strong> (<em>numpy.ndarray</em><em>, </em><em>optional</em>) – Boolean vector selecting templates to consider during the
+fit.  If None, all templates are used in the fit.  If
+provided, the shape must be (NBIN,NTPL) when providing the
+binned data and (NSPEC,NTPL) when no binned data are
+provided.</li>
+<li><strong>flux_binned</strong> (<em>numpy.ndarray</em><em>, </em><em>optional</em>) – Binned spectra with previous fits to the stellar kinematics.
+See purpose above.</li>
+<li><strong>noise_binned</strong> (<em>numpy.ndarray</em><em>, </em><em>optional</em>) – Error in the binned spectra.</li>
+<li><strong>mask_binned</strong> (<em>numpy.ndarray</em><em>, </em><em>optional</em>) – Mask for the binned spectra.</li>
+<li><strong>x_binned</strong> (<em>numpy.ndarray</em><em>, </em><em>optional</em>) – On-sky bin x coordinate; shape is (NBIN,).</li>
+<li><strong>y_binned</strong> (<em>numpy.ndarray</em><em>, </em><em>optional</em>) – On-sky bin y coordinate; shape is (NBIN,).</li>
+<li><strong>x</strong> (<em>numpy.ndarray</em><em>, </em><em>optional</em>) – On-sky spectrum x coordinates; shape is (NSPEC,)</li>
+<li><strong>y</strong> (<em>numpy.ndarray</em><em>, </em><em>optional</em>) – On-sky spectrum y coordinates; shape is (NSPEC,).</li>
+<li><strong>plot</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">bool</span></code>, optional) – Show the pPXF fit plot at each iteration.  Default is to
+skip the plot.</li>
+<li><strong>quiet</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">bool</span></code>, optional) – Suppress output to the terminal (default).</li>
+<li><strong>debug</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">bool</span></code>, optional) – Run in debugging mode.  Currently, all this does is perform
+the initial setup and then return empty vectors of the
+correct shape.  No fits are performed.</li>
 </ul>
 </td>
 </tr>
@@ -711,13 +685,13 @@ kinematics for each fit [shape is (NSPEC,sum(MOMENTS)].</p>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
-<li><code class="xref py py-exc docutils literal"><span class="pre">NotImplementedError</span></code> – Raised if the number of stellar components
-is larger than 1.</li>
-<li><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if: (1) some of the necessary bin-remapping
-data has not been provided (see function description); (2)
-the template flag object does not have the correct shape;
-(3) the wavelength and flux vectors do not match; and (4)
-the input list of kinematics does not have the correct
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">NotImplementedError</span></code> – Raised if the number of stellar components is larger than 1.</li>
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if: (1) only some of the necessary bin-remapping data
+has not been provided (see function description); (2) the
+template flag object does not have the correct shape; (3)
+the wavelength and flux vectors do not match; (4) any of the
+spectra are fully masked (i.e., there’s nothing to fit); or
+(5) the input list of kinematics does not have the correct
 length.</li>
 </ul>
 </td>
