@@ -476,8 +476,6 @@ def passband_weighted_mean(x, y, z, passband=None, borders=False, yerr=None, zer
         if yerr.shape != y.shape:
             raise ValueError('Incorrect shape for y errors.')
         ye_integrand = (z[:,None]-numpy.atleast_1d(integral)[None,:])*yerr[:,None]
-        # KHRR - the line above is the original; the line below pushes through the crash
-        #ye_integrand = (z[:,None]-integral[None])*yerr[:,None]
         weighted_integral_err += numpy.square(passband_integral(x, ye_integrand, passband=passband,
                                                                 borders=borders, log=log,
                                                                 base=base, quad=True))
