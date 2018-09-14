@@ -38,7 +38,7 @@
     <link rel="top" title="mangadap 2.2.2 documentation" href="index.html"/>
         <link rel="up" title="mangadap.util package" href="mangadap.util.html"/>
         <link rel="next" title="mangadap.util.log module" href="mangadap.util.log.html"/>
-        <link rel="prev" title="mangadap.util.instrument module" href="mangadap.util.instrument.html"/> 
+        <link rel="prev" title="mangadap.util.geometry module" href="mangadap.util.geometry.html"/> 
 
   
   <script src="_static/js/modernizr.min.js"></script>
@@ -100,7 +100,7 @@
 <li class="toctree-l3"><a class="reference internal" href="mangadap.par.html">mangadap.par package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.proc.html">mangadap.proc package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.survey.html">mangadap.survey package</a></li>
-<li class="toctree-l3"><a class="reference internal" href="mangadap.test.html">mangadap.test package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.tests.html">mangadap.tests package</a></li>
 <li class="toctree-l3 current"><a class="reference internal" href="mangadap.util.html">mangadap.util package</a><ul class="current">
 <li class="toctree-l4 current"><a class="reference internal" href="mangadap.util.html#submodules">Submodules</a></li>
 <li class="toctree-l4"><a class="reference internal" href="mangadap.util.html#module-mangadap.util">Module contents</a></li>
@@ -192,7 +192,7 @@
 <dt><em>Source location</em>:</dt>
 <dd>$MANGADAP_DIR/python/mangadap/util/lineprofiles.py</dd>
 <dt><em>Imports and python version compliance</em>:</dt>
-<dd><div class="first last highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<dd><div class="first last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
@@ -218,11 +218,11 @@
 <dl class="class">
 <dt id="mangadap.util.lineprofiles.FFTGaussianLSF">
 <em class="property">class </em><code class="descclassname">mangadap.util.lineprofiles.</code><code class="descname">FFTGaussianLSF</code><span class="sig-paren">(</span><em>p=None</em>, <em>dx=None</em>, <em>pixel=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#FFTGaussianLSF"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.FFTGaussianLSF" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#mangadap.util.lineprofiles.GaussianLSF" title="mangadap.util.lineprofiles.GaussianLSF"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.lineprofiles.GaussianLSF</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#mangadap.util.lineprofiles.GaussianLSF" title="mangadap.util.lineprofiles.GaussianLSF"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.lineprofiles.GaussianLSF</span></code></a></p>
 <p>Define a Gaussian line profile by first constructing the analytic
 FFT of the profile and then returning the inverse real FFT.  See
-<code class="xref py py-func docutils literal"><span class="pre">mangadap.contrib.ppxf_util.emline()</span></code> by M. Cappellari.  The
-sampling <em>must</em> be uniform in <span class="math">\(x\)</span>.</p>
+ppxf_util.emline by M. Cappellari.  The sampling <em>must</em> be uniform
+in <span class="math notranslate nohighlight">\(x\)</span>.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -263,7 +263,7 @@ sampling width.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if the provided parameter vector is not 3
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if the provided parameter vector is not 3
 elements long.</td>
 </tr>
 </tbody>
@@ -274,8 +274,8 @@ elements long.</td>
 <dd><p>Sample the profile.</p>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
-<p class="last">Does <strong>not</strong> check if the provided <span class="math">\(x\)</span> values are
-sampled at <a class="reference internal" href="#mangadap.util.lineprofiles.FFTGaussianLSF.dx" title="mangadap.util.lineprofiles.FFTGaussianLSF.dx"><code class="xref py py-attr docutils literal"><span class="pre">dx</span></code></a>.</p>
+<p class="last">Does <strong>not</strong> check if the provided <span class="math notranslate nohighlight">\(x\)</span> values are
+sampled at <a class="reference internal" href="#mangadap.util.lineprofiles.FFTGaussianLSF.dx" title="mangadap.util.lineprofiles.FFTGaussianLSF.dx"><code class="xref py py-attr docutils literal notranslate"><span class="pre">dx</span></code></a>.</p>
 </div>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -292,14 +292,14 @@ sampled at <a class="reference internal" href="#mangadap.util.lineprofiles.FFTGa
 <dl class="class">
 <dt id="mangadap.util.lineprofiles.GaussianLSF">
 <em class="property">class </em><code class="descclassname">mangadap.util.lineprofiles.</code><code class="descname">GaussianLSF</code><span class="sig-paren">(</span><em>p=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#GaussianLSF"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.GaussianLSF" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Define a Gaussian line profile, <em>sampled</em> over the width of the
-sampling step, parameterized by its integral (<span class="math">\(F\)</span>), center
-(<span class="math">\(\mu\)</span>), and standard deviation (<span class="math">\(\sigma\)</span>). I.e:</p>
-<div class="math">
+sampling step, parameterized by its integral (<span class="math notranslate nohighlight">\(F\)</span>), center
+(<span class="math notranslate nohighlight">\(\mu\)</span>), and standard deviation (<span class="math notranslate nohighlight">\(\sigma\)</span>). I.e:</p>
+<div class="math notranslate nohighlight">
 \[\mathcal{N}(x|f,\mu,\sigma) = \frac{f}{\sqrt{2\pi}\sigma}
 \exp\left(\frac{-\Delta^2}{2\sigma^2}\right)\]</div>
-<p>where <span class="math">\(\Delta = x-\mu\)</span>.  The coordinate vector <span class="math">\(x\)</span> does
+<p>where <span class="math notranslate nohighlight">\(\Delta = x-\mu\)</span>.  The coordinate vector <span class="math notranslate nohighlight">\(x\)</span> does
 not need to be uniformly sampled.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -322,7 +322,7 @@ by default.</td>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if the provided parameter vector is not 3
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if the provided parameter vector is not 3
 elements long.</td>
 </tr>
 </tbody>
@@ -363,7 +363,7 @@ parameters for the profile.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>p</strong> (<em>array-like</em>) – LSF parameters.</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if the provided parameter vector is not 3
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if the provided parameter vector is not 3
 elements long.</td>
 </tr>
 </tbody>
@@ -375,10 +375,10 @@ elements long.</td>
 <dl class="class">
 <dt id="mangadap.util.lineprofiles.GaussianLineProfile">
 <em class="property">class </em><code class="descclassname">mangadap.util.lineprofiles.</code><code class="descname">GaussianLineProfile</code><span class="sig-paren">(</span><em>zmom=1.0</em>, <em>mean=0.0</em>, <em>sigma=1.0</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#GaussianLineProfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.GaussianLineProfile" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">astropy.modeling.core.FittableModel</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">astropy.modeling.core.FittableModel</span></code></p>
 <p>Define a Gaussian line profile as parameterized by its zeroth
 moment, mean, and standard deviation:</p>
-<div class="math">
+<div class="math notranslate nohighlight">
 \[\mathcal{N}(x|f,\mu,\sigma) = \frac{f}{\sqrt{2\pi}\sigma}
 \exp\left(\frac{-(x-\mu)^2}{2\sigma^2}\right)\]</div>
 <p>The base class is <a class="reference external" href="http://docs.astropy.org/en/stable/api/astropy.modeling.FittableModel.html">astropy.modeling.FittableModel</a>, which
@@ -411,13 +411,14 @@ models in the <a class="reference external" href="http://docs.astropy.org/en/sta
 
 <dl class="attribute">
 <dt id="mangadap.util.lineprofiles.GaussianLineProfile._parameters_">
-<code class="descname">_parameters_</code><em class="property"> = OrderedDict([('zmom', Parameter('zmom', default=1.0)), ('mean', Parameter('mean', default=0.0)), ('sigma', Parameter('sigma', default=1.0))])</em><a class="headerlink" href="#mangadap.util.lineprofiles.GaussianLineProfile._parameters_" title="Permalink to this definition">¶</a></dt>
+<code class="descname">_parameters_</code><em class="property"> = {'mean': Parameter('mean', default=0.0), 'sigma': Parameter('sigma', default=1.0), 'zmom': Parameter('zmom', default=1.0)}</em><a class="headerlink" href="#mangadap.util.lineprofiles.GaussianLineProfile._parameters_" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="staticmethod">
 <dt id="mangadap.util.lineprofiles.GaussianLineProfile.evaluate">
 <em class="property">static </em><code class="descname">evaluate</code><span class="sig-paren">(</span><em>x</em>, <em>zmom</em>, <em>mean</em>, <em>sigma</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#GaussianLineProfile.evaluate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.GaussianLineProfile.evaluate" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Evaluate the model on some input variables.</p>
+</dd></dl>
 
 <dl class="staticmethod">
 <dt id="mangadap.util.lineprofiles.GaussianLineProfile.fit_deriv">
@@ -519,17 +520,17 @@ models in the <a class="reference external" href="http://docs.astropy.org/en/sta
 <dl class="class">
 <dt id="mangadap.util.lineprofiles.IntegratedGaussianLSF">
 <em class="property">class </em><code class="descclassname">mangadap.util.lineprofiles.</code><code class="descname">IntegratedGaussianLSF</code><span class="sig-paren">(</span><em>p=None</em>, <em>dx=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#IntegratedGaussianLSF"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.IntegratedGaussianLSF" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#mangadap.util.lineprofiles.GaussianLSF" title="mangadap.util.lineprofiles.GaussianLSF"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.lineprofiles.GaussianLSF</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#mangadap.util.lineprofiles.GaussianLSF" title="mangadap.util.lineprofiles.GaussianLSF"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.lineprofiles.GaussianLSF</span></code></a></p>
 <p>Define a Gaussian line profile, <em>integrated</em> over the width of the
-sampling step, parameterized by its integral (<span class="math">\(F\)</span>), center
-(<span class="math">\(\mu\)</span>), and standard deviation (<span class="math">\(\sigma\)</span>). I.e:</p>
-<div class="math">
+sampling step, parameterized by its integral (<span class="math notranslate nohighlight">\(F\)</span>), center
+(<span class="math notranslate nohighlight">\(\mu\)</span>), and standard deviation (<span class="math notranslate nohighlight">\(\sigma\)</span>). I.e:</p>
+<div class="math notranslate nohighlight">
 \[\mathcal{N}(x|F,\mu,\sigma) = \frac{F}{2} \left[
 {\rm erf}\left(\frac{\Delta+\delta_x/2}{\sqrt{2}\sigma}\right) -
 {\rm erf}\left(\frac{\Delta-\delta_x/2}{\sqrt{2}\sigma}\right)\right]\]</div>
-<p>where <span class="math">\({\rm erf}(x)\)</span> is the error function, <span class="math">\(\Delta =
-x-\mu\)</span>, and <span class="math">\(\delta_x\)</span> is the sampling step.  The sampling
-<em>must</em> be uniform in <span class="math">\(x\)</span>.</p>
+<p>where <span class="math notranslate nohighlight">\({\rm erf}(x)\)</span> is the error function, <span class="math notranslate nohighlight">\(\Delta =
+x-\mu\)</span>, and <span class="math notranslate nohighlight">\(\delta_x\)</span> is the sampling step.  The sampling
+<em>must</em> be uniform in <span class="math notranslate nohighlight">\(x\)</span>.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -561,7 +562,7 @@ by default.</li>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if the provided parameter vector is not 3
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if the provided parameter vector is not 3
 elements long.</td>
 </tr>
 </tbody>
@@ -572,8 +573,8 @@ elements long.</td>
 <dd><p>Sample the profile.</p>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
-<p class="last">Does <strong>not</strong> check if the provided <span class="math">\(x\)</span> values are
-sampled at <a class="reference internal" href="#mangadap.util.lineprofiles.IntegratedGaussianLSF.dx" title="mangadap.util.lineprofiles.IntegratedGaussianLSF.dx"><code class="xref py py-attr docutils literal"><span class="pre">dx</span></code></a>.</p>
+<p class="last">Does <strong>not</strong> check if the provided <span class="math notranslate nohighlight">\(x\)</span> values are
+sampled at <a class="reference internal" href="#mangadap.util.lineprofiles.IntegratedGaussianLSF.dx" title="mangadap.util.lineprofiles.IntegratedGaussianLSF.dx"><code class="xref py py-attr docutils literal notranslate"><span class="pre">dx</span></code></a>.</p>
 </div>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -590,7 +591,7 @@ sampled at <a class="reference internal" href="#mangadap.util.lineprofiles.Integ
 <dl class="class">
 <dt id="mangadap.util.lineprofiles.NCompLineProfile">
 <em class="property">class </em><code class="descclassname">mangadap.util.lineprofiles.</code><code class="descname">NCompLineProfile</code><span class="sig-paren">(</span><em>ncomp</em>, <em>par=None</em>, <em>err=None</em>, <em>profile=&lt;class 'mangadap.util.lineprofiles.GaussianLineProfile'&gt; Name: GaussianLineProfile Inputs: ('x'</em>, <em>) Outputs: ('y'</em>, <em>) Fittable parameters: ('zmom'</em>, <em>'mean'</em>, <em>'sigma')</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/lineprofiles.html#NCompLineProfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.lineprofiles.NCompLineProfile" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Construct a single line profile from many components with the same
 profile parameterization.</p>
 <dl class="method">
@@ -719,7 +720,7 @@ profile parameterization.</p>
         <a href="mangadap.util.log.html" class="btn btn-neutral float-right" title="mangadap.util.log module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="mangadap.util.instrument.html" class="btn btn-neutral" title="mangadap.util.instrument module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="mangadap.util.geometry.html" class="btn btn-neutral" title="mangadap.util.geometry module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

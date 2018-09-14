@@ -104,7 +104,7 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.proc.html">mangadap.proc package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.survey.html">mangadap.survey package</a></li>
-<li class="toctree-l3"><a class="reference internal" href="mangadap.test.html">mangadap.test package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.tests.html">mangadap.tests package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.util.html">mangadap.util package</a></li>
 </ul>
 </li>
@@ -226,7 +226,7 @@ configuration file.</div>
 <dl class="class">
 <dt id="mangadap.par.parset.ParDatabase">
 <em class="property">class </em><code class="descclassname">mangadap.par.parset.</code><code class="descname">ParDatabase</code><span class="sig-paren">(</span><em>inp</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/par/parset.html#ParDatabase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.par.parset.ParDatabase" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Class used as a list of ParSets in a glorified structured numpy
 array.</p>
 <p>Very similar to yanny when converted to a numpy array.</p>
@@ -257,7 +257,7 @@ type</li>
 <dl class="class">
 <dt id="mangadap.par.parset.ParSet">
 <em class="property">class </em><code class="descclassname">mangadap.par.parset.</code><code class="descname">ParSet</code><span class="sig-paren">(</span><em>pars</em>, <em>values=None</em>, <em>defaults=None</em>, <em>options=None</em>, <em>dtypes=None</em>, <em>can_call=None</em>, <em>descr=None</em>, <em>cfg_section=None</em>, <em>cfg_comment=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/par/parset.html#ParSet"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.par.parset.ParSet" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Generic base class to handle and manipulate a list of operational
 parameters.  A glorified dictionary that constrains and types its
 components.</p>
@@ -267,33 +267,33 @@ components.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>pars</strong> (<em>list</em>) – A list of keywords for a list of parameter values.</li>
-<li><strong>values</strong> (<code class="xref py py-obj docutils literal"><span class="pre">list</span></code>, optional) – Initialize the parameters to these values.  If not provided,
+<li><strong>values</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">list</span></code>, optional) – Initialize the parameters to these values.  If not provided,
 all parameters are initialized to <cite>None</cite> or the provided
 default.</li>
-<li><strong>defaults</strong> (<code class="xref py py-obj docutils literal"><span class="pre">list</span></code>, optional) – For any parameters not provided in the <em>values</em> list, use
+<li><strong>defaults</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">list</span></code>, optional) – For any parameters not provided in the <em>values</em> list, use
 these default values.  If not provided, no defaults are
 assumed.</li>
-<li><strong>options</strong> (<code class="xref py py-obj docutils literal"><span class="pre">list</span></code>, optional) – Force the parameters to be one of a list of options.  Each
+<li><strong>options</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">list</span></code>, optional) – Force the parameters to be one of a list of options.  Each
 element in the list can be a list itself.  If not provided,
 all parameters are allowed to take on any value within the
 allowed data type.</li>
-<li><strong>dtypes</strong> (<code class="xref py py-obj docutils literal"><span class="pre">list</span></code>, optional) – Force the parameter to be one of a list of data types.  Each
+<li><strong>dtypes</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">list</span></code>, optional) – Force the parameter to be one of a list of data types.  Each
 element in the list can be a list itself.  If not provided,
 all parameters are allowed to have any data type.</li>
-<li><strong>can_call</strong> (<code class="xref py py-obj docutils literal"><span class="pre">list</span></code>, optional) – Flag that the parameters are
+<li><strong>can_call</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">list</span></code>, optional) – Flag that the parameters are
 callable operations.  Default is False.</li>
-<li><strong>descr</strong> (<code class="xref py py-obj docutils literal"><span class="pre">list</span></code>, optional) – A list of parameter descriptions.  Empty strings by default.</li>
-<li><strong>cfg_section</strong> (<code class="xref py py-obj docutils literal"><span class="pre">str</span></code>, optional) – The top-level designation for a configuration section
+<li><strong>descr</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">list</span></code>, optional) – A list of parameter descriptions.  Empty strings by default.</li>
+<li><strong>cfg_section</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">str</span></code>, optional) – The top-level designation for a configuration section
 written based on the contents of this parameter set.</li>
-<li><strong>cfg_comment</strong> (<code class="xref py py-obj docutils literal"><span class="pre">str</span></code>, optional) – Comment to be placed at the top-level of the configuration
+<li><strong>cfg_comment</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">str</span></code>, optional) – Comment to be placed at the top-level of the configuration
 section written based on the contents of this parameter set.</li>
 </ul>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
-<li><code class="xref py py-exc docutils literal"><span class="pre">TypeError</span></code> – Raised if the input parameters are not lists or if the input
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">TypeError</span></code> – Raised if the input parameters are not lists or if the input
 keys are not strings.</li>
-<li><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if any of the optional arguments do not have the same
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if any of the optional arguments do not have the same
 length as the input list of parameter keys.</li>
 </ul>
 </td>
@@ -402,17 +402,17 @@ this ParSet and its ParSet members.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>key</strong> (<code class="xref py py-obj docutils literal"><span class="pre">str</span></code>) – Key for new parameter</li>
-<li><strong>value</strong> (<a class="reference internal" href="#mangadap.par.parset.ParSet.dtype" title="mangadap.par.parset.ParSet.dtype"><code class="xref py py-obj docutils literal"><span class="pre">dtype</span></code></a>) – Parameter value, must have a type in the list provided
+<li><strong>key</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">str</span></code>) – Key for new parameter</li>
+<li><strong>value</strong> (<a class="reference internal" href="#mangadap.par.parset.ParSet.dtype" title="mangadap.par.parset.ParSet.dtype"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dtype</span></code></a>) – Parameter value, must have a type in the list provided
 by <a href="#id1"><span class="problematic" id="id2">:arg:`dtype`</span></a>, if the list is provided</li>
-<li><strong>default</strong> (<a class="reference internal" href="#mangadap.par.parset.ParSet.dtype" title="mangadap.par.parset.ParSet.dtype"><code class="xref py py-obj docutils literal"><span class="pre">dtype</span></code></a>, optional) – Define a default value for the parameter, must have a
+<li><strong>default</strong> (<a class="reference internal" href="#mangadap.par.parset.ParSet.dtype" title="mangadap.par.parset.ParSet.dtype"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dtype</span></code></a>, optional) – Define a default value for the parameter, must have a
 type in the list provided by <a href="#id3"><span class="problematic" id="id4">:arg:`dtype`</span></a>, if the list
 is provided.  No default if not provided.</li>
-<li><strong>options</strong> (<code class="xref py py-obj docutils literal"><span class="pre">list</span></code>, optional) – List of discrete values that the parameter is allowed to
+<li><strong>options</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">list</span></code>, optional) – List of discrete values that the parameter is allowed to
 have.  Allowed to be anything if not provided.</li>
-<li><strong>dtype</strong> (<code class="xref py py-obj docutils literal"><span class="pre">list</span></code>, optional) – List of allowed data types that the parameter can have.
+<li><strong>dtype</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">list</span></code>, optional) – List of allowed data types that the parameter can have.
 Allowed to be anything if not provided.</li>
-<li><strong>can_call</strong> (<code class="xref py py-obj docutils literal"><span class="pre">bool</span></code>, optional) – Flag that the parameters are callable operations.
+<li><strong>can_call</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">bool</span></code>, optional) – Flag that the parameters are callable operations.
 Default is False.</li>
 </ul>
 </td>
@@ -442,22 +442,22 @@ Default is False.</li>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>cfg_file</strong> (<em>str</em>) – The name of the file to write/append to.</li>
-<li><strong>section_name</strong> (<code class="xref py py-obj docutils literal"><span class="pre">str</span></code>, optional) – The top-level name for the config section.  This must be
-provided if <a class="reference internal" href="#mangadap.par.parset.ParSet.cfg_section" title="mangadap.par.parset.ParSet.cfg_section"><code class="xref py py-attr docutils literal"><span class="pre">cfg_section</span></code></a> is None or any of the
+<li><strong>section_name</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">str</span></code>, optional) – The top-level name for the config section.  This must be
+provided if <a class="reference internal" href="#mangadap.par.parset.ParSet.cfg_section" title="mangadap.par.parset.ParSet.cfg_section"><code class="xref py py-attr docutils literal notranslate"><span class="pre">cfg_section</span></code></a> is None or any of the
 parameters are not also ParSet instances themselves.</li>
-<li><strong>section_comment</strong> (<code class="xref py py-obj docutils literal"><span class="pre">str</span></code>, optional) – The top-level comment for the config section based on
+<li><strong>section_comment</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">str</span></code>, optional) – The top-level comment for the config section based on
 this ParSet.</li>
-<li><strong>section_level</strong> (<code class="xref py py-obj docutils literal"><span class="pre">int</span></code>, optional) – The top level of this ParSet.  Used for recursive output
+<li><strong>section_level</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">int</span></code>, optional) – The top level of this ParSet.  Used for recursive output
 of nested ParSets.</li>
-<li><strong>append</strong> (<code class="xref py py-obj docutils literal"><span class="pre">bool</span></code>, optional) – Append this configuration output of this ParSet to the
+<li><strong>append</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">bool</span></code>, optional) – Append this configuration output of this ParSet to the
 file.  False by default.  If not appending and the file
 exists, the file is automatically overwritten.</li>
-<li><strong>quiet</strong> (<code class="xref py py-obj docutils literal"><span class="pre">bool</span></code>, optional) – Suppress all standard output from the function.</li>
+<li><strong>quiet</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">bool</span></code>, optional) – Suppress all standard output from the function.</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if there are types other than ParSet in the
-parameter list, <a class="reference internal" href="#mangadap.par.parset.ParSet.cfg_section" title="mangadap.par.parset.ParSet.cfg_section"><code class="xref py py-attr docutils literal"><span class="pre">cfg_section</span></code></a> is None, and no
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if there are types other than ParSet in the
+parameter list, <a class="reference internal" href="#mangadap.par.parset.ParSet.cfg_section" title="mangadap.par.parset.ParSet.cfg_section"><code class="xref py py-attr docutils literal notranslate"><span class="pre">cfg_section</span></code></a> is None, and no
 section_name argument was provided.</p>
 </td>
 </tr>

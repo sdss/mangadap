@@ -1,5 +1,5 @@
-mangadap\.util\.fileio module
-=============================
+mangadap.util.fileio module
+===========================
 
 .. automodule:: mangadap.util.fileio
     :members:

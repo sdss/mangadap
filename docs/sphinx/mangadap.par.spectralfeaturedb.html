@@ -104,7 +104,7 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.proc.html">mangadap.proc package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.survey.html">mangadap.survey package</a></li>
-<li class="toctree-l3"><a class="reference internal" href="mangadap.test.html">mangadap.test package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.tests.html">mangadap.tests package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.util.html">mangadap.util package</a></li>
 </ul>
 </li>
@@ -182,11 +182,11 @@
   <div class="section" id="module-mangadap.par.spectralfeaturedb">
 <span id="mangadap-par-spectralfeaturedb-module"></span><h1>mangadap.par.spectralfeaturedb module<a class="headerlink" href="#module-mangadap.par.spectralfeaturedb" title="Permalink to this headline">¶</a></h1>
 <p>Container class for databases of spectral features.  This is the base
-class used by <a class="reference internal" href="mangadap.par.artifactdb.html#mangadap.par.artifactdb.ArtifactDB" title="mangadap.par.artifactdb.ArtifactDB"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.artifactdb.ArtifactDB</span></code></a>,
-<a class="reference internal" href="mangadap.par.emissionlinedb.html#mangadap.par.emissionlinedb.EmissionLineDB" title="mangadap.par.emissionlinedb.EmissionLineDB"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.emissionlinedb.EmissionLineDB</span></code></a>,
-<a class="reference internal" href="mangadap.par.emissionmomentsdb.html#mangadap.par.emissionmomentsdb.EmissionMomentsDB" title="mangadap.par.emissionmomentsdb.EmissionMomentsDB"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.emissionmomentsdb.EmissionMomentsDB</span></code></a>,
-<a class="reference internal" href="mangadap.par.absorptionindexdb.html#mangadap.par.absorptionindexdb.AbsorptionIndexDB" title="mangadap.par.absorptionindexdb.AbsorptionIndexDB"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.absorptionindexdb.AbsorptionIndexDB</span></code></a>, and
-<a class="reference internal" href="mangadap.par.bandheadindexdb.html#mangadap.par.bandheadindexdb.BandheadIndexDB" title="mangadap.par.bandheadindexdb.BandheadIndexDB"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.bandheadindexdb.BandheadIndexDB</span></code></a>.</p>
+class used by <a class="reference internal" href="mangadap.par.artifactdb.html#mangadap.par.artifactdb.ArtifactDB" title="mangadap.par.artifactdb.ArtifactDB"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.par.artifactdb.ArtifactDB</span></code></a>,
+<a class="reference internal" href="mangadap.par.emissionlinedb.html#mangadap.par.emissionlinedb.EmissionLineDB" title="mangadap.par.emissionlinedb.EmissionLineDB"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.par.emissionlinedb.EmissionLineDB</span></code></a>,
+<a class="reference internal" href="mangadap.par.emissionmomentsdb.html#mangadap.par.emissionmomentsdb.EmissionMomentsDB" title="mangadap.par.emissionmomentsdb.EmissionMomentsDB"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.par.emissionmomentsdb.EmissionMomentsDB</span></code></a>,
+<a class="reference internal" href="mangadap.par.absorptionindexdb.html#mangadap.par.absorptionindexdb.AbsorptionIndexDB" title="mangadap.par.absorptionindexdb.AbsorptionIndexDB"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.par.absorptionindexdb.AbsorptionIndexDB</span></code></a>, and
+<a class="reference internal" href="mangadap.par.bandheadindexdb.html#mangadap.par.bandheadindexdb.BandheadIndexDB" title="mangadap.par.bandheadindexdb.BandheadIndexDB"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.par.bandheadindexdb.BandheadIndexDB</span></code></a>.</p>
 <dl class="docutils">
 <dt><em>License</em>:</dt>
 <dd><dl class="first last docutils">
@@ -197,7 +197,7 @@ class used by <a class="reference internal" href="mangadap.par.artifactdb.html#m
 <dt><em>Source location</em>:</dt>
 <dd>$MANGADAP_DIR/python/mangadap/par/spectralfeaturedb.py</dd>
 <dt><em>Imports and python version compliance</em>:</dt>
-<dd><div class="first last highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<dd><div class="first last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
@@ -212,7 +212,7 @@ class used by <a class="reference internal" href="mangadap.par.artifactdb.html#m
 <span class="kn">import</span> <span class="nn">numpy</span>
 
 <span class="kn">from</span> <span class="nn">.parset</span> <span class="k">import</span> <span class="n">ParSet</span>
-<span class="kn">from</span> <span class="nn">..config.defaults</span> <span class="k">import</span> <span class="n">default_dap_source</span>
+<span class="kn">from</span> <span class="nn">..config.defaults</span> <span class="k">import</span> <span class="n">dap_source_dir</span>
 <span class="kn">from</span> <span class="nn">..util.parser</span> <span class="k">import</span> <span class="n">DefaultConfig</span>
 </pre></div>
 </div>
@@ -223,14 +223,14 @@ class used by <a class="reference internal" href="mangadap.par.artifactdb.html#m
 <dd><div class="first last line-block">
 <div class="line"><strong>18 Mar 2016</strong>: Original implementation by K. Westfall (KBW)</div>
 <div class="line"><strong>25 Feb 2017</strong>: (KBW) Change to using
-<a class="reference internal" href="mangadap.util.parser.html#mangadap.util.parser.DefaultConfig" title="mangadap.util.parser.DefaultConfig"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.parser.DefaultConfig</span></code></a></div>
+<a class="reference internal" href="mangadap.util.parser.html#mangadap.util.parser.DefaultConfig" title="mangadap.util.parser.DefaultConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.parser.DefaultConfig</span></code></a></div>
 </div>
 </dd>
 </dl>
 <dl class="class">
 <dt id="mangadap.par.spectralfeaturedb.SpectralFeatureDBDef">
 <em class="property">class </em><code class="descclassname">mangadap.par.spectralfeaturedb.</code><code class="descname">SpectralFeatureDBDef</code><span class="sig-paren">(</span><em>key</em>, <em>file_path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/par/spectralfeaturedb.html#SpectralFeatureDBDef"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.par.spectralfeaturedb.SpectralFeatureDBDef" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet" title="mangadap.par.parset.ParSet"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.parset.ParSet</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet" title="mangadap.par.parset.ParSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.par.parset.ParSet</span></code></a></p>
 <p>Class with parameters used to define an absorption-line index
 database.  Options and defaults in ParSet base class are set to
 None.</p>
@@ -251,22 +251,22 @@ definitions in the config directory path.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>dapsrc</strong> (<em>str</em>) – (Optional) Root path to the DAP source
 directory.  If not provided, the default is defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_source" title="mangadap.config.defaults.default_dap_source"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_source()</span></code></a>.</p>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.dap_source_dir" title="mangadap.config.defaults.dap_source_dir"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.dap_source_dir()</span></code></a>.</p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">An list of <a class="reference internal" href="#mangadap.par.spectralfeaturedb.SpectralFeatureDBDef" title="mangadap.par.spectralfeaturedb.SpectralFeatureDBDef"><code class="xref py py-class docutils literal"><span class="pre">SpectralFeatureDBDef</span></code></a> objects.</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">An list of <a class="reference internal" href="#mangadap.par.spectralfeaturedb.SpectralFeatureDBDef" title="mangadap.par.spectralfeaturedb.SpectralFeatureDBDef"><code class="xref py py-class docutils literal notranslate"><span class="pre">SpectralFeatureDBDef</span></code></a> objects.</p>
 </td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">list</p>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
-<li><code class="xref py py-exc docutils literal"><span class="pre">NotADirectoryError</span></code> – Raised if the provided or default
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">NotADirectoryError</span></code> – Raised if the provided or default
 <em>dapsrc</em> is not a directory.</li>
-<li><code class="xref py py-exc docutils literal"><span class="pre">FileNotFoundError</span></code> – Raised if the database parameter file is not
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">FileNotFoundError</span></code> – Raised if the database parameter file is not
 found.</li>
-<li><code class="xref py py-exc docutils literal"><span class="pre">KeyError</span></code> – Raised if the keywords are not all unique.</li>
-<li><code class="xref py py-exc docutils literal"><span class="pre">NameError</span></code> – Raised if either ConfigParser or
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">KeyError</span></code> – Raised if the keywords are not all unique.</li>
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">NameError</span></code> – Raised if either ConfigParser or
 ExtendedInterpolation are not correctly imported.  The
 latter is a <em>Python 3 only module</em>!</li>
 </ul>
@@ -285,16 +285,16 @@ latter is a <em>Python 3 only module</em>!</li>
 <dl class="function">
 <dt id="mangadap.par.spectralfeaturedb.validate_spectral_feature_config">
 <code class="descclassname">mangadap.par.spectralfeaturedb.</code><code class="descname">validate_spectral_feature_config</code><span class="sig-paren">(</span><em>cnfg</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/par/spectralfeaturedb.html#validate_spectral_feature_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.par.spectralfeaturedb.validate_spectral_feature_config" title="Permalink to this definition">¶</a></dt>
-<dd><p>Validate the <a class="reference internal" href="mangadap.util.parser.html#mangadap.util.parser.DefaultConfig" title="mangadap.util.parser.DefaultConfig"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.parser.DefaultConfig</span></code></a> object with
+<dd><p>Validate the <a class="reference internal" href="mangadap.util.parser.html#mangadap.util.parser.DefaultConfig" title="mangadap.util.parser.DefaultConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.parser.DefaultConfig</span></code></a> object with
 the spectral-feature database parameters.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>cnfg</strong> (<a class="reference internal" href="mangadap.util.parser.html#mangadap.util.parser.DefaultConfig" title="mangadap.util.parser.DefaultConfig"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.parser.DefaultConfig</span></code></a>) – Object with
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>cnfg</strong> (<a class="reference internal" href="mangadap.util.parser.html#mangadap.util.parser.DefaultConfig" title="mangadap.util.parser.DefaultConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.parser.DefaultConfig</span></code></a>) – Object with
 spectral-feature database parameters.</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal"><span class="pre">KeyError</span></code> – Raised if required keyword does not exist.</td>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal notranslate"><span class="pre">KeyError</span></code> – Raised if required keyword does not exist.</td>
 </tr>
 </tbody>
 </table>

@@ -37,7 +37,7 @@
         <link rel="search" title="Search" href="search.html"/>
     <link rel="top" title="mangadap 2.2.2 documentation" href="index.html"/>
         <link rel="up" title="mangadap.util package" href="mangadap.util.html"/>
-        <link rel="next" title="mangadap.util.instrument module" href="mangadap.util.instrument.html"/>
+        <link rel="next" title="mangadap.util.lineprofiles module" href="mangadap.util.lineprofiles.html"/>
         <link rel="prev" title="mangadap.util.fitsutil module" href="mangadap.util.fitsutil.html"/> 
 
   
@@ -100,7 +100,7 @@
 <li class="toctree-l3"><a class="reference internal" href="mangadap.par.html">mangadap.par package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.proc.html">mangadap.proc package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.survey.html">mangadap.survey package</a></li>
-<li class="toctree-l3"><a class="reference internal" href="mangadap.test.html">mangadap.test package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.tests.html">mangadap.tests package</a></li>
 <li class="toctree-l3 current"><a class="reference internal" href="mangadap.util.html">mangadap.util package</a><ul class="current">
 <li class="toctree-l4 current"><a class="reference internal" href="mangadap.util.html#submodules">Submodules</a></li>
 <li class="toctree-l4"><a class="reference internal" href="mangadap.util.html#module-mangadap.util">Module contents</a></li>
@@ -192,7 +192,7 @@
 <dt><em>Source location</em>:</dt>
 <dd>$MANGADAP_DIR/python/mangadap/util/geometry.py</dd>
 <dt><em>Imports and python version compliance</em>:</dt>
-<dd><div class="first last highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<dd><div class="first last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
@@ -213,10 +213,10 @@
 <div class="line"><strong>2015</strong>: Original implementation by K. Westfall (KBW)</div>
 <div class="line"><strong>20 May 2015</strong>: (KBW) Documentation and Sphinx tests</div>
 <div class="line"><strong>28 Mar 2016</strong>: (KBW) Copied old projected_disk_plane to
-<a class="reference internal" href="#mangadap.util.geometry.SemiMajorAxisCoo" title="mangadap.util.geometry.SemiMajorAxisCoo"><code class="xref py py-class docutils literal"><span class="pre">SemiMajorAxisCoo</span></code></a>.  Coordinate projection functions
-(e.g., <a class="reference internal" href="#mangadap.util.geometry.SemiMajorAxisCoo.polar" title="mangadap.util.geometry.SemiMajorAxisCoo.polar"><code class="xref py py-func docutils literal"><span class="pre">SemiMajorAxisCoo.polar()</span></code></a>) can now take array-like
+<a class="reference internal" href="#mangadap.util.geometry.SemiMajorAxisCoo" title="mangadap.util.geometry.SemiMajorAxisCoo"><code class="xref py py-class docutils literal notranslate"><span class="pre">SemiMajorAxisCoo</span></code></a>.  Coordinate projection functions
+(e.g., <a class="reference internal" href="#mangadap.util.geometry.SemiMajorAxisCoo.polar" title="mangadap.util.geometry.SemiMajorAxisCoo.polar"><code class="xref py py-func docutils literal notranslate"><span class="pre">SemiMajorAxisCoo.polar()</span></code></a>) can now take array-like
 objects as arguments.</div>
-<div class="line"><strong>08 Sep 2016</strong>: (KBW) Allow <a class="reference internal" href="#mangadap.util.geometry.point_inside_polygon" title="mangadap.util.geometry.point_inside_polygon"><code class="xref py py-func docutils literal"><span class="pre">point_inside_polygon()</span></code></a> to
+<div class="line"><strong>08 Sep 2016</strong>: (KBW) Allow <a class="reference internal" href="#mangadap.util.geometry.point_inside_polygon" title="mangadap.util.geometry.point_inside_polygon"><code class="xref py py-func docutils literal notranslate"><span class="pre">point_inside_polygon()</span></code></a> to
 accept multiple coordinates.</div>
 </div>
 </dd>
@@ -224,11 +224,11 @@ accept multiple coordinates.</div>
 <dl class="class">
 <dt id="mangadap.util.geometry.SemiMajorAxisCoo">
 <em class="property">class </em><code class="descclassname">mangadap.util.geometry.</code><code class="descname">SemiMajorAxisCoo</code><span class="sig-paren">(</span><em>xc=None</em>, <em>yc=None</em>, <em>rot=None</em>, <em>pa=None</em>, <em>ell=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/geometry.html#SemiMajorAxisCoo"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.geometry.SemiMajorAxisCoo" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Calculate the semi-major axis coordinates given a set of input
-parameters following <span class="math">\({\mathbf x} = {\mathbf A}^{-1}\ {\mathbf
+parameters following <span class="math notranslate nohighlight">\({\mathbf x} = {\mathbf A}^{-1}\ {\mathbf
 b}\)</span>, where</p>
-<div class="math">
+<div class="math notranslate nohighlight">
 \[ \begin{align}\begin{aligned}\begin{split}{\mathbf A} = \left[
 \begin{array}{rrrrrr}
     1 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 \\
@@ -249,7 +249,7 @@ b}\)</span>, where</p>
 \end{array}
 \right]\end{split}\end{aligned}\end{align} \]</div>
 <p>such that</p>
-<div class="math">
+<div class="math notranslate nohighlight">
 \[\begin{split}{\mathbf x} = \left[
 \begin{array}{r}
     x_f \\
@@ -263,28 +263,28 @@ b}\)</span>, where</p>
 <dl class="docutils">
 <dt>and:</dt>
 <dd><ul class="first last simple">
-<li><span class="math">\(\psi\)</span> is the Cartesian rotation of the focal-plane
+<li><span class="math notranslate nohighlight">\(\psi\)</span> is the Cartesian rotation of the focal-plane
 relative to the sky-plane (+x toward East; +y toward North),</li>
-<li><span class="math">\(\phi_0\)</span> is the on-sky position angle of the major axis
+<li><span class="math notranslate nohighlight">\(\phi_0\)</span> is the on-sky position angle of the major axis
 of the ellipse, defined as the angle from North through East</li>
-<li><span class="math">\(\varepsilon=1-b/a\)</span> is the ellipticity based on the the
-semi-minor to semi-major axis ratio (<span class="math">\(b/a\)</span>).</li>
-<li><span class="math">\((x_f,y_f)\)</span> is the sky-right, focal-plane position
-relative to a reference on-sky position <span class="math">\((x_0,y_0)\)</span>
+<li><span class="math notranslate nohighlight">\(\varepsilon=1-b/a\)</span> is the ellipticity based on the the
+semi-minor to semi-major axis ratio (<span class="math notranslate nohighlight">\(b/a\)</span>).</li>
+<li><span class="math notranslate nohighlight">\((x_f,y_f)\)</span> is the sky-right, focal-plane position
+relative to a reference on-sky position <span class="math notranslate nohighlight">\((x_0,y_0)\)</span>
 relative to the center of the ellipse (galaxy center),</li>
-<li><span class="math">\((x_s,y_s)\)</span> is the on-sky position of <span class="math">\((x_f,y_f)\)</span>
+<li><span class="math notranslate nohighlight">\((x_s,y_s)\)</span> is the on-sky position of <span class="math notranslate nohighlight">\((x_f,y_f)\)</span>
 relative to the center of the ellipse, and</li>
-<li><span class="math">\((x_a,y_a)\)</span> is the Cartesian position of
-<span class="math">\((x_f,y_f)\)</span> in units of the semi-major axis.</li>
+<li><span class="math notranslate nohighlight">\((x_a,y_a)\)</span> is the Cartesian position of
+<span class="math notranslate nohighlight">\((x_f,y_f)\)</span> in units of the semi-major axis.</li>
 </ul>
 </dd>
 </dl>
-<p>This form is used such that <span class="math">\({\mathbf A}\)</span> need only be defined
+<p>This form is used such that <span class="math notranslate nohighlight">\({\mathbf A}\)</span> need only be defined
 once per class instance.</p>
 <p>The class also allows for inverse calculations, i.e., calculating
 the focal-plane positions provide the semi-major axis coordinates.
 In this case,</p>
-<div class="math">
+<div class="math notranslate nohighlight">
 \[ \begin{align}\begin{aligned}\begin{split}{\mathbf C} = \left[
 \begin{array}{rrrr}
     \cos\psi &amp; \sin\psi &amp; -1 &amp; 0 \\
@@ -301,7 +301,7 @@ In this case,</p>
 \end{array}
 \right]\end{split}\end{aligned}\end{align} \]</div>
 <p>such that</p>
-<div class="math">
+<div class="math notranslate nohighlight">
 \[\begin{split}{\mathbf f} = \left[
 \begin{array}{r}
     x_f \\
@@ -310,17 +310,17 @@ In this case,</p>
     y_s
 \end{array}
 \right]\end{split}\]</div>
-<p>and <span class="math">\({\mathbf f} = {\mathbf C}^{-1}\ {\mathbf d}\)</span>.</p>
+<p>and <span class="math notranslate nohighlight">\({\mathbf f} = {\mathbf C}^{-1}\ {\mathbf d}\)</span>.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>xc</strong> (<em>float</em>) – Same as <span class="math">\(x_0\)</span>, defined above</li>
-<li><strong>yc</strong> (<em>float</em>) – Same as <span class="math">\(y_0\)</span>, defined above</li>
-<li><strong>rot</strong> (<em>float</em>) – Same as <span class="math">\(\psi\)</span>, defined above</li>
-<li><strong>pa</strong> (<em>float</em>) – Same as <span class="math">\(\phi_0\)</span>, defined above</li>
-<li><strong>ell</strong> (<em>float</em>) – Same as <span class="math">\(\varepsilon\)</span>, defined above</li>
+<li><strong>xc</strong> (<em>float</em>) – Same as <span class="math notranslate nohighlight">\(x_0\)</span>, defined above</li>
+<li><strong>yc</strong> (<em>float</em>) – Same as <span class="math notranslate nohighlight">\(y_0\)</span>, defined above</li>
+<li><strong>rot</strong> (<em>float</em>) – Same as <span class="math notranslate nohighlight">\(\psi\)</span>, defined above</li>
+<li><strong>pa</strong> (<em>float</em>) – Same as <span class="math notranslate nohighlight">\(\phi_0\)</span>, defined above</li>
+<li><strong>ell</strong> (<em>float</em>) – Same as <span class="math notranslate nohighlight">\(\varepsilon\)</span>, defined above</li>
 </ul>
 </td>
 </tr>
@@ -331,7 +331,7 @@ In this case,</p>
 <code class="descname">xc,yc</code></dt>
 <dd><p><em>float,float</em> – a reference on-sky position relative to the
 center of the ellipse (galaxy center); same as
-<span class="math">\((x_0,y_0)\)</span> defined above</p>
+<span class="math notranslate nohighlight">\((x_0,y_0)\)</span> defined above</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -339,7 +339,7 @@ center of the ellipse (galaxy center); same as
 <code class="descname">rot</code><a class="headerlink" href="#mangadap.util.geometry.SemiMajorAxisCoo.rot" title="Permalink to this definition">¶</a></dt>
 <dd><p><em>float</em> – Cartesian rotation of the focal-plane relative to
 the sky-plane (+x toward East; +y toward North); same as
-<span class="math">\(\psi\)</span> defined above</p>
+<span class="math notranslate nohighlight">\(\psi\)</span> defined above</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -347,15 +347,15 @@ the sky-plane (+x toward East; +y toward North); same as
 <code class="descname">pa</code><a class="headerlink" href="#mangadap.util.geometry.SemiMajorAxisCoo.pa" title="Permalink to this definition">¶</a></dt>
 <dd><p><em>float</em> – On-sky position angle of the major axis of the
 ellipse, defined as the angle from North through East and is
-the same as <span class="math">\(\phi_0\)</span> defined above</p>
+the same as <span class="math notranslate nohighlight">\(\phi_0\)</span> defined above</p>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="mangadap.util.geometry.SemiMajorAxisCoo.ell">
 <code class="descname">ell</code><a class="headerlink" href="#mangadap.util.geometry.SemiMajorAxisCoo.ell" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>float</em> – Ellipticity define as <span class="math">\(\varepsilon=1-b/a\)</span>,
+<dd><p><em>float</em> – Ellipticity define as <span class="math notranslate nohighlight">\(\varepsilon=1-b/a\)</span>,
 based on the semi-minor to semi-major axis ratio
-(<span class="math">\(b/a\)</span>) of the ellipse.</p>
+(<span class="math notranslate nohighlight">\(b/a\)</span>) of the ellipse.</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -369,7 +369,7 @@ based on the semi-minor to semi-major axis ratio
 <code class="descname">Alu</code><a class="headerlink" href="#mangadap.util.geometry.SemiMajorAxisCoo.Alu" title="Permalink to this definition">¶</a></dt>
 <dd><p><em>numpy.ndarray</em> – The <strong>lu</strong> array returned by
 <a class="reference external" href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.lu_factor.html">scipy.linalg.lu_factor</a>, which is used to calculate the LU
-decomposition of <span class="math">\({\mathbf A}\)</span></p>
+decomposition of <span class="math notranslate nohighlight">\({\mathbf A}\)</span></p>
 </dd></dl>
 
 <dl class="attribute">
@@ -377,14 +377,14 @@ decomposition of <span class="math">\({\mathbf A}\)</span></p>
 <code class="descname">Apiv</code><a class="headerlink" href="#mangadap.util.geometry.SemiMajorAxisCoo.Apiv" title="Permalink to this definition">¶</a></dt>
 <dd><p><em>numpy.ndarray</em> – The <strong>piv</strong> array returned by
 <a class="reference external" href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.lu_factor.html">scipy.linalg.lu_factor</a>, which is used to calculate the LU
-decomposition of <span class="math">\({\mathbf A}\)</span></p>
+decomposition of <span class="math notranslate nohighlight">\({\mathbf A}\)</span></p>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="mangadap.util.geometry.SemiMajorAxisCoo.B">
 <code class="descname">B</code><a class="headerlink" href="#mangadap.util.geometry.SemiMajorAxisCoo.B" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>numpy.ndarray</em> – The vector <span class="math">\({\mathbf b}\)</span>, as defined
-above, used to calculate <span class="math">\({\mathbf x} = {\mathbf
+<dd><p><em>numpy.ndarray</em> – The vector <span class="math notranslate nohighlight">\({\mathbf b}\)</span>, as defined
+above, used to calculate <span class="math notranslate nohighlight">\({\mathbf x} = {\mathbf
 A}^{-1}\ {\mathbf b}\)</span></p>
 </dd></dl>
 
@@ -400,7 +400,7 @@ the inverse operations</p>
 <code class="descname">Clu</code><a class="headerlink" href="#mangadap.util.geometry.SemiMajorAxisCoo.Clu" title="Permalink to this definition">¶</a></dt>
 <dd><p><em>numpy.ndarray</em> – The <strong>lu</strong> array returned by
 <a class="reference external" href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.lu_factor.html">scipy.linalg.lu_factor</a>, which is used to calculate the LU
-decomposition of <span class="math">\({\mathbf C}\)</span></p>
+decomposition of <span class="math notranslate nohighlight">\({\mathbf C}\)</span></p>
 </dd></dl>
 
 <dl class="attribute">
@@ -408,14 +408,14 @@ decomposition of <span class="math">\({\mathbf C}\)</span></p>
 <code class="descname">Cpiv</code><a class="headerlink" href="#mangadap.util.geometry.SemiMajorAxisCoo.Cpiv" title="Permalink to this definition">¶</a></dt>
 <dd><p><em>numpy.ndarray</em> – The <strong>piv</strong> array returned by
 <a class="reference external" href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.lu_factor.html">scipy.linalg.lu_factor</a>, which is used to calculate the LU
-decomposition of <span class="math">\({\mathbf C}\)</span></p>
+decomposition of <span class="math notranslate nohighlight">\({\mathbf C}\)</span></p>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="mangadap.util.geometry.SemiMajorAxisCoo.D">
 <code class="descname">D</code><a class="headerlink" href="#mangadap.util.geometry.SemiMajorAxisCoo.D" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>numpy.ndarray</em> – The vector <span class="math">\({\mathbf d}\)</span>, as defined
-above, used to calculate <span class="math">\({\mathbf f} = {\mathbf
+<dd><p><em>numpy.ndarray</em> – The vector <span class="math notranslate nohighlight">\({\mathbf d}\)</span>, as defined
+above, used to calculate <span class="math notranslate nohighlight">\({\mathbf f} = {\mathbf
 C}^{-1}\ {\mathbf d}\)</span></p>
 </dd></dl>
 
@@ -424,21 +424,21 @@ C}^{-1}\ {\mathbf d}\)</span></p>
 <code class="descname">_calculate_cartesian</code><span class="sig-paren">(</span><em>r</em>, <em>theta</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/geometry.html#SemiMajorAxisCoo._calculate_cartesian"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.geometry.SemiMajorAxisCoo._calculate_cartesian" title="Permalink to this definition">¶</a></dt>
 <dd><p>Invert the calculation of the semi-major-axis polar coordinates
 to calculate the semi-major-axis Cartesian coordinates
-<span class="math">\((x_a,y_a)\)</span> using</p>
-<div class="math">
+<span class="math notranslate nohighlight">\((x_a,y_a)\)</span> using</p>
+<div class="math notranslate nohighlight">
 \[\begin{split}x_a &amp;= \pm R / \sqrt{1 + \tan^2\theta}\\
 y_a &amp;= -x_a\ \tan\theta\end{split}\]</div>
-<p>where <span class="math">\(x_a\)</span> is negative when <span class="math">\(\pi/2 \leq \theta &lt;
+<p>where <span class="math notranslate nohighlight">\(x_a\)</span> is negative when <span class="math notranslate nohighlight">\(\pi/2 \leq \theta &lt;
 3\pi/2\)</span>.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>r</strong><strong>,</strong><strong>theta</strong> (<em>array-like</em>) – The semi-major-axis polar coordinates
-<span class="math">\((R,\theta)\)</span>.</td>
+<span class="math notranslate nohighlight">\((R,\theta)\)</span>.</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The semi-major-axis Cartesian coordinates:
-<span class="math">\(x_a, y_a\)</span>.</td>
+<span class="math notranslate nohighlight">\(x_a, y_a\)</span>.</td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">numpy.ndarray</td>
 </tr>
@@ -450,9 +450,9 @@ y_a &amp;= -x_a\ \tan\theta\end{split}\]</div>
 <dt id="mangadap.util.geometry.SemiMajorAxisCoo._calculate_polar">
 <code class="descname">_calculate_polar</code><span class="sig-paren">(</span><em>x</em>, <em>y</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/geometry.html#SemiMajorAxisCoo._calculate_polar"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.geometry.SemiMajorAxisCoo._calculate_polar" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calculate the polar coordinates (radius and azimuth) provided
-the Cartesian semi-major-axis coordinates <span class="math">\((x_a,y_a)\)</span>
+the Cartesian semi-major-axis coordinates <span class="math notranslate nohighlight">\((x_a,y_a)\)</span>
 using</p>
-<div class="math">
+<div class="math notranslate nohighlight">
 \[\begin{split}R &amp;= \sqrt{x_a^2 + y_a^2} \\
 \theta &amp;= \tan^{-1}\left(\frac{-y_a}{x_a}\right)\end{split}\]</div>
 <table class="docutils field-list" frame="void" rules="none">
@@ -460,10 +460,10 @@ using</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong><strong>,</strong><strong>y</strong> (<em>array-like</em>) – The semi-major-axis Cartesian coordinates
-<span class="math">\((x_a,y_a)\)</span>.</td>
+<span class="math notranslate nohighlight">\((x_a,y_a)\)</span>.</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The semi-major-axis polar coordinates:
-<span class="math">\(R, \theta\)</span>.</td>
+<span class="math notranslate nohighlight">\(R, \theta\)</span>.</td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">numpy.ndarray</td>
 </tr>
@@ -493,7 +493,7 @@ decomposition for forward operations.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>y</strong> (<a class="reference internal" href="mangadap.proc.elric.html#mangadap.proc.elric.LineProfileFit.x" title="mangadap.proc.elric.LineProfileFit.x"><em>x</em></a><em>,</em>) – Single values for use in calculating the
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>y</strong> (<em>x</em><em>,</em>) – Single values for use in calculating the
 semi-major-axis coordinates.</td>
 </tr>
 </tbody>
@@ -515,7 +515,7 @@ decomposition for inverse operations.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>y</strong> (<a class="reference internal" href="mangadap.proc.elric.html#mangadap.proc.elric.LineProfileFit.x" title="mangadap.proc.elric.LineProfileFit.x"><em>x</em></a><em>,</em>) – Single values for use in calculating the
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>y</strong> (<em>x</em><em>,</em>) – Single values for use in calculating the
 on-sky focal plane coordinates.</td>
 </tr>
 </tbody>
@@ -525,20 +525,20 @@ on-sky focal plane coordinates.</td>
 <dl class="method">
 <dt id="mangadap.util.geometry.SemiMajorAxisCoo.cartesian">
 <code class="descname">cartesian</code><span class="sig-paren">(</span><em>x</em>, <em>y</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/geometry.html#SemiMajorAxisCoo.cartesian"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.geometry.SemiMajorAxisCoo.cartesian" title="Permalink to this definition">¶</a></dt>
-<dd><p>Calculate <span class="math">\({\mathbf x}\)</span> using <a class="reference internal" href="#mangadap.util.geometry.SemiMajorAxisCoo.solve" title="mangadap.util.geometry.SemiMajorAxisCoo.solve"><code class="xref py py-func docutils literal"><span class="pre">solve()</span></code></a> for the
-provided <span class="math">\((x_f,y_f)\)</span> and return the semi-major-axis
-Cartesian and coordinates, <span class="math">\((x_a,y_a)\)</span>.</p>
+<dd><p>Calculate <span class="math notranslate nohighlight">\({\mathbf x}\)</span> using <a class="reference internal" href="#mangadap.util.geometry.SemiMajorAxisCoo.solve" title="mangadap.util.geometry.SemiMajorAxisCoo.solve"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve()</span></code></a> for the
+provided <span class="math notranslate nohighlight">\((x_f,y_f)\)</span> and return the semi-major-axis
+Cartesian and coordinates, <span class="math notranslate nohighlight">\((x_a,y_a)\)</span>.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong><strong>,</strong><strong>y</strong> (<em>array-like</em>) – The coordinate <span class="math">\((x_f,y_f)\)</span>, which
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong><strong>,</strong><strong>y</strong> (<em>array-like</em>) – The coordinate <span class="math notranslate nohighlight">\((x_f,y_f)\)</span>, which
 is the sky-right, focal-plane position relative to a
-reference on-sky position <span class="math">\((x_0,y_0)\)</span> relative to
+reference on-sky position <span class="math notranslate nohighlight">\((x_0,y_0)\)</span> relative to
 the center of the ellipse (galaxy center),</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Two arrays with the semi-major-axis Cartesian
-coordinates, <span class="math">\(x_a, y_a\)</span>.</td>
+coordinates, <span class="math notranslate nohighlight">\(x_a, y_a\)</span>.</td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">numpy.ndarray</td>
 </tr>
@@ -549,18 +549,18 @@ coordinates, <span class="math">\(x_a, y_a\)</span>.</td>
 <dl class="method">
 <dt id="mangadap.util.geometry.SemiMajorAxisCoo.cartesian_invert">
 <code class="descname">cartesian_invert</code><span class="sig-paren">(</span><em>x</em>, <em>y</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/geometry.html#SemiMajorAxisCoo.cartesian_invert"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.geometry.SemiMajorAxisCoo.cartesian_invert" title="Permalink to this definition">¶</a></dt>
-<dd><p>Calculate <span class="math">\({\mathbf f}\)</span> using <a class="reference internal" href="#mangadap.util.geometry.SemiMajorAxisCoo.solve" title="mangadap.util.geometry.SemiMajorAxisCoo.solve"><code class="xref py py-func docutils literal"><span class="pre">solve()</span></code></a> for the
-provided <span class="math">\((x_a,y_a)\)</span> and return focal-plane cartesian
-coordinates <span class="math">\((x_f,y_f)\)</span>.</p>
+<dd><p>Calculate <span class="math notranslate nohighlight">\({\mathbf f}\)</span> using <a class="reference internal" href="#mangadap.util.geometry.SemiMajorAxisCoo.solve" title="mangadap.util.geometry.SemiMajorAxisCoo.solve"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve()</span></code></a> for the
+provided <span class="math notranslate nohighlight">\((x_a,y_a)\)</span> and return focal-plane cartesian
+coordinates <span class="math notranslate nohighlight">\((x_f,y_f)\)</span>.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong><strong>,</strong><strong>y</strong> (<em>array-like</em>) – The semi-major-axis Cartesian coordinates
-<span class="math">\((x_a,y_a)\)</span>.</td>
+<span class="math notranslate nohighlight">\((x_a,y_a)\)</span>.</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The focal-plane Cartesian coordinates
-<span class="math">\((x_f,y_f)\)</span>.</td>
+<span class="math notranslate nohighlight">\((x_f,y_f)\)</span>.</td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">numpy.ndarray</td>
 </tr>
@@ -571,23 +571,23 @@ coordinates <span class="math">\((x_f,y_f)\)</span>.</p>
 <dl class="method">
 <dt id="mangadap.util.geometry.SemiMajorAxisCoo.coo">
 <code class="descname">coo</code><span class="sig-paren">(</span><em>x</em>, <em>y</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/geometry.html#SemiMajorAxisCoo.coo"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.geometry.SemiMajorAxisCoo.coo" title="Permalink to this definition">¶</a></dt>
-<dd><p>Calculate <span class="math">\({\mathbf x}\)</span> using <a class="reference internal" href="#mangadap.util.geometry.SemiMajorAxisCoo.solve" title="mangadap.util.geometry.SemiMajorAxisCoo.solve"><code class="xref py py-func docutils literal"><span class="pre">solve()</span></code></a> for the
-provided <span class="math">\((x_f,y_f)\)</span> and return the semi-major-axis
-Cartesian and polar coordinates, <span class="math">\((x_a,y_a)\)</span> and
-<span class="math">\((R,\theta)\)</span>.  This combines the functionality of
-<a class="reference internal" href="#mangadap.util.geometry.SemiMajorAxisCoo.cartesian" title="mangadap.util.geometry.SemiMajorAxisCoo.cartesian"><code class="xref py py-func docutils literal"><span class="pre">cartesian()</span></code></a> and <a class="reference internal" href="#mangadap.util.geometry.SemiMajorAxisCoo.polar" title="mangadap.util.geometry.SemiMajorAxisCoo.polar"><code class="xref py py-func docutils literal"><span class="pre">polar()</span></code></a>, and so is more efficient
+<dd><p>Calculate <span class="math notranslate nohighlight">\({\mathbf x}\)</span> using <a class="reference internal" href="#mangadap.util.geometry.SemiMajorAxisCoo.solve" title="mangadap.util.geometry.SemiMajorAxisCoo.solve"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve()</span></code></a> for the
+provided <span class="math notranslate nohighlight">\((x_f,y_f)\)</span> and return the semi-major-axis
+Cartesian and polar coordinates, <span class="math notranslate nohighlight">\((x_a,y_a)\)</span> and
+<span class="math notranslate nohighlight">\((R,\theta)\)</span>.  This combines the functionality of
+<a class="reference internal" href="#mangadap.util.geometry.SemiMajorAxisCoo.cartesian" title="mangadap.util.geometry.SemiMajorAxisCoo.cartesian"><code class="xref py py-func docutils literal notranslate"><span class="pre">cartesian()</span></code></a> and <a class="reference internal" href="#mangadap.util.geometry.SemiMajorAxisCoo.polar" title="mangadap.util.geometry.SemiMajorAxisCoo.polar"><code class="xref py py-func docutils literal notranslate"><span class="pre">polar()</span></code></a>, and so is more efficient
 than using these both separately.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong><strong>,</strong><strong>y</strong> (<em>array-like</em>) – The coordinates <span class="math">\((x_f,y_f)\)</span>, which
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong><strong>,</strong><strong>y</strong> (<em>array-like</em>) – The coordinates <span class="math notranslate nohighlight">\((x_f,y_f)\)</span>, which
 are the sky-right, focal-plane position relative to a
-reference on-sky position <span class="math">\((x_0,y_0)\)</span> relative to
+reference on-sky position <span class="math notranslate nohighlight">\((x_0,y_0)\)</span> relative to
 the center of the ellipse (galaxy center),</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Four arrays with the semi-major-axis
-Cartesian and polar coordinates:  <span class="math">\(x_a, y_a, R,
+Cartesian and polar coordinates:  <span class="math notranslate nohighlight">\(x_a, y_a, R,
 \theta\)</span>.</td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">numpy.ndarray</td>
@@ -599,23 +599,23 @@ Cartesian and polar coordinates:  <span class="math">\(x_a, y_a, R,
 <dl class="method">
 <dt id="mangadap.util.geometry.SemiMajorAxisCoo.polar">
 <code class="descname">polar</code><span class="sig-paren">(</span><em>x</em>, <em>y</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/geometry.html#SemiMajorAxisCoo.polar"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.geometry.SemiMajorAxisCoo.polar" title="Permalink to this definition">¶</a></dt>
-<dd><p>Calculate <span class="math">\({\mathbf x}\)</span> using <a class="reference internal" href="#mangadap.util.geometry.SemiMajorAxisCoo.solve" title="mangadap.util.geometry.SemiMajorAxisCoo.solve"><code class="xref py py-func docutils literal"><span class="pre">solve()</span></code></a> for the
-provided <span class="math">\((x_f,y_f)\)</span> and return the semi-major-axis polar
-coordinates, <span class="math">\((R,\theta)\)</span>, where</p>
-<div class="math">
+<dd><p>Calculate <span class="math notranslate nohighlight">\({\mathbf x}\)</span> using <a class="reference internal" href="#mangadap.util.geometry.SemiMajorAxisCoo.solve" title="mangadap.util.geometry.SemiMajorAxisCoo.solve"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve()</span></code></a> for the
+provided <span class="math notranslate nohighlight">\((x_f,y_f)\)</span> and return the semi-major-axis polar
+coordinates, <span class="math notranslate nohighlight">\((R,\theta)\)</span>, where</p>
+<div class="math notranslate nohighlight">
 \[\begin{split}R &amp;= \sqrt{x_a^2 + y_a^2} \\
 \theta &amp;= \tan^{-1}\left(\frac{-y_a}{x_a}\right)\end{split}\]</div>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong><strong>,</strong><strong>y</strong> (<em>array-like</em>) – The coordinate <span class="math">\((x_f,y_f)\)</span>, which
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong><strong>,</strong><strong>y</strong> (<em>array-like</em>) – The coordinate <span class="math notranslate nohighlight">\((x_f,y_f)\)</span>, which
 is the sky-right, focal-plane position relative to a
-reference on-sky position <span class="math">\((x_0,y_0)\)</span> relative to
+reference on-sky position <span class="math notranslate nohighlight">\((x_0,y_0)\)</span> relative to
 the center of the ellipse (galaxy center),</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Two arrays with the semi-major-axis polar
-coordinates: <span class="math">\(R, \theta\)</span>.</td>
+coordinates: <span class="math notranslate nohighlight">\(R, \theta\)</span>.</td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">numpy.ndarray</td>
 </tr>
@@ -626,18 +626,18 @@ coordinates: <span class="math">\(R, \theta\)</span>.</td>
 <dl class="method">
 <dt id="mangadap.util.geometry.SemiMajorAxisCoo.polar_invert">
 <code class="descname">polar_invert</code><span class="sig-paren">(</span><em>r</em>, <em>theta</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/geometry.html#SemiMajorAxisCoo.polar_invert"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.geometry.SemiMajorAxisCoo.polar_invert" title="Permalink to this definition">¶</a></dt>
-<dd><p>Calculate <span class="math">\({\mathbf f}\)</span> using <a class="reference internal" href="#mangadap.util.geometry.SemiMajorAxisCoo.solve" title="mangadap.util.geometry.SemiMajorAxisCoo.solve"><code class="xref py py-func docutils literal"><span class="pre">solve()</span></code></a> for the
-provided <span class="math">\((R,\theta)\)</span> and return focal-plane cartesian
-coordinates <span class="math">\((x_f,y_f)\)</span>.</p>
+<dd><p>Calculate <span class="math notranslate nohighlight">\({\mathbf f}\)</span> using <a class="reference internal" href="#mangadap.util.geometry.SemiMajorAxisCoo.solve" title="mangadap.util.geometry.SemiMajorAxisCoo.solve"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve()</span></code></a> for the
+provided <span class="math notranslate nohighlight">\((R,\theta)\)</span> and return focal-plane cartesian
+coordinates <span class="math notranslate nohighlight">\((x_f,y_f)\)</span>.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>r</strong><strong>,</strong><strong>theta</strong> (<em>array-like</em>) – The semi-major-axis polar coordinates
-<span class="math">\((R,\theta)\)</span>.</td>
+<span class="math notranslate nohighlight">\((R,\theta)\)</span>.</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Two arrays with the focal-plane Cartesian
-coordinates <span class="math">\((x_f,y_f)\)</span>.</td>
+coordinates <span class="math notranslate nohighlight">\((x_f,y_f)\)</span>.</td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">numpy.ndarray</td>
 </tr>
@@ -648,25 +648,25 @@ coordinates <span class="math">\((x_f,y_f)\)</span>.</td>
 <dl class="method">
 <dt id="mangadap.util.geometry.SemiMajorAxisCoo.solve">
 <code class="descname">solve</code><span class="sig-paren">(</span><em>x</em>, <em>y</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/geometry.html#SemiMajorAxisCoo.solve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.geometry.SemiMajorAxisCoo.solve" title="Permalink to this definition">¶</a></dt>
-<dd><p>Use <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.lu_solve.html">scipy.linalg.lu_solve</a> to solve <span class="math">\({\mathbf x} =
+<dd><p>Use <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.lu_solve.html">scipy.linalg.lu_solve</a> to solve <span class="math notranslate nohighlight">\({\mathbf x} =
 {\mathbf A}^{-1}\ {\mathbf b}\)</span>.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong><strong>,</strong><strong>y</strong> (<em>array-like</em>) – The coordinates <span class="math">\((x_f,y_f)\)</span>, which
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong><strong>,</strong><strong>y</strong> (<em>array-like</em>) – The coordinates <span class="math notranslate nohighlight">\((x_f,y_f)\)</span>, which
 are the sky-right, focal-plane Cartesian coordinates
 relative to a reference on-sky position
-<span class="math">\((x_0,y_0)\)</span>, which is relative to the center of
+<span class="math notranslate nohighlight">\((x_0,y_0)\)</span>, which is relative to the center of
 the ellipse (galaxy center).</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The <span class="math">\({\mathbf x}\)</span> vectors (separated by
-rows) as defined by the solution to <span class="math">\({\mathbf A}^{-1}\
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The <span class="math notranslate nohighlight">\({\mathbf x}\)</span> vectors (separated by
+rows) as defined by the solution to <span class="math notranslate nohighlight">\({\mathbf A}^{-1}\
 {\mathbf b}\)</span></td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">numpy.ndarray</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if object was not properly defined or if
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if object was not properly defined or if
 the X and Y arrays do not have the same size.</td>
 </tr>
 </tbody>
@@ -676,21 +676,21 @@ the X and Y arrays do not have the same size.</td>
 <dl class="method">
 <dt id="mangadap.util.geometry.SemiMajorAxisCoo.solve_inverse">
 <code class="descname">solve_inverse</code><span class="sig-paren">(</span><em>x</em>, <em>y</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/geometry.html#SemiMajorAxisCoo.solve_inverse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.geometry.SemiMajorAxisCoo.solve_inverse" title="Permalink to this definition">¶</a></dt>
-<dd><p>Use <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.lu_solve.html">scipy.linalg.lu_solve</a> to solve <span class="math">\({\mathbf f} =
+<dd><p>Use <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.lu_solve.html">scipy.linalg.lu_solve</a> to solve <span class="math notranslate nohighlight">\({\mathbf f} =
 {\mathbf C}^{-1}\ {\mathbf d}\)</span>.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong><strong>,</strong><strong>y</strong> (<em>array-like</em>) – The semi-major-axis Cartesian coordinates
-<span class="math">\((x_a,y_a)\)</span>.</td>
+<span class="math notranslate nohighlight">\((x_a,y_a)\)</span>.</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The <span class="math">\({\mathbf f}\)</span> vector as defined by
-the solution to <span class="math">\({\mathbf C}^{-1}\ {\mathbf d}\)</span></td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The <span class="math notranslate nohighlight">\({\mathbf f}\)</span> vector as defined by
+the solution to <span class="math notranslate nohighlight">\({\mathbf C}^{-1}\ {\mathbf d}\)</span></td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">numpy.ndarray</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if object was not properly defined or if
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if object was not properly defined or if
 the X and Y arrays do not have the same size.</td>
 </tr>
 </tbody>
@@ -759,7 +759,7 @@ number.</li>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">int</p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if <cite>polygon</cite> is not 2D, if <cite>polygon</cite> does not
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if <cite>polygon</cite> is not 2D, if <cite>polygon</cite> does not
 have two columns, or if <cite>point</cite> is not a 2-element array.</p>
 </td>
 </tr>
@@ -779,7 +779,7 @@ have two columns, or if <cite>point</cite> is not a 2-element array.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="mangadap.util.instrument.html" class="btn btn-neutral float-right" title="mangadap.util.instrument module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="mangadap.util.lineprofiles.html" class="btn btn-neutral float-right" title="mangadap.util.lineprofiles module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="mangadap.util.fitsutil.html" class="btn btn-neutral" title="mangadap.util.fitsutil module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>

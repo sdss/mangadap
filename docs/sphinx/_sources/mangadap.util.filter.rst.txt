@@ -1,5 +1,5 @@
-mangadap\.util\.filter module
-=============================
+mangadap.util.filter module
+===========================
 
 .. automodule:: mangadap.util.filter
     :members:

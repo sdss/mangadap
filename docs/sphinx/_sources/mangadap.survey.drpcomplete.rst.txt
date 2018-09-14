@@ -1,5 +1,5 @@
-mangadap\.survey\.drpcomplete module
-====================================
+mangadap.survey.drpcomplete module
+==================================
 
 .. automodule:: mangadap.survey.drpcomplete
     :members:

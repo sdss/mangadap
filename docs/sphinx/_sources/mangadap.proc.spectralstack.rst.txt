@@ -1,5 +1,5 @@
-mangadap\.proc\.spectralstack module
-====================================
+mangadap.proc.spectralstack module
+==================================
 
 .. automodule:: mangadap.proc.spectralstack
     :members:

@@ -1,5 +1,5 @@
-mangadap\.contrib package
-=========================
+mangadap.contrib package
+========================
 
 Submodules
 ----------

@@ -1,5 +1,5 @@
-mangadap\.proc\.spatiallybinnedspectra module
-=============================================
+mangadap.proc.spatiallybinnedspectra module
+===========================================
 
 .. automodule:: mangadap.proc.spatiallybinnedspectra
     :members:

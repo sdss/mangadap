@@ -104,7 +104,7 @@
 <li class="toctree-l3"><a class="reference internal" href="mangadap.par.html">mangadap.par package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.proc.html">mangadap.proc package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.survey.html">mangadap.survey package</a></li>
-<li class="toctree-l3"><a class="reference internal" href="mangadap.test.html">mangadap.test package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.tests.html">mangadap.tests package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.util.html">mangadap.util package</a></li>
 </ul>
 </li>
@@ -183,24 +183,24 @@
 <span id="mangadap-contrib-lambdar-2d-formanga-module"></span><h1>mangadap.contrib.LambdaR_2D_forMaNGA module<a class="headerlink" href="#module-mangadap.contrib.LambdaR_2D_forMaNGA" title="Permalink to this headline">¶</a></h1>
 <p>Eric EMSELLEM - ESO / CRAL
 <a class="reference external" href="mailto:eric&#46;emsellem&#37;&#52;&#48;eso&#46;org">eric<span>&#46;</span>emsellem<span>&#64;</span>eso<span>&#46;</span>org</a></p>
-<p>The main goal of this script is to derive <span class="math">\(\lambda_R\)</span> and
-<span class="math">\(V/\sigma\)</span> radial profiles, given a set of coordinates
-<span class="math">\((x,y)\)</span> and kinematic measurements (<span class="math">\(V\)</span>, <span class="math">\(\sigma\)</span>, but
-also associated flux, <span class="math">\(F\)</span>)</p>
-<p>The standard formulae for <span class="math">\(\lambda_R\)</span> comes from Emsellem et al.
+<p>The main goal of this script is to derive <span class="math notranslate nohighlight">\(\lambda_R\)</span> and
+<span class="math notranslate nohighlight">\(V/\sigma\)</span> radial profiles, given a set of coordinates
+<span class="math notranslate nohighlight">\((x,y)\)</span> and kinematic measurements (<span class="math notranslate nohighlight">\(V\)</span>, <span class="math notranslate nohighlight">\(\sigma\)</span>, but
+also associated flux, <span class="math notranslate nohighlight">\(F\)</span>)</p>
+<p>The standard formulae for <span class="math notranslate nohighlight">\(\lambda_R\)</span> comes from Emsellem et al.
 2007, MNRAS 379, 401 and Emsellem et al. 2011, MNRAS 414, 888, while the
-formulae for <span class="math">\(V/\sigma\)</span> done in the proper way with IFU come from
+formulae for <span class="math notranslate nohighlight">\(V/\sigma\)</span> done in the proper way with IFU come from
 Binney 2005, 363, 937.</p>
-<div class="math">
+<div class="math notranslate nohighlight">
 \[\lambda_R = \frac{\sum F\ |V|}{\sum F\ (V^2 + \sigma^2)^{1/2}}\]</div>
 <p>and</p>
-<div class="math">
+<div class="math notranslate nohighlight">
 \[V / \sigma = \left( \frac{\sum F\ V^2}{\sum F\ \sigma^2}
 \right)^{1/2}\]</div>
-<p>The main difference between <span class="math">\(\lambda_R\)</span> and <span class="math">\(V/\sigma\)</span> is
-that <span class="math">\(\lambda_R\)</span> is providing a radius-biased view of the
+<p>The main difference between <span class="math notranslate nohighlight">\(\lambda_R\)</span> and <span class="math notranslate nohighlight">\(V/\sigma\)</span> is
+that <span class="math notranslate nohighlight">\(\lambda_R\)</span> is providing a radius-biased view of the
 dynamical status and can be used as a proxy for apparent specific
-stellar angular momentum, while <span class="math">\(V/\sigma\)</span> is flux-biased and more
+stellar angular momentum, while <span class="math notranslate nohighlight">\(V/\sigma\)</span> is flux-biased and more
 prone to changes due to small central structures.  There is, however, a
 nice relation between the two (see the above- mentioned papers) which
 holds for regular kinematics.</p>
@@ -208,15 +208,15 @@ holds for regular kinematics.</p>
 spaxels) and are therefore “cumulative” in the sense that they should
 include all spaxels within a certain “radius”.  The advised selection is
 to follow the moment ellipticity of the system: the derivation of
-<span class="math">\(\lambda_R\)</span> and <span class="math">\(V/\sigma\)</span> thus require values for the
-ellipticity (Eps; <span class="math">\(\epsilon\)</span>) and position angle (PA;
-<span class="math">\(\phi_0\)</span>).</p>
+<span class="math notranslate nohighlight">\(\lambda_R\)</span> and <span class="math notranslate nohighlight">\(V/\sigma\)</span> thus require values for the
+ellipticity (Eps; <span class="math notranslate nohighlight">\(\epsilon\)</span>) and position angle (PA;
+<span class="math notranslate nohighlight">\(\phi_0\)</span>).</p>
 <dl class="docutils">
 <dt><em>Source location</em>:</dt>
 <dd>$MANGADAP_DIR/python/mangadap/contrib/LambdaR_2D_forMaNGA.py</dd>
 </dl>
 <p><em>Python2/3 compliance</em>:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
 
@@ -227,7 +227,7 @@ ellipticity (Eps; <span class="math">\(\epsilon\)</span>) and position angle (PA
 </pre></div>
 </div>
 <p><em>Imports</em>:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">numpy</span> <span class="k">import</span> <span class="n">cos</span><span class="p">,</span> <span class="n">sin</span><span class="p">,</span> <span class="nb">sum</span><span class="p">,</span> <span class="n">sqrt</span>
 <span class="kn">import</span> <span class="nn">scipy</span>
 <span class="kn">from</span> <span class="nn">scipy</span> <span class="k">import</span> <span class="n">interpolate</span>
@@ -249,7 +249,7 @@ DAP, minor modifications to docstrings, python 2/3 compliance.</div>
 <dl class="class">
 <dt id="mangadap.contrib.LambdaR_2D_forMaNGA.Circle_Zone">
 <em class="property">class </em><code class="descclassname">mangadap.contrib.LambdaR_2D_forMaNGA.</code><code class="descname">Circle_Zone</code><span class="sig-paren">(</span><em>params=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/contrib/LambdaR_2D_forMaNGA.html#Circle_Zone"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.contrib.LambdaR_2D_forMaNGA.Circle_Zone" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#mangadap.contrib.LambdaR_2D_forMaNGA.Selection_Zone" title="mangadap.contrib.LambdaR_2D_forMaNGA.Selection_Zone"><code class="xref py py-class docutils literal"><span class="pre">mangadap.contrib.LambdaR_2D_forMaNGA.Selection_Zone</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#mangadap.contrib.LambdaR_2D_forMaNGA.Selection_Zone" title="mangadap.contrib.LambdaR_2D_forMaNGA.Selection_Zone"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.contrib.LambdaR_2D_forMaNGA.Selection_Zone</span></code></a></p>
 <dl class="method">
 <dt id="mangadap.contrib.LambdaR_2D_forMaNGA.Circle_Zone.select">
 <code class="descname">select</code><span class="sig-paren">(</span><em>xin</em>, <em>yin</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/contrib/LambdaR_2D_forMaNGA.html#Circle_Zone.select"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.contrib.LambdaR_2D_forMaNGA.Circle_Zone.select" title="Permalink to this definition">¶</a></dt>
@@ -266,8 +266,8 @@ DAP, minor modifications to docstrings, python 2/3 compliance.</div>
 <dl class="function">
 <dt id="mangadap.contrib.LambdaR_2D_forMaNGA.Derive_LR_VS_Profiles">
 <code class="descclassname">mangadap.contrib.LambdaR_2D_forMaNGA.</code><code class="descname">Derive_LR_VS_Profiles</code><span class="sig-paren">(</span><em>X</em>, <em>Y</em>, <em>F</em>, <em>V</em>, <em>S</em>, <em>Rprofile=None</em>, <em>R_EpsPA=None</em>, <em>Eps=None</em>, <em>PA=None</em>, <em>maskDic=None</em>, <em>maskName=None</em>, <em>verbose=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/contrib/LambdaR_2D_forMaNGA.html#Derive_LR_VS_Profiles"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.contrib.LambdaR_2D_forMaNGA.Derive_LR_VS_Profiles" title="Permalink to this definition">¶</a></dt>
-<dd><p>Compute the <span class="math">\(\lambda_R\)</span> and <span class="math">\(V/\sigma\)</span> parameters from a
-set of <span class="math">\((x,y)\)</span> (positions) and <span class="math">\(V\)</span>, <span class="math">\(\sigma\)</span>
+<dd><p>Compute the <span class="math notranslate nohighlight">\(\lambda_R\)</span> and <span class="math notranslate nohighlight">\(V/\sigma\)</span> parameters from a
+set of <span class="math notranslate nohighlight">\((x,y)\)</span> (positions) and <span class="math notranslate nohighlight">\(V\)</span>, <span class="math notranslate nohighlight">\(\sigma\)</span>
 (stellar kinematics).</p>
 <p>If an ellipticity profile is provided, it is used to select the
 points within growing apertures.  Otherwise it uses a default
@@ -289,7 +289,7 @@ radius or be constant.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>Y</strong> (<em>X</em><em>,</em>) – Cartesian coordinates. Units can be
-arbitrary as <span class="math">\(\lambda_R\)</span> and <span class="math">\(V/\sigma\)</span> are
+arbitrary as <span class="math notranslate nohighlight">\(\lambda_R\)</span> and <span class="math notranslate nohighlight">\(V/\sigma\)</span> are
 dimensionless (but should be linear, so not RA, DEC) <em>X</em>,
 and <em>Y</em> should be associated with square spaxels but do not
 need to fill in a full rectangular grid.  No default.</li>
@@ -368,7 +368,7 @@ within the radius range.</li>
 <dl class="class">
 <dt id="mangadap.contrib.LambdaR_2D_forMaNGA.Rectangle_Zone">
 <em class="property">class </em><code class="descclassname">mangadap.contrib.LambdaR_2D_forMaNGA.</code><code class="descname">Rectangle_Zone</code><span class="sig-paren">(</span><em>params=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/contrib/LambdaR_2D_forMaNGA.html#Rectangle_Zone"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.contrib.LambdaR_2D_forMaNGA.Rectangle_Zone" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#mangadap.contrib.LambdaR_2D_forMaNGA.Selection_Zone" title="mangadap.contrib.LambdaR_2D_forMaNGA.Selection_Zone"><code class="xref py py-class docutils literal"><span class="pre">mangadap.contrib.LambdaR_2D_forMaNGA.Selection_Zone</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#mangadap.contrib.LambdaR_2D_forMaNGA.Selection_Zone" title="mangadap.contrib.LambdaR_2D_forMaNGA.Selection_Zone"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.contrib.LambdaR_2D_forMaNGA.Selection_Zone</span></code></a></p>
 <dl class="method">
 <dt id="mangadap.contrib.LambdaR_2D_forMaNGA.Rectangle_Zone.select">
 <code class="descname">select</code><span class="sig-paren">(</span><em>xin</em>, <em>yin</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/contrib/LambdaR_2D_forMaNGA.html#Rectangle_Zone.select"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.contrib.LambdaR_2D_forMaNGA.Rectangle_Zone.select" title="Permalink to this definition">¶</a></dt>
@@ -393,7 +393,7 @@ Using a PA in degrees</p>
 <dl class="class">
 <dt id="mangadap.contrib.LambdaR_2D_forMaNGA.Selection_Zone">
 <em class="property">class </em><code class="descclassname">mangadap.contrib.LambdaR_2D_forMaNGA.</code><code class="descname">Selection_Zone</code><span class="sig-paren">(</span><em>params=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/contrib/LambdaR_2D_forMaNGA.html#Selection_Zone"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.contrib.LambdaR_2D_forMaNGA.Selection_Zone" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Parent class for Rectangle_Zone and Circle_Zone</p>
 </dd></dl>
 

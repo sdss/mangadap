@@ -36,7 +36,7 @@
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
     <link rel="top" title="mangadap 2.2.2 documentation" href="../../../index.html"/>
-        <link rel="up" title="Module code" href="../../index.html"/> 
+        <link rel="up" title="mangadap" href="../../mangadap.html"/> 
 
   
   <script src="../../../_static/js/modernizr.min.js"></script>
@@ -138,6 +138,8 @@
         
           <li><a href="../../index.html">Module code</a> &raquo;</li>
         
+          <li><a href="../../mangadap.html">mangadap</a> &raquo;</li>
+        
       <li>mangadap.proc.spatiallybinnedspectra</li>
     
     
@@ -194,7 +196,7 @@
 <span class="sd">        import numpy</span>
 
 <span class="sd">        from ..par.parset import ParSet</span>
-<span class="sd">        from ..config.defaults import default_dap_source, default_dap_common_path</span>
+<span class="sd">        from ..config.defaults import dap_source_dir, default_dap_common_path</span>
 <span class="sd">        from ..config.defaults import default_dap_file_name</span>
 <span class="sd">        from ..util.geometry import SemiMajorAxisCoo</span>
 <span class="sd">        from ..util.fileio import init_record_array</span>
@@ -265,12 +267,12 @@
 <span class="kn">from</span> <span class="nn">..util.parser</span> <span class="k">import</span> <span class="n">DefaultConfig</span>
 <span class="kn">from</span> <span class="nn">..util.bitmask</span> <span class="k">import</span> <span class="n">BitMask</span>
 <span class="kn">from</span> <span class="nn">..util.pixelmask</span> <span class="k">import</span> <span class="n">SpectralPixelMask</span>
-<span class="kn">from</span> <span class="nn">..util.instrument</span> <span class="k">import</span> <span class="n">spectral_coordinate_step</span>
+<span class="kn">from</span> <span class="nn">..util.sampling</span> <span class="k">import</span> <span class="n">spectral_coordinate_step</span>
 <span class="kn">from</span> <span class="nn">..util.covariance</span> <span class="k">import</span> <span class="n">Covariance</span>
 <span class="kn">from</span> <span class="nn">..util.geometry</span> <span class="k">import</span> <span class="n">SemiMajorAxisCoo</span>
 <span class="kn">from</span> <span class="nn">..util.extinction</span> <span class="k">import</span> <span class="n">GalacticExtinction</span>
 <span class="kn">from</span> <span class="nn">..util.log</span> <span class="k">import</span> <span class="n">log_output</span>
-<span class="kn">from</span> <span class="nn">..config.defaults</span> <span class="k">import</span> <span class="n">default_dap_source</span><span class="p">,</span> <span class="n">default_dap_common_path</span>
+<span class="kn">from</span> <span class="nn">..config.defaults</span> <span class="k">import</span> <span class="n">dap_source_dir</span><span class="p">,</span> <span class="n">default_dap_common_path</span>
 <span class="kn">from</span> <span class="nn">..config.defaults</span> <span class="k">import</span> <span class="n">default_dap_file_name</span><span class="p">,</span> <span class="n">default_cube_pixelscale</span>
 <span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">spatialbinning</span>
 <span class="kn">from</span> <span class="nn">.reductionassessments</span> <span class="k">import</span> <span class="n">ReductionAssessment</span>
@@ -425,7 +427,7 @@
 <span class="sd">    Args:</span>
 <span class="sd">        dapsrc (str): (**Optional**) Root path to the DAP source</span>
 <span class="sd">            directory.  If not provided, the default is defined by</span>
-<span class="sd">            :func:`mangadap.config.defaults.default_dap_source`.</span>
+<span class="sd">            :func:`mangadap.config.defaults.dap_source_dir`.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        list: A list of</span>
@@ -448,7 +450,7 @@
 <span class="sd">        </span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Check the source directory exists</span>
-    <span class="n">dapsrc</span> <span class="o">=</span> <span class="n">default_dap_source</span><span class="p">()</span> <span class="k">if</span> <span class="n">dapsrc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">)</span>
+    <span class="n">dapsrc</span> <span class="o">=</span> <span class="n">dap_source_dir</span><span class="p">()</span> <span class="k">if</span> <span class="n">dapsrc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">NotADirectoryError</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1"> does not exist!&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">))</span>
 
@@ -533,7 +535,7 @@
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dapsrc</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="n">dapsrc</span> <span class="o">=</span> <span class="n">default_dap_source</span><span class="p">()</span> <span class="k">if</span> <span class="n">dapsrc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">)</span>
+        <span class="n">dapsrc</span> <span class="o">=</span> <span class="n">dap_source_dir</span><span class="p">()</span> <span class="k">if</span> <span class="n">dapsrc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">)</span>
         <span class="n">BitMask</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ini_file</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">,</span> <span class="s1">&#39;python&#39;</span><span class="p">,</span> <span class="s1">&#39;mangadap&#39;</span><span class="p">,</span> <span class="s1">&#39;config&#39;</span><span class="p">,</span>
                                                      <span class="s1">&#39;bitmasks&#39;</span><span class="p">,</span>
                                                      <span class="s1">&#39;spatially_binned_spectra_bits.ini&#39;</span><span class="p">))</span></div>
@@ -560,7 +562,7 @@
 <span class="sd">            :func:`available_spatial_binning_methods`.</span>
 <span class="sd">        dapsrc (str): (**Optional**) Root path to the DAP source</span>
 <span class="sd">            directory.  If not provided, the default is defined by</span>
-<span class="sd">            :func:`mangadap.config.defaults.default_dap_source`.</span>
+<span class="sd">            :func:`mangadap.config.defaults.dap_source_dir`.</span>
 <span class="sd">        dapver (str): (**Optional**) The DAP version to use for the</span>
 <span class="sd">            analysis, used to override the default defined by</span>
 <span class="sd">            :func:`mangadap.config.defaults.default_dap_version`.</span>
@@ -1284,8 +1286,8 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">[</span><span class="s1">&#39;binpar&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">[</span><span class="s1">&#39;binclass&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span> \
                     <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">[</span><span class="s1">&#39;binfunc&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span>
 
-
-<div class="viewcode-block" id="SpatiallyBinnedSpectra.do_not_fit_flags"><a class="viewcode-back" href="../../../mangadap.proc.spatiallybinnedspectra.html#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra.do_not_fit_flags">[docs]</a>    <span class="k">def</span> <span class="nf">do_not_fit_flags</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="SpatiallyBinnedSpectra.do_not_fit_flags"><a class="viewcode-back" href="../../../mangadap.proc.spatiallybinnedspectra.html#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra.do_not_fit_flags">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">do_not_fit_flags</span><span class="p">():</span>
         <span class="k">return</span> <span class="p">[</span><span class="s1">&#39;DIDNOTUSE&#39;</span><span class="p">,</span> <span class="s1">&#39;FORESTAR&#39;</span><span class="p">,</span> <span class="s1">&#39;LOW_SPECCOV&#39;</span><span class="p">,</span> <span class="s1">&#39;LOW_SNR&#39;</span><span class="p">,</span> <span class="s1">&#39;NONE_IN_STACK&#39;</span><span class="p">]</span></div>
 
 
@@ -1401,6 +1403,12 @@
             <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">quiet</span><span class="p">:</span>
                 <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;DRP file previously unopened.  Reading now.&#39;</span><span class="p">)</span>
             <span class="n">drpf</span><span class="o">.</span><span class="n">open_hdu</span><span class="p">()</span>
+
+        <span class="c1"># Test if the RSS file exists; cannot compute covariance if not</span>
+        <span class="c1"># TODO: this will break for a different stacking class</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">[</span><span class="s1">&#39;stackpar&#39;</span><span class="p">][</span><span class="s1">&#39;covar_mode&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="s1">&#39;none&#39;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">drpf</span><span class="o">.</span><span class="n">can_compute_covariance</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Cannot determine covariance matrix!  Continuing without!&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">[</span><span class="s1">&#39;stackpar&#39;</span><span class="p">][</span><span class="s1">&#39;covar_mode&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;none&#39;</span>
 
         <span class="c1"># TODO: How many of these attributes should I keep, vs. just use</span>
         <span class="c1"># drpf attributes?</span>

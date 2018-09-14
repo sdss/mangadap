@@ -36,7 +36,7 @@
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
     <link rel="top" title="mangadap 2.2.2 documentation" href="../../../index.html"/>
-        <link rel="up" title="Module code" href="../../index.html"/> 
+        <link rel="up" title="mangadap" href="../../mangadap.html"/> 
 
   
   <script src="../../../_static/js/modernizr.min.js"></script>
@@ -137,6 +137,8 @@
       <li><a href="../../../index.html">Docs</a> &raquo;</li>
         
           <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../../mangadap.html">mangadap</a> &raquo;</li>
         
       <li>mangadap.util.covariance</li>
     
@@ -723,7 +725,15 @@
         <span class="c1"># Construct the covariance matrix</span>
         <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span> <span class="n">sparse</span><span class="o">.</span><span class="n">triu</span><span class="p">(</span><span class="n">_T</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">_Sigma</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">_T</span><span class="o">.</span><span class="n">transpose</span><span class="p">())))</span><span class="o">.</span><span class="n">tocsr</span><span class="p">()</span> <span class="p">)</span></div>
 
-        
+
+<div class="viewcode-block" id="Covariance.from_variance"><a class="viewcode-back" href="../../../mangadap.util.covariance.html#mangadap.util.covariance.Covariance.from_variance">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_variance</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">variance</span><span class="p">,</span> <span class="n">correlation</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Construct a diagonal covariance matrix using the provided variance.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">sparse</span><span class="o">.</span><span class="n">csr</span><span class="o">.</span><span class="n">csr_matrix</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">diagflat</span><span class="p">(</span><span class="n">variance</span><span class="p">)),</span> <span class="n">correlation</span><span class="o">=</span><span class="n">correlation</span><span class="p">)</span></div>
+
+
 <div class="viewcode-block" id="Covariance._grab_true_index"><a class="viewcode-back" href="../../../mangadap.util.covariance.html#mangadap.util.covariance.Covariance._grab_true_index">[docs]</a>    <span class="k">def</span> <span class="nf">_grab_true_index</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inp</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        In the case of a 3D array, return the true array-element index</span>

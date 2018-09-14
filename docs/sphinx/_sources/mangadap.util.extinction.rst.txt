@@ -1,5 +1,5 @@
-mangadap\.util\.extinction module
-=================================
+mangadap.util.extinction module
+===============================
 
 .. automodule:: mangadap.util.extinction
     :members:

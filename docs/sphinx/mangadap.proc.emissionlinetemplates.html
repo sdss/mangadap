@@ -104,7 +104,7 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.survey.html">mangadap.survey package</a></li>
-<li class="toctree-l3"><a class="reference internal" href="mangadap.test.html">mangadap.test package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.tests.html">mangadap.tests package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.util.html">mangadap.util package</a></li>
 </ul>
 </li>
@@ -182,7 +182,7 @@
   <div class="section" id="module-mangadap.proc.emissionlinetemplates">
 <span id="mangadap-proc-emissionlinetemplates-module"></span><h1>mangadap.proc.emissionlinetemplates module<a class="headerlink" href="#module-mangadap.proc.emissionlinetemplates" title="Permalink to this headline">¶</a></h1>
 <p>Class that constructs a set of emission-line templates, primarily for
-use with <a class="reference internal" href="mangadap.proc.sasuke.html#mangadap.proc.sasuke.Sasuke" title="mangadap.proc.sasuke.Sasuke"><code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.sasuke.Sasuke</span></code></a>.</p>
+use with <a class="reference internal" href="mangadap.proc.sasuke.html#mangadap.proc.sasuke.Sasuke" title="mangadap.proc.sasuke.Sasuke"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.proc.sasuke.Sasuke</span></code></a>.</p>
 <dl class="docutils">
 <dt><em>License</em>:</dt>
 <dd><dl class="first last docutils">
@@ -193,7 +193,7 @@ use with <a class="reference internal" href="mangadap.proc.sasuke.html#mangadap.
 <dt><em>Source location</em>:</dt>
 <dd>$MANGADAP_DIR/python/mangadap/proc/emissionlinetemplates.py</dd>
 <dt><em>Imports and python version compliance</em>:</dt>
-<dd><div class="first last highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<dd><div class="first last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
@@ -212,7 +212,7 @@ use with <a class="reference internal" href="mangadap.proc.sasuke.html#mangadap.
 
 <span class="kn">import</span> <span class="nn">astropy.constants</span>
 
-<span class="kn">from</span> <span class="nn">..util.instrument</span> <span class="k">import</span> <span class="n">spectrum_velocity_scale</span><span class="p">,</span> <span class="n">spectral_coordinate_step</span>
+<span class="kn">from</span> <span class="nn">..util.sampling</span> <span class="k">import</span> <span class="n">spectrum_velocity_scale</span><span class="p">,</span> <span class="n">spectral_coordinate_step</span>
 <span class="kn">from</span> <span class="nn">..util.log</span> <span class="k">import</span> <span class="n">log_output</span>
 <span class="kn">from</span> <span class="nn">..util</span> <span class="k">import</span> <span class="n">lineprofiles</span>
 <span class="kn">from</span> <span class="nn">.spectralfitting</span> <span class="k">import</span> <span class="n">EmissionLineFit</span>
@@ -225,9 +225,9 @@ use with <a class="reference internal" href="mangadap.proc.sasuke.html#mangadap.
 <div><p>To construct emission-line templates, you need a wavelength vector,
 the instrumental resolution at which to construct the templates, and
 an emission line database (see
-<a class="reference internal" href="mangadap.par.emissionlinedb.html#mangadap.par.emissionlinedb.EmissionLineDB" title="mangadap.par.emissionlinedb.EmissionLineDB"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.emissionlinedb.EmissionLineDB</span></code></a>).  A simple
+<a class="reference internal" href="mangadap.par.emissionlinedb.html#mangadap.par.emissionlinedb.EmissionLineDB" title="mangadap.par.emissionlinedb.EmissionLineDB"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.par.emissionlinedb.EmissionLineDB</span></code></a>).  A simple
 construction would be:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="c1"># Imports</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Imports</span>
 <span class="kn">import</span> <span class="nn">numpy</span>
 <span class="kn">from</span> <span class="nn">mangadap.par.emissionlinedb</span> <span class="k">import</span> <span class="n">EmissionLineDB</span>
 <span class="kn">from</span> <span class="nn">mangadap.proc.emissionlinetemplates</span> <span class="k">import</span> <span class="n">EmissionLineTemplates</span>
@@ -243,37 +243,37 @@ construction would be:</p>
 <dt><em>Revision history</em>:</dt>
 <dd><div class="first last line-block">
 <div class="line"><strong>08 Sep 2017</strong>: Originally pulled from
-<a class="reference internal" href="mangadap.proc.sasuke.html#module-mangadap.proc.sasuke" title="mangadap.proc.sasuke"><code class="xref py py-mod docutils literal"><span class="pre">mangadap.proc.sasuke</span></code></a> by K. Westfall (KBW)</div>
+<a class="reference internal" href="mangadap.proc.sasuke.html#module-mangadap.proc.sasuke" title="mangadap.proc.sasuke"><code class="xref py py-mod docutils literal notranslate"><span class="pre">mangadap.proc.sasuke</span></code></a> by K. Westfall (KBW)</div>
 </div>
 </dd>
 </dl>
 <dl class="class">
 <dt id="mangadap.proc.emissionlinetemplates.EmissionLineTemplates">
 <em class="property">class </em><code class="descclassname">mangadap.proc.emissionlinetemplates.</code><code class="descname">EmissionLineTemplates</code><span class="sig-paren">(</span><em>wave</em>, <em>sigma_inst</em>, <em>log=True</em>, <em>base=10</em>, <em>emldb=None</em>, <em>flux_density=True</em>, <em>loggers=None</em>, <em>quiet=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/emissionlinetemplates.html#EmissionLineTemplates"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Construct a set of emission-line templates based on an emission-line
-database, primarily for use in <a class="reference internal" href="mangadap.proc.sasuke.html#mangadap.proc.sasuke.Sasuke" title="mangadap.proc.sasuke.Sasuke"><code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.sasuke.Sasuke</span></code></a>.</p>
+database, primarily for use in <a class="reference internal" href="mangadap.proc.sasuke.html#mangadap.proc.sasuke.Sasuke" title="mangadap.proc.sasuke.Sasuke"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.proc.sasuke.Sasuke</span></code></a>.</p>
 <p>The templates are constructed based on the constraints provided by
 the emission-line database.  See
-<a class="reference internal" href="mangadap.par.emissionlinedb.html#mangadap.par.emissionlinedb.EmissionLinePar" title="mangadap.par.emissionlinedb.EmissionLinePar"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.emissionlinedb.EmissionLinePar</span></code></a> for the
+<a class="reference internal" href="mangadap.par.emissionlinedb.html#mangadap.par.emissionlinedb.EmissionLinePar" title="mangadap.par.emissionlinedb.EmissionLinePar"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.par.emissionlinedb.EmissionLinePar</span></code></a> for the
 structure of each row in the database and an explanation for each of
 its columns.  The selected profile type for each line <strong>must</strong> have
 a <cite>parameters_from_moments</cite> method that returns the parameters of
 the line provided the first three moments (moments 0, 1, and 2).</p>
 <p>Only lines with <cite>action=f</cite> are included in any template.  The array
-<a class="reference internal" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates.tpli" title="mangadap.proc.emissionlinetemplates.EmissionLineTemplates.tpli"><code class="xref py py-attr docutils literal"><span class="pre">tpli</span></code></a> provides the index of the template that contains each
+<a class="reference internal" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates.tpli" title="mangadap.proc.emissionlinetemplates.EmissionLineTemplates.tpli"><code class="xref py py-attr docutils literal notranslate"><span class="pre">tpli</span></code></a> provides the index of the template that contains each
 line in the emission-line database.  Lines that are not assigned to
 any template — either because they do not have <cite>action=f</cite> or their
-center lies outside the wavelength range in <a class="reference internal" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates.wave" title="mangadap.proc.emissionlinetemplates.EmissionLineTemplates.wave"><code class="xref py py-attr docutils literal"><span class="pre">wave</span></code></a> — are
+center lies outside the wavelength range in <a class="reference internal" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates.wave" title="mangadap.proc.emissionlinetemplates.EmissionLineTemplates.wave"><code class="xref py py-attr docutils literal notranslate"><span class="pre">wave</span></code></a> — are
 given an index of -1.</p>
 <p>Only lines with <cite>mode=a</cite> (i.e., flux, velocity, and velocity
 dispersion are all tied) are included in the same template.</p>
 <p>Lines with tied velocities are assigned the same velocity component
-(<a class="reference internal" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates.vgrp" title="mangadap.proc.emissionlinetemplates.EmissionLineTemplates.vgrp"><code class="xref py py-attr docutils literal"><span class="pre">vgrp</span></code></a>) and lines with the tied velocity dispersions are
-assigned the same sigma component (<a class="reference internal" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates.sgrp" title="mangadap.proc.emissionlinetemplates.EmissionLineTemplates.sgrp"><code class="xref py py-attr docutils literal"><span class="pre">sgrp</span></code></a>).</p>
+(<a class="reference internal" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates.vgrp" title="mangadap.proc.emissionlinetemplates.EmissionLineTemplates.vgrp"><code class="xref py py-attr docutils literal notranslate"><span class="pre">vgrp</span></code></a>) and lines with the tied velocity dispersions are
+assigned the same sigma component (<a class="reference internal" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates.sgrp" title="mangadap.proc.emissionlinetemplates.EmissionLineTemplates.sgrp"><code class="xref py py-attr docutils literal notranslate"><span class="pre">sgrp</span></code></a>).</p>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
-<p class="last">The construction of templates for use with <code class="xref py py-class docutils literal"><span class="pre">Sasuke</span></code> does
+<p class="last">The construction of templates for use with <code class="xref py py-class docutils literal notranslate"><span class="pre">Sasuke</span></code> does
 <em>not</em> allow one to tie fluxes while leaving the velocities
 and/or velocity dispersions as independent.</p>
 </div>
@@ -285,14 +285,14 @@ and/or velocity dispersions as independent.</p>
 <li><strong>wave</strong> (<em>array-like</em>) – A single wavelength vector with the
 wavelengths for the template spectra.  The wavelengths are
 expected to be sample either linearly or geometrically (see
-<a class="reference internal" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates.log" title="mangadap.proc.emissionlinetemplates.EmissionLineTemplates.log"><code class="xref py py-attr docutils literal"><span class="pre">log</span></code></a>).</li>
+<a class="reference internal" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates.log" title="mangadap.proc.emissionlinetemplates.EmissionLineTemplates.log"><code class="xref py py-attr docutils literal notranslate"><span class="pre">log</span></code></a>).</li>
 <li><strong>sigma_inst</strong> (<em>float</em><em>,</em><em>array-like</em>) – The single value or value as a
 function of wavelength for the instrumental dispersion
 (km/s) to use for the template construction.</li>
 <li><strong>log</strong> (<em>bool</em>) – (<strong>Optional</strong>) Flag that the wavelengths have been
 sampled geometrically.</li>
 <li><strong>base</strong> (<em>float</em>) – (<strong>Optional</strong>) Base for the geometric sampling.</li>
-<li><strong>(</strong> (<a class="reference internal" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates.emldb" title="mangadap.proc.emissionlinetemplates.EmissionLineTemplates.emldb"><em>emldb</em></a>) – class:<cite>mangadap.par.emissionlinedb.EmissionLineDB’):
+<li><strong>(</strong> (<em>emldb</em>) – class:<cite>mangadap.par.emissionlinedb.EmissionLineDB’):
 (**Optional**) Emission-line database that is parsed to
 setup which lines to include in the same template because
 they are modeled as having the same velocity, velocity
@@ -305,7 +305,7 @@ flux density (flux per angstrom).  Default is to return the
 spectrum in units of flux per pixel.</li>
 <li><strong>loggers</strong> (<em>list</em>) – (<strong>Optional</strong>) List of <a href="#id7"><span class="problematic" id="id8">`logging.Logger`_</span></a> objects
 to log progress; ignored if quiet=True.  Logging is done
-using <a class="reference internal" href="mangadap.util.log.html#mangadap.util.log.log_output" title="mangadap.util.log.log_output"><code class="xref py py-func docutils literal"><span class="pre">mangadap.util.log.log_output()</span></code></a>.  Default is no
+using <a class="reference internal" href="mangadap.util.log.html#mangadap.util.log.log_output" title="mangadap.util.log.log_output"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.util.log.log_output()</span></code></a>.  Default is no
 logging.  This can be reset in some methods.</li>
 <li><strong>quiet</strong> (<em>bool</em>) – (<strong>Optional</strong>) Suppress all terminal and logging
 output.  Default is False.</li>
@@ -319,7 +319,7 @@ output.  Default is False.</li>
 <code class="descname">wave</code><a class="headerlink" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates.wave" title="Permalink to this definition">¶</a></dt>
 <dd><p><em>numpy.ndarray</em> – Array with the wavelength (angstroms) of
 each pixel for all the constructed templates.  Shape is
-<span class="math">\(N_{\rm pix}\)</span>.</p>
+<span class="math notranslate nohighlight">\(N_{\rm pix}\)</span>.</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -345,8 +345,8 @@ wavelength of each spectral line.</p>
 <dl class="attribute">
 <dt id="mangadap.proc.emissionlinetemplates.EmissionLineTemplates.emldb">
 <code class="descname">emldb</code><a class="headerlink" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates.emldb" title="Permalink to this definition">¶</a></dt>
-<dd><p><a class="reference internal" href="mangadap.par.emissionlinedb.html#mangadap.par.emissionlinedb.EmissionLineDB" title="mangadap.par.emissionlinedb.EmissionLineDB"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.emissionlinedb.EmissionLineDB</span></code></a> – Database with the emission-line parameters.  Shape is
-(<span class="math">\(N_{\rm pix}\)</span>,).</p>
+<dd><p><a class="reference internal" href="mangadap.par.emissionlinedb.html#mangadap.par.emissionlinedb.EmissionLineDB" title="mangadap.par.emissionlinedb.EmissionLineDB"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.par.emissionlinedb.EmissionLineDB</span></code></a> – Database with the emission-line parameters.  Shape is
+(<span class="math notranslate nohighlight">\(N_{\rm pix}\)</span>,).</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -359,7 +359,7 @@ wavelength of each spectral line.</p>
 <dt id="mangadap.proc.emissionlinetemplates.EmissionLineTemplates.flux">
 <code class="descname">flux</code><a class="headerlink" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates.flux" title="Permalink to this definition">¶</a></dt>
 <dd><p><em>numpy.ndarray</em> – The template spectra.  Shape is
-<span class="math">\((N_{\rm tpl},N_{\rm pix})\)</span>.</p>
+<span class="math notranslate nohighlight">\((N_{\rm tpl},N_{\rm pix})\)</span>.</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -369,7 +369,7 @@ wavelength of each spectral line.</p>
 emission line.  Any emission-lines with <cite>tpli==-1</cite> means
 that the emission line was not included in any template,
 which should only occur for lines with <a href="#id1"><span class="problematic" id="id2">``</span></a>action==i` in the
-database.  Shape is (<span class="math">\(N_{\rm eml}\)</span>,).</p>
+database.  Shape is (<span class="math notranslate nohighlight">\(N_{\rm eml}\)</span>,).</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -378,7 +378,7 @@ database.  Shape is (<span class="math">\(N_{\rm eml}\)</span>,).</p>
 <dd><p><em>numpy.ndarray</em> – The component number assigned to each
 template.  Templates with the same component number are
 forced to have the same velocity and velocity dispersion by
-pPXF.  Shape is (<span class="math">\(N_{\rm tpl}\)</span>,).</p>
+pPXF.  Shape is (<span class="math notranslate nohighlight">\(N_{\rm tpl}\)</span>,).</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -388,7 +388,7 @@ pPXF.  Shape is (<span class="math">\(N_{\rm tpl}\)</span>,).</p>
 template.  Templates in the same velocity group have their
 velocity parameters tied in pPXF, but the velocity
 dispersion parameters are independent.  Shape is
-(<span class="math">\(N_{\rm tpl}\)</span>,).</p>
+(<span class="math notranslate nohighlight">\(N_{\rm tpl}\)</span>,).</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -398,7 +398,7 @@ dispersion parameters are independent.  Shape is
 assigned to each template.  Templates in the same sigma
 group have their velocity dispersion parameters tied in
 pPXF, but the velocity parameters are independent.  Shape is
-(<span class="math">\(N_{\rm tpl}\)</span>,).</p>
+(<span class="math notranslate nohighlight">\(N_{\rm tpl}\)</span>,).</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -407,7 +407,7 @@ pPXF, but the velocity parameters are independent.  Shape is
 <dd><p><em>numpy.ndarray</em> – The instrumental dispersion
 (km/s) at the rest wavelength of each emission line.  This
 is mostly used to aid the velocity dispersion corrections
-determined by <code class="xref py py-class docutils literal"><span class="pre">Sasuke</span></code>.  Shape is (<span class="math">\(N_{\rm
+determined by <code class="xref py py-class docutils literal notranslate"><span class="pre">Sasuke</span></code>.  Shape is (<span class="math notranslate nohighlight">\(N_{\rm
 eml}\)</span>,).</p>
 </dd></dl>
 
@@ -416,7 +416,7 @@ eml}\)</span>,).</p>
 <code class="descname">loggers</code><a class="headerlink" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates.loggers" title="Permalink to this definition">¶</a></dt>
 <dd><p><em>list</em> – List of <a href="#id9"><span class="problematic" id="id10">`logging.Logger`_</span></a> objects to log
 progress; ignored if quiet=True.  Logging is done using
-<a class="reference internal" href="mangadap.util.log.html#mangadap.util.log.log_output" title="mangadap.util.log.log_output"><code class="xref py py-func docutils literal"><span class="pre">mangadap.util.log.log_output()</span></code></a>.</p>
+<a class="reference internal" href="mangadap.util.log.html#mangadap.util.log.log_output" title="mangadap.util.log.log_output"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.util.log.log_output()</span></code></a>.</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -429,22 +429,22 @@ progress; ignored if quiet=True.  Logging is done using
 <dt id="mangadap.proc.emissionlinetemplates.EmissionLineTemplates._parse_emission_line_database">
 <code class="descname">_parse_emission_line_database</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/emissionlinetemplates.html#EmissionLineTemplates._parse_emission_line_database"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates._parse_emission_line_database" title="Permalink to this definition">¶</a></dt>
 <dd><p>Parse the input emission-line database; see
-<a class="reference internal" href="mangadap.par.emissionlinedb.html#mangadap.par.emissionlinedb.EmissionLinePar" title="mangadap.par.emissionlinedb.EmissionLinePar"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.emissionlinedb.EmissionLinePar</span></code></a>.</p>
+<a class="reference internal" href="mangadap.par.emissionlinedb.html#mangadap.par.emissionlinedb.EmissionLinePar" title="mangadap.par.emissionlinedb.EmissionLinePar"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.par.emissionlinedb.EmissionLinePar</span></code></a>.</p>
 <p>Only lines with <cite>action=f</cite> are included in any template.  The
-array <a class="reference internal" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates.tpli" title="mangadap.proc.emissionlinetemplates.EmissionLineTemplates.tpli"><code class="xref py py-attr docutils literal"><span class="pre">tpli</span></code></a> provides the index of the template that
+array <a class="reference internal" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates.tpli" title="mangadap.proc.emissionlinetemplates.EmissionLineTemplates.tpli"><code class="xref py py-attr docutils literal notranslate"><span class="pre">tpli</span></code></a> provides the index of the template that
 contains each line in the emission-line database.  Lines that
 are not assigned to any template — either because they do not
 have <cite>action=f</cite> or their center lies outside the wavelength
-range in <a class="reference internal" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates.wave" title="mangadap.proc.emissionlinetemplates.EmissionLineTemplates.wave"><code class="xref py py-attr docutils literal"><span class="pre">wave</span></code></a> — are given an index of -1.</p>
+range in <a class="reference internal" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates.wave" title="mangadap.proc.emissionlinetemplates.EmissionLineTemplates.wave"><code class="xref py py-attr docutils literal notranslate"><span class="pre">wave</span></code></a> — are given an index of -1.</p>
 <p>Only lines with <cite>mode=a</cite> (i.e., tie flux, velocity, and velocity
 dispersion) are included in the same template.</p>
 <p>Lines with tied velocities are assigned the same velocity
-component (<a class="reference internal" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates.vgrp" title="mangadap.proc.emissionlinetemplates.EmissionLineTemplates.vgrp"><code class="xref py py-attr docutils literal"><span class="pre">vgrp</span></code></a>) and lines with the tied velocity
+component (<a class="reference internal" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates.vgrp" title="mangadap.proc.emissionlinetemplates.EmissionLineTemplates.vgrp"><code class="xref py py-attr docutils literal notranslate"><span class="pre">vgrp</span></code></a>) and lines with the tied velocity
 dispersions are assigned the same sigma component
-(<a class="reference internal" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates.sgrp" title="mangadap.proc.emissionlinetemplates.EmissionLineTemplates.sgrp"><code class="xref py py-attr docutils literal"><span class="pre">sgrp</span></code></a>).</p>
+(<a class="reference internal" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates.sgrp" title="mangadap.proc.emissionlinetemplates.EmissionLineTemplates.sgrp"><code class="xref py py-attr docutils literal notranslate"><span class="pre">sgrp</span></code></a>).</p>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
-<p class="last">The construction of templates for use with <code class="xref py py-class docutils literal"><span class="pre">Sasuke</span></code>
+<p class="last">The construction of templates for use with <code class="xref py py-class docutils literal notranslate"><span class="pre">Sasuke</span></code>
 does <em>not</em> allow one to tie fluxes while leaving the
 velocities and/or velocity dispersions as independent.</p>
 </div>
@@ -454,7 +454,7 @@ only assigning results to self.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if the parsing of the database leaves
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if the parsing of the database leaves
 some templates without an assigned component, velocity
 group, and/or sigma group.  This implies an error in the
 construction of the emission-line database, not the code
@@ -469,7 +469,7 @@ itself.</td>
 <code class="descname">_tied_index</code><span class="sig-paren">(</span><em>i</em>, <em>primary=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/emissionlinetemplates.html#EmissionLineTemplates._tied_index"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates._tied_index" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the index of the line to which this one is tied.</p>
 <p>The result may be that this line is tied to one that is also
-tied to a second line.  If that’s the case, the <code class="docutils literal"><span class="pre">primary</span></code>
+tied to a second line.  If that’s the case, the <code class="docutils literal notranslate"><span class="pre">primary</span></code>
 keyword can be use to trace the parameter tying back to the
 independent line.</p>
 <dl class="docutils">
@@ -488,7 +488,7 @@ primary (bool): (<strong>Optional</strong>) Trace the line tying all the</p>
 </tr>
 <tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">int</td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if the primary option is selected and the
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if the primary option is selected and the
 line does not trace back to a primary line.  This
 represents a poorly constructed emission-line database
 and should be avoided!</td>
@@ -501,16 +501,16 @@ and should be avoided!</td>
 <dt id="mangadap.proc.emissionlinetemplates.EmissionLineTemplates.build_templates">
 <code class="descname">build_templates</code><span class="sig-paren">(</span><em>emldb</em>, <em>flux_density=True</em>, <em>loggers=None</em>, <em>quiet=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/emissionlinetemplates.html#EmissionLineTemplates.build_templates"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates.build_templates" title="Permalink to this definition">¶</a></dt>
 <dd><p>Build the set of templates for a given emission-line database.
-The function uses the current values in <a class="reference internal" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates.wave" title="mangadap.proc.emissionlinetemplates.EmissionLineTemplates.wave"><code class="xref py py-attr docutils literal"><span class="pre">wave</span></code></a> and
-<a class="reference internal" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates.sigma_inst" title="mangadap.proc.emissionlinetemplates.EmissionLineTemplates.sigma_inst"><code class="xref py py-attr docutils literal"><span class="pre">sigma_inst</span></code></a>.  Any existing templates from a previous call
-to <a class="reference internal" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates.build_templates" title="mangadap.proc.emissionlinetemplates.EmissionLineTemplates.build_templates"><code class="xref py py-func docutils literal"><span class="pre">build_templates()</span></code></a> or from the object instantiation will
+The function uses the current values in <a class="reference internal" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates.wave" title="mangadap.proc.emissionlinetemplates.EmissionLineTemplates.wave"><code class="xref py py-attr docutils literal notranslate"><span class="pre">wave</span></code></a> and
+<a class="reference internal" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates.sigma_inst" title="mangadap.proc.emissionlinetemplates.EmissionLineTemplates.sigma_inst"><code class="xref py py-attr docutils literal notranslate"><span class="pre">sigma_inst</span></code></a>.  Any existing templates from a previous call
+to <a class="reference internal" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates.build_templates" title="mangadap.proc.emissionlinetemplates.EmissionLineTemplates.build_templates"><code class="xref py py-func docutils literal notranslate"><span class="pre">build_templates()</span></code></a> or from the object instantiation will
 be overwritten using the provided emission-line database.</p>
-<p>See <a class="reference internal" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates.check_database" title="mangadap.proc.emissionlinetemplates.EmissionLineTemplates.check_database"><code class="xref py py-func docutils literal"><span class="pre">check_database()</span></code></a> for the requirements of the provided
+<p>See <a class="reference internal" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates.check_database" title="mangadap.proc.emissionlinetemplates.EmissionLineTemplates.check_database"><code class="xref py py-func docutils literal notranslate"><span class="pre">check_database()</span></code></a> for the requirements of the provided
 emission-line database, and see
-<a class="reference internal" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates._parse_emission_line_database" title="mangadap.proc.emissionlinetemplates.EmissionLineTemplates._parse_emission_line_database"><code class="xref py py-func docutils literal"><span class="pre">_parse_emission_line_database()</span></code></a> for how the database is
+<a class="reference internal" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates._parse_emission_line_database" title="mangadap.proc.emissionlinetemplates.EmissionLineTemplates._parse_emission_line_database"><code class="xref py py-func docutils literal notranslate"><span class="pre">_parse_emission_line_database()</span></code></a> for how the database is
 interpretted when constructing the templates.</p>
 <p>The function constructs and returns the following attributes:
-<a class="reference internal" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates.flux" title="mangadap.proc.emissionlinetemplates.EmissionLineTemplates.flux"><code class="xref py py-attr docutils literal"><span class="pre">flux</span></code></a>, <a class="reference internal" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates.comp" title="mangadap.proc.emissionlinetemplates.EmissionLineTemplates.comp"><code class="xref py py-attr docutils literal"><span class="pre">comp</span></code></a>, <a class="reference internal" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates.vgrp" title="mangadap.proc.emissionlinetemplates.EmissionLineTemplates.vgrp"><code class="xref py py-attr docutils literal"><span class="pre">vgrp</span></code></a>, and <a class="reference internal" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates.sgrp" title="mangadap.proc.emissionlinetemplates.EmissionLineTemplates.sgrp"><code class="xref py py-attr docutils literal"><span class="pre">sgrp</span></code></a></p>
+<a class="reference internal" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates.flux" title="mangadap.proc.emissionlinetemplates.EmissionLineTemplates.flux"><code class="xref py py-attr docutils literal notranslate"><span class="pre">flux</span></code></a>, <a class="reference internal" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates.comp" title="mangadap.proc.emissionlinetemplates.EmissionLineTemplates.comp"><code class="xref py py-attr docutils literal notranslate"><span class="pre">comp</span></code></a>, <a class="reference internal" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates.vgrp" title="mangadap.proc.emissionlinetemplates.EmissionLineTemplates.vgrp"><code class="xref py py-attr docutils literal notranslate"><span class="pre">vgrp</span></code></a>, and <a class="reference internal" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates.sgrp" title="mangadap.proc.emissionlinetemplates.EmissionLineTemplates.sgrp"><code class="xref py py-attr docutils literal notranslate"><span class="pre">sgrp</span></code></a></p>
 <div class="admonition-todo admonition" id="index-0">
 <p class="first admonition-title">Todo</p>
 <ul class="last simple">
@@ -525,21 +525,21 @@ falls outside the spectral range.</li>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>(</strong> (<a class="reference internal" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates.emldb" title="mangadap.proc.emissionlinetemplates.EmissionLineTemplates.emldb"><em>emldb</em></a>) – class:<a href="#id3"><span class="problematic" id="id4">`</span></a>mangadap.par.emissionlinedb.EmissionLineDB’):
+<li><strong>(</strong> (<em>emldb</em>) – class:<a href="#id3"><span class="problematic" id="id4">`</span></a>mangadap.par.emissionlinedb.EmissionLineDB’):
 Emission-line database.</li>
 <li><strong>flux_density</strong> (<em>bool</em>) – (<strong>Optional</strong>) Return spectrum in units
 of flux density (flux per angstrom).  Default is to
 return the spectrum in units of flux per pixel.</li>
 <li><strong>loggers</strong> (<em>list</em>) – (<strong>Optional</strong>) List of <a href="#id11"><span class="problematic" id="id12">`logging.Logger`_</span></a>
 objects to log progress; ignored if quiet=True.  Logging
-is done using <a class="reference internal" href="mangadap.util.log.html#mangadap.util.log.log_output" title="mangadap.util.log.log_output"><code class="xref py py-func docutils literal"><span class="pre">mangadap.util.log.log_output()</span></code></a>.</li>
+is done using <a class="reference internal" href="mangadap.util.log.html#mangadap.util.log.log_output" title="mangadap.util.log.log_output"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.util.log.log_output()</span></code></a>.</li>
 <li><strong>quiet</strong> (<em>bool</em>) – (<strong>Optional</strong>) Suppress all terminal and
 logging output.</li>
 </ul>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Returns 4 arrays: (1) the set of templates
-with shape <span class="math">\(N_{\rm tpl}\times N_{\rm wave}\)</span>, (2) the
+with shape <span class="math notranslate nohighlight">\(N_{\rm tpl}\times N_{\rm wave}\)</span>, (2) the
 kinematic component assignement for each template, (3) the
 velocity group associated with each template, and (4) the
 sigma group assocated with each template.</p>
@@ -556,16 +556,16 @@ sigma group assocated with each template.</p>
 <dt id="mangadap.proc.emissionlinetemplates.EmissionLineTemplates.check_database">
 <code class="descname">check_database</code><span class="sig-paren">(</span><em>emldb</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/emissionlinetemplates.html#EmissionLineTemplates.check_database"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates.check_database" title="Permalink to this definition">¶</a></dt>
 <dd><p>Check that the provided emission-line database can be used with
-the <a class="reference internal" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates" title="mangadap.proc.emissionlinetemplates.EmissionLineTemplates"><code class="xref py py-class docutils literal"><span class="pre">EmissionLineTemplates</span></code></a> class.  Most checks are
+the <a class="reference internal" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates" title="mangadap.proc.emissionlinetemplates.EmissionLineTemplates"><code class="xref py py-class docutils literal notranslate"><span class="pre">EmissionLineTemplates</span></code></a> class.  Most checks are
 performed by
-<a class="reference internal" href="mangadap.proc.spectralfitting.html#mangadap.proc.spectralfitting.EmissionLineFit.check_emission_line_database" title="mangadap.proc.spectralfitting.EmissionLineFit.check_emission_line_database"><code class="xref py py-func docutils literal"><span class="pre">mangadap.proc.spectralfitting.EmissionLineFit.check_emission_line_database()</span></code></a>.</p>
-<p>Additional checks specific to <a class="reference internal" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates" title="mangadap.proc.emissionlinetemplates.EmissionLineTemplates"><code class="xref py py-class docutils literal"><span class="pre">EmissionLineTemplates</span></code></a>
+<a class="reference internal" href="mangadap.proc.spectralfitting.html#mangadap.proc.spectralfitting.EmissionLineFit.check_emission_line_database" title="mangadap.proc.spectralfitting.EmissionLineFit.check_emission_line_database"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.proc.spectralfitting.EmissionLineFit.check_emission_line_database()</span></code></a>.</p>
+<p>Additional checks specific to <a class="reference internal" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates" title="mangadap.proc.emissionlinetemplates.EmissionLineTemplates"><code class="xref py py-class docutils literal notranslate"><span class="pre">EmissionLineTemplates</span></code></a>
 are:</p>
 <blockquote>
 <div><ul class="simple">
 <li>Any lines with mode <cite>w</cite> is treated as <cite>f</cite> and a warning is
 provided.</li>
-<li>The <a class="reference internal" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates" title="mangadap.proc.emissionlinetemplates.EmissionLineTemplates"><code class="xref py py-class docutils literal"><span class="pre">EmissionLineTemplates</span></code></a> object <em>cannot</em> be used
+<li>The <a class="reference internal" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates" title="mangadap.proc.emissionlinetemplates.EmissionLineTemplates"><code class="xref py py-class docutils literal notranslate"><span class="pre">EmissionLineTemplates</span></code></a> object <em>cannot</em> be used
 with mode <cite>x</cite>; any lines with this mode will cause a
 ValueError to be raised..</li>
 </ul>
@@ -578,17 +578,17 @@ templates.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>(</strong> (<a class="reference internal" href="#mangadap.proc.emissionlinetemplates.EmissionLineTemplates.emldb" title="mangadap.proc.emissionlinetemplates.EmissionLineTemplates.emldb"><em>emldb</em></a>) – class:<a href="#id5"><span class="problematic" id="id6">`</span></a>mangadap.par.emissionlinedb.EmissionLineDB’):
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>(</strong> (<em>emldb</em>) – class:<a href="#id5"><span class="problematic" id="id6">`</span></a>mangadap.par.emissionlinedb.EmissionLineDB’):
 Emission-line database.</p>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
-<li><code class="xref py py-exc docutils literal"><span class="pre">TypeError</span></code> – Raised if the provided object is not an instance
-of <a class="reference internal" href="mangadap.par.emissionlinedb.html#mangadap.par.emissionlinedb.EmissionLineDB" title="mangadap.par.emissionlinedb.EmissionLineDB"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.emissionlinedb.EmissionLineDB</span></code></a>.</li>
-<li><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if any line has a mode of <cite>x</cite> or if the
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">TypeError</span></code> – Raised if the provided object is not an instance
+of <a class="reference internal" href="mangadap.par.emissionlinedb.html#mangadap.par.emissionlinedb.EmissionLineDB" title="mangadap.par.emissionlinedb.EmissionLineDB"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.par.emissionlinedb.EmissionLineDB</span></code></a>.</li>
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if any line has a mode of <cite>x</cite> or if the
 database does not provide a valid definition for any
 templates.</li>
-<li><code class="xref py py-exc docutils literal"><span class="pre">NameError</span></code> – Raised if a defined profile type is not known.</li>
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">NameError</span></code> – Raised if a defined profile type is not known.</li>
 </ul>
 </td>
 </tr>

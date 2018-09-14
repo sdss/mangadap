@@ -1,5 +1,5 @@
-mangadap\.util\.pixelmask module
-================================
+mangadap.util.pixelmask module
+==============================
 
 .. automodule:: mangadap.util.pixelmask
     :members:

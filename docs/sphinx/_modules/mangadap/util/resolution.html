@@ -1,0 +1,1221 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mangadap.util.resolution &mdash; mangadap 2.2.2 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../search.html"/>
+    <link rel="top" title="mangadap 2.2.2 documentation" href="../../../index.html"/>
+        <link rel="up" title="mangadap" href="../../mangadap.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> mangadap
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../mangadap.html">mangadap package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">mangadap</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../../mangadap.html">mangadap</a> &raquo;</li>
+        
+      <li>mangadap.util.resolution</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for mangadap.util.resolution</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Licensed under a 3-clause BSD style license - see LICENSE.rst</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Provides a set of functions to handle and alter the instrumental</span>
+<span class="sd">resolution.</span>
+
+<span class="sd">*License*:</span>
+<span class="sd">    Copyright (c) 2018, SDSS-IV/MaNGA Pipeline Group</span>
+<span class="sd">        Licensed under BSD 3-clause license - see LICENSE.rst</span>
+
+<span class="sd">*Source location*:</span>
+<span class="sd">    $MANGADAP_DIR/python/mangadap/util/resolution.py</span>
+
+<span class="sd">*Revision history*:</span>
+<span class="sd">    | **27 May 2015**: Original implementation by K. Westfall (KBW)</span>
+<span class="sd">        based on downgrader_MANGA.f provided by D.  Thomas, O. Steele,</span>
+<span class="sd">        D.  Wilkinson, D. Goddard.</span>
+<span class="sd">    | **13 Jun 2015**: D.Wilkinson edit to not calculate unimportant</span>
+<span class="sd">        convolution terms -&gt; runs 5x faster.</span>
+<span class="sd">    | **03 Feb 2016**: (KBW) Generalized M. Cappellari&#39;s</span>
+<span class="sd">        :func:`log_rebin` to :func:`resample_vector` to allow for linear</span>
+<span class="sd">        interpolation of flux density across the pixel.</span>
+<span class="sd">    | **04 Feb 2016**: (KBW) Further fixes to :func:`resample_vector`.</span>
+<span class="sd">        Added :func:`spectral_coordinate_step`, and propagated change to</span>
+<span class="sd">        :func:`spectrum_velocity_scale`</span>
+<span class="sd">    | **21 Apr 2016**: (KBW) It&#39;s the Queen&#39;s 90th birthday!  Removed</span>
+<span class="sd">        log10 keyword from :func:`spectrum_velocity_scale`.</span>
+<span class="sd">    | **20 May 2016**: (KBW) Corrected match between number of pixels</span>
+<span class="sd">        and output range computed in :func:`resample_vector_npix`; now</span>
+<span class="sd">        returns an adjusted range to make sure that the sampling and</span>
+<span class="sd">        range results in an exact integer number of pixels.</span>
+<span class="sd">    | **05 Jul 2016**: (KBW) To avoid confusion, commented out</span>
+<span class="sd">        log_rebin.</span>
+<span class="sd">    | **25 Oct 2016**: (KBW) Modified :func:`spectral_coordinate_step`</span>
+<span class="sd">        to be a mean over the full spectrum to avoid numerical precision</span>
+<span class="sd">        errors.</span>
+<span class="sd">    | **06 Apr 2017**: (KBW) Add :func:`angstroms_per_pixel`.</span>
+<span class="sd">    | **30 Aug 2017**: (KBW) Add :func:`resample1d`;</span>
+<span class="sd">        :func:`resample_vector` should be deprecated.</span>
+<span class="sd">    | **27 Sep 2017**: (KBW) Added `integral` keyword to</span>
+<span class="sd">        :func:`match_spectral_resolution` so that it can be passed to</span>
+<span class="sd">        :func:`convolution_variable_sigma`.</span>
+<span class="sd">    | **19 Jul 2018**: (KBW) Fixed a bug in</span>
+<span class="sd">        :class:`VariableGaussianKernel` when constructing the kernel</span>
+<span class="sd">        based on the error function.</span>
+<span class="sd">    | **30 Aug 2018**: (KBW) Removed sampling code and moved it to</span>
+<span class="sd">        sampling.py.  Renamed this file from instrument.py to</span>
+<span class="sd">        resolution.py.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version</span> <span class="o">&gt;</span> <span class="s1">&#39;3&#39;</span><span class="p">:</span>
+    <span class="n">long</span> <span class="o">=</span> <span class="nb">int</span>
+
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="k">import</span> <span class="n">interpolate</span>
+<span class="kn">from</span> <span class="nn">scipy.special</span> <span class="k">import</span> <span class="n">erf</span>
+
+<span class="kn">import</span> <span class="nn">astropy.constants</span>
+<span class="kn">from</span> <span class="nn">.constants</span> <span class="k">import</span> <span class="n">DAPConstants</span>
+
+<span class="kn">from</span> <span class="nn">.sampling</span> <span class="k">import</span> <span class="n">spectrum_velocity_scale</span>
+
+<span class="c1">#from matplotlib import pyplot</span>
+
+<div class="viewcode-block" id="VariableGaussianKernel"><a class="viewcode-back" href="../../../mangadap.util.resolution.html#mangadap.util.resolution.VariableGaussianKernel">[docs]</a><span class="k">class</span> <span class="nc">VariableGaussianKernel</span><span class="p">:</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Support class for variable sigma convolution.  See</span>
+<span class="sd">    :func:`convolution_variable_sigma`.</span>
+
+<span class="sd">    Modest modification of M. Cappellari&#39;s</span>
+<span class="sd">    :func:`ppxf.ppxf_util.gaussian_filter1d` function.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        sigma (numpy.ndarray):</span>
+<span class="sd">            Coordinate-dependent standard deviation of the Gaussian</span>
+<span class="sd">            kernel in pixels.</span>
+<span class="sd">        minsig (:obj:`float`, optional):</span>
+<span class="sd">            The minimum sigma value allowed.</span>
+<span class="sd">        nsig (:obj:`float`, optional):</span>
+<span class="sd">            The extent of the calculation of the kernel for the</span>
+<span class="sd">            convolution.  By default, the kernel is not calculated</span>
+<span class="sd">            beyond 3*sigma.</span>
+<span class="sd">        integral (:obj:`bool`, optional):</span>
+<span class="sd">            Construct the kernel based on the integral of the Gaussian</span>
+<span class="sd">            over the pixel width using the error function, instead of</span>
+<span class="sd">            just sampling the Gaussian function directly.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError:</span>
+<span class="sd">            Raised if the input sigma has no length.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        sigma (numpy.ndarray):</span>
+<span class="sd">            Coordinate-dependent standard deviation of the Gaussian</span>
+<span class="sd">            kernel.</span>
+<span class="sd">        p (int):</span>
+<span class="sd">            The maximum number of pixels on either side of the kernel</span>
+<span class="sd">            center needed for the convolution.</span>
+<span class="sd">        m (int):</span>
+<span class="sd">            Number of pixels in the kernel (:math:`m = 2p + 1`).</span>
+<span class="sd">        kernel (numpy.ndarray):</span>
+<span class="sd">            The calculated kernel to use for the convolution.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">minsig</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">nsig</span><span class="o">=</span><span class="mf">3.0</span><span class="p">,</span> <span class="n">integral</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">=</span> <span class="n">sigma</span><span class="o">.</span><span class="n">size</span>                                     <span class="c1"># Vector length</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Input sigma has zero length!&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigma</span> <span class="o">=</span> <span class="n">sigma</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="nb">min</span><span class="o">=</span><span class="n">minsig</span><span class="p">)</span>                     <span class="c1"># Force sigmas to minimum </span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">nsig</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">sigma</span><span class="p">)))</span>   <span class="c1"># Kernel covers up to nsig*sigma</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">m</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">p</span> <span class="o">+</span> <span class="mi">1</span>                                   <span class="c1"># Kernel length</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">m</span><span class="p">)</span>             <span class="c1"># X^2 for kernel</span>
+        <span class="n">x2</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="c1"># Kernel will have size m x n</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kernel</span> <span class="o">=</span> <span class="p">(</span><span class="n">erf</span><span class="p">((</span><span class="n">x</span><span class="p">[:,</span><span class="kc">None</span><span class="p">]</span><span class="o">+</span><span class="mf">0.5</span><span class="p">)</span><span class="o">/</span><span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">sigma</span><span class="p">)</span> 
+                            <span class="o">-</span> <span class="n">erf</span><span class="p">((</span><span class="n">x</span><span class="p">[:,</span><span class="kc">None</span><span class="p">]</span><span class="o">-</span><span class="mf">0.5</span><span class="p">)</span><span class="o">/</span><span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">sigma</span><span class="p">))</span><span class="o">/</span><span class="mf">2.</span> <span class="k">if</span> <span class="n">integral</span> <span class="k">else</span> \
+                      <span class="n">numpy</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">x2</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sigma</span><span class="p">)))</span> \
+                                <span class="o">/</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigma</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">kernel</span> <span class="o">/=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kernel</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>       <span class="c1"># Normalize kernel</span>
+
+
+<div class="viewcode-block" id="VariableGaussianKernel._check_shape"><a class="viewcode-back" href="../../../mangadap.util.resolution.html#mangadap.util.resolution.VariableGaussianKernel._check_shape">[docs]</a>    <span class="k">def</span> <span class="nf">_check_shape</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">ye</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Make sure that the shapes are appropriate for the defined kernel.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;y must be a 1D array!&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">y</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;y and sigma must have the same shape!&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">ye</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ye</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">ye</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;ye length does not must have the correct shape!&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="VariableGaussianKernel._create_a"><a class="viewcode-back" href="../../../mangadap.util.resolution.html#mangadap.util.resolution.VariableGaussianKernel._create_a">[docs]</a>    <span class="k">def</span> <span class="nf">_create_a</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kernel</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">m</span><span class="p">):</span>
+            <span class="n">a</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="p">:</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="p">]</span> <span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">m</span><span class="o">+</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">a</span></div>
+
+
+<div class="viewcode-block" id="VariableGaussianKernel.convolve"><a class="viewcode-back" href="../../../mangadap.util.resolution.html#mangadap.util.resolution.VariableGaussianKernel.convolve">[docs]</a>    <span class="k">def</span> <span class="nf">convolve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">ye</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Convolve the input vector with the variable-width Gaussian.</span>
+
+<span class="sd">        The input `y` must be a 1D vector with the same length as</span>
+<span class="sd">        :attr:`sigma`.  If errors are provided, they must also adhere to</span>
+<span class="sd">        these shape limitations and are propagated to the convolved</span>
+<span class="sd">        vector.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            y (numpy.ndarray):</span>
+<span class="sd">                Vector to convolve</span>
+<span class="sd">            ye (numpy.ndarray, optional):</span>
+<span class="sd">                Error in the vector to convolve</span>
+<span class="sd">    </span>
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError:</span>
+<span class="sd">                Raised if *y* is not a 1D vector, or if the shape of *y*</span>
+<span class="sd">                and *sigma* (and *ye* if provided) are different.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            numpy.ndarray: The convovled vector.  If the errors are</span>
+<span class="sd">            provided, the function returns two vectors, the convolved</span>
+<span class="sd">            vector and its error.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_shape</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">ye</span><span class="o">=</span><span class="n">ye</span><span class="p">)</span>
+
+        <span class="c1"># Create m copies of the shifted input function</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_a</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">ye</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">a</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">kernel</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="c1"># Construct the error</span>
+        <span class="n">ae</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_a</span><span class="p">(</span><span class="n">ye</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">a</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">kernel</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span> \
+                    <span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">ae</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">kernel</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span></div></div>
+
+
+<div class="viewcode-block" id="convolution_variable_sigma"><a class="viewcode-back" href="../../../mangadap.util.resolution.html#mangadap.util.resolution.convolution_variable_sigma">[docs]</a><span class="k">def</span> <span class="nf">convolution_variable_sigma</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">ye</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">integral</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convolve a discretely sampled function :math:`y(x)` with a Gaussian</span>
+<span class="sd">    kernel, :math:`g`, where the standard deviation of the kernel is a</span>
+<span class="sd">    function of :math:`x`, :math:`\sigma(x)`.  Nominal calculations can</span>
+<span class="sd">    be performed to propagate the error in the result; these</span>
+<span class="sd">    calculations **do not** include the covariance between the pixels,</span>
+<span class="sd">    which will mean that the calculations likely have significant error!</span>
+
+<span class="sd">    The convolution is defined as:</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        (y\ast g)(x) &amp;= \int_{-\infty}^{\infty} y(X)\ g(\sigma,x-X)\ dX \\</span>
+<span class="sd">                     &amp;= \int_{-\infty}^{\infty} \frac{y(X)}{\sqrt{2\pi}\</span>
+<span class="sd">                        \sigma(X)}\ \exp\left(-\frac{(x-X)^2}{2\</span>
+<span class="sd">                        \sigma(X)^2}\right) dX .</span>
+
+<span class="sd">    To minimize edge effects and account for the censoring of the data</span>
+<span class="sd">    (finite range in :math:`x`), the convolution is actually calculated</span>
+<span class="sd">    as a definite integral and normalized as follows:</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        (y\ast g)(x) \sim\frac{</span>
+<span class="sd">        \int_{x-n_\sigma*\sigma(x)}^{x+n_\sigma*\sigma(x)} y(X)\</span>
+<span class="sd">        g(\sigma,x-X)\ dX}{</span>
+<span class="sd">        \int_{x-n_\sigma*\sigma(x)}^{x+n_\sigma*\sigma(x)}</span>
+<span class="sd">        g(\sigma,x-X)\ dX} .</span>
+
+<span class="sd">    The above is identical to getting the weighted mean of :math:`y` at</span>
+<span class="sd">    each position :math:`x`, where the weights are defined by a Gaussian</span>
+<span class="sd">    kernel centered at :math:`x` with a variable dispersion.</span>
+
+<span class="sd">    Use of this function requires:</span>
+<span class="sd">        - *y* and *sigma* must be 1D vectors</span>
+<span class="sd">        - *y* and *sigma* must be uniformly sampled on the same grid</span>
+<span class="sd">        - *sigma* must be in pixel units.</span>
+
+<span class="sd">    .. todo::</span>
+<span class="sd">        This should be deprecated and/or merged with</span>
+<span class="sd">        :class:`VariableGaussianKernel`.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        y (numpy.ndarray): A uniformly sampled function to convolve.</span>
+<span class="sd">        sigma (numpy.ndarray): The standard deviation of the Gaussian</span>
+<span class="sd">            kernel sampled at the same positions as *y*.  The units of</span>
+<span class="sd">            *sigma* **must** be in pixels.</span>
+<span class="sd">        ye (numpy.ndarray): (**Optional**) Errors in the function</span>
+<span class="sd">            :math:`y(x)`.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        numpy.ndarray: Arrays with the convolved function :math:`(y\ast</span>
+<span class="sd">        g)(x)` sampled at the same positions as the input :math:`x`</span>
+<span class="sd">        vector and its error.  The second array will be returned as None</span>
+<span class="sd">        if the error vector is not provided.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">VariableGaussianKernel</span><span class="p">(</span><span class="n">sigma</span><span class="p">,</span> <span class="n">integral</span><span class="o">=</span><span class="n">integral</span><span class="p">)</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="n">ye</span><span class="o">=</span><span class="n">ye</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SpectralResolution"><a class="viewcode-back" href="../../../mangadap.util.resolution.html#mangadap.util.resolution.SpectralResolution">[docs]</a><span class="k">class</span> <span class="nc">SpectralResolution</span><span class="p">:</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Container class for the resolution, :math:`R =</span>
+<span class="sd">    \lambda/\Delta\lambda`, of a spectrum.  The primary functionality is</span>
+<span class="sd">    to determine the parameters necessary to match the resolution of one</span>
+<span class="sd">    spectrum to another.  It can also be used as a function to</span>
+<span class="sd">    interpolate the spectral resolution at a given wavelenth.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        wave (numpy.ndarray): A 1D vector with the wavelength in</span>
+<span class="sd">            angstroms.  The sampling may be either in linear steps of</span>
+<span class="sd">            wavelength or :math:`\log_{10}` steps.</span>
+<span class="sd">        sres (numpy.ndarray): A 1D vector with the spectral resolution,</span>
+<span class="sd">            :math:`R`, sampled at the positions of the provided</span>
+<span class="sd">            wavelength vector.</span>
+<span class="sd">        log10 (bool): (**Optional**) Flag that the spectrum has been</span>
+<span class="sd">            binned logarithmically (base 10) in wavelength</span>
+<span class="sd">        interp_ext (int or str): (**Optional**) The value to pass as</span>
+<span class="sd">            *ext* to the interpolator, which defines its behavior when</span>
+<span class="sd">            attempting to sample the spectral resolution beyond where it</span>
+<span class="sd">            is defined.  See</span>
+<span class="sd">            `scipy.interpolate.InterpolatedUnivariateSpline`_.  Default</span>
+<span class="sd">            is to extrapolate.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: Raised if *wave* is not a 1D vector or if *wave* and</span>
+<span class="sd">            *sres* do not have the same shape.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        interpolator</span>
+<span class="sd">            (`scipy.interpolate.InterpolatedUnivariateSpline`_): An</span>
+<span class="sd">            object used to interpolate the spectral resolution at any</span>
+<span class="sd">            given wavelength.  The interpolation is hard-wired to be</span>
+<span class="sd">            **linear** and its extrapolation behavior is defined by</span>
+<span class="sd">            *interp_ext*.  The wavelength and resolution vectors are</span>
+<span class="sd">            held by this object for later reference if needed.</span>
+<span class="sd">        log10 (bool): Flag that the spectrum has been binned</span>
+<span class="sd">            logarithmically (base 10) in wavelength</span>
+<span class="sd">        c (float): The speed of light; provided by `astropy.constants`_.</span>
+<span class="sd">        dv (float): The velocity step per pixel in km/s.  Defined using</span>
+<span class="sd">            :func:`spectrum_velocity_scale` if :attr:`log10` is True;</span>
+<span class="sd">            otherwise set to None.</span>
+<span class="sd">        dw (float): The wavelength step per pixel in angstroms.  Defined</span>
+<span class="sd">            as the wavelength step between the first two pixels if</span>
+<span class="sd">            :attr:`log10` is False; otherwise set to None.</span>
+<span class="sd">        min_sig (float): Minimum standard deviation allowed for the</span>
+<span class="sd">            kernel used to match two spectral resolutions.  See</span>
+<span class="sd">            :func:`GaussianKernelDifference`.</span>
+<span class="sd">        sig_pd (numpy.ndarray): The standard deviation in pixels</span>
+<span class="sd">            required to match the spectral resolution of this object to</span>
+<span class="sd">            the resolution defined by a different</span>
+<span class="sd">            :class:`SpectralResolution` object.  See</span>
+<span class="sd">            :func:`GaussianKernelDifference`.</span>
+<span class="sd">        sig_mask (numpy.ndarray): A *uint* vector used to identify</span>
+<span class="sd">            measurements of :attr:`sig_pd` that should **not** be used</span>
+<span class="sd">            to match the spectral resolution of this object to the</span>
+<span class="sd">            resolution defined by a different</span>
+<span class="sd">            :class:`SpectralResolution` object.  See</span>
+<span class="sd">            :func:`GaussianKernelDifference`.</span>
+<span class="sd">        sig_vo (float): A constant offset of the kernal standard</span>
+<span class="sd">            deviation **in km/s** that has been applied to</span>
+<span class="sd">            :attr:`sig_pd`.  See :func:`GaussianKernelDifference`.</span>
+<span class="sd">        </span>
+<span class="sd">    .. todo::</span>
+<span class="sd">        - Allow it to determine if the binning is linear or geometric,</span>
+<span class="sd">          then use the *log10* keyword to distinguish between natural</span>
+<span class="sd">          log and :math:`log_{10}` binning.</span>
+<span class="sd">        - Allow for more than one type of line-spread function?</span>
+
+<span class="sd">    .. warning::</span>
+
+<span class="sd">        The default behavior of the interpolator is to extrapolate the</span>
+<span class="sd">        input spectral resolution vector when trying to sample from</span>
+<span class="sd">        regions beyond where it is sampled.  Use *interp_ext* change</span>
+<span class="sd">        this; see `scipy.interpolate.InterpolatedUnivariateSpline`_.</span>
+
+<span class="sd">    .. _astropy.constants: http://docs.astropy.org/en/stable/constants/index.html</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wave</span><span class="p">,</span> <span class="n">sres</span><span class="p">,</span> <span class="n">log10</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">interp_ext</span><span class="o">=</span><span class="s1">&#39;extrapolate&#39;</span><span class="p">):</span>
+        <span class="c1"># Check the sizes</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">wave</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;wave must be a 1D array!&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">wave</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">sres</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;wave and sres must have the same shape!&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Use linear interpolation when sampling the spectral resolution</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">interpolator</span> <span class="o">=</span> <span class="n">interpolate</span><span class="o">.</span><span class="n">interp1d</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">sres</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="n">interp_ext</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log10</span> <span class="o">=</span> <span class="n">log10</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">c</span> <span class="o">=</span> <span class="n">astropy</span><span class="o">.</span><span class="n">constants</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;km/s&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">dv</span> <span class="o">=</span> <span class="n">spectrum_velocity_scale</span><span class="p">(</span><span class="n">wave</span><span class="p">)</span> <span class="k">if</span> <span class="n">log10</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dw</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">log10</span> <span class="k">else</span> <span class="n">wave</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">wave</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># No resolution matching calculated yet</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">min_sig</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sig_pd</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sig_mask</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sig_vo</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">w</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Interpolate the spectral resolution at wavelength *w*.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">interpolator</span><span class="p">(</span><span class="n">w</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="SpectralResolution._finalize_GaussianKernelDifference"><a class="viewcode-back" href="../../../mangadap.util.resolution.html#mangadap.util.resolution.SpectralResolution._finalize_GaussianKernelDifference">[docs]</a>    <span class="k">def</span> <span class="nf">_finalize_GaussianKernelDifference</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sig2_pd</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Given the calculated :math:`\sigma^2_{p,d}`, calculate and save</span>
+<span class="sd">        the attributes :attr:`sig_pd` and :attr:`sig_mask`.  See</span>
+<span class="sd">        :func:`GaussianKernelDifference`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+<span class="c1">#        print(&#39;finalize b&#39;)</span>
+        <span class="n">indx</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">sig2_pd</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+        <span class="n">nindx</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">indx</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sig_pd</span> <span class="o">=</span> <span class="n">sig2_pd</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sig_pd</span><span class="p">[</span><span class="n">nindx</span><span class="p">]</span> <span class="o">=</span> <span class="n">sig2_pd</span><span class="p">[</span><span class="n">nindx</span><span class="p">]</span><span class="o">/</span><span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">absolute</span><span class="p">(</span><span class="n">sig2_pd</span><span class="p">[</span><span class="n">nindx</span><span class="p">]))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sig_pd</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+<span class="c1">#        self.sig_mask = numpy.array(self.sig_pd &lt; -self.min_sig).astype(numpy.uint)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sig_mask</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sig_pd</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_sig</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">uint</span><span class="p">)</span></div>
+<span class="c1">#        print(&#39;finalize e&#39;)</span>
+
+
+<div class="viewcode-block" id="SpectralResolution._convert_vd2pd"><a class="viewcode-back" href="../../../mangadap.util.resolution.html#mangadap.util.resolution.SpectralResolution._convert_vd2pd">[docs]</a>    <span class="k">def</span> <span class="nf">_convert_vd2pd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sig2_vd</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Convert from :math:`\sigma^2_{v,d}` to :math:`\sigma^2_{p,d}`.</span>
+<span class="sd">        See :func:`GaussianKernelDifference`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+<span class="c1">#        print(&#39;vd2pd&#39;)</span>
+        <span class="k">return</span> <span class="n">sig2_vd</span> <span class="o">/</span> <span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dv</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">log10</span> <span class="k">else</span> \
+               <span class="n">sig2_vd</span> <span class="o">/</span> <span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">dw</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">wave</span><span class="p">())</span></div>
+
+
+<div class="viewcode-block" id="SpectralResolution._convert_pd2vd"><a class="viewcode-back" href="../../../mangadap.util.resolution.html#mangadap.util.resolution.SpectralResolution._convert_pd2vd">[docs]</a>    <span class="k">def</span> <span class="nf">_convert_pd2vd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sig2_pd</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Convert from :math:`\sigma^2_{p,d}` to :math:`\sigma^2_{v,d}`.</span>
+<span class="sd">        See :func:`GaussianKernelDifference`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+<span class="c1">#        print(&#39;pd2vd&#39;)</span>
+        <span class="k">return</span> <span class="n">sig2_pd</span> <span class="o">*</span> <span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dv</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">log10</span> <span class="k">else</span> \
+               <span class="n">sig2_pd</span> <span class="o">*</span> <span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">dw</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">wave</span><span class="p">())</span></div>
+
+
+<div class="viewcode-block" id="SpectralResolution.wave"><a class="viewcode-back" href="../../../mangadap.util.resolution.html#mangadap.util.resolution.SpectralResolution.wave">[docs]</a>    <span class="k">def</span> <span class="nf">wave</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the wavelength vector; held by :attr:`interpolator`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+<span class="c1">#        return self.interpolator._data[0]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">interpolator</span><span class="o">.</span><span class="n">x</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="k">if</span> <span class="n">copy</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">interpolator</span><span class="o">.</span><span class="n">x</span></div>
+
+
+<div class="viewcode-block" id="SpectralResolution.sres"><a class="viewcode-back" href="../../../mangadap.util.resolution.html#mangadap.util.resolution.SpectralResolution.sres">[docs]</a>    <span class="k">def</span> <span class="nf">sres</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the resolution vector; held by :attr:`interpolator`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+<span class="c1">#        return self.interpolator._data[1]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">interpolator</span><span class="o">.</span><span class="n">y</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="k">if</span> <span class="n">copy</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">interpolator</span><span class="o">.</span><span class="n">y</span></div>
+
+
+<div class="viewcode-block" id="SpectralResolution.instrumental_dispersion"><a class="viewcode-back" href="../../../mangadap.util.resolution.html#mangadap.util.resolution.SpectralResolution.instrumental_dispersion">[docs]</a>    <span class="k">def</span> <span class="nf">instrumental_dispersion</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">w</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        Return the instrumental dispersion by converting from :math:`R`</span>
+<span class="sd">        to :math:`\sigma_{v,inst}` according to:</span>
+<span class="sd">            </span>
+<span class="sd">        .. math::</span>
+<span class="sd">            </span>
+<span class="sd">            \sigma_{v,inst} = \frac{c}{\sqrt{8\ln 2}\ R}.</span>
+
+<span class="sd">        If w is None, just convert the internal interpolator values.</span>
+<span class="sd">        Otherwise, return the values sampled at w.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">w</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c</span><span class="p">,</span> <span class="n">DAPConstants</span><span class="o">.</span><span class="n">sig2fwhm</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">interpolator</span><span class="o">.</span><span class="n">y</span><span class="p">)</span><span class="o">.</span><span class="n">filled</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c</span><span class="p">,</span> <span class="n">DAPConstants</span><span class="o">.</span><span class="n">sig2fwhm</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">interpolator</span><span class="p">(</span><span class="n">w</span><span class="p">))</span><span class="o">.</span><span class="n">filled</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SpectralResolution.match"><a class="viewcode-back" href="../../../mangadap.util.resolution.html#mangadap.util.resolution.SpectralResolution.match">[docs]</a>    <span class="k">def</span> <span class="nf">match</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_sres</span><span class="p">,</span> <span class="n">no_offset</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">min_sig_pix</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Currently only an alias for :func:`GaussianKernelDifference`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">GaussianKernelDifference</span><span class="p">(</span><span class="n">new_sres</span><span class="p">,</span> <span class="n">no_offset</span><span class="o">=</span><span class="n">no_offset</span><span class="p">,</span> <span class="n">min_sig_pix</span><span class="o">=</span><span class="n">min_sig_pix</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SpectralResolution.GaussianKernelDifference"><a class="viewcode-back" href="../../../mangadap.util.resolution.html#mangadap.util.resolution.SpectralResolution.GaussianKernelDifference">[docs]</a>    <span class="k">def</span> <span class="nf">GaussianKernelDifference</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_sres</span><span class="p">,</span> <span class="n">no_offset</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">min_sig_pix</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Determine the parameters of a Gaussian kernel required to</span>
+<span class="sd">        convert the resolution of this object to the resolution of a</span>
+<span class="sd">        different the :class:`SpectralResolution` object, *new_sres*.</span>
+
+<span class="sd">        The spectral resolution is defined as :math:`R =</span>
+<span class="sd">        \lambda/\Delta\lambda`, where :math:`\Delta\lambda` is the FWHM</span>
+<span class="sd">        of the spectral resolution element.  The standard deviation of</span>
+<span class="sd">        the resolution element in angstroms is then</span>
+<span class="sd">   </span>
+<span class="sd">        .. math::</span>
+<span class="sd">    </span>
+<span class="sd">            \sigma_\lambda = \frac{\lambda}{f R}, \ \ {\rm where} \ \  f</span>
+<span class="sd">            = \frac{{\rm FWHM_\lambda}}{\sigma_\lambda} = \sqrt{8\ln 2}.</span>
+
+<span class="sd">        Assuming a Gaussian (in angstroms) line-spread function:</span>
+
+<span class="sd">        .. math::</span>
+
+<span class="sd">            \sigma^2_{\lambda,2} = \sigma^2_{\lambda,1} +</span>
+<span class="sd">            \sigma^2_{\lambda,d}</span>
+
+<span class="sd">        such that</span>
+
+<span class="sd">        .. math::</span>
+
+<span class="sd">            \sigma^2_{\lambda,d} = \left(\frac{\lambda}{f}\right)^2</span>
+<span class="sd">            (R^{-2}_2 - R^{-2}_1)</span>
+
+<span class="sd">        is the defining parameter of the Gaussian kernel needed to take</span>
+<span class="sd">        a spectrum of resolution :math:`R_1` to one with a resolution of</span>
+<span class="sd">        :math:`R_2`.</span>
+
+<span class="sd">        For input to :func:`convolution_variable_sigma`, the</span>
+<span class="sd">        *wavelength-dependent* parameter of the Gaussian kernel is</span>
+<span class="sd">        converted to pixels.  This function allows for the input spectra</span>
+<span class="sd">        to be linearly sampled in angstroms or log10(angstroms).  For</span>
+<span class="sd">        the former (*log10=False*), </span>
+
+<span class="sd">        .. math::</span>
+
+<span class="sd">            \sigma^2_{p,d} = \left(\frac{\lambda}{f\</span>
+<span class="sd">            \delta\lambda}\right)^2 (R^{-2}_2 - R^{-2}_1)</span>
+
+<span class="sd">        where :math:`\delta\lambda` is the size of the pixel in</span>
+<span class="sd">        angstroms.  If the units are log10(angstrom) (*log10=True*), we</span>
+<span class="sd">        approximate the velocity width of each pixel to be :math:`\delta</span>
+<span class="sd">        v = c \ln(10.0) (\log\lambda[1]-\log\lambda[0])`, such that</span>
+<span class="sd">    </span>
+<span class="sd">        .. math::</span>
+
+<span class="sd">            \sigma^2_{p,d} &amp;= \left(\frac{c}{ \delta v \lambda}\right)^2</span>
+<span class="sd">            \sigma^2_{\lambda,d} \\ &amp;= \left(\frac{c}{ f\ \delta</span>
+<span class="sd">            v}\right)^2 (R^{-2}_2 - R^{-2}_1)\ ;</span>
+
+<span class="sd">        :math:`c` is the speed of light in km/s.</span>
+
+<span class="sd">        The nominal use of this algorithm assumes :math:`R_1 \geq R_2`.</span>
+<span class="sd">        However, in practice, :func:`convolution_variable_sigma` only</span>
+<span class="sd">        uses a Gaussian kernel up to some minimum value of</span>
+<span class="sd">        :math:`\epsilon_\sigma`; below this, the kernel is assumed to be</span>
+<span class="sd">        a Delta function.  Therefore, as long as</span>
+<span class="sd">    </span>
+<span class="sd">        .. math::</span>
+<span class="sd">    </span>
+<span class="sd">            \sigma_{p,d} \equiv \sigma^2_{p,d}/\sqrt{|\sigma^2_{p,d}|}</span>
+<span class="sd">            \geq -\epsilon_\sigma\ ,</span>
+<span class="sd">        </span>
+<span class="sd">        the behavior of :func:`convolution_variable_sigma` should not be</span>
+<span class="sd">        affected.  However, in regions with</span>
+<span class="sd">    </span>
+<span class="sd">        .. math::</span>
+<span class="sd">    </span>
+<span class="sd">            \sigma_{p,d} \equiv \sigma^2_{p,d}/\sqrt{|\sigma^2_{p,d}|}</span>
+<span class="sd">            \leq \epsilon_\sigma\ ,</span>
+
+<span class="sd">        the behavior of :func:`convolution_variable_sigma` does *not*</span>
+<span class="sd">        produce an accurate convolution!        </span>
+<span class="sd">    </span>
+<span class="sd">        To deal with spectral regions that do not have</span>
+<span class="sd">        :math:`\sigma_{p,d} \geq \epsilon_\sigma`, there are three</span>
+<span class="sd">        choices:</span>
+
+<span class="sd">            (**Option 1**) trim the spectral range to only those</span>
+<span class="sd">            spectral regions where the existing resolution is better</span>
+<span class="sd">            than the target resolution up to this limit,</span>
+<span class="sd">        </span>
+<span class="sd">            (**Option 2**) match the existing resolution to the target</span>
+<span class="sd">            resolution up to some constant offset that must be accounted</span>
+<span class="sd">            for in subsequent analyses, or</span>
+
+<span class="sd">            (**Option 3**) allow for a wavelength dependent difference</span>
+<span class="sd">            in the spectral resolution that must be accounted for in</span>
+<span class="sd">            subsequent analyses.</span>
+
+<span class="sd">        The choice of either Option 1 or 2 is selected by setting</span>
+<span class="sd">        *no_offset* to, respectively, True or False; Option 1 is the</span>
+<span class="sd">        default behavior.  Currently, Option 3 is not allowed.</span>
+
+<span class="sd">        For Option 1, pixels with :math:`\sigma_{p,d} &lt;</span>
+<span class="sd">        \epsilon_\sigma` are masked (*sigma_mask = 1*); however, the</span>
+<span class="sd">        returned values of :math:`\sigma_{p,d}` are left unchanged.</span>
+
+<span class="sd">        For Option 2, we define</span>
+
+<span class="sd">        .. math::</span>
+
+<span class="sd">            \sigma^2_{v,o} = | {\rm min}(0.0, {\rm min}(\sigma^2_{v,d})</span>
+<span class="sd">            - {\rm max}(\epsilon_\sigma \delta v)^2) |</span>
+
+<span class="sd">        where :math:`\delta v` is constant for the logarithmically</span>
+<span class="sd">        binned spectrum and is wavelength dependent for the linearly</span>
+<span class="sd">        binned spectra; in the latter case, the velocity step is</span>
+<span class="sd">        determined for each pixel::</span>
+
+<span class="sd">            _wave = self.wave()</span>
+<span class="sd">            dv = self.c * (2.0*(_wave[1:] - _wave[0:-1]) / (_wave[1:] + _wave[0:-1]))</span>
+
+<span class="sd">        If :math:`\sigma^2_{v,o} &gt; 0.0`, it must be that :math:`{\rm</span>
+<span class="sd">        min}(\sigma^2_{v,d}) &lt; {\rm max}(\epsilon_\sigma \delta v)^2`,</span>
+<span class="sd">        such that an offset should be applied.  In that case, the</span>
+<span class="sd">        returned kernel parameters are</span>
+
+<span class="sd">        .. math::</span>
+
+<span class="sd">            \sigma^\prime_{v,d} = \sqrt{\sigma^2_{v,d} +</span>
+<span class="sd">            \sigma^2_{v,o}}\ .</span>
+
+<span class="sd">        with the units converted to pixels using the equations above, no</span>
+<span class="sd">        pixels are masked, and :math:`\sqrt{\sigma^2_{v,o}}` is returned</span>
+<span class="sd">        for the offset.  Otherwise, the offset is set to 0.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            new_sres (:class:`SpectralResolution`): Spectral resolution</span>
+<span class="sd">                to match to.</span>
+<span class="sd">            no_offset (bool): (**Optional**) Force :math:`\sigma^2_{v,o}</span>
+<span class="sd">                = 0` by masking regions with :math:`\sigma_{p,d} &lt;</span>
+<span class="sd">                \epsilon_\sigma`; i.e., the value of this arguments</span>
+<span class="sd">                selects Option 1 (True) or Option 2 (False).</span>
+<span class="sd">            min_sig_pix (float): (**Optional**) Minimum value of the</span>
+<span class="sd">                standard deviation allowed before assuming the kernel is</span>
+<span class="sd">                a Delta function.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+<span class="c1">#        print(&#39;kernel difference&#39;)</span>
+        <span class="c1"># Save the minimum pixel sigma to allow</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">min_sig</span> <span class="o">=</span> <span class="n">min_sig_pix</span>
+
+        <span class="c1"># Interpolate the new spectral resolution vector at the wavelengths</span>
+        <span class="c1"># of the input spectral resolution</span>
+        <span class="n">_wave</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wave</span><span class="p">()</span>
+        <span class="n">_sres</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sres</span><span class="p">()</span>
+        <span class="n">interp_sres</span> <span class="o">=</span> <span class="n">new_sres</span><span class="p">(</span><span class="n">_wave</span><span class="p">)</span>
+
+        <span class="c1"># Determine the variance (in angstroms) of Gaussian needed to match</span>
+        <span class="c1"># input resolution to the new values</span>
+<span class="c1">#        print(&#39;sig2_wd&#39;)</span>
+        <span class="n">sig2_wd</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">_wave</span><span class="o">/</span><span class="n">DAPConstants</span><span class="o">.</span><span class="n">sig2fwhm</span><span class="p">)</span> \
+                  <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span><span class="o">/</span><span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">interp_sres</span><span class="p">)</span> <span class="o">-</span> <span class="mf">1.0</span><span class="o">/</span><span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">_sres</span><span class="p">))</span>
+
+<span class="c1">#        pyplot.plot(_wave, _sres)</span>
+<span class="c1">#        pyplot.plot(_wave, interp_sres)</span>
+<span class="c1">#        pyplot.show()</span>
+
+<span class="c1">#        print(&#39;sig2_vd&#39;)</span>
+        <span class="c1"># Convert to km/s</span>
+        <span class="n">sig2_vd</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c</span><span class="o">/</span><span class="n">_wave</span><span class="p">)</span> <span class="o">*</span> <span class="n">sig2_wd</span>
+
+        <span class="c1"># Option 1:</span>
+        <span class="k">if</span> <span class="n">no_offset</span><span class="p">:</span>
+            <span class="c1"># Convert the variance to pixel coordinates</span>
+            <span class="n">sig2_pd</span> <span class="o">=</span> <span class="n">sig2_vd</span> <span class="o">/</span> <span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dv</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">log10</span> <span class="k">else</span> \
+                      <span class="n">sig2_wd</span> <span class="o">/</span> <span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dw</span><span class="p">)</span>
+            <span class="c1"># No offset applied</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sig_vo</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+        <span class="c1"># Option 2:</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># 1% fudge so pixel at min_sig is not masked!</span>
+            <span class="n">fudge</span> <span class="o">=</span> <span class="mf">1.01</span>
+            
+            <span class="c1"># Calculate the velocity step of each pixel</span>
+            <span class="n">dv</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">c</span> <span class="o">*</span> <span class="p">(</span><span class="mf">2.0</span><span class="o">*</span><span class="p">(</span><span class="n">_wave</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">-</span> <span class="n">_wave</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">/</span> <span class="p">(</span><span class="n">_wave</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">+</span> <span class="n">_wave</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+            <span class="c1"># Get the needed *velocity* offset (this is the square)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sig_vo</span> <span class="o">=</span> <span class="n">fudge</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">absolute</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">amin</span><span class="p">(</span><span class="n">sig2_vd</span><span class="p">)</span>
+                                                  <span class="o">-</span> <span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">min_sig</span> <span class="o">*</span> <span class="n">numpy</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">dv</span><span class="p">))))</span>
+            <span class="c1"># Apply it if it&#39;s larger than 0</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sig_vo</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">sig2_vd</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sig_vo</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">sig_vo</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sig_vo</span><span class="p">)</span>
+
+            <span class="c1"># Convert the variance to pixel coordinates</span>
+            <span class="n">sig2_pd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_convert_vd2pd</span><span class="p">(</span><span class="n">sig2_vd</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_finalize_GaussianKernelDifference</span><span class="p">(</span><span class="n">sig2_pd</span><span class="p">)</span></div>
+
+<span class="c1">#        print(&#39;kernel difference done&#39;)</span>
+
+<span class="c1">#    def ZeroGaussianKernelDifference(self, min_sig_pix=0.0):</span>
+<span class="c1">#        self.min_sig = min_sig_pix</span>
+<span class="c1">#        sig2_pd = numpy.zeros(self.wave().shape, dtype=numpy.float64)</span>
+<span class="c1">#        self._finalize_GaussianKernelDifference(sig2_pd)</span>
+
+
+<div class="viewcode-block" id="SpectralResolution.offset_GaussianKernelDifference"><a class="viewcode-back" href="../../../mangadap.util.resolution.html#mangadap.util.resolution.SpectralResolution.offset_GaussianKernelDifference">[docs]</a>    <span class="k">def</span> <span class="nf">offset_GaussianKernelDifference</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">offset</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        If the properties required to match the resolution of one</span>
+<span class="sd">        spectrum to another has already been calculated (see</span>
+<span class="sd">        :func:`GaussianKernelDifference`), this allows for one to apply</span>
+<span class="sd">        an additional offset.  The additional offset **must** be in km/s</span>
+<span class="sd">        (not pixels).</span>
+
+<span class="sd">        The offset is applied in quadrature; however, the offset can be</span>
+<span class="sd">        negative such that one can reduce :attr:`sig_pd`.  Once</span>
+<span class="sd">        converted to km/s, the offset is applied by calculating:</span>
+
+<span class="sd">        .. math::</span>
+<span class="sd">        </span>
+<span class="sd">            \sigma^{\prime\ 2}_{v,d} = \sigma^{2}_{v,d} +</span>
+<span class="sd">            \sigma_{off}|\sigma_{off}|\ .</span>
+
+<span class="sd">        :attr:`sig_vo` is adjusted in the same way, and the change in</span>
+<span class="sd">        :math:`\sigma^{\prime\ 2}_{v,d}` is then propagated to</span>
+<span class="sd">        :attr:`sig_pd` and :attr:`sig_mask`.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            offset (float): Value of the standard deviation in km/s to</span>
+<span class="sd">                add in quadrature to a previously calculated</span>
+<span class="sd">                :attr:`sig_pd`.</span>
+<span class="sd">        </span>
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: Raised if the kernel properties have not yet</span>
+<span class="sd">                been defined.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_sig</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">sig_pd</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">sig_mask</span> <span class="ow">is</span> <span class="kc">None</span> \
+                <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">sig_vo</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<span class="c1">#            print(&#39;WARNING: No kernel difference yet defined.  Assuming 0.&#39;)</span>
+<span class="c1">#            self.ZeroGaussianKernelDifference()</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;No kernel defined yet.  Run GaussianKernelDifference first.&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">numpy</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">offset</span><span class="p">,</span><span class="mf">0.0</span><span class="p">):</span>
+            <span class="k">return</span>
+        <span class="n">off2</span> <span class="o">=</span> <span class="n">offset</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">absolute</span><span class="p">(</span><span class="n">offset</span><span class="p">)</span>
+        <span class="n">sig2_vo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sig_vo</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">absolute</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sig_vo</span><span class="p">)</span> <span class="o">+</span> <span class="n">off2</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sig_vo</span> <span class="o">=</span> <span class="mf">0.0</span> <span class="k">if</span> <span class="n">numpy</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">sig2_vo</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span> \
+                          <span class="k">else</span> <span class="n">sig2_vo</span><span class="o">/</span><span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">absolute</span><span class="p">(</span><span class="n">sig2_vo</span><span class="p">))</span>
+        <span class="n">sig2_vd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_convert_pd2vd</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sig_pd</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">absolute</span><span class="p">(</span><span class="n">sig_pd</span><span class="p">))</span> <span class="o">+</span> <span class="n">off2</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_finalize_GaussianKernelDifference</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_convert_vd2pd</span><span class="p">(</span><span class="n">sig2_vd</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="SpectralResolution.adjusted_resolution"><a class="viewcode-back" href="../../../mangadap.util.resolution.html#mangadap.util.resolution.SpectralResolution.adjusted_resolution">[docs]</a>    <span class="k">def</span> <span class="nf">adjusted_resolution</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">indx</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        Return the resolution that should result from applying</span>
+<span class="sd">        :func:`convolution_variable_sigma` to the spectrum associated</span>
+<span class="sd">        with this spectral resolution object using :attr:`sigma_pd`.</span>
+<span class="sd">        I.e., calculate:</span>
+
+<span class="sd">        .. math::</span>
+
+<span class="sd">            R_2 = \left[ \left(\frac{f}{c}\right)^2 \sigma^2_{v,d} +</span>
+<span class="sd">            R^{-2}_1\right]^{-1/2}\ . </span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            indx (tuple): (**Optional**) Selection tuple used to return</span>
+<span class="sd">                a subset of the full resolution vector.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            numpy.ndarray: The (full or selected) vector with the</span>
+<span class="sd">            adjusted resolution.</span>
+
+<span class="sd">        .. todo::</span>
+<span class="sd">            Allow to reset the resolution of this object to the adjusted</span>
+<span class="sd">            resolution and reset the kernel variables to None.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">indx</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mf">1.0</span><span class="o">/</span><span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span> <span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">DAPConstants</span><span class="o">.</span><span class="n">sig2fwhm</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">c</span><span class="p">)</span> \
+                                   <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_convert_pd2vd</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sig_pd</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">absolute</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sig_pd</span><span class="p">))</span> \
+                                   <span class="o">+</span> <span class="mf">1.0</span><span class="o">/</span><span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sres</span><span class="p">())</span> <span class="p">)</span>
+
+        <span class="k">return</span> <span class="mf">1.0</span><span class="o">/</span><span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span> <span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">DAPConstants</span><span class="o">.</span><span class="n">sig2fwhm</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">c</span><span class="p">)</span> \
+                            <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_convert_pd2vd</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sig_pd</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">absolute</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sig_pd</span><span class="p">)))[</span><span class="n">indx</span><span class="p">]</span> \
+                               <span class="o">+</span> <span class="mf">1.0</span><span class="o">/</span><span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sres</span><span class="p">()[</span><span class="n">indx</span><span class="p">])</span> <span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="match_spectral_resolution"><a class="viewcode-back" href="../../../mangadap.util.resolution.html#mangadap.util.resolution.match_spectral_resolution">[docs]</a><span class="k">def</span> <span class="nf">match_spectral_resolution</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">sres</span><span class="p">,</span> <span class="n">new_sres_wave</span><span class="p">,</span> <span class="n">new_sres</span><span class="p">,</span> <span class="n">ivar</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> 
+                              <span class="n">min_sig_pix</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">no_offset</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">variable_offset</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">log10</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                              <span class="n">new_log10</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">integral</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">quiet</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Adjust the existing spectral resolution of a spectrum to a **lower**</span>
+<span class="sd">    resolution as best as possible.  The primary functionality is in</span>
+<span class="sd">    :class:`SpectralResolution`, which determines the Gaussian kernel</span>
+<span class="sd">    parameters needed to match the resolution, and</span>
+<span class="sd">    :func:`convolve_variable_sigma`, which actually performs the</span>
+<span class="sd">    convolution to match the resolution.</span>
+
+<span class="sd">    In particular, see</span>
+<span class="sd">    :func:`SpectralResolution.GaussianKernelDifference` for a</span>
+<span class="sd">    description of how the kernel parameters are determined and how</span>
+<span class="sd">    regions where the target resolution is **higher** than the existing</span>
+<span class="sd">    resolution.  In this case, one of the options is to adopt an offset</span>
+<span class="sd">    of the resolution (in km/s) that could be corrected for in</span>
+<span class="sd">    subsequent analysis.  In this case, setting *variable_offset* to</span>
+<span class="sd">    True allows the offset to be different for all input spectra.  If</span>
+<span class="sd">    one expects to combine the spectra, the default behavior should be</span>
+<span class="sd">    used, forcing all the spectra to have a constant offset.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        wave (numpy.ndarray): A 1D or 2D (:math:`N_{\rm spec}\times</span>
+<span class="sd">            N_{\rm pix}`) array with the wavelength in angstroms for a</span>
+<span class="sd">            set of spectra.  The sampling may be either in linear steps</span>
+<span class="sd">            of wavelength or :math:`\log_{10}` steps, as set using</span>
+<span class="sd">            *log10*.</span>
+<span class="sd">        flux (numpy.ndarray): A 1D or 2D (:math:`N_{\rm spec}\times</span>
+<span class="sd">            N_{\rm pix}`) array with the flux sampled at the provided</span>
+<span class="sd">            wavelengths.</span>
+<span class="sd">        sres (numpy.ndarray): A 1D or 2D (:math:`N_{\rm spec}\times</span>
+<span class="sd">            N_{\rm pix}`) array with the spectral resolution, :math:`R`,</span>
+<span class="sd">            at the provided wavelengths.</span>
+<span class="sd">        new_sres_wave (numpy.ndarray): A 1D vector with the wavelength</span>
+<span class="sd">            in angstroms at which the new resolution of the input</span>
+<span class="sd">            spectra has been sampled.  The sampling may be either in</span>
+<span class="sd">            linear steps of wavelength or :math:`\log_{10}` steps, as</span>
+<span class="sd">            set using *new_log10*.</span>
+<span class="sd">        new_sres (numpy.ndarray): A 1D vector with the new resolution</span>
+<span class="sd">            for the input spectra.</span>
+<span class="sd">        ivar (numpy.ndarray): (**Optional**) A 1D or 2D (:math:`N_{\rm</span>
+<span class="sd">            spec}\times N_{\rm pix}`) array with the inverse variance of</span>
+<span class="sd">            the flux sampled at the provided wavelengths.  This vector</span>
+<span class="sd">            is used to estimate the noise in the resolution-matched</span>
+<span class="sd">            spectra.</span>
+
+<span class="sd">            .. warning::</span>
+<span class="sd">                The accuracy of the errors still remain untested!</span>
+<span class="sd">            </span>
+<span class="sd">        mask (numpy.ndarray): (**Optional**) A 1D or 2D (:math:`N_{\rm</span>
+<span class="sd">            spec}\times N_{\rm pix}`) array with a *uint* mask for the</span>
+<span class="sd">            flux sampled at the provided wavelengths.</span>
+<span class="sd">        no_offset (bool): (**Optional**) Force :math:`\sigma^2_{v,o} =</span>
+<span class="sd">            0` by masking regions with :math:`\sigma_{p,d} &lt;</span>
+<span class="sd">            -\epsilon_\sigma`; i.e., the value of this arguments selects</span>
+<span class="sd">            Option 1 (True) or Option 2 (False).  See</span>
+<span class="sd">            :func:`SpectralResolution.GaussianKernelDifference`.</span>
+<span class="sd">        min_sig_pix (float): (**Optional**) Minimum value of the</span>
+<span class="sd">            standard deviation in pixels allowed before assuming the</span>
+<span class="sd">            kernel is a Delta function.</span>
+<span class="sd">        variable_offset (bool): (**Optional**) Flag to allow the offset</span>
+<span class="sd">            applied to each spectrum (when the input contains more than</span>
+<span class="sd">            one spectraum) to be tailored to each spectrum.  Otherwise</span>
+<span class="sd">            (*variable_offset=False*) the offset is forced to be the</span>
+<span class="sd">            same for all spectra.</span>
+<span class="sd">        log10 (bool): (**Optional**) Flag that the spectrum has been</span>
+<span class="sd">            binned logarithmically (base 10) in wavelength</span>
+<span class="sd">        new_log10 (bool): (**Optional**) Flag that the coordinates of</span>
+<span class="sd">            the new spectral resolution are  spectrum as been binned</span>
+<span class="sd">            logarithmically (base 10) in wavelength.</span>
+
+<span class="sd">    Returns: </span>
+<span class="sd">        numpy.ndarray: Five objects are returned:</span>
+
+<span class="sd">            - A 1D or 2D (:math:`N_{\rm spec}\times N_{\rm pix}`) array</span>
+<span class="sd">              with the resolution-matched flux sampled at the input</span>
+<span class="sd">              wavelengths.</span>
+<span class="sd">            - A 1D or 2D (:math:`N_{\rm spec}\times N_{\rm pix}`) array</span>
+<span class="sd">              with the spectral resolution, :math:`R`, of the</span>
+<span class="sd">              resolution-matched spectra at the provided wavelengths.</span>
+<span class="sd">            - A 1D vector with any constant offset in resolution **in</span>
+<span class="sd">              km/s** between the targetted value and the result.  See</span>
+<span class="sd">              :func:`SpectralResolution.GaussianKernelDifference`.</span>
+<span class="sd">            - A 1D or 2D (:math:`N_{\rm spec}\times N_{\rm pix}`) array</span>
+<span class="sd">              with a *uint* mask for the resolution-matched flux sampled</span>
+<span class="sd">              at the input wavelengths.  This is returned regardless of</span>
+<span class="sd">              whether an input mask was provided.  Any pixel that had a</span>
+<span class="sd">              resolution that was lower than the target resolution (up</span>
+<span class="sd">              to some tolerance defined by *min_sig_pix*) is returned as</span>
+<span class="sd">              masked.</span>
+<span class="sd">            - A 1D or 2D (:math:`N_{\rm spec}\times N_{\rm pix}`) array</span>
+<span class="sd">              with the inverse variance of the resolution-matched flux</span>
+<span class="sd">              sampled at the input wavelengths.  If *ivar*</span>
+<span class="sd">              is not provided, a &#39;None&#39; returned as the last element</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: Raised if:</span>
+
+<span class="sd">            - the input *wave* array is 2D and the *sres* array is not;</span>
+<span class="sd">              a 1D wavelength array is allowed for a 2D *sres* array but</span>
+<span class="sd">              not vice versa</span>
+
+<span class="sd">            - the number of spectral pixels in *wave*, *flux*, and</span>
+<span class="sd">              *sres* is not the same</span>
+
+<span class="sd">            - the shape of the *flux*, *mask* (if provided), and *ivar*</span>
+<span class="sd">              (if provided) are not the same</span>
+
+<span class="sd">            - the shape of the *new_sres_wave* and *new_sres* arrays</span>
+<span class="sd">              are not the same and/or not 1D</span>
+
+<span class="sd">    .. todo::</span>
+
+<span class="sd">        - Add interp_ext != &#39;extrapolate&#39; option?</span>
+<span class="sd">        - Better way to use warnings?</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Check the dimensionality of wave and sres</span>
+    <span class="n">wave_matrix</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">wave</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
+    <span class="n">sres_matrix</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">sres</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
+    <span class="k">if</span> <span class="n">wave_matrix</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">sres_matrix</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;If input wavelength array is 2D, the spectral resolution array must&#39;</span> \
+                         <span class="s1">&#39; also be 2D&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Check the shapes</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">wave_matrix</span> <span class="o">==</span> <span class="n">sres_matrix</span> <span class="ow">and</span> <span class="n">wave</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">sres</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="ow">or</span> \
+       <span class="p">(</span><span class="ow">not</span> <span class="n">wave_matrix</span> <span class="ow">and</span> <span class="n">sres_matrix</span> <span class="ow">and</span> <span class="n">wave</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">sres</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Input spectral resolution and coordinate arrays must have the same&#39;</span> \
+                         <span class="s1">&#39; number of spectral channels!&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">wave_matrix</span> <span class="ow">and</span> <span class="n">wave</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">flux</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="ow">or</span> \
+       <span class="p">(</span><span class="ow">not</span> <span class="n">wave_matrix</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">flux</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="n">wave</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">flux</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="ow">or</span> \
+       <span class="p">(</span><span class="ow">not</span> <span class="n">wave_matrix</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">flux</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">wave</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">flux</span><span class="o">.</span><span class="n">shape</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Input flux and coordinate arrays must have the same number of&#39;</span> \
+                         <span class="s1">&#39; spectral channels!&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">mask</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">flux</span><span class="o">.</span><span class="n">shape</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Input flux and mask arrays must have the same shape!&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">ivar</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">ivar</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">flux</span><span class="o">.</span><span class="n">shape</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Input flux and ivar arrays must have the same shape!&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sres</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">flux</span><span class="o">.</span><span class="n">shape</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Shape of the spectral resolution array must be &lt;= to the flux array.&#39;</span><span class="p">)</span>
+        
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">new_sres_wave</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">new_sres</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;New spectral resolution and coordinate arrays must be 1D!&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">new_sres_wave</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">new_sres</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;New spectral resolution and coordinate arrays must have the same shape!&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Raise a warning if the new_sres vector will have to be</span>
+    <span class="c1"># extrapolated for the input wavelengths</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">quiet</span> <span class="ow">and</span> <span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">amin</span><span class="p">(</span><span class="n">wave</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">new_sres_wave</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">or</span> <span class="n">numpy</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">wave</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">new_sres_wave</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Mapping to the new spectral resolution will require extrapolating the&#39;</span> \
+                      <span class="s1">&#39; provided input vectors!&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Initialize some variables</span>
+    <span class="n">nspec</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">flux</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">flux</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">nsres</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sres</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">sres</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">sres_matrix</span> <span class="ow">and</span> <span class="n">nspec</span> <span class="o">!=</span> <span class="n">nsres</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;For 2D matrices, number of spectral resolution vectors must match the &#39;</span> \
+                         <span class="s1">&#39;number of spectra.&#39;</span><span class="p">)</span>
+    <span class="n">spec_dim</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">flux</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="n">sres_dim</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">sres</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="n">sigma_offset</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nspec</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+    <span class="n">new_res</span> <span class="o">=</span> <span class="n">SpectralResolution</span><span class="p">(</span><span class="n">new_sres_wave</span><span class="p">,</span> <span class="n">new_sres</span><span class="p">,</span> <span class="n">log10</span><span class="o">=</span><span class="n">new_log10</span><span class="p">)</span>
+
+<span class="c1">#    pyplot.plot(new_sres_wave, new_sres)</span>
+<span class="c1">#    pyplot.show()</span>
+<span class="c1">#    exit()</span>
+
+    <span class="n">res</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">nspec</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">object</span><span class="p">)</span>
+
+    <span class="c1"># Get the kernel parameters necessary to match all spectra to the</span>
+    <span class="c1"># new resolution</span>
+    <span class="k">if</span> <span class="n">nsres</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">sres_dim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">res</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">SpectralResolution</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">sres</span><span class="p">,</span> <span class="n">log10</span><span class="o">=</span><span class="n">log10</span><span class="p">)</span>
+        <span class="n">res</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">new_res</span><span class="p">,</span> <span class="n">no_offset</span><span class="o">=</span><span class="n">no_offset</span><span class="p">,</span> <span class="n">min_sig_pix</span><span class="o">=</span><span class="n">min_sig_pix</span><span class="p">)</span>
+        <span class="n">sigma_offset</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">res</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">sig_vo</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">nspec</span><span class="p">):</span>
+            <span class="n">res</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">res</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="c1">#        pyplot.plot(wave, res[0].sig_pd)</span>
+<span class="c1">#        pyplot.show()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">nsres</span><span class="p">):</span>
+            <span class="n">_wave</span> <span class="o">=</span> <span class="n">wave</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span> <span class="k">if</span> <span class="n">wave_matrix</span> <span class="k">else</span> <span class="n">wave</span>
+            <span class="n">_sres</span> <span class="o">=</span> <span class="n">sres</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span> <span class="k">if</span> <span class="n">sres_matrix</span> <span class="k">else</span> <span class="n">sres</span>
+            <span class="n">res</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">SpectralResolution</span><span class="p">(</span><span class="n">_wave</span><span class="p">,</span> <span class="n">_sres</span><span class="p">,</span> <span class="n">log10</span><span class="o">=</span><span class="n">log10</span><span class="p">)</span>
+            <span class="n">res</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">new_res</span><span class="p">,</span> <span class="n">no_offset</span><span class="o">=</span><span class="n">no_offset</span><span class="p">,</span> <span class="n">min_sig_pix</span><span class="o">=</span><span class="n">min_sig_pix</span><span class="p">)</span>
+            <span class="n">sigma_offset</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">res</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">sig_vo</span>
+<span class="c1">#            pyplot.plot(_wave, res[i].sig_pd)</span>
+<span class="c1">#            pyplot.plot(_wave, numpy.sqrt(res[i]._convert_pd2vd(numpy.square(res[i].sig_pd))))</span>
+<span class="c1">#            pyplot.show()</span>
+
+    <span class="c1"># Force all the offsets to be the same, if requested</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">no_offset</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">variable_offset</span><span class="p">:</span>
+        <span class="n">common_offset</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">sigma_offset</span><span class="p">)</span>
+        <span class="n">offset_diff</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span> <span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">common_offset</span><span class="p">)</span> <span class="o">-</span> <span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">sigma_offset</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">r</span><span class="p">,</span> <span class="n">o</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">res</span><span class="p">,</span><span class="n">offset_diff</span><span class="p">):</span>
+            <span class="n">r</span><span class="o">.</span><span class="n">offset_GaussianKernelDifference</span><span class="p">(</span><span class="n">o</span><span class="p">)</span>
+
+    <span class="c1"># Perform the convolutions</span>
+    <span class="n">out_flux</span> <span class="o">=</span> <span class="n">flux</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">out_ivar</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">ivar</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">(</span><span class="n">ivar</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
+    <span class="n">noise</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">ivar</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">1.0</span><span class="o">/</span><span class="n">out_ivar</span><span class="p">)</span>
+    <span class="n">out_sres</span> <span class="o">=</span> <span class="n">sres</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">_mask</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">flux</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">uint</span><span class="p">)</span> <span class="k">if</span> <span class="n">mask</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">mask</span>
+    <span class="n">out_mask</span> <span class="o">=</span> <span class="n">_mask</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+<span class="c1">#    print(&#39;test div by zero&#39;)</span>
+    <span class="k">if</span> <span class="n">nspec</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">spec_dim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">sig_kernel</span> <span class="o">=</span> <span class="n">res</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">sig_pd</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">sig_kernel</span><span class="p">[</span><span class="n">sig_kernel</span> <span class="o">&lt;</span> <span class="n">min_sig_pix</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="n">indx</span> <span class="o">=</span> <span class="n">res</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">sig_pd</span> <span class="o">&gt;</span> <span class="n">min_sig_pix</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">ivar</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">out_flux</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="n">convolution_variable_sigma</span><span class="p">(</span><span class="n">flux</span><span class="p">,</span> <span class="n">sig_kernel</span><span class="p">,</span>
+                                                            <span class="n">integral</span><span class="o">=</span><span class="n">integral</span><span class="p">)[</span><span class="n">indx</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">oflux</span><span class="p">,</span> <span class="n">oivar</span> <span class="o">=</span> <span class="n">convolution_variable_sigma</span><span class="p">(</span><span class="n">flux</span><span class="p">,</span> <span class="n">sig_kernel</span><span class="p">,</span>
+                                                          <span class="n">ye</span><span class="o">=</span><span class="kc">None</span> <span class="k">if</span> <span class="n">ivar</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">noise</span><span class="p">[</span><span class="n">indx</span><span class="p">],</span>
+                                                          <span class="n">integral</span><span class="o">=</span><span class="n">integral</span><span class="p">)</span>
+
+                <span class="n">out_flux</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="n">oflux</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span>
+                <span class="n">out_ivar</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="n">oivar</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span>
+                <span class="k">del</span> <span class="n">oflux</span><span class="p">,</span> <span class="n">oivar</span>
+            <span class="n">out_sres</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="n">res</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">adjusted_resolution</span><span class="p">(</span><span class="n">indx</span><span class="o">=</span><span class="n">indx</span><span class="p">)</span>
+            <span class="n">out_mask</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="n">res</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">sig_mask</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">mask</span> <span class="o">==</span> <span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">uint</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Encountered ValueError: </span><span class="si">{0}</span><span class="s1"> ; continuing but resolution is NOT &#39;</span>
+                          <span class="s1">&#39;changed and mask is set.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+            <span class="n">out_mask</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">flux</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">uint</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">nspec</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">quiet</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Matching resolution: </span><span class="si">{0}</span><span class="s1">/</span><span class="si">{1}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="n">nspec</span><span class="p">),</span> <span class="n">end</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\r</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+<span class="c1">#                indx = numpy.where(res[i].sig_pd &gt; min_sig_pix)</span>
+                <span class="n">sig_kernel</span> <span class="o">=</span> <span class="n">res</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">sig_pd</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                <span class="n">sig_kernel</span><span class="p">[</span><span class="n">sig_kernel</span> <span class="o">&lt;</span> <span class="n">min_sig_pix</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+                <span class="n">indx</span> <span class="o">=</span> <span class="n">res</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">sig_pd</span> <span class="o">&gt;</span> <span class="n">min_sig_pix</span>
+                <span class="k">if</span> <span class="n">ivar</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">out_flux</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="n">convolution_variable_sigma</span><span class="p">(</span><span class="n">flux</span><span class="p">[</span><span class="n">i</span><span class="p">,:],</span> <span class="n">sig_kernel</span><span class="p">,</span>
+                                                                  <span class="n">integral</span><span class="o">=</span><span class="n">integral</span><span class="p">)[</span><span class="n">indx</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">oflux</span><span class="p">,</span> <span class="n">oivar</span> <span class="o">=</span> <span class="n">convolution_variable_sigma</span><span class="p">(</span><span class="n">flux</span><span class="p">[</span><span class="n">i</span><span class="p">,:],</span> <span class="n">sig_kernel</span><span class="p">,</span>
+                                                              <span class="n">ye</span><span class="o">=</span><span class="kc">None</span> <span class="k">if</span> <span class="n">ivar</span> <span class="ow">is</span> <span class="kc">None</span> 
+                                                                    <span class="k">else</span> <span class="n">noise</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span>
+                                                              <span class="n">integral</span><span class="o">=</span><span class="n">integral</span><span class="p">)</span>
+                    <span class="n">out_flux</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="n">oflux</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span>
+                    <span class="n">out_ivar</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="n">oivar</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span>
+                    <span class="k">del</span> <span class="n">oflux</span><span class="p">,</span> <span class="n">oivar</span>
+                <span class="n">out_mask</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="n">res</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">sig_mask</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> \
+                                        <span class="o">|</span> <span class="p">(</span><span class="n">_mask</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">uint</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">out_sres</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">out_sres</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="n">res</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">adjusted_resolution</span><span class="p">(</span><span class="n">indx</span><span class="o">=</span><span class="n">indx</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">out_sres</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="n">res</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">adjusted_resolution</span><span class="p">(</span><span class="n">indx</span><span class="o">=</span><span class="n">indx</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Encountered ValueError: </span><span class="si">{0}</span><span class="s1"> ; continuing but resolution is NOT &#39;</span>
+                              <span class="s1">&#39;changed and mask is set.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+                <span class="n">out_mask</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">flux</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">uint</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">quiet</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Matching resolution: </span><span class="si">{0}</span><span class="s1">/</span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">nspec</span><span class="p">))</span>
+
+    <span class="c1"># TODO: Add this functionality from the IDL version?</span>
+    <span class="c1">#</span>
+    <span class="c1"># Finally, the code masks a number of pixels at the beginning and</span>
+    <span class="c1"># end of the spectra to remove regions affected by errors in the</span>
+    <span class="c1"># convolution due to the censoring of the data.  The number of</span>
+    <span class="c1"># pixels is the FWHM of the largest Gaussian applied in the</span>
+    <span class="c1"># convolution: ceil(sig2fwhm*max(diff_sig_w)/dw).  This is currently</span>
+    <span class="c1"># hard-wired and should be tested.</span>
+
+    <span class="k">if</span> <span class="n">ivar</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">out_ivar</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="mf">1.0</span><span class="o">/</span><span class="n">out_ivar</span><span class="p">)</span>
+        <span class="c1"># When returning out_ivar, convert it to a normal array</span>
+        <span class="k">return</span> <span class="n">out_flux</span><span class="p">,</span> <span class="n">out_sres</span><span class="p">,</span> <span class="n">sigma_offset</span><span class="p">,</span> <span class="n">out_mask</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">out_ivar</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">out_flux</span><span class="p">,</span> <span class="n">out_sres</span><span class="p">,</span> <span class="n">sigma_offset</span><span class="p">,</span> <span class="n">out_mask</span><span class="p">,</span> <span class="kc">None</span></div>
+    
+
+</pre></div>
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, SDSS-IV/MaNGA Pipeline Group.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'2.2.2',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

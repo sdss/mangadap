@@ -1,5 +1,5 @@
-mangadap\.util\.covariance module
-=================================
+mangadap.util.covariance module
+===============================
 
 .. automodule:: mangadap.util.covariance
     :members:

@@ -1,5 +1,5 @@
-mangadap\.util\.lineprofiles module
-===================================
+mangadap.util.lineprofiles module
+=================================
 
 .. automodule:: mangadap.util.lineprofiles
     :members:

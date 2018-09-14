@@ -36,7 +36,7 @@
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
     <link rel="top" title="mangadap 2.2.2 documentation" href="../../../index.html"/>
-        <link rel="up" title="Module code" href="../../index.html"/> 
+        <link rel="up" title="mangadap" href="../../mangadap.html"/> 
 
   
   <script src="../../../_static/js/modernizr.min.js"></script>
@@ -138,6 +138,8 @@
         
           <li><a href="../../index.html">Module code</a> &raquo;</li>
         
+          <li><a href="../../mangadap.html">mangadap</a> &raquo;</li>
+        
       <li>mangadap.proc.emissionlinemodel</li>
     
     
@@ -192,7 +194,7 @@
 <span class="sd">        from ..par.parset import ParSet</span>
 <span class="sd">        from ..par.artifactdb import ArtifactDB</span>
 <span class="sd">        from ..par.emissionlinedb import EmissionLineDB</span>
-<span class="sd">        from ..config.defaults import default_dap_source, default_dap_file_name</span>
+<span class="sd">        from ..config.defaults import dap_source_dir, default_dap_file_name</span>
 <span class="sd">        from ..config.defaults import default_dap_method, default_dap_method_path</span>
 <span class="sd">        from ..util.fitsutil import DAPFitsUtil</span>
 <span class="sd">        from ..util.fileio import init_record_array, rec_to_fits_type, rec_to_fits_col_dim</span>
@@ -258,7 +260,7 @@
 <span class="kn">from</span> <span class="nn">..par.parset</span> <span class="k">import</span> <span class="n">ParSet</span>
 <span class="kn">from</span> <span class="nn">..par.artifactdb</span> <span class="k">import</span> <span class="n">ArtifactDB</span>
 <span class="kn">from</span> <span class="nn">..par.emissionlinedb</span> <span class="k">import</span> <span class="n">EmissionLineDB</span>
-<span class="kn">from</span> <span class="nn">..config.defaults</span> <span class="k">import</span> <span class="n">default_dap_source</span><span class="p">,</span> <span class="n">default_dap_file_name</span>
+<span class="kn">from</span> <span class="nn">..config.defaults</span> <span class="k">import</span> <span class="n">dap_source_dir</span><span class="p">,</span> <span class="n">default_dap_file_name</span>
 <span class="kn">from</span> <span class="nn">..config.defaults</span> <span class="k">import</span> <span class="n">default_dap_method</span><span class="p">,</span> <span class="n">default_dap_method_path</span>
 <span class="kn">from</span> <span class="nn">..util.fitsutil</span> <span class="k">import</span> <span class="n">DAPFitsUtil</span>
 <span class="kn">from</span> <span class="nn">..util.fileio</span> <span class="k">import</span> <span class="n">init_record_array</span><span class="p">,</span> <span class="n">rec_to_fits_type</span><span class="p">,</span> <span class="n">rec_to_fits_col_dim</span>
@@ -268,8 +270,6 @@
 <span class="kn">from</span> <span class="nn">..util.parser</span> <span class="k">import</span> <span class="n">DefaultConfig</span>
 <span class="kn">from</span> <span class="nn">.spatiallybinnedspectra</span> <span class="k">import</span> <span class="n">SpatiallyBinnedSpectra</span>
 <span class="kn">from</span> <span class="nn">.stellarcontinuummodel</span> <span class="k">import</span> <span class="n">StellarContinuumModel</span>
-<span class="c1">#from .emissionlinemoments import EmissionLineMoments</span>
-<span class="kn">from</span> <span class="nn">.bandpassfilter</span> <span class="k">import</span> <span class="n">emission_line_equivalent_width</span>
 <span class="kn">from</span> <span class="nn">.elric</span> <span class="k">import</span> <span class="n">Elric</span><span class="p">,</span> <span class="n">ElricPar</span>
 <span class="kn">from</span> <span class="nn">.sasuke</span> <span class="k">import</span> <span class="n">Sasuke</span><span class="p">,</span> <span class="n">SasukePar</span>
 <span class="kn">from</span> <span class="nn">.util</span> <span class="k">import</span> <span class="n">select_proc_method</span><span class="p">,</span> <span class="n">replace_with_data_from_nearest_coo</span>
@@ -342,7 +342,7 @@
 <span class="sd">    Args:</span>
 <span class="sd">        dapsrc (str): (**Optional**) Root path to the DAP source</span>
 <span class="sd">            directory.  If not provided, the default is defined by</span>
-<span class="sd">            :func:`mangadap.config.defaults.default_dap_source`.</span>
+<span class="sd">            :func:`mangadap.config.defaults.dap_source_dir`.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        list: A list of :func:`EmissionLineModelDef` objects, each</span>
@@ -367,7 +367,7 @@
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Check the source directory exists</span>
-    <span class="n">dapsrc</span> <span class="o">=</span> <span class="n">default_dap_source</span><span class="p">()</span> <span class="k">if</span> <span class="n">dapsrc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">)</span>
+    <span class="n">dapsrc</span> <span class="o">=</span> <span class="n">dap_source_dir</span><span class="p">()</span> <span class="k">if</span> <span class="n">dapsrc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">NotADirectoryError</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1"> does not exist!&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">))</span>
 
@@ -451,7 +451,7 @@
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dapsrc</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="n">dapsrc</span> <span class="o">=</span> <span class="n">default_dap_source</span><span class="p">()</span> <span class="k">if</span> <span class="n">dapsrc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">)</span>
+        <span class="n">dapsrc</span> <span class="o">=</span> <span class="n">dap_source_dir</span><span class="p">()</span> <span class="k">if</span> <span class="n">dapsrc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">)</span>
         <span class="n">BitMask</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ini_file</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">,</span> <span class="s1">&#39;python&#39;</span><span class="p">,</span> <span class="s1">&#39;mangadap&#39;</span><span class="p">,</span> <span class="s1">&#39;config&#39;</span><span class="p">,</span>
                                                      <span class="s1">&#39;bitmasks&#39;</span><span class="p">,</span> <span class="s1">&#39;emission_line_model_bits.ini&#39;</span><span class="p">))</span></div>
 
@@ -1317,7 +1317,9 @@
 
         <span class="c1">#---------------------------------------------------------------</span>
         <span class="c1"># Fit the spectra</span>
-        <span class="c1"># Mask should be fully defined within the fitting function</span>
+        <span class="c1"># Mask should be fully defined within the fitting function This</span>
+        <span class="c1"># should also add the equivalent widths.  TODO: Shouldn&#39;t the</span>
+        <span class="c1"># equivalent widths be done here?</span>
         <span class="n">model_flux</span><span class="p">,</span> <span class="n">model_base</span><span class="p">,</span> <span class="n">model_mask</span><span class="p">,</span> <span class="n">model_fit_par</span><span class="p">,</span> <span class="n">model_eml_par</span><span class="p">,</span> <span class="n">model_binid</span> <span class="o">=</span> \
                 <span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">[</span><span class="s1">&#39;fitfunc&#39;</span><span class="p">](</span><span class="bp">self</span><span class="o">.</span><span class="n">binned_spectra</span><span class="p">,</span> <span class="n">par</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">[</span><span class="s1">&#39;fitpar&#39;</span><span class="p">],</span>
                                        <span class="n">loggers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">loggers</span><span class="p">,</span> <span class="n">quiet</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">quiet</span><span class="p">)</span>
@@ -1900,8 +1902,22 @@
         <span class="c1"># Only the selected models are constructed, others are masked</span>
         <span class="n">select</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">flagged</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;FIT&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;MASK&#39;</span><span class="p">],</span>
                                             <span class="n">flag</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;NO_FIT&#39;</span><span class="p">,</span> <span class="s1">&#39;FIT_FAILED&#39;</span><span class="p">,</span> <span class="s1">&#39;INSUFFICIENT_DATA&#39;</span><span class="p">]))</span>
-        <span class="n">templates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stellar_continuum</span><span class="o">.</span><span class="n">method</span><span class="p">[</span><span class="s1">&#39;fitpar&#39;</span><span class="p">][</span><span class="s1">&#39;template_library&#39;</span><span class="p">]</span> \
-                            <span class="k">if</span> <span class="n">replacement_templates</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">replacement_templates</span>
+        
+        <span class="c1"># Get the template library</span>
+        <span class="n">templates</span> <span class="o">=</span> <span class="n">replacement_templates</span>
+        <span class="k">if</span> <span class="n">templates</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">templates</span><span class="p">,</span> <span class="n">TemplateLibrary</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">bins_to_fit</span> <span class="o">=</span> <span class="n">EmissionLineFit</span><span class="o">.</span><span class="n">select_binned_spectra_to_fit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">binned_spectra</span><span class="p">,</span>
+                                            <span class="n">minimum_snr</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">[</span><span class="s1">&#39;fitpar&#39;</span><span class="p">][</span><span class="s1">&#39;minimum_snr&#39;</span><span class="p">],</span>
+                                            <span class="n">stellar_continuum</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">stellar_continuum</span><span class="p">)</span>
+                <span class="n">z</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">[</span><span class="s1">&#39;fitpar&#39;</span><span class="p">][</span><span class="s1">&#39;guess_redshift&#39;</span><span class="p">][</span><span class="n">bins_to_fit</span><span class="p">])</span>
+                <span class="n">templates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">[</span><span class="s1">&#39;fitclass&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get_stellar_templates</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">[</span><span class="s1">&#39;fitpar&#39;</span><span class="p">],</span>
+                                                                          <span class="bp">self</span><span class="o">.</span><span class="n">binned_spectra</span><span class="o">.</span><span class="n">drpf</span><span class="p">,</span>
+                                                                          <span class="n">z</span><span class="o">=</span><span class="n">z</span><span class="p">,</span>
+                                                                          <span class="n">loggers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">loggers</span><span class="p">,</span>
+                                                                          <span class="n">quiet</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">quiet</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">templates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stellar_continuum</span><span class="o">.</span><span class="n">method</span><span class="p">[</span><span class="s1">&#39;fitpar&#39;</span><span class="p">][</span><span class="s1">&#39;template_library&#39;</span><span class="p">]</span>
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">[</span><span class="s1">&#39;fitclass&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">construct_continuum_models</span><span class="p">(</span>
                                         <span class="bp">self</span><span class="o">.</span><span class="n">emldb</span><span class="p">,</span> <span class="n">templates</span><span class="p">[</span><span class="s1">&#39;WAVE&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">templates</span><span class="p">[</span><span class="s1">&#39;FLUX&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>

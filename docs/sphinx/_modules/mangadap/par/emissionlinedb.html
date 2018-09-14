@@ -36,7 +36,7 @@
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
     <link rel="top" title="mangadap 2.2.2 documentation" href="../../../index.html"/>
-        <link rel="up" title="Module code" href="../../index.html"/> 
+        <link rel="up" title="mangadap" href="../../mangadap.html"/> 
 
   
   <script src="../../../_static/js/modernizr.min.js"></script>
@@ -138,6 +138,8 @@
         
           <li><a href="../../index.html">Module code</a> &raquo;</li>
         
+          <li><a href="../../mangadap.html">mangadap</a> &raquo;</li>
+        
       <li>mangadap.par.emissionlinedb</li>
     
     
@@ -192,7 +194,7 @@
 <span class="sd">        from .parset import ParSet, ParDatabase</span>
 <span class="sd">        from .spectralfeaturedb import available_spectral_feature_databases, SpectralFeatureDBDef</span>
 <span class="sd">        from ..proc.util import select_proc_method</span>
-<span class="sd">        from ..config.defaults import default_dap_source</span>
+<span class="sd">        from ..config.defaults import dap_source_dir</span>
 
 <span class="sd">*Class usage examples*:</span>
 <span class="sd">    To define an emission line::</span>
@@ -271,7 +273,7 @@
 <span class="kn">from</span> <span class="nn">.parset</span> <span class="k">import</span> <span class="n">ParSet</span><span class="p">,</span> <span class="n">ParDatabase</span>
 <span class="kn">from</span> <span class="nn">.spectralfeaturedb</span> <span class="k">import</span> <span class="n">available_spectral_feature_databases</span><span class="p">,</span> <span class="n">SpectralFeatureDBDef</span>
 <span class="kn">from</span> <span class="nn">..proc.util</span> <span class="k">import</span> <span class="n">select_proc_method</span>
-<span class="kn">from</span> <span class="nn">..config.defaults</span> <span class="k">import</span> <span class="n">default_dap_source</span>
+<span class="kn">from</span> <span class="nn">..config.defaults</span> <span class="k">import</span> <span class="n">dap_source_dir</span>
 
 <span class="c1"># Add strict versioning</span>
 <span class="c1"># from distutils.version import StrictVersion</span>
@@ -475,7 +477,7 @@
 <span class="sd">    Args:</span>
 <span class="sd">        dapsrc (str): (**Optional**) Root path to the DAP source</span>
 <span class="sd">            directory.  If not provided, the default is defined by</span>
-<span class="sd">            :func:`mangadap.config.defaults.default_dap_source`.</span>
+<span class="sd">            :func:`mangadap.config.defaults.dap_source_dir`.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        list: An list of :func:`SpectralFeatureDBDef` objects, each of</span>
@@ -505,7 +507,7 @@
 <span class="sd">            parameter file.</span>
 <span class="sd">        dapsrc (str): (**Optional**) Root path to the DAP source</span>
 <span class="sd">            directory.  If not provided, the default is defined by</span>
-<span class="sd">            :func:`mangadap.config.defaults.default_dap_source`.</span>
+<span class="sd">            :func:`mangadap.config.defaults.dap_source_dir`.</span>
 
 <span class="sd">    Attributes:</span>
 <span class="sd">        database (str): Keyword of the selected database to use.</span>

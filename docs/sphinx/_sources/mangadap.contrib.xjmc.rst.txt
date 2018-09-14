@@ -1,5 +1,5 @@
-mangadap\.contrib\.xjmc module
-==============================
+mangadap.contrib.xjmc module
+============================
 
 .. automodule:: mangadap.contrib.xjmc
     :members:

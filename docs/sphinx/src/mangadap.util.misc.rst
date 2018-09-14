@@ -1,5 +1,5 @@
-mangadap\.util\.misc module
-===========================
+mangadap.util.misc module
+=========================
 
 .. automodule:: mangadap.util.misc
     :members:

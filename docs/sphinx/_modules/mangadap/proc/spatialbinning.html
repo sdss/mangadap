@@ -36,7 +36,7 @@
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
     <link rel="top" title="mangadap 2.2.2 documentation" href="../../../index.html"/>
-        <link rel="up" title="Module code" href="../../index.html"/> 
+        <link rel="up" title="mangadap" href="../../mangadap.html"/> 
 
   
   <script src="../../../_static/js/modernizr.min.js"></script>
@@ -138,6 +138,8 @@
         
           <li><a href="../../index.html">Module code</a> &raquo;</li>
         
+          <li><a href="../../mangadap.html">mangadap</a> &raquo;</li>
+        
       <li>mangadap.proc.spatialbinning</li>
     
     
@@ -185,9 +187,10 @@
 <span class="sd">        from scipy import sparse</span>
 <span class="sd">        from astropy.io import fits</span>
 
+<span class="sd">        from vorbin.voronoi_2d_binning import voronoi_2d_binning</span>
+
 <span class="sd">        from ..par.parset import ParSet</span>
 <span class="sd">        from ..util.geometry import SemiMajorAxisCoo</span>
-<span class="sd">        from ..contrib.voronoi_2d_binning import voronoi_2d_binning</span>
 <span class="sd">        from ..util.covariance import Covariance</span>
 
 <span class="sd">*Class usage examples*:</span>
@@ -195,6 +198,8 @@
 
 <span class="sd">*Revision history*:</span>
 <span class="sd">    | **01 Apr 2016**: Implementation begun by K. Westfall (KBW)</span>
+<span class="sd">    | **22 May 2018**: (KBW) Import vorbin package version of</span>
+<span class="sd">        voronoi_2d_binning</span>
 
 <span class="sd">.. _numpy.ndarray: http://docs.scipy.org/doc/numpy-1.10.0/reference/generated/numpy.ndarray.html</span>
 <span class="sd">.. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html</span>
@@ -218,7 +223,7 @@
 <span class="kn">from</span> <span class="nn">scipy</span> <span class="k">import</span> <span class="n">sparse</span>
 <span class="kn">from</span> <span class="nn">astropy.io</span> <span class="k">import</span> <span class="n">fits</span>
 
-<span class="kn">from</span> <span class="nn">captools.voronoi_2d_binning</span> <span class="k">import</span> <span class="n">voronoi_2d_binning</span>
+<span class="kn">from</span> <span class="nn">vorbin.voronoi_2d_binning</span> <span class="k">import</span> <span class="n">voronoi_2d_binning</span>
 
 <span class="kn">from</span> <span class="nn">..par.parset</span> <span class="k">import</span> <span class="n">ParSet</span>
 <span class="kn">from</span> <span class="nn">..util.geometry</span> <span class="k">import</span> <span class="n">SemiMajorAxisCoo</span>

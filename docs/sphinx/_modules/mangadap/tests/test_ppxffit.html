@@ -1,0 +1,365 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mangadap.tests.test_ppxffit &mdash; mangadap 2.2.2 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../search.html"/>
+    <link rel="top" title="mangadap 2.2.2 documentation" href="../../../index.html"/>
+        <link rel="up" title="mangadap" href="../../mangadap.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> mangadap
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                2.2.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../mangadap.html">mangadap package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">mangadap</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../../mangadap.html">mangadap</a> &raquo;</li>
+        
+      <li>mangadap.tests.test_ppxffit</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for mangadap.tests.test_ppxffit</h1><div class="highlight"><pre>
+<span></span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
+
+<span class="kn">import</span> <span class="nn">pytest</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="k">import</span> <span class="n">interpolate</span>
+<span class="kn">from</span> <span class="nn">astropy.io</span> <span class="k">import</span> <span class="n">fits</span>
+<span class="kn">import</span> <span class="nn">astropy.constants</span>
+
+<span class="kn">from</span> <span class="nn">mangadap.drpfits</span> <span class="k">import</span> <span class="n">DRPFits</span><span class="p">,</span> <span class="n">DRPFitsBitMask</span>
+
+<span class="kn">from</span> <span class="nn">mangadap.par.artifactdb</span> <span class="k">import</span> <span class="n">ArtifactDB</span>
+<span class="kn">from</span> <span class="nn">mangadap.par.emissionlinedb</span> <span class="k">import</span> <span class="n">EmissionLineDB</span>
+
+<span class="kn">from</span> <span class="nn">mangadap.util.pixelmask</span> <span class="k">import</span> <span class="n">SpectralPixelMask</span>
+
+<span class="kn">from</span> <span class="nn">mangadap.proc.templatelibrary</span> <span class="k">import</span> <span class="n">TemplateLibrary</span>
+<span class="kn">from</span> <span class="nn">mangadap.proc.ppxffit</span> <span class="k">import</span> <span class="n">PPXFFit</span>
+<span class="kn">from</span> <span class="nn">mangadap.proc.stellarcontinuummodel</span> <span class="k">import</span> <span class="n">StellarContinuumModelBitMask</span>
+
+<span class="kn">from</span> <span class="nn">mangadap.tests.util</span> <span class="k">import</span> <span class="n">data_file</span>
+
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="ne">UserWarning</span><span class="p">)</span>
+<span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="ne">RuntimeWarning</span><span class="p">)</span>
+
+<div class="viewcode-block" id="test_ppxffit"><a class="viewcode-back" href="../../../mangadap.tests.test_ppxffit.html#mangadap.tests.test_ppxffit.test_ppxffit">[docs]</a><span class="k">def</span> <span class="nf">test_ppxffit</span><span class="p">():</span>
+    <span class="c1"># Read the data</span>
+    <span class="n">specfile</span> <span class="o">=</span> <span class="n">data_file</span><span class="p">(</span><span class="s1">&#39;MaNGA_test_spectra.fits.gz&#39;</span><span class="p">)</span>
+    <span class="n">hdu</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">specfile</span><span class="p">)</span>
+    <span class="n">drpbm</span> <span class="o">=</span> <span class="n">DRPFitsBitMask</span><span class="p">()</span>
+    <span class="n">flux</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">(</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;FLUX&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+                                <span class="n">mask</span><span class="o">=</span><span class="n">drpbm</span><span class="o">.</span><span class="n">flagged</span><span class="p">(</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;MASK&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">DRPFits</span><span class="o">.</span><span class="n">do_not_fit_flags</span><span class="p">()))</span>
+    <span class="n">ferr</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;IVAR&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.5</span><span class="p">)</span>
+    <span class="n">flux</span><span class="p">[</span><span class="n">ferr</span><span class="o">.</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">masked</span>
+    <span class="n">ferr</span><span class="p">[</span><span class="n">flux</span><span class="o">.</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">masked</span>
+    <span class="n">nspec</span> <span class="o">=</span> <span class="n">flux</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="c1"># Instantiate the template libary</span>
+    <span class="n">velscale_ratio</span> <span class="o">=</span> <span class="mi">4</span>
+    <span class="n">tpl</span> <span class="o">=</span> <span class="n">TemplateLibrary</span><span class="p">(</span><span class="s1">&#39;MILESHC&#39;</span><span class="p">,</span> <span class="n">match_to_drp_resolution</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">velscale_ratio</span><span class="o">=</span><span class="n">velscale_ratio</span><span class="p">,</span>
+                          <span class="n">spectral_step</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">hardcopy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">tpl_sres</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">tpl</span><span class="p">[</span><span class="s1">&#39;SPECRES&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="c1"># Get the pixel mask</span>
+    <span class="n">pixelmask</span> <span class="o">=</span> <span class="n">SpectralPixelMask</span><span class="p">(</span><span class="n">artdb</span><span class="o">=</span><span class="n">ArtifactDB</span><span class="p">(</span><span class="s1">&#39;BADSKY&#39;</span><span class="p">),</span> <span class="n">emldb</span><span class="o">=</span><span class="n">EmissionLineDB</span><span class="p">(</span><span class="s1">&#39;ELPFULL&#39;</span><span class="p">))</span>
+
+    <span class="c1"># Instantiate the fitting class</span>
+    <span class="n">ppxf</span> <span class="o">=</span> <span class="n">PPXFFit</span><span class="p">(</span><span class="n">StellarContinuumModelBitMask</span><span class="p">())</span>
+
+    <span class="c1"># Perform the fit</span>
+    <span class="n">fit_wave</span><span class="p">,</span> <span class="n">fit_flux</span><span class="p">,</span> <span class="n">fit_mask</span><span class="p">,</span> <span class="n">fit_par</span> \
+        <span class="o">=</span> <span class="n">ppxf</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">tpl</span><span class="p">[</span><span class="s1">&#39;WAVE&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">tpl</span><span class="p">[</span><span class="s1">&#39;FLUX&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;WAVE&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">ferr</span><span class="p">,</span>
+                   <span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;Z&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">nspec</span><span class="p">,</span> <span class="mf">100.</span><span class="p">),</span> <span class="n">iteration_mode</span><span class="o">=</span><span class="s1">&#39;no_global_wrej&#39;</span><span class="p">,</span>
+                   <span class="n">reject_boxcar</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">ensemble</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">velscale_ratio</span><span class="o">=</span><span class="n">velscale_ratio</span><span class="p">,</span>
+                   <span class="n">mask</span><span class="o">=</span><span class="n">pixelmask</span><span class="p">,</span> <span class="n">matched_resolution</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">tpl_sres</span><span class="o">=</span><span class="n">tpl_sres</span><span class="p">,</span>
+                   <span class="n">obj_sres</span><span class="o">=</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;SRES&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">degree</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">moments</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+    <span class="c1"># Test the results</span>
+
+    <span class="c1"># Rejected pixels</span>
+    <span class="k">assert</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">ppxf</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">flagged</span><span class="p">(</span><span class="n">fit_mask</span><span class="p">,</span> <span class="n">flag</span><span class="o">=</span><span class="s1">&#39;PPXF_REJECT&#39;</span><span class="p">))</span> <span class="o">==</span> <span class="mi">124</span><span class="p">,</span> \
+                <span class="s1">&#39;Different number of rejected pixels&#39;</span>
+
+    <span class="c1"># Unable to fit</span>
+    <span class="k">assert</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">ppxf</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">flagged_bits</span><span class="p">(</span><span class="n">fit_par</span><span class="p">[</span><span class="s1">&#39;MASK&#39;</span><span class="p">][</span><span class="mi">5</span><span class="p">]),</span> <span class="p">[</span><span class="s1">&#39;NO_FIT&#39;</span><span class="p">]),</span> \
+                <span class="s1">&#39;Expected NO_FIT in 6th spectrum&#39;</span>
+
+    <span class="c1"># Number of used templates</span>
+    <span class="k">assert</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">fit_par</span><span class="p">[</span><span class="s1">&#39;TPLWGT&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+                             <span class="p">[</span><span class="mi">13</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">17</span><span class="p">,</span> <span class="mi">14</span><span class="p">,</span> <span class="mi">17</span><span class="p">,</span>  <span class="mi">0</span><span class="p">,</span>  <span class="mi">8</span><span class="p">,</span> <span class="mi">12</span><span class="p">]),</span> \
+                <span class="s1">&#39;Different number of templates with non-zero weights&#39;</span>
+
+    <span class="c1"># Number of additive coefficients</span>
+    <span class="k">assert</span> <span class="n">fit_par</span><span class="p">[</span><span class="s1">&#39;ADDCOEF&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">9</span><span class="p">,</span> <span class="s1">&#39;Incorrect number of additive coefficients&#39;</span>
+
+    <span class="c1"># No multiplicative coefficients</span>
+    <span class="k">assert</span> <span class="n">numpy</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">fit_par</span><span class="p">[</span><span class="s1">&#39;MULTCOEF&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">),</span> \
+                <span class="s1">&#39;No multiplicative coefficients should exist&#39;</span>
+
+    <span class="c1"># Kinematics and errors</span>
+    <span class="k">assert</span> <span class="n">numpy</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">fit_par</span><span class="p">[</span><span class="s1">&#39;KIN&#39;</span><span class="p">],</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mf">14881.7722996</span> <span class="p">,</span>   <span class="mf">291.85468616</span><span class="p">],</span>
+                                                       <span class="p">[</span><span class="mf">15053.5428018</span> <span class="p">,</span>   <span class="mf">123.07989289</span><span class="p">],</span>
+                                                       <span class="p">[</span><span class="mf">14788.28367965</span><span class="p">,</span>   <span class="mf">235.8053923</span> <span class="p">],</span>
+                                                       <span class="p">[</span> <span class="mf">8293.07541034</span><span class="p">,</span>   <span class="mf">170.86985816</span><span class="p">],</span>
+                                                       <span class="p">[</span> <span class="mf">9261.89551736</span><span class="p">,</span>   <span class="mf">201.84993174</span><span class="p">],</span>
+                                                       <span class="p">[</span>    <span class="mf">0.</span>        <span class="p">,</span>     <span class="mf">0.</span>        <span class="p">],</span>
+                                                       <span class="p">[</span> <span class="mf">5126.52362297</span><span class="p">,</span>    <span class="mf">66.93778845</span><span class="p">],</span>
+                                                       <span class="p">[</span> <span class="mf">5458.11430831</span><span class="p">,</span>    <span class="mf">51.92792211</span><span class="p">]])),</span> \
+                <span class="s1">&#39;Kinematics are different&#39;</span>
+    <span class="k">assert</span> <span class="n">numpy</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">fit_par</span><span class="p">[</span><span class="s1">&#39;KINERR&#39;</span><span class="p">],</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span> <span class="mf">1.9709821</span> <span class="p">,</span>  <span class="mf">1.85886101</span><span class="p">],</span>
+                                                          <span class="p">[</span> <span class="mf">1.44396882</span><span class="p">,</span>  <span class="mf">1.65099111</span><span class="p">],</span>
+                                                          <span class="p">[</span> <span class="mf">2.39500413</span><span class="p">,</span>  <span class="mf">2.34584906</span><span class="p">],</span>
+                                                          <span class="p">[</span> <span class="mf">2.13102942</span><span class="p">,</span>  <span class="mf">2.26898814</span><span class="p">],</span>
+                                                          <span class="p">[</span> <span class="mf">1.10522357</span><span class="p">,</span>  <span class="mf">1.11307583</span><span class="p">],</span>
+                                                          <span class="p">[</span> <span class="mf">0.</span>        <span class="p">,</span>  <span class="mf">0.</span>        <span class="p">],</span>
+                                                          <span class="p">[</span><span class="mf">25.50804271</span><span class="p">,</span> <span class="mf">30.41783466</span><span class="p">],</span>
+                                                          <span class="p">[</span> <span class="mf">4.46678658</span><span class="p">,</span>  <span class="mf">7.40489565</span><span class="p">]])),</span> \
+                <span class="s1">&#39;Kinematic errors are different&#39;</span>
+
+    <span class="c1"># Velocity dispersion corrections</span>
+    <span class="k">assert</span> <span class="n">numpy</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">fit_par</span><span class="p">[</span><span class="s1">&#39;SIGMACORR_SRES&#39;</span><span class="p">],</span>
+                          <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">24.03388208</span><span class="p">,</span> <span class="mf">11.76975482</span><span class="p">,</span> <span class="mf">27.80845511</span><span class="p">,</span> <span class="mf">38.76085538</span><span class="p">,</span>
+                                       <span class="mf">23.00081717</span><span class="p">,</span>  <span class="mf">0.</span>        <span class="p">,</span> <span class="mf">63.36255328</span><span class="p">,</span> <span class="mf">24.45657423</span><span class="p">])),</span> \
+                <span class="s1">&#39;SRES corrections are different&#39;</span>
+    <span class="k">assert</span> <span class="n">numpy</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">fit_par</span><span class="p">[</span><span class="s1">&#39;SIGMACORR_EMP&#39;</span><span class="p">],</span>
+                          <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">22.45805838</span><span class="p">,</span>  <span class="mf">0.</span>        <span class="p">,</span> <span class="mf">25.8235458</span> <span class="p">,</span> <span class="mf">38.03511325</span><span class="p">,</span>
+                                       <span class="mf">18.04372944</span><span class="p">,</span>  <span class="mf">0.</span>        <span class="p">,</span> <span class="mf">69.11989189</span><span class="p">,</span>  <span class="mf">0.</span>        <span class="p">])),</span> \
+                <span class="s1">&#39;EMP corrections are different&#39;</span>
+
+    <span class="c1"># Figures of merit</span>
+    <span class="k">assert</span> <span class="n">numpy</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">fit_par</span><span class="p">[</span><span class="s1">&#39;RCHI2&#39;</span><span class="p">],</span>
+                          <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.96704896</span><span class="p">,</span> <span class="mf">1.17507642</span><span class="p">,</span> <span class="mf">1.49607667</span><span class="p">,</span> <span class="mf">1.55779108</span><span class="p">,</span>
+                                       <span class="mf">2.55917584</span><span class="p">,</span> <span class="mf">0.</span>        <span class="p">,</span> <span class="mf">1.06372982</span><span class="p">,</span> <span class="mf">0.87424217</span><span class="p">])),</span> \
+                <span class="s1">&#39;Reduced chi-square different&#39;</span>
+
+    <span class="k">assert</span> <span class="n">numpy</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">fit_par</span><span class="p">[</span><span class="s1">&#39;RMS&#39;</span><span class="p">],</span>
+                          <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0337455</span> <span class="p">,</span> <span class="mf">0.0189093</span> <span class="p">,</span> <span class="mf">0.03541922</span><span class="p">,</span> <span class="mf">0.02358469</span><span class="p">,</span>
+                                       <span class="mf">0.04709133</span><span class="p">,</span> <span class="mf">0.</span>        <span class="p">,</span> <span class="mf">0.01608275</span><span class="p">,</span> <span class="mf">0.01622584</span><span class="p">])),</span> \
+                <span class="s1">&#39;RMS different&#39;</span>
+
+    <span class="k">assert</span> <span class="n">numpy</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">fit_par</span><span class="p">[</span><span class="s1">&#39;FRMS&#39;</span><span class="p">],</span>
+                          <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.01892738</span><span class="p">,</span> <span class="mf">0.02500785</span><span class="p">,</span> <span class="mf">0.02596966</span><span class="p">,</span> <span class="mf">0.03601668</span><span class="p">,</span>
+                                       <span class="mf">0.01834503</span><span class="p">,</span> <span class="mf">0.</span>        <span class="p">,</span> <span class="mf">8.59674419</span><span class="p">,</span> <span class="mf">0.18296954</span><span class="p">])),</span> \
+                <span class="s1">&#39;Fractional RMS different&#39;</span>
+
+    <span class="k">assert</span> <span class="n">numpy</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">fit_par</span><span class="p">[</span><span class="s1">&#39;ABSRESID&#39;</span><span class="p">][:,</span><span class="mi">2</span><span class="p">],</span>
+                          <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.06758258</span><span class="p">,</span> <span class="mf">0.03682331</span><span class="p">,</span> <span class="mf">0.06943672</span><span class="p">,</span> <span class="mf">0.0472579</span> <span class="p">,</span>
+                                       <span class="mf">0.09572067</span><span class="p">,</span> <span class="mf">0.</span>        <span class="p">,</span> <span class="mf">0.03088698</span><span class="p">,</span> <span class="mf">0.02879618</span><span class="p">])),</span> \
+                <span class="s1">&#39;Median absolute residual different&#39;</span></div>
+
+<span class="c1">#if __name__ == &#39;__main__&#39;:</span>
+    <span class="c1">#test_ppxffit()</span>
+
+</pre></div>
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, SDSS-IV/MaNGA Pipeline Group.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'2.2.2',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

@@ -1,5 +1,5 @@
-mangadap\.proc\.templatelibrary module
-======================================
+mangadap.proc.templatelibrary module
+====================================
 
 .. automodule:: mangadap.proc.templatelibrary
     :members:

@@ -1,5 +1,5 @@
-mangadap\.util\.parser module
-=============================
+mangadap.util.parser module
+===========================
 
 .. automodule:: mangadap.util.parser
     :members:
