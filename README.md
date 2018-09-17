@@ -34,17 +34,14 @@ full repo](#cloning-the-full-repo) below)
 
 There are a few ways to install (always from within the top-level directory of the repo):
 
- - To install the DAP, run::
-    `python3 setup.py install`
+ - To install the DAP, run: `python3 setup.py install`
 
-   On MacOSX, you may need to add `CC=clang`, i.e.:
-    `CC=clang python3 setup.py install`
+   On MacOSX, you may need to add `CC=clang`, i.e.: `CC=clang python3 setup.py install`
 
- - To install the DAP in a way that makes it easier to develop, run::
-    `python3 setup.py develop`
+ - To install the DAP in a way that makes it easier to develop, run: `python3 setup.py develop`
 
- - To install the DAP and update its dependencies as necessary, run::
-    `pip3 install -e .`
+ - To install the DAP and update its dependencies as necessary, run:
+   `pip3 install -e .`
 
 ----
 
