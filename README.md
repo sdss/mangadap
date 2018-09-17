@@ -77,6 +77,27 @@ below.
  - `$MANGADAP_VER` is only used to set the path names, not to select the
    specific version of the pipeline to use
 
+These environmental variables can be added to your `.bash_profile` file in your home directory or be included in a script that is sourced when you want to run the DAP.  The added lines to your `.bash_profile` file could look something like this:
+
+```
+export MANGA_SPECTRO_REDUX=/Volumes/MaNGA/redux
+export MANGA_SPECTRO_ANALYSIS=/Volumes/MaNGA/analysis
+
+export MANGADRP_VER=v2_4_3
+
+export MANGADAP_VER=2.2.1
+export MANGADAP_DIR=$HOME/Work/MaNGA/dap/repo/mangadap
+
+export MANGACORE_VER=trunk
+export MANGACORE_DIR=$HOME/Work/MaNGA/core/$MANGACORE_VER
+```
+
+**Note**: Some of these variables are also defined by Marvin; see
+(here)[https://sdss-marvin.readthedocs.io/en/stable/installation.html].
+It's possible to have both Marvin and the DAP point to the same
+directory, but beware that this may mean that some of the files get
+overwritten.
+
 ## Usage
 
 ## Citation
