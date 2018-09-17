@@ -49,6 +49,24 @@ The tests are rather lacking still, but you can test the installation using
 
 `python3 setup.py test`
 
+The tests may fail because of the specific versions of packages being
+used.  We continue to develop the tests to make them more robust to
+system-specific behavior.  For reference, the tests currently pass on
+the following system:
+
+```
+MacOSX 10.10
+Python 3.6.2
+GCC 4.2.1
+astropy==3.0.4
+numpy==1.15.1
+ppxf==6.7.12
+pydl==0.6.0
+pytest==3.4.0
+scipy==1.1.0
+vorbin==3.1.3
+```
+
 ----
 
 The DAP uses environmental variable to define the paths to specific data
