@@ -5,6 +5,8 @@
 # Hard-coded redshift corrections for plateTargets files.
 #
 # Revisions:
+#   14 Sep 2018: (KBW) Included redshift fixes based on differences
+#       between speczall-v2_4_3.fits MEAN_Z0 and NSA_Z; uses MEAN_Z0
 #------------------------------------------------------------------------
 
 typedef struct {
@@ -52,4 +54,15 @@ DAPZCORR  9675 12702 0.0
 DAPZCORR  9675 12703 0.0
 DAPZCORR  9675 12704 0.0
 DAPZCORR  9675 12705 0.0
+DAPZCORR  7443  3703 0.0131
+DAPZCORR  7992 12701 0.0679
+DAPZCORR  8158  3702 0.0379
+DAPZCORR  8258  9102 0.0613
+DAPZCORR  8333  3702 0.1093
+DAPZCORR  8443 12701 0.0288
+DAPZCORR  8461  6101 0.0270
+DAPZCORR  8618 12702 0.0709
+DAPZCORR  8719  9101 0.0083
+DAPZCORR  8937  3703 0.0618
+DAPZCORR  8943 12705 0.1249
 

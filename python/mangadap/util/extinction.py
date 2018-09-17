@@ -296,7 +296,7 @@ def reddening_vector_fm(wave, ebv, rv=None, coeffs=None):
         raise TypeError('Input reddening value must be a single float.')
 
     # Check the provided coefficients
-    if coeffs is not None and not isinstance(FMExtinctionCoefficients):
+    if coeffs is not None and not isinstance(coeffs, FMExtinctionCoefficients):
         raise TypeError('Coefficients must be provided by a FMExtinctionCoefficients object.')
 
     _rv = default_fm_rv() if rv is None else rv
@@ -460,7 +460,7 @@ class GalacticExtinction:
         else:
             self.rv = rv
 
-        self.coeffs = FMExtinctionCoefficients.from_Rv(_rv) \
+        self.coeffs = FMExtinctionCoefficients.from_Rv(self.rv) \
                             if coeffs is None and self.form == 'FM' else coeffs
 
         if self.wave is None or self.ebv is None:
