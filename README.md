@@ -93,7 +93,7 @@ export MANGACORE_DIR=$HOME/Work/MaNGA/core/$MANGACORE_VER
 ```
 
 **Note**: Some of these variables are also defined by Marvin; see
-(here)[https://sdss-marvin.readthedocs.io/en/stable/installation.html].
+[here](https://sdss-marvin.readthedocs.io/en/stable/installation.html).
 It's possible to have both Marvin and the DAP point to the same
 directory, but beware that this may mean that some of the files get
 overwritten.
