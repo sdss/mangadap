@@ -5,6 +5,7 @@ import astropy.constants
 from astropy.io import fits
 import matplotlib.pyplot as pl
 import matplotlib.cm as cm
+import matplotlib.colors as mcol
 
 from mangadap.dapfits import DAPCubeBitMask
 from mangadap.util.fileio import channel_dictionary
@@ -13,16 +14,16 @@ import pdb
 
 
 plate = 7443
-ifu = 6102
-nsa_redshift = 0.0280161
+ifu = 1902
+nsa_redshift = 0.0189259
 vel = nsa_redshift * astropy.constants.c.to('km/s').value
 plate_str = "{:.0f}".format(plate)
 ifu_str = "{:.0f}".format(ifu)
 outfil = 'check_new_binning_scheme_'+plate_str+'-'+ifu_str+'.pdf'
 
-analysis_path = os.getcwd()+'/Aperture-GAU-MILESHC/'
-fits_cube_fil = analysis_path+plate_str+'/'+ifu_str+'/manga-'+plate_str+'-'+ifu_str+'-LOGCUBE-Aperture-GAU-MILESHC.fits.gz'
-fits_maps_fil = analysis_path+plate_str+'/'+ifu_str+'/manga-'+plate_str+'-'+ifu_str+'-MAPS-Aperture-GAU-MILESHC.fits.gz'
+analysis_path = os.getcwd()+'/5x5n-GAU-MILESHC/'
+fits_cube_fil = analysis_path+plate_str+'/'+ifu_str+'/manga-'+plate_str+'-'+ifu_str+'-LOGCUBE-5x5n-GAU-MILESHC.fits.gz'
+fits_maps_fil = analysis_path+plate_str+'/'+ifu_str+'/manga-'+plate_str+'-'+ifu_str+'-MAPS-5x5n-GAU-MILESHC.fits.gz'
 #pdb.set_trace()
 
 # Read in CUBE
@@ -57,15 +58,18 @@ stellar_vfield_ivar = np.ma.MaskedArray(hdu_maps['STELLAR_VEL_IVAR'].data,
                                         mask=hdu_maps[mask_ext].data > 0)
 
 
-# Plot map of binids, emission line velocities, etc
+#Plot map of binids, emission line velocities, etc
 fig, axes = pl.subplots(1, 3, figsize=(12,4))
-mapplot.plot(value=binid, title='Bin ID', cmap=cm.tab10, fig=fig, ax=axes[0], cbrange=[-1,3])
+
+rand_cmap = mcol.ListedColormap(np.random.rand(400,3))
+mapplot.plot(value=binid, title='Bin ID', cmap=rand_cmap, fig=fig, ax=axes[0], cbrange=[0,315])
 
 mapplot.plot(value=emission_vfield, title='Emission Line Velocity', cmap=cm.coolwarm,
-             cbrange=[-150,150], fig=fig, ax=axes[1])
+             cbrange=[-120,120], fig=fig, ax=axes[1])
 
 mapplot.plot(value=stellar_vfield, title='Stellar Velocity', cmap=cm.coolwarm,
-             cbrange=[-150,150], fig=fig, ax=axes[2])
+             cbrange=[-120,120], fig=fig, ax=axes[2])
 
 fig.tight_layout()
 pl.savefig(outfil)
+pdb.set_trace()
