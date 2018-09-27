@@ -10,7 +10,6 @@ import numpy
 from mangadap.util.extinction import GalacticExtinction
 
 def test_ccm():
-
     ccm = GalacticExtinction(form='CCM')
 
     Av = 0.068
