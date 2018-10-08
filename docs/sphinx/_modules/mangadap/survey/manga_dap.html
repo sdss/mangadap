@@ -36,7 +36,7 @@
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
     <link rel="top" title="mangadap 2.2.2 documentation" href="../../../index.html"/>
-        <link rel="up" title="Module code" href="../../index.html"/> 
+        <link rel="up" title="mangadap" href="../../mangadap.html"/> 
 
   
   <script src="../../../_static/js/modernizr.min.js"></script>
@@ -138,6 +138,8 @@
         
           <li><a href="../../index.html">Module code</a> &raquo;</li>
         
+          <li><a href="../../mangadap.html">mangadap</a> &raquo;</li>
+        
       <li>mangadap.survey.manga_dap</li>
     
     
@@ -193,7 +195,6 @@
 <span class="sd">        from ..config.defaults import default_analysis_path, default_dap_method</span>
 <span class="sd">        from ..config.defaults import default_dap_method_path</span>
 <span class="sd">        from ..util.log import init_DAP_logging, module_logging, log_output</span>
-<span class="sd">        from ..util.version import __version__</span>
 <span class="sd">        from ..drpfits import DRPFits</span>
 <span class="sd">        from ..par.obsinput import ObsInputPar</span>
 <span class="sd">        from ..par.analysisplan import AnalysisPlanSet</span>
@@ -233,11 +234,12 @@
 
 <span class="kn">import</span> <span class="nn">astropy.constants</span>
 
+<span class="kn">from</span> <span class="nn">mangadap</span> <span class="k">import</span> <span class="n">__version__</span>
+
 <span class="kn">from</span> <span class="nn">..config.defaults</span> <span class="k">import</span> <span class="n">default_drp_version</span><span class="p">,</span> <span class="n">default_dap_version</span>
 <span class="kn">from</span> <span class="nn">..config.defaults</span> <span class="k">import</span> <span class="n">default_analysis_path</span><span class="p">,</span> <span class="n">default_dap_method</span>
 <span class="kn">from</span> <span class="nn">..config.defaults</span> <span class="k">import</span> <span class="n">default_dap_method_path</span>
 <span class="kn">from</span> <span class="nn">..util.log</span> <span class="k">import</span> <span class="n">init_DAP_logging</span><span class="p">,</span> <span class="n">module_logging</span><span class="p">,</span> <span class="n">log_output</span>
-<span class="kn">from</span> <span class="nn">..util.version</span> <span class="k">import</span> <span class="n">__version__</span>
 <span class="kn">from</span> <span class="nn">..drpfits</span> <span class="k">import</span> <span class="n">DRPFits</span>
 <span class="kn">from</span> <span class="nn">..par.obsinput</span> <span class="k">import</span> <span class="n">ObsInputPar</span>
 <span class="kn">from</span> <span class="nn">..par.analysisplan</span> <span class="k">import</span> <span class="n">AnalysisPlanSet</span>
@@ -317,7 +319,7 @@
 <span class="sd">            :func:`mangadap.config.defaults.default_dap_version`.</span>
 <span class="sd">        dapsrc (str): (**Optional**) Source directory of the DAP.</span>
 <span class="sd">            Default determined by</span>
-<span class="sd">            :func:`mangadap.config.defaults.default_dap_source`.</span>
+<span class="sd">            :func:`mangadap.config.defaults.dap_source_dir`.</span>
 <span class="sd">        analysis_path (str) : (**Optional**) Top-level directory for the DAP</span>
 <span class="sd">            output data; default is defined by</span>
 <span class="sd">            :func:`mangadap.config.defaults.default_analysis_path`.</span>

@@ -100,7 +100,7 @@
 <li class="toctree-l3"><a class="reference internal" href="mangadap.par.html">mangadap.par package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.proc.html">mangadap.proc package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.survey.html">mangadap.survey package</a></li>
-<li class="toctree-l3"><a class="reference internal" href="mangadap.test.html">mangadap.test package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.tests.html">mangadap.tests package</a></li>
 <li class="toctree-l3 current"><a class="reference internal" href="mangadap.util.html">mangadap.util package</a><ul class="current">
 <li class="toctree-l4 current"><a class="reference internal" href="mangadap.util.html#submodules">Submodules</a></li>
 <li class="toctree-l4"><a class="reference internal" href="mangadap.util.html#module-mangadap.util">Module contents</a></li>
@@ -192,7 +192,7 @@
 <dt><em>Source location</em>:</dt>
 <dd>$MANGADAP_DIR/python/mangadap/util/parser.py</dd>
 <dt><em>Imports and python version compliance</em>:</dt>
-<dd><div class="first last highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<dd><div class="first last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
@@ -210,7 +210,7 @@
 <p class="first admonition-title">Todo</p>
 <ul class="last simple">
 <li>Add function that will parse the default MaNGA fits file name (see
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_manga_fits_root" title="mangadap.config.defaults.default_manga_fits_root"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_manga_fits_root()</span></code></a>).</li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_manga_fits_root" title="mangadap.config.defaults.default_manga_fits_root"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_manga_fits_root()</span></code></a>).</li>
 </ul>
 </div>
 <dl class="docutils">
@@ -218,15 +218,15 @@
 <dd><div class="first last line-block">
 <div class="line"><strong>2015</strong>: Original implementation by K. Westfall (KBW)</div>
 <div class="line"><strong>20 May 2015</strong>: (KBW) Documentation and Sphinx tests</div>
-<div class="line"><strong>04 Jun 2015</strong>: (KBW) Added <a class="reference internal" href="#mangadap.util.parser.parse_drp_file_name" title="mangadap.util.parser.parse_drp_file_name"><code class="xref py py-func docutils literal"><span class="pre">parse_drp_file_name()</span></code></a>,
-<a class="reference internal" href="#mangadap.util.parser.parse_dap_file_name" title="mangadap.util.parser.parse_dap_file_name"><code class="xref py py-func docutils literal"><span class="pre">parse_dap_file_name()</span></code></a></div>
+<div class="line"><strong>04 Jun 2015</strong>: (KBW) Added <a class="reference internal" href="#mangadap.util.parser.parse_drp_file_name" title="mangadap.util.parser.parse_drp_file_name"><code class="xref py py-func docutils literal notranslate"><span class="pre">parse_drp_file_name()</span></code></a>,
+<a class="reference internal" href="#mangadap.util.parser.parse_dap_file_name" title="mangadap.util.parser.parse_dap_file_name"><code class="xref py py-func docutils literal notranslate"><span class="pre">parse_dap_file_name()</span></code></a></div>
 </div>
 </dd>
 </dl>
 <dl class="class">
 <dt id="mangadap.util.parser.DefaultConfig">
 <em class="property">class </em><code class="descclassname">mangadap.util.parser.</code><code class="descname">DefaultConfig</code><span class="sig-paren">(</span><em>f=None</em>, <em>interpolate=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/parser.html#DefaultConfig"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.parser.DefaultConfig" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>A wrapper for the ConfigParser class that handles None values and
 provides some convenience functions.</p>
 <dl class="method">
@@ -283,7 +283,7 @@ provides some convenience functions.</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>inp</strong> (<em>str</em><em> or </em><em>list</em>) – Input string with a list of comma-separated values</li>
 <li><strong>evaluate</strong> (<em>bool</em>) – (Optional) Attempt to evaluate the elements in
-the list using <code class="xref py py-func docutils literal"><span class="pre">eval()</span></code>.</li>
+the list using <code class="xref py py-func docutils literal notranslate"><span class="pre">eval()</span></code>.</li>
 <li><strong>quiet</strong> (<em>bool</em>) – (Optional) Suppress terminal output</li>
 </ul>
 </td>
@@ -302,7 +302,7 @@ the list using <code class="xref py py-func docutils literal"><span class="pre">
 <dt id="mangadap.util.parser.list_to_csl_string">
 <code class="descclassname">mangadap.util.parser.</code><code class="descname">list_to_csl_string</code><span class="sig-paren">(</span><em>flist</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/parser.html#list_to_csl_string"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.parser.list_to_csl_string" title="Permalink to this definition">¶</a></dt>
 <dd><p>Convert a list to a comma-separated string; i.e. perform the inverse
-of <a class="reference internal" href="#mangadap.util.parser.arginp_to_list" title="mangadap.util.parser.arginp_to_list"><code class="xref py py-func docutils literal"><span class="pre">arginp_to_list()</span></code></a>.</p>
+of <a class="reference internal" href="#mangadap.util.parser.arginp_to_list" title="mangadap.util.parser.arginp_to_list"><code class="xref py py-func docutils literal notranslate"><span class="pre">arginp_to_list()</span></code></a>.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -310,7 +310,7 @@ of <a class="reference internal" href="#mangadap.util.parser.arginp_to_list" tit
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>flist</strong> (<em>list</em>) – List to convert to a comma-separated string</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">String with the values in the input list converted to
-string, using <code class="xref py py-func docutils literal"><span class="pre">str()</span></code>, separated by commas</td>
+string, using <code class="xref py py-func docutils literal notranslate"><span class="pre">str()</span></code>, separated by commas</td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">str</td>
 </tr>
@@ -339,8 +339,8 @@ from the name of the file.</p>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
-<li><code class="xref py py-exc docutils literal"><span class="pre">TypeError</span></code> – Raised if <em>name</em> is not a string.</li>
-<li><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if if the file name does not look like a DRP
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">TypeError</span></code> – Raised if <em>name</em> is not a string.</li>
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if if the file name does not look like a DRP
 file because it does not include ‘manga-‘, ‘-BIN’, or
 ‘.fits’.</li>
 </ul>
@@ -370,8 +370,8 @@ of the DRP file pulled from the file name.</p>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
-<li><code class="xref py py-exc docutils literal"><span class="pre">TypeError</span></code> – Raised if <em>name</em> is not a string.</li>
-<li><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if if the file name does not look like a DRP
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">TypeError</span></code> – Raised if <em>name</em> is not a string.</li>
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if if the file name does not look like a DRP
 file because it does not include ‘manga-‘, ‘-LOG’, or
 ‘.fits.gz’.</li>
 </ul>

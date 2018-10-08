@@ -104,7 +104,7 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.survey.html">mangadap.survey package</a></li>
-<li class="toctree-l3"><a class="reference internal" href="mangadap.test.html">mangadap.test package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.tests.html">mangadap.tests package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.util.html">mangadap.util package</a></li>
 </ul>
 </li>
@@ -194,7 +194,7 @@ once per DRP data file.</p>
 <dt><em>Source location</em>:</dt>
 <dd>$MANGADAP_DIR/python/mangadap/proc/reductionassessments.py</dd>
 <dt><em>Imports and python version compliance</em>:</dt>
-<dd><div class="first last highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<dd><div class="first last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
@@ -216,7 +216,7 @@ once per DRP data file.</p>
 
 <span class="kn">from</span> <span class="nn">..drpfits</span> <span class="k">import</span> <span class="n">DRPFits</span>
 <span class="kn">from</span> <span class="nn">..par.parset</span> <span class="k">import</span> <span class="n">ParSet</span>
-<span class="kn">from</span> <span class="nn">..config.defaults</span> <span class="k">import</span> <span class="n">default_dap_source</span><span class="p">,</span> <span class="n">default_dap_common_path</span>
+<span class="kn">from</span> <span class="nn">..config.defaults</span> <span class="k">import</span> <span class="n">dap_source_dir</span><span class="p">,</span> <span class="n">default_dap_common_path</span>
 <span class="kn">from</span> <span class="nn">..config.defaults</span> <span class="k">import</span> <span class="n">default_dap_file_name</span>
 <span class="kn">from</span> <span class="nn">..util.covariance</span> <span class="k">import</span> <span class="n">Covariance</span>
 <span class="kn">from</span> <span class="nn">..util.geometry</span> <span class="k">import</span> <span class="n">SemiMajorAxisCoo</span>
@@ -235,7 +235,7 @@ once per DRP data file.</p>
 <div class="line"><strong>11 May 2016</strong>: (KBW) Switch to using
 <a class="reference external" href="http://pydl.readthedocs.io/en/stable/api/pydl.goddard.astro.airtovac.html#pydl.goddard.astro.airtovac">pydl.goddard.astro.airtovac</a> instead of internal function</div>
 <div class="line"><strong>19 May 2016</strong>: (KBW) Added loggers and quiet keyword arguments
-to <a class="reference internal" href="#mangadap.proc.reductionassessments.ReductionAssessment" title="mangadap.proc.reductionassessments.ReductionAssessment"><code class="xref py py-class docutils literal"><span class="pre">ReductionAssessment</span></code></a>, removed verbose</div>
+to <a class="reference internal" href="#mangadap.proc.reductionassessments.ReductionAssessment" title="mangadap.proc.reductionassessments.ReductionAssessment"><code class="xref py py-class docutils literal notranslate"><span class="pre">ReductionAssessment</span></code></a>, removed verbose</div>
 <div class="line"><strong>23 Feb 2017</strong>: (KBW) Use DAPFitsUtil read and write functions.</div>
 <div class="line"><strong>27 Feb 2017</strong>: (KBW) Use DefaultConfig.</div>
 <div class="line"><strong>17 May 2017</strong>: (KBW) Added ability to use a response function
@@ -246,11 +246,11 @@ for the flux statistics.</div>
 <dl class="class">
 <dt id="mangadap.proc.reductionassessments.ReductionAssessment">
 <em class="property">class </em><code class="descclassname">mangadap.proc.reductionassessments.</code><code class="descname">ReductionAssessment</code><span class="sig-paren">(</span><em>method_key</em>, <em>drpf</em>, <em>pa=0.0</em>, <em>ell=0.0</em>, <em>method_list=None</em>, <em>dapsrc=None</em>, <em>dapver=None</em>, <em>analysis_path=None</em>, <em>directory_path=None</em>, <em>output_file=None</em>, <em>hardcopy=True</em>, <em>symlink_dir=None</em>, <em>clobber=False</em>, <em>checksum=False</em>, <em>loggers=None</em>, <em>quiet=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/reductionassessments.html#ReductionAssessment"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.reductionassessments.ReductionAssessment" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Object used to perform and store assessments of a DRP file needed
 for handling of the data by the DAP.  These assessments need only be
 done once per DRP data file.</p>
-<p>See <a class="reference internal" href="#mangadap.proc.reductionassessments.ReductionAssessment.compute" title="mangadap.proc.reductionassessments.ReductionAssessment.compute"><code class="xref py py-func docutils literal"><span class="pre">compute()</span></code></a> for the provided data.</p>
+<p>See <a class="reference internal" href="#mangadap.proc.reductionassessments.ReductionAssessment.compute" title="mangadap.proc.reductionassessments.ReductionAssessment.compute"><code class="xref py py-func docutils literal notranslate"><span class="pre">compute()</span></code></a> for the provided data.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -258,38 +258,38 @@ done once per DRP data file.</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>method_key</strong> (<em>str</em>) – Keyword selecting the assessment method to
 use.</li>
-<li><strong>drpf</strong> (<a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal"><span class="pre">mangadap.drpfits.DRPFits</span></code></a>) – DRP file (object) to
+<li><strong>drpf</strong> (<a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.drpfits.DRPFits</span></code></a>) – DRP file (object) to
 use for the assessments.</li>
 <li><strong>pa</strong> (<em>float</em>) – (<strong>Optional</strong>) On-sky position angle of the major
 axis used to calculate elliptical, semi-major-axis
 coordinates, defined as the angle from North through East
-and denoted <span class="math">\(\phi_0\)</span>.  Default is 0.0.</li>
+and denoted <span class="math notranslate nohighlight">\(\phi_0\)</span>.  Default is 0.0.</li>
 <li><strong>ell</strong> (<em>float</em>) – (<strong>Optional</strong>) Ellipticity defined as
-<span class="math">\(\varepsilon=1-b/a\)</span>, based on the semi-minor to
-semi-major axis ratio (<span class="math">\(b/a\)</span>) of the isophotal ellipse
+<span class="math notranslate nohighlight">\(\varepsilon=1-b/a\)</span>, based on the semi-minor to
+semi-major axis ratio (<span class="math notranslate nohighlight">\(b/a\)</span>) of the isophotal ellipse
 used to calculate elliptical, semi-major-axis coordinates.
 Default is 0.0.</li>
 <li><strong>method_list</strong> (<em>list</em>) – (<strong>Optional</strong>) List of
-<a class="reference internal" href="#mangadap.proc.reductionassessments.ReductionAssessmentDef" title="mangadap.proc.reductionassessments.ReductionAssessmentDef"><code class="xref py py-class docutils literal"><span class="pre">ReductionAssessmentDef</span></code></a> objects that define the
+<a class="reference internal" href="#mangadap.proc.reductionassessments.ReductionAssessmentDef" title="mangadap.proc.reductionassessments.ReductionAssessmentDef"><code class="xref py py-class docutils literal notranslate"><span class="pre">ReductionAssessmentDef</span></code></a> objects that define the
 parameters required to perform the assessments of the DRP
 file.  The <em>method_key</em> must select one of these objects.
 Default is to construct list using
-<a class="reference internal" href="#mangadap.proc.reductionassessments.available_reduction_assessments" title="mangadap.proc.reductionassessments.available_reduction_assessments"><code class="xref py py-func docutils literal"><span class="pre">available_reduction_assessments()</span></code></a>.</li>
+<a class="reference internal" href="#mangadap.proc.reductionassessments.available_reduction_assessments" title="mangadap.proc.reductionassessments.available_reduction_assessments"><code class="xref py py-func docutils literal notranslate"><span class="pre">available_reduction_assessments()</span></code></a>.</li>
 <li><strong>dapver</strong> (<em>str</em>) – (<strong>Optional</strong>) DAP version, which is used to
 define the default DAP analysis path.  Default is defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_version" title="mangadap.config.defaults.default_dap_version"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_version()</span></code></a></li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_version" title="mangadap.config.defaults.default_dap_version"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_dap_version()</span></code></a></li>
 <li><strong>analysis_path</strong> (<em>str</em>) – (<strong>Optional</strong>) The path to the top level
 directory containing the DAP output files for a given DRP
 and DAP version.  Default is defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_analysis_path" title="mangadap.config.defaults.default_analysis_path"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_analysis_path()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_analysis_path" title="mangadap.config.defaults.default_analysis_path"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_analysis_path()</span></code></a>.</li>
 <li><strong>directory_path</strong> (<em>str</em>) – (<strong>Optional</strong>) The exact path for the
 output file.  Default is defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_common_path" title="mangadap.config.defaults.default_dap_common_path"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_common_path()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_common_path" title="mangadap.config.defaults.default_dap_common_path"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_dap_common_path()</span></code></a>.</li>
 <li><strong>output_file</strong> (<em>str</em>) – (<strong>Optional</strong>) The name of the file for the
 computed assessments.  The full path of the output file will
-be <a class="reference internal" href="#mangadap.proc.reductionassessments.ReductionAssessment.directory_path" title="mangadap.proc.reductionassessments.ReductionAssessment.directory_path"><code class="xref py py-attr docutils literal"><span class="pre">directory_path</span></code></a>/<a class="reference internal" href="#mangadap.proc.reductionassessments.ReductionAssessment.output_file" title="mangadap.proc.reductionassessments.ReductionAssessment.output_file"><code class="xref py py-attr docutils literal"><span class="pre">output_file</span></code></a>.  Default is
+be <a class="reference internal" href="#mangadap.proc.reductionassessments.ReductionAssessment.directory_path" title="mangadap.proc.reductionassessments.ReductionAssessment.directory_path"><code class="xref py py-attr docutils literal notranslate"><span class="pre">directory_path</span></code></a>/<a class="reference internal" href="#mangadap.proc.reductionassessments.ReductionAssessment.output_file" title="mangadap.proc.reductionassessments.ReductionAssessment.output_file"><code class="xref py py-attr docutils literal notranslate"><span class="pre">output_file</span></code></a>.  Default is
 defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_file_name" title="mangadap.config.defaults.default_dap_file_name"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_file_name()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_file_name" title="mangadap.config.defaults.default_dap_file_name"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_dap_file_name()</span></code></a>.</li>
 <li><strong>hardcopy</strong> (<em>bool</em>) – (<strong>Optional</strong>) Flag to write the data to a fits
 file.  Default is True.</li>
 <li><strong>symlink_dir</strong> (<em>str</em>) – (<strong>Optional</strong>) Create a symlink to the file
@@ -301,7 +301,7 @@ output file to be overwritten.  Default is False.</li>
 reading the data.</li>
 <li><strong>loggers</strong> (<em>list</em>) – (<strong>Optional</strong>) List of <a class="reference external" href="https://docs.python.org/3/library/logging.html">logging.Logger</a> objects
 to log progress; ignored if quiet=True.  Logging is done
-using <a class="reference internal" href="mangadap.util.log.html#mangadap.util.log.log_output" title="mangadap.util.log.log_output"><code class="xref py py-func docutils literal"><span class="pre">mangadap.util.log.log_output()</span></code></a>.  Default is no
+using <a class="reference internal" href="mangadap.util.log.html#mangadap.util.log.log_output" title="mangadap.util.log.log_output"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.util.log.log_output()</span></code></a>.  Default is no
 logging.</li>
 <li><strong>quiet</strong> (<em>bool</em>) – (<strong>Optional</strong>) Suppress all terminal and logging
 output.  Default is False.</li>
@@ -313,14 +313,14 @@ output.  Default is False.</li>
 <dl class="attribute">
 <dt id="mangadap.proc.reductionassessments.ReductionAssessment.method">
 <code class="descname">method</code><a class="headerlink" href="#mangadap.proc.reductionassessments.ReductionAssessment.method" title="Permalink to this definition">¶</a></dt>
-<dd><p><a class="reference internal" href="#mangadap.proc.reductionassessments.ReductionAssessmentDef" title="mangadap.proc.reductionassessments.ReductionAssessmentDef"><code class="xref py py-class docutils literal"><span class="pre">ReductionAssessmentDef</span></code></a> – Parameters defining the
+<dd><p><a class="reference internal" href="#mangadap.proc.reductionassessments.ReductionAssessmentDef" title="mangadap.proc.reductionassessments.ReductionAssessmentDef"><code class="xref py py-class docutils literal notranslate"><span class="pre">ReductionAssessmentDef</span></code></a> – Parameters defining the
 method to use for the reduction assessments.</p>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="mangadap.proc.reductionassessments.ReductionAssessment.drpf">
 <code class="descname">drpf</code><a class="headerlink" href="#mangadap.proc.reductionassessments.ReductionAssessment.drpf" title="Permalink to this definition">¶</a></dt>
-<dd><p><a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal"><span class="pre">mangadap.drpfits.DRPFits</span></code></a> – DRP file (object) with
+<dd><p><a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.drpfits.DRPFits</span></code></a> – DRP file (object) with
 which the template library is associated for analysis</p>
 </dd></dl>
 
@@ -330,15 +330,15 @@ which the template library is associated for analysis</p>
 <dd><p><em>float</em> – On-sky position angle of the major axis used to
 calculate elliptical, semi-major-axis coordinates, defined
 as the angle from North through East and denoted
-<span class="math">\(\phi_0\)</span>.</p>
+<span class="math notranslate nohighlight">\(\phi_0\)</span>.</p>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="mangadap.proc.reductionassessments.ReductionAssessment.ell">
 <code class="descname">ell</code><a class="headerlink" href="#mangadap.proc.reductionassessments.ReductionAssessment.ell" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>float</em> – Ellipticity defined as <span class="math">\(\varepsilon=1-b/a\)</span>,
+<dd><p><em>float</em> – Ellipticity defined as <span class="math notranslate nohighlight">\(\varepsilon=1-b/a\)</span>,
 based on the semi-minor to semi-major axis ratio
-(<span class="math">\(b/a\)</span>) of the isophotal ellipse used to calculate
+(<span class="math notranslate nohighlight">\(b/a\)</span>) of the isophotal ellipse used to calculate
 elliptical, semi-major-axis coordinates.</p>
 </dd></dl>
 
@@ -347,7 +347,7 @@ elliptical, semi-major-axis coordinates.</p>
 <code class="descname">directory_path</code><a class="headerlink" href="#mangadap.proc.reductionassessments.ReductionAssessment.directory_path" title="Permalink to this definition">¶</a></dt>
 <dd><p><em>str</em> – The exact path for the output file.
 Default is defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_common_path" title="mangadap.config.defaults.default_dap_common_path"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_common_path()</span></code></a>.</p>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_common_path" title="mangadap.config.defaults.default_dap_common_path"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_dap_common_path()</span></code></a>.</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -355,8 +355,8 @@ Default is defined by
 <code class="descname">output_file</code><a class="headerlink" href="#mangadap.proc.reductionassessments.ReductionAssessment.output_file" title="Permalink to this definition">¶</a></dt>
 <dd><p><em>str</em> – The name of the file for the computed
 assessments.  The full path of the output file will be
-<a class="reference internal" href="#mangadap.proc.reductionassessments.ReductionAssessment.directory_path" title="mangadap.proc.reductionassessments.ReductionAssessment.directory_path"><code class="xref py py-attr docutils literal"><span class="pre">directory_path</span></code></a>/<a class="reference internal" href="#mangadap.proc.reductionassessments.ReductionAssessment.output_file" title="mangadap.proc.reductionassessments.ReductionAssessment.output_file"><code class="xref py py-attr docutils literal"><span class="pre">output_file</span></code></a>.  Default is
-defined by <a class="reference internal" href="#mangadap.proc.reductionassessments.ReductionAssessment._set_paths" title="mangadap.proc.reductionassessments.ReductionAssessment._set_paths"><code class="xref py py-func docutils literal"><span class="pre">_set_paths()</span></code></a>.</p>
+<a class="reference internal" href="#mangadap.proc.reductionassessments.ReductionAssessment.directory_path" title="mangadap.proc.reductionassessments.ReductionAssessment.directory_path"><code class="xref py py-attr docutils literal notranslate"><span class="pre">directory_path</span></code></a>/<a class="reference internal" href="#mangadap.proc.reductionassessments.ReductionAssessment.output_file" title="mangadap.proc.reductionassessments.ReductionAssessment.output_file"><code class="xref py py-attr docutils literal notranslate"><span class="pre">output_file</span></code></a>.  Default is
+defined by <a class="reference internal" href="#mangadap.proc.reductionassessments.ReductionAssessment._set_paths" title="mangadap.proc.reductionassessments.ReductionAssessment._set_paths"><code class="xref py py-func docutils literal notranslate"><span class="pre">_set_paths()</span></code></a>.</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -382,7 +382,7 @@ data, with columns as described above.</p>
 <dl class="attribute">
 <dt id="mangadap.proc.reductionassessments.ReductionAssessment.correlation">
 <code class="descname">correlation</code><a class="headerlink" href="#mangadap.proc.reductionassessments.ReductionAssessment.correlation" title="Permalink to this definition">¶</a></dt>
-<dd><p><a class="reference internal" href="mangadap.util.covariance.html#mangadap.util.covariance.Covariance" title="mangadap.util.covariance.Covariance"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.covariance.Covariance</span></code></a> – Covariance matrix for the mean flux measurements, if
+<dd><p><a class="reference internal" href="mangadap.util.covariance.html#mangadap.util.covariance.Covariance" title="mangadap.util.covariance.Covariance"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.covariance.Covariance</span></code></a> – Covariance matrix for the mean flux measurements, if
 calculated.</p>
 </dd></dl>
 
@@ -391,7 +391,7 @@ calculated.</p>
 <code class="descname">loggers</code><a class="headerlink" href="#mangadap.proc.reductionassessments.ReductionAssessment.loggers" title="Permalink to this definition">¶</a></dt>
 <dd><p><em>list</em> – List of <a class="reference external" href="https://docs.python.org/3/library/logging.html">logging.Logger</a> objects to log
 progress; ignored if quiet=True.  Logging is done using
-<a class="reference internal" href="mangadap.util.log.html#mangadap.util.log.log_output" title="mangadap.util.log.log_output"><code class="xref py py-func docutils literal"><span class="pre">mangadap.util.log.log_output()</span></code></a>.</p>
+<a class="reference internal" href="mangadap.util.log.html#mangadap.util.log.log_output" title="mangadap.util.log.log_output"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.util.log.log_output()</span></code></a>.</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -404,8 +404,8 @@ progress; ignored if quiet=True.  Logging is done using
 <dt id="mangadap.proc.reductionassessments.ReductionAssessment._define_method">
 <code class="descname">_define_method</code><span class="sig-paren">(</span><em>method_key</em>, <em>method_list=None</em>, <em>dapsrc=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/reductionassessments.html#ReductionAssessment._define_method"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.reductionassessments.ReductionAssessment._define_method" title="Permalink to this definition">¶</a></dt>
 <dd><p>Select the assessment method from the provided list.  Used to
-set <a class="reference internal" href="#mangadap.proc.reductionassessments.ReductionAssessment.method" title="mangadap.proc.reductionassessments.ReductionAssessment.method"><code class="xref py py-attr docutils literal"><span class="pre">method</span></code></a>; see
-<a class="reference internal" href="mangadap.proc.util.html#mangadap.proc.util.select_proc_method" title="mangadap.proc.util.select_proc_method"><code class="xref py py-func docutils literal"><span class="pre">mangadap.proc.util.select_proc_method()</span></code></a>.</p>
+set <a class="reference internal" href="#mangadap.proc.reductionassessments.ReductionAssessment.method" title="mangadap.proc.reductionassessments.ReductionAssessment.method"><code class="xref py py-attr docutils literal notranslate"><span class="pre">method</span></code></a>; see
+<a class="reference internal" href="mangadap.proc.util.html#mangadap.proc.util.select_proc_method" title="mangadap.proc.util.select_proc_method"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.proc.util.select_proc_method()</span></code></a>.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -413,13 +413,13 @@ set <a class="reference internal" href="#mangadap.proc.reductionassessments.Redu
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>method_key</strong> (<em>str</em>) – Keyword of the selected method.  Available
 methods are provided by
-<a class="reference internal" href="#mangadap.proc.reductionassessments.available_reduction_assessments" title="mangadap.proc.reductionassessments.available_reduction_assessments"><code class="xref py py-func docutils literal"><span class="pre">available_reduction_assessments()</span></code></a></li>
+<a class="reference internal" href="#mangadap.proc.reductionassessments.available_reduction_assessments" title="mangadap.proc.reductionassessments.available_reduction_assessments"><code class="xref py py-func docutils literal notranslate"><span class="pre">available_reduction_assessments()</span></code></a></li>
 <li><strong>method_list</strong> (<em>list</em>) – (<strong>Optional</strong>) List of
-<a class="reference internal" href="#mangadap.proc.reductionassessments.ReductionAssessmentDef" title="mangadap.proc.reductionassessments.ReductionAssessmentDef"><code class="xref py py-class docutils literal"><span class="pre">ReductionAssessmentDef</span></code></a> objects that define the
+<a class="reference internal" href="#mangadap.proc.reductionassessments.ReductionAssessmentDef" title="mangadap.proc.reductionassessments.ReductionAssessmentDef"><code class="xref py py-class docutils literal notranslate"><span class="pre">ReductionAssessmentDef</span></code></a> objects that define the
 parameters required to assess the reduced data.</li>
 <li><strong>dapsrc</strong> (<em>str</em>) – (<strong>Optional</strong>) Root path to the DAP source
 directory.  If not provided, the default is defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_source" title="mangadap.config.defaults.default_dap_source"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_source()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.dap_source_dir" title="mangadap.config.defaults.dap_source_dir"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.dap_source_dir()</span></code></a>.</li>
 </ul>
 </td>
 </tr>
@@ -442,24 +442,24 @@ extension.</p>
 <dl class="method">
 <dt id="mangadap.proc.reductionassessments.ReductionAssessment._set_paths">
 <code class="descname">_set_paths</code><span class="sig-paren">(</span><em>directory_path</em>, <em>dapver</em>, <em>analysis_path</em>, <em>output_file</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/reductionassessments.html#ReductionAssessment._set_paths"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.reductionassessments.ReductionAssessment._set_paths" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set the I/O paths.  Used to set <a class="reference internal" href="#mangadap.proc.reductionassessments.ReductionAssessment.directory_path" title="mangadap.proc.reductionassessments.ReductionAssessment.directory_path"><code class="xref py py-attr docutils literal"><span class="pre">directory_path</span></code></a> and
-<a class="reference internal" href="#mangadap.proc.reductionassessments.ReductionAssessment.output_file" title="mangadap.proc.reductionassessments.ReductionAssessment.output_file"><code class="xref py py-attr docutils literal"><span class="pre">output_file</span></code></a>.  If not provided, the defaults are set
+<dd><p>Set the I/O paths.  Used to set <a class="reference internal" href="#mangadap.proc.reductionassessments.ReductionAssessment.directory_path" title="mangadap.proc.reductionassessments.ReductionAssessment.directory_path"><code class="xref py py-attr docutils literal notranslate"><span class="pre">directory_path</span></code></a> and
+<a class="reference internal" href="#mangadap.proc.reductionassessments.ReductionAssessment.output_file" title="mangadap.proc.reductionassessments.ReductionAssessment.output_file"><code class="xref py py-attr docutils literal notranslate"><span class="pre">output_file</span></code></a>.  If not provided, the defaults are set
 using, respectively,
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_common_path" title="mangadap.config.defaults.default_dap_common_path"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_common_path()</span></code></a> and
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_file_name" title="mangadap.config.defaults.default_dap_file_name"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_file_name()</span></code></a>.</p>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_common_path" title="mangadap.config.defaults.default_dap_common_path"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_dap_common_path()</span></code></a> and
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_file_name" title="mangadap.config.defaults.default_dap_file_name"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_dap_file_name()</span></code></a>.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>directory_path</strong> (<em>str</em>) – The exact path to the DAP reduction
-assessments file.  See <a class="reference internal" href="#mangadap.proc.reductionassessments.ReductionAssessment.directory_path" title="mangadap.proc.reductionassessments.ReductionAssessment.directory_path"><code class="xref py py-attr docutils literal"><span class="pre">directory_path</span></code></a>.</li>
+assessments file.  See <a class="reference internal" href="#mangadap.proc.reductionassessments.ReductionAssessment.directory_path" title="mangadap.proc.reductionassessments.ReductionAssessment.directory_path"><code class="xref py py-attr docutils literal notranslate"><span class="pre">directory_path</span></code></a>.</li>
 <li><strong>dapver</strong> (<em>str</em>) – DAP version.</li>
 <li><strong>analysis_path</strong> (<em>str</em>) – The path to the top-level directory
 containing the DAP output files for a given DRP and DAP
 version.</li>
 <li><strong>output_file</strong> (<em>str</em>) – The name of the file with the reduction
-assessments.  See <a class="reference internal" href="#mangadap.proc.reductionassessments.ReductionAssessment.compute" title="mangadap.proc.reductionassessments.ReductionAssessment.compute"><code class="xref py py-func docutils literal"><span class="pre">compute()</span></code></a>.</li>
+assessments.  See <a class="reference internal" href="#mangadap.proc.reductionassessments.ReductionAssessment.compute" title="mangadap.proc.reductionassessments.ReductionAssessment.compute"><code class="xref py py-func docutils literal notranslate"><span class="pre">compute()</span></code></a>.</li>
 </ul>
 </td>
 </tr>
@@ -474,41 +474,41 @@ assessments.  See <a class="reference internal" href="#mangadap.proc.reductionas
 are:</p>
 <blockquote>
 <div><ul class="simple">
-<li><code class="docutils literal"><span class="pre">PRIMARY</span></code> : Empty apart from the header information.</li>
-<li><code class="docutils literal"><span class="pre">SPECTRUM</span></code> : Extension with the main, per-spectrum
+<li><code class="docutils literal notranslate"><span class="pre">PRIMARY</span></code> : Empty apart from the header information.</li>
+<li><code class="docutils literal notranslate"><span class="pre">SPECTRUM</span></code> : Extension with the main, per-spectrum
 measurements; see below.</li>
-<li><code class="docutils literal"><span class="pre">CORREL</span></code> : The correlation matrix between the <code class="docutils literal"><span class="pre">SIGNAL</span></code>
-measurements provided in the <code class="docutils literal"><span class="pre">SPECTRUM</span></code> extension.  The
+<li><code class="docutils literal notranslate"><span class="pre">CORREL</span></code> : The correlation matrix between the <code class="docutils literal notranslate"><span class="pre">SIGNAL</span></code>
+measurements provided in the <code class="docutils literal notranslate"><span class="pre">SPECTRUM</span></code> extension.  The
 format of this extension is identical to the nominal
-output of the <a class="reference internal" href="mangadap.util.covariance.html#mangadap.util.covariance.Covariance" title="mangadap.util.covariance.Covariance"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.covariance.Covariance</span></code></a>
+output of the <a class="reference internal" href="mangadap.util.covariance.html#mangadap.util.covariance.Covariance" title="mangadap.util.covariance.Covariance"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.covariance.Covariance</span></code></a>
 object; see
-<a class="reference internal" href="mangadap.util.covariance.html#mangadap.util.covariance.Covariance.write" title="mangadap.util.covariance.Covariance.write"><code class="xref py py-func docutils literal"><span class="pre">mangadap.util.covariance.Covariance.write()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.util.covariance.html#mangadap.util.covariance.Covariance.write" title="mangadap.util.covariance.Covariance.write"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.util.covariance.Covariance.write()</span></code></a>.</li>
 </ul>
 </div></blockquote>
-<p>The <code class="docutils literal"><span class="pre">SPECTRUM</span></code> extension contains the following columns:</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">SPECTRUM</span></code> extension contains the following columns:</p>
 <blockquote>
 <div><ul class="simple">
-<li><code class="docutils literal"><span class="pre">DRP_INDEX</span></code> : Array coordinates in the DRP file; see
-<a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits.spatial_index" title="mangadap.drpfits.DRPFits.spatial_index"><code class="xref py py-attr docutils literal"><span class="pre">mangadap.drpfits.DRPFits.spatial_index</span></code></a>.  For RSS
+<li><code class="docutils literal notranslate"><span class="pre">DRP_INDEX</span></code> : Array coordinates in the DRP file; see
+<a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits.spatial_index" title="mangadap.drpfits.DRPFits.spatial_index"><code class="xref py py-attr docutils literal notranslate"><span class="pre">mangadap.drpfits.DRPFits.spatial_index</span></code></a>.  For RSS
 files, this is a single integer; for CUBE files, it is a
 vector of two integers.</li>
-<li><code class="docutils literal"><span class="pre">SKY_COO</span></code> : On-sky X and Y coordinates.  Coordinates are
+<li><code class="docutils literal notranslate"><span class="pre">SKY_COO</span></code> : On-sky X and Y coordinates.  Coordinates are
 sky-right offsets from the object center; i.e., positive X
 is along the direction of positive right ascension.  See
-<a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits.mean_sky_coordinates" title="mangadap.drpfits.DRPFits.mean_sky_coordinates"><code class="xref py py-class docutils literal"><span class="pre">mangadap.drpfits.DRPFits.mean_sky_coordinates</span></code></a>.</li>
-<li><code class="docutils literal"><span class="pre">ELL_COO</span></code> : Elliptical (semi-major axis) radius and
+<a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits.mean_sky_coordinates" title="mangadap.drpfits.DRPFits.mean_sky_coordinates"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.drpfits.DRPFits.mean_sky_coordinates</span></code></a>.</li>
+<li><code class="docutils literal notranslate"><span class="pre">ELL_COO</span></code> : Elliptical (semi-major axis) radius and
 azimuth angle from N through East with respect to the
 photometric position angle; based on the provided
 ellipticity parameters.  See
-<a class="reference internal" href="mangadap.util.geometry.html#mangadap.util.geometry.SemiMajorAxisCoo" title="mangadap.util.geometry.SemiMajorAxisCoo"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.geometry.SemiMajorAxisCoo</span></code></a>.</li>
-<li><code class="docutils literal"><span class="pre">FGOODPIX</span></code> : Fraction of good pixels in each spectrum.</li>
-<li><code class="docutils literal"><span class="pre">MINEQMAX</span></code> : Flag that min(flux) = max(flux) in the
+<a class="reference internal" href="mangadap.util.geometry.html#mangadap.util.geometry.SemiMajorAxisCoo" title="mangadap.util.geometry.SemiMajorAxisCoo"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.geometry.SemiMajorAxisCoo</span></code></a>.</li>
+<li><code class="docutils literal notranslate"><span class="pre">FGOODPIX</span></code> : Fraction of good pixels in each spectrum.</li>
+<li><code class="docutils literal notranslate"><span class="pre">MINEQMAX</span></code> : Flag that min(flux) = max(flux) in the
 spectrum; i.e., the spaxel has no data.</li>
-<li><code class="docutils literal"><span class="pre">SIGNAL</span></code>, <code class="docutils literal"><span class="pre">VARIANCE</span></code>, <code class="docutils literal"><span class="pre">SNR</span></code> : Per pixel means of the
+<li><code class="docutils literal notranslate"><span class="pre">SIGNAL</span></code>, <code class="docutils literal notranslate"><span class="pre">VARIANCE</span></code>, <code class="docutils literal notranslate"><span class="pre">SNR</span></code> : Per pixel means of the
 flux, flux variance, and signal-to-noise.  The
-<code class="docutils literal"><span class="pre">VARIANCE</span></code> and <code class="docutils literal"><span class="pre">SNR</span></code> columns use the inverse variance
+<code class="docutils literal notranslate"><span class="pre">VARIANCE</span></code> and <code class="docutils literal notranslate"><span class="pre">SNR</span></code> columns use the inverse variance
 provided by the DRP.  See
-<a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits.flux_stats" title="mangadap.drpfits.DRPFits.flux_stats"><code class="xref py py-func docutils literal"><span class="pre">mangadap.drpfits.DRPFits.flux_stats()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits.flux_stats" title="mangadap.drpfits.DRPFits.flux_stats"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.drpfits.DRPFits.flux_stats()</span></code></a>.</li>
 </ul>
 </div></blockquote>
 <table class="docutils field-list" frame="void" rules="none">
@@ -516,33 +516,33 @@ provided by the DRP.  See
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>drpf</strong> (<a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal"><span class="pre">mangadap.drpfits.DRPFits</span></code></a>) – DRP file (object)
+<li><strong>drpf</strong> (<a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.drpfits.DRPFits</span></code></a>) – DRP file (object)
 to use for the assessments.</li>
 <li><strong>pa</strong> (<em>float</em>) – (<strong>Optional</strong>) On-sky position angle of the
 major axis used to calculate elliptical, semi-major-axis
 coordinates, defined as the angle from North through
-East and denoted <span class="math">\(\phi_0\)</span>.  Default is 0.0.</li>
+East and denoted <span class="math notranslate nohighlight">\(\phi_0\)</span>.  Default is 0.0.</li>
 <li><strong>ell</strong> (<em>float</em>) – (<strong>Optional</strong>) Ellipticity defined as
-<span class="math">\(\varepsilon=1-b/a\)</span>, based on the semi-minor to
-semi-major axis ratio (<span class="math">\(b/a\)</span>) of the isophotal
+<span class="math notranslate nohighlight">\(\varepsilon=1-b/a\)</span>, based on the semi-minor to
+semi-major axis ratio (<span class="math notranslate nohighlight">\(b/a\)</span>) of the isophotal
 ellipse used to calculate elliptical, semi-major-axis
 coordinates.  Default is 0.0.</li>
 <li><strong>dapver</strong> (<em>str</em>) – (<strong>Optional</strong>) DAP version, which is used to
 define the default DAP analysis path.  Default is
 defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_version" title="mangadap.config.defaults.default_dap_version"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_version()</span></code></a></li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_version" title="mangadap.config.defaults.default_dap_version"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_dap_version()</span></code></a></li>
 <li><strong>analysis_path</strong> (<em>str</em>) – (<strong>Optional</strong>) The path to the top
 level directory containing the DAP output files for a
 given DRP and DAP version.  Default is defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_analysis_path" title="mangadap.config.defaults.default_analysis_path"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_analysis_path()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_analysis_path" title="mangadap.config.defaults.default_analysis_path"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_analysis_path()</span></code></a>.</li>
 <li><strong>directory_path</strong> (<em>str</em>) – (<strong>Optional</strong>) The exact path for the
 output file.  Default is defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_common_path" title="mangadap.config.defaults.default_dap_common_path"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_common_path()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_common_path" title="mangadap.config.defaults.default_dap_common_path"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_dap_common_path()</span></code></a>.</li>
 <li><strong>output_file</strong> (<em>str</em>) – (<strong>Optional</strong>) The name of the file for
 the computed assessments.  The full path of the output
-file will be <a class="reference internal" href="#mangadap.proc.reductionassessments.ReductionAssessment.directory_path" title="mangadap.proc.reductionassessments.ReductionAssessment.directory_path"><code class="xref py py-attr docutils literal"><span class="pre">directory_path</span></code></a>/<a class="reference internal" href="#mangadap.proc.reductionassessments.ReductionAssessment.output_file" title="mangadap.proc.reductionassessments.ReductionAssessment.output_file"><code class="xref py py-attr docutils literal"><span class="pre">output_file</span></code></a>.
+file will be <a class="reference internal" href="#mangadap.proc.reductionassessments.ReductionAssessment.directory_path" title="mangadap.proc.reductionassessments.ReductionAssessment.directory_path"><code class="xref py py-attr docutils literal notranslate"><span class="pre">directory_path</span></code></a>/<a class="reference internal" href="#mangadap.proc.reductionassessments.ReductionAssessment.output_file" title="mangadap.proc.reductionassessments.ReductionAssessment.output_file"><code class="xref py py-attr docutils literal notranslate"><span class="pre">output_file</span></code></a>.
 Default is defined by
-<code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_reduction_assessments_file()</span></code>.</li>
+<code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_reduction_assessments_file()</span></code>.</li>
 <li><strong>hardcopy</strong> (<em>bool</em>) – (<strong>Optional</strong>) Flag to write the data to a
 fits file.  Default is True.</li>
 <li><strong>symlink_dir</strong> (<em>str</em>) – (<strong>Optional</strong>) Create a symlink to the
@@ -558,7 +558,7 @@ logging output.  Default is False.</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raise if no DRPFits object is provided or if
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raise if no DRPFits object is provided or if
 the output file is undefined.</p>
 </td>
 </tr>
@@ -581,18 +581,18 @@ the output file is undefined.</p>
 the reduction assessments.</li>
 <li><strong>directory_path</strong> (<em>str</em>) – (<strong>Optional</strong>) The exact path to the
 DAP reduction assessments file.  Default set by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_common_path" title="mangadap.config.defaults.default_dap_common_path"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_common_path()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_common_path" title="mangadap.config.defaults.default_dap_common_path"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_dap_common_path()</span></code></a>.</li>
 <li><strong>drpver</strong> (<em>str</em>) – (<strong>Optional</strong>) DRP version.  Default set by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_drp_version" title="mangadap.config.defaults.default_drp_version"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_drp_version()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_drp_version" title="mangadap.config.defaults.default_drp_version"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_drp_version()</span></code></a>.</li>
 <li><strong>dapver</strong> (<em>str</em>) – (<strong>Optional</strong>) DAP version.  Default set by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_version" title="mangadap.config.defaults.default_dap_version"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_version()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_version" title="mangadap.config.defaults.default_dap_version"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_dap_version()</span></code></a>.</li>
 <li><strong>analysis_path</strong> (<em>str</em>) – (<strong>Optional</strong>) The path to the
 top-level directory containing the DAP output files for
 a given DRP and DAP version. Default set by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_analysis_path" title="mangadap.config.defaults.default_analysis_path"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_analysis_path()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_analysis_path" title="mangadap.config.defaults.default_analysis_path"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_analysis_path()</span></code></a>.</li>
 <li><strong>output_file</strong> (<em>str</em>) – (<strong>Optional</strong>) The name of the file with
 the reduction assessments.  Default set by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_file_name" title="mangadap.config.defaults.default_dap_file_name"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_file_name()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_file_name" title="mangadap.config.defaults.default_dap_file_name"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_dap_file_name()</span></code></a>.</li>
 </ul>
 </td>
 </tr>
@@ -629,11 +629,11 @@ name of the output file.</p>
 <dl class="class">
 <dt id="mangadap.proc.reductionassessments.ReductionAssessmentDef">
 <em class="property">class </em><code class="descclassname">mangadap.proc.reductionassessments.</code><code class="descname">ReductionAssessmentDef</code><span class="sig-paren">(</span><em>key</em>, <em>waverange=None</em>, <em>response_func=None</em>, <em>covariance=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/reductionassessments.html#ReductionAssessmentDef"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.reductionassessments.ReductionAssessmentDef" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet" title="mangadap.par.parset.ParSet"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.parset.ParSet</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet" title="mangadap.par.parset.ParSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.par.parset.ParSet</span></code></a></p>
 <p>Class with parameters used to define how the reduction assessments
 are performed.  At the moment this is just a set of parameters that
 define how the S/N is calculated.</p>
-<p>See <a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet" title="mangadap.par.parset.ParSet"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.parset.ParSet</span></code></a> for attributes.</p>
+<p>See <a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet" title="mangadap.par.parset.ParSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.par.parset.ParSet</span></code></a> for attributes.</p>
 <div class="admonition-todo admonition" id="index-0">
 <p class="first admonition-title">Todo</p>
 <ul class="last simple">
@@ -666,14 +666,14 @@ respectively.</li>
 <code class="descclassname">mangadap.proc.reductionassessments.</code><code class="descname">available_reduction_assessments</code><span class="sig-paren">(</span><em>dapsrc=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/reductionassessments.html#available_reduction_assessments"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.reductionassessments.available_reduction_assessments" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the list of available reduction assessment methods.  To get a
 list of default methods provided by the DAP do:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">mangadap.proc.reductionassessments</span> <span class="k">import</span> <span class="n">available_reduction_assessments</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">mangadap.proc.reductionassessments</span> <span class="k">import</span> <span class="n">available_reduction_assessments</span>
 <span class="n">rdx_methods</span> <span class="o">=</span> <span class="n">available_reduction_assessments</span><span class="p">()</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">rdx_methods</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Each element in the <cite>rdx_methods</cite> list is an instance of
-<a class="reference internal" href="#mangadap.proc.reductionassessments.ReductionAssessmentDef" title="mangadap.proc.reductionassessments.ReductionAssessmentDef"><code class="xref py py-class docutils literal"><span class="pre">ReductionAssessmentDef</span></code></a>, which  is printed using the
-<code class="xref py py-class docutils literal"><span class="pre">ParSet</span></code> base class representation function.</p>
+<a class="reference internal" href="#mangadap.proc.reductionassessments.ReductionAssessmentDef" title="mangadap.proc.reductionassessments.ReductionAssessmentDef"><code class="xref py py-class docutils literal notranslate"><span class="pre">ReductionAssessmentDef</span></code></a>, which  is printed using the
+<code class="xref py py-class docutils literal notranslate"><span class="pre">ParSet</span></code> base class representation function.</p>
 <p>New methods can be included by adding ini config files to
 <cite>$MANGADAP_DIR/python/mangadap/config/reduction_assessments</cite>.  See
 an example file at
@@ -685,10 +685,10 @@ an example file at
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>dapsrc</strong> (<em>str</em>) – (<strong>Optional</strong>) Root path to the DAP source
 directory (i.e., $MANGADAP_DIR).  If not provided, the
 default is defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_source" title="mangadap.config.defaults.default_dap_source"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_source()</span></code></a>.</p>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.dap_source_dir" title="mangadap.config.defaults.dap_source_dir"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.dap_source_dir()</span></code></a>.</p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A list of <a class="reference internal" href="#mangadap.proc.reductionassessments.ReductionAssessmentDef" title="mangadap.proc.reductionassessments.ReductionAssessmentDef"><code class="xref py py-func docutils literal"><span class="pre">ReductionAssessmentDef()</span></code></a> objects, each
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A list of <a class="reference internal" href="#mangadap.proc.reductionassessments.ReductionAssessmentDef" title="mangadap.proc.reductionassessments.ReductionAssessmentDef"><code class="xref py py-func docutils literal notranslate"><span class="pre">ReductionAssessmentDef()</span></code></a> objects, each
 defining a separate assessment method.</p>
 </td>
 </tr>
@@ -696,13 +696,13 @@ defining a separate assessment method.</p>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
-<li><code class="xref py py-exc docutils literal"><span class="pre">NotADirectoryError</span></code> – Raised if the provided or default
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">NotADirectoryError</span></code> – Raised if the provided or default
 <em>dapsrc</em> is not a directory.</li>
-<li><code class="xref py py-exc docutils literal"><span class="pre">OSError/IOError</span></code> – Raised if no reduction assessment configuration
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">OSError/IOError</span></code> – Raised if no reduction assessment configuration
 files could be found.</li>
-<li><code class="xref py py-exc docutils literal"><span class="pre">KeyError</span></code> – Raised if the assessment method keywords are not all
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">KeyError</span></code> – Raised if the assessment method keywords are not all
 unique.</li>
-<li><code class="xref py py-exc docutils literal"><span class="pre">NameError</span></code> – Raised if either ConfigParser or
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">NameError</span></code> – Raised if either ConfigParser or
 ExtendedInterpolation are not correctly imported.  The
 latter is a <em>Python 3 only module</em>!</li>
 </ul>
@@ -715,15 +715,15 @@ latter is a <em>Python 3 only module</em>!</li>
 <dl class="function">
 <dt id="mangadap.proc.reductionassessments.validate_reduction_assessment_config">
 <code class="descclassname">mangadap.proc.reductionassessments.</code><code class="descname">validate_reduction_assessment_config</code><span class="sig-paren">(</span><em>cnfg</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/reductionassessments.html#validate_reduction_assessment_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.reductionassessments.validate_reduction_assessment_config" title="Permalink to this definition">¶</a></dt>
-<dd><p>Validate the <a class="reference internal" href="mangadap.util.parser.html#mangadap.util.parser.DefaultConfig" title="mangadap.util.parser.DefaultConfig"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.parser.DefaultConfig</span></code></a> object that
+<dd><p>Validate the <a class="reference internal" href="mangadap.util.parser.html#mangadap.util.parser.DefaultConfig" title="mangadap.util.parser.DefaultConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.parser.DefaultConfig</span></code></a> object that
 provides the reduction-assessment method parameters.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>cnfg</strong> (<a class="reference internal" href="mangadap.util.parser.html#mangadap.util.parser.DefaultConfig" title="mangadap.util.parser.DefaultConfig"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.parser.DefaultConfig</span></code></a>) – Object with
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>cnfg</strong> (<a class="reference internal" href="mangadap.util.parser.html#mangadap.util.parser.DefaultConfig" title="mangadap.util.parser.DefaultConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.parser.DefaultConfig</span></code></a>) – Object with
 the reduction-assessment method parameters needed by
-<a class="reference internal" href="#mangadap.proc.reductionassessments.ReductionAssessmentDef" title="mangadap.proc.reductionassessments.ReductionAssessmentDef"><code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.reductionassessments.ReductionAssessmentDef</span></code></a>.</p>
+<a class="reference internal" href="#mangadap.proc.reductionassessments.ReductionAssessmentDef" title="mangadap.proc.reductionassessments.ReductionAssessmentDef"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.proc.reductionassessments.ReductionAssessmentDef</span></code></a>.</p>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Booleans that specify how the reduction assessment should
@@ -736,9 +736,9 @@ a filter response function.</p>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
-<li><code class="xref py py-exc docutils literal"><span class="pre">KeyError</span></code> – Raised if required keyword does not exist.</li>
-<li><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if keys have unacceptable values.</li>
-<li><code class="xref py py-exc docutils literal"><span class="pre">FileNotFoundError</span></code> – Raised if a file is specified but could not
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">KeyError</span></code> – Raised if required keyword does not exist.</li>
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if keys have unacceptable values.</li>
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">FileNotFoundError</span></code> – Raised if a file is specified but could not
 be found.</li>
 </ul>
 </td>

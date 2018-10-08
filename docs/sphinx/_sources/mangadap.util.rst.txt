@@ -1,5 +1,5 @@
-mangadap\.util package
-======================
+mangadap.util package
+=====================
 
 Submodules
 ----------
@@ -15,13 +15,14 @@ Submodules
    mangadap.util.filter
    mangadap.util.fitsutil
    mangadap.util.geometry
-   mangadap.util.instrument
    mangadap.util.lineprofiles
    mangadap.util.log
    mangadap.util.mapping
    mangadap.util.misc
    mangadap.util.parser
    mangadap.util.pixelmask
+   mangadap.util.resolution
+   mangadap.util.sampling
    mangadap.util.version
 
 Module contents

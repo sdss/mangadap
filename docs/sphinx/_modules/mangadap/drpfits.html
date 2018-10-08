@@ -36,7 +36,7 @@
               href="../../genindex.html"/>
         <link rel="search" title="Search" href="../../search.html"/>
     <link rel="top" title="mangadap 2.2.2 documentation" href="../../index.html"/>
-        <link rel="up" title="Module code" href="../index.html"/> 
+        <link rel="up" title="mangadap" href="../mangadap.html"/> 
 
   
   <script src="../../_static/js/modernizr.min.js"></script>
@@ -137,6 +137,8 @@
       <li><a href="../../index.html">Docs</a> &raquo;</li>
         
           <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../mangadap.html">mangadap</a> &raquo;</li>
         
       <li>mangadap.drpfits</li>
     
@@ -276,6 +278,10 @@
 <span class="sd">      create CUBE related data, like the covariance matrix and</span>
 <span class="sd">      instrumental dispersion calculations.</span>
 
+<span class="sd">    - Computing the approximate covariance cube is currently not</span>
+<span class="sd">      possible with only the CUBE on disk.  There&#39;s a logic problem that</span>
+<span class="sd">      needs to be fixed.</span>
+
 <span class="sd">.. _astropy.io.fits: http://docs.astropy.org/en/stable/io/fits/index.html</span>
 <span class="sd">.. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html</span>
 <span class="sd">.. _astropy.wcs.wcs.WCS: http://docs.astropy.org/en/v1.0.2/api/astropy.wcs.WCS.html</span>
@@ -318,8 +324,8 @@
 <span class="kn">from</span> <span class="nn">.util.covariance</span> <span class="k">import</span> <span class="n">Covariance</span>
 <span class="kn">from</span> <span class="nn">.util.pixelmask</span> <span class="k">import</span> <span class="n">SpectralPixelMask</span>
 <span class="kn">from</span> <span class="nn">.util.filter</span> <span class="k">import</span> <span class="n">interpolate_masked_vector</span>
-<span class="kn">from</span> <span class="nn">.util.instrument</span> <span class="k">import</span> <span class="n">spectral_coordinate_step</span>
-<span class="kn">from</span> <span class="nn">.config.defaults</span> <span class="k">import</span> <span class="n">default_idlutils_dir</span><span class="p">,</span> <span class="n">default_drp_version</span>
+<span class="kn">from</span> <span class="nn">.util.sampling</span> <span class="k">import</span> <span class="n">spectral_coordinate_step</span>
+<span class="kn">from</span> <span class="nn">.config.defaults</span> <span class="k">import</span> <span class="n">sdss_maskbits_file</span><span class="p">,</span> <span class="n">default_drp_version</span>
 <span class="kn">from</span> <span class="nn">.config.defaults</span> <span class="k">import</span> <span class="n">default_redux_path</span><span class="p">,</span> <span class="n">default_drp_directory_path</span>
 <span class="kn">from</span> <span class="nn">.config.defaults</span> <span class="k">import</span> <span class="n">default_cube_pixelscale</span><span class="p">,</span> <span class="n">default_cube_width_buffer</span>
 <span class="kn">from</span> <span class="nn">.config.defaults</span> <span class="k">import</span> <span class="n">default_cube_recenter</span><span class="p">,</span> <span class="n">default_regrid_rlim</span>
@@ -441,8 +447,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sdss_maskbits</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;CUBE&#39;</span><span class="p">):</span>
         <span class="n">DRPFits</span><span class="o">.</span><span class="n">check_mode</span><span class="p">(</span><span class="n">mode</span><span class="p">)</span>
-        <span class="n">sdss_maskbits</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">default_idlutils_dir</span><span class="p">(),</span> <span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="s1">&#39;sdss&#39;</span><span class="p">,</span> <span class="s1">&#39;sdssMaskbits.par&#39;</span><span class="p">)</span> \
-                        <span class="k">if</span> <span class="n">sdss_maskbits</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">sdss_maskbits</span>
+        <span class="n">sdss_maskbits</span> <span class="o">=</span> <span class="n">sdss_maskbits_file</span><span class="p">()</span>
         <span class="n">BitMask</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">par_file</span><span class="o">=</span><span class="n">sdss_maskbits</span><span class="p">,</span> <span class="n">par_grp</span><span class="o">=</span><span class="s1">&#39;MANGA_DRP3PIXMASK&#39;</span> \
                                                         <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;CUBE&#39;</span> <span class="k">else</span> <span class="s1">&#39;MANGA_DRP2PIXMASK&#39;</span><span class="p">)</span></div>
 
@@ -452,8 +457,7 @@
 <span class="sd">    Structure with the definition of the DRP3QUAL mask bits.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sdss_maskbits</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="n">sdss_maskbits</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">default_idlutils_dir</span><span class="p">(),</span> <span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="s1">&#39;sdss&#39;</span><span class="p">,</span> <span class="s1">&#39;sdssMaskbits.par&#39;</span><span class="p">)</span> \
-                        <span class="k">if</span> <span class="n">sdss_maskbits</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">sdss_maskbits</span>
+        <span class="n">sdss_maskbits</span> <span class="o">=</span> <span class="n">sdss_maskbits_file</span><span class="p">()</span>
         <span class="n">BitMask</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">par_file</span><span class="o">=</span><span class="n">sdss_maskbits</span><span class="p">,</span> <span class="n">par_grp</span><span class="o">=</span><span class="s1">&#39;MANGA_DRP3QUAL&#39;</span><span class="p">)</span></div>
 
 
@@ -668,6 +672,7 @@
         <span class="c1"># Setup the variables for the internal data structure</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span> <span class="o">=</span> <span class="kc">None</span>                 <span class="c1"># Do not automatically read the data</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">ext</span> <span class="o">=</span> <span class="kc">None</span>                 <span class="c1"># Extensions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sres_ext</span> <span class="o">=</span> <span class="kc">None</span>            <span class="c1"># Spectral resolution extensions</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">checksum</span> <span class="o">=</span> <span class="n">checksum</span>        <span class="c1"># Check the file for corruption</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">wcs</span> <span class="o">=</span> <span class="kc">None</span>                 <span class="c1"># WCS structure</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">shape</span> <span class="o">=</span> <span class="kc">None</span>               <span class="c1"># Shape of the data array</span>
@@ -1094,12 +1099,13 @@
 
         <span class="c1">#Get the distances</span>
         <span class="n">dij</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span> <span class="p">(</span><span class="n">nim</span><span class="p">,</span><span class="n">nim</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
-        <span class="n">dij</span><span class="p">[</span><span class="n">jj</span><span class="o">&gt;=</span><span class="n">ii</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span> <span class="p">(</span><span class="n">j_i</span><span class="p">[</span><span class="n">jj</span><span class="o">&gt;=</span><span class="n">ii</span><span class="p">]</span><span class="o">-</span><span class="n">i_i</span><span class="p">[</span><span class="n">jj</span><span class="o">&gt;=</span><span class="n">ii</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">j_j</span><span class="p">[</span><span class="n">jj</span><span class="o">&gt;=</span><span class="n">ii</span><span class="p">]</span><span class="o">-</span><span class="n">i_j</span><span class="p">[</span><span class="n">jj</span><span class="o">&gt;=</span><span class="n">ii</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span> <span class="p">)</span>
+        <span class="n">dij</span><span class="p">[</span><span class="n">jj</span><span class="o">&gt;=</span><span class="n">ii</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span> <span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">j_i</span><span class="p">[</span><span class="n">jj</span><span class="o">&gt;=</span><span class="n">ii</span><span class="p">]</span><span class="o">-</span><span class="n">i_i</span><span class="p">[</span><span class="n">jj</span><span class="o">&gt;=</span><span class="n">ii</span><span class="p">])</span> 
+                                    <span class="o">+</span> <span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">j_j</span><span class="p">[</span><span class="n">jj</span><span class="o">&gt;=</span><span class="n">ii</span><span class="p">]</span><span class="o">-</span><span class="n">i_j</span><span class="p">[</span><span class="n">jj</span><span class="o">&gt;=</span><span class="n">ii</span><span class="p">])</span> <span class="p">)</span>
         <span class="n">dij</span><span class="p">[</span><span class="n">dij</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="o">*</span><span class="n">rlim</span><span class="o">/</span><span class="n">pixelscale</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
 
         <span class="c1">#Set rho_ij</span>
         <span class="n">rho_ij</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span> <span class="p">(</span><span class="n">nim</span><span class="p">,</span><span class="n">nim</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
-        <span class="n">rho_ij</span><span class="p">[</span><span class="n">dij</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">dij</span><span class="p">[</span><span class="n">dij</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="n">sigma_rho</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">rho_ij</span><span class="p">[</span><span class="n">dij</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">square</span><span class="p">(</span><span class="n">dij</span><span class="p">[</span><span class="n">dij</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="n">sigma_rho</span><span class="p">))</span>
         <span class="n">rho_ij</span><span class="p">[</span><span class="n">ii</span><span class="o">==</span><span class="n">jj</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
 
         <span class="c1"># Set the sparse rho matrix and save the parameters used to</span>
@@ -1156,6 +1162,18 @@
         <span class="c1"># (i.e., the DRP provides [lambda, y, x] whereas this class</span>
         <span class="c1"># transposes this order)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">spatial_index</span><span class="p">[:]</span> <span class="o">=</span> <span class="p">[</span> <span class="p">(</span><span class="n">ii</span><span class="p">,</span><span class="n">jj</span><span class="p">)</span> <span class="k">for</span> <span class="n">ii</span><span class="p">,</span> <span class="n">jj</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">)</span> <span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="DRPFits._spectral_resolution_extension"><a class="viewcode-back" href="../../mangadap.drpfits.html#mangadap.drpfits.DRPFits._spectral_resolution_extension">[docs]</a>    <span class="k">def</span> <span class="nf">_spectral_resolution_extension</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ext</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">pre</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Determine the spectral resolution channel to use.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">_ext</span> <span class="o">=</span> <span class="n">ext</span>
+        <span class="k">if</span> <span class="n">ext</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">_ext</span> <span class="o">=</span> <span class="s1">&#39;PREDISP&#39;</span> <span class="k">if</span> <span class="n">pre</span> <span class="k">else</span> <span class="s1">&#39;DISP&#39;</span>
+            <span class="k">if</span> <span class="n">_ext</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">sres_ext</span><span class="p">:</span>
+                <span class="n">_ext</span> <span class="o">=</span> <span class="s1">&#39;PRESPECRES&#39;</span> <span class="k">if</span> <span class="n">pre</span> <span class="k">else</span> <span class="s1">&#39;SPECRES&#39;</span>
+        <span class="k">return</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">_ext</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">sres_ext</span> <span class="k">else</span> <span class="n">_ext</span></div>
 
 
 <div class="viewcode-block" id="DRPFits.mode_options"><a class="viewcode-back" href="../../mangadap.drpfits.html#mangadap.drpfits.DRPFits.mode_options">[docs]</a>    <span class="nd">@staticmethod</span>
@@ -1281,6 +1299,8 @@
         <span class="c1"># image arrays.  Can I expedite this somehow?</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span> <span class="o">=</span> <span class="n">DAPFitsUtil</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">inp</span><span class="p">,</span> <span class="n">permissions</span><span class="o">=</span><span class="s1">&#39;readonly&#39;</span><span class="p">,</span> <span class="n">checksum</span><span class="o">=</span><span class="n">checksum</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">ext</span> <span class="o">=</span> <span class="p">[</span> <span class="n">h</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span> <span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sres_ext</span> <span class="o">=</span> <span class="p">[</span> <span class="n">h</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span>
+                            <span class="k">if</span> <span class="n">h</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="p">[</span> <span class="s1">&#39;PREDISP&#39;</span><span class="p">,</span> <span class="s1">&#39;DISP&#39;</span><span class="p">,</span> <span class="s1">&#39;PRESPECRES&#39;</span><span class="p">,</span> <span class="s1">&#39;SPECRES&#39;</span> <span class="p">]</span> <span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_set_spectral_arrays</span><span class="p">()</span>
 
 <span class="c1">#        # Reformat and initialize properties of the data</span>
@@ -1513,17 +1533,27 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Make sure the fits file has been opened</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">open_hdu</span><span class="p">(</span><span class="n">checksum</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">checksum</span><span class="p">)</span>
-        <span class="c1"># Check the selected base extension exists</span>
-        <span class="k">if</span> <span class="n">ext</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;DISP&#39;</span><span class="p">,</span><span class="s1">&#39;SPECRES&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">ext</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ext</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;No extension: </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ext</span><span class="p">))</span>
 
-        <span class="c1"># Set the base extension</span>
-        <span class="n">_ext</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;DISP&#39;</span> <span class="k">if</span> <span class="s1">&#39;DISP&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ext</span> <span class="k">else</span> <span class="s1">&#39;SPECRES&#39;</span><span class="p">)</span> <span class="k">if</span> <span class="n">ext</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">ext</span>
-        <span class="c1"># Add the &#39;PRE&#39; qualifier if requested and check that it exists</span>
-        <span class="k">if</span> <span class="n">pre</span><span class="p">:</span>
-            <span class="k">if</span> <span class="s1">&#39;PRE&#39;</span><span class="o">+</span><span class="n">_ext</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ext</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;No </span><span class="si">{0}</span><span class="s1"> extension in DRP file.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s1">&#39;PRE&#39;</span><span class="o">+</span><span class="n">_ext</span><span class="p">))</span>
-            <span class="n">_ext</span> <span class="o">=</span> <span class="s1">&#39;PRE&#39;</span><span class="o">+</span><span class="n">_ext</span>
+        <span class="c1"># Determine which spectral resolution element to use</span>
+        <span class="n">_ext</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spectral_resolution_extension</span><span class="p">(</span><span class="n">ext</span><span class="o">=</span><span class="n">ext</span><span class="p">,</span> <span class="n">pre</span><span class="o">=</span><span class="n">pre</span><span class="p">)</span>
+
+        <span class="c1"># If no valid extension, raise an exception</span>
+        <span class="k">if</span> <span class="n">ext</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">_ext</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;No valid spectral resolution extension.&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">ext</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">_ext</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;No extension: </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ext</span><span class="p">))</span>
+            
+<span class="c1">#        # Check the selected base extension exists</span>
+<span class="c1">#        if ext in [&#39;DISP&#39;,&#39;SPECRES&#39;] and ext not in self.ext:</span>
+<span class="c1">#            raise ValueError(&#39;No extension: {0}&#39;.format(ext))</span>
+<span class="c1">#</span>
+<span class="c1">#        # Set the base extension</span>
+<span class="c1">#        _ext = (&#39;DISP&#39; if &#39;DISP&#39; in self.ext else &#39;SPECRES&#39;) if ext is None else ext</span>
+<span class="c1">#        # Add the &#39;PRE&#39; qualifier if requested and check that it exists</span>
+<span class="c1">#        if pre:</span>
+<span class="c1">#            if &#39;PRE&#39;+_ext not in self.ext:</span>
+<span class="c1">#                raise ValueError(&#39;No {0} extension in DRP file.&#39;.format(&#39;PRE&#39;+_ext))</span>
+<span class="c1">#            _ext = &#39;PRE&#39;+_ext</span>
 
         <span class="c1"># Build the spectral resolution vectors</span>
         <span class="n">sres</span> <span class="o">=</span> <span class="kc">None</span>
@@ -3042,6 +3072,15 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;RSS&#39;</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">covar</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">signal</span><span class="p">,</span> <span class="n">variance</span><span class="p">,</span> <span class="n">snr</span><span class="p">,</span> <span class="kc">None</span>
 
+        <span class="c1"># Test if the RSS file exists</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;CUBE&#39;</span> <span class="ow">and</span> <span class="n">covar</span><span class="p">:</span>
+            <span class="n">rss</span> <span class="o">=</span> <span class="n">DRPFits</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">plate</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ifudesign</span><span class="p">,</span> <span class="s1">&#39;RSS&#39;</span><span class="p">,</span> <span class="n">drpver</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">drpver</span><span class="p">,</span>
+                          <span class="n">redux_path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">redux_path</span><span class="p">,</span> <span class="n">directory_path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">directory_path</span><span class="p">,</span>
+                          <span class="n">read</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">rss</span><span class="o">.</span><span class="n">file_path</span><span class="p">()):</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;RSS counterpart not available.  Cannot determine covariance matrix!&#39;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">signal</span><span class="p">,</span> <span class="n">variance</span><span class="p">,</span> <span class="n">snr</span><span class="p">,</span> <span class="kc">None</span>
+
         <span class="c1"># Only calculate the covariance at the central, or input, wavelength</span>
         <span class="n">_covar_wave</span> <span class="o">=</span> <span class="n">covar_wave</span> <span class="k">if</span> <span class="n">covar_wave</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> \
                         <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_covariance_wavelength</span><span class="p">(</span><span class="n">waverange</span><span class="o">=</span><span class="n">waverange</span><span class="p">,</span>
@@ -3119,7 +3158,21 @@
         <span class="k">except</span><span class="p">:</span>
             <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Could not use </span><span class="se">\&#39;</span><span class="s1">shapely</span><span class="se">\&#39;</span><span class="s1"> package to compute overlapping fiber area.&#39;</span> \
                           <span class="s1">&#39;Return the total fiber area.&#39;</span><span class="p">,</span> <span class="ne">ImportWarning</span><span class="p">)</span>
-            <span class="k">return</span> <span class="p">(</span><span class="n">nbin</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span></div></div>
+            <span class="k">return</span> <span class="p">(</span><span class="n">nbin</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">can_compute_covariance</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;RSS&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+       
+        <span class="c1"># Try to find the RSS file</span>
+        <span class="n">rss</span> <span class="o">=</span> <span class="n">DRPFits</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">plate</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ifudesign</span><span class="p">,</span> <span class="s1">&#39;RSS&#39;</span><span class="p">,</span> <span class="n">drpver</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">drpver</span><span class="p">,</span>
+                          <span class="n">redux_path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">redux_path</span><span class="p">,</span> <span class="n">directory_path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">directory_path</span><span class="p">,</span>
+                          <span class="n">read</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">rss</span><span class="o">.</span><span class="n">file_path</span><span class="p">()):</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
         
 
 <span class="c1">#   def white_light(self, mask_list=None):</span>

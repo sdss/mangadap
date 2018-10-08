@@ -1,5 +1,5 @@
-mangadap\.proc\.sasuke module
-=============================
+mangadap.proc.sasuke module
+===========================
 
 .. automodule:: mangadap.proc.sasuke
     :members:

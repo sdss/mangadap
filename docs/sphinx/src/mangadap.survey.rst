@@ -1,5 +1,5 @@
-mangadap\.survey package
-========================
+mangadap.survey package
+=======================
 
 Submodules
 ----------

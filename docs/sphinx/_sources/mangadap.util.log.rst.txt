@@ -1,5 +1,5 @@
-mangadap\.util\.log module
-==========================
+mangadap.util.log module
+========================
 
 .. automodule:: mangadap.util.log
     :members:

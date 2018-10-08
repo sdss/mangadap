@@ -1,5 +1,5 @@
-mangadap\.proc\.util module
-===========================
+mangadap.proc.util module
+=========================
 
 .. automodule:: mangadap.proc.util
     :members:

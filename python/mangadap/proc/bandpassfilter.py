@@ -393,7 +393,7 @@ def passband_integral(x, y, passband=None, borders=False, log=False, base=10.0, 
                     else numpy.sum(_y*inband_dx, axis=0)
 
     # Reshape the returned array if only one passband provided
-    return integral if _passband.shape[0] > 1 else integral[0]
+    return integral if numpy.atleast_1d(passband).ndim == 2 else integral[0]
 
 
 def passband_integrated_width(x, y, passband=None, borders=False, log=False, base=10.0):
@@ -476,8 +476,6 @@ def passband_weighted_mean(x, y, z, passband=None, borders=False, yerr=None, zer
         if yerr.shape != y.shape:
             raise ValueError('Incorrect shape for y errors.')
         ye_integrand = (z[:,None]-numpy.atleast_1d(integral)[None,:])*yerr[:,None]
-        # KHRR - the line above is the original; the line below pushes through the crash
-        #ye_integrand = (z[:,None]-integral[None])*yerr[:,None]
         weighted_integral_err += numpy.square(passband_integral(x, ye_integrand, passband=passband,
                                                                 borders=borders, log=log,
                                                                 base=base, quad=True))
@@ -546,7 +544,7 @@ def passband_weighted_sdev(x, y, z, passband=None, borders=False, yerr=None, zer
         return sigma, None
 
     # Construct error
-    sigma_error = numpy.zeros_like(sigma, dtype=float)
+    sigma_error = numpy.zeros_like(sigma, dtype=float) if isinstance(sigma, numpy.ndarray) else 0.
 
     # Get the integrand for the y errors
     if yerr is not None:
@@ -562,7 +560,7 @@ def passband_weighted_sdev(x, y, z, passband=None, borders=False, yerr=None, zer
     if zerr is not None:
         if zerr.shape != z.shape:
             raise ValueError('Incorrect shape for z errors.')
-        ze_integrand = 2*(z[:,None]-mu[None,:])*(y*zerr)[:,None]
+        ze_integrand = 2*(z[:,None]-numpy.atleast_1d(mu)[None,:])*(y*zerr)[:,None]
         sigma_error += numpy.square(passband_integral(x, ze_integrand, passband=passband,
                                                       borders=borders, log=log, base=base,
                                                       quad=True))

@@ -104,7 +104,7 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.survey.html">mangadap.survey package</a></li>
-<li class="toctree-l3"><a class="reference internal" href="mangadap.test.html">mangadap.test package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.tests.html">mangadap.tests package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.util.html">mangadap.util package</a></li>
 </ul>
 </li>
@@ -191,34 +191,6 @@
 </dd>
 <dt><em>Source location</em>:</dt>
 <dd>$MANGADAP_DIR/python/mangadap/proc/ppxffit.py</dd>
-<dt><em>Imports and python version compliance</em>:</dt>
-<dd><div class="first last highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
-<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
-<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
-<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
-
-<span class="kn">import</span> <span class="nn">sys</span>
-<span class="kn">import</span> <span class="nn">warnings</span>
-<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version</span> <span class="o">&gt;</span> <span class="s1">&#39;3&#39;</span><span class="p">:</span>
-    <span class="n">long</span> <span class="o">=</span> <span class="nb">int</span>
-
-<span class="kn">import</span> <span class="nn">numpy</span>
-<span class="kn">import</span> <span class="nn">scipy.interpolate</span>
-<span class="kn">import</span> <span class="nn">scipy.signal</span>
-<span class="kn">import</span> <span class="nn">astropy.constants</span>
-
-<span class="kn">from</span> <span class="nn">..par.parset</span> <span class="k">import</span> <span class="n">ParSet</span>
-<span class="kn">from</span> <span class="nn">..util.bitmask</span> <span class="k">import</span> <span class="n">BitMask</span>
-<span class="kn">from</span> <span class="nn">..util.fileio</span> <span class="k">import</span> <span class="n">init_record_array</span>
-<span class="kn">from</span> <span class="nn">..util.instrument</span> <span class="k">import</span> <span class="n">spectrum_velocity_scale</span><span class="p">,</span> <span class="n">resample1d</span><span class="p">,</span> <span class="n">SpectralResolution</span>
-<span class="kn">from</span> <span class="nn">..contrib.ppxf</span> <span class="k">import</span> <span class="n">ppxf</span>
-<span class="kn">from</span> <span class="nn">.spatiallybinnedspectra</span> <span class="k">import</span> <span class="n">SpatiallyBinnedSpectra</span>
-<span class="kn">from</span> <span class="nn">.templatelibrary</span> <span class="k">import</span> <span class="n">TemplateLibrary</span>
-<span class="kn">from</span> <span class="nn">.pixelmask</span> <span class="k">import</span> <span class="n">PixelMask</span>
-<span class="kn">from</span> <span class="nn">.spectralfitting</span> <span class="k">import</span> <span class="n">StellarKinematicsFit</span>
-</pre></div>
-</div>
-</dd>
 <dt><em>Class usage examples</em>:</dt>
 <dd>Add examples</dd>
 <dt><em>Revision history</em>:</dt>
@@ -235,20 +207,23 @@ offset between template and object spectra to account for
 different size pixels.</div>
 <div class="line"><strong>31 Oct 2016</strong>: (KBW) Allow the spectral resolution to be a
 vector per spaxel or a vector per set of input spectra in
-<a class="reference internal" href="#mangadap.proc.ppxffit.PPXFFit.fit" title="mangadap.proc.ppxffit.PPXFFit.fit"><code class="xref py py-func docutils literal"><span class="pre">PPXFFit.fit()</span></code></a>.</div>
+<a class="reference internal" href="#mangadap.proc.ppxffit.PPXFFit.fit" title="mangadap.proc.ppxffit.PPXFFit.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">PPXFFit.fit()</span></code></a>.</div>
 <div class="line"><strong>01 Nov 2016</strong>: (KBW) Added new iteration method that does not do
 a first fit to the global spectrum but does include the
 rejection iteration.  Allows users to treat each spectrum
-provided to <a class="reference internal" href="#mangadap.proc.ppxffit.PPXFFit.fit" title="mangadap.proc.ppxffit.PPXFFit.fit"><code class="xref py py-func docutils literal"><span class="pre">PPXFFit.fit()</span></code></a> individually.  Fixed goodpixel
+provided to <a class="reference internal" href="#mangadap.proc.ppxffit.PPXFFit.fit" title="mangadap.proc.ppxffit.PPXFFit.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">PPXFFit.fit()</span></code></a> individually.  Fixed goodpixel
 mask when not first fitting the global spectrum.</div>
 <div class="line"><strong>02 Nov 2016</strong>: (KBW) Added ability to limit which templates are
-fit to each spectrum in <a class="reference internal" href="#mangadap.proc.ppxffit.PPXFFit.fit" title="mangadap.proc.ppxffit.PPXFFit.fit"><code class="xref py py-func docutils literal"><span class="pre">PPXFFit.fit()</span></code></a> using usetpl kwarg.</div>
+fit to each spectrum in <a class="reference internal" href="#mangadap.proc.ppxffit.PPXFFit.fit" title="mangadap.proc.ppxffit.PPXFFit.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">PPXFFit.fit()</span></code></a> using usetpl kwarg.</div>
 <div class="line"><strong>17 Feb 2017</strong>: (KBW) Included filtering options.  Changed to use
 ppxf v6.0.4; mpfit object no longer returned, only mpfit status.</div>
 <div class="line"><strong>30 Aug 2017</strong>: (KBW) Switch from
-<a class="reference internal" href="mangadap.util.instrument.html#mangadap.util.instrument.resample_vector" title="mangadap.util.instrument.resample_vector"><code class="xref py py-func docutils literal"><span class="pre">mangadap.util.instrument.resample_vector()</span></code></a> to
-<a class="reference internal" href="mangadap.util.instrument.html#mangadap.util.instrument.resample1d" title="mangadap.util.instrument.resample1d"><code class="xref py py-func docutils literal"><span class="pre">mangadap.util.instrument.resample1d()</span></code></a>.</div>
-<div class="line"><strong>05 Feb 2018</strong>: (KBW) Added <a class="reference internal" href="#mangadap.proc.ppxffit.PPXFModel" title="mangadap.proc.ppxffit.PPXFModel"><code class="xref py py-class docutils literal"><span class="pre">PPXFModel</span></code></a>.</div>
+<code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.util.instrument.resample_vector()</span></code> to
+<code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.util.instrument.resample1d()</span></code>.</div>
+<div class="line"><strong>05 Feb 2018</strong>: (KBW) Added <a class="reference internal" href="#mangadap.proc.ppxffit.PPXFModel" title="mangadap.proc.ppxffit.PPXFModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">PPXFModel</span></code></a>.</div>
+<div class="line"><strong>22 May 2018</strong>: (KBW) Change import to ppxf package.</div>
+<div class="line"><strong>30 Aug 2018</strong>: (KBW) Changed from resample1d to
+<a class="reference internal" href="mangadap.util.sampling.html#mangadap.util.sampling.Resample" title="mangadap.util.sampling.Resample"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.sampling.Resample</span></code></a>.</div>
 </div>
 </dd>
 </dl>
@@ -261,17 +236,17 @@ poor redshift guesses.</p>
 <dl class="class">
 <dt id="mangadap.proc.ppxffit.PPXFFit">
 <em class="property">class </em><code class="descclassname">mangadap.proc.ppxffit.</code><code class="descname">PPXFFit</code><span class="sig-paren">(</span><em>bitmask</em>, <em>par=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="mangadap.proc.spectralfitting.html#mangadap.proc.spectralfitting.StellarKinematicsFit" title="mangadap.proc.spectralfitting.StellarKinematicsFit"><code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.spectralfitting.StellarKinematicsFit</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="mangadap.proc.spectralfitting.html#mangadap.proc.spectralfitting.StellarKinematicsFit" title="mangadap.proc.spectralfitting.StellarKinematicsFit"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.proc.spectralfitting.StellarKinematicsFit</span></code></a></p>
 <p>Use pPXF to measure the stellar kinematics.  Although it can also
 fit the composition and emission lines, for now just force it to be
-a <code class="xref py py-class docutils literal"><span class="pre">StellarKinematicsFit</span></code> objec.</p>
+a <code class="xref py py-class docutils literal notranslate"><span class="pre">StellarKinematicsFit</span></code> objec.</p>
 <dl class="attribute">
 <dt id="mangadap.proc.ppxffit.PPXFFit.bitmask">
 <code class="descname">bitmask</code><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit.bitmask" title="Permalink to this definition">¶</a></dt>
 <dd><p><em>BitMask</em> – Bitmask to use for masking spectral pixels
 and parameter values.  For
-<a class="reference internal" href="#mangadap.proc.ppxffit.PPXFFit.fit_SpatiallyBinnedSpectra" title="mangadap.proc.ppxffit.PPXFFit.fit_SpatiallyBinnedSpectra"><code class="xref py py-func docutils literal"><span class="pre">fit_SpatiallyBinnedSpectra()</span></code></a>, must have bit for
-‘LOW_SNR’.  For <a class="reference internal" href="#mangadap.proc.ppxffit.PPXFFit.fit" title="mangadap.proc.ppxffit.PPXFFit.fit"><code class="xref py py-func docutils literal"><span class="pre">fit()</span></code></a> must have bits for ‘TPL_PIXELS’,
+<a class="reference internal" href="#mangadap.proc.ppxffit.PPXFFit.fit_SpatiallyBinnedSpectra" title="mangadap.proc.ppxffit.PPXFFit.fit_SpatiallyBinnedSpectra"><code class="xref py py-func docutils literal notranslate"><span class="pre">fit_SpatiallyBinnedSpectra()</span></code></a>, must have bit for
+‘LOW_SNR’.  For <a class="reference internal" href="#mangadap.proc.ppxffit.PPXFFit.fit" title="mangadap.proc.ppxffit.PPXFFit.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">fit()</span></code></a> must have bits for ‘TPL_PIXELS’,
 ‘TRUNCATED’, ‘PPXF_REJECT’, ‘LARGE_CHI2’, ‘LARGE_RESID’,
 ‘INSUFFICIENT_DATA’, ‘FIT_FAILED’, ‘NEAR_BOUND’.</p>
 </dd></dl>
@@ -398,7 +373,7 @@ done in log space.</p>
 
 <dl class="method">
 <dt id="mangadap.proc.ppxffit.PPXFFit._nominal_dispersion_correction">
-<code class="descname">_nominal_dispersion_correction</code><span class="sig-paren">(</span><em>obj_sres</em>, <em>gpm</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit._nominal_dispersion_correction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit._nominal_dispersion_correction" title="Permalink to this definition">¶</a></dt>
+<code class="descname">_nominal_dispersion_correction</code><span class="sig-paren">(</span><em>obj_sres</em>, <em>gpm</em>, <em>cz</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit._nominal_dispersion_correction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit._nominal_dispersion_correction" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calculate the dispersion corrections as the quadrature
 difference between the spectral resolution of the template and
 object spectra.  Returns a masked array!</p>
@@ -421,45 +396,45 @@ defaults?</li>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>obj_flux</strong> (<em>numpy.ma.MaskedArray</em>) – Size is <span class="math">\(N_{\rm
+<li><strong>obj_flux</strong> (<em>numpy.ma.MaskedArray</em>) – Size is <span class="math notranslate nohighlight">\(N_{\rm
 spec}\times N_{\rm chan}\)</span>, object spectra.</li>
-<li><strong>obj_ferr</strong> (<em>numpy.ma.MaskedArray</em>) – Size is <span class="math">\(N_{\rm
+<li><strong>obj_ferr</strong> (<em>numpy.ma.MaskedArray</em>) – Size is <span class="math notranslate nohighlight">\(N_{\rm
 spec}\times N_{\rm chan}\)</span>, object errors</li>
-<li><strong>start</strong> (<em>array</em>) – Size is <span class="math">\(N_{\rm spec}\)</span>, starting pixel
+<li><strong>start</strong> (<em>array</em>) – Size is <span class="math notranslate nohighlight">\(N_{\rm spec}\)</span>, starting pixel
 for each spectrum</li>
-<li><strong>end</strong> (<em>array</em>) – Size is <span class="math">\(N_{\rm spec}\)</span>, ending pixel (+1)
+<li><strong>end</strong> (<em>array</em>) – Size is <span class="math notranslate nohighlight">\(N_{\rm spec}\)</span>, ending pixel (+1)
 for each spectrum</li>
-<li><strong>base_velocity</strong> (<em>array</em>) – Size is <span class="math">\(N_{\rm spec}\)</span>, base
+<li><strong>base_velocity</strong> (<em>array</em>) – Size is <span class="math notranslate nohighlight">\(N_{\rm spec}\)</span>, base
 velocity offset between each object spectrum and the
 template spectra.</li>
-<li><strong>tpl_flux</strong> (<em>array</em>) – Size is <span class="math">\(N_{\rm tpl}\times N_{\rm
+<li><strong>tpl_flux</strong> (<em>array</em>) – Size is <span class="math notranslate nohighlight">\(N_{\rm tpl}\times N_{\rm
 tpl chan}\)</span>, template spectra</li>
-<li><strong>tpl_rfft</strong> (<em>array</em>) – Size is <span class="math">\(N_{\rm tpl}\times N_{\rm
+<li><strong>tpl_rfft</strong> (<em>array</em>) – Size is <span class="math notranslate nohighlight">\(N_{\rm tpl}\times N_{\rm
 tpl pad}\)</span>, real FFT of the template spectra</li>
 <li><strong>guess_kin</strong> (<em>array</em>) – Initial guess for kinematics.  Size is
-<span class="math">\(N_{\rm spec}\times N_{\rm moments}\)</span>.</li>
+<span class="math notranslate nohighlight">\(N_{\rm spec}\times N_{\rm moments}\)</span>.</li>
 <li><strong>fix_kinematics</strong> (<em>bool</em>) – (<strong>Optional</strong>) Flag to fix the
 kinematics to the input values during the fit.</li>
-<li><strong>obj_to_fit</strong> (<em>array</em>) – (<strong>Optional</strong>) Size is <span class="math">\(N_{\rm
+<li><strong>obj_to_fit</strong> (<em>array</em>) – (<strong>Optional</strong>) Size is <span class="math notranslate nohighlight">\(N_{\rm
 spec}\)</span>, boolean flag to fit object spectrum</li>
-<li><strong>tpl_to_use</strong> (<em>array</em>) – (<strong>Optional</strong>) Size is <span class="math">\(N_{\rm
+<li><strong>tpl_to_use</strong> (<em>array</em>) – (<strong>Optional</strong>) Size is <span class="math notranslate nohighlight">\(N_{\rm
 spec}\times N_{\rm tpl}\)</span>, boolean flag to use a template
 for the fit to each object spectrum</li>
 <li><strong>plot</strong> (<em>bool</em>) – (<strong>Optional</strong>) Produce the default ppxf fit
 plot.</li>
 <li><strong>degree</strong> (<em>int</em>) – (<strong>Optional</strong>) Additive polynomial order.
-Default is to use the internal attribute <code class="xref py py-attr docutils literal"><span class="pre">degree</span></code>.</li>
+Default is to use the internal attribute <code class="xref py py-attr docutils literal notranslate"><span class="pre">degree</span></code>.</li>
 <li><strong>mdegree</strong> (<em>int</em>) – (<strong>Optional</strong>) Multiplicative polynomial
 order.  Default is to use the internal attribute
-<code class="xref py py-attr docutils literal"><span class="pre">mdegree</span></code>.</li>
+<code class="xref py py-attr docutils literal notranslate"><span class="pre">mdegree</span></code>.</li>
 <li><strong>dof</strong> (<em>int</em>) – (<strong>Optional</strong>) Number of degrees of freedom in
 the fit.  Default is to use the internal attribute
-<code class="xref py py-attr docutils literal"><span class="pre">dof</span></code>.</li>
+<code class="xref py py-attr docutils literal notranslate"><span class="pre">dof</span></code>.</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Array with <span class="math">\(N_{\rm spec}\)</span> instances of
-<a class="reference internal" href="#mangadap.proc.ppxffit.PPXFFitResult" title="mangadap.proc.ppxffit.PPXFFitResult"><code class="xref py py-class docutils literal"><span class="pre">PPXFFitResult</span></code></a>.</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Array with <span class="math notranslate nohighlight">\(N_{\rm spec}\)</span> instances of
+<a class="reference internal" href="#mangadap.proc.ppxffit.PPXFFitResult" title="mangadap.proc.ppxffit.PPXFFitResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">PPXFFitResult</span></code></a>.</p>
 </td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">numpy.ndarray</p>
@@ -471,7 +446,7 @@ the fit.  Default is to use the internal attribute
 
 <dl class="method">
 <dt id="mangadap.proc.ppxffit.PPXFFit._save_results">
-<code class="descname">_save_results</code><span class="sig-paren">(</span><em>global_fit_result</em>, <em>result</em>, <em>model_flux</em>, <em>model_mask</em>, <em>model_par</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit._save_results"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit._save_results" title="Permalink to this definition">¶</a></dt>
+<code class="descname">_save_results</code><span class="sig-paren">(</span><em>global_fit_result</em>, <em>result</em>, <em>model_mask</em>, <em>model_par</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit._save_results"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit._save_results" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
@@ -505,14 +480,14 @@ km/s</li>
 <li><strong>obj_wave</strong> (<em>numpy.ndarray</em>) – 1D vector of object wavelengths in
 angstroms.  Does NOT need to be same as the template
 wavelengths.</li>
-<li><strong>obj_flux</strong> (<em>numpy.ndarray</em>) – <span class="math">\(N_{\rm spec}\times N_{\rm
+<li><strong>obj_flux</strong> (<em>numpy.ndarray</em>) – <span class="math notranslate nohighlight">\(N_{\rm spec}\times N_{\rm
 pix}\)</span> array of object spectra to fit.  Can be a
 numpy.ma.MaskedArray.</li>
-<li><strong>obj_ferr</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) <span class="math">\(N_{\rm
+<li><strong>obj_ferr</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) <span class="math notranslate nohighlight">\(N_{\rm
 spec}\times N_{\rm pix}\)</span> array with the errors in the
 object spectra.  Can be a numpy.ma.MaskedArray.</li>
 <li><strong>obj_sres</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) 1D or 2D array with
-the spectral resolution (<span class="math">\(R =
+the spectral resolution (<span class="math notranslate nohighlight">\(R =
 \lambda/\Delta\lambda\)</span>) at each wavelength for (each of)
 the object spectra.  Default is the resolution is not
 provided and assumed to be same as the template
@@ -554,20 +529,23 @@ pPXFFit.</p>
 <dl class="staticmethod">
 <dt id="mangadap.proc.ppxffit.PPXFFit.compile_model_flux">
 <em class="property">static </em><code class="descname">compile_model_flux</code><span class="sig-paren">(</span><em>obj_flux</em>, <em>ppxf_result</em>, <em>rescale=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit.compile_model_flux"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit.compile_model_flux" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return the model flux, masked where the data were not fit.  The
-function does <em>not</em> reconstruct the model based on the ppxf
-parameters.</p>
+<dd><p>Return the model flux but pulling the models out of the ppxf
+results.  The model can be rescaled to the data based on the
+fitted pixels if rescale is True.</p>
+<p>The output array is masked in the spectral regions below and
+above the fitted wavelength range; any intervening pixels are
+<em>not</em> masked, even if they’re not included in the fit.</p>
 </dd></dl>
 
 <dl class="staticmethod">
 <dt id="mangadap.proc.ppxffit.PPXFFit.construct_models">
 <em class="property">static </em><code class="descname">construct_models</code><span class="sig-paren">(</span><em>tpl_wave</em>, <em>tpl_flux</em>, <em>obj_wave</em>, <em>obj_flux_shape</em>, <em>model_par</em>, <em>select=None</em>, <em>redshift_only=False</em>, <em>deredshift=False</em>, <em>corrected_dispersion=False</em>, <em>dvtol=1e-10</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit.construct_models"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit.construct_models" title="Permalink to this definition">¶</a></dt>
 <dd><p>Construct models using the provided set of model parameters.
-This is a wrapper for <a class="reference internal" href="#mangadap.proc.ppxffit.PPXFModel" title="mangadap.proc.ppxffit.PPXFModel"><code class="xref py py-class docutils literal"><span class="pre">PPXFModel</span></code></a>.</p>
+This is a wrapper for <a class="reference internal" href="#mangadap.proc.ppxffit.PPXFModel" title="mangadap.proc.ppxffit.PPXFModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">PPXFModel</span></code></a>.</p>
 <p>Only the shape of the object data is needed, not the data
 itself.</p>
 <p>Allows for a replacement template library that must have the
-same shape as <code class="xref py py-attr docutils literal"><span class="pre">tpl_flux</span></code>.</p>
+same shape as <code class="xref py py-attr docutils literal notranslate"><span class="pre">tpl_flux</span></code>.</p>
 <p>The input velocities are expected to be cz, not “ppxf”
 (pixelized) velocities.</p>
 <p>If redshift_only is true, the provided dispersion is set to 1e-9
@@ -594,25 +572,25 @@ constant change in velocity.  Over large velocity shifts, this
 approximation can become poor.  An e-mail summary from Michele
 Cappellari:</p>
 <p>The velocity scale per pixel is input as</p>
-<div class="math">
+<div class="math notranslate nohighlight">
 \[\delta v = c \delta\ln\lambda = c (\ln\lambda_1 -
 \ln\lambda_0)\]</div>
 <p>The velocites output by pPXF are:</p>
-<div class="math">
+<div class="math notranslate nohighlight">
 \[V = \delta V N_{\rm shift} = c \ln(\lambda_{N_{\rm
 shift}}/\lambda_0)\]</div>
 <p>which implies that the relation between PPXF output velocity and
 redshift is</p>
-<div class="math">
+<div class="math notranslate nohighlight">
 \[1 + z = exp(V/c),\]</div>
 <p>which reduces z~vel/c in the low-redshift limit.  This function
-converts the <span class="math">\(V\)</span> values provided by pPXF to <span class="math">\(cz\)</span>
+converts the <span class="math notranslate nohighlight">\(V\)</span> values provided by pPXF to <span class="math notranslate nohighlight">\(cz\)</span>
 velocities.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p class="last"><strong>IMPORTANT</strong>: After this conversion, you must revert the
 velocities back to the “pixel-based velocities” (using
-<code class="xref py py-func docutils literal"><span class="pre">_revert_velocity()</span></code>) before using the velocities to
+<code class="xref py py-func docutils literal notranslate"><span class="pre">_revert_velocity()</span></code>) before using the velocities to
 reconstruct the pPXF fitted model.</p>
 </div>
 </dd></dl>
@@ -645,7 +623,7 @@ kinematics.</li>
 spectrum-specific velocity dispersion used to set the
 initial guess kinematics.</li>
 <li><strong>iteration_mode</strong> (<em>str</em>) – (<strong>Optional</strong>) Iteration sequence to
-perform.  See <a class="reference internal" href="#mangadap.proc.ppxffit.PPXFFit.iteration_modes" title="mangadap.proc.ppxffit.PPXFFit.iteration_modes"><code class="xref py py-func docutils literal"><span class="pre">iteration_modes()</span></code></a>.</li>
+perform.  See <a class="reference internal" href="#mangadap.proc.ppxffit.PPXFFit.iteration_modes" title="mangadap.proc.ppxffit.PPXFFit.iteration_modes"><code class="xref py py-func docutils literal notranslate"><span class="pre">iteration_modes()</span></code></a>.</li>
 <li><strong>reject_boxcar</strong> (<em>int</em>) – (<strong>Optional</strong>) Size of the boxcar to
 use during the rejection iteration.  Default is 100.  If
 None, rejection uses the entire residual spectrum.</li>
@@ -666,7 +644,7 @@ treating the list of object spectra as an ensemble.</em></li>
 <li><strong>velscale_ratio</strong> (<em>int</em>) – (<strong>Optional</strong>) Ratio of velocity scale
 per pixel in the object spectra to that for the template
 spectra.  Default is that they should be identical.</li>
-<li><strong>(</strong><strong>numpy.ndarray</strong><strong>,</strong> (<a class="reference internal" href="mangadap.proc.elric.html#mangadap.proc.elric.LineProfileFit.mask" title="mangadap.proc.elric.LineProfileFit.mask"><em>mask</em></a>) – :class:<a href="#id1"><span class="problematic" id="id2">`</span></a>mangadap.util.pixelmask.SpectralPixelMask):
+<li><strong>(</strong><strong>numpy.ndarray</strong><strong>,</strong> (<em>mask</em>) – :class:<a href="#id1"><span class="problematic" id="id2">`</span></a>mangadap.util.pixelmask.SpectralPixelMask):
 (<strong>Optional</strong>) A baseline pixel mask to use during the
 fitting.  Other pixels may be masked via the convenience
 functions, but these pixels will always be masked.</li>
@@ -674,13 +652,13 @@ functions, but these pixels will always be masked.</li>
 object and template spectra have identical spectral
 resolution.  Default is True.</li>
 <li><strong>tpl_sres</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) One-dimensional
-vector with the spectral resolution (<span class="math">\(R =
+vector with the spectral resolution (<span class="math notranslate nohighlight">\(R =
 \lambda/\Delta\lambda\)</span>) at each wavelength of the
 template spectra.  Default is the resolution is not
 provided and assumed to be same as the object
 resolution.</li>
 <li><strong>obj_sres</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) One- or Two-dimensional
-array with the spectral resolution (<span class="math">\(R =
+array with the spectral resolution (<span class="math notranslate nohighlight">\(R =
 \lambda/\Delta\lambda\)</span>) at each wavelength for (each of)
 the object spectra.  Default is the resolution is not
 provided and assumed to be same as the template
@@ -762,7 +740,7 @@ ppxf() the following parameters: component =
 </li>
 <li><strong>loggers</strong> (<em>list</em>) – (<strong>Optional</strong>) List of <a class="reference external" href="https://docs.python.org/3/library/logging.html">logging.Logger</a> objects
 to log progress; ignored if quiet=True.  Logging is done
-using <a class="reference internal" href="mangadap.util.log.html#mangadap.util.log.log_output" title="mangadap.util.log.log_output"><code class="xref py py-func docutils literal"><span class="pre">mangadap.util.log.log_output()</span></code></a>.  Default is
+using <a class="reference internal" href="mangadap.util.log.html#mangadap.util.log.log_output" title="mangadap.util.log.log_output"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.util.log.log_output()</span></code></a>.  Default is
 no logging.</li>
 <li><strong>quiet</strong> (<em>bool</em>) – (<strong>Optional</strong>) Suppress all terminal and
 logging output.  Default is False.</li>
@@ -791,7 +769,7 @@ object spectra (<em>obj_wave</em>).</p>
 <p>3. A mask for the best-fitting models spectra, following
 from the internal bitmask.</p>
 <p>4. A record array with the fitted model parameters; see
-<code class="xref py py-class docutils literal"><span class="pre">spectralfitting.StellarKinematicsFit._per_stellar_kinematics_dtype</span></code>.</p>
+<code class="xref py py-class docutils literal notranslate"><span class="pre">spectralfitting.StellarKinematicsFit._per_stellar_kinematics_dtype</span></code>.</p>
 </div></blockquote>
 </p>
 </td>
@@ -799,7 +777,7 @@ from the internal bitmask.</p>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">numpy.ndarray</p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if the input arrays are not of the
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if the input arrays are not of the
 correct shape or if the pixel scale of the template and
 object spectra is greater than the specified tolerance.</p>
 </td>
@@ -873,7 +851,7 @@ avoid aliasing near the edges of the spectral range in
 km/s.  Default is six times <em>max_velocity_range</em>.</li>
 <li><strong>loggers</strong> (<em>list</em>) – (<strong>Optional</strong>) List of <a class="reference external" href="https://docs.python.org/3/library/logging.html">logging.Logger</a>
 objects to log progress; ignored if quiet=True.  Logging
-is done using <a class="reference internal" href="mangadap.util.log.html#mangadap.util.log.log_output" title="mangadap.util.log.log_output"><code class="xref py py-func docutils literal"><span class="pre">mangadap.util.log.log_output()</span></code></a>.
+is done using <a class="reference internal" href="mangadap.util.log.html#mangadap.util.log.log_output" title="mangadap.util.log.log_output"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.util.log.log_output()</span></code></a>.
 Default is no logging.</li>
 <li><strong>quiet</strong> (<em>bool</em>) – (<strong>Optional</strong>) Suppress all terminal and
 logging output.  Default is False.</li>
@@ -899,7 +877,7 @@ convolution aliasing</li>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">numpy.ndarray</p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if (1) no pixels are valid for the fit,
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if (1) no pixels are valid for the fit,
 (2) the template and object do not have overlapping
 spectral regions given the expected velocity offset
 between the two, or (3) the turncation to deal with
@@ -925,10 +903,10 @@ aliasing removes all remaining pixels.</p>
 <em class="property">static </em><code class="descname">iteration_modes</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFit.iteration_modes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFit.iteration_modes" title="Permalink to this definition">¶</a></dt>
 <dd><p>Possible iteration methods:</p>
 <blockquote>
-<div><p><code class="docutils literal"><span class="pre">none</span></code>: Fit all bins with all templates with a single call
+<div><p><code class="docutils literal notranslate"><span class="pre">none</span></code>: Fit all bins with all templates with a single call
 to pPXF.</p>
 <dl class="docutils">
-<dt><code class="docutils literal"><span class="pre">fit_reject_filter</span></code>: Perform the following procedure:</dt>
+<dt><code class="docutils literal notranslate"><span class="pre">fit_reject_filter</span></code>: Perform the following procedure:</dt>
 <dd><ul class="first last simple">
 <li>Fit each spectrum</li>
 <li><dl class="first docutils">
@@ -946,22 +924,22 @@ to result of the final filtered fit</li>
 </ul>
 </dd>
 </dl>
-<p><code class="docutils literal"><span class="pre">no_global_wrej</span></code>: Do not fit the global spectrum
+<p><code class="docutils literal notranslate"><span class="pre">no_global_wrej</span></code>: Do not fit the global spectrum
 first, but include a rejection iteration.  All templates are
 fit in each step.</p>
-<p><code class="docutils literal"><span class="pre">global_template</span></code>:  Fit the global spectrum with all
+<p><code class="docutils literal notranslate"><span class="pre">global_template</span></code>:  Fit the global spectrum with all
 templates and include a single rejection iteration.  The
 pixel mask for this fit is the base mask for all fits to the
 individual bins.  A single rejection iteration is done for
 each bin.  <strong>Only the global template is used when fitting
 each bin.</strong></p>
-<p><code class="docutils literal"><span class="pre">nonzero_templates</span></code>:  Fit the global spectrum with
+<p><code class="docutils literal notranslate"><span class="pre">nonzero_templates</span></code>:  Fit the global spectrum with
 all templates and include a single rejection iteration.  The
 pixel mask for this fit is the base mask for all fits to the
 individual bins.  A single rejection iteration is done for
 each bin.  <strong>Only the templates with non-zero weights are
 used when fitting each bin.</strong></p>
-<p><code class="docutils literal"><span class="pre">all_templates</span></code>:  Fit the global spectrum with all
+<p><code class="docutils literal notranslate"><span class="pre">all_templates</span></code>:  Fit the global spectrum with all
 templates and include a single rejection iteration.  The
 pixel mask for this fit is the base mask for all fits to the
 individual bins.  A single rejection iteration is done for
@@ -985,7 +963,7 @@ each bin.  <strong>All templates are used when fitting each bin.</strong></p>
 <dd><p>Return the limits on the LOSVD parameters used by pPXF.</p>
 <blockquote>
 <div><ul class="simple">
-<li>Velocity limits are <span class="math">\(\pm 2000\)</span> km/s</li>
+<li>Velocity limits are <span class="math notranslate nohighlight">\(\pm 2000\)</span> km/s</li>
 <li>Velocity-disperison limits are from 1/10 pixels to 1000 km/s</li>
 <li>Limits of the higher orders moments are from -0.3 to 0.3</li>
 </ul>
@@ -1104,12 +1082,12 @@ propagation; it’s just the inverse of the “convert” operation</p>
 <dl class="class">
 <dt id="mangadap.proc.ppxffit.PPXFFitPar">
 <em class="property">class </em><code class="descclassname">mangadap.proc.ppxffit.</code><code class="descname">PPXFFitPar</code><span class="sig-paren">(</span><em>template_library_key</em>, <em>template_library</em>, <em>guess_redshift</em>, <em>guess_dispersion</em>, <em>iteration_mode='global_template'</em>, <em>reject_boxcar=None</em>, <em>filter_boxcar=None</em>, <em>filter_operation=None</em>, <em>filter_iterations=None</em>, <em>match_resolution=True</em>, <em>velscale_ratio=None</em>, <em>minimum_snr=None</em>, <em>pixelmask=None</em>, <em>bias=None</em>, <em>degree=None</em>, <em>mdegree=None</em>, <em>filt_degree=None</em>, <em>filt_mdegree=None</em>, <em>moments=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFitPar"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFitPar" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet" title="mangadap.par.parset.ParSet"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.parset.ParSet</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet" title="mangadap.par.parset.ParSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.par.parset.ParSet</span></code></a></p>
 <p>Define a parameter set used by the pPXF fitting method.</p>
 <div class="admonition-todo admonition" id="index-5">
 <p class="first admonition-title">Todo</p>
 <p class="last">The overlap between this and
-<a class="reference internal" href="mangadap.proc.stellarcontinuummodel.html#mangadap.proc.stellarcontinuummodel.StellarContinuumModelDef" title="mangadap.proc.stellarcontinuummodel.StellarContinuumModelDef"><code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.stellarcontinuummodel.StellarContinuumModelDef</span></code></a>
+<a class="reference internal" href="mangadap.proc.stellarcontinuummodel.html#mangadap.proc.stellarcontinuummodel.StellarContinuumModelDef" title="mangadap.proc.stellarcontinuummodel.StellarContinuumModelDef"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.proc.stellarcontinuummodel.StellarContinuumModelDef</span></code></a>
 is not well designed.</p>
 </div>
 <table class="docutils field-list" frame="void" rules="none">
@@ -1118,16 +1096,16 @@ is not well designed.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>template_library_key</strong> (<em>str</em>) – Keyword of the library to fit.  See
-<a class="reference internal" href="mangadap.proc.templatelibrary.html#mangadap.proc.templatelibrary.available_template_libraries" title="mangadap.proc.templatelibrary.available_template_libraries"><code class="xref py py-func docutils literal"><span class="pre">mangadap.proc.templatelibrary.available_template_libraries()</span></code></a>.</li>
-<li><strong>template_library</strong> – (<a class="reference internal" href="mangadap.proc.templatelibrary.html#mangadap.proc.templatelibrary.TemplateLibrary" title="mangadap.proc.templatelibrary.TemplateLibrary"><code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.templatelibrary.TemplateLibrary</span></code></a>):
+<a class="reference internal" href="mangadap.proc.templatelibrary.html#mangadap.proc.templatelibrary.available_template_libraries" title="mangadap.proc.templatelibrary.available_template_libraries"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.proc.templatelibrary.available_template_libraries()</span></code></a>.</li>
+<li><strong>template_library</strong> – (<a class="reference internal" href="mangadap.proc.templatelibrary.html#mangadap.proc.templatelibrary.TemplateLibrary" title="mangadap.proc.templatelibrary.TemplateLibrary"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.proc.templatelibrary.TemplateLibrary</span></code></a>):
 Object with the spectra in the template library that have
 been prepared for analysis of the data.</li>
 <li><strong>guess_redshift</strong> (<em>array-like</em>) – Initial guess for the redshift
-(<span class="math">\(cz\)</span>) of each binned spectrum.</li>
+(<span class="math notranslate nohighlight">\(cz\)</span>) of each binned spectrum.</li>
 <li><strong>guess_dispersion</strong> (<em>array-like</em>) – Initial guess for the velocity
 dispersion for each binned spectrum.</li>
 <li><strong>iteration_mode</strong> (<em>str</em>) – (<strong>Optional</strong>) Iteration mode to use; see
-<a class="reference internal" href="#mangadap.proc.ppxffit.PPXFFit.iteration_modes" title="mangadap.proc.ppxffit.PPXFFit.iteration_modes"><code class="xref py py-func docutils literal"><span class="pre">PPXFFit.iteration_modes()</span></code></a>.</li>
+<a class="reference internal" href="#mangadap.proc.ppxffit.PPXFFit.iteration_modes" title="mangadap.proc.ppxffit.PPXFFit.iteration_modes"><code class="xref py py-func docutils literal notranslate"><span class="pre">PPXFFit.iteration_modes()</span></code></a>.</li>
 <li><strong>match_resolution</strong> (<em>bool</em>) – (<strong>Optional</strong>) Match the spectral
 resolution of the template to that of the galaxy data.  This
 is used only when constructing the template library.
@@ -1140,9 +1118,9 @@ is the same as assuming that the velocity scales are
 identical.</li>
 <li><strong>minimum_snr</strong> (<em>float</em>) – (<strong>Optional</strong>) Minimum S/N ratio to include
 in the fitting.</li>
-<li><strong>pixelmask</strong> (<code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.pixelmask.PixelMask</span></code>) – (<strong>Optional</strong>) Pixel mask to include during the fitting.</li>
-<li><strong>degree</strong><strong>, </strong><strong>mdegree</strong><strong>, </strong><strong>moments</strong> (<a class="reference internal" href="mangadap.proc.sasuke.html#mangadap.proc.sasuke.Sasuke.bias" title="mangadap.proc.sasuke.Sasuke.bias"><em>bias</em></a><em>,</em>) – (<strong>Optional</strong>) See
-<code class="xref py py-class docutils literal"><span class="pre">mangadap.contrib.ppxf.ppxf</span></code> documentation.</li>
+<li><strong>pixelmask</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.proc.pixelmask.PixelMask</span></code>) – (<strong>Optional</strong>) Pixel mask to include during the fitting.</li>
+<li><strong>degree</strong><strong>, </strong><strong>mdegree</strong><strong>, </strong><strong>moments</strong> (<em>bias</em><em>,</em>) – (<strong>Optional</strong>) See
+<code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.contrib.ppxf.ppxf</span></code> documentation.</li>
 </ul>
 </td>
 </tr>
@@ -1158,7 +1136,7 @@ in the fitting.</li>
 <dt id="mangadap.proc.ppxffit.PPXFFitPar._keyword_defaults">
 <em class="property">static </em><code class="descname">_keyword_defaults</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFitPar._keyword_defaults"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFitPar._keyword_defaults" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the keyword defaults.  Pulled from
-<code class="xref py py-class docutils literal"><span class="pre">mangadap.contrib.ppxf.ppxf</span></code>.</p>
+<code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.contrib.ppxf.ppxf</span></code>.</p>
 </dd></dl>
 
 <dl class="method">
@@ -1176,7 +1154,7 @@ in the fitting.</li>
 <dl class="class">
 <dt id="mangadap.proc.ppxffit.PPXFFitResult">
 <em class="property">class </em><code class="descclassname">mangadap.proc.ppxffit.</code><code class="descname">PPXFFitResult</code><span class="sig-paren">(</span><em>degree</em>, <em>mdegree</em>, <em>start</em>, <em>end</em>, <em>tpl_to_use</em>, <em>ppxf_fit</em>, <em>ntpl</em>, <em>weight_errors=False</em>, <em>component_fits=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFFitResult"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFFitResult" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>A basic utility to save the critical parts of the pPXF model.</p>
 <dl class="method">
 <dt id="mangadap.proc.ppxffit.PPXFFitResult.empty_fit">
@@ -1198,7 +1176,7 @@ in the fitting.</li>
 <dl class="class">
 <dt id="mangadap.proc.ppxffit.PPXFModel">
 <em class="property">class </em><code class="descclassname">mangadap.proc.ppxffit.</code><code class="descname">PPXFModel</code><span class="sig-paren">(</span><em>templates</em>, <em>galaxy</em>, <em>velscale</em>, <em>velscale_ratio=None</em>, <em>vsyst=None</em>, <em>sigma_diff=0</em>, <em>moments=2</em>, <em>degree=4</em>, <em>mdegree=0</em>, <em>component=0</em>, <em>gas_component=None</em>, <em>lam=None</em>, <em>reddening=None</em>, <em>gas_reddening=None</em>, <em>reddening_func=None</em>, <em>sky=None</em>, <em>templates_rfft=None</em>, <em>trig=False</em>, <em>quiet=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/ppxffit.html#PPXFModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.ppxffit.PPXFModel" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Class that reconstructs a pPXF model given a set of templates and
 the model parameters.</p>
 <p>This pulls functions from M. Cappellari’s ppxf class, version 6.7.0.</p>

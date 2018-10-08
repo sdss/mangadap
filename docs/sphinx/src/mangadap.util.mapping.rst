@@ -1,5 +1,5 @@
-mangadap\.util\.mapping module
-==============================
+mangadap.util.mapping module
+============================
 
 .. automodule:: mangadap.util.mapping
     :members:

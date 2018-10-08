@@ -1558,8 +1558,10 @@ class SpectralIndices:
 
         # Mask any dummy indices
         dummy = numpy.zeros(nindx, dtype=numpy.bool)
-        dummy[:nabs] = absdb.dummy
-        dummy[nabs:] = bhddb.dummy
+        if absdb is not None:
+            dummy[:nabs] = absdb.dummy
+        if bhddb is not None:
+            dummy[nabs:] = bhddb.dummy
         if numpy.any(dummy):
             measurements['MASK'][:,dummy] = True if bitmask is None else \
                     bitmask.turn_on(measurements['MASK'][:,dummy], 'UNDEFINED_BANDS')

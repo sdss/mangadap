@@ -36,7 +36,7 @@
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
     <link rel="top" title="mangadap 2.2.2 documentation" href="../../../index.html"/>
-        <link rel="up" title="Module code" href="../../index.html"/> 
+        <link rel="up" title="mangadap" href="../../mangadap.html"/> 
 
   
   <script src="../../../_static/js/modernizr.min.js"></script>
@@ -138,6 +138,8 @@
         
           <li><a href="../../index.html">Module code</a> &raquo;</li>
         
+          <li><a href="../../mangadap.html">mangadap</a> &raquo;</li>
+        
       <li>mangadap.proc.reductionassessments</li>
     
     
@@ -195,7 +197,7 @@
 
 <span class="sd">        from ..drpfits import DRPFits</span>
 <span class="sd">        from ..par.parset import ParSet</span>
-<span class="sd">        from ..config.defaults import default_dap_source, default_dap_common_path</span>
+<span class="sd">        from ..config.defaults import dap_source_dir, default_dap_common_path</span>
 <span class="sd">        from ..config.defaults import default_dap_file_name</span>
 <span class="sd">        from ..util.covariance import Covariance</span>
 <span class="sd">        from ..util.geometry import SemiMajorAxisCoo</span>
@@ -247,7 +249,7 @@
 
 <span class="kn">from</span> <span class="nn">..drpfits</span> <span class="k">import</span> <span class="n">DRPFits</span>
 <span class="kn">from</span> <span class="nn">..par.parset</span> <span class="k">import</span> <span class="n">ParSet</span>
-<span class="kn">from</span> <span class="nn">..config.defaults</span> <span class="k">import</span> <span class="n">default_dap_source</span><span class="p">,</span> <span class="n">default_dap_common_path</span>
+<span class="kn">from</span> <span class="nn">..config.defaults</span> <span class="k">import</span> <span class="n">dap_source_dir</span><span class="p">,</span> <span class="n">default_dap_common_path</span>
 <span class="kn">from</span> <span class="nn">..config.defaults</span> <span class="k">import</span> <span class="n">default_dap_file_name</span>
 <span class="kn">from</span> <span class="nn">..util.fitsutil</span> <span class="k">import</span> <span class="n">DAPFitsUtil</span>
 <span class="kn">from</span> <span class="nn">..util.covariance</span> <span class="k">import</span> <span class="n">Covariance</span>
@@ -364,7 +366,7 @@
 <span class="sd">        dapsrc (str): (**Optional**) Root path to the DAP source</span>
 <span class="sd">            directory (i.e., $MANGADAP_DIR).  If not provided, the</span>
 <span class="sd">            default is defined by</span>
-<span class="sd">            :func:`mangadap.config.defaults.default_dap_source`.</span>
+<span class="sd">            :func:`mangadap.config.defaults.dap_source_dir`.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        list: A list of :func:`ReductionAssessmentDef` objects, each</span>
@@ -382,7 +384,7 @@
 <span class="sd">            latter is a *Python 3 only module*!</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Check the source directory exists</span>
-    <span class="n">dapsrc</span> <span class="o">=</span> <span class="n">default_dap_source</span><span class="p">()</span> <span class="k">if</span> <span class="n">dapsrc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">)</span>
+    <span class="n">dapsrc</span> <span class="o">=</span> <span class="n">dap_source_dir</span><span class="p">()</span> <span class="k">if</span> <span class="n">dapsrc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">NotADirectoryError</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1"> does not exist!&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">))</span>
 
@@ -588,7 +590,7 @@
 <span class="sd">                parameters required to assess the reduced data.</span>
 <span class="sd">            dapsrc (str): (**Optional**) Root path to the DAP source</span>
 <span class="sd">                directory.  If not provided, the default is defined by</span>
-<span class="sd">                :func:`mangadap.config.defaults.default_dap_source`.</span>
+<span class="sd">                :func:`mangadap.config.defaults.dap_source_dir`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">=</span> <span class="n">select_proc_method</span><span class="p">(</span><span class="n">method_key</span><span class="p">,</span> <span class="n">ReductionAssessmentDef</span><span class="p">,</span>
                                          <span class="n">method_list</span><span class="o">=</span><span class="n">method_list</span><span class="p">,</span>
@@ -813,6 +815,11 @@
             <span class="n">drpf</span><span class="o">.</span><span class="n">open_hdu</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">drpf</span> <span class="o">=</span> <span class="n">drpf</span>
 
+        <span class="c1"># Test if the RSS file exists; cannot compute covariance if not</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">[</span><span class="s1">&#39;covariance&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">drpf</span><span class="o">.</span><span class="n">can_compute_covariance</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;RSS counterpart not available.  Cannot determine covariance matrix!&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">[</span><span class="s1">&#39;covariance&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+
         <span class="c1"># Reset the output paths if necessary</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_set_paths</span><span class="p">(</span><span class="n">directory_path</span><span class="p">,</span> <span class="n">dapver</span><span class="p">,</span> <span class="n">analysis_path</span><span class="p">,</span> <span class="n">output_file</span><span class="p">)</span>
         <span class="c1"># Check that the path for or to the file is defined</span>
@@ -844,10 +851,13 @@
 
             <span class="c1"># Construct the correlation matrix with the appropriate</span>
             <span class="c1"># variance</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">correlation</span> <span class="o">=</span> <span class="n">Covariance</span><span class="o">.</span><span class="n">from_fits</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">,</span> <span class="n">ivar_ext</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">row_major</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                                                    <span class="n">correlation</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">correlation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">correlation</span><span class="o">.</span><span class="n">apply_new_variance</span><span class="p">(</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">[</span><span class="s1">&#39;covariance&#39;</span><span class="p">]:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">correlation</span> <span class="o">=</span> <span class="n">Covariance</span><span class="o">.</span><span class="n">from_fits</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">,</span> <span class="n">ivar_ext</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">row_major</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                                        <span class="n">correlation</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">correlation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">correlation</span><span class="o">.</span><span class="n">apply_new_variance</span><span class="p">(</span>
                                                             <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;SPECTRUM&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;VARIANCE&#39;</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">correlation</span> <span class="o">=</span> <span class="kc">None</span>
 
             <span class="c1"># Read the header data</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">pa</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;PRIMARY&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;ECOOPA&#39;</span><span class="p">]</span>
@@ -858,12 +868,16 @@
             <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">quiet</span> <span class="ow">and</span> <span class="n">ell</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">ell</span> <span class="o">!=</span> <span class="n">ell</span><span class="p">:</span>
                 <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Provided ellipticity different from available file; set &#39;</span> \
                               <span class="s1">&#39;clobber=True to overwrite.&#39;</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">covar_wave</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;PRIMARY&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;BBWAVE&#39;</span><span class="p">]</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">covar_wave</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">covar_wave</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">covar_wave</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">covar_channel</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;PRIMARY&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;BBINDEX&#39;</span><span class="p">]</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">covar_channel</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">covar_channel</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">covar_channel</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">[</span><span class="s1">&#39;covariance&#39;</span><span class="p">]:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">covar_wave</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;PRIMARY&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;BBWAVE&#39;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">covar_wave</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">covar_wave</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">covar_wave</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">covar_channel</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;PRIMARY&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;BBINDEX&#39;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">covar_channel</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">covar_channel</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">covar_channel</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">covar_wave</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">covar_channel</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="c1">#            print(self.covar_wave, self.covar_channel)</span>
 
             <span class="c1"># Make sure the symlink exists</span>

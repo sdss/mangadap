@@ -1,5 +1,5 @@
-mangadap\.survey\.util module
-=============================
+mangadap.survey.util module
+===========================
 
 .. automodule:: mangadap.survey.util
     :members:

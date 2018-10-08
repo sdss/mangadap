@@ -54,7 +54,6 @@ import numpy
 from numpy.polynomial.polynomial import polyval
 import scipy.interpolate
 
-
 def default_calzetti_rv():
     return 4.05
 
@@ -235,12 +234,12 @@ class FMExtinctionCoefficients:
 
 class AvgLMCExtinctionCoefficients(FMExtinctionCoefficients):
     def __init__(self):
-        FMExtinctionCoefficients.__init__(self, 4.626, 1.05, -2.16, 1.31, 1.92, 0.42)
+        FMExtinctionCoefficients.__init__(self, 4.596, 0.91, -1.28, 1.11, 2.73, 0.64)
 
 
 class LMC2ExtinctionCoefficients(FMExtinctionCoefficients):
     def __init__(self):
-        FMExtinctionCoefficients.__init__(self, 4.596, 0.91, -1.28, 1.11, 2.73, 0.64)
+        FMExtinctionCoefficients.__init__(self, 4.626, 1.05, -2.16, 1.31, 1.92, 0.42)
 
 
 def default_fm_rv():
@@ -296,7 +295,7 @@ def reddening_vector_fm(wave, ebv, rv=None, coeffs=None):
         raise TypeError('Input reddening value must be a single float.')
 
     # Check the provided coefficients
-    if coeffs is not None and not isinstance(FMExtinctionCoefficients):
+    if coeffs is not None and not isinstance(coeffs, FMExtinctionCoefficients):
         raise TypeError('Coefficients must be provided by a FMExtinctionCoefficients object.')
 
     _rv = default_fm_rv() if rv is None else rv
@@ -334,10 +333,14 @@ def reddening_vector_fm(wave, ebv, rv=None, coeffs=None):
                                                 polyval(_rv, [ 7.00127e-01, 1.00184, -3.32598e-05]),
                                                 polyval(_rv, [     1.19456, 1.01707, -5.46959e-03,
                                                                7.97809e-04, -4.45636e-05]) ]) )
-    tck = scipy.interpolate.splrep(numpy.append(splpts_oi_k,splpts_uv_k),
-                                   numpy.append(splpts_oi_ext,splpts_uv_ext), s=0)
-    ext[numpy.invert(w1)] = scipy.interpolate.splev(k[numpy.invert(w1)], tck)
-
+    
+    # Use bc_type = 'natural' to be identical to fm_unred.pro in
+    # IDLUTILS
+    interp = scipy.interpolate.CubicSpline(numpy.append(splpts_oi_k,splpts_uv_k),
+                                           numpy.append(splpts_oi_ext,splpts_uv_ext),
+                                           bc_type='natural')
+    w2 = numpy.invert(w1)
+    ext[w2] = interp(k[w2])
     return numpy.ma.power(10., 0.4*ext*ebv)
 
 
@@ -460,7 +463,7 @@ class GalacticExtinction:
         else:
             self.rv = rv
 
-        self.coeffs = FMExtinctionCoefficients.from_Rv(_rv) \
+        self.coeffs = FMExtinctionCoefficients.from_Rv(self.rv) \
                             if coeffs is None and self.form == 'FM' else coeffs
 
         if self.wave is None or self.ebv is None:

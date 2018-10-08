@@ -104,7 +104,7 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.survey.html">mangadap.survey package</a></li>
-<li class="toctree-l3"><a class="reference internal" href="mangadap.test.html">mangadap.test package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.tests.html">mangadap.tests package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.util.html">mangadap.util package</a></li>
 </ul>
 </li>
@@ -192,7 +192,7 @@
 <dt><em>Source location</em>:</dt>
 <dd>$MANGADAP_DIR/python/mangadap/proc/spectralfitting.py</dd>
 <dt><em>Imports and python version compliance</em>:</dt>
-<dd><div class="first last highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<dd><div class="first last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
@@ -216,24 +216,24 @@
 <div class="line"><strong>03 Nov 2016</strong>: (KBW) Added USETPL column to stellar kinematics
 output table.</div>
 <div class="line"><strong>25 Oct 2017</strong>: (KBW) Added PLY columns to emission-line database</div>
-<div class="line"><strong>02 Feb 2018</strong>: (KBW) Added <code class="xref py py-func docutils literal"><span class="pre">select_binned_spectra_to_fit()</span></code>.</div>
+<div class="line"><strong>02 Feb 2018</strong>: (KBW) Added <code class="xref py py-func docutils literal notranslate"><span class="pre">select_binned_spectra_to_fit()</span></code>.</div>
 <div class="line"><strong>15 Mar 2018</strong>: (KBW) Equivalenth width now measured at the
 velocity of each line if a redshift is not provided.  See
-<code class="xref py py-func docutils literal"><span class="pre">measure_equivalent_width()</span></code>.</div>
+<code class="xref py py-func docutils literal notranslate"><span class="pre">measure_equivalent_width()</span></code>.</div>
 </div>
 </dd>
 </dl>
 <dl class="class">
 <dt id="mangadap.proc.spectralfitting.CompositionFit">
 <em class="property">class </em><code class="descclassname">mangadap.proc.spectralfitting.</code><code class="descname">CompositionFit</code><span class="sig-paren">(</span><em>fit_method</em>, <em>bitmask</em>, <em>par=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/spectralfitting.html#CompositionFit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.spectralfitting.CompositionFit" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#mangadap.proc.spectralfitting.SpectralFitting" title="mangadap.proc.spectralfitting.SpectralFitting"><code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.spectralfitting.SpectralFitting</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#mangadap.proc.spectralfitting.SpectralFitting" title="mangadap.proc.spectralfitting.SpectralFitting"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.proc.spectralfitting.SpectralFitting</span></code></a></p>
 <p>Base class for fitting the spectral composition.</p>
 </dd></dl>
 
 <dl class="class">
 <dt id="mangadap.proc.spectralfitting.EmissionLineFit">
 <em class="property">class </em><code class="descclassname">mangadap.proc.spectralfitting.</code><code class="descname">EmissionLineFit</code><span class="sig-paren">(</span><em>fit_method</em>, <em>bitmask=None</em>, <em>par=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/spectralfitting.html#EmissionLineFit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.spectralfitting.EmissionLineFit" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#mangadap.proc.spectralfitting.SpectralFitting" title="mangadap.proc.spectralfitting.SpectralFitting"><code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.spectralfitting.SpectralFitting</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#mangadap.proc.spectralfitting.SpectralFitting" title="mangadap.proc.spectralfitting.SpectralFitting"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.proc.spectralfitting.SpectralFitting</span></code></a></p>
 <p>Base class for fitting emission lines.</p>
 <dl class="staticmethod">
 <dt id="mangadap.proc.spectralfitting.EmissionLineFit._per_emission_line_dtype">
@@ -257,13 +257,13 @@ with a size that matches flux.</p>
 <dt id="mangadap.proc.spectralfitting.EmissionLineFit.check_emission_line_database">
 <em class="property">static </em><code class="descname">check_emission_line_database</code><span class="sig-paren">(</span><em>emldb</em>, <em>wave=None</em>, <em>check_par=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/spectralfitting.html#EmissionLineFit.check_emission_line_database"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.spectralfitting.EmissionLineFit.check_emission_line_database" title="Permalink to this definition">¶</a></dt>
 <dd><p>Check the emission-line database.  Modes are checked by
-<a class="reference internal" href="mangadap.par.emissionlinedb.html#mangadap.par.emissionlinedb.EmissionLinePar" title="mangadap.par.emissionlinedb.EmissionLinePar"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.emissionlinedb.EmissionLinePar</span></code></a>, and the
+<a class="reference internal" href="mangadap.par.emissionlinedb.html#mangadap.par.emissionlinedb.EmissionLinePar" title="mangadap.par.emissionlinedb.EmissionLinePar"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.par.emissionlinedb.EmissionLinePar</span></code></a>, and the
 indices are checked to be unique by
-<a class="reference internal" href="mangadap.par.emissionlinedb.html#mangadap.par.emissionlinedb.EmissionLineDB" title="mangadap.par.emissionlinedb.EmissionLineDB"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.emissionlinedb.EmissionLineDB</span></code></a>.</p>
+<a class="reference internal" href="mangadap.par.emissionlinedb.html#mangadap.par.emissionlinedb.EmissionLineDB" title="mangadap.par.emissionlinedb.EmissionLineDB"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.par.emissionlinedb.EmissionLineDB</span></code></a>.</p>
 <blockquote>
 <div><ul class="simple">
 <li>The type of the object must be
-<a class="reference internal" href="mangadap.par.emissionlinedb.html#mangadap.par.emissionlinedb.EmissionLineDB" title="mangadap.par.emissionlinedb.EmissionLineDB"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.emissionlinedb.EmissionLineDB</span></code></a></li>
+<a class="reference internal" href="mangadap.par.emissionlinedb.html#mangadap.par.emissionlinedb.EmissionLineDB" title="mangadap.par.emissionlinedb.EmissionLineDB"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.par.emissionlinedb.EmissionLineDB</span></code></a></li>
 <li>The provided profile type of each line must be a defined
 class.</li>
 <li>At least one line must have mode=`f`</li>
@@ -279,19 +279,19 @@ that falls outside of the provided wavelength range.</li>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>(</strong> (<a class="reference internal" href="mangadap.proc.emissionlinetemplates.html#mangadap.proc.emissionlinetemplates.EmissionLineTemplates.emldb" title="mangadap.proc.emissionlinetemplates.EmissionLineTemplates.emldb"><em>emldb</em></a>) – class:<a href="#id1"><span class="problematic" id="id2">`</span></a>mangadap.par.emissionlinedb.EmissionLineDB’):
+<li><strong>(</strong> (<em>emldb</em>) – class:<a href="#id1"><span class="problematic" id="id2">`</span></a>mangadap.par.emissionlinedb.EmissionLineDB’):
 Emission-line database.</li>
 <li><strong>wave</strong> (<em>array-like</em>) – </li>
 </ul>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
-<li><code class="xref py py-exc docutils literal"><span class="pre">TypeError</span></code> – Raised if the provided object is not an instance
-of <a class="reference internal" href="mangadap.par.emissionlinedb.html#mangadap.par.emissionlinedb.EmissionLineDB" title="mangadap.par.emissionlinedb.EmissionLineDB"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.emissionlinedb.EmissionLineDB</span></code></a>.</li>
-<li><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if any line has a mode of <cite>x</cite> or if the
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">TypeError</span></code> – Raised if the provided object is not an instance
+of <a class="reference internal" href="mangadap.par.emissionlinedb.html#mangadap.par.emissionlinedb.EmissionLineDB" title="mangadap.par.emissionlinedb.EmissionLineDB"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.par.emissionlinedb.EmissionLineDB</span></code></a>.</li>
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if any line has a mode of <cite>x</cite> or if the
 database does not provide a valid definition for any
 templates.</li>
-<li><code class="xref py py-exc docutils literal"><span class="pre">NameError</span></code> – Raised if a defined profile type is not known.</li>
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">NameError</span></code> – Raised if a defined profile type is not known.</li>
 </ul>
 </td>
 </tr>
@@ -304,7 +304,7 @@ templates.</li>
 <em class="property">static </em><code class="descname">get_spectra_to_fit</code><span class="sig-paren">(</span><em>spectra</em>, <em>pixelmask=None</em>, <em>select=None</em>, <em>error=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/spectralfitting.html#EmissionLineFit.get_spectra_to_fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.spectralfitting.EmissionLineFit.get_spectra_to_fit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the spectra to fit during the emission-line fitting.</p>
 <dl class="docutils">
-<dt>:param spectra (<a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal"><span class="pre">mangadap.drpfits.DRPFits</span></code></a>,: <code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.spatiallybinnedspectra.SpatiallBinnedSpectra</span></code>):</dt>
+<dt>:param spectra (<a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.drpfits.DRPFits</span></code></a>,: <code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.proc.spatiallybinnedspectra.SpatiallBinnedSpectra</span></code>):</dt>
 <dd>Object with the spectra to fit.  Can be one of the
 provided objects.  This works because both have
 <cite>copy_to_masked_array</cite> and <cite>do_not_fit_flags</cite> methods.</dd>
@@ -314,7 +314,7 @@ provided objects.  This works because both have
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>pixelmask</strong> – (<a class="reference internal" href="mangadap.util.pixelmask.html#mangadap.util.pixelmask.SpectralPixelMask" title="mangadap.util.pixelmask.SpectralPixelMask"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.pixelmask.SpectralPixelMask</span></code></a>):
+<li><strong>pixelmask</strong> – (<a class="reference internal" href="mangadap.util.pixelmask.html#mangadap.util.pixelmask.SpectralPixelMask" title="mangadap.util.pixelmask.SpectralPixelMask"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.pixelmask.SpectralPixelMask</span></code></a>):
 (<strong>Optional</strong>) Pixel mask to apply.</li>
 <li><strong>select</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) Select specific
 spectra to return.</li>
@@ -383,7 +383,7 @@ measurement; only the provided error in the flux.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if the length of the spectra, errors, or
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if the length of the spectra, errors, or
 mask does not match the length of the wavelength array;
 raised if the wavelength, redshift, or dispersion arrays
 are not 1D vectors; and raised if the number of
@@ -409,12 +409,12 @@ S/N.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>binned_spectra</strong> – (<a class="reference internal" href="mangadap.proc.spatiallybinnedspectra.html#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra" title="mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra"><code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra</span></code></a>):
+<li><strong>binned_spectra</strong> – (<a class="reference internal" href="mangadap.proc.spatiallybinnedspectra.html#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra" title="mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra</span></code></a>):
 Binned spectra to be fit.</li>
 <li><strong>minimum_snr</strong> (<em>float</em>) – The minimum S/N of the binned spectrum
 to fit; see
-<a class="reference internal" href="mangadap.proc.spatiallybinnedspectra.html#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra.above_snr_limit" title="mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra.above_snr_limit"><code class="xref py py-func docutils literal"><span class="pre">mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra.above_snr_limit()</span></code></a>.</li>
-<li><strong>stellar_continuum</strong> – (<a class="reference internal" href="mangadap.proc.stellarcontinuummodel.html#mangadap.proc.stellarcontinuummodel.StellarContinuumModel" title="mangadap.proc.stellarcontinuummodel.StellarContinuumModel"><code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.stellarcontinuummodel.StellarContinuumModel</span></code></a>):
+<a class="reference internal" href="mangadap.proc.spatiallybinnedspectra.html#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra.above_snr_limit" title="mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra.above_snr_limit"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra.above_snr_limit()</span></code></a>.</li>
+<li><strong>stellar_continuum</strong> – (<a class="reference internal" href="mangadap.proc.stellarcontinuummodel.html#mangadap.proc.stellarcontinuummodel.StellarContinuumModel" title="mangadap.proc.stellarcontinuummodel.StellarContinuumModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.proc.stellarcontinuummodel.StellarContinuumModel</span></code></a>):
 (<strong>Optional</strong>) Stellar-continuum models that have been
 fit to the binned spectra, if available.  The current
 function will only return True for spectra that are both
@@ -447,14 +447,14 @@ setting where the continuum is not defined.</p>
 <dl class="class">
 <dt id="mangadap.proc.spectralfitting.SpectralFitting">
 <em class="property">class </em><code class="descclassname">mangadap.proc.spectralfitting.</code><code class="descname">SpectralFitting</code><span class="sig-paren">(</span><em>fit_type</em>, <em>bitmask=None</em>, <em>par=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/spectralfitting.html#SpectralFitting"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.spectralfitting.SpectralFitting" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Base class for spectral fitting.</p>
 </dd></dl>
 
 <dl class="class">
 <dt id="mangadap.proc.spectralfitting.StellarKinematicsFit">
 <em class="property">class </em><code class="descclassname">mangadap.proc.spectralfitting.</code><code class="descname">StellarKinematicsFit</code><span class="sig-paren">(</span><em>fit_method</em>, <em>bitmask</em>, <em>par=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/spectralfitting.html#StellarKinematicsFit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.spectralfitting.StellarKinematicsFit" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#mangadap.proc.spectralfitting.SpectralFitting" title="mangadap.proc.spectralfitting.SpectralFitting"><code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.spectralfitting.SpectralFitting</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#mangadap.proc.spectralfitting.SpectralFitting" title="mangadap.proc.spectralfitting.SpectralFitting"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.proc.spectralfitting.SpectralFitting</span></code></a></p>
 <p>Base class for fitting stellar kinematics.</p>
 <dl class="staticmethod">
 <dt id="mangadap.proc.spectralfitting.StellarKinematicsFit._per_stellar_kinematics_dtype">

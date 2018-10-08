@@ -36,7 +36,7 @@
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
     <link rel="top" title="mangadap 2.2.2 documentation" href="../../../index.html"/>
-        <link rel="up" title="Module code" href="../../index.html"/> 
+        <link rel="up" title="mangadap" href="../../mangadap.html"/> 
 
   
   <script src="../../../_static/js/modernizr.min.js"></script>
@@ -138,6 +138,8 @@
         
           <li><a href="../../index.html">Module code</a> &raquo;</li>
         
+          <li><a href="../../mangadap.html">mangadap</a> &raquo;</li>
+        
       <li>mangadap.par.spectralfeaturedb</li>
     
     
@@ -192,7 +194,7 @@
 <span class="sd">        import numpy</span>
 
 <span class="sd">        from .parset import ParSet</span>
-<span class="sd">        from ..config.defaults import default_dap_source</span>
+<span class="sd">        from ..config.defaults import dap_source_dir</span>
 <span class="sd">        from ..util.parser import DefaultConfig</span>
 
 <span class="sd">*Class usage examples*:</span>
@@ -220,7 +222,7 @@
 <span class="kn">import</span> <span class="nn">numpy</span>
 
 <span class="kn">from</span> <span class="nn">.parset</span> <span class="k">import</span> <span class="n">ParSet</span>
-<span class="kn">from</span> <span class="nn">..config.defaults</span> <span class="k">import</span> <span class="n">default_dap_source</span>
+<span class="kn">from</span> <span class="nn">..config.defaults</span> <span class="k">import</span> <span class="n">dap_source_dir</span>
 <span class="kn">from</span> <span class="nn">..util.parser</span> <span class="k">import</span> <span class="n">DefaultConfig</span>
 
 <span class="c1"># Add strict versioning</span>
@@ -272,7 +274,7 @@
 <span class="sd">    Args:</span>
 <span class="sd">        dapsrc (str): (Optional) Root path to the DAP source</span>
 <span class="sd">            directory.  If not provided, the default is defined by</span>
-<span class="sd">            :func:`mangadap.config.defaults.default_dap_source`.</span>
+<span class="sd">            :func:`mangadap.config.defaults.dap_source_dir`.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        list: An list of :class:`SpectralFeatureDBDef` objects.</span>
@@ -291,7 +293,7 @@
 <span class="sd">        - Add backup function for Python 2.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Check the source directory exists</span>
-    <span class="n">dapsrc</span> <span class="o">=</span> <span class="n">default_dap_source</span><span class="p">()</span> <span class="k">if</span> <span class="n">dapsrc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">)</span>
+    <span class="n">dapsrc</span> <span class="o">=</span> <span class="n">dap_source_dir</span><span class="p">()</span> <span class="k">if</span> <span class="n">dapsrc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">NotADirectoryError</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1"> does not exist!&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">))</span>
 

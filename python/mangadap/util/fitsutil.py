@@ -764,7 +764,7 @@ class DAPFitsUtil:
             if numpy.sum(indx) == 0:
                 continue
             _out_mask[indx] = out_bitmask.turn_on(_out_mask[indx],
-                                                 (flag if out_flag is None else out_flag))
+                                                  (flag if out_flag is None else out_flag))
         return _out_mask
 
 

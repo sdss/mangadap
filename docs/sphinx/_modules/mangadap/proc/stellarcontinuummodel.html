@@ -36,7 +36,7 @@
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
     <link rel="top" title="mangadap 2.2.2 documentation" href="../../../index.html"/>
-        <link rel="up" title="Module code" href="../../index.html"/> 
+        <link rel="up" title="mangadap" href="../../mangadap.html"/> 
 
   
   <script src="../../../_static/js/modernizr.min.js"></script>
@@ -138,6 +138,8 @@
         
           <li><a href="../../index.html">Module code</a> &raquo;</li>
         
+          <li><a href="../../mangadap.html">mangadap</a> &raquo;</li>
+        
       <li>mangadap.proc.stellarcontinuummodel</li>
     
     
@@ -167,45 +169,6 @@
 
 <span class="sd">*Source location*:</span>
 <span class="sd">    $MANGADAP_DIR/python/mangadap/proc/stellarcontinuummodel.py</span>
-
-<span class="sd">*Imports and python version compliance*:</span>
-<span class="sd">    ::</span>
-
-<span class="sd">        from __future__ import division</span>
-<span class="sd">        from __future__ import print_function</span>
-<span class="sd">        from __future__ import absolute_import</span>
-<span class="sd">        from __future__ import unicode_literals</span>
-
-<span class="sd">        import sys</span>
-<span class="sd">        import warnings</span>
-<span class="sd">        if sys.version &gt; &#39;3&#39;:</span>
-<span class="sd">            long = int</span>
-
-<span class="sd">        import os</span>
-<span class="sd">        import glob</span>
-<span class="sd">        import logging</span>
-<span class="sd">        import numpy</span>
-
-<span class="sd">        from astropy.io import fits</span>
-<span class="sd">        import astropy.constants</span>
-
-<span class="sd">        from ..drpfits import DRPFits</span>
-<span class="sd">        from ..par.parset import ParSet</span>
-<span class="sd">        from ..par.artifactdb import ArtifactDB</span>
-<span class="sd">        from ..par.emissionlinedb import EmissionLineDB</span>
-<span class="sd">        from ..util.log import log_output</span>
-<span class="sd">        from ..util.fitsutil import DAPFitsUtil</span>
-<span class="sd">        from ..util.fileio import rec_to_fits_type</span>
-<span class="sd">        from ..util.instrument import spectrum_velocity_scale</span>
-<span class="sd">        from ..util.bitmask import BitMask</span>
-<span class="sd">        from ..util.pixelmask import SpectralPixelMask</span>
-<span class="sd">        from ..util.parser import DefaultConfig</span>
-<span class="sd">        from ..config.defaults import default_dap_source, default_dap_file_name</span>
-<span class="sd">        from ..config.defaults import default_dap_method, default_dap_method_path</span>
-<span class="sd">        from .spatiallybinnedspectra import SpatiallyBinnedSpectra</span>
-<span class="sd">        from .templatelibrary import TemplateLibrary</span>
-<span class="sd">        from .ppxffit import PPXFFitPar, PPXFFit</span>
-<span class="sd">        from .util import select_proc_method</span>
 
 <span class="sd">*Class usage examples*:</span>
 <span class="sd">        Add examples</span>
@@ -262,11 +225,12 @@
 <span class="kn">from</span> <span class="nn">..util.log</span> <span class="k">import</span> <span class="n">log_output</span>
 <span class="kn">from</span> <span class="nn">..util.fitsutil</span> <span class="k">import</span> <span class="n">DAPFitsUtil</span>
 <span class="kn">from</span> <span class="nn">..util.fileio</span> <span class="k">import</span> <span class="n">rec_to_fits_type</span>
-<span class="kn">from</span> <span class="nn">..util.instrument</span> <span class="k">import</span> <span class="n">spectral_coordinate_step</span><span class="p">,</span> <span class="n">spectrum_velocity_scale</span><span class="p">,</span> <span class="n">SpectralResolution</span>
+<span class="kn">from</span> <span class="nn">..util.sampling</span> <span class="k">import</span> <span class="n">spectral_coordinate_step</span><span class="p">,</span> <span class="n">spectrum_velocity_scale</span>
+<span class="kn">from</span> <span class="nn">..util.resolution</span> <span class="k">import</span> <span class="n">SpectralResolution</span>
 <span class="kn">from</span> <span class="nn">..util.bitmask</span> <span class="k">import</span> <span class="n">BitMask</span>
 <span class="kn">from</span> <span class="nn">..util.pixelmask</span> <span class="k">import</span> <span class="n">SpectralPixelMask</span>
 <span class="kn">from</span> <span class="nn">..util.parser</span> <span class="k">import</span> <span class="n">DefaultConfig</span>
-<span class="kn">from</span> <span class="nn">..config.defaults</span> <span class="k">import</span> <span class="n">default_dap_source</span><span class="p">,</span> <span class="n">default_dap_file_name</span>
+<span class="kn">from</span> <span class="nn">..config.defaults</span> <span class="k">import</span> <span class="n">dap_source_dir</span><span class="p">,</span> <span class="n">default_dap_file_name</span>
 <span class="kn">from</span> <span class="nn">..config.defaults</span> <span class="k">import</span> <span class="n">default_dap_method</span><span class="p">,</span> <span class="n">default_dap_method_path</span>
 <span class="kn">from</span> <span class="nn">.spatiallybinnedspectra</span> <span class="k">import</span> <span class="n">SpatiallyBinnedSpectra</span>
 <span class="kn">from</span> <span class="nn">.templatelibrary</span> <span class="k">import</span> <span class="n">TemplateLibrary</span>
@@ -371,7 +335,7 @@
 <span class="sd">    Args:</span>
 <span class="sd">        dapsrc (str): (**Optional**) Root path to the DAP source</span>
 <span class="sd">            directory.  If not provided, the default is defined by</span>
-<span class="sd">            :func:`mangadap.config.defaults.default_dap_source`.</span>
+<span class="sd">            :func:`mangadap.config.defaults.dap_source_dir`.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        list: A list of</span>
@@ -394,7 +358,7 @@
 <span class="sd">        </span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Check the source directory exists</span>
-    <span class="n">dapsrc</span> <span class="o">=</span> <span class="n">default_dap_source</span><span class="p">()</span> <span class="k">if</span> <span class="n">dapsrc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">)</span>
+    <span class="n">dapsrc</span> <span class="o">=</span> <span class="n">dap_source_dir</span><span class="p">()</span> <span class="k">if</span> <span class="n">dapsrc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">NotADirectoryError</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1"> does not exist!&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">))</span>
 
@@ -473,7 +437,7 @@
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dapsrc</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="n">dapsrc</span> <span class="o">=</span> <span class="n">default_dap_source</span><span class="p">()</span> <span class="k">if</span> <span class="n">dapsrc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">)</span>
+        <span class="n">dapsrc</span> <span class="o">=</span> <span class="n">dap_source_dir</span><span class="p">()</span> <span class="k">if</span> <span class="n">dapsrc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">)</span>
         <span class="n">BitMask</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ini_file</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">,</span> <span class="s1">&#39;python&#39;</span><span class="p">,</span> <span class="s1">&#39;mangadap&#39;</span><span class="p">,</span> <span class="s1">&#39;config&#39;</span><span class="p">,</span>
                                                      <span class="s1">&#39;bitmasks&#39;</span><span class="p">,</span>
                                                      <span class="s1">&#39;stellar_continuum_model_bits.ini&#39;</span><span class="p">))</span></div>
@@ -503,7 +467,7 @@
 <span class="sd">            :func:`available_stellar_continuum_modeling_methods`.</span>
 <span class="sd">        dapsrc (str): (**Optional**) Root path to the DAP source</span>
 <span class="sd">            directory.  If not provided, the default is defined by</span>
-<span class="sd">            :func:`mangadap.config.defaults.default_dap_source`.</span>
+<span class="sd">            :func:`mangadap.config.defaults.dap_source_dir`.</span>
 <span class="sd">        dapver (str): (**Optional**) The DAP version to use for the</span>
 <span class="sd">            analysis, used to override the default defined by</span>
 <span class="sd">            :func:`mangadap.config.defaults.default_dap_version`.</span>
@@ -1022,7 +986,7 @@
 <span class="sd">                dispersion in km/s.  Default is 100 km/s.</span>
 <span class="sd">            dapsrc (str): (**Optional**) Root path to the DAP source</span>
 <span class="sd">                directory.  If not provided, the default is defined by</span>
-<span class="sd">                :func:`mangadap.config.defaults.default_dap_source`.</span>
+<span class="sd">                :func:`mangadap.config.defaults.dap_source_dir`.</span>
 <span class="sd">            dapver (str): (**Optional**) The DAP version to use for the</span>
 <span class="sd">                analysis, used to override the default defined by</span>
 <span class="sd">                :func:`mangadap.config.defaults.default_dap_version`.</span>
@@ -1395,8 +1359,12 @@
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Reset the mask of the stellar continuum to a continuous window</span>
 <span class="sd">        from the minimum to maximum valid wavelength.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
 
+<span class="sd">        .. todo::</span>
+<span class="sd">            - Allow continuum to be n-dimensional and use</span>
+<span class="sd">              `numpy.apply_along_axis`.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">spatial_shape</span> <span class="o">=</span> <span class="n">DAPFitsUtil</span><span class="o">.</span><span class="n">get_spatial_shape</span><span class="p">(</span><span class="n">continuum</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dispaxis</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">spatial_shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Input array should be two-dimensional!&#39;</span><span class="p">)</span>

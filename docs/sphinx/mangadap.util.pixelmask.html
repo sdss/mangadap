@@ -37,7 +37,7 @@
         <link rel="search" title="Search" href="search.html"/>
     <link rel="top" title="mangadap 2.2.2 documentation" href="index.html"/>
         <link rel="up" title="mangadap.util package" href="mangadap.util.html"/>
-        <link rel="next" title="mangadap.util.version module" href="mangadap.util.version.html"/>
+        <link rel="next" title="mangadap.util.resolution module" href="mangadap.util.resolution.html"/>
         <link rel="prev" title="mangadap.util.parser module" href="mangadap.util.parser.html"/> 
 
   
@@ -100,7 +100,7 @@
 <li class="toctree-l3"><a class="reference internal" href="mangadap.par.html">mangadap.par package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.proc.html">mangadap.proc package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.survey.html">mangadap.survey package</a></li>
-<li class="toctree-l3"><a class="reference internal" href="mangadap.test.html">mangadap.test package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.tests.html">mangadap.tests package</a></li>
 <li class="toctree-l3 current"><a class="reference internal" href="mangadap.util.html">mangadap.util package</a><ul class="current">
 <li class="toctree-l4 current"><a class="reference internal" href="mangadap.util.html#submodules">Submodules</a></li>
 <li class="toctree-l4"><a class="reference internal" href="mangadap.util.html#module-mangadap.util">Module contents</a></li>
@@ -192,7 +192,7 @@
 <dt><em>Source location</em>:</dt>
 <dd>$MANGADAP_DIR/python/mangadap/proc/pixelmask.py</dd>
 <dt><em>Imports and python version compliance</em>:</dt>
-<dd><div class="first last highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<dd><div class="first last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
@@ -216,7 +216,7 @@
 <dt><em>Revision history</em>:</dt>
 <dd><div class="first last line-block">
 <div class="line"><strong>18 Apr 2016</strong>: Original implementation K. Westfall (KBW)</div>
-<div class="line"><strong>30 Nov 2016</strong>: (KBW) Generalization of <a class="reference internal" href="#mangadap.util.pixelmask.PixelMask" title="mangadap.util.pixelmask.PixelMask"><code class="xref py py-class docutils literal"><span class="pre">PixelMask</span></code></a> and
+<div class="line"><strong>30 Nov 2016</strong>: (KBW) Generalization of <a class="reference internal" href="#mangadap.util.pixelmask.PixelMask" title="mangadap.util.pixelmask.PixelMask"><code class="xref py py-class docutils literal notranslate"><span class="pre">PixelMask</span></code></a> and
 minor edits</div>
 </div>
 </dd>
@@ -224,7 +224,7 @@ minor edits</div>
 <dl class="class">
 <dt id="mangadap.util.pixelmask.PixelMask">
 <em class="property">class </em><code class="descclassname">mangadap.util.pixelmask.</code><code class="descname">PixelMask</code><a class="reference internal" href="_modules/mangadap/util/pixelmask.html#PixelMask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.pixelmask.PixelMask" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Base class for a general 1D or 2D pixel mask.</p>
 <dl class="attribute">
 <dt id="mangadap.util.pixelmask.PixelMask.shape">
@@ -288,7 +288,7 @@ Default is that there is only one dimension.</li>
 <dl class="method">
 <dt id="mangadap.util.pixelmask.PixelMask._set_shape">
 <code class="descname">_set_shape</code><span class="sig-paren">(</span><em>x</em>, <em>ny=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/pixelmask.html#PixelMask._set_shape"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.pixelmask.PixelMask._set_shape" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set <a class="reference internal" href="#mangadap.util.pixelmask.PixelMask.shape" title="mangadap.util.pixelmask.PixelMask.shape"><code class="xref py py-attr docutils literal"><span class="pre">shape</span></code></a> of the object</p>
+<dd><p>Set <a class="reference internal" href="#mangadap.util.pixelmask.PixelMask.shape" title="mangadap.util.pixelmask.PixelMask.shape"><code class="xref py py-attr docutils literal notranslate"><span class="pre">shape</span></code></a> of the object</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -309,7 +309,7 @@ Default is that there is no second dimension.</li>
 <dl class="class">
 <dt id="mangadap.util.pixelmask.SpectralPixelMask">
 <em class="property">class </em><code class="descclassname">mangadap.util.pixelmask.</code><code class="descname">SpectralPixelMask</code><span class="sig-paren">(</span><em>artdb=None</em>, <em>emldb=None</em>, <em>waverange=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/pixelmask.html#SpectralPixelMask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.pixelmask.SpectralPixelMask" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#mangadap.util.pixelmask.PixelMask" title="mangadap.util.pixelmask.PixelMask"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.pixelmask.PixelMask</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#mangadap.util.pixelmask.PixelMask" title="mangadap.util.pixelmask.PixelMask"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.pixelmask.PixelMask</span></code></a></p>
 <p>Container that produces a mask for the stellar continuum based on a
 set of emission lines and artifacts.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -317,8 +317,8 @@ set of emission lines and artifacts.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>artdb</strong> (<code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.artifactdb.ArtifactDB</span></code>) – (<strong>Optional</strong>) Database with the list of artifacts to mask.</li>
-<li><strong>emldb</strong> (<code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.emissionlinedb.EmissionLineDB</span></code>) – (<strong>Optional</strong>) Database with the list of emission lines to
+<li><strong>artdb</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.proc.artifactdb.ArtifactDB</span></code>) – (<strong>Optional</strong>) Database with the list of artifacts to mask.</li>
+<li><strong>emldb</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.proc.emissionlinedb.EmissionLineDB</span></code>) – (<strong>Optional</strong>) Database with the list of emission lines to
 mask.</li>
 <li><strong>waverange</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) Any pixels <strong>outside</strong>
 this wavelength range are masked.</li>
@@ -330,13 +330,13 @@ this wavelength range are masked.</li>
 <dl class="attribute">
 <dt id="mangadap.util.pixelmask.SpectralPixelMask.artdb">
 <code class="descname">artdb</code><a class="headerlink" href="#mangadap.util.pixelmask.SpectralPixelMask.artdb" title="Permalink to this definition">¶</a></dt>
-<dd><p><code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.artifactdb.ArtifactDB</span></code> – Database with the list of artifacts to mask.</p>
+<dd><p><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.proc.artifactdb.ArtifactDB</span></code> – Database with the list of artifacts to mask.</p>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="mangadap.util.pixelmask.SpectralPixelMask.emldb">
 <code class="descname">emldb</code><a class="headerlink" href="#mangadap.util.pixelmask.SpectralPixelMask.emldb" title="Permalink to this definition">¶</a></dt>
-<dd><p><code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.emissionlinedb.EmissionLineDB</span></code> – Database with the list of emission lines to
+<dd><p><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.proc.emissionlinedb.EmissionLineDB</span></code> – Database with the list of emission lines to
 mask.</p>
 </dd></dl>
 
@@ -395,8 +395,8 @@ the kinematics</p>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
-<li><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if the length of the <cite>kin</cite> array is not</li>
-<li>the same as the number of emission lines in <a class="reference internal" href="#mangadap.util.pixelmask.SpectralPixelMask.emldb" title="mangadap.util.pixelmask.SpectralPixelMask.emldb"><code class="xref py py-attr docutils literal"><span class="pre">emldb</span></code></a>.</li>
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if the length of the <cite>kin</cite> array is not</li>
+<li>the same as the number of emission lines in <a class="reference internal" href="#mangadap.util.pixelmask.SpectralPixelMask.emldb" title="mangadap.util.pixelmask.SpectralPixelMask.emldb"><code class="xref py py-attr docutils literal notranslate"><span class="pre">emldb</span></code></a>.</li>
 </ul>
 </td>
 </tr>
@@ -450,17 +450,17 @@ basis.</li>
 <dt id="mangadap.util.pixelmask.SpectralPixelMask._get_emission_line_bands">
 <code class="descname">_get_emission_line_bands</code><span class="sig-paren">(</span><em>velocity_offsets=0.0</em>, <em>sigma=250.0</em>, <em>nsigma=3.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/pixelmask.html#SpectralPixelMask._get_emission_line_bands"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.pixelmask.SpectralPixelMask._get_emission_line_bands" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set the emission-line masks, using the emission-line parameters
-defined by <a class="reference internal" href="#mangadap.util.pixelmask.SpectralPixelMask.emldb" title="mangadap.util.pixelmask.SpectralPixelMask.emldb"><code class="xref py py-attr docutils literal"><span class="pre">emldb</span></code></a> (see
-<a class="reference internal" href="mangadap.par.emissionlinedb.html#mangadap.par.emissionlinedb.EmissionLineDB" title="mangadap.par.emissionlinedb.EmissionLineDB"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.emissionlinedb.EmissionLineDB</span></code></a>.</p>
+defined by <a class="reference internal" href="#mangadap.util.pixelmask.SpectralPixelMask.emldb" title="mangadap.util.pixelmask.SpectralPixelMask.emldb"><code class="xref py py-attr docutils literal notranslate"><span class="pre">emldb</span></code></a> (see
+<a class="reference internal" href="mangadap.par.emissionlinedb.html#mangadap.par.emissionlinedb.EmissionLineDB" title="mangadap.par.emissionlinedb.EmissionLineDB"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.par.emissionlinedb.EmissionLineDB</span></code></a>.</p>
 <p>All emission lines in the database, except for those marked with
 <cite>action==i</cite> are masked.</p>
 <p>The center of the masked region is constructed using
 <cite>emldb[‘restwave’]</cite> and the provided velocity
 (<cite>velocity_offset</cite>).  The velocity of any lines marked as sky
 (<cite>action==s</cite>) is always set to 0.</p>
-<p>The width of the mask is set to be <span class="math">\(\pm n_\sigma \sigma\)</span>
-about this center, where both <span class="math">\(n_\sigma\)</span> and
-<span class="math">\(\sigma\)</span> are parameters (<cite>nsigma</cite>, <cite>sigma</cite>).  If <cite>sigma</cite> is
+<p>The width of the mask is set to be <span class="math notranslate nohighlight">\(\pm n_\sigma \sigma\)</span>
+about this center, where both <span class="math notranslate nohighlight">\(n_\sigma\)</span> and
+<span class="math notranslate nohighlight">\(\sigma\)</span> are parameters (<cite>nsigma</cite>, <cite>sigma</cite>).  If <cite>sigma</cite> is
 None, <cite>emldb[‘sig’]</cite> is used for each line.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -483,14 +483,14 @@ number per emission line.  Cannot be None.</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A <span class="math">\(N_l \times 2\)</span> array with the
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A <span class="math notranslate nohighlight">\(N_l \times 2\)</span> array with the
 wavelength limits of the emission-line bands.</p>
 </td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">numpy.ndarray</p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if <cite>nsigma</cite> is None, or any <cite>nsigma</cite> is
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if <cite>nsigma</cite> is None, or any <cite>nsigma</cite> is
 not greater than 0; raised if the half-width of any mask
 is not greater than 0.</p>
 </td>
@@ -530,13 +530,13 @@ Default is just one.</li>
 <dd><p>Construct a bit mask that signifies pixels as outside the
 desired wavelength range, as being affected by an artifact, and
 being designated as an emission-line region.  To simply flag the
-pixels as a binary masked or unmasked, use <a class="reference internal" href="#mangadap.util.pixelmask.SpectralPixelMask.boolean" title="mangadap.util.pixelmask.SpectralPixelMask.boolean"><code class="xref py py-func docutils literal"><span class="pre">boolean()</span></code></a>.</p>
+pixels as a binary masked or unmasked, use <a class="reference internal" href="#mangadap.util.pixelmask.SpectralPixelMask.boolean" title="mangadap.util.pixelmask.SpectralPixelMask.boolean"><code class="xref py py-func docutils literal notranslate"><span class="pre">boolean()</span></code></a>.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>bitmask</strong> (<a class="reference internal" href="mangadap.util.bitmask.html#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.bitmask.BitMask</span></code></a>) – Bitmask
+<li><strong>bitmask</strong> (<a class="reference internal" href="mangadap.util.bitmask.html#mangadap.util.bitmask.BitMask" title="mangadap.util.bitmask.BitMask"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.bitmask.BitMask</span></code></a>) – Bitmask
 used to flag pixels.  The flags waverange_flag,
 art_flag, and eml_flag <em>must</em> be defined in the provided
 instance of BitMask.</li>
@@ -634,7 +634,7 @@ basis.</li>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="mangadap.util.version.html" class="btn btn-neutral float-right" title="mangadap.util.version module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="mangadap.util.resolution.html" class="btn btn-neutral float-right" title="mangadap.util.resolution module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="mangadap.util.parser.html" class="btn btn-neutral" title="mangadap.util.parser module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>

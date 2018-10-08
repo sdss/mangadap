@@ -15,6 +15,10 @@
  - Added test data to `data/tests/`
  - Added tests for more core routines, like PPXFFit.fit() and
    Sasuke.fit().  Tests take about 1 min to execute.
+ - Fix FORESTAR bug in spectral indices.
+ - Fix some bugs in the bandpass integral functions introduced during
+   recent testing.
+ - Add spectral indices test
 
 TODO:
  - Documentation of config examples are out of date!

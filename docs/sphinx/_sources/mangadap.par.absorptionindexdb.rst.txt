@@ -1,5 +1,5 @@
-mangadap\.par\.absorptionindexdb module
-=======================================
+mangadap.par.absorptionindexdb module
+=====================================
 
 .. automodule:: mangadap.par.absorptionindexdb
     :members:
