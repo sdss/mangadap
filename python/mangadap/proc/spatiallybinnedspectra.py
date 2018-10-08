@@ -232,7 +232,7 @@ def validate_spatial_binning_scheme_config(cnfg):
     if not cnfg.all_required(required_keywords):
         raise KeyError('Keywords {0} must all have valid values.'.format(required_keywords))
 
-    if cnfg['method'] not in [ 'none', 'global', 'voronoi', 'radial' ]:
+    if cnfg['method'] not in [ 'none', 'global', 'voronoi', 'radial', 'square' ]:
         raise ValueError('Unknown binning method: {0}'.format(cnfg['method']))
 
     covar_par_needed_modes = SpectralStack.covariance_mode_options(par_needed=True)
@@ -251,6 +251,9 @@ def validate_spatial_binning_scheme_config(cnfg):
     if cnfg['method'] == 'radial' and not cnfg.all_required(required_keywords):
         raise KeyError('Keywords {0} must all have valid values for radial binning.'.format(
                         required_keywords))
+
+    if cnfg['method'] == 'square' and not cnfg.keyword_specified('binsz'):
+        raise KeyError('Keyword \'binsz\' must be provided for square binning.')
 
 
 
@@ -326,6 +329,10 @@ def available_spatial_binning_methods(dapsrc=None):
             binpar = spatialbinning.VoronoiBinningPar(cnfg.getfloat('target_snr'), None, None,
                                                       cnfg.getfloat('noise_calib'))
             binclass = spatialbinning.VoronoiBinning()
+            binfunc = binclass.bin_index
+        elif cnfg['method'] == 'square':
+            binpar = spatialbinning.SquareBinningPar(cnfg.getfloat('binsz', default=2.0))
+            binclass = spatialbinning.SquareBinning()
             binfunc = binclass.bin_index
         else:   # Do not bin!
             binpar = None
@@ -573,6 +580,7 @@ class SpatiallyBinnedSpectra:
             else:
                 self.method['binpar']['noise'] \
                         = numpy.sqrt(self.rdxqa['SPECTRUM'].data['VARIANCE'][good_spec])
+
 
         # Nothing to add for binning types 'none' or 'global', or
         # user-defined function!
@@ -1461,6 +1469,8 @@ class SpatiallyBinnedSpectra:
                 = self.method['binfunc'](self.rdxqa['SPECTRUM'].data['SKY_COO'][good_spec,0],
                                          self.rdxqa['SPECTRUM'].data['SKY_COO'][good_spec,1],
                                          par=self.method['binpar'])
+
+
         if numpy.sum(bin_indx > -1) == 0:
             raise ValueError('No spectra in ANY bin!')
 
