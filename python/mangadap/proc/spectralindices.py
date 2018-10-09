@@ -421,6 +421,8 @@ class BandheadIndices:
         # Calculate the index in the correct order
         blue_n = order == 'b_r'
         self.index = numpy.ma.zeros(self.nindx, dtype=numpy.float)
+#        import pdb
+#        pdb.set_trace()
         self.index[blue_n] = numpy.ma.divide(self.blue_continuum[blue_n],
                                              self.red_continuum[blue_n]).filled(0.0)
         self.divbyzero[blue_n] = numpy.invert(numpy.absolute(self.red_continuum[blue_n])>0.0)
