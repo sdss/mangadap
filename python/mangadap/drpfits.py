@@ -164,8 +164,7 @@ from .util.parser import arginp_to_list
 from .util.covariance import Covariance
 from .util.pixelmask import SpectralPixelMask
 from .util.filter import interpolate_masked_vector
-from .util.instrument import spectral_coordinate_step
-#from .config.defaults import default_idlutils_dir
+from .util.sampling import spectral_coordinate_step
 from .config.defaults import sdss_maskbits_file, default_drp_version
 from .config.defaults import default_redux_path, default_drp_directory_path
 from .config.defaults import default_cube_pixelscale, default_cube_width_buffer

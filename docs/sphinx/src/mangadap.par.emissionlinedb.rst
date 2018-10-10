@@ -1,5 +1,5 @@
-mangadap\.par\.emissionlinedb module
-====================================
+mangadap.par.emissionlinedb module
+==================================
 
 .. automodule:: mangadap.par.emissionlinedb
     :members:

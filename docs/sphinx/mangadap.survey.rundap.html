@@ -104,7 +104,7 @@
 <li class="toctree-l4"><a class="reference internal" href="mangadap.survey.html#module-mangadap.survey">Module contents</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="mangadap.test.html">mangadap.test package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.tests.html">mangadap.tests package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.util.html">mangadap.util package</a></li>
 </ul>
 </li>
@@ -193,7 +193,7 @@ Utah.</p>
 <dt><em>Source location</em>:</dt>
 <dd>$MANGADAP_DIR/python/mangadap/survey/rundap.py</dd>
 <dt><em>Imports and python version compliance</em>:</dt>
-<dd><div class="first last highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<dd><div class="first last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
@@ -258,32 +258,32 @@ classes.</div>
 <div class="line"><strong>27 Aug 2015</strong>: (KBW) Sphinx documentation; prep for MPL-4;
 accommodate changes in drpcomplete; removed arg as an attribute
 because it was only used in
-<code class="xref py py-func docutils literal"><span class="pre">mangadap.survey.rundap._read_arg()</span></code>; despite not doing
+<code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.survey.rundap._read_arg()</span></code>; despite not doing
 anything before, commented out _write_module_commands for the
 time-being; removed file_root() and parameter_file() functions
 in favor of adding/using functions from
-<a class="reference internal" href="mangadap.config.defaults.html#module-mangadap.config.defaults" title="mangadap.config.defaults"><code class="xref py py-mod docutils literal"><span class="pre">mangadap.config.defaults</span></code></a>; version number set to 1_1_0.</div>
+<a class="reference internal" href="mangadap.config.defaults.html#module-mangadap.config.defaults" title="mangadap.config.defaults"><code class="xref py py-mod docutils literal notranslate"><span class="pre">mangadap.config.defaults</span></code></a>; version number set to 1_1_0.</div>
 <div class="line"><strong>06 Oct 2015</strong>: (KBW) Added functionality to select the types of
 additional output.  Minor changes to allow for DR13 QA plots.</div>
 <div class="line"><strong>22 Oct 2015</strong>: (KBW) Added check that the selected MPL versions match
 the current environmental versions.  Includes edit to
-<a class="reference internal" href="mangadap.survey.mangampl.html#mangadap.survey.mangampl.MaNGAMPL" title="mangadap.survey.mangampl.MaNGAMPL"><code class="xref py py-class docutils literal"><span class="pre">mangadap.survey.mangampl.MaNGAMPL</span></code></a> to include
+<a class="reference internal" href="mangadap.survey.mangampl.html#mangadap.survey.mangampl.MaNGAMPL" title="mangadap.survey.mangampl.MaNGAMPL"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.survey.mangampl.MaNGAMPL</span></code></a> to include
 MANGACORE_VER.  Changed default number of nodes to 9.  Added
 definition of idl command for use on sciama cluster at the ICG,
 Portsmouth.</div>
 <div class="line"><strong>04 Nov 2015</strong>: (KBW) Added capability to turn off main DAP
-processing call so that <a class="reference internal" href="#mangadap.survey.rundap.rundap" title="mangadap.survey.rundap.rundap"><code class="xref py py-class docutils literal"><span class="pre">rundap</span></code></a> can be used to, e.g.,
+processing call so that <a class="reference internal" href="#mangadap.survey.rundap.rundap" title="mangadap.survey.rundap.rundap"><code class="xref py py-class docutils literal notranslate"><span class="pre">rundap</span></code></a> can be used to, e.g.,
 just create the plots for existing data.</div>
 <div class="line"><strong>17 Feb 2016</strong>: (KBW) Added try/except block for importing
 pbs.queue; converted old drpfile to new
-<a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal"><span class="pre">mangadap.drpfits.DRPFits</span></code></a>, and drpcomplete to new
-<a class="reference internal" href="mangadap.survey.drpcomplete.html#mangadap.survey.drpcomplete.DRPComplete" title="mangadap.survey.drpcomplete.DRPComplete"><code class="xref py py-class docutils literal"><span class="pre">mangadap.survey.drpcomplete.DRPComplete</span></code></a>.</div>
+<a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.drpfits.DRPFits</span></code></a>, and drpcomplete to new
+<a class="reference internal" href="mangadap.survey.drpcomplete.html#mangadap.survey.drpcomplete.DRPComplete" title="mangadap.survey.drpcomplete.DRPComplete"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.survey.drpcomplete.DRPComplete</span></code></a>.</div>
 <div class="line"><strong>13 May 2016</strong>: (KBW) Substantial changes to accommodate
 conversion of DAP from IDL to python</div>
 <div class="line"><strong>19 May 2016</strong>: (KBW) Added command-line options for including
 log file</div>
 <div class="line"><strong>11 Oct 2016</strong>: (KBW) Version checking moved to
-<a class="reference internal" href="mangadap.survey.mangampl.html#mangadap.survey.mangampl.MaNGAMPL" title="mangadap.survey.mangampl.MaNGAMPL"><code class="xref py py-class docutils literal"><span class="pre">mangadap.survey.mangampl.MaNGAMPL</span></code></a>.</div>
+<a class="reference internal" href="mangadap.survey.mangampl.html#mangadap.survey.mangampl.MaNGAMPL" title="mangadap.survey.mangampl.MaNGAMPL"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.survey.mangampl.MaNGAMPL</span></code></a>.</div>
 <div class="line"><strong>23 Aug 2017</strong>: (KBW) Include ppxffit QA plots.</div>
 <div class="line"><strong>29 Aug 2017</strong>: (KBW) Include DAPall post-processing.</div>
 </div>
@@ -292,7 +292,7 @@ log file</div>
 <dl class="class">
 <dt id="mangadap.survey.rundap.rundap">
 <em class="property">class </em><code class="descclassname">mangadap.survey.rundap.</code><code class="descname">rundap</code><span class="sig-paren">(</span><em>daily=None</em>, <em>all=None</em>, <em>clobber=None</em>, <em>redo=None</em>, <em>console=None</em>, <em>quiet=False</em>, <em>print_version=False</em>, <em>strictver=True</em>, <em>mplver=None</em>, <em>redux_path=None</em>, <em>dapver=None</em>, <em>analysis_path=None</em>, <em>plan_file=None</em>, <em>platelist=None</em>, <em>ifudesignlist=None</em>, <em>modelist=None</em>, <em>combinatorics=False</em>, <em>list_file=None</em>, <em>prior_mode=None</em>, <em>prior_bin=None</em>, <em>prior_iter=None</em>, <em>prior_old=None</em>, <em>platetargets=None</em>, <em>log=False</em>, <em>dapproc=True</em>, <em>plots=True</em>, <em>verbose=0</em>, <em>build_dapall=False</em>, <em>report_progress=False</em>, <em>label='mangadap'</em>, <em>nodes=9</em>, <em>cpus=None</em>, <em>qos=None</em>, <em>umask='0027'</em>, <em>walltime='240:00:00'</em>, <em>hard=True</em>, <em>create=False</em>, <em>submit=False</em>, <em>queue=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/survey/rundap.html#rundap"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.survey.rundap.rundap" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Class used for automated execution of the MaNGA DAP via submission
 of scripts to a cluster.</p>
 <p>[ More complete explanation of the class here. ]</p>
@@ -306,7 +306,7 @@ hindering such usage of the primary python programs!</p>
 <div class="admonition-todo admonition" id="index-1">
 <p class="first admonition-title">Todo</p>
 <ul class="last simple">
-<li>Have <a class="reference internal" href="#mangadap.survey.rundap.rundap._read_arg" title="mangadap.survey.rundap.rundap._read_arg"><code class="xref py py-func docutils literal"><span class="pre">_read_arg()</span></code></a> return the boolean for <code class="xref py py-attr docutils literal"><span class="pre">version</span></code>
+<li>Have <a class="reference internal" href="#mangadap.survey.rundap.rundap._read_arg" title="mangadap.survey.rundap.rundap._read_arg"><code class="xref py py-func docutils literal notranslate"><span class="pre">_read_arg()</span></code></a> return the boolean for <code class="xref py py-attr docutils literal notranslate"><span class="pre">version</span></code>
 instead of keeping it as an attribute.</li>
 </ul>
 </div>
@@ -333,11 +333,11 @@ requirements for this version of the dap.  Default is True,
 meaning the code will raise an exception if the expected
 version are not the same as the environment.</li>
 <li><strong>mplver</strong> (<em>str</em>) – <p>(<strong>Optional</strong>) MPL version to analyze.  Used with
-<a class="reference internal" href="mangadap.survey.mangampl.html#mangadap.survey.mangampl.MaNGAMPL" title="mangadap.survey.mangampl.MaNGAMPL"><code class="xref py py-class docutils literal"><span class="pre">mangadap.survey.mangampl.MaNGAMPL</span></code></a> to set the
+<a class="reference internal" href="mangadap.survey.mangampl.html#mangadap.survey.mangampl.MaNGAMPL" title="mangadap.survey.mangampl.MaNGAMPL"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.survey.mangampl.MaNGAMPL</span></code></a> to set the
 idlutils version and the DRP version.  Ideally, this
 controls the modules that are loaded before execution of the
 DAP.  The default version (selected if mplver=None) is
-defined by <a class="reference internal" href="mangadap.survey.mangampl.html#mangadap.survey.mangampl.MaNGAMPL" title="mangadap.survey.mangampl.MaNGAMPL"><code class="xref py py-class docutils literal"><span class="pre">mangadap.survey.mangampl.MaNGAMPL</span></code></a>.</p>
+defined by <a class="reference internal" href="mangadap.survey.mangampl.html#mangadap.survey.mangampl.MaNGAMPL" title="mangadap.survey.mangampl.MaNGAMPL"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.survey.mangampl.MaNGAMPL</span></code></a>.</p>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
 <p class="last">This functionality is <strong>NOT</strong> actually implemented.
@@ -348,30 +348,30 @@ cluster.</p>
 </li>
 <li><strong>redux_path</strong> (<em>str</em>) – (<strong>Optional</strong>) The top-level path with the DRP
 files used to override the default defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_redux_path" title="mangadap.config.defaults.default_redux_path"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_redux_path()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_redux_path" title="mangadap.config.defaults.default_redux_path"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_redux_path()</span></code></a>.</li>
 <li><strong>dapver</strong> (<em>str</em>) – (<strong>Optional</strong>) The DAP version to use for the
 analysis, used to override the default defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_version" title="mangadap.config.defaults.default_dap_version"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_version()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_version" title="mangadap.config.defaults.default_dap_version"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_dap_version()</span></code></a>.</li>
 <li><strong>analysis_path</strong> (<em>str</em>) – (<strong>Optional</strong>) The top-level path for the
 DAP output files, used to override the default defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_analysis_path" title="mangadap.config.defaults.default_analysis_path"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_analysis_path()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_analysis_path" title="mangadap.config.defaults.default_analysis_path"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_analysis_path()</span></code></a>.</li>
 <li><strong>plan_file</strong> (<em>str</em>) – (<strong>Optional</strong>) Name of the plan file to use for
 <em>all</em> DRP data in this run, used to override the default
 defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_plan_file" title="mangadap.config.defaults.default_dap_plan_file"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_plan_file()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_plan_file" title="mangadap.config.defaults.default_dap_plan_file"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_dap_plan_file()</span></code></a>.</li>
 <li><strong>platelist</strong> (<em>int</em><em>, </em><em>str</em>) – (<strong>Optional</strong>) List of plates to analyze;
-default is to search the <a class="reference internal" href="#mangadap.survey.rundap.rundap.redux_path" title="mangadap.survey.rundap.rundap.redux_path"><code class="xref py py-attr docutils literal"><span class="pre">redux_path</span></code></a> for any DRP
-files; see <a class="reference internal" href="mangadap.survey.drpcomplete.html#mangadap.survey.drpcomplete.DRPComplete" title="mangadap.survey.drpcomplete.DRPComplete"><code class="xref py py-class docutils literal"><span class="pre">mangadap.survey.drpcomplete.DRPComplete</span></code></a>.</li>
+default is to search the <a class="reference internal" href="#mangadap.survey.rundap.rundap.redux_path" title="mangadap.survey.rundap.rundap.redux_path"><code class="xref py py-attr docutils literal notranslate"><span class="pre">redux_path</span></code></a> for any DRP
+files; see <a class="reference internal" href="mangadap.survey.drpcomplete.html#mangadap.survey.drpcomplete.DRPComplete" title="mangadap.survey.drpcomplete.DRPComplete"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.survey.drpcomplete.DRPComplete</span></code></a>.</li>
 <li><strong>ifudesignlist</strong> (<em>int</em><em>, </em><em>str</em>) – (<strong>Optional</strong>) List of ifudesigns to
-analyze: default is to search the <a class="reference internal" href="#mangadap.survey.rundap.rundap.redux_path" title="mangadap.survey.rundap.rundap.redux_path"><code class="xref py py-attr docutils literal"><span class="pre">redux_path</span></code></a> for any
+analyze: default is to search the <a class="reference internal" href="#mangadap.survey.rundap.rundap.redux_path" title="mangadap.survey.rundap.rundap.redux_path"><code class="xref py py-attr docutils literal notranslate"><span class="pre">redux_path</span></code></a> for any
 DRP files; see
-<a class="reference internal" href="mangadap.survey.drpcomplete.html#mangadap.survey.drpcomplete.DRPComplete" title="mangadap.survey.drpcomplete.DRPComplete"><code class="xref py py-class docutils literal"><span class="pre">mangadap.survey.drpcomplete.DRPComplete</span></code></a>.</li>
+<a class="reference internal" href="mangadap.survey.drpcomplete.html#mangadap.survey.drpcomplete.DRPComplete" title="mangadap.survey.drpcomplete.DRPComplete"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.survey.drpcomplete.DRPComplete</span></code></a>.</li>
 <li><strong>modelist</strong> (<em>str</em>) – (<strong>Optional</strong>) DRP 3D modes (‘RSS’ or ‘CUBE’) to
 analyze; default is to analyze both.</li>
 <li><strong>combinatorics</strong> (<em>bool</em>) – (<strong>Optional</strong>) Use all unique combinations
 of the entered plate/ifudesign/mode lists to create the full
 list of DRP files to analyze.  See
-<a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.drpfits_list" title="mangadap.drpfits.drpfits_list"><code class="xref py py-func docutils literal"><span class="pre">mangadap.drpfits.drpfits_list()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.drpfits_list" title="mangadap.drpfits.drpfits_list"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.drpfits.drpfits_list()</span></code></a>.</li>
 <li><strong>prior_mode</strong> (<em>str</em>) – (<strong>Optional</strong>) Used to construct a plate-ifu
 specific prior fits file name to replace an existing value
 in the plan file.  This sets the mode (‘RSS’ or ‘CUBE’) of
@@ -390,7 +390,7 @@ file constructed using the other “prior_*” attributes.</li>
 <li><strong>platetargets</strong> (<em>str</em><em>, </em><em>list</em>) – (<strong>Optional</strong>) List of platetargets
 files to search through to find any given plate-ifudesign
 combination.  Default is returned as the first element in
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_plate_target_files" title="mangadap.config.defaults.default_plate_target_files"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_plate_target_files()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_plate_target_files" title="mangadap.config.defaults.default_plate_target_files"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_plate_target_files()</span></code></a>.</li>
 <li><strong>dapproc</strong> (<em>bool</em>) – (<strong>Optional</strong>) Flag to execute the main DAP
 processing. Default is True.</li>
 <li><strong>plots</strong> (<em>bool</em>) – (<strong>Optional</strong>) Create the QA plots. Default is
@@ -400,13 +400,13 @@ Default is mangadap and the run mode (daily, etc).</li>
 <li><strong>nodes</strong> (<em>int</em>) – (<strong>Optional</strong>) Number of cluster nodes to use.
 Default is 9.</li>
 <li><strong>qos</strong> (<em>str</em>) – (<strong>Optional</strong>) Select a specific processor (only None
-for daily run).  This option is ignored if <a class="reference internal" href="#mangadap.survey.rundap.rundap.q" title="mangadap.survey.rundap.rundap.q"><code class="xref py py-attr docutils literal"><span class="pre">q</span></code></a> is set.</li>
+for daily run).  This option is ignored if <a class="reference internal" href="#mangadap.survey.rundap.rundap.q" title="mangadap.survey.rundap.rundap.q"><code class="xref py py-attr docutils literal notranslate"><span class="pre">q</span></code></a> is set.</li>
 <li><strong>umask</strong> (<em>str</em>) – (<strong>Optional</strong>) umask to set for output. Default is
 0027.</li>
 <li><strong>walltime</strong> (<em>str</em>) – (<strong>Optional</strong>) Maximum wall time for cluster
 job.  Default is 10 days (‘240:00:00’).</li>
 <li><strong>hard</strong> (<em>bool</em>) – <p>(<strong>Optional</strong>) Same as hard keyword in cluster
-submission; see <code class="xref py py-func docutils literal"><span class="pre">pbs.queue.commit()</span></code>.</p>
+submission; see <code class="xref py py-func docutils literal notranslate"><span class="pre">pbs.queue.commit()</span></code>.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p class="last">This keyword is in the <strong>opposite</strong> sense of the
@@ -452,7 +452,7 @@ redo any existing analysis.</p>
 <code class="descname">redo</code><a class="headerlink" href="#mangadap.survey.rundap.rundap.redo" title="Permalink to this definition">¶</a></dt>
 <dd><p><em>bool</em> – Redo an existing set of analyses; must be
 accompanied by a list of plates, ifus, and modes to analyze.
-In this case, <a class="reference internal" href="#mangadap.survey.rundap.rundap.clobber" title="mangadap.survey.rundap.rundap.clobber"><code class="xref py py-attr docutils literal"><span class="pre">clobber</span></code></a> is implicitly true.</p>
+In this case, <a class="reference internal" href="#mangadap.survey.rundap.rundap.clobber" title="mangadap.survey.rundap.rundap.clobber"><code class="xref py py-attr docutils literal notranslate"><span class="pre">clobber</span></code></a> is implicitly true.</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -478,7 +478,7 @@ the expected version are not the same as the environment.</p>
 <dl class="attribute">
 <dt id="mangadap.survey.rundap.rundap.mpl">
 <code class="descname">mpl</code><a class="headerlink" href="#mangadap.survey.rundap.rundap.mpl" title="Permalink to this definition">¶</a></dt>
-<dd><p><a class="reference internal" href="mangadap.survey.mangampl.html#mangadap.survey.mangampl.MaNGAMPL" title="mangadap.survey.mangampl.MaNGAMPL"><code class="xref py py-class docutils literal"><span class="pre">mangadap.survey.mangampl.MaNGAMPL</span></code></a> – MPL version;
+<dd><p><a class="reference internal" href="mangadap.survey.mangampl.html#mangadap.survey.mangampl.MaNGAMPL" title="mangadap.survey.mangampl.MaNGAMPL"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.survey.mangampl.MaNGAMPL</span></code></a> – MPL version;
 see above.</p>
 </dd></dl>
 
@@ -620,7 +620,7 @@ through to find any given plate-ifudesign combination.</p>
 <dt id="mangadap.survey.rundap.rundap.hard">
 <code class="descname">hard</code><a class="headerlink" href="#mangadap.survey.rundap.rundap.hard" title="Permalink to this definition">¶</a></dt>
 <dd><p><em>bool</em> – Same as hard keyword in cluster submission; see
-<code class="xref py py-func docutils literal"><span class="pre">pbs.queue.commit()</span></code>.</p>
+<code class="xref py py-func docutils literal notranslate"><span class="pre">pbs.queue.commit()</span></code>.</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -645,7 +645,7 @@ scripts.</p>
 <dl class="attribute">
 <dt id="mangadap.survey.rundap.rundap.drpc">
 <code class="descname">drpc</code><a class="headerlink" href="#mangadap.survey.rundap.rundap.drpc" title="Permalink to this definition">¶</a></dt>
-<dd><p><a class="reference internal" href="mangadap.survey.drpcomplete.html#mangadap.survey.drpcomplete.DRPComplete" title="mangadap.survey.drpcomplete.DRPComplete"><code class="xref py py-class docutils literal"><span class="pre">mangadap.survey.drpcomplete.DRPComplete</span></code></a> – Database of the available DRP files and the parameters
+<dd><p><a class="reference internal" href="mangadap.survey.drpcomplete.html#mangadap.survey.drpcomplete.DRPComplete" title="mangadap.survey.drpcomplete.DRPComplete"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.survey.drpcomplete.DRPComplete</span></code></a> – Database of the available DRP files and the parameters
 necessary to write the DAP par files.</p>
 </dd></dl>
 
@@ -654,9 +654,9 @@ necessary to write the DAP par files.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
-<li><code class="xref py py-exc docutils literal"><span class="pre">FileNotFoundError</span></code> – Raised if a plate-ifu list file is provided
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">FileNotFoundError</span></code> – Raised if a plate-ifu list file is provided
 but it does not exist, or if the plan file does not exist.</li>
-<li><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if all processing steps are turned off, if
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if all processing steps are turned off, if
 the selected MPL is undefined; if the fast node is selected
 with nodes &gt; 1; if multiple run modes are selected; or if
 the plate list, ifudesign list, or mode list are not
@@ -681,7 +681,7 @@ If not, create them.  The necessary output paths are:</p>
 <li>The callind path that contains a copy of the plan, the
 script input and output files, and the touch files</li>
 <li>The main common path defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_common_path" title="mangadap.config.defaults.default_dap_common_path"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_common_path()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_common_path" title="mangadap.config.defaults.default_dap_common_path"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_dap_common_path()</span></code></a>.</li>
 <li>The plan-based subdirectories based on the plan file</li>
 </ul>
 </div></blockquote>
@@ -740,19 +740,19 @@ Portsmouth.  The available queues are:</p>
 </table>
 <p>One should <strong>not</strong> submit to sciama3.q without permission from
 Will Percival.  The default queue is cluster.q (sciama2.q); so
-basically only use <a class="reference internal" href="#mangadap.survey.rundap.rundap.q" title="mangadap.survey.rundap.rundap.q"><code class="xref py py-attr docutils literal"><span class="pre">q</span></code></a> to select sciama1.q.</p>
+basically only use <a class="reference internal" href="#mangadap.survey.rundap.rundap.q" title="mangadap.survey.rundap.rundap.q"><code class="xref py py-attr docutils literal notranslate"><span class="pre">q</span></code></a> to select sciama1.q.</p>
 <p>Submissions to Utah should have their queue destination set to
-None.  However, the fast node can be selected using <a class="reference internal" href="#mangadap.survey.rundap.rundap.qos" title="mangadap.survey.rundap.rundap.qos"><code class="xref py py-attr docutils literal"><span class="pre">qos</span></code></a>.</p>
+None.  However, the fast node can be selected using <a class="reference internal" href="#mangadap.survey.rundap.rundap.qos" title="mangadap.survey.rundap.rundap.qos"><code class="xref py py-attr docutils literal notranslate"><span class="pre">qos</span></code></a>.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="mangadap.survey.rundap.rundap._fill_queue">
 <code class="descname">_fill_queue</code><span class="sig-paren">(</span><em>drpfiles</em>, <em>clobber=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/survey/rundap.html#rundap._fill_queue"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.survey.rundap.rundap._fill_queue" title="Permalink to this definition">¶</a></dt>
 <dd><p>Create a queue instance, write the script files for all CPUs
-using <a class="reference internal" href="#mangadap.survey.rundap.rundap.prepare_for_analysis" title="mangadap.survey.rundap.rundap.prepare_for_analysis"><code class="xref py py-func docutils literal"><span class="pre">prepare_for_analysis()</span></code></a> and append the job to the
+using <a class="reference internal" href="#mangadap.survey.rundap.rundap.prepare_for_analysis" title="mangadap.survey.rundap.rundap.prepare_for_analysis"><code class="xref py py-func docutils literal notranslate"><span class="pre">prepare_for_analysis()</span></code></a> and append the job to the
 queue, and then submit the jobs to the cluster queue.  If
-<a class="reference internal" href="#mangadap.survey.rundap.rundap.submit" title="mangadap.survey.rundap.rundap.submit"><code class="xref py py-attr docutils literal"><span class="pre">submit</span></code></a> is False, this is essentially a wrapper for
-<a class="reference internal" href="#mangadap.survey.rundap.rundap.prepare_for_analysis" title="mangadap.survey.rundap.rundap.prepare_for_analysis"><code class="xref py py-func docutils literal"><span class="pre">prepare_for_analysis()</span></code></a>.</p>
+<a class="reference internal" href="#mangadap.survey.rundap.rundap.submit" title="mangadap.survey.rundap.rundap.submit"><code class="xref py py-attr docutils literal notranslate"><span class="pre">submit</span></code></a> is False, this is essentially a wrapper for
+<a class="reference internal" href="#mangadap.survey.rundap.rundap.prepare_for_analysis" title="mangadap.survey.rundap.rundap.prepare_for_analysis"><code class="xref py py-func docutils literal notranslate"><span class="pre">prepare_for_analysis()</span></code></a>.</p>
 <p>This function is written to be functional for submission to the
 cluster queues both at Utah and using the sciama cluster at
 Portsmouth.  The available queues are:</p>
@@ -790,9 +790,9 @@ Portsmouth.  The available queues are:</p>
 </table>
 <p>One should <strong>not</strong> submit to sciama3.q without permission from
 Will Percival.  The default queue is cluster.q (sciama2.q); so
-basically only use <a class="reference internal" href="#mangadap.survey.rundap.rundap.q" title="mangadap.survey.rundap.rundap.q"><code class="xref py py-attr docutils literal"><span class="pre">q</span></code></a> to select sciama1.q.</p>
+basically only use <a class="reference internal" href="#mangadap.survey.rundap.rundap.q" title="mangadap.survey.rundap.rundap.q"><code class="xref py py-attr docutils literal notranslate"><span class="pre">q</span></code></a> to select sciama1.q.</p>
 <p>Submissions to Utah should have their queue destination set to
-None.  However, the fast node can be selected using <a class="reference internal" href="#mangadap.survey.rundap.rundap.qos" title="mangadap.survey.rundap.rundap.qos"><code class="xref py py-attr docutils literal"><span class="pre">qos</span></code></a>.</p>
+None.  However, the fast node can be selected using <a class="reference internal" href="#mangadap.survey.rundap.rundap.qos" title="mangadap.survey.rundap.rundap.qos"><code class="xref py py-attr docutils literal notranslate"><span class="pre">qos</span></code></a>.</p>
 <div class="admonition-todo admonition" id="index-3">
 <p class="first admonition-title">Todo</p>
 <ul class="last simple">
@@ -853,7 +853,7 @@ given DRP file:</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>drpf</strong> (<a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal"><span class="pre">mangadap.drpfits.DRPFits</span></code></a>) – DRP file object
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>drpf</strong> (<a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.drpfits.DRPFits</span></code></a>) – DRP file object
 used to pass the plate, ifudesign, and mode values.</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Flag that the DAP has finished (True) or not (False).</td>
@@ -868,15 +868,15 @@ used to pass the plate, ifudesign, and mode values.</td>
 <dt id="mangadap.survey.rundap.rundap.full_drpfile_list">
 <code class="descname">full_drpfile_list</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/survey/rundap.html#rundap.full_drpfile_list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.survey.rundap.rundap.full_drpfile_list" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generate a list of all the DRP files based on the
-<a class="reference internal" href="mangadap.survey.drpcomplete.html#mangadap.survey.drpcomplete.DRPComplete" title="mangadap.survey.drpcomplete.DRPComplete"><code class="xref py py-class docutils literal"><span class="pre">mangadap.survey.drpcomplete.DRPComplete</span></code></a> database.  DRP
+<a class="reference internal" href="mangadap.survey.drpcomplete.html#mangadap.survey.drpcomplete.DRPComplete" title="mangadap.survey.drpcomplete.DRPComplete"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.survey.drpcomplete.DRPComplete</span></code></a> database.  DRP
 files constructed based on the
-<a class="reference internal" href="mangadap.survey.drpcomplete.html#mangadap.survey.drpcomplete.DRPComplete" title="mangadap.survey.drpcomplete.DRPComplete"><code class="xref py py-class docutils literal"><span class="pre">mangadap.survey.drpcomplete.DRPComplete</span></code></a> database are
+<a class="reference internal" href="mangadap.survey.drpcomplete.html#mangadap.survey.drpcomplete.DRPComplete" title="mangadap.survey.drpcomplete.DRPComplete"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.survey.drpcomplete.DRPComplete</span></code></a> database are
 expected to exist.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">A list of <a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal"><span class="pre">mangadap.drpfits.DRPFits</span></code></a> objects
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">A list of <a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.drpfits.DRPFits</span></code></a> objects
 defining the available DRP files.</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">list</td>
@@ -897,7 +897,7 @@ above steps are completed successfully.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>drpf</strong> (<a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal"><span class="pre">mangadap.drpfits.DRPFits</span></code></a>) – Object defining
+<li><strong>drpf</strong> (<a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.drpfits.DRPFits</span></code></a>) – Object defining
 the DRP file to analyze.</li>
 <li><strong>clobber</strong> (<em>bool</em>) – (<strong>Optional</strong>) Flag to overwrite any
 existing files.</li>
@@ -907,7 +907,7 @@ existing files.</li>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Three strings with the name of the written script file,
 the file for the output sent to STDOUT, and the file for the
 output sent to STDERR, as provided by the call to
-<a class="reference internal" href="#mangadap.survey.rundap.rundap.write_compute_script" title="mangadap.survey.rundap.rundap.write_compute_script"><code class="xref py py-func docutils literal"><span class="pre">write_compute_script()</span></code></a>.</p>
+<a class="reference internal" href="#mangadap.survey.rundap.rundap.write_compute_script" title="mangadap.survey.rundap.rundap.write_compute_script"><code class="xref py py-func docutils literal notranslate"><span class="pre">write_compute_script()</span></code></a>.</p>
 </td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">str</p>
@@ -930,7 +930,7 @@ run, regardless of their current state.  If false, only
 those analyses not currently running or done will be
 performed.</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if qos is requested; this mode is only
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if qos is requested; this mode is only
 allowed for the daily run.</td>
 </tr>
 </tbody>
@@ -946,7 +946,7 @@ the 3D stage.  Ideally, this is automatically run by crontab.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal"><span class="pre">Exception</span></code> – <em>Always</em> raised because daily mode is currently
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal notranslate"><span class="pre">Exception</span></code> – <em>Always</em> raised because daily mode is currently
 unavailable for the DAP.</td>
 </tr>
 </tbody>
@@ -963,7 +963,7 @@ any existing results and is called manually.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if qos is requested; this mode is only
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if qos is requested; this mode is only
 allowed for the daily run.</td>
 </tr>
 </tbody>
@@ -982,7 +982,7 @@ have completed a run of DAP analysis.</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>clobber</strong> (<em>bool</em>) – (<strong>Optional</strong>) Overwrite any existing
 analysis output.</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A list of <a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal"><span class="pre">mangadap.drpfits.DRPFits</span></code></a> objects
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A list of <a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.drpfits.DRPFits</span></code></a> objects
 defining the DRP files that should be analyzed.</td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">list</td>
@@ -1009,7 +1009,7 @@ very close to the combination of all=True, clobber=False.</li>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal"><span class="pre">NotImplementedError</span></code> – <strong>Always</strong> raised because function is not
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal notranslate"><span class="pre">NotImplementedError</span></code> – <strong>Always</strong> raised because function is not
 correctly implemented.</td>
 </tr>
 </tbody>
@@ -1026,7 +1026,7 @@ implicitly True.</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">A list of <a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal"><span class="pre">mangadap.drpfits.DRPFits</span></code></a> objects
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">A list of <a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.drpfits.DRPFits</span></code></a> objects
 defining the DRP files that should be analyzed.</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">list</td>
@@ -1040,12 +1040,12 @@ defining the DRP files that should be analyzed.</td>
 <code class="descname">selected_drpfile_list</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/survey/rundap.html#rundap.selected_drpfile_list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.survey.rundap.rundap.selected_drpfile_list" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generate a list of all the DRP files based on the provided
 plates, ifudesigns, and modes, using the
-<a class="reference internal" href="mangadap.survey.drpcomplete.html#mangadap.survey.drpcomplete.DRPComplete" title="mangadap.survey.drpcomplete.DRPComplete"><code class="xref py py-class docutils literal"><span class="pre">mangadap.survey.drpcomplete.DRPComplete</span></code></a> database.</p>
+<a class="reference internal" href="mangadap.survey.drpcomplete.html#mangadap.survey.drpcomplete.DRPComplete" title="mangadap.survey.drpcomplete.DRPComplete"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.survey.drpcomplete.DRPComplete</span></code></a> database.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">A list of <a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal"><span class="pre">mangadap.drpfits.DRPFits</span></code></a> objects
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">A list of <a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits" title="mangadap.drpfits.DRPFits"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.drpfits.DRPFits</span></code></a> objects
 defining the selected DRP files.</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">list</td>
@@ -1059,7 +1059,7 @@ defining the selected DRP files.</td>
 <code class="descname">set_pltifu_status</code><span class="sig-paren">(</span><em>plate</em>, <em>ifudesign</em>, <em>mode=None</em>, <em>status='queued'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/survey/rundap.html#rundap.set_pltifu_status"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.survey.rundap.rundap.set_pltifu_status" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generate a touch file that signifies the status for a given
 plate/ifudesign/mode.  The root of the touch file is set by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_file_root" title="mangadap.config.defaults.default_dap_file_root"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_file_root()</span></code></a>.</p>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_file_root" title="mangadap.config.defaults.default_dap_file_root"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_dap_file_root()</span></code></a>.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -1130,7 +1130,7 @@ output sent to STDERR.</p>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">str</p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">Exception</span></code> – Raised if DAP version is not correctly defined.</p>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal notranslate"><span class="pre">Exception</span></code> – Raised if DAP version is not correctly defined.</p>
 </td>
 </tr>
 </tbody>
@@ -1162,7 +1162,7 @@ output sent to STDERR.</p>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">str</p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if DAP version is not correctly defined.</p>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if DAP version is not correctly defined.</p>
 </td>
 </tr>
 </tbody>

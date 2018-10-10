@@ -1,5 +1,5 @@
-mangadap\.proc\.spectralfitting module
-======================================
+mangadap.proc.spectralfitting module
+====================================
 
 .. automodule:: mangadap.proc.spectralfitting
     :members:

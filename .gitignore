@@ -3,4 +3,11 @@ python/mangadap/*.__pycache__
 .*swp
 .DS_Store
 */.ipynb_checkpoints/
+.eggs
+.pytest_cache
+examples/data/*.fits
+examples/data/*.fits.gz
+examples/output/HYB10-GAU-MILESHC/
+examples/output/VOR10-GAU-MILESHC/
+examples/output/common/
 

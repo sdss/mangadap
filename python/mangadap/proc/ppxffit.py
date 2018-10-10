@@ -10,33 +10,6 @@ Implements a wrapper class for pPXF.
 *Source location*:
     $MANGADAP_DIR/python/mangadap/proc/ppxffit.py
 
-*Imports and python version compliance*:
-    ::
-
-        from __future__ import division
-        from __future__ import print_function
-        from __future__ import absolute_import
-        from __future__ import unicode_literals
-
-        import sys
-        import warnings
-        if sys.version > '3':
-            long = int
-
-        import numpy
-        import scipy.interpolate
-        import scipy.signal
-        import astropy.constants
-
-        from ..par.parset import ParSet
-        from ..util.bitmask import BitMask
-        from ..util.fileio import init_record_array
-        from ..util.instrument import spectrum_velocity_scale, resample1d, SpectralResolution
-        from .spatiallybinnedspectra import SpatiallyBinnedSpectra
-        from .templatelibrary import TemplateLibrary
-        from .pixelmask import PixelMask
-        from .spectralfitting import StellarKinematicsFit
-
 *Class usage examples*:
         Add examples
 
@@ -68,6 +41,8 @@ Implements a wrapper class for pPXF.
         :func:`mangadap.util.instrument.resample1d`.
     | **05 Feb 2018**: (KBW) Added :class:`PPXFModel`.
     | **22 May 2018**: (KBW) Change import to ppxf package.
+    | **30 Aug 2018**: (KBW) Changed from resample1d to
+        :class:`mangadap.util.sampling.Resample`.
 
 .. todo::
 
@@ -107,8 +82,8 @@ from ..util.pixelmask import PixelMask, SpectralPixelMask
 from ..util.fileio import init_record_array
 from ..util.filter import BoxcarFilter
 from ..util.log import log_output
-from ..util.instrument import spectrum_velocity_scale, resample1d, SpectralResolution
-from ..util.instrument import match_spectral_resolution, angstroms_per_pixel
+from ..util.sampling import spectrum_velocity_scale, angstroms_per_pixel, Resample
+from ..util.resolution import match_spectral_resolution, SpectralResolution
 from ..util.constants import DAPConstants
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .templatelibrary import TemplateLibrary
@@ -1770,23 +1745,14 @@ class PPXFFit(StellarKinematicsFit):
 
                 # Resample to match the object spectra
                 inRange = self.tpl_wave[[0,-1]] * (1.0 + nominal_redshift[i])
-                _, model_wlosvd[i,:] = resample1d(tmp_wlosvd,
-                                                  x=self.tpl_wave*(1 + nominal_redshift[i]),
-                                                  inLog=True, newRange=self.obj_wave[[0,-1]],
-                                                  newpix=self.obj_wave.size, newLog=True)
-                _, model_wlosvd_msres[i,:] = resample1d(tmp_wlosvd_msres,
-                                                        x=self.tpl_wave*(1 + nominal_redshift[i]),
-                                                        inLog=True, newRange=self.obj_wave[[0,-1]],
-                                                        newpix=self.obj_wave.size, newLog=True)
-#                _, model_wlosvd[i,:] = resample_vector(tmp_wlosvd, xRange=inRange, inLog=True,
-#                                                       newRange=self.obj_wave[[0,-1]],
-#                                                       newpix=self.obj_wave.size, newLog=True,
-#                                                       flat=False)
-#                _, model_wlosvd_msres[i,:] = resample_vector(tmp_wlosvd_msres, xRange=inRange,
-#                                                             inLog=True,
-#                                                             newRange=self.obj_wave[[0,-1]],
-#                                                             newpix=self.obj_wave.size,
-#                                                             newLog=True, flat=False)
+                model_wlosvd[i,:] = Resample(tmp_wlosvd,
+                                             x=self.tpl_wave*(1 + nominal_redshift[i]),
+                                             inLog=True, newRange=self.obj_wave[[0,-1]],
+                                             newpix=self.obj_wave.size, newLog=True).outy
+                model_wlosvd_msres[i,:] = Resample(tmp_wlosvd_msres,
+                                                   x=self.tpl_wave*(1 + nominal_redshift[i]),
+                                                   inLog=True, newRange=self.obj_wave[[0,-1]],
+                                                   newpix=self.obj_wave.size, newLog=True).outy
 
                 # Check 2-pixel resolution limit in resampled data
 #                _, npix = resample_vector(unity, xRange=inRange, inLog=True,
@@ -2020,20 +1986,20 @@ class PPXFFit(StellarKinematicsFit):
         model_par['MASK'][indx] = self.bitmask.turn_on(model_par['MASK'][indx], 'BAD_SIGMA')
 
 
-    def _save_results(self, global_fit_result, result, model_flux, model_mask, model_par):
+    def _save_results(self, global_fit_result, result, model_mask, model_par):
 
         #---------------------------------------------------------------
         # Get the model spectra
         model_flux = PPXFFit.compile_model_flux(self.obj_flux, result)
-        # Calculate the model residuals; both should be masked where the
-        # data were not fit
+
+        # Calculate the model residuals.  They still need to be masked
+        # in regions that were *not* included in the fit; see the
+        # iterations below
         residual = self.obj_flux - model_flux
         fractional_residual = numpy.ma.divide(self.obj_flux - model_flux, model_flux)
-        # Get the chi-square for each spectrum
-        model_par['CHI2'] = numpy.ma.sum(numpy.square(residual/self.obj_ferr), axis=1)
-        # Get the (fractional) residual RMS for each spectrum
-        model_par['RMS'] = numpy.sqrt(numpy.ma.mean(numpy.square(residual), axis=1))
-        model_par['FRMS'] = numpy.sqrt(numpy.ma.mean(numpy.square(fractional_residual), axis=1))
+
+        # Instantiate a bad pixel mask to be used
+        bpm = numpy.zeros_like(self.obj_wave, dtype=bool)
 
         # Flag the pixels that were not used
         model_mask[numpy.ma.getmaskarray(self.obj_flux)] \
@@ -2099,6 +2065,7 @@ class PPXFFit(StellarKinematicsFit):
 
             #-----------------------------------------------------------
             # Save the model parameters and figures of merit
+
             # Number of fitted pixels
             model_par['NPIXFIT'][i] = len(result[i].gpm)
             # Template weights and errors
@@ -2124,6 +2091,22 @@ class PPXFFit(StellarKinematicsFit):
             model_par['KIN'][i] = result[i].kin
             # Kinematic errors
             model_par['KINERR'][i] = result[i].kinerr
+
+            # Mask the residuals according to the pixel fit for this
+            # spectrum
+            bpm[:] = True
+            bpm[result[i].start+result[i].gpm] = False
+            residual[i,bpm] = numpy.ma.masked
+            fractional_residual[i,bpm] = numpy.ma.masked
+
+            # Get the chi-square and rms metrics
+            model_par['CHI2'][i] = 0.0 if numpy.all(residual.mask[i] | self.obj_ferr.mask[i]) \
+                                    else numpy.sum(numpy.square(residual[i]/self.obj_ferr[i]))
+            model_par['RMS'][i] = 0.0 if numpy.all(residual.mask[i]) \
+                                    else numpy.sqrt(numpy.ma.mean(numpy.square(residual[i])))
+            model_par['FRMS'][i] = 0.0 if numpy.all(fractional_residual.mask[i]) \
+                            else numpy.sqrt(numpy.ma.mean(numpy.square(fractional_residual[i])))
+
             # Chi-square
             model_par['RCHI2'][i] = model_par['CHI2'][i] \
                                         / (model_par['NPIXFIT'][i] 
@@ -2131,10 +2114,6 @@ class PPXFFit(StellarKinematicsFit):
             model_par['ROBUST_RCHI2'][i] = result[i].robust_rchi2
 
             # Get growth statistics for the residuals
-#            model_par['ABSRESID'][i] = residual_growth((residual[i,:]).compressed(),
-#                                                       [0.68, 0.95, 0.99])
-#            model_par['FABSRESID'][i] = residual_growth(fractional_residual[i,:].compressed(),
-#                                                        [0.68, 0.95, 0.99])
             model_par['ABSRESID'][i] = sample_growth(numpy.ma.absolute(residual[i,:]),
                                                      [0.0, 0.68, 0.95, 0.99, 1.0])
             model_par['FABSRESID'][i] = sample_growth(numpy.ma.absolute(fractional_residual[i,:]),
@@ -2162,8 +2141,7 @@ class PPXFFit(StellarKinematicsFit):
 
         #---------------------------------------------------------------
         # Test if kinematics are reliable
-        # TODO: Skipped for now because unreliable flag not defined for
-        # MPL-6
+        # TODO: Skipped for now because unreliable flag not well defined
 #        self._validate_kinematics(model_mask, model_par)
 
         #---------------------------------------------------------------
@@ -2710,7 +2688,7 @@ class PPXFFit(StellarKinematicsFit):
         #---------------------------------------------------------------
         # Save the results
         model_flux, model_mask, model_par \
-                = self._save_results(global_fit_result, result, model_flux, model_mask, model_par)
+                = self._save_results(global_fit_result, result, model_mask, model_par)
 
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, 'pPXF finished')
@@ -3099,9 +3077,13 @@ class PPXFFit(StellarKinematicsFit):
     @staticmethod
     def compile_model_flux(obj_flux, ppxf_result, rescale=False):
         """
-        Return the model flux, masked where the data were not fit.  The
-        function does *not* reconstruct the model based on the ppxf
-        parameters.
+        Return the model flux but pulling the models out of the ppxf
+        results.  The model can be rescaled to the data based on the
+        fitted pixels if rescale is True.
+
+        The output array is masked in the spectral regions below and
+        above the fitted wavelength range; any intervening pixels are
+        *not* masked, even if they're not included in the fit.
         """
         model_flux = numpy.ma.MaskedArray(numpy.zeros(obj_flux.shape, dtype=float),
                                           mask=numpy.ones(obj_flux.shape, dtype=bool))
@@ -3226,12 +3208,8 @@ class PPXFFit(StellarKinematicsFit):
         if _redshift_only:
             # Resample the redshifted template to the wavelength grid of
             # the binned spectra
-            _, model[:] = resample1d(composite_template, x=tpl_wave*(1.0 + redshift), inLog=True,
-                                     newRange=obj_wave[[0,-1]], newpix=obj_wave.size, newLog=True)
-#            inRange = tpl_wave[[0,-1]] * (1.0 + redshift)
-#            _, model[:] = resample_vector(composite_template, xRange=inRange, inLog=True,
-#                                          newRange=obj_wave[[0,-1]], newpix=obj_wave.size,
-#                                          newLog=True, flat=False)
+            model = Resample(composite_template, x=tpl_wave*(1.0 + redshift), inLog=True,
+                             newRange=obj_wave[[0,-1]], newpix=obj_wave.size, newLog=True).outy
             model[:_start] = 0.0
             model[:_start] = numpy.ma.masked
             model[_end:] = 0.0

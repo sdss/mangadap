@@ -1,5 +1,5 @@
-mangadap\.proc\.emissionlinetemplates module
-============================================
+mangadap.proc.emissionlinetemplates module
+==========================================
 
 .. automodule:: mangadap.proc.emissionlinetemplates
     :members:

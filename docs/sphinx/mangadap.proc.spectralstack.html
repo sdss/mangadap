@@ -104,7 +104,7 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.survey.html">mangadap.survey package</a></li>
-<li class="toctree-l3"><a class="reference internal" href="mangadap.test.html">mangadap.test package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.tests.html">mangadap.tests package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.util.html">mangadap.util package</a></li>
 </ul>
 </li>
@@ -192,7 +192,7 @@
 <dt><em>Source location</em>:</dt>
 <dd>$MANGADAP_DIR/python/mangadap/proc/spatialbins.py</dd>
 <dt><em>Imports and python version compliance</em>:</dt>
-<dd><div class="first last highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<dd><div class="first last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
@@ -228,28 +228,30 @@ construct spectral resolution of binned spectra.</div>
 <div class="line"><strong>30 Nov 2016</strong>: (KBW) Use, e.g., [None,:] slicing instead of,
 e.g., numpy.array([v]*n) when necessary for array arithmetic</div>
 <div class="line"><strong>01 Dec 2016</strong>: (KBW) Allow stacking the spectral resolution to
-be turned off via <a class="reference internal" href="#mangadap.proc.spectralstack.SpectralStackPar" title="mangadap.proc.spectralstack.SpectralStackPar"><code class="xref py py-class docutils literal"><span class="pre">SpectralStackPar</span></code></a>.</div>
+be turned off via <a class="reference internal" href="#mangadap.proc.spectralstack.SpectralStackPar" title="mangadap.proc.spectralstack.SpectralStackPar"><code class="xref py py-class docutils literal notranslate"><span class="pre">SpectralStackPar</span></code></a>.</div>
 <div class="line"><strong>06 Dec 2016</strong>: (KBW) In
-<a class="reference internal" href="#mangadap.proc.spectralstack.SpectralStack._set_rebin_transfer_matrix" title="mangadap.proc.spectralstack.SpectralStack._set_rebin_transfer_matrix"><code class="xref py py-func docutils literal"><span class="pre">mangadap.proc.spectralstack.SpectralStack._set_rebin_transfer_matrix()</span></code></a>,
+<a class="reference internal" href="#mangadap.proc.spectralstack.SpectralStack._set_rebin_transfer_matrix" title="mangadap.proc.spectralstack.SpectralStack._set_rebin_transfer_matrix"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.proc.spectralstack.SpectralStack._set_rebin_transfer_matrix()</span></code></a>,
 the number of bins is set by the number of unique indices;
 before based on the maximum unique index, meaning that “missing”
 bins were included.  They’re now excluded, forcing classes like
-<a class="reference internal" href="mangadap.proc.spatiallybinnedspectra.html#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra" title="mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra"><code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra</span></code></a>
+<a class="reference internal" href="mangadap.proc.spatiallybinnedspectra.html#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra" title="mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra</span></code></a>
 to keep track of missing bins.</div>
 <div class="line"><strong>30 Aug 2017</strong>: (KBW) Switch from
-<a class="reference internal" href="mangadap.util.instrument.html#mangadap.util.instrument.resample_vector" title="mangadap.util.instrument.resample_vector"><code class="xref py py-func docutils literal"><span class="pre">mangadap.util.instrument.resample_vector()</span></code></a> to
-<a class="reference internal" href="mangadap.util.instrument.html#mangadap.util.instrument.resample1d" title="mangadap.util.instrument.resample1d"><code class="xref py py-func docutils literal"><span class="pre">mangadap.util.instrument.resample1d()</span></code></a> in untested function
-<a class="reference internal" href="#mangadap.proc.spectralstack.SpectralStack.register" title="mangadap.proc.spectralstack.SpectralStack.register"><code class="xref py py-func docutils literal"><span class="pre">SpectralStack.register()</span></code></a>.</div>
+<code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.util.instrument.resample_vector()</span></code> to
+<code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.util.instrument.resample1d()</span></code> in untested function
+<a class="reference internal" href="#mangadap.proc.spectralstack.SpectralStack.register" title="mangadap.proc.spectralstack.SpectralStack.register"><code class="xref py py-func docutils literal notranslate"><span class="pre">SpectralStack.register()</span></code></a>.</div>
+<div class="line"><strong>30 Aug 2018</strong>: (KBW) Switch from resample1d to
+<a class="reference internal" href="mangadap.util.sampling.html#mangadap.util.sampling.Resample" title="mangadap.util.sampling.Resample"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.util.sampling.Resample()</span></code></a></div>
 </div>
 </dd>
 </dl>
 <dl class="class">
 <dt id="mangadap.proc.spectralstack.SpectralStack">
 <em class="property">class </em><code class="descclassname">mangadap.proc.spectralstack.</code><code class="descname">SpectralStack</code><a class="reference internal" href="_modules/mangadap/proc/spectralstack.html#SpectralStack"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.spectralstack.SpectralStack" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Class whose primary function is to stack a set of spectra while
 treating covariance between spectra.</p>
-<p>See <a class="reference internal" href="#mangadap.proc.spectralstack.SpectralStack.covariance_mode_options" title="mangadap.proc.spectralstack.SpectralStack.covariance_mode_options"><code class="xref py py-func docutils literal"><span class="pre">covariance_mode_options()</span></code></a> for available methods of
+<p>See <a class="reference internal" href="#mangadap.proc.spectralstack.SpectralStack.covariance_mode_options" title="mangadap.proc.spectralstack.SpectralStack.covariance_mode_options"><code class="xref py py-func docutils literal notranslate"><span class="pre">covariance_mode_options()</span></code></a> for available methods of
 accounting for covariance.</p>
 <p>Class also approximates the resulting spectral resolution of the
 stacked data.</p>
@@ -271,8 +273,8 @@ the given mode.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>covariance_mode</strong> (<em>str</em>) – Covariance handling mode; see
-<a class="reference internal" href="#mangadap.proc.spectralstack.SpectralStack.covariance_mode_options" title="mangadap.proc.spectralstack.SpectralStack.covariance_mode_options"><code class="xref py py-func docutils literal"><span class="pre">covariance_mode_options()</span></code></a>.</li>
-<li><strong>(</strong><strong>None</strong><strong>, </strong><strong>float</strong><strong>,</strong> (<em>covar</em>) – <a class="reference internal" href="mangadap.util.covariance.html#mangadap.util.covariance.Covariance" title="mangadap.util.covariance.Covariance"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.covariance.Covariance</span></code></a>): The
+<a class="reference internal" href="#mangadap.proc.spectralstack.SpectralStack.covariance_mode_options" title="mangadap.proc.spectralstack.SpectralStack.covariance_mode_options"><code class="xref py py-func docutils literal notranslate"><span class="pre">covariance_mode_options()</span></code></a>.</li>
+<li><strong>(</strong><strong>None</strong><strong>, </strong><strong>float</strong><strong>,</strong> (<em>covar</em>) – <a class="reference internal" href="mangadap.util.covariance.html#mangadap.util.covariance.Covariance" title="mangadap.util.covariance.Covariance"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.covariance.Covariance</span></code></a>): The
 object to check the type against the covariance handling
 mode.</li>
 </ul>
@@ -288,6 +290,14 @@ mode.</li>
 </table>
 </dd></dl>
 
+<dl class="staticmethod">
+<dt id="mangadap.proc.spectralstack.SpectralStack._check_input_sres">
+<em class="property">static </em><code class="descname">_check_input_sres</code><span class="sig-paren">(</span><em>sres</em>, <em>nspec</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/spectralstack.html#SpectralStack._check_input_sres"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.spectralstack.SpectralStack._check_input_sres" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check the shape and type of the input spectral resolution.</p>
+<p>If the input is a masked array, interpolate over the mask.
+Always returns a numpy.ndarray (unmasked).</p>
+</dd></dl>
+
 <dl class="method">
 <dt id="mangadap.proc.spectralstack.SpectralStack._covar_in_mean">
 <code class="descname">_covar_in_mean</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/spectralstack.html#SpectralStack._covar_in_mean"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.spectralstack.SpectralStack._covar_in_mean" title="Permalink to this definition">¶</a></dt>
@@ -299,13 +309,6 @@ division by the number of pixels through the covariance matrix.</p>
 <dt id="mangadap.proc.spectralstack.SpectralStack._get_input_mask">
 <em class="property">static </em><code class="descname">_get_input_mask</code><span class="sig-paren">(</span><em>flux</em>, <em>ivar=None</em>, <em>mask=None</em>, <em>dtype=&lt;class 'bool'&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/spectralstack.html#SpectralStack._get_input_mask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.spectralstack.SpectralStack._get_input_mask" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
-
-<dl class="staticmethod">
-<dt id="mangadap.proc.spectralstack.SpectralStack._get_input_sres">
-<em class="property">static </em><code class="descname">_get_input_sres</code><span class="sig-paren">(</span><em>sres</em>, <em>nspec</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/spectralstack.html#SpectralStack._get_input_sres"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.spectralstack.SpectralStack._get_input_sres" title="Permalink to this definition">¶</a></dt>
-<dd><p>Check the shape and type of the input spectral resolution.
-Always returns a MaskedArray.</p>
-</dd></dl>
 
 <dl class="method">
 <dt id="mangadap.proc.spectralstack.SpectralStack._get_stack_mean">
@@ -322,15 +325,15 @@ Always returns a MaskedArray.</p>
 <dt id="mangadap.proc.spectralstack.SpectralStack._set_rebin_transfer_matrix">
 <code class="descname">_set_rebin_transfer_matrix</code><span class="sig-paren">(</span><em>binid</em>, <em>binwgt=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/spectralstack.html#SpectralStack._set_rebin_transfer_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.spectralstack.SpectralStack._set_rebin_transfer_matrix" title="Permalink to this definition">¶</a></dt>
 <dd><p>Construct the transfer matrix that rebins the spectra.  The
-output shape is <span class="math">\((N_{\rm bin} \times N_{\rm spec})\)</span> with
+output shape is <span class="math notranslate nohighlight">\((N_{\rm bin} \times N_{\rm spec})\)</span> with
 the expectation that the spectrum flux array has shape
-<span class="math">\((N_{\rm spec} \times N_{\rm wave})\)</span>.  The binned spectra
-are calculated by matrix multiplication, <span class="math">\(\mathbf{B} =
+<span class="math notranslate nohighlight">\((N_{\rm spec} \times N_{\rm wave})\)</span>.  The binned spectra
+are calculated by matrix multiplication, <span class="math notranslate nohighlight">\(\mathbf{B} =
 \mathbf{T} \times \mathbf{F}\)</span> such that the covariance matrix
-can be calculated as <span class="math">\(\mathbf{C} = \mathbf{T} \times
+can be calculated as <span class="math notranslate nohighlight">\(\mathbf{C} = \mathbf{T} \times
 \mathbf{\Sigma} \times \mathbf{T}^{\rm T}\)</span>, where
-<span class="math">\(\mathbf{\Sigma}\)</span> is the covariance matrix in the flux
-array, <span class="math">\(\mathbf{F}\)</span>.</p>
+<span class="math notranslate nohighlight">\(\mathbf{\Sigma}\)</span> is the covariance matrix in the flux
+array, <span class="math notranslate nohighlight">\(\mathbf{F}\)</span>.</p>
 <p>If weighting, the sum of the weights is normalized to the number
 of points included in the bin.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -363,8 +366,8 @@ the spectra.  If not provided, the weights are uniform.</li>
 <code class="descname">_stack_without_covariance</code><span class="sig-paren">(</span><em>flux</em>, <em>ivar=None</em>, <em>sres=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/spectralstack.html#SpectralStack._stack_without_covariance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.spectralstack.SpectralStack._stack_without_covariance" title="Permalink to this definition">¶</a></dt>
 <dd><p>Stack the spectra, ignoring any covariance that may or may not
 exist.</p>
-<p>Sets <code class="xref py py-attr docutils literal"><span class="pre">flux</span></code>, <code class="xref py py-attr docutils literal"><span class="pre">fluxsqr</span></code>, <code class="xref py py-attr docutils literal"><span class="pre">npix</span></code>, <code class="xref py py-attr docutils literal"><span class="pre">ivar</span></code>,
-<code class="xref py py-attr docutils literal"><span class="pre">sres</span></code>.</p>
+<p>Sets <code class="xref py py-attr docutils literal notranslate"><span class="pre">flux</span></code>, <code class="xref py py-attr docutils literal notranslate"><span class="pre">fluxsqr</span></code>, <code class="xref py py-attr docutils literal notranslate"><span class="pre">npix</span></code>, <code class="xref py py-attr docutils literal notranslate"><span class="pre">ivar</span></code>,
+<code class="xref py py-attr docutils literal notranslate"><span class="pre">sres</span></code>.</p>
 <p>The stored data is always based on the SUM of the spectra in the
 stack.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -373,8 +376,8 @@ stack.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>flux</strong> (<em>numpy.ma.MaskedArray</em>) – Flux array.</li>
-<li><strong>ivar</strong> (<code class="xref py py-obj docutils literal"><span class="pre">numpy.ma.MaskedArray</span></code>, optional) – The inverse variance array.</li>
-<li><strong>sres</strong> (<code class="xref py py-obj docutils literal"><span class="pre">numpy.ma.MaskedArray</span></code>, optional) – 1D or 2D spectral resolution as a function of wavelength
+<li><strong>ivar</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.ma.MaskedArray</span></code>, optional) – The inverse variance array.</li>
+<li><strong>sres</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.ma.MaskedArray</span></code>, optional) – 1D or 2D spectral resolution as a function of wavelength
 for all or each input spectrum.  Default is to ignore
 any spectral resolution data.</li>
 </ul>
@@ -396,37 +399,37 @@ any spectral resolution data.</li>
 covar_par set how covariance is accounted for in the stacking
 procedure.  The valid options are:</p>
 <blockquote>
-<div><p><code class="docutils literal"><span class="pre">none</span></code>: The noise in the stacked spectrum is a nominal
+<div><p><code class="docutils literal notranslate"><span class="pre">none</span></code>: The noise in the stacked spectrum is a nominal
 propagation of the error assuming no covariance.  No
 parameters needed.</p>
-<p><code class="docutils literal"><span class="pre">calibrate</span></code>: The spectral noise is calibrated following:</p>
-<div class="math">
+<p><code class="docutils literal notranslate"><span class="pre">calibrate</span></code>: The spectral noise is calibrated following:</p>
+<div class="math notranslate nohighlight">
 \[n_{\rm calib} = n_{\rm nominal} (1 + \alpha \log\
 N_{\rm bin})\]</div>
-<p>where <span class="math">\(N_{\rm bin}\)</span> is the number of binned spaxels.
-The value of <span class="math">\(\alpha\)</span> must be provided as a parameter.</p>
-<p><code class="docutils literal"><span class="pre">channels</span></code>: The noise vector of each stacked spectrum is
+<p>where <span class="math notranslate nohighlight">\(N_{\rm bin}\)</span> is the number of binned spaxels.
+The value of <span class="math notranslate nohighlight">\(\alpha\)</span> must be provided as a parameter.</p>
+<p><code class="docutils literal notranslate"><span class="pre">channels</span></code>: The noise vector of each stacked spectrum is
 adjusted based on the mean ratio of the nominal and formally
 correct calculations of the noise measurements over a number
 of spectral channels.  The channels are drawn from across
 the full spectral range.  The number of channels to use is a
 defined parameter.  The covariance matrix must be provided
-to <a class="reference internal" href="#mangadap.proc.spectralstack.SpectralStack.stack" title="mangadap.proc.spectralstack.SpectralStack.stack"><code class="xref py py-func docutils literal"><span class="pre">stack()</span></code></a>.</p>
-<p><code class="docutils literal"><span class="pre">wavelengths</span></code>: Functionally equivalent to <code class="docutils literal"><span class="pre">channels</span></code>;
+to <a class="reference internal" href="#mangadap.proc.spectralstack.SpectralStack.stack" title="mangadap.proc.spectralstack.SpectralStack.stack"><code class="xref py py-func docutils literal notranslate"><span class="pre">stack()</span></code></a>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">wavelengths</span></code>: Functionally equivalent to <code class="docutils literal notranslate"><span class="pre">channels</span></code>;
 however, the channels to use is set by a list of provided
 wavelengths.  The covariance matrix must be provided to
-<a class="reference internal" href="#mangadap.proc.spectralstack.SpectralStack.stack" title="mangadap.proc.spectralstack.SpectralStack.stack"><code class="xref py py-func docutils literal"><span class="pre">stack()</span></code></a>.</p>
-<p><code class="docutils literal"><span class="pre">approx_correlation</span></code>: Approximate the covariance matrix
+<a class="reference internal" href="#mangadap.proc.spectralstack.SpectralStack.stack" title="mangadap.proc.spectralstack.SpectralStack.stack"><code class="xref py py-func docutils literal notranslate"><span class="pre">stack()</span></code></a>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">approx_correlation</span></code>: Approximate the covariance matrix
 using a Gaussian description of the correlation between
 pixels.  See
-<a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits.covariance_matrix" title="mangadap.drpfits.DRPFits.covariance_matrix"><code class="xref py py-func docutils literal"><span class="pre">mangadap.drpfits.DRPFits.covariance_matrix()</span></code></a>.  The
-value of <span class="math">\(\sigma\)</span> provides for the Gaussian desciption
-of <span class="math">\(\rho_{ij}\)</span> in the correlation matrix.  The
-covariance matrix must be provided to <a class="reference internal" href="#mangadap.proc.spectralstack.SpectralStack.stack" title="mangadap.proc.spectralstack.SpectralStack.stack"><code class="xref py py-func docutils literal"><span class="pre">stack()</span></code></a>.</p>
-<p><code class="docutils literal"><span class="pre">full</span></code>: The full covariance cube is calculated and the
+<a class="reference internal" href="mangadap.drpfits.html#mangadap.drpfits.DRPFits.covariance_matrix" title="mangadap.drpfits.DRPFits.covariance_matrix"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.drpfits.DRPFits.covariance_matrix()</span></code></a>.  The
+value of <span class="math notranslate nohighlight">\(\sigma\)</span> provides for the Gaussian desciption
+of <span class="math notranslate nohighlight">\(\rho_{ij}\)</span> in the correlation matrix.  The
+covariance matrix must be provided to <a class="reference internal" href="#mangadap.proc.spectralstack.SpectralStack.stack" title="mangadap.proc.spectralstack.SpectralStack.stack"><code class="xref py py-func docutils literal notranslate"><span class="pre">stack()</span></code></a>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">full</span></code>: The full covariance cube is calculated and the
 noise vectors are constructed using the formally correct
 calculation.  No parameters needed.  The covariance matrix
-must be provided to <a class="reference internal" href="#mangadap.proc.spectralstack.SpectralStack.stack" title="mangadap.proc.spectralstack.SpectralStack.stack"><code class="xref py py-func docutils literal"><span class="pre">stack()</span></code></a>.</p>
+must be provided to <a class="reference internal" href="#mangadap.proc.spectralstack.SpectralStack.stack" title="mangadap.proc.spectralstack.SpectralStack.stack"><code class="xref py py-func docutils literal notranslate"><span class="pre">stack()</span></code></a>.</p>
 </div></blockquote>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -443,30 +446,34 @@ must be provided to <a class="reference internal" href="#mangadap.proc.spectrals
 <dl class="staticmethod">
 <dt id="mangadap.proc.spectralstack.SpectralStack.min_max_wave">
 <em class="property">static </em><code class="descname">min_max_wave</code><span class="sig-paren">(</span><em>wave</em>, <em>voff</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/spectralstack.html#SpectralStack.min_max_wave"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.spectralstack.SpectralStack.min_max_wave" title="Permalink to this definition">¶</a></dt>
-<dd><p>Determine the minimum and maximum of all shifted wavelength
+<dd><blockquote>
+<div><p>Determine the minimum and maximum of all shifted wavelength
 ranges.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>wave</strong> (<em>numpy.ndarray</em>) – Original wavelengths.</li>
-<li><strong>voff</strong> (<em>numpy.ndarray</em>) – Velocity offsets in km/s.  Each
-element is applied to the wavelength vector to determine
-the maximum wavelength range.  Does not need to be
-one-dimensional.</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Two floats with the minimum and maximum redshifted
-wavelengths.</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">float</p>
-</td>
-</tr>
-</tbody>
-</table>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><dl class="first last docutils">
+<dt>wave (array-like):</dt>
+<dd>Original wavelengths.  Should be 1D.</dd>
+<dt>voff (float, array-like):</dt>
+<dd>The velocity shift in km/s to apply to the wavelength
+vector (i.e., the velocity shift should be :math:<a href="#id1"><span class="problematic" id="id2">`</span></a>v_{</dd>
+</dl>
+</dd>
+</dl>
+</div></blockquote>
+<dl class="docutils">
+<dt>m</dt>
+<dd><blockquote class="first">
+<div>off} = -cz`.  de-redshift).  Each element is applied to
+the wavelength vector to determine the maximum
+wavelength range allowed for all spectra.  Should be 1D.</div></blockquote>
+<dl class="last docutils">
+<dt>Returns:</dt>
+<dd>float: Two floats with the minimum and maximum redshifted
+wavelengths.</dd>
+</dl>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="staticmethod">
@@ -474,8 +481,8 @@ wavelengths.</p>
 <em class="property">static </em><code class="descname">operation_options</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/spectralstack.html#SpectralStack.operation_options"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.spectralstack.SpectralStack.operation_options" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the allowed stacking operations.  Current operations are:</p>
 <blockquote>
-<div><p><code class="docutils literal"><span class="pre">mean</span></code>: Construct the mean of the spectra</p>
-<p><code class="docutils literal"><span class="pre">sum</span></code>: Construct the spectrum sum.</p>
+<div><p><code class="docutils literal notranslate"><span class="pre">mean</span></code>: Construct the mean of the spectra</p>
+<p><code class="docutils literal notranslate"><span class="pre">sum</span></code>: Construct the spectrum sum.</p>
 </div></blockquote>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -500,7 +507,7 @@ stacking spectra.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>mode</strong> (<em>str</em>) – Mode to use.  Must be an allowed mode; see
-<a class="reference internal" href="#mangadap.proc.spectralstack.SpectralStack.covariance_mode_options" title="mangadap.proc.spectralstack.SpectralStack.covariance_mode_options"><code class="xref py py-func docutils literal"><span class="pre">covariance_mode_options()</span></code></a>.</li>
+<a class="reference internal" href="#mangadap.proc.spectralstack.SpectralStack.covariance_mode_options" title="mangadap.proc.spectralstack.SpectralStack.covariance_mode_options"><code class="xref py py-func docutils literal notranslate"><span class="pre">covariance_mode_options()</span></code></a>.</li>
 <li><strong>par</strong> (<em>str</em>) – String representation of the parameters for the
 specified mode.</li>
 </ul>
@@ -514,9 +521,9 @@ the designated covariance mode.</p>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
-<li><code class="xref py py-exc docutils literal"><span class="pre">TypeError</span></code> – Raised if the input parameter could not be
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">TypeError</span></code> – Raised if the input parameter could not be
 converted to a float as needed by the specified mode.</li>
-<li><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if the mode is not recognized.</li>
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if the mode is not recognized.</li>
 </ul>
 </td>
 </tr>
@@ -526,62 +533,72 @@ converted to a float as needed by the specified mode.</li>
 
 <dl class="staticmethod">
 <dt id="mangadap.proc.spectralstack.SpectralStack.register">
-<em class="property">static </em><code class="descname">register</code><span class="sig-paren">(</span><em>wave</em>, <em>voff</em>, <em>flux</em>, <em>ivar=None</em>, <em>mask=None</em>, <em>sres=None</em>, <em>log=False</em>, <em>base=10.0</em>, <em>keep_range=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/spectralstack.html#SpectralStack.register"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.spectralstack.SpectralStack.register" title="Permalink to this definition">¶</a></dt>
+<em class="property">static </em><code class="descname">register</code><span class="sig-paren">(</span><em>wave</em>, <em>voff</em>, <em>flux</em>, <em>ivar=None</em>, <em>mask=None</em>, <em>sres=None</em>, <em>log=False</em>, <em>base=10.0</em>, <em>keep_range=False</em>, <em>flim=0.5</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/spectralstack.html#SpectralStack.register"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.spectralstack.SpectralStack.register" title="Permalink to this definition">¶</a></dt>
 <dd><p>Register a set of spectra to the same wavelength range given a
 set of velocity offsets.</p>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
 <p class="last"><strong>THIS FUNCTION IS UNTESTED!</strong></p>
 </div>
+<div class="admonition-todo admonition" id="index-1">
+<p class="first admonition-title">Todo</p>
+<ul class="last simple">
+<li>Allow for correction for deredshifting flux.</li>
+</ul>
+</div>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>wave</strong> (<em>numpy.ndarray</em>) – Single wavelength vector for all input
-spectra.</li>
-<li><strong>voff</strong> (<em>numpy.ndarray</em>) – Vector with velocity offsets to apply
-to each spectrum.</li>
-<li><strong>flux</strong> (<em>numpy.ndarray</em>) – Spectrum flux values.  Can be a
-masked array.</li>
-<li><strong>ivar</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) Inverse variance in the
-spectrum fluxes.  Can be a masked array.</li>
-<li><strong>mask</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) Binary mask values for
-the spectrum fluxes; 0 (False) is unmasked, anything
-else is masked.  Default assumes no pixel mask.</li>
-<li><strong>sres</strong> (<em>numpy.ndarray</em>) – (<strong>Optional</strong>) 1D or 2D spectral
-resolution as a function of wavelength for all or each
-input spectrum.  Default is to ignore any spectral
-resolution data.  Can be a masked array.</li>
-<li><strong>log</strong> (<em>bool</em>) – (<strong>Optional</strong>) Flag that the wavelength vector
-is geometrically stepped in wavelength.</li>
-<li><strong>base</strong> (<em>float</em>) – (<strong>Optional</strong>) If the wavelength vector is
-geometrically stepped, this is the base of the
-logarithmic step.  Default is 10.0.</li>
-<li><strong>keep_range</strong> (<em>float</em>) – (<strong>Optional</strong>)  When registering the
-wavelengths of the shifted spectra, keep the identical
-spectral range as input.</li>
+<li><strong>wave</strong> (<em>numpy.ndarray</em>) – Single wavelength vector for all input spectra.  Must be
+1D with shape <span class="math notranslate nohighlight">\((N_{\rm wave},)\)</span>.</li>
+<li><strong>voff</strong> (<em>float</em><em>, </em><em>array-like</em>) – The velocity shift in km/s to apply to the wavelength
+vector (i.e., the velocity shift should be <span class="math notranslate nohighlight">\(v_{\rm
+off} = -cz\)</span>.  de-redshift).  Should be 1D at most.</li>
+<li><strong>flux</strong> (<em>numpy.ndarray</em>) – Flux array to register.  Must be 2D with shape
+<span class="math notranslate nohighlight">\((N_{\rm spec},N_{\rm wave})\)</span>.  Can be a masked
+array.</li>
+<li><strong>ivar</strong> (<em>numpy.ndarray</em><em>, </em><em>optional</em>) – Inverse variance in the spectrum fluxes.  Shape must
+match <cite>flux</cite>.  Can be a masked array.</li>
+<li><strong>mask</strong> (<em>numpy.ndarray</em><em>, </em><em>optional</em>) – Boolean array with values in <cite>flux</cite> to mask.  Default
+assumes nothing is masked.  If <cite>flux</cite> and/or <cite>ivar</cite> are
+masked array, this is included in union with those
+masks.</li>
+<li><strong>sres</strong> (<em>numpy.ndarray</em><em>, </em><em>optional</em>) – 1D or 2D spectral resolution as a function of wavelength
+for all or each input spectrum.  Default is to ignore
+any spectral resolution data.  If a masked array, the
+masked pixels are interpolated.</li>
+<li><strong>log</strong> (<em>bool</em><em>, </em><em>optional</em>) – Flag that the wavelength vector is geometrically sampled
+in wavelength.</li>
+<li><strong>base</strong> (<em>float</em><em>, </em><em>optional</em>) – If the wavelength vector is geometrically stepped, this
+is the base of the logarithmic step.  Default is 10.0.</li>
+<li><strong>keep_range</strong> (<em>float</em><em>, </em><em>optional</em>) – When registering the wavelengths of the shifted spectra,
+keep the identical spectral range as input.</li>
+<li><strong>flim</strong> (<em>float</em><em>, </em><em>optional</em>) – Mask any pixels in the output flux arrays that are
+covered by less than this fraction by the input masked
+flux array.</li>
 </ul>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Returns four arrays:
 (1) the new wavelength vector, common to all spectra; (2)
-the new flux array; (3) the new inverse variance array,
-which will be None if no inverse variances are provided to
-the function; and (4) the new spectral resolution vectors,
-which will also be None if no spectral resolution vectors
-are provided.  The last three arrays are <em>all</em> MaskedArrays.</p>
+the new masked flux array; (3) the new masked inverse
+variance array, which will be None if no inverse variances
+are provided to the function; and (4) the new spectral
+resolution vectors, which will also be None if no spectral
+resolution vectors are provided.</p>
 </td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">numpy.ndarray, <a class="reference external" href="http://docs.scipy.org/doc/numpy-1.10.1/reference/maskedarray.baseclass.html#numpy.ma.MaskedArray">numpy.ma.MaskedArray</a></p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if the wavelength or velocity offset
-vectors are not one-dimensional, if the flux array is
-not two-dimensional, if the inverse variance or mask
-arrays do not have the same shape as the flux array, or
-if the number of wavelengths does not match the second
-axis of the flux array.</p>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if the wavelength or velocity offset vectors are
+not one-dimensional, if the flux array is not
+two-dimensional, if the inverse variance or mask arrays
+do not have the same shape as the flux array, or if the
+number of wavelengths does not match the second axis of
+the flux array.</p>
 </td>
 </tr>
 </tbody>
@@ -604,36 +621,36 @@ mean, of the spectra.</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>wave</strong> (<em>numpy.ndarray</em>) – Single wavelength vector for all input spectra.</li>
 <li><strong>flux</strong> (<em>numpy.ndarray</em>) – Spectrum flux values.  Can be a masked array.</li>
-<li><strong>operation</strong> (<code class="xref py py-obj docutils literal"><span class="pre">str</span></code>, optional) – Stacking operation to perform.  See
-<a class="reference internal" href="#mangadap.proc.spectralstack.SpectralStack.operation_options" title="mangadap.proc.spectralstack.SpectralStack.operation_options"><code class="xref py py-func docutils literal"><span class="pre">operation_options()</span></code></a>.  Default is <code class="docutils literal"><span class="pre">mean</span></code>.</li>
-<li><strong>binid</strong> (<code class="xref py py-obj docutils literal"><span class="pre">numpy.ndarray</span></code>, optional) – Indices of the bin in which to place each spectrum.  If
+<li><strong>operation</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">str</span></code>, optional) – Stacking operation to perform.  See
+<a class="reference internal" href="#mangadap.proc.spectralstack.SpectralStack.operation_options" title="mangadap.proc.spectralstack.SpectralStack.operation_options"><code class="xref py py-func docutils literal notranslate"><span class="pre">operation_options()</span></code></a>.  Default is <code class="docutils literal notranslate"><span class="pre">mean</span></code>.</li>
+<li><strong>binid</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>, optional) – Indices of the bin in which to place each spectrum.  If
 not provided, all the spectra will be combined.</li>
-<li><strong>binwgt</strong> (<code class="xref py py-obj docutils literal"><span class="pre">numpy.ndarray</span></code>, optional) – Weights for each of the spectra.  If not provided, all
+<li><strong>binwgt</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>, optional) – Weights for each of the spectra.  If not provided, all
 weights are uniform.</li>
-<li><strong>ivar</strong> (<code class="xref py py-obj docutils literal"><span class="pre">numpy.ndarray</span></code>, optional) – Inverse variance in the spectrum fluxes.  Can be a
+<li><strong>ivar</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>, optional) – Inverse variance in the spectrum fluxes.  Can be a
 masked array.</li>
-<li><strong>mask</strong> (<code class="xref py py-obj docutils literal"><span class="pre">numpy.ndarray</span></code>, optional) – Binary mask values for the spectrum fluxes; 0 (False) is
+<li><strong>mask</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>, optional) – Binary mask values for the spectrum fluxes; 0 (False) is
 unmasked, anything else is masked.  Default assumes no
 pixel mask.</li>
-<li><strong>sres</strong> (<code class="xref py py-obj docutils literal"><span class="pre">numpy.ndarray</span></code>, optional) – 1D or 2D spectral resolution as a function of wavelength
+<li><strong>sres</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>, optional) – 1D or 2D spectral resolution as a function of wavelength
 for all or each input spectrum.  Default is to ignore
 any spectral resolution data.  Can be a masked array.</li>
-<li><strong>voff</strong> (<code class="xref py py-obj docutils literal"><span class="pre">numpy.ndarray</span></code>, optional) – Vector with velocity offsets to apply to each spectrum.
+<li><strong>voff</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>, optional) – Vector with velocity offsets to apply to each spectrum.
 Default is no velocity offsets</li>
-<li><strong>log</strong> (<code class="xref py py-obj docutils literal"><span class="pre">bool</span></code>, optional) – Flag that the wavelength vector is geometrically stepped
+<li><strong>log</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">bool</span></code>, optional) – Flag that the wavelength vector is geometrically stepped
 in wavelength.</li>
-<li><strong>base</strong> (<code class="xref py py-obj docutils literal"><span class="pre">float</span></code>, optional) – If the wavelength vector is geometrically stepped, this
+<li><strong>base</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">float</span></code>, optional) – If the wavelength vector is geometrically stepped, this
 is the base of the logarithmic step.  Default is 10.0.</li>
-<li><strong>covariance_mode</strong> (<code class="xref py py-obj docutils literal"><span class="pre">str</span></code>, optional) – Keyword for method to use for dealing with covariance;
-see <a class="reference internal" href="#mangadap.proc.spectralstack.SpectralStack.covariance_mode_options" title="mangadap.proc.spectralstack.SpectralStack.covariance_mode_options"><code class="xref py py-func docutils literal"><span class="pre">covariance_mode_options()</span></code></a>.  Default is to
+<li><strong>covariance_mode</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">str</span></code>, optional) – Keyword for method to use for dealing with covariance;
+see <a class="reference internal" href="#mangadap.proc.spectralstack.SpectralStack.covariance_mode_options" title="mangadap.proc.spectralstack.SpectralStack.covariance_mode_options"><code class="xref py py-func docutils literal notranslate"><span class="pre">covariance_mode_options()</span></code></a>.  Default is to
 ignore covariance.</li>
-<li><strong>covar</strong> (<code class="xref py py-obj docutils literal"><span class="pre">float</span></code>, <code class="xref py py-obj docutils literal"><span class="pre">Covariance</span></code>, optional) – Covariance object to use, which must match the
+<li><strong>covar</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">Covariance</span></code>, optional) – Covariance object to use, which must match the
 expectation from the covariance mode.  See
-<a class="reference internal" href="#mangadap.proc.spectralstack.SpectralStack.covariance_mode_options" title="mangadap.proc.spectralstack.SpectralStack.covariance_mode_options"><code class="xref py py-func docutils literal"><span class="pre">covariance_mode_options()</span></code></a> and
-<a class="reference internal" href="#mangadap.proc.spectralstack.SpectralStack._check_covariance_type" title="mangadap.proc.spectralstack.SpectralStack._check_covariance_type"><code class="xref py py-func docutils literal"><span class="pre">_check_covariance_type()</span></code></a>.</li>
-<li><strong>keep_range</strong> (<code class="xref py py-obj docutils literal"><span class="pre">float</span></code>, optional) – When registering the wavelengths of the shifted spectra,
+<a class="reference internal" href="#mangadap.proc.spectralstack.SpectralStack.covariance_mode_options" title="mangadap.proc.spectralstack.SpectralStack.covariance_mode_options"><code class="xref py py-func docutils literal notranslate"><span class="pre">covariance_mode_options()</span></code></a> and
+<a class="reference internal" href="#mangadap.proc.spectralstack.SpectralStack._check_covariance_type" title="mangadap.proc.spectralstack.SpectralStack._check_covariance_type"><code class="xref py py-func docutils literal notranslate"><span class="pre">_check_covariance_type()</span></code></a>.</li>
+<li><strong>keep_range</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">float</span></code>, optional) – When registering the wavelengths of the shifted spectra,
 keep the identical spectral range as input.</li>
-<li><strong>fill_sres</strong> (<code class="xref py py-obj docutils literal"><span class="pre">bool</span></code>, optional) – If the spectral resolution is provided, interpolate the
+<li><strong>fill_sres</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">bool</span></code>, optional) – If the spectral resolution is provided, interpolate the
 stacked spectral resolution instead of returning a
 masked array.</li>
 </ul>
@@ -649,13 +666,13 @@ the stacked spectral resolution, and the stacked covariance.</p>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">numpy.ndarray, <a class="reference external" href="http://docs.scipy.org/doc/numpy-1.10.1/reference/maskedarray.baseclass.html#numpy.ma.MaskedArray">numpy.ma.MaskedArray</a></p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if the wavelength vector is not one-dimensional,
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if the wavelength vector is not one-dimensional,
 if the flux array is not two-dimensional, if the inverse
 variance or mask arrays do not have the same shape as
 the flux array, or if the number of wavelengths does not
 match the second axis of the flux array.  Also raised if
 the covariance mode is not recognized; see
-<a class="reference internal" href="#mangadap.proc.spectralstack.SpectralStack.covariance_mode_options" title="mangadap.proc.spectralstack.SpectralStack.covariance_mode_options"><code class="xref py py-func docutils literal"><span class="pre">covariance_mode_options()</span></code></a>.</p>
+<a class="reference internal" href="#mangadap.proc.spectralstack.SpectralStack.covariance_mode_options" title="mangadap.proc.spectralstack.SpectralStack.covariance_mode_options"><code class="xref py py-func docutils literal notranslate"><span class="pre">covariance_mode_options()</span></code></a>.</p>
 </td>
 </tr>
 </tbody>
@@ -665,19 +682,19 @@ the covariance mode is not recognized; see
 <dl class="method">
 <dt id="mangadap.proc.spectralstack.SpectralStack.stack_DRPFits">
 <code class="descname">stack_DRPFits</code><span class="sig-paren">(</span><em>drpf</em>, <em>binid</em>, <em>par=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/spectralstack.html#SpectralStack.stack_DRPFits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.spectralstack.SpectralStack.stack_DRPFits" title="Permalink to this definition">¶</a></dt>
-<dd><p>Wrapper function for <a class="reference internal" href="#mangadap.proc.spectralstack.SpectralStack.stack" title="mangadap.proc.spectralstack.SpectralStack.stack"><code class="xref py py-func docutils literal"><span class="pre">stack()</span></code></a> that uses a DRPFits file.</p>
+<dd><p>Wrapper function for <a class="reference internal" href="#mangadap.proc.spectralstack.SpectralStack.stack" title="mangadap.proc.spectralstack.SpectralStack.stack"><code class="xref py py-func docutils literal notranslate"><span class="pre">stack()</span></code></a> that uses a DRPFits file.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>par</strong> (<a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet" title="mangadap.par.parset.ParSet"><em>ParSet</em></a><em> or </em><em>dict</em>) – (<strong>Optional</strong>) Set of parameters used
-to define how the stack the spectra.  See <a class="reference internal" href="#mangadap.proc.spectralstack.SpectralStack.stack" title="mangadap.proc.spectralstack.SpectralStack.stack"><code class="xref py py-func docutils literal"><span class="pre">stack()</span></code></a>.
+to define how the stack the spectra.  See <a class="reference internal" href="#mangadap.proc.spectralstack.SpectralStack.stack" title="mangadap.proc.spectralstack.SpectralStack.stack"><code class="xref py py-func docutils literal notranslate"><span class="pre">stack()</span></code></a>.
 Does not need to be provided on initialization, but a
 parameter set is required for all the stacking routines.</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Returns six elements.  See <a class="reference internal" href="#mangadap.proc.spectralstack.SpectralStack.stack" title="mangadap.proc.spectralstack.SpectralStack.stack"><code class="xref py py-func docutils literal"><span class="pre">stack()</span></code></a>.</td>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Returns six elements.  See <a class="reference internal" href="#mangadap.proc.spectralstack.SpectralStack.stack" title="mangadap.proc.spectralstack.SpectralStack.stack"><code class="xref py py-func docutils literal notranslate"><span class="pre">stack()</span></code></a>.</td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">numpy.ndarray, <a class="reference internal" href="mangadap.util.covariance.html#mangadap.util.covariance.Covariance" title="mangadap.util.covariance.Covariance"><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.covariance.Covariance</span></code></a></td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">numpy.ndarray, <a class="reference internal" href="mangadap.util.covariance.html#mangadap.util.covariance.Covariance" title="mangadap.util.covariance.Covariance"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.covariance.Covariance</span></code></a></td>
 </tr>
 </tbody>
 </table>
@@ -688,10 +705,10 @@ parameter set is required for all the stacking routines.</td>
 <dl class="class">
 <dt id="mangadap.proc.spectralstack.SpectralStackPar">
 <em class="property">class </em><code class="descclassname">mangadap.proc.spectralstack.</code><code class="descname">SpectralStackPar</code><span class="sig-paren">(</span><em>operation</em>, <em>vel_register</em>, <em>vel_offsets</em>, <em>covar_mode</em>, <em>covar_par</em>, <em>stack_sres</em>, <em>prepixel_sres</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/spectralstack.html#SpectralStackPar"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.spectralstack.SpectralStackPar" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet" title="mangadap.par.parset.ParSet"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.parset.ParSet</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet" title="mangadap.par.parset.ParSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.par.parset.ParSet</span></code></a></p>
 <p>Class with parameters used to set how to stack a set of spectra.
-See <a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet" title="mangadap.par.parset.ParSet"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.parset.ParSet</span></code></a> for attributes.</p>
-<div class="admonition-todo admonition" id="index-1">
+See <a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet" title="mangadap.par.parset.ParSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.par.parset.ParSet</span></code></a> for attributes.</p>
+<div class="admonition-todo admonition" id="index-2">
 <p class="first admonition-title">Todo</p>
 <p class="last">Allow for sigma rejection.</p>
 </div>
@@ -701,7 +718,7 @@ See <a class="reference internal" href="mangadap.par.parset.html#mangadap.par.pa
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>operation</strong> (<em>str</em>) – Operation to perform for the stacked spectrum.
-See <a class="reference internal" href="#mangadap.proc.spectralstack.SpectralStack.operation_options" title="mangadap.proc.spectralstack.SpectralStack.operation_options"><code class="xref py py-func docutils literal"><span class="pre">SpectralStack.operation_options()</span></code></a> for the
+See <a class="reference internal" href="#mangadap.proc.spectralstack.SpectralStack.operation_options" title="mangadap.proc.spectralstack.SpectralStack.operation_options"><code class="xref py py-func docutils literal notranslate"><span class="pre">SpectralStack.operation_options()</span></code></a> for the
 available operation options.</li>
 <li><strong>vel_register</strong> (<em>bool</em>) – Flag to velocity register the spectra
 before adding them based on a provided prior measurement of
@@ -710,11 +727,11 @@ the velocities.</li>
 apply to the spectra to stack.</li>
 <li><strong>covar_mode</strong> (<em>str</em>) – Describes how to incorporate covariance into
 the spectral stacking.  See
-<a class="reference internal" href="#mangadap.proc.spectralstack.SpectralStack.covariance_mode_options" title="mangadap.proc.spectralstack.SpectralStack.covariance_mode_options"><code class="xref py py-func docutils literal"><span class="pre">SpectralStack.covariance_mode_options()</span></code></a> for the
+<a class="reference internal" href="#mangadap.proc.spectralstack.SpectralStack.covariance_mode_options" title="mangadap.proc.spectralstack.SpectralStack.covariance_mode_options"><code class="xref py py-func docutils literal notranslate"><span class="pre">SpectralStack.covariance_mode_options()</span></code></a> for the
 available options.</li>
 <li><strong>covar_par</strong> (<em>int</em><em>, </em><em>float</em><em>, </em><em>numpy.ndarray</em><em>, </em><em>list</em>) – The parameter(s)
 needed to perform a given method of handling the covariance.
-See <a class="reference internal" href="#mangadap.proc.spectralstack.SpectralStack.covariance_mode_options" title="mangadap.proc.spectralstack.SpectralStack.covariance_mode_options"><code class="xref py py-func docutils literal"><span class="pre">SpectralStack.covariance_mode_options()</span></code></a> for the
+See <a class="reference internal" href="#mangadap.proc.spectralstack.SpectralStack.covariance_mode_options" title="mangadap.proc.spectralstack.SpectralStack.covariance_mode_options"><code class="xref py py-func docutils literal notranslate"><span class="pre">SpectralStack.covariance_mode_options()</span></code></a> for the
 available options.</li>
 <li><strong>stack_sres</strong> (<em>bool</em>) – Stack the spectral resolution as well as the
 flux data.</li>

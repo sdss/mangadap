@@ -1,5 +1,5 @@
-mangadap\.contrib\.LambdaR\_2D\_forMaNGA module
-===============================================
+mangadap.contrib.LambdaR\_2D\_forMaNGA module
+=============================================
 
 .. automodule:: mangadap.contrib.LambdaR_2D_forMaNGA
     :members:

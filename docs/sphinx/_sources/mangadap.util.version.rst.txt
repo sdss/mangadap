@@ -1,5 +1,5 @@
-mangadap\.util\.version module
-==============================
+mangadap.util.version module
+============================
 
 .. automodule:: mangadap.util.version
     :members:

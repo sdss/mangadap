@@ -100,7 +100,7 @@
 <li class="toctree-l3"><a class="reference internal" href="mangadap.par.html">mangadap.par package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.proc.html">mangadap.proc package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.survey.html">mangadap.survey package</a></li>
-<li class="toctree-l3"><a class="reference internal" href="mangadap.test.html">mangadap.test package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.tests.html">mangadap.tests package</a></li>
 <li class="toctree-l3 current"><a class="reference internal" href="mangadap.util.html">mangadap.util package</a><ul class="current">
 <li class="toctree-l4 current"><a class="reference internal" href="mangadap.util.html#submodules">Submodules</a></li>
 <li class="toctree-l4"><a class="reference internal" href="mangadap.util.html#module-mangadap.util">Module contents</a></li>
@@ -192,7 +192,7 @@
 <dt><em>Source location</em>:</dt>
 <dd>$MANGADAP_DIR/python/mangadap/util/fileio.py</dd>
 <dt><em>Imports and python version compliance</em>:</dt>
-<dd><div class="first last highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<dd><div class="first last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
@@ -214,19 +214,19 @@
 <dt><em>Revision history</em>:</dt>
 <dd><div class="first last line-block">
 <div class="line"><strong>27 May 2015</strong>: Original implementation by K. Westfall (KBW)</div>
-<div class="line"><strong>29 Jan 2016</strong>: (KBW) Added <a class="reference internal" href="#mangadap.util.fileio.read_template_spectrum" title="mangadap.util.fileio.read_template_spectrum"><code class="xref py py-func docutils literal"><span class="pre">read_template_spectrum()</span></code></a></div>
+<div class="line"><strong>29 Jan 2016</strong>: (KBW) Added <a class="reference internal" href="#mangadap.util.fileio.read_template_spectrum" title="mangadap.util.fileio.read_template_spectrum"><code class="xref py py-func docutils literal notranslate"><span class="pre">read_template_spectrum()</span></code></a></div>
 <div class="line"><strong>01 Feb 2016</strong>: (KBW) Moved wavelength calculation to a common
 function.</div>
-<div class="line"><strong>09 Feb 2016</strong>: (KBW) Added <a class="reference internal" href="#mangadap.util.fileio.writefits_1dspec" title="mangadap.util.fileio.writefits_1dspec"><code class="xref py py-func docutils literal"><span class="pre">writefits_1dspec()</span></code></a>.</div>
-<div class="line"><strong>28 Mar 2016</strong>: (KBW) Added function <a class="reference internal" href="#mangadap.util.fileio.init_record_array" title="mangadap.util.fileio.init_record_array"><code class="xref py py-func docutils literal"><span class="pre">init_record_array()</span></code></a>
-and <a class="reference internal" href="#mangadap.util.fileio.rec_to_fits_type" title="mangadap.util.fileio.rec_to_fits_type"><code class="xref py py-func docutils literal"><span class="pre">rec_to_fits_type()</span></code></a></div>
-<div class="line"><strong>19 May 2016</strong>: (KBW) In <code class="xref py py-func docutils literal"><span class="pre">write_hdu()</span></code>, removed verbose and
+<div class="line"><strong>09 Feb 2016</strong>: (KBW) Added <a class="reference internal" href="#mangadap.util.fileio.writefits_1dspec" title="mangadap.util.fileio.writefits_1dspec"><code class="xref py py-func docutils literal notranslate"><span class="pre">writefits_1dspec()</span></code></a>.</div>
+<div class="line"><strong>28 Mar 2016</strong>: (KBW) Added function <a class="reference internal" href="#mangadap.util.fileio.init_record_array" title="mangadap.util.fileio.init_record_array"><code class="xref py py-func docutils literal notranslate"><span class="pre">init_record_array()</span></code></a>
+and <a class="reference internal" href="#mangadap.util.fileio.rec_to_fits_type" title="mangadap.util.fileio.rec_to_fits_type"><code class="xref py py-func docutils literal notranslate"><span class="pre">rec_to_fits_type()</span></code></a></div>
+<div class="line"><strong>19 May 2016</strong>: (KBW) In <code class="xref py py-func docutils literal notranslate"><span class="pre">write_hdu()</span></code>, removed verbose and
 added loggers and quiet.</div>
-<div class="line"><strong>25 Aug 2016</strong>: (KBW) Added <a class="reference internal" href="#mangadap.util.fileio.channel_dictionary" title="mangadap.util.fileio.channel_dictionary"><code class="xref py py-func docutils literal"><span class="pre">channel_dictionary()</span></code></a></div>
+<div class="line"><strong>25 Aug 2016</strong>: (KBW) Added <a class="reference internal" href="#mangadap.util.fileio.channel_dictionary" title="mangadap.util.fileio.channel_dictionary"><code class="xref py py-func docutils literal notranslate"><span class="pre">channel_dictionary()</span></code></a></div>
 <div class="line"><strong>23 Feb 2017</strong>: (KBW) create_symlink now creates the directory if
 it doesn’t exist</div>
 <div class="line"><strong>23 Mar 2017</strong>: (KBW) Force type of header keywords in
-<a class="reference internal" href="#mangadap.util.fileio.wavelength_vector" title="mangadap.util.fileio.wavelength_vector"><code class="xref py py-func docutils literal"><span class="pre">wavelength_vector()</span></code></a>.</div>
+<a class="reference internal" href="#mangadap.util.fileio.wavelength_vector" title="mangadap.util.fileio.wavelength_vector"><code class="xref py py-func docutils literal notranslate"><span class="pre">wavelength_vector()</span></code></a>.</div>
 </div>
 </dd>
 </dl>
@@ -265,7 +265,7 @@ to the directory with the symlink.</p>
 <code class="descclassname">mangadap.util.fileio.</code><code class="descname">init_record_array</code><span class="sig-paren">(</span><em>shape</em>, <em>dtype</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/fileio.html#init_record_array"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.fileio.init_record_array" title="Permalink to this definition">¶</a></dt>
 <dd><p>Utility function that initializes a record array using a provided
 input data type.  For example:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">dtype</span> <span class="o">=</span> <span class="p">[</span> <span class="p">(</span><span class="s1">&#39;INDX&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int</span><span class="p">,</span> <span class="p">(</span><span class="mi">2</span><span class="p">,)</span> <span class="p">),</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dtype</span> <span class="o">=</span> <span class="p">[</span> <span class="p">(</span><span class="s1">&#39;INDX&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int</span><span class="p">,</span> <span class="p">(</span><span class="mi">2</span><span class="p">,)</span> <span class="p">),</span>
           <span class="p">(</span><span class="s1">&#39;VALUE&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">)</span> <span class="p">]</span>
 </pre></div>
 </div>
@@ -299,7 +299,7 @@ element in the record array.</li>
 <dd><p>Read a template spectrum.</p>
 <p>Template spectra are “raw format” files with template data and are,
 at minimum, expected to have the following components:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">hdu</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;CRVAL1&#39;</span><span class="p">]</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hdu</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;CRVAL1&#39;</span><span class="p">]</span>
 <span class="n">hdu</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;CRPIX1&#39;</span><span class="p">]</span>
 <span class="n">hdu</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;CDELT1&#39;</span><span class="p">]</span>
 <span class="n">hdu</span><span class="p">[</span><span class="n">data_ext</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
@@ -338,8 +338,8 @@ template spectrum.</p>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
-<li><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if fits file is not one-dimensional.</li>
-<li><code class="xref py py-exc docutils literal"><span class="pre">KeyError</span></code> – Raised if various header keywords or extension names
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if fits file is not one-dimensional.</li>
+<li><code class="xref py py-exc docutils literal notranslate"><span class="pre">KeyError</span></code> – Raised if various header keywords or extension names
 are not available.</li>
 </ul>
 </td>
@@ -364,7 +364,7 @@ flux read for the spectrum.</td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">numpy.ndarray</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal"><span class="pre">Exception</span></code> – Raised if the input fits file has more than one
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal notranslate"><span class="pre">Exception</span></code> – Raised if the input fits file has more than one
 extension or its primary extension has more than two
 dimensions.</td>
 </tr>

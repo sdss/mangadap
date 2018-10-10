@@ -9,7 +9,7 @@ from matplotlib import pyplot
 
 from mangadap.drpfits import DRPFits
 from mangadap.util.fitsutil import DAPFitsUtil
-from mangadap.util.instrument import SpectralResolution
+from mangadap.util.resolution import SpectralResolution
 from mangadap.util.pixelmask import SpectralPixelMask
 
 from mangadap.par.artifactdb import ArtifactDB
@@ -56,8 +56,8 @@ if __name__ == '__main__':
     y = 21
 
     # Show the ppxf plots
-    fit_plots = True
-#    fit_plots = False
+#    fit_plots = True
+    fit_plots = False
 
     # Template keywords
     sc_tpl_key = 'MILESHC'

@@ -1,5 +1,5 @@
-mangadap\.proc\.spatialbinning module
-=====================================
+mangadap.proc.spatialbinning module
+===================================
 
 .. automodule:: mangadap.proc.spatialbinning
     :members:

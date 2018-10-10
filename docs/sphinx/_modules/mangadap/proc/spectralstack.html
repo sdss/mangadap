@@ -36,7 +36,7 @@
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
     <link rel="top" title="mangadap 2.2.2 documentation" href="../../../index.html"/>
-        <link rel="up" title="Module code" href="../../index.html"/> 
+        <link rel="up" title="mangadap" href="../../mangadap.html"/> 
 
   
   <script src="../../../_static/js/modernizr.min.js"></script>
@@ -138,6 +138,8 @@
         
           <li><a href="../../index.html">Module code</a> &raquo;</li>
         
+          <li><a href="../../mangadap.html">mangadap</a> &raquo;</li>
+        
       <li>mangadap.proc.spectralstack</li>
     
     
@@ -213,6 +215,8 @@
 <span class="sd">        :func:`mangadap.util.instrument.resample_vector` to</span>
 <span class="sd">        :func:`mangadap.util.instrument.resample1d` in untested function</span>
 <span class="sd">        :func:`SpectralStack.register`.</span>
+<span class="sd">    | **30 Aug 2018**: (KBW) Switch from resample1d to</span>
+<span class="sd">        :func:`mangadap.util.sampling.Resample`</span>
 
 <span class="sd">.. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html</span>
 <span class="sd">.. _astropy.io.fits.Header: http://docs.astropy.org/en/stable/io/fits/api/headers.html#header</span>
@@ -236,8 +240,8 @@
 
 <span class="kn">from</span> <span class="nn">..par.parset</span> <span class="k">import</span> <span class="n">ParSet</span>
 <span class="kn">from</span> <span class="nn">..util.covariance</span> <span class="k">import</span> <span class="n">Covariance</span>
-
-<span class="kn">from</span> <span class="nn">..util.instrument</span> <span class="k">import</span> <span class="n">resample1d</span><span class="p">,</span> <span class="n">resample_vector_npix</span><span class="p">,</span> <span class="n">spectral_coordinate_step</span>
+<span class="kn">from</span> <span class="nn">..util.filter</span> <span class="k">import</span> <span class="n">interpolate_masked_vector</span>
+<span class="kn">from</span> <span class="nn">..util.sampling</span> <span class="k">import</span> <span class="n">Resample</span><span class="p">,</span> <span class="n">spectral_coordinate_step</span>
 
 <span class="kn">from</span> <span class="nn">matplotlib</span> <span class="k">import</span> <span class="n">pyplot</span><span class="p">,</span> <span class="n">rc</span>
 
@@ -322,7 +326,7 @@
 <span class="sd">        hdr (`astropy.io.fits.Header`_): Header object to write to.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;operation&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;STCKOP&#39;</span><span class="p">]</span>
-        <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;vel_register&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;STCKVREG&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;vel_register&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;STCKVREG&#39;</span><span class="p">])</span>
         <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;covar_mode&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;STCKCRMD&#39;</span><span class="p">]</span>
         <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;covar_par&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;STCKCRPR&#39;</span><span class="p">])</span>
         <span class="bp">self</span><span class="p">[</span><span class="s1">&#39;stack_sres&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;STCKRES&#39;</span><span class="p">])</span>
@@ -417,19 +421,32 @@
         <span class="k">return</span> <span class="n">inp_mask</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span></div>
 
      
-<div class="viewcode-block" id="SpectralStack._get_input_sres"><a class="viewcode-back" href="../../../mangadap.proc.spectralstack.html#mangadap.proc.spectralstack.SpectralStack._get_input_sres">[docs]</a>    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_get_input_sres</span><span class="p">(</span><span class="n">sres</span><span class="p">,</span> <span class="n">nspec</span><span class="p">):</span>
+<div class="viewcode-block" id="SpectralStack._check_input_sres"><a class="viewcode-back" href="../../../mangadap.proc.spectralstack.html#mangadap.proc.spectralstack.SpectralStack._check_input_sres">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_check_input_sres</span><span class="p">(</span><span class="n">sres</span><span class="p">,</span> <span class="n">nspec</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Check the shape and type of the input spectral resolution.</span>
-<span class="sd">        Always returns a MaskedArray.</span>
+
+<span class="sd">        If the input is a masked array, interpolate over the mask.</span>
+<span class="sd">        Always returns a numpy.ndarray (unmasked).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">sres</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">None</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sres</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="n">nspec</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">sres</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">nspec</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;spectral resolution array is not the correct shape.&#39;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sres</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="n">sres</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">nspec</span><span class="p">)</span> <span class="ow">or</span> <span class="n">nspec</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">(</span><span class="n">sres</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">([</span><span class="n">sres</span><span class="p">]</span><span class="o">*</span><span class="n">nspec</span><span class="p">)</span></div>
+        <span class="k">if</span> <span class="n">sres</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Spectral resolution must be 2D or less.&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">sres</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="n">nspec</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">sres</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">nspec</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Spectral resolution array is not the correct shape.&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sres</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">):</span>
+            <span class="n">_sres</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">apply_along_axis</span><span class="p">(</span><span class="n">interpolate_masked_vector</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span>
+                                           <span class="n">sres</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="n">sres</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">sres</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">sres</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">_sres</span> <span class="o">=</span> <span class="n">_sres</span><span class="p">[</span><span class="mi">0</span><span class="p">,:]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">_sres</span> <span class="o">=</span> <span class="n">sres</span>
+
+        <span class="k">if</span> <span class="n">_sres</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">or</span> <span class="n">nspec</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">_sres</span>
+        <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">_sres</span><span class="p">]</span><span class="o">*</span><span class="n">nspec</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="SpectralStack._set_rebin_transfer_matrix"><a class="viewcode-back" href="../../../mangadap.proc.spectralstack.html#mangadap.proc.spectralstack.SpectralStack._set_rebin_transfer_matrix">[docs]</a>    <span class="k">def</span> <span class="nf">_set_rebin_transfer_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">binid</span><span class="p">,</span> <span class="n">binwgt</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
@@ -794,81 +811,107 @@
 <span class="sd">        ranges.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            wave (numpy.ndarray): Original wavelengths.</span>
-
-<span class="sd">            voff (numpy.ndarray): Velocity offsets in km/s.  Each</span>
-<span class="sd">                element is applied to the wavelength vector to determine</span>
-<span class="sd">                the maximum wavelength range.  Does not need to be</span>
-<span class="sd">                one-dimensional.</span>
+<span class="sd">            wave (array-like):</span>
+<span class="sd">                Original wavelengths.  Should be 1D.</span>
+<span class="sd">            voff (float, array-like):</span>
+<span class="sd">                The velocity shift in km/s to apply to the wavelength</span>
+<span class="sd">                vector (i.e., the velocity shift should be :math:`v_{\rm</span>
+<span class="sd">                off} = -cz`.  de-redshift).  Each element is applied to</span>
+<span class="sd">                the wavelength vector to determine the maximum</span>
+<span class="sd">                wavelength range allowed for all spectra.  Should be 1D.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            float: Two floats with the minimum and maximum redshifted</span>
 <span class="sd">            wavelengths.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">_wave</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">numpy</span><span class="o">.</span><span class="n">amin</span><span class="p">(</span><span class="n">wave</span><span class="p">),</span> <span class="n">numpy</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">wave</span><span class="p">)])</span>
-        <span class="n">redshifted</span> <span class="o">=</span> <span class="n">_wave</span><span class="p">[</span><span class="kc">None</span><span class="p">,:]</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">+</span><span class="n">voff</span><span class="p">[:,</span><span class="kc">None</span><span class="p">]</span><span class="o">/</span><span class="n">astropy</span><span class="o">.</span><span class="n">constants</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;km/s&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">amin</span><span class="p">(</span><span class="n">redshifted</span><span class="p">),</span> <span class="n">numpy</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">redshifted</span><span class="p">)</span></div>
+        <span class="n">_wave</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">wave</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">_wave</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Wavelength vector should be 1D!&#39;</span><span class="p">)</span>
+        <span class="n">_voff</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">voff</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">_voff</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Velocity should be a float or 1D vector.&#39;</span><span class="p">)</span>
+        <span class="n">_wave</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">numpy</span><span class="o">.</span><span class="n">amin</span><span class="p">(</span><span class="n">_wave</span><span class="p">),</span> <span class="n">numpy</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">_wave</span><span class="p">)])</span>
+        <span class="n">doppler_shifted</span> <span class="o">=</span> <span class="n">_wave</span><span class="p">[</span><span class="kc">None</span><span class="p">,:]</span><span class="o">*</span><span class="p">(</span><span class="mf">1.</span><span class="o">+</span><span class="n">_voff</span><span class="p">[:,</span><span class="kc">None</span><span class="p">]</span><span class="o">/</span><span class="n">astropy</span><span class="o">.</span><span class="n">constants</span><span class="o">.</span><span class="n">c</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;km/s&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">amin</span><span class="p">(</span><span class="n">doppler_shifted</span><span class="p">),</span> <span class="n">numpy</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">doppler_shifted</span><span class="p">)</span></div>
 
 
     <span class="c1">#TODO: Untested!</span>
 <div class="viewcode-block" id="SpectralStack.register"><a class="viewcode-back" href="../../../mangadap.proc.spectralstack.html#mangadap.proc.spectralstack.SpectralStack.register">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">register</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">voff</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">ivar</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sres</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span>
-                 <span class="n">keep_range</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+                 <span class="n">keep_range</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">flim</span><span class="o">=</span><span class="mf">0.5</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Register a set of spectra to the same wavelength range given a</span>
 <span class="sd">        set of velocity offsets.</span>
 
 <span class="sd">        .. warning::</span>
 <span class="sd">            **THIS FUNCTION IS UNTESTED!**</span>
 
+<span class="sd">        .. todo::</span>
+<span class="sd">            - Allow for correction for deredshifting flux.</span>
+
 <span class="sd">        Args:</span>
-<span class="sd">            wave (numpy.ndarray): Single wavelength vector for all input</span>
-<span class="sd">                spectra.</span>
-<span class="sd">            voff (numpy.ndarray): Vector with velocity offsets to apply</span>
-<span class="sd">                to each spectrum.</span>
-<span class="sd">            flux (numpy.ndarray): Spectrum flux values.  Can be a</span>
-<span class="sd">                masked array.</span>
-<span class="sd">            ivar (numpy.ndarray): (**Optional**) Inverse variance in the</span>
-<span class="sd">                spectrum fluxes.  Can be a masked array.</span>
-<span class="sd">            mask (numpy.ndarray): (**Optional**) Binary mask values for</span>
-<span class="sd">                the spectrum fluxes; 0 (False) is unmasked, anything</span>
-<span class="sd">                else is masked.  Default assumes no pixel mask.</span>
-<span class="sd">            sres (numpy.ndarray): (**Optional**) 1D or 2D spectral</span>
-<span class="sd">                resolution as a function of wavelength for all or each</span>
-<span class="sd">                input spectrum.  Default is to ignore any spectral</span>
-<span class="sd">                resolution data.  Can be a masked array.</span>
-<span class="sd">            log (bool): (**Optional**) Flag that the wavelength vector</span>
-<span class="sd">                is geometrically stepped in wavelength.</span>
-<span class="sd">            base (float): (**Optional**) If the wavelength vector is</span>
-<span class="sd">                geometrically stepped, this is the base of the</span>
-<span class="sd">                logarithmic step.  Default is 10.0.</span>
-<span class="sd">            keep_range (float): (**Optional**)  When registering the</span>
-<span class="sd">                wavelengths of the shifted spectra, keep the identical</span>
-<span class="sd">                spectral range as input.</span>
+<span class="sd">            wave (numpy.ndarray):</span>
+<span class="sd">                Single wavelength vector for all input spectra.  Must be</span>
+<span class="sd">                1D with shape :math:`(N_{\rm wave},)`.</span>
+<span class="sd">            voff (float, array-like):</span>
+<span class="sd">                The velocity shift in km/s to apply to the wavelength</span>
+<span class="sd">                vector (i.e., the velocity shift should be :math:`v_{\rm</span>
+<span class="sd">                off} = -cz`.  de-redshift).  Should be 1D at most.</span>
+<span class="sd">            flux (numpy.ndarray):</span>
+<span class="sd">                Flux array to register.  Must be 2D with shape</span>
+<span class="sd">                :math:`(N_{\rm spec},N_{\rm wave})`.  Can be a masked</span>
+<span class="sd">                array.</span>
+<span class="sd">            ivar (numpy.ndarray, optional):</span>
+<span class="sd">                Inverse variance in the spectrum fluxes.  Shape must</span>
+<span class="sd">                match `flux`.  Can be a masked array.</span>
+<span class="sd">            mask (numpy.ndarray, optional):</span>
+<span class="sd">                Boolean array with values in `flux` to mask.  Default</span>
+<span class="sd">                assumes nothing is masked.  If `flux` and/or `ivar` are</span>
+<span class="sd">                masked array, this is included in union with those</span>
+<span class="sd">                masks.</span>
+<span class="sd">            sres (numpy.ndarray, optional):</span>
+<span class="sd">                1D or 2D spectral resolution as a function of wavelength</span>
+<span class="sd">                for all or each input spectrum.  Default is to ignore</span>
+<span class="sd">                any spectral resolution data.  If a masked array, the</span>
+<span class="sd">                masked pixels are interpolated.</span>
+<span class="sd">            log (bool, optional):</span>
+<span class="sd">                Flag that the wavelength vector is geometrically sampled</span>
+<span class="sd">                in wavelength.</span>
+<span class="sd">            base (float, optional):</span>
+<span class="sd">                If the wavelength vector is geometrically stepped, this</span>
+<span class="sd">                is the base of the logarithmic step.  Default is 10.0.</span>
+<span class="sd">            keep_range (float, optional):</span>
+<span class="sd">                When registering the wavelengths of the shifted spectra,</span>
+<span class="sd">                keep the identical spectral range as input.</span>
+<span class="sd">            flim (float, optional):</span>
+<span class="sd">                Mask any pixels in the output flux arrays that are</span>
+<span class="sd">                covered by less than this fraction by the input masked</span>
+<span class="sd">                flux array.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            numpy.ndarray, `numpy.ma.MaskedArray`_: Returns four arrays:</span>
 <span class="sd">            (1) the new wavelength vector, common to all spectra; (2)</span>
-<span class="sd">            the new flux array; (3) the new inverse variance array,</span>
-<span class="sd">            which will be None if no inverse variances are provided to</span>
-<span class="sd">            the function; and (4) the new spectral resolution vectors,</span>
-<span class="sd">            which will also be None if no spectral resolution vectors</span>
-<span class="sd">            are provided.  The last three arrays are *all* MaskedArrays.</span>
+<span class="sd">            the new masked flux array; (3) the new masked inverse</span>
+<span class="sd">            variance array, which will be None if no inverse variances</span>
+<span class="sd">            are provided to the function; and (4) the new spectral</span>
+<span class="sd">            resolution vectors, which will also be None if no spectral</span>
+<span class="sd">            resolution vectors are provided.</span>
 
 <span class="sd">        Raises:</span>
-<span class="sd">            ValueError: Raised if the wavelength or velocity offset</span>
-<span class="sd">                vectors are not one-dimensional, if the flux array is</span>
-<span class="sd">                not two-dimensional, if the inverse variance or mask</span>
-<span class="sd">                arrays do not have the same shape as the flux array, or</span>
-<span class="sd">                if the number of wavelengths does not match the second</span>
-<span class="sd">                axis of the flux array.</span>
+<span class="sd">            ValueError:</span>
+<span class="sd">                Raised if the wavelength or velocity offset vectors are</span>
+<span class="sd">                not one-dimensional, if the flux array is not</span>
+<span class="sd">                two-dimensional, if the inverse variance or mask arrays</span>
+<span class="sd">                do not have the same shape as the flux array, or if the</span>
+<span class="sd">                number of wavelengths does not match the second axis of</span>
+<span class="sd">                the flux array.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Check the input</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">wave</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Input wavelength array must be one-dimensional.&#39;</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">flux</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Input flux array must be two-dimensional.  To register a single &#39;</span> \
-                             <span class="s1">&#39;flux vector, use mangadap.util.instrument.resample_vector.&#39;</span><span class="p">)</span>
+                             <span class="s1">&#39;flux vector, use mangadap.util.sampling.Resample.&#39;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">flux</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="n">wave</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Flux array shape does not match the wavelength data.&#39;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">ivar</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">ivar</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">flux</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
@@ -882,60 +925,40 @@
         <span class="n">inp_mask</span> <span class="o">=</span> <span class="n">SpectralStack</span><span class="o">.</span><span class="n">_get_input_mask</span><span class="p">(</span><span class="n">flux</span><span class="p">,</span> <span class="n">ivar</span><span class="o">=</span><span class="n">ivar</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
 
         <span class="c1"># Get the spectral resolution (always a masked array)</span>
-        <span class="n">inp_sres</span> <span class="o">=</span> <span class="n">SpectralStack</span><span class="o">.</span><span class="n">_get_input_sres</span><span class="p">(</span><span class="n">sres</span><span class="p">,</span> <span class="n">flux</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">inp_sres</span> <span class="o">=</span> <span class="n">SpectralStack</span><span class="o">.</span><span class="n">_check_input_sres</span><span class="p">(</span><span class="n">sres</span><span class="p">,</span> <span class="n">flux</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 
-        <span class="c1"># Input and output spectral range</span>
-<span class="c1">#        inRange = [wave[0], wave[-1]]</span>
-        <span class="n">outRange</span> <span class="o">=</span> <span class="p">[</span><span class="n">wave</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">wave</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span> <span class="k">if</span> <span class="n">keep_range</span> <span class="k">else</span> <span class="nb">list</span><span class="p">(</span><span class="n">min_max_wave</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">voff</span><span class="p">))</span>
+        <span class="c1"># Output spectral range</span>
+        <span class="n">outRange</span> <span class="o">=</span> <span class="p">[</span><span class="n">wave</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">wave</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span> <span class="k">if</span> <span class="n">keep_range</span> \
+                        <span class="k">else</span> <span class="nb">list</span><span class="p">(</span><span class="n">SpectralStack</span><span class="o">.</span><span class="n">min_max_wave</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">voff</span><span class="p">))</span>
         <span class="c1"># Sampling (logarithmic or linear)</span>
         <span class="n">dw</span> <span class="o">=</span> <span class="n">spectral_coordinate_step</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="n">log</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">)</span>
-<span class="c1">#        (numpy.log(wave[1]) - numpy.log(wave[0]))/numpy.log(base) \</span>
-<span class="c1">#                    if log else (wave[1] - wave[0])</span>
-        <span class="c1"># Output number of pixels</span>
-        <span class="k">if</span> <span class="n">keep_range</span><span class="p">:</span>
-            <span class="n">nwave</span> <span class="o">=</span> <span class="n">wave</span><span class="o">.</span><span class="n">size</span>
+
+        <span class="c1"># Resample the flux and error</span>
+        <span class="n">ferr</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">ivar</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">ivar</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.5</span><span class="p">)</span>
+        <span class="n">resamp</span> <span class="o">=</span> <span class="n">Resample</span><span class="p">(</span><span class="n">flux</span><span class="p">,</span> <span class="n">e</span><span class="o">=</span><span class="n">ferr</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">inp_mask</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">wave</span><span class="p">,</span> <span class="n">inLog</span><span class="o">=</span><span class="n">log</span><span class="p">,</span> <span class="n">newRange</span><span class="o">=</span><span class="n">outRange</span><span class="p">,</span>
+                          <span class="n">newdx</span><span class="o">=</span><span class="n">dw</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">)</span>
+
+        <span class="c1"># Mask pixels covered below the designate fraction</span>
+        <span class="n">_mask</span> <span class="o">=</span> <span class="n">resamp</span><span class="o">.</span><span class="n">outf</span> <span class="o">&lt;</span> <span class="n">flim</span>
+
+        <span class="c1"># Get the inverse variance</span>
+        <span class="k">if</span> <span class="n">ivar</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">_ivar</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">nwave</span><span class="p">,</span> <span class="n">outRange</span> <span class="o">=</span> <span class="n">resample_vector_npix</span><span class="p">(</span><span class="n">outRange</span><span class="o">=</span><span class="n">outRange</span><span class="p">,</span> <span class="n">dx</span><span class="o">=</span><span class="n">dw</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="n">log</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">)</span>
-        
-        <span class="c1">#Initialize the output arrays</span>
-        <span class="n">_flux</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">nspec</span><span class="p">,</span><span class="n">nwave</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
-        <span class="n">_ivar</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nspec</span><span class="p">,</span><span class="n">nwave</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
-        <span class="n">_mask</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nspec</span><span class="p">,</span><span class="n">nwave</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
-        <span class="n">_sres</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">sres</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nspec</span><span class="p">,</span><span class="n">nwave</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
-        <span class="n">_sres_mask</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">sres</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nspec</span><span class="p">,</span><span class="n">nwave</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
-        <span class="n">var</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">ivar</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">ivar</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">filled</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span>
+            <span class="n">_ivar</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">resamp</span><span class="o">.</span><span class="n">oute</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">)</span>
+            <span class="n">_ivar</span><span class="p">[</span><span class="n">_mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">masked</span>
 
-        <span class="c1"># Resample each spectrum</span>
-        <span class="c1"># TODO: Use numpy.apply_along_axis</span>
-        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nspec</span><span class="p">):</span>
-            <span class="n">_wave</span><span class="p">,</span> <span class="n">_flux</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">resample1d</span><span class="p">(</span><span class="n">flux</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">x</span><span class="o">=</span><span class="n">wave</span><span class="p">,</span> <span class="n">inLog</span><span class="o">=</span><span class="n">log</span><span class="p">,</span> <span class="n">newRange</span><span class="o">=</span><span class="n">outRange</span><span class="p">,</span>
-                                           <span class="n">newpix</span><span class="o">=</span><span class="n">nwave</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">)</span>
-            <span class="n">_wave</span><span class="p">,</span> <span class="n">_mask</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">resample1d</span><span class="p">(</span><span class="n">inp_mask</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">x</span><span class="o">=</span><span class="n">wave</span><span class="p">,</span> <span class="n">inLog</span><span class="o">=</span><span class="n">log</span><span class="p">,</span>
-                                           <span class="n">newRange</span><span class="o">=</span><span class="n">outRange</span><span class="p">,</span> <span class="n">newpix</span><span class="o">=</span><span class="n">nwave</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">,</span> <span class="n">ext_value</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">var</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">_wave</span><span class="p">,</span> <span class="n">_ivar</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">resample1d</span><span class="p">(</span><span class="n">var</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">x</span><span class="o">=</span><span class="n">wave</span><span class="p">,</span> <span class="n">inLog</span><span class="o">=</span><span class="n">log</span><span class="p">,</span>
-                                               <span class="n">newRange</span><span class="o">=</span><span class="n">outRange</span><span class="p">,</span> <span class="n">newpix</span><span class="o">=</span><span class="n">nwave</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">inp_sres</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">_wave</span><span class="p">,</span> <span class="n">_sres</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">resample1d</span><span class="p">(</span><span class="n">inp_sres</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">x</span><span class="o">=</span><span class="n">wave</span><span class="p">,</span> <span class="n">inLog</span><span class="o">=</span><span class="n">log</span><span class="p">,</span>
-                                               <span class="n">newRange</span><span class="o">=</span><span class="n">outRange</span><span class="p">,</span> <span class="n">newpix</span><span class="o">=</span><span class="n">nwave</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">)</span>
-                <span class="n">_wave</span><span class="p">,</span> <span class="n">_sres_mask</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">resample1d</span><span class="p">(</span><span class="n">inp_sres</span><span class="o">.</span><span class="n">mask</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">x</span><span class="o">=</span><span class="n">wave</span><span class="p">,</span> <span class="n">inLog</span><span class="o">=</span><span class="n">log</span><span class="p">,</span>
-                                                    <span class="n">newRange</span><span class="o">=</span><span class="n">outRange</span><span class="p">,</span> <span class="n">newpix</span><span class="o">=</span><span class="n">nwave</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">,</span>
-                                                    <span class="n">ext_value</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="c1"># Interpolate the spectral resolution at the location of the new</span>
+        <span class="c1"># wavelength vector</span>
+        <span class="k">if</span> <span class="n">inp_sres</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">_sres</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">interp</span> <span class="o">=</span> <span class="n">interpolate</span><span class="o">.</span><span class="n">interp1d</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">inp_sres</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">assume_sorted</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                          <span class="n">fill_value</span><span class="o">=</span><span class="s1">&#39;extrapolate&#39;</span><span class="p">)</span>
+            <span class="n">_sres</span> <span class="o">=</span> <span class="n">interp</span><span class="p">(</span><span class="n">resamp</span><span class="o">.</span><span class="n">outx</span><span class="p">)</span>
 
-        <span class="n">indx</span> <span class="o">=</span> <span class="n">_mask</span> <span class="o">&gt;</span> <span class="mf">0.5</span>
-        <span class="n">_mask</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
-        <span class="n">_mask</span><span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">indx</span><span class="p">)]</span> <span class="o">=</span> <span class="mf">0.0</span>
-        <span class="n">_mask</span> <span class="o">=</span> <span class="n">_mask</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">inp_sres</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">indx</span> <span class="o">=</span> <span class="n">_sres_mask</span> <span class="o">&gt;</span> <span class="mf">0.5</span>
-            <span class="n">_sres_mask</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
-            <span class="n">_sres_mask</span><span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">indx</span><span class="p">)]</span> <span class="o">=</span> <span class="mf">0.0</span>
-            <span class="n">_sres_mask</span> <span class="o">=</span> <span class="n">_sres_mask</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">)</span>
-            <span class="n">_sres</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">(</span><span class="n">_sres</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">_sres_mask</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">_wave</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">(</span><span class="n">_flux</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">_mask</span><span class="p">),</span> \
-                    <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">_ivar</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">filled</span><span class="p">(</span><span class="mf">0.0</span><span class="p">),</span> <span class="n">mask</span><span class="o">=</span><span class="n">_mask</span><span class="p">),</span> <span class="n">_sres</span></div>
+        <span class="c1"># Return the result</span>
+        <span class="k">return</span> <span class="n">resamp</span><span class="o">.</span><span class="n">outx</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">(</span><span class="n">resamp</span><span class="o">.</span><span class="n">outy</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">_mask</span><span class="p">),</span> <span class="n">_ivar</span><span class="p">,</span> <span class="n">_sres</span></div>
 
 
 <div class="viewcode-block" id="SpectralStack.build_covariance_data_DRPFits"><a class="viewcode-back" href="../../../mangadap.proc.spectralstack.html#mangadap.proc.spectralstack.SpectralStack.build_covariance_data_DRPFits">[docs]</a>    <span class="nd">@staticmethod</span>
@@ -1153,7 +1176,7 @@
             <span class="n">_mask</span> <span class="o">=</span> <span class="n">SpectralStack</span><span class="o">.</span><span class="n">_get_input_mask</span><span class="p">(</span><span class="n">flux</span><span class="p">,</span> <span class="n">ivar</span><span class="o">=</span><span class="n">ivar</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
             <span class="n">_flux</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">(</span><span class="n">flux</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">_mask</span><span class="p">)</span>
             <span class="n">_ivar</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">ivar</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">(</span><span class="n">ivar</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">_mask</span><span class="p">)</span>
-            <span class="n">_sres</span> <span class="o">=</span> <span class="n">SpectralStack</span><span class="o">.</span><span class="n">_get_input_sres</span><span class="p">(</span><span class="n">sres</span><span class="p">,</span> <span class="n">flux</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">_sres</span> <span class="o">=</span> <span class="n">SpectralStack</span><span class="o">.</span><span class="n">_check_input_sres</span><span class="p">(</span><span class="n">sres</span><span class="p">,</span> <span class="n">flux</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">wave</span> <span class="o">=</span> <span class="n">wave</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">wave</span><span class="p">,</span> <span class="n">_flux</span><span class="p">,</span> <span class="n">_ivar</span><span class="p">,</span> <span class="n">_sres</span> <span class="o">=</span> <span class="n">register</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">voff</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">ivar</span><span class="o">=</span><span class="n">ivar</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">,</span>
@@ -1185,7 +1208,7 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sres</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sres</span><span class="o">.</span><span class="n">mask</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">sres</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sres</span><span class="o">.</span><span class="n">data</span>
-            <span class="k">if</span> <span class="n">fill_sres</span><span class="p">:</span>
+            <span class="k">elif</span> <span class="n">fill_sres</span><span class="p">:</span>
                 <span class="n">outshape</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sres</span><span class="o">.</span><span class="n">shape</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">sres</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">apply_along_axis</span><span class="p">(</span><span class="n">interpolate_masked_vector</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span>
                                                    <span class="bp">self</span><span class="o">.</span><span class="n">sres</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sres</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span>

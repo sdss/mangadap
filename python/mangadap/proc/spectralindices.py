@@ -10,52 +10,8 @@ A class hierarchy that performs the spectral-index measurements.
 *Source location*:
     $MANGADAP_DIR/python/mangadap/proc/spectralindices.py
 
-*Imports and python version compliance*:
-    ::
-
-        from __future__ import division
-        from __future__ import print_function
-        from __future__ import absolute_import
-        from __future__ import unicode_literals
-
-        import sys
-        import warnings
-        if sys.version > '3':
-            long = int
-
-        import glob
-        import os.path
-        import numpy
-        from astropy.io import fits
-
-        from ..par.parset import ParSet
-        from ..par.artifactdb import ArtifactDB
-        from ..par.absorptionindexdb import AbsorptionIndexDB
-        from ..par.bandheadindexdb import BandheadIndexDB
-        from ..config.defaults import dap_source_dir, default_dap_file_name
-        from ..config.defaults import default_dap_method, default_dap_method_path
-        from ..config.defaults import default_dap_common_path
-        from ..util.instrument import SpectralResolution, match_spectral_resolution
-        from ..util.instrument import spectral_coordinate_step, spectrum_velocity_scale
-        from ..util.fitsutil import DAPFitsUtil
-        from ..util.fileio import init_record_array, rec_to_fits_type
-        from ..util.log import log_output
-        from ..util.bitmask import BitMask
-        from ..util.pixelmask import SpectralPixelMask
-        from ..util.parser import DefaultConfig
-        from .spatiallybinnedspectra import SpatiallyBinnedSpectra
-        from .templatelibrary import TemplateLibrary
-        from .stellarcontinuummodel import StellarContinuumModel
-        from .emissionlinemodel import EmissionLineModel
-        from .bandpassfilter import passband_integral, passband_integrated_width
-        from .bandpassfilter import passband_integrated_mean
-        from .bandpassfilter import passband_weighted_mean
-        from .util import select_proc_method, flux_to_fnu
-
-
 *Class usage examples*:
     Add examples!
-
 
 *Notes*:
     
@@ -143,9 +99,9 @@ from ..par.absorptionindexdb import AbsorptionIndexDB
 from ..par.bandheadindexdb import BandheadIndexDB
 from ..config.defaults import dap_source_dir, default_dap_file_name
 from ..config.defaults import default_dap_method, default_dap_method_path
-from ..config.defaults import default_dap_common_path
-from ..util.instrument import SpectralResolution, match_spectral_resolution
-from ..util.instrument import spectral_coordinate_step, spectrum_velocity_scale
+from ..config.defaults import default_dap_common_path, default_analysis_path
+from ..util.resolution import SpectralResolution, match_spectral_resolution
+from ..util.sampling import spectral_coordinate_step, spectrum_velocity_scale
 from ..util.fitsutil import DAPFitsUtil
 from ..util.fileio import init_record_array, rec_to_fits_type
 from ..util.log import log_output
@@ -156,9 +112,7 @@ from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .templatelibrary import TemplateLibrary
 from .stellarcontinuummodel import StellarContinuumModel
 from .emissionlinemodel import EmissionLineModel
-from .bandpassfilter import passband_integral, passband_integrated_width
-from .bandpassfilter import passband_integrated_mean
-from .bandpassfilter import passband_weighted_mean, pseudocontinuum
+from .bandpassfilter import passband_integral, passband_integrated_width, pseudocontinuum
 from .util import select_proc_method, flux_to_fnu
 
 import astropy.constants
@@ -387,8 +341,8 @@ class AbsorptionLineIndices:
             # Calculate the integral over the passband
             self.index[i] = passband_integral(wave, integrand, passband=m, log=log)
             if err is not None:
-                self.index_err[i] = numpy.sqrt(passband_integral(wave, numpy.square(err/cont),
-                                               passband=m, log=log))
+                self.index_err[i] = passband_integral(wave, err/cont, passband=m, log=log,
+                                                      quad=True)
 
             # Get the fraction of the band covered by the spectrum and
             # flag bands that are only partially covered or empty
@@ -467,6 +421,8 @@ class BandheadIndices:
         # Calculate the index in the correct order
         blue_n = order == 'b_r'
         self.index = numpy.ma.zeros(self.nindx, dtype=numpy.float)
+#        import pdb
+#        pdb.set_trace()
         self.index[blue_n] = numpy.ma.divide(self.blue_continuum[blue_n],
                                              self.red_continuum[blue_n]).filled(0.0)
         self.divbyzero[blue_n] = numpy.invert(numpy.absolute(self.red_continuum[blue_n])>0.0)
@@ -749,7 +705,9 @@ class SpectralIndices:
         # Set the output directory path
         method = default_dap_method(binned_spectra=self.binned_spectra,
                                     stellar_continuum=self.stellar_continuum)
-        self.analysis_path = default_analysis_path if analysis_path is None else str(analysis_path)
+        self.analysis_path = default_analysis_path(drpver=self.binned_spectra.drpf.drpver,
+                                                   dapver=dapver) \
+                                    if analysis_path is None else str(analysis_path)
         self.directory_path = default_dap_method_path(method, plate=self.binned_spectra.drpf.plate,
                                                       ifudesign=self.binned_spectra.drpf.ifudesign,
                                                       ref=True,
@@ -1143,8 +1101,8 @@ class SpectralIndices:
 #        pyplot.step(wave, flux[0,:], where='mid', linestyle='-', color='r', lw=0.5)
 #        pyplot.show()
 
-        # Use :func:`mangadap.instrument.match_spectral_resolution` to
-        # match the spectral resolution of the binned spectra to the
+        # Use :func:`mangadap.util.resolution.match_spectral_resolution`
+        # to match the spectral resolution of the binned spectra to the
         # spectral-index system
         new_sres = wave/resolution_fwhm
         
@@ -1165,7 +1123,7 @@ class SpectralIndices:
 #        pyplot.step(wave, new_ivar[0,:]/numpy.mean(new_ivar[0,:]), where='mid', linestyle='-', color='r', lw=2.5)
 #        pyplot.show()
 
-        # From instrument.py:  "Any pixel that had a resolution that was
+        # From resolution.py:  "Any pixel that had a resolution that was
         # lower than the target resolution (up to some tolerance defined
         # by *min_sig_pix*) is returned as masked."  This is exactly
         # what should be masked with the SPECRES_LOW bit.
@@ -1600,8 +1558,10 @@ class SpectralIndices:
 
         # Mask any dummy indices
         dummy = numpy.zeros(nindx, dtype=numpy.bool)
-        dummy[:nabs] = absdb.dummy
-        dummy[nabs:] = bhddb.dummy
+        if absdb is not None:
+            dummy[:nabs] = absdb.dummy
+        if bhddb is not None:
+            dummy[nabs:] = bhddb.dummy
         if numpy.any(dummy):
             measurements['MASK'][:,dummy] = True if bitmask is None else \
                     bitmask.turn_on(measurements['MASK'][:,dummy], 'UNDEFINED_BANDS')

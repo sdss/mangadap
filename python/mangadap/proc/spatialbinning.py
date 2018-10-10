@@ -532,3 +532,171 @@ class VoronoiBinning(SpatialBinning):
 # ----------------------------------------------------------------------
 
 
+# SQUARE BINNING -------------------------------------------------------
+
+#Written by Kate Rubin 9/27/18
+#Based on KBW's test_new_binning_scheme.py and the RadialBinning class
+
+class SquareBinningPar(ParSet):
+    """
+    Class with parameters used by the square binning algorithm.  See
+    :class:`mangadap.par.parset.ParSet` for attributes.
+
+    Args:
+        binsz (float): Sets desired bin size in arcsec
+    """
+
+    def __init__(self, binsz):
+        in_fl = [int, float]
+
+        pars = ['binsz']
+        values = [binsz]
+        dtypes = [float]
+
+        ParSet.__init__(self, pars, values=values, dtypes=dtypes)
+
+    def toheader(self, hdr):
+        """
+        Copy some of the parameters to a header.
+
+        Args:
+            hdr (`astropy.io.fits.Header`_): Header object to write to.
+
+        Returns:
+            `astropy.io.fits.Header`_: Edited header object
+
+        Raises:
+            TypeError: Raised if input is not an
+                `astropy.io.fits.Header`_ object.
+        """
+        if not isinstance(hdr, fits.Header):
+            raise TypeError('Input is not a astropy.io.fits.Header object!')
+
+        hdr['BINSIZE'] = (self['binsz'], 'Square bin size (arcsec)')
+        return hdr
+
+    def fromheader(self, hdr):
+        """
+        Copy the information from the header.
+
+        hdr (`astropy.io.fits.Header`_): Header object to write to.
+        """
+        if not isinstance(hdr, fits.Header):
+            raise TypeError('Input is not a astropy.io.fits.Header object!')
+
+        self['binsz'] = hdr['BINSIZE']
+
+
+class SquareBinning(SpatialBinning):
+
+    """
+    Class to perform binning of full cube in square apertures
+    Length of aperture side is given in arcsec with binsz
+
+    """
+    def __init__(self, par=None):
+        SpatialBinning.__init__(self, 'square', par=par)
+        self.binsz = None
+
+
+    def bin_index(self, x, y, par=None):
+        """
+            Bin the data and return the indices of the bins.
+        """
+        _x = numpy.asarray(x)
+        if len(_x.shape) != 1:
+            raise ValueError('On-sky coordinates must be one-dimensional.')
+        nspaxels = _x.size
+        if len(y) != nspaxels:
+            raise ValueError('Input coordinates are of different lengths.')
+        _y = numpy.asarray(y)
+
+
+        # Perform any necessary initialization
+        if par is not None:
+            self.par = par
+            if self.binsz is not None:
+                del self.binsz
+                self.binsz = None
+        if self.par is None:
+            raise ValueError('Required parameters for SquareBinning have not been defined.')
+        if self.binsz is None:
+            self.binsz = self.par['binsz']
+
+
+
+        binid = numpy.full(nspaxels, -1, dtype=int)
+        binsz = self.binsz
+        minx = numpy.min(_x)-0.25
+        maxx = numpy.max(_x)+0.25
+        miny = numpy.min(_y)-0.25
+        maxy = numpy.max(_y)+0.25
+
+        ctbin = 0
+
+        # Start from the center, work out to edge of each quadrant
+
+        # Quadrant 1
+        nslicex = numpy.ceil((maxx) / binsz)
+        nslicey = numpy.ceil((maxy) / binsz)
+
+        x_lo = numpy.linspace(0.0,(nslicex*binsz),nslicex+1.0)
+        y_lo = numpy.linspace(0.0,(nslicey*binsz),nslicey+1.0)
+
+
+        # Find which spaxels land in each aperture
+        for xi in x_lo:
+            for yj in y_lo:
+                indx = (_x >= xi) & (_x < xi+binsz) & (_y >= yj) & (_y < yj+binsz)
+                if any(indx):
+                    binid[indx] = ctbin
+                    ctbin = ctbin + 1
+
+
+        # Quadrant 2
+        nslicex = numpy.ceil((maxx) / binsz)
+        nslicey = numpy.floor((miny) / binsz)
+
+        x_lo = numpy.linspace(0.0, (nslicex * binsz), nslicex + 1.0)
+        y_lo = numpy.linspace(0.0, (nslicey * binsz), numpy.abs(nslicey) + 1.0)
+
+        # Find which spaxels land in each aperture
+        for xi in x_lo:
+            for yj in y_lo:
+                indx = (_x >= xi) & (_x < xi + binsz) & (_y <= yj) & (_y > yj - binsz)
+                if any(indx):
+                    binid[indx] = ctbin
+                    ctbin = ctbin + 1
+
+        # Quadrant 3
+        nslicex = numpy.floor((minx) / binsz)
+        nslicey = numpy.ceil((maxy) / binsz)
+
+        x_lo = numpy.linspace(0.0, (nslicex * binsz), numpy.abs(nslicex) + 1.0)
+        y_lo = numpy.linspace(0.0, (nslicey * binsz), numpy.abs(nslicey) + 1.0)
+
+        # Find which spaxels land in each aperture
+        for xi in x_lo:
+            for yj in y_lo:
+                indx = (_x <= xi) & (_x > xi - binsz) & (_y >= yj) & (_y < yj + binsz)
+                if any(indx):
+                    binid[indx] = ctbin
+                    ctbin = ctbin + 1
+
+        # Quadrant 4
+        nslicex = numpy.floor((minx) / binsz)
+        nslicey = numpy.floor((miny) / binsz)
+
+        x_lo = numpy.linspace(0.0, (nslicex * binsz), numpy.abs(nslicex) + 1.0)
+        y_lo = numpy.linspace(0.0, (nslicey * binsz), numpy.abs(nslicey) + 1.0)
+
+        # Find which spaxels land in each aperture
+        for xi in x_lo:
+            for yj in y_lo:
+                indx = (_x <= xi) & (_x > xi - binsz) & (_y <= yj) & (_y > yj - binsz)
+                if any(indx):
+                    binid[indx] = ctbin
+                    ctbin = ctbin + 1
+
+
+        return binid

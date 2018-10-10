@@ -1,5 +1,5 @@
-mangadap\.par\.emissionmomentsdb module
-=======================================
+mangadap.par.emissionmomentsdb module
+=====================================
 
 .. automodule:: mangadap.par.emissionmomentsdb
     :members:

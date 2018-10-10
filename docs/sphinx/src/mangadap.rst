@@ -11,7 +11,7 @@ Subpackages
     mangadap.par
     mangadap.proc
     mangadap.survey
-    mangadap.test
+    mangadap.tests
     mangadap.util
 
 Submodules

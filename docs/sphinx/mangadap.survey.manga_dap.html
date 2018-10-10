@@ -104,7 +104,7 @@
 <li class="toctree-l4"><a class="reference internal" href="mangadap.survey.html#module-mangadap.survey">Module contents</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="mangadap.test.html">mangadap.test package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.tests.html">mangadap.tests package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.util.html">mangadap.util package</a></li>
 </ul>
 </li>
@@ -192,7 +192,7 @@
 <dt><em>Source location</em>:</dt>
 <dd>$MANGADAP_DIR/python/mangadap/survey/manga_dap.py</dd>
 <dt><em>Imports and python version compliance</em>:</dt>
-<dd><div class="first last highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<dd><div class="first last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
@@ -214,7 +214,6 @@
 <span class="kn">from</span> <span class="nn">..config.defaults</span> <span class="k">import</span> <span class="n">default_analysis_path</span><span class="p">,</span> <span class="n">default_dap_method</span>
 <span class="kn">from</span> <span class="nn">..config.defaults</span> <span class="k">import</span> <span class="n">default_dap_method_path</span>
 <span class="kn">from</span> <span class="nn">..util.log</span> <span class="k">import</span> <span class="n">init_DAP_logging</span><span class="p">,</span> <span class="n">module_logging</span><span class="p">,</span> <span class="n">log_output</span>
-<span class="kn">from</span> <span class="nn">..util.version</span> <span class="k">import</span> <span class="n">__version__</span>
 <span class="kn">from</span> <span class="nn">..drpfits</span> <span class="k">import</span> <span class="n">DRPFits</span>
 <span class="kn">from</span> <span class="nn">..par.obsinput</span> <span class="k">import</span> <span class="n">ObsInputPar</span>
 <span class="kn">from</span> <span class="nn">..par.analysisplan</span> <span class="k">import</span> <span class="n">AnalysisPlanSet</span>
@@ -244,8 +243,8 @@ __version__</div>
 <code class="descclassname">mangadap.survey.manga_dap.</code><code class="descname">manga_dap</code><span class="sig-paren">(</span><em>obs</em>, <em>plan</em>, <em>dbg=False</em>, <em>log=None</em>, <em>verbose=0</em>, <em>drpver=None</em>, <em>redux_path=None</em>, <em>directory_path=None</em>, <em>dapver=None</em>, <em>dapsrc=None</em>, <em>analysis_path=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/survey/manga_dap.html#manga_dap"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.survey.manga_dap.manga_dap" title="Permalink to this definition">¶</a></dt>
 <dd><p>Main wrapper function for the MaNGA DAP.</p>
 <p>This function is designed to be called once per PLATE-IFUDESIGN as
-set by the provided <a class="reference internal" href="mangadap.par.obsinput.html#mangadap.par.obsinput.ObsInputPar" title="mangadap.par.obsinput.ObsInputPar"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.obsinput.ObsInputPar</span></code></a>
-instance.  The <a class="reference internal" href="mangadap.par.analysisplan.html#mangadap.par.analysisplan.AnalysisPlanSet" title="mangadap.par.analysisplan.AnalysisPlanSet"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.analysisplan.AnalysisPlanSet</span></code></a>
+set by the provided <a class="reference internal" href="mangadap.par.obsinput.html#mangadap.par.obsinput.ObsInputPar" title="mangadap.par.obsinput.ObsInputPar"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.par.obsinput.ObsInputPar</span></code></a>
+instance.  The <a class="reference internal" href="mangadap.par.analysisplan.html#mangadap.par.analysisplan.AnalysisPlanSet" title="mangadap.par.analysisplan.AnalysisPlanSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.par.analysisplan.AnalysisPlanSet</span></code></a>
 instance sets the types of analyses to perform on this observation.
 Each analysis plan results in a MAPS and model LOGCUBE file.</p>
 <dl class="docutils">
@@ -257,22 +256,22 @@ Each analysis plan results in a MAPS and model LOGCUBE file.</p>
 <dd><ul class="first last">
 <li>Determine basic assessments of the data, including the S/N
 and spaxel coordinates.  See
-<a class="reference internal" href="mangadap.proc.reductionassessments.html#mangadap.proc.reductionassessments.ReductionAssessment" title="mangadap.proc.reductionassessments.ReductionAssessment"><code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.reductionassessments.ReductionAssessment</span></code></a>.</li>
+<a class="reference internal" href="mangadap.proc.reductionassessments.html#mangadap.proc.reductionassessments.ReductionAssessment" title="mangadap.proc.reductionassessments.ReductionAssessment"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.proc.reductionassessments.ReductionAssessment</span></code></a>.</li>
 <li>Bin the spectra.  See
-<a class="reference internal" href="mangadap.proc.spatiallybinnedspectra.html#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra" title="mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra"><code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra</span></code></a>.</li>
+<a class="reference internal" href="mangadap.proc.spatiallybinnedspectra.html#mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra" title="mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra</span></code></a>.</li>
 <li>Fit the stellar continuum for stellar kinematics.  See
-<a class="reference internal" href="mangadap.proc.stellarcontinuummodel.html#mangadap.proc.stellarcontinuummodel.StellarContinuumModel" title="mangadap.proc.stellarcontinuummodel.StellarContinuumModel"><code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.stellarcontinuummodel.StellarContinuumModel</span></code></a>.</li>
+<a class="reference internal" href="mangadap.proc.stellarcontinuummodel.html#mangadap.proc.stellarcontinuummodel.StellarContinuumModel" title="mangadap.proc.stellarcontinuummodel.StellarContinuumModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.proc.stellarcontinuummodel.StellarContinuumModel</span></code></a>.</li>
 <li>Measure the emission-line moments.  See
-<a class="reference internal" href="mangadap.proc.emissionlinemoments.html#mangadap.proc.emissionlinemoments.EmissionLineMoments" title="mangadap.proc.emissionlinemoments.EmissionLineMoments"><code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.emissionlinemoments.EmissionLineMoments</span></code></a>.</li>
+<a class="reference internal" href="mangadap.proc.emissionlinemoments.html#mangadap.proc.emissionlinemoments.EmissionLineMoments" title="mangadap.proc.emissionlinemoments.EmissionLineMoments"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.proc.emissionlinemoments.EmissionLineMoments</span></code></a>.</li>
 <li>Fit parameterized line profiles to the emission lines.
 See
-<a class="reference internal" href="mangadap.proc.emissionlinemodel.html#mangadap.proc.emissionlinemodel.EmissionLineModel" title="mangadap.proc.emissionlinemodel.EmissionLineModel"><code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.emissionlinemodel.EmissionLineModel</span></code></a>.</li>
+<a class="reference internal" href="mangadap.proc.emissionlinemodel.html#mangadap.proc.emissionlinemodel.EmissionLineModel" title="mangadap.proc.emissionlinemodel.EmissionLineModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.proc.emissionlinemodel.EmissionLineModel</span></code></a>.</li>
 <li>Subtract the fitted emission-line models and measure the
 spectral indices.  See
-<a class="reference internal" href="mangadap.proc.spectralindices.html#mangadap.proc.spectralindices.SpectralIndices" title="mangadap.proc.spectralindices.SpectralIndices"><code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.spectralindices.SpectralIndices</span></code></a>.</li>
+<a class="reference internal" href="mangadap.proc.spectralindices.html#mangadap.proc.spectralindices.SpectralIndices" title="mangadap.proc.spectralindices.SpectralIndices"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.proc.spectralindices.SpectralIndices</span></code></a>.</li>
 <li>Construct the primary output files based on the plan
-results.  See <a class="reference internal" href="mangadap.dapfits.html#mangadap.dapfits.construct_maps_file" title="mangadap.dapfits.construct_maps_file"><code class="xref py py-func docutils literal"><span class="pre">mangadap.dapfits.construct_maps_file()</span></code></a>
-and <a class="reference internal" href="mangadap.dapfits.html#mangadap.dapfits.construct_cube_file" title="mangadap.dapfits.construct_cube_file"><code class="xref py py-func docutils literal"><span class="pre">mangadap.dapfits.construct_cube_file()</span></code></a>.</li>
+results.  See <a class="reference internal" href="mangadap.dapfits.html#mangadap.dapfits.construct_maps_file" title="mangadap.dapfits.construct_maps_file"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.dapfits.construct_maps_file()</span></code></a>
+and <a class="reference internal" href="mangadap.dapfits.html#mangadap.dapfits.construct_cube_file" title="mangadap.dapfits.construct_cube_file"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.dapfits.construct_cube_file()</span></code></a>.</li>
 </ul>
 </dd>
 </dl>
@@ -294,9 +293,9 @@ minor progress within blocks.</li>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>obs</strong> (dict, <a class="reference internal" href="mangadap.par.obsinput.html#mangadap.par.obsinput.ObsInputPar" title="mangadap.par.obsinput.ObsInputPar"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.obsinput.ObsInputPar</span></code></a>) – Object
+<li><strong>obs</strong> (dict, <a class="reference internal" href="mangadap.par.obsinput.html#mangadap.par.obsinput.ObsInputPar" title="mangadap.par.obsinput.ObsInputPar"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.par.obsinput.ObsInputPar</span></code></a>) – Object
 with the input parameters.</li>
-<li><strong>plan</strong> (<a class="reference internal" href="mangadap.par.analysisplan.html#mangadap.par.analysisplan.AnalysisPlanSet" title="mangadap.par.analysisplan.AnalysisPlanSet"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.analysisplan.AnalysisPlanSet</span></code></a>) – Object with the analysis plans to implement.</li>
+<li><strong>plan</strong> (<a class="reference internal" href="mangadap.par.analysisplan.html#mangadap.par.analysisplan.AnalysisPlanSet" title="mangadap.par.analysisplan.AnalysisPlanSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.par.analysisplan.AnalysisPlanSet</span></code></a>) – Object with the analysis plans to implement.</li>
 <li><strong>dbg</strong> (<em>bool</em>) – (<strong>Optional</strong>) Flag to run the DAP in debug mode,
 see above; default is False.  Limited use; still under
 development.</li>
@@ -305,21 +304,21 @@ no log file is produced by default.</li>
 <li><strong>verbose</strong> (<em>int</em>) – (<strong>Optional</strong>) Verbosity level, see above;
 default is 0.</li>
 <li><strong>drpver</strong> (<em>str</em>) – (<strong>Optional</strong>) DRP version.  Default determined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_drp_version" title="mangadap.config.defaults.default_drp_version"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_drp_version()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_drp_version" title="mangadap.config.defaults.default_drp_version"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_drp_version()</span></code></a>.</li>
 <li><strong>redux_path</strong> (<em>str</em>) – (<strong>Optional</strong>) Top-level directory with the
 DRP products; default is defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_redux_path" title="mangadap.config.defaults.default_redux_path"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_redux_path()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_redux_path" title="mangadap.config.defaults.default_redux_path"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_redux_path()</span></code></a>.</li>
 <li><strong>directory_path</strong> (<em>str</em>) – (<strong>Optional</strong>) Direct path to directory
 containing the DRP output file; default is defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_drp_directory_path" title="mangadap.config.defaults.default_drp_directory_path"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_drp_directory_path()</span></code></a></li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_drp_directory_path" title="mangadap.config.defaults.default_drp_directory_path"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_drp_directory_path()</span></code></a></li>
 <li><strong>dapver</strong> (<em>str</em>) – (<strong>Optional</strong>) DAP version.  Default determined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_version" title="mangadap.config.defaults.default_dap_version"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_version()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_version" title="mangadap.config.defaults.default_dap_version"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_dap_version()</span></code></a>.</li>
 <li><strong>dapsrc</strong> (<em>str</em>) – (<strong>Optional</strong>) Source directory of the DAP.
 Default determined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_dap_source" title="mangadap.config.defaults.default_dap_source"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_dap_source()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.dap_source_dir" title="mangadap.config.defaults.dap_source_dir"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.dap_source_dir()</span></code></a>.</li>
 <li><strong>analysis_path</strong> (<em>str</em>) – (<strong>Optional</strong>) Top-level directory for the DAP
 output data; default is defined by
-<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_analysis_path" title="mangadap.config.defaults.default_analysis_path"><code class="xref py py-func docutils literal"><span class="pre">mangadap.config.defaults.default_analysis_path()</span></code></a>.</li>
+<a class="reference internal" href="mangadap.config.defaults.html#mangadap.config.defaults.default_analysis_path" title="mangadap.config.defaults.default_analysis_path"><code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.defaults.default_analysis_path()</span></code></a>.</li>
 </ul>
 </td>
 </tr>

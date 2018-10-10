@@ -36,7 +36,7 @@
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
     <link rel="top" title="mangadap 2.2.2 documentation" href="../../../index.html"/>
-        <link rel="up" title="Module code" href="../../index.html"/> 
+        <link rel="up" title="mangadap" href="../../mangadap.html"/> 
 
   
   <script src="../../../_static/js/modernizr.min.js"></script>
@@ -138,6 +138,8 @@
         
           <li><a href="../../index.html">Module code</a> &raquo;</li>
         
+          <li><a href="../../mangadap.html">mangadap</a> &raquo;</li>
+        
       <li>mangadap.proc.templatelibrary</li>
     
     
@@ -195,42 +197,6 @@
 
 <span class="sd">*Source location*:</span>
 <span class="sd">    $MANGADAP_DIR/python/mangadap/proc/templatelibrary.py</span>
-
-<span class="sd">*Imports and python version compliance*:</span>
-<span class="sd">    ::</span>
-
-<span class="sd">        from __future__ import division</span>
-<span class="sd">        from __future__ import print_function</span>
-<span class="sd">        from __future__ import absolute_import</span>
-<span class="sd">        from __future__ import unicode_literals</span>
-
-<span class="sd">        import sys</span>
-<span class="sd">        import warnings</span>
-<span class="sd">        if sys.version &gt; &#39;3&#39;:</span>
-<span class="sd">            long = int</span>
-
-<span class="sd">        import glob</span>
-<span class="sd">        import os</span>
-<span class="sd">        import time</span>
-<span class="sd">        import logging</span>
-
-<span class="sd">        import numpy</span>
-<span class="sd">        from scipy import sparse</span>
-<span class="sd">        from scipy.interpolate import InterpolatedUnivariateSpline</span>
-<span class="sd">        from astropy.io import fits</span>
-<span class="sd">        import astropy.constants</span>
-<span class="sd">        from pydl.goddard.astro import airtovac</span>
-
-<span class="sd">        from ..util.bitmask import BitMask</span>
-<span class="sd">        from ..par.parset import ParSet</span>
-<span class="sd">        from ..config.defaults import default_dap_source, default_dap_common_path</span>
-<span class="sd">        from ..config.defaults import default_dap_file_name</span>
-<span class="sd">        from ..util.log import log_output</span>
-<span class="sd">        from ..util.fileio import readfits_1dspec, read_template_spectrum, writefits_1dspec</span>
-<span class="sd">        from ..util.instrument import resample1d, resample_vector_npix, SpectralResolution</span>
-<span class="sd">        from ..util.instrument import match_spectral_resolution, spectral_coordinate_step</span>
-<span class="sd">        from ..util.parser import DefaultConfig</span>
-<span class="sd">        from .util import select_proc_method, HDUList_mask_wavelengths</span>
 
 <span class="sd">*Class usage examples*:</span>
 <span class="sd">    Assuming you have the default directory structure setup, you can do::</span>
@@ -292,11 +258,11 @@
 <span class="sd">        # Imports</span>
 <span class="sd">        from mangadap.proc.templatelibrary import TemplateLibraryDef</span>
 <span class="sd">        from mangadap.proc.templatelibrary import TemplateLibrary</span>
-<span class="sd">        from mangadap.config.defaults import default_dap_source</span>
+<span class="sd">        from mangadap.config.defaults import dap_source_dir</span>
 <span class="sd">        from matplotlib import pyplot</span>
 
 <span class="sd">        # Define the search string for the library</span>
-<span class="sd">        search_str = default_dap_source()+&#39;/data/stellar_templates/miles/*.fits&#39;</span>
+<span class="sd">        search_str = dap_source_dir()+&#39;/data/stellar_templates/miles/*.fits&#39;</span>
 
 <span class="sd">        # Define the template library parameters</span>
 <span class="sd">        tpl_par = TemplateLibraryDef(key=&#39;MILES&#39;,    # Unique keyword for the library</span>
@@ -362,6 +328,8 @@
 <span class="sd">    | **30 Aug 2017**: (KBW) Switch from using</span>
 <span class="sd">        :func:`mangadap.util.instrument.resample_vector` to</span>
 <span class="sd">        :func:`mangadap.util.instrument.resample1d`</span>
+<span class="sd">    | **30 Aug 2018**: (KBW) Switch from using resample1d to</span>
+<span class="sd">        :class:`mangadap.util.sampling.Resample`.</span>
 
 <span class="sd">.. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html</span>
 <span class="sd">.. _glob.glob: https://docs.python.org/3.4/library/glob.html</span>
@@ -391,15 +359,15 @@
 <span class="kn">from</span> <span class="nn">pydl.goddard.astro</span> <span class="k">import</span> <span class="n">airtovac</span>
 
 <span class="kn">from</span> <span class="nn">..par.parset</span> <span class="k">import</span> <span class="n">ParSet</span>
-<span class="kn">from</span> <span class="nn">..config.defaults</span> <span class="k">import</span> <span class="n">default_dap_source</span><span class="p">,</span> <span class="n">default_dap_common_path</span>
+<span class="kn">from</span> <span class="nn">..config.defaults</span> <span class="k">import</span> <span class="n">dap_source_dir</span><span class="p">,</span> <span class="n">default_dap_common_path</span>
 <span class="kn">from</span> <span class="nn">..config.defaults</span> <span class="k">import</span> <span class="n">default_dap_file_name</span>
 <span class="kn">from</span> <span class="nn">..util.bitmask</span> <span class="k">import</span> <span class="n">BitMask</span>
 <span class="kn">from</span> <span class="nn">..util.log</span> <span class="k">import</span> <span class="n">log_output</span>
 <span class="kn">from</span> <span class="nn">..util.fileio</span> <span class="k">import</span> <span class="n">readfits_1dspec</span><span class="p">,</span> <span class="n">read_template_spectrum</span><span class="p">,</span> <span class="n">writefits_1dspec</span><span class="p">,</span> <span class="n">create_symlink</span>
 <span class="kn">from</span> <span class="nn">..util.fitsutil</span> <span class="k">import</span> <span class="n">DAPFitsUtil</span>
-<span class="kn">from</span> <span class="nn">..util.instrument</span> <span class="k">import</span> <span class="n">resample1d</span><span class="p">,</span> <span class="n">resample_vector_npix</span><span class="p">,</span> <span class="n">SpectralResolution</span>
-<span class="kn">from</span> <span class="nn">..util.instrument</span> <span class="k">import</span> <span class="n">match_spectral_resolution</span><span class="p">,</span> <span class="n">spectral_coordinate_step</span>
-<span class="kn">from</span> <span class="nn">..util.instrument</span> <span class="k">import</span> <span class="n">spectrum_velocity_scale</span><span class="p">,</span> <span class="n">angstroms_per_pixel</span>
+<span class="kn">from</span> <span class="nn">..util.sampling</span> <span class="k">import</span> <span class="n">Resample</span><span class="p">,</span> <span class="n">resample_vector_npix</span><span class="p">,</span> <span class="n">angstroms_per_pixel</span>
+<span class="kn">from</span> <span class="nn">..util.sampling</span> <span class="k">import</span> <span class="n">spectral_coordinate_step</span><span class="p">,</span> <span class="n">spectrum_velocity_scale</span>
+<span class="kn">from</span> <span class="nn">..util.resolution</span> <span class="k">import</span> <span class="n">SpectralResolution</span><span class="p">,</span> <span class="n">match_spectral_resolution</span>
 <span class="kn">from</span> <span class="nn">..util.parser</span> <span class="k">import</span> <span class="n">DefaultConfig</span>
 <span class="kn">from</span> <span class="nn">.util</span> <span class="k">import</span> <span class="n">select_proc_method</span><span class="p">,</span> <span class="n">HDUList_mask_wavelengths</span>
 
@@ -512,7 +480,7 @@
 <span class="sd">    Args:</span>
 <span class="sd">        dapsrc (str): (**Optional**) Root path to the DAP source</span>
 <span class="sd">            directory.  If not provided, the default is defined by</span>
-<span class="sd">            :func:`mangadap.config.defaults.default_dap_source`.</span>
+<span class="sd">            :func:`mangadap.config.defaults.dap_source_dir`.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        list: A list of</span>
@@ -536,7 +504,7 @@
 <span class="sd">        </span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Check the source directory exists</span>
-    <span class="n">dapsrc</span> <span class="o">=</span> <span class="n">default_dap_source</span><span class="p">()</span> <span class="k">if</span> <span class="n">dapsrc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">)</span>
+    <span class="n">dapsrc</span> <span class="o">=</span> <span class="n">dap_source_dir</span><span class="p">()</span> <span class="k">if</span> <span class="n">dapsrc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">NotADirectoryError</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{0}</span><span class="s1"> does not exist!&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">))</span>
 
@@ -593,7 +561,7 @@
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dapsrc</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="n">dapsrc</span> <span class="o">=</span> <span class="n">default_dap_source</span><span class="p">()</span> <span class="k">if</span> <span class="n">dapsrc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">)</span>
+        <span class="n">dapsrc</span> <span class="o">=</span> <span class="n">dap_source_dir</span><span class="p">()</span> <span class="k">if</span> <span class="n">dapsrc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">)</span>
         <span class="n">BitMask</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ini_file</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dapsrc</span><span class="p">,</span> <span class="s1">&#39;python&#39;</span><span class="p">,</span> <span class="s1">&#39;mangadap&#39;</span><span class="p">,</span> <span class="s1">&#39;config&#39;</span><span class="p">,</span>
                                                      <span class="s1">&#39;bitmasks&#39;</span><span class="p">,</span> <span class="s1">&#39;spectral_template_bits.ini&#39;</span><span class="p">))</span></div>
 
@@ -618,7 +586,7 @@
 <span class="sd">    can be used with a non-DRP spectrum.  In the latter case, the user</span>
 <span class="sd">    must supply the velocity scale of the pixel for the logarithmically</span>
 <span class="sd">    resampled template library, and a</span>
-<span class="sd">    :class:`mangadap.util.instrument.SpectralResolution` object the</span>
+<span class="sd">    :class:`mangadap.util.resolution.SpectralResolution` object the</span>
 <span class="sd">    defines the instrumental resolution of the spectrum/spectra to be</span>
 <span class="sd">    analyzed.</span>
 
@@ -650,7 +618,7 @@
 <span class="sd">            in this list.</span>
 <span class="sd">        dapsrc (str): (**Optional**) Root path to the DAP source</span>
 <span class="sd">            directory.  If not provided, the default is defined by</span>
-<span class="sd">            :func:`mangadap.config.defaults.default_dap_source`.</span>
+<span class="sd">            :func:`mangadap.config.defaults.dap_source_dir`.</span>
 <span class="sd">        drpf (:class:`mangadap.drpfits.DRPFits`): (**Optional**) DRP</span>
 <span class="sd">            file (object) with which the template library is associated</span>
 <span class="sd">            for analysis</span>
@@ -664,7 +632,7 @@
 <span class="sd">            provided :class:`mangadap.drpfits.DRPFits` object is this</span>
 <span class="sd">            many times larger than the pixels in the resampled template</span>
 <span class="sd">            spectrum.</span>
-<span class="sd">        sres (:class:`mangadap.util.instrument.SpectralResolution`):</span>
+<span class="sd">        sres (:class:`mangadap.util.resolution.SpectralResolution`):</span>
 <span class="sd">            (**Optional**) The object is used simply to access the</span>
 <span class="sd">            spectral resolution and associated wavelength coordinate</span>
 <span class="sd">            vector needed when matching the spectral resolution of the</span>
@@ -721,7 +689,7 @@
 <span class="sd">        ntpl (int): Number of template spectra in the library</span>
 <span class="sd">        drpf (:class:`mangadap.drpfits.DRPFits`): DRP file (object) with</span>
 <span class="sd">            which the template library is associated for analysis</span>
-<span class="sd">        sres (:class:`mangadap.util.instrument.SpectralResolution`):</span>
+<span class="sd">        sres (:class:`mangadap.util.resolution.SpectralResolution`):</span>
 <span class="sd">            The object is used simply to access the spectral resolution</span>
 <span class="sd">            and associated wavelength coordinate vector needed when</span>
 <span class="sd">            matching the spectral resolution of the template library;</span>
@@ -852,7 +820,7 @@
 <span class="sd">                interpret a template library.</span>
 <span class="sd">            dapsrc (str): (**Optional**) Root path to the DAP source</span>
 <span class="sd">                directory.  If not provided, the default is defined by</span>
-<span class="sd">                :func:`mangadap.config.defaults.default_dap_source`.</span>
+<span class="sd">                :func:`mangadap.config.defaults.dap_source_dir`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Get the details of the selected template library</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">library</span> <span class="o">=</span> <span class="n">select_proc_method</span><span class="p">(</span><span class="n">library_key</span><span class="p">,</span> <span class="n">TemplateLibraryDef</span><span class="p">,</span> <span class="n">method_list</span><span class="o">=</span><span class="n">tpllib_list</span><span class="p">,</span>
@@ -983,7 +951,7 @@
 
 <span class="sd">        The spectral resolution is set using :attr:`fwhm`, and the</span>
 <span class="sd">        spectral resolution offset is initialized to zero (see</span>
-<span class="sd">        :func:`mangadap.util.instrument.GaussianKernelDifference`).</span>
+<span class="sd">        :func:`mangadap.util.resolution.GaussianKernelDifference`).</span>
 
 <span class="sd">        .. warning::</span>
 
@@ -1070,7 +1038,7 @@
 <span class="sd">                :math:`R=\lambda/\delta\lambda`, at each pixel.</span>
 <span class="sd">            soff (numpy.ndarray): The spectral resolution offset for</span>
 <span class="sd">                each spectrum (see</span>
-<span class="sd">                :func:`mangadap.util.instrument.GaussianKernelDifference`). </span>
+<span class="sd">                :func:`mangadap.util.resolution.GaussianKernelDifference`). </span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -1156,23 +1124,15 @@
 <span class="sd">                allowed before considering the pixel as masked.</span>
 
 <span class="sd">        Returns:</span>
-<span class="sd">            tuple: The indices of the pixels in the rebinned spectrum</span>
-<span class="sd">            that should be masked.</span>
+<span class="sd">            numpy.ndarray: Boolean array indicating which pixels in the</span>
+<span class="sd">            rebinned spectrum should be masked.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-
-        <span class="n">mask_ex</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">flagged</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;MASK&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">,:],</span> <span class="n">flag</span><span class="o">=</span><span class="n">flag</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
-        <span class="n">wave</span><span class="p">,</span> <span class="n">mask_ex</span> <span class="o">=</span> <span class="n">resample1d</span><span class="p">(</span><span class="n">mask_ex</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;WAVE&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">,:],</span>
-                                   <span class="n">inLog</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">library</span><span class="p">[</span><span class="s1">&#39;log10&#39;</span><span class="p">],</span> <span class="n">newRange</span><span class="o">=</span><span class="n">fullRange</span><span class="p">,</span>
-                                   <span class="n">newLog</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">log10_sampling</span><span class="p">,</span> <span class="n">newdx</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spectral_step</span><span class="p">)</span>
-
-<span class="c1">#        wave, mask_ex = resample_vector(mask_ex, xRange=[self.hdu[&#39;WAVE&#39;].data[i,0],</span>
-<span class="c1">#                                                         self.hdu[&#39;WAVE&#39;].data[i,-1]],</span>
-<span class="c1">#                                        inLog=self.library[&#39;log10&#39;], newRange=fullRange,</span>
-<span class="c1">#                                        newLog=self.log10_sampling, dx=self.spectral_step,</span>
-<span class="c1">#                                        conserve=False) # flat=True!</span>
-
-        <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">mask_ex</span> <span class="o">&gt;</span> <span class="n">rmsk_lim</span><span class="p">)</span></div>
-
+        <span class="n">unity</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">MaskedArray</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;WAVE&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">),</span>
+                                     <span class="n">mask</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">flagged</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;MASK&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">,:],</span>
+                                                               <span class="n">flag</span><span class="o">=</span><span class="n">flag</span><span class="p">))</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="n">Resample</span><span class="p">(</span><span class="n">unity</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;WAVE&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">,:],</span> <span class="n">inLog</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">library</span><span class="p">[</span><span class="s1">&#39;log10&#39;</span><span class="p">],</span>
+                     <span class="n">newRange</span><span class="o">=</span><span class="n">fullRange</span><span class="p">,</span> <span class="n">newLog</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">log10_sampling</span><span class="p">,</span> <span class="n">newdx</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spectral_step</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">r</span><span class="o">.</span><span class="n">outf</span> <span class="o">&lt;</span> <span class="n">rmsk_lim</span></div>
 
 <div class="viewcode-block" id="TemplateLibrary._modify_spectral_resolution"><a class="viewcode-back" href="../../../mangadap.proc.templatelibrary.html#mangadap.proc.templatelibrary.TemplateLibrary._modify_spectral_resolution">[docs]</a>    <span class="k">def</span> <span class="nf">_modify_spectral_resolution</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -1195,9 +1155,10 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span> <span class="o">=</span> <span class="n">HDUList_mask_wavelengths</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bitmask</span><span class="p">,</span> <span class="s1">&#39;SPECRES_EXTRAP&#39;</span><span class="p">,</span> <span class="n">wavelim</span><span class="p">,</span>
                                             <span class="n">invert</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
-<span class="c1">#        oldwave = numpy.copy(self.hdu[&#39;WAVE&#39;].data[0,:]).ravel()</span>
-<span class="c1">#        oldflux = numpy.copy(self.hdu[&#39;FLUX&#39;].data[0,:]).ravel()</span>
-<span class="c1">#        pyplot.plot(self.hdu[&#39;WAVE&#39;].data[0,:], self.hdu[&#39;FLUX&#39;].data[0,:]) </span>
+<span class="c1">#        i = 10</span>
+<span class="c1">#        oldwave = numpy.copy(self.hdu[&#39;WAVE&#39;].data[i,:]).ravel()</span>
+<span class="c1">#        oldflux = numpy.copy(self.hdu[&#39;FLUX&#39;].data[i,:]).ravel()</span>
+<span class="c1">#        pyplot.plot(self.hdu[&#39;WAVE&#39;].data[i,:], self.hdu[&#39;FLUX&#39;].data[i,:]) </span>
 <span class="c1">#        pyplot.show()</span>
 
         <span class="c1"># Match the resolution of the templates.  ivar is returned, but</span>
@@ -1205,7 +1166,7 @@
         <span class="c1"># match_spectral_resolution</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">quiet</span><span class="p">:</span>
             <span class="n">log_output</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">loggers</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="s1">&#39;Modifying spectral resolution ... &#39;</span><span class="p">)</span>
-<span class="c1">#        print(&#39;min_sig_pix: &#39;, self.min_sig_pix)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;min_sig_pix: &#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_sig_pix</span><span class="p">)</span>
 <span class="c1">#        print(spectrum_velocity_scale(self.hdu[&#39;WAVE&#39;].data))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;FLUX&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;SPECRES&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;SIGOFF&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">res_mask</span><span class="p">,</span> <span class="n">ivar</span> <span class="o">=</span> \
             <span class="n">match_spectral_resolution</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;WAVE&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;FLUX&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
@@ -1222,7 +1183,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">turn_on</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;MASK&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">res_mask</span> <span class="o">==</span> <span class="mi">1</span><span class="p">],</span> <span class="s1">&#39;SPECRES_LOW&#39;</span><span class="p">)</span>
 
 <span class="c1">#        pyplot.plot(oldwave, oldflux)</span>
-<span class="c1">#        pyplot.plot(self.hdu[&#39;WAVE&#39;].data[0,:], self.hdu[&#39;FLUX&#39;].data[0,:], &#39;g&#39;)</span>
+<span class="c1">#        pyplot.plot(self.hdu[&#39;WAVE&#39;].data[i,:], self.hdu[&#39;FLUX&#39;].data[i,:], &#39;g&#39;)</span>
 <span class="c1">#        pyplot.show()</span>
 
         <span class="k">return</span> <span class="n">redshift</span></div>
@@ -1237,7 +1198,9 @@
 
 <span class="sd">            - Add wavelength coordinate WCS information to the</span>
 <span class="sd">              appropriate extension headers.</span>
-
+<span class="sd">            - Include &#39;step&#39; as an argument</span>
+<span class="sd">            - Include limit on covering fraction used to mask data as an</span>
+<span class="sd">              argument</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Convert to vacuum wavelengths</span>
 <span class="c1">#        pyplot.plot(self.hdu[&#39;WAVE&#39;].data[0,:], self.hdu[&#39;FLUX&#39;].data[0,:]) </span>
@@ -1262,6 +1225,17 @@
         <span class="c1"># template library to that of a set of galaxy spectra to be fit.</span>
         <span class="c1"># However, the sampling can be left alone and this part will</span>
         <span class="c1"># force all the spectra to have the same wavelength range.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">quiet</span><span class="p">:</span>
+            <span class="n">log_output</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">loggers</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="s1">&#39;Matching sampling ... &#39;</span><span class="p">)</span>
+
+        <span class="c1"># Number of angstroms per pixel</span>
+        <span class="n">ang_per_pix</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">angstroms_per_pixel</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">library</span><span class="p">[</span><span class="s1">&#39;log10&#39;</span><span class="p">],</span> <span class="n">base</span><span class="o">=</span><span class="mf">10.</span><span class="p">,</span>
+                                                       <span class="n">regular</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">library</span><span class="p">[</span><span class="s1">&#39;in_vacuum&#39;</span><span class="p">])</span>
+                                        <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;WAVE&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">])</span>
+
+        <span class="c1"># Number of pixels per resolution element</span>
+        <span class="n">pix_per_fwhm</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;WAVE&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+                                       <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;SPECRES&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span> <span class="o">*</span> <span class="n">ang_per_pix</span><span class="p">)</span>
 
         <span class="c1"># The raw spectra are allowed to have wavelength ranges that</span>
         <span class="c1"># differ.  First, determine the wavelength range that encloses</span>
@@ -1269,92 +1243,64 @@
         <span class="c1"># no data.</span>
         <span class="n">fullRange</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wavelength_range</span><span class="p">(</span><span class="n">flag</span><span class="o">=</span><span class="s1">&#39;NO_DATA&#39;</span><span class="p">)</span> <span class="k">if</span> <span class="n">wavelength_range</span> <span class="ow">is</span> <span class="kc">None</span> \
                             <span class="k">else</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">wavelength_range</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+
         <span class="c1"># Get the spectral step if it hasn&#39;t been set yet</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">spectral_step</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">spectral_step</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_minimum_sampling</span><span class="p">()</span>
 
         <span class="c1"># Get the number of pixels needed</span>
         <span class="n">npix</span><span class="p">,</span> <span class="n">_fullRange</span> <span class="o">=</span> <span class="n">resample_vector_npix</span><span class="p">(</span><span class="n">outRange</span><span class="o">=</span><span class="n">fullRange</span><span class="p">,</span> <span class="n">dx</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spectral_step</span><span class="p">,</span>
-                                               <span class="n">log</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">log10_sampling</span><span class="p">)</span>
+                                                <span class="n">log</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">log10_sampling</span><span class="p">)</span>
 
         <span class="c1"># Any pixels without data after resampling are given a value</span>
         <span class="c1"># that is the minimum flux - 100 so that they can be easily</span>
         <span class="c1"># identified afterward.  The minimum flux is:</span>
         <span class="n">min_flux</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">amin</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;FLUX&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">ravel</span><span class="p">())</span>
         <span class="c1"># the observed pixels are</span>
-        <span class="n">observed</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">flagged</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;MASK&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">flag</span><span class="o">=</span><span class="s1">&#39;NO_DATA&#39;</span><span class="p">))</span>
-        
-        <span class="c1"># Number of angstroms per pixel</span>
-        <span class="n">ang_per_pix</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;FLUX&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ntpl</span><span class="p">):</span>
-            <span class="n">ang_per_pix</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">angstroms_per_pixel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;WAVE&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">,:],</span>
-                                                   <span class="n">log</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">library</span><span class="p">[</span><span class="s1">&#39;log10&#39;</span><span class="p">],</span> <span class="n">base</span><span class="o">=</span><span class="mf">10.</span><span class="p">,</span>
-                                                   <span class="n">regular</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">library</span><span class="p">[</span><span class="s1">&#39;in_vacuum&#39;</span><span class="p">])</span>
-<span class="c1">#        ang_per_pix_nr = angstroms_per_pixel(self.hdu[&#39;WAVE&#39;].data[i,:], log=self.library[&#39;log10&#39;],</span>
-<span class="c1">#                                             base=10., regular=False)</span>
-<span class="c1">#        pyplot.plot(ang_per_pix[0,:])</span>
-<span class="c1">#        pyplot.plot(ang_per_pix_nr)</span>
-<span class="c1">#        pyplot.show()</span>
-        <span class="c1"># Number of pixels per resolution element</span>
-        <span class="n">pix_per_fwhm</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;WAVE&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
-                                                       <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;SPECRES&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">),</span> <span class="n">ang_per_pix</span><span class="p">)</span>
+        <span class="n">no_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">flagged</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;MASK&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">flag</span><span class="o">=</span><span class="s1">&#39;NO_DATA&#39;</span><span class="p">)</span>
 
         <span class="c1"># Now resample the spectra.  First allocate the arrays</span>
         <span class="n">flux</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">ntpl</span><span class="p">,</span> <span class="n">npix</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
         <span class="n">sres</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">ntpl</span><span class="p">,</span> <span class="n">npix</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
         <span class="n">mask</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">ntpl</span><span class="p">,</span> <span class="n">npix</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">minimum_dtype</span><span class="p">())</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">quiet</span><span class="p">:</span>
-            <span class="n">log_output</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">loggers</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="s1">&#39;Matching sampling ... &#39;</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ntpl</span><span class="p">):</span>
-            <span class="c1"># Observed wavelengths</span>
-            <span class="n">wave_in</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;WAVE&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">observed</span><span class="p">[</span><span class="n">i</span><span class="p">,:]]</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
-            <span class="c1"># Rebin the observed wavelength range</span>
-            <span class="n">wave</span><span class="p">,</span> <span class="n">flux</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">resample1d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;FLUX&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">observed</span><span class="p">[</span><span class="n">i</span><span class="p">,:]]</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span>
-                                         <span class="n">x</span><span class="o">=</span><span class="n">wave_in</span><span class="p">,</span> <span class="n">inLog</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">library</span><span class="p">[</span><span class="s1">&#39;log10&#39;</span><span class="p">],</span> <span class="n">newRange</span><span class="o">=</span><span class="n">fullRange</span><span class="p">,</span>
-                                         <span class="n">newLog</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">log10_sampling</span><span class="p">,</span> <span class="n">newdx</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spectral_step</span><span class="p">,</span>
-                                         <span class="n">ext_value</span><span class="o">=</span><span class="n">min_flux</span><span class="o">-</span><span class="mf">100.</span><span class="p">)</span>
-<span class="c1">#            wave, flux[i,:] = resample_vector(self.hdu[&#39;FLUX&#39;].data[i,observed[i,:]].ravel(),</span>
-<span class="c1">#                                              xRange=[wave_in[0], wave_in[-1]],</span>
-<span class="c1">#                                              inLog=self.library[&#39;log10&#39;], newRange=fullRange,</span>
-<span class="c1">#                                              newLog=self.log10_sampling, dx=self.spectral_step,</span>
-<span class="c1">#                                              ext_value=min_flux-100., conserve=False, flat=False)</span>
 
-            <span class="c1"># Find the unobserved pixels, set them to have no flux, and</span>
-            <span class="c1"># flag them as having no data</span>
-            <span class="n">indx</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">flux</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span> <span class="o">&lt;</span> <span class="n">min_flux</span><span class="o">-</span><span class="mf">10.</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ntpl</span><span class="p">):</span>
+            <span class="c1"># Rebin the observed wavelength range</span>
+            <span class="n">r</span> <span class="o">=</span> <span class="n">Resample</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;FLUX&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">,:],</span> <span class="n">mask</span><span class="o">=</span><span class="n">no_data</span><span class="p">[</span><span class="n">i</span><span class="p">,:],</span>
+                         <span class="n">x</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;WAVE&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">,:],</span> <span class="n">inLog</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">library</span><span class="p">[</span><span class="s1">&#39;log10&#39;</span><span class="p">],</span>
+                         <span class="n">newRange</span><span class="o">=</span><span class="n">fullRange</span><span class="p">,</span> <span class="n">newLog</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">log10_sampling</span><span class="p">,</span>
+                         <span class="n">newdx</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spectral_step</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            
+            <span class="c1"># Save the result</span>
+            <span class="n">wave</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">outx</span>
+            <span class="n">flux</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">outy</span>
+            <span class="n">indx</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">outf</span> <span class="o">&lt;</span> <span class="mf">0.9</span>
             <span class="n">flux</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
             <span class="n">mask</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">turn_on</span><span class="p">(</span><span class="n">mask</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">indx</span><span class="p">],</span> <span class="s1">&#39;NO_DATA&#39;</span><span class="p">)</span>
 
             <span class="c1"># Resample the spectral resolution by simple interpolation.</span>
-            <span class="c1"># Select the good pixels</span>
-            <span class="n">indx</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">flux</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span> <span class="o">&lt;</span> <span class="n">min_flux</span><span class="o">-</span><span class="mf">10.</span><span class="p">))</span>
-            <span class="c1"># and interpolate</span>
-            <span class="n">sres</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="n">interpolate</span><span class="o">.</span><span class="n">interp1d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;WAVE&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span>
-                                                <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;SPECRES&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span>
-                                                <span class="n">fill_value</span><span class="o">=</span><span class="s1">&#39;extrapolate&#39;</span><span class="p">)(</span><span class="n">wave</span><span class="p">[</span><span class="n">indx</span><span class="p">])</span>
+            <span class="n">sres</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">interpolate</span><span class="o">.</span><span class="n">interp1d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;WAVE&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">,:],</span>
+                                             <span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;SPECRES&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">,:],</span> <span class="n">assume_sorted</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                             <span class="n">fill_value</span><span class="o">=</span><span class="s1">&#39;extrapolate&#39;</span><span class="p">)(</span><span class="n">wave</span><span class="p">)</span>
+            <span class="n">sres</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
 
-            <span class="c1">#-----------------------------------------------------------</span>
-            <span class="c1"># Correct resolution for any resampling that results in</span>
-            <span class="c1"># less than 2 pixels per resolution element</span>
-            <span class="c1"># Get the number of new pixels combined for each new one</span>
-            <span class="n">_</span><span class="p">,</span> <span class="n">npix</span> <span class="o">=</span> <span class="n">resample1d</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">wave_in</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">),</span> <span class="n">x</span><span class="o">=</span><span class="n">wave_in</span><span class="p">,</span>
-                                 <span class="n">inLog</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">library</span><span class="p">[</span><span class="s1">&#39;log10&#39;</span><span class="p">],</span> <span class="n">newRange</span><span class="o">=</span><span class="n">fullRange</span><span class="p">,</span>
-                                 <span class="n">newLog</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">log10_sampling</span><span class="p">,</span> <span class="n">newdx</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spectral_step</span><span class="p">,</span>
-                                 <span class="n">conserve</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-            <span class="c1"># and the number of new pixels per resolution element</span>
-            <span class="n">_pix_per_fwhm</span> <span class="o">=</span> <span class="n">interpolate</span><span class="o">.</span><span class="n">interp1d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hdu</span><span class="p">[</span><span class="s1">&#39;WAVE&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">observed</span><span class="p">[</span><span class="n">i</span><span class="p">,:]]</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span>
-                                                 <span class="n">pix_per_fwhm</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">observed</span><span class="p">[</span><span class="n">i</span><span class="p">,:]]</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span>
-                                                 <span class="n">fill_value</span><span class="o">=</span><span class="s1">&#39;extrapolate&#39;</span><span class="p">)(</span><span class="n">wave</span><span class="p">)</span> <span class="o">/</span> <span class="n">npix</span>
-<span class="c1">#            pyplot.plot(wave_in, pix_per_fwhm[i,observed[i,:]])</span>
+            <span class="c1"># Recalculate the number of pixels per fwhm</span>
+
+            <span class="c1"># Number of angstroms per pixel</span>
+            <span class="n">_ang_per_pix</span> <span class="o">=</span> <span class="n">angstroms_per_pixel</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">log10_sampling</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="mf">10.</span><span class="p">,</span>
+                                               <span class="n">regular</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="c1"># Number of pixels per resolution element</span>
+            <span class="n">_pix_per_fwhm</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">sres</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span> <span class="o">*</span> <span class="n">_ang_per_pix</span><span class="p">)</span>
+
+<span class="c1">#            pyplot.plot(self.hdu[&#39;WAVE&#39;].data[i,:-1], numpy.diff(self.hdu[&#39;WAVE&#39;].data[i,:]))</span>
+<span class="c1">#            pyplot.plot(self.hdu[&#39;WAVE&#39;].data[i,:], pix_per_fwhm[i,:])</span>
 <span class="c1">#            pyplot.plot(wave, _pix_per_fwhm)</span>
-<span class="c1">#            pyplot.plot(wave, npix)</span>
 <span class="c1">#            pyplot.show()</span>
+<span class="c1">#            exit()</span>
 
             <span class="n">indx</span> <span class="o">=</span> <span class="n">_pix_per_fwhm</span> <span class="o">&lt;</span> <span class="mi">2</span>
             <span class="k">if</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">indx</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Resampling has cause resolution below the two pixel limit!&#39;</span><span class="p">)</span>
-                <span class="n">_ang_per_pix</span> <span class="o">=</span> <span class="n">angstroms_per_pixel</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">log10_sampling</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="mf">10.</span><span class="p">,</span>
-                                                   <span class="n">regular</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
                 <span class="n">sres</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="n">wave</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span><span class="o">/</span><span class="mf">2.</span><span class="o">/</span><span class="n">_ang_per_pix</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span>
                 <span class="n">mask</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">turn_on</span><span class="p">(</span><span class="n">mask</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">indx</span><span class="p">],</span> <span class="s1">&#39;SPECRES_2PIXEL&#39;</span><span class="p">)</span>
             <span class="c1">#-----------------------------------------------------------</span>
@@ -1375,9 +1321,10 @@
             <span class="n">indx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rebin_masked</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="s1">&#39;SPECRES_LOW&#39;</span><span class="p">,</span> <span class="n">fullRange</span><span class="p">,</span> <span class="n">rmsk_lim</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
             <span class="n">mask</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bitmask</span><span class="o">.</span><span class="n">turn_on</span><span class="p">(</span><span class="n">mask</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">indx</span><span class="p">],</span> <span class="s1">&#39;SPECRES_LOW&#39;</span><span class="p">)</span>
             
-<span class="c1">#            pyplot.plot(oldwave, oldflux)</span>
-<span class="c1">#            pyplot.plot(wave, flux[i,:], &#39;g&#39;)</span>
+<span class="c1">#            pyplot.plot(self.hdu[&#39;WAVE&#39;].data[i,:], self.hdu[&#39;FLUX&#39;].data[i,:])</span>
+<span class="c1">#            pyplot.plot(wave, flux[i,:])</span>
 <span class="c1">#            pyplot.show()</span>
+<span class="c1">#            exit()</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">quiet</span><span class="p">:</span>
             <span class="n">log_output</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">loggers</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="s1">&#39;... done&#39;</span><span class="p">)</span>
@@ -1386,7 +1333,6 @@
             <span class="n">log_output</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">loggers</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
                        <span class="s1">&#39;After resampling (calculated): </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">spectral_coordinate_step</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span>
                                                                                         <span class="n">log</span><span class="o">=</span><span class="kc">True</span><span class="p">)))</span>
-
 <span class="c1">#        pyplot.plot(oldwave, oldflux)</span>
 <span class="c1">#        pyplot.plot(wave, flux[0,:], &#39;g&#39;)</span>
 <span class="c1">#        pyplot.show()</span>
@@ -1449,7 +1395,7 @@
 <span class="sd">                interpret a template library.</span>
 <span class="sd">            dapsrc (str): (**Optional**) Root path to the DAP source</span>
 <span class="sd">                directory.  If not provided, the default is defined by</span>
-<span class="sd">                :func:`mangadap.config.defaults.default_dap_source`.</span>
+<span class="sd">                :func:`mangadap.config.defaults.dap_source_dir`.</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">library_key</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -1480,7 +1426,7 @@
 
 <span class="sd">            - Match the spectral resolution of the template to that of</span>
 <span class="sd">              the DRP spectra; see</span>
-<span class="sd">              :func:`mangadap.util.instrument.match_spectral_resolution`.</span>
+<span class="sd">              :func:`mangadap.util.resolution.match_spectral_resolution`.</span>
 
 <span class="sd">            - Mask the template pixels where the spectral resolution was</span>
 <span class="sd">              too low to match to the DRP spectra; see</span>
@@ -1489,8 +1435,8 @@
 <span class="sd">            - Force a common wavelength range and sampling for all</span>
 <span class="sd">              templates, where the sampling is forced to match the</span>
 <span class="sd">              sampling of the DRP spectra; see</span>
-<span class="sd">              :func:`mangadap.util.instrument.resample_vector_pix`.  The masks</span>
-<span class="sd">              are appropriately resampled as well; see</span>
+<span class="sd">              :func:`mangadap.util.sampling.resample_vector_pix`.  The</span>
+<span class="sd">              masks are appropriately resampled as well; see</span>
 <span class="sd">              :func:`_rebin_masked`.</span>
 
 <span class="sd">        .. warning::</span>
@@ -1511,7 +1457,7 @@
 <span class="sd">                *library_key* is None.</span>
 <span class="sd">            dapsrc (str): (**Optional**) Root path to the DAP source</span>
 <span class="sd">                directory.  If not provided, the default is defined by</span>
-<span class="sd">                :func:`mangadap.config.defaults.default_dap_source`.</span>
+<span class="sd">                :func:`mangadap.config.defaults.dap_source_dir`.</span>
 <span class="sd">                Input ignored if *library_key* is None.</span>
 <span class="sd">            drpf (:class:`mangadap.drpfits.DRPFits`): (**Optional**) DRP</span>
 <span class="sd">                file (object) with which the template library is</span>
@@ -1530,7 +1476,7 @@
 <span class="sd">                provided :class:`mangadap.drpfits.DRPFits` object is</span>
 <span class="sd">                this many times larger than the pixels in the resampled</span>
 <span class="sd">                template spectrum.</span>
-<span class="sd">            sres (:class:`mangadap.util.instrument.SpectralResolution`):</span>
+<span class="sd">            sres (:class:`mangadap.util.resolution.SpectralResolution`):</span>
 <span class="sd">                (**Optional**) The object is used simply to access the</span>
 <span class="sd">                spectral resolution and associated wavelength coordinate</span>
 <span class="sd">                vector needed when matching the spectral resolution of</span>
@@ -1625,6 +1571,7 @@
                 <span class="k">except</span><span class="p">:</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">sres</span> <span class="o">=</span> <span class="n">drpf</span><span class="o">.</span><span class="n">spectral_resolution</span><span class="p">(</span><span class="n">ext</span><span class="o">=</span><span class="s1">&#39;SPECRES&#39;</span><span class="p">,</span> <span class="n">toarray</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">fill</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                                                          <span class="n">median</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">sres</span> <span class="o">=</span> <span class="n">SpectralResolution</span><span class="p">(</span><span class="n">drpf</span><span class="p">[</span><span class="s1">&#39;WAVE&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sres</span><span class="p">,</span> <span class="n">log10</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">sres</span> <span class="o">=</span> <span class="kc">None</span>
 

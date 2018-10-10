@@ -100,7 +100,7 @@
 <li class="toctree-l3"><a class="reference internal" href="mangadap.par.html">mangadap.par package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.proc.html">mangadap.proc package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.survey.html">mangadap.survey package</a></li>
-<li class="toctree-l3"><a class="reference internal" href="mangadap.test.html">mangadap.test package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.tests.html">mangadap.tests package</a></li>
 <li class="toctree-l3 current"><a class="reference internal" href="mangadap.util.html">mangadap.util package</a><ul class="current">
 <li class="toctree-l4 current"><a class="reference internal" href="mangadap.util.html#submodules">Submodules</a></li>
 <li class="toctree-l4"><a class="reference internal" href="mangadap.util.html#module-mangadap.util">Module contents</a></li>
@@ -192,7 +192,7 @@
 <dt><em>Source location</em>:</dt>
 <dd>$MANGADAP_DIR/python/mangadap/util/mapping.py</dd>
 <dt><em>Imports and python version compliance</em>:</dt>
-<dd><div class="first last highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+<dd><div class="first last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
@@ -324,9 +324,9 @@ October 2014</div>
 <dt id="mangadap.util.mapping.masked_pixelized_image">
 <code class="descclassname">mangadap.util.mapping.</code><code class="descname">masked_pixelized_image</code><span class="sig-paren">(</span><em>x</em>, <em>y</em>, <em>z</em>, <em>pixelscale=1.0</em>, <em>zmin=None</em>, <em>zmax=None</em>, <em>imshow_prep=False</em>, <em>fill_value=0.0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/mapping.html#masked_pixelized_image"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.mapping.masked_pixelized_image" title="Permalink to this definition">¶</a></dt>
 <dd><p>Provided a set of pixelized data, return a masked image with a type
-<a class="reference external" href="http://docs.scipy.org/doc/numpy/reference/maskedarray.baseclass.html#numpy.ma.MaskedArray">numpy.ma.MaskedArray</a>.  The <span class="math">\(x\)</span> coordinates are organized
-along rows and the <span class="math">\(y\)</span> coordinates are organized along
-columns.  I.e., i.e., img[0,1] = <span class="math">\(z(x_0,y_1)\)</span>, unless
+<a class="reference external" href="http://docs.scipy.org/doc/numpy/reference/maskedarray.baseclass.html#numpy.ma.MaskedArray">numpy.ma.MaskedArray</a>.  The <span class="math notranslate nohighlight">\(x\)</span> coordinates are organized
+along rows and the <span class="math notranslate nohighlight">\(y\)</span> coordinates are organized along
+columns.  I.e., i.e., img[0,1] = <span class="math notranslate nohighlight">\(z(x_0,y_1)\)</span>, unless
 <em>imshow_prep</em> is requested (see below).</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -335,7 +335,7 @@ columns.  I.e., i.e., img[0,1] = <span class="math">\(z(x_0,y_1)\)</span>, unles
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>x</strong> (<em>numpy.ndarray</em>) – X coordinates of the pixels</li>
 <li><strong>y</strong> (<em>numpy.ndarray</em>) – Y coordinates of the pixels</li>
-<li><strong>z</strong> (<em>numpy.ndarray</em>) – Image values at <span class="math">\(x,y\)</span>.</li>
+<li><strong>z</strong> (<em>numpy.ndarray</em>) – Image values at <span class="math notranslate nohighlight">\(x,y\)</span>.</li>
 <li><strong>pixelscale</strong> (<em>float</em>) – (Optional) Pixelscale of the image in
 arcsec/pixel.</li>
 <li><strong>zmin</strong> (<em>float</em>) – (Optional) Minimum z value to include in the
@@ -344,19 +344,19 @@ output image.  Default is to allow all pixel values.</li>
 output image.  Default is to allow all pixel values.</li>
 <li><strong>imshow_prep</strong> (<em>bool</em>) – <p>(Optional) Prepare the matrix for use with
 <a class="reference external" href="http://matplotlib.org/api/pyplot_api.html#matplotlib.pyplot.imshow">pyplot.imshow</a>.  If <em>imshow_prep</em> is True, before output,
-the matrix is reordered such that increasing <span class="math">\(x\)</span>
-values are along columns and increasing <span class="math">\(y\)</span> values are
+the matrix is reordered such that increasing <span class="math notranslate nohighlight">\(x\)</span>
+values are along columns and increasing <span class="math notranslate nohighlight">\(y\)</span> values are
 along rows; i.e., the output is the transpose of the default
 behavior.  The appropriate call to imshow that will then put
 increasing x values along the abcissa and increasing y
 values along the ordinate is, e.g.:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">ext</span><span class="p">,</span> <span class="n">img</span> <span class="o">=</span> <span class="n">masked_pixelized_image</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">imshow_prep</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ext</span><span class="p">,</span> <span class="n">img</span> <span class="o">=</span> <span class="n">masked_pixelized_image</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">imshow_prep</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="n">pyplot</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">,</span> <span class="n">extent</span><span class="o">=</span><span class="n">ext</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Note that origin <strong>must</strong> be “lower” when calling
 <a class="reference external" href="http://matplotlib.org/api/pyplot_api.html#matplotlib.pyplot.imshow">pyplot.imshow</a> on the array produced by this routine for
-the <span class="math">\(x,y\)</span> ordering to be as expected!</p>
+the <span class="math notranslate nohighlight">\(x,y\)</span> ordering to be as expected!</p>
 </li>
 <li><strong>fill_value</strong> (<em>float</em>) – (Optional) The default value to use for
 pixels without any data.</li>
@@ -382,7 +382,7 @@ associated (boolean) mask.</p>
 <code class="descclassname">mangadap.util.mapping.</code><code class="descname">match_map_arrays</code><span class="sig-paren">(</span><em>arr1</em>, <em>ext1</em>, <em>arr2</em>, <em>ext2</em>, <em>dx</em>, <em>dy</em>, <em>tol=1e-06</em>, <em>truncate=True</em>, <em>pixelscale=0.5</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/util/mapping.html#match_map_arrays"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.util.mapping.match_map_arrays" title="Permalink to this definition">¶</a></dt>
 <dd><p>Match the centers and extent of two map arrays by applying the
 previously calculated pixel offsets.  See
-<a class="reference internal" href="#mangadap.util.mapping.map_center_pixel_offset" title="mangadap.util.mapping.map_center_pixel_offset"><code class="xref py py-func docutils literal"><span class="pre">map_center_pixel_offset()</span></code></a>.</p>
+<a class="reference internal" href="#mangadap.util.mapping.map_center_pixel_offset" title="mangadap.util.mapping.map_center_pixel_offset"><code class="xref py py-func docutils literal notranslate"><span class="pre">map_center_pixel_offset()</span></code></a>.</p>
 <p>This is just a wrapper for the two supporting functions below.</p>
 <p>Both maps <em>must</em> be two dimensional; i.e., a single map, not a set
 of maps arranged in different channels.</p>

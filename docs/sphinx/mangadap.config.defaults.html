@@ -104,7 +104,7 @@
 <li class="toctree-l3"><a class="reference internal" href="mangadap.par.html">mangadap.par package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.proc.html">mangadap.proc package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.survey.html">mangadap.survey package</a></li>
-<li class="toctree-l3"><a class="reference internal" href="mangadap.test.html">mangadap.test package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.tests.html">mangadap.tests package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.util.html">mangadap.util package</a></li>
 </ul>
 </li>
@@ -193,7 +193,7 @@ MaNGA DAP, such as paths and file names.</p>
 <dt><em>Source location</em>:</dt>
 <dd>$MANGADAP_DIR/python/mangadap/config/defaults.py</dd>
 <dt><em>Imports and python version compliance</em>:</dt>
-<dd><div class="first last highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<dd><div class="first last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
@@ -202,8 +202,7 @@ MaNGA DAP, such as paths and file names.</p>
 <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version</span> <span class="o">&gt;</span> <span class="s1">&#39;3&#39;</span><span class="p">:</span>
     <span class="n">long</span> <span class="o">=</span> <span class="nb">int</span>
 
-<span class="kn">import</span> <span class="nn">os.path</span>
-<span class="kn">from</span> <span class="nn">os</span> <span class="k">import</span> <span class="n">environ</span>
+<span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">glob</span>
 <span class="kn">import</span> <span class="nn">numpy</span>
 <span class="kn">from</span> <span class="nn">mangadap.util.exception_tools</span> <span class="k">import</span> <span class="n">check_environment_variable</span>
@@ -217,42 +216,48 @@ MaNGA DAP, such as paths and file names.</p>
 <div class="line"><strong>20 May 2015</strong>: (KBW) TODO: Change the default names of the par
 and output fits files</div>
 <div class="line"><strong>15 Jun 2015</strong>: (KBW) Added default functions moved from
-<code class="xref py py-class docutils literal"><span class="pre">mangadap.drpfile</span></code></div>
+<code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.drpfile</span></code></div>
 <div class="line"><strong>16 Jun 2015</strong>: (KBW) Added wavelength limits and lower flux
 limit to
-<code class="xref py py-func docutils literal"><span class="pre">mangadap.config.inputdata.available_template_libraries()</span></code></div>
+<code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.inputdata.available_template_libraries()</span></code></div>
 <div class="line"><strong>17 Jun 2015</strong>: (KBW) Moved declarations of template library keys
 to its own function: <em>default_template_library_keys</em>, and
-edited <code class="xref py py-func docutils literal"><span class="pre">available_template_libraries()</span></code> accordingly</div>
+edited <code class="xref py py-func docutils literal notranslate"><span class="pre">available_template_libraries()</span></code> accordingly</div>
 <div class="line"><strong>27 Aug 2015</strong>: (KBW) Changed the name of the plan file; added
-<a class="reference internal" href="#mangadap.config.defaults.default_dap_file_root" title="mangadap.config.defaults.default_dap_file_root"><code class="xref py py-func docutils literal"><span class="pre">default_dap_file_root()</span></code></a> based on file_root() from
-<a class="reference internal" href="mangadap.survey.rundap.html#module-mangadap.survey.rundap" title="mangadap.survey.rundap"><code class="xref py py-class docutils literal"><span class="pre">mangadap.survey.rundap</span></code></a>.</div>
-<div class="line"><strong>28 Aug 2015</strong>: (KBW) Added <a class="reference internal" href="#mangadap.config.defaults.default_manga_fits_root" title="mangadap.config.defaults.default_manga_fits_root"><code class="xref py py-func docutils literal"><span class="pre">default_manga_fits_root()</span></code></a> and
-<code class="xref py py-func docutils literal"><span class="pre">default_cube_covariance_file()</span></code></div>
+<a class="reference internal" href="#mangadap.config.defaults.default_dap_file_root" title="mangadap.config.defaults.default_dap_file_root"><code class="xref py py-func docutils literal notranslate"><span class="pre">default_dap_file_root()</span></code></a> based on file_root() from
+<a class="reference internal" href="mangadap.survey.rundap.html#module-mangadap.survey.rundap" title="mangadap.survey.rundap"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.survey.rundap</span></code></a>.</div>
+<div class="line"><strong>28 Aug 2015</strong>: (KBW) Added <a class="reference internal" href="#mangadap.config.defaults.default_manga_fits_root" title="mangadap.config.defaults.default_manga_fits_root"><code class="xref py py-func docutils literal notranslate"><span class="pre">default_manga_fits_root()</span></code></a> and
+<code class="xref py py-func docutils literal notranslate"><span class="pre">default_cube_covariance_file()</span></code></div>
 <div class="line"><strong>07 Oct 2015</strong>: (KBW) Adjusted for changes to naming of the
 template library database definitions.  Added M11-STELIB-ZSOL
 library.</div>
 <div class="line"><strong>29 Jan 2016</strong>: (KBW) Changed
-<code class="xref py py-func docutils literal"><span class="pre">manga.config.inputdata.available_template_libraries()</span></code> to
+<code class="xref py py-func docutils literal notranslate"><span class="pre">manga.config.inputdata.available_template_libraries()</span></code> to
 use configparser ini files to define each template library.</div>
 <div class="line"><strong>03 Feb 2016</strong>: (KBW) Added checks for required environmental
 variables.</div>
 <div class="line"><strong>17 Feb 2016</strong>: (KBW) Added try/except blocks for importing
 ConfigParser.</div>
-<div class="line"><strong>16 Mar 2016</strong>: (KBW) Created <code class="xref py py-mod docutils literal"><span class="pre">mangadap.config.inputdata</span></code>
+<div class="line"><strong>16 Mar 2016</strong>: (KBW) Created <code class="xref py py-mod docutils literal notranslate"><span class="pre">mangadap.config.inputdata</span></code>
 and moved <strong>default_template_libraries</strong> there (and changed it
 to
-<code class="xref py py-func docutils literal"><span class="pre">mangadap.config.inputdata.available_template_libraries()</span></code>.
+<code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.config.inputdata.available_template_libraries()</span></code>.
 No longer need ConfigParser here.</div>
-<div class="line"><strong>12 Jul 2016</strong>: (KBW) Changed <a class="reference internal" href="#mangadap.config.defaults.default_manga_fits_root" title="mangadap.config.defaults.default_manga_fits_root"><code class="xref py py-func docutils literal"><span class="pre">default_manga_fits_root()</span></code></a> to
+<div class="line"><strong>12 Jul 2016</strong>: (KBW) Changed <a class="reference internal" href="#mangadap.config.defaults.default_manga_fits_root" title="mangadap.config.defaults.default_manga_fits_root"><code class="xref py py-func docutils literal notranslate"><span class="pre">default_manga_fits_root()</span></code></a> to
 accommodate MAPS output name.</div>
-<div class="line"><strong>05 May 2017</strong>: (KBW) <a class="reference internal" href="#mangadap.config.defaults.default_dap_version" title="mangadap.config.defaults.default_dap_version"><code class="xref py py-func docutils literal"><span class="pre">default_dap_version()</span></code></a> returns
+<div class="line"><strong>05 May 2017</strong>: (KBW) <a class="reference internal" href="#mangadap.config.defaults.default_dap_version" title="mangadap.config.defaults.default_dap_version"><code class="xref py py-func docutils literal notranslate"><span class="pre">default_dap_version()</span></code></a> returns
 internal version if MANGADAP_VER environmental variable is not
 defined.</div>
-<div class="line"><strong>01 Mar 2018</strong>: (KBW) Added <a class="reference internal" href="#mangadap.config.defaults.default_redshift_fix_file" title="mangadap.config.defaults.default_redshift_fix_file"><code class="xref py py-func docutils literal"><span class="pre">default_redshift_fix_file()</span></code></a>.</div>
+<div class="line"><strong>01 Mar 2018</strong>: (KBW) Added <a class="reference internal" href="#mangadap.config.defaults.default_redshift_fix_file" title="mangadap.config.defaults.default_redshift_fix_file"><code class="xref py py-func docutils literal notranslate"><span class="pre">default_redshift_fix_file()</span></code></a>.</div>
 </div>
 </dd>
 </dl>
+<dl class="function">
+<dt id="mangadap.config.defaults.dap_source_dir">
+<code class="descclassname">mangadap.config.defaults.</code><code class="descname">dap_source_dir</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/config/defaults.html#dap_source_dir"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.config.defaults.dap_source_dir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the root path to the DAP source directory.</p>
+</dd></dl>
+
 <dl class="function">
 <dt id="mangadap.config.defaults.default_analysis_path">
 <code class="descclassname">mangadap.config.defaults.</code><code class="descname">default_analysis_path</code><span class="sig-paren">(</span><em>drpver=None</em>, <em>dapver=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/config/defaults.html#default_analysis_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.config.defaults.default_analysis_path" title="Permalink to this definition">¶</a></dt>
@@ -264,9 +269,9 @@ variable MANGA_SPECTRO_ANALYSIS.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>drpver</strong> (<em>str</em>) – (<strong>Optional</strong>) DRP version.  Default is to use
-<a class="reference internal" href="#mangadap.config.defaults.default_drp_version" title="mangadap.config.defaults.default_drp_version"><code class="xref py py-func docutils literal"><span class="pre">default_drp_version()</span></code></a>.</li>
+<a class="reference internal" href="#mangadap.config.defaults.default_drp_version" title="mangadap.config.defaults.default_drp_version"><code class="xref py py-func docutils literal notranslate"><span class="pre">default_drp_version()</span></code></a>.</li>
 <li><strong>dapver</strong> (<em>str</em>) – (<strong>Optional</strong>) DAP version.  Default is to use
-<a class="reference internal" href="#mangadap.config.defaults.default_dap_version" title="mangadap.config.defaults.default_dap_version"><code class="xref py py-func docutils literal"><span class="pre">default_dap_version()</span></code></a>.</li>
+<a class="reference internal" href="#mangadap.config.defaults.default_dap_version" title="mangadap.config.defaults.default_dap_version"><code class="xref py py-func docutils literal notranslate"><span class="pre">default_dap_version()</span></code></a>.</li>
 </ul>
 </td>
 </tr>
@@ -314,11 +319,11 @@ multiple binning schemes.</p>
 directory of a specific plate.</li>
 <li><strong>ifudesign</strong> (<em>int</em>) – (<strong>Optional</strong>)  IFU design number.</li>
 <li><strong>drpver</strong> (<em>str</em>) – (<strong>Optional</strong>) DRP version.  Default is to use
-<a class="reference internal" href="#mangadap.config.defaults.default_drp_version" title="mangadap.config.defaults.default_drp_version"><code class="xref py py-func docutils literal"><span class="pre">default_drp_version()</span></code></a>.</li>
+<a class="reference internal" href="#mangadap.config.defaults.default_drp_version" title="mangadap.config.defaults.default_drp_version"><code class="xref py py-func docutils literal notranslate"><span class="pre">default_drp_version()</span></code></a>.</li>
 <li><strong>dapver</strong> (<em>str</em>) – (<strong>Optional</strong>) DAP version.  Default is to use
-<a class="reference internal" href="#mangadap.config.defaults.default_dap_version" title="mangadap.config.defaults.default_dap_version"><code class="xref py py-func docutils literal"><span class="pre">default_dap_version()</span></code></a>.</li>
+<a class="reference internal" href="#mangadap.config.defaults.default_dap_version" title="mangadap.config.defaults.default_dap_version"><code class="xref py py-func docutils literal notranslate"><span class="pre">default_dap_version()</span></code></a>.</li>
 <li><strong>analysis_path</strong> (<em>str</em>) – (<strong>Optional</strong>) Path to the root analysis
-directory.  Default is to use <a class="reference internal" href="#mangadap.config.defaults.default_analysis_path" title="mangadap.config.defaults.default_analysis_path"><code class="xref py py-func docutils literal"><span class="pre">default_analysis_path()</span></code></a></li>
+directory.  Default is to use <a class="reference internal" href="#mangadap.config.defaults.default_analysis_path" title="mangadap.config.defaults.default_analysis_path"><code class="xref py py-func docutils literal notranslate"><span class="pre">default_analysis_path()</span></code></a></li>
 </ul>
 </td>
 </tr>
@@ -328,7 +333,7 @@ directory.  Default is to use <a class="reference internal" href="#mangadap.conf
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">str</p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if IFU design is provided and plate is not.</p>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if IFU design is provided and plate is not.</p>
 </td>
 </tr>
 </tbody>
@@ -417,18 +422,18 @@ Nominally, the latter should include the template set used.</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>method</strong> (<em>str</em>) – String defining the method identifier for a set of
 DAP output files.  These should be built using
-<a class="reference internal" href="#mangadap.config.defaults.default_dap_method" title="mangadap.config.defaults.default_dap_method"><code class="xref py py-func docutils literal"><span class="pre">default_dap_method()</span></code></a>.</li>
+<a class="reference internal" href="#mangadap.config.defaults.default_dap_method" title="mangadap.config.defaults.default_dap_method"><code class="xref py py-func docutils literal notranslate"><span class="pre">default_dap_method()</span></code></a>.</li>
 <li><strong>plate</strong> (<em>int</em>) – (<strong>Optional</strong>) Plate number.</li>
 <li><strong>ifudesign</strong> (<em>int</em>) – (<strong>Optional</strong>)  IFU design number.</li>
 <li><strong>qa</strong> (<em>bool</em>) – (<strong>Optional</strong>) Give the path to the qa/ subdirectory</li>
 <li><strong>ref</strong> (<em>bool</em>) – (<strong>Optional</strong>) Give the path to the ref/
 subdirectory</li>
 <li><strong>drpver</strong> (<em>str</em>) – (<strong>Optional</strong>) DRP version.  Default is to use
-<a class="reference internal" href="#mangadap.config.defaults.default_drp_version" title="mangadap.config.defaults.default_drp_version"><code class="xref py py-func docutils literal"><span class="pre">default_drp_version()</span></code></a>.</li>
+<a class="reference internal" href="#mangadap.config.defaults.default_drp_version" title="mangadap.config.defaults.default_drp_version"><code class="xref py py-func docutils literal notranslate"><span class="pre">default_drp_version()</span></code></a>.</li>
 <li><strong>dapver</strong> (<em>str</em>) – (<strong>Optional</strong>) DAP version.  Default is to use
-<a class="reference internal" href="#mangadap.config.defaults.default_dap_version" title="mangadap.config.defaults.default_dap_version"><code class="xref py py-func docutils literal"><span class="pre">default_dap_version()</span></code></a>.</li>
+<a class="reference internal" href="#mangadap.config.defaults.default_dap_version" title="mangadap.config.defaults.default_dap_version"><code class="xref py py-func docutils literal notranslate"><span class="pre">default_dap_version()</span></code></a>.</li>
 <li><strong>analysis_path</strong> (<em>str</em>) – (<strong>Optional</strong>) Path to the root analysis
-directory.  Default is to use <a class="reference internal" href="#mangadap.config.defaults.default_analysis_path" title="mangadap.config.defaults.default_analysis_path"><code class="xref py py-func docutils literal"><span class="pre">default_analysis_path()</span></code></a></li>
+directory.  Default is to use <a class="reference internal" href="#mangadap.config.defaults.default_analysis_path" title="mangadap.config.defaults.default_analysis_path"><code class="xref py py-func docutils literal notranslate"><span class="pre">default_analysis_path()</span></code></a></li>
 </ul>
 </td>
 </tr>
@@ -438,7 +443,7 @@ directory.  Default is to use <a class="reference internal" href="#mangadap.conf
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">str</p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if IFU design is provided and plate is not,
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if IFU design is provided and plate is not,
 or if either qa or ref are true and one or both of plate and
 IFU design are not provided..</p>
 </td>
@@ -461,18 +466,18 @@ specified DRP output file.</p>
 <li><strong>ifudesign</strong> (<em>int</em>) – IFU design number</li>
 <li><strong>mode</strong> (<em>str</em>) – Mode of the DRP reduction; either RSS or CUBE</li>
 <li><strong>partype</strong> (<em>str</em>) – An “unregulated” type for the parameter file.
-The default is <code class="docutils literal"><span class="pre">'input'</span></code>, signifying the input set of
+The default is <code class="docutils literal notranslate"><span class="pre">'input'</span></code>, signifying the input set of
 observational parameters; see
-<a class="reference internal" href="mangadap.par.obsinput.html#mangadap.par.obsinput.ObsInputPar" title="mangadap.par.obsinput.ObsInputPar"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.obsinput.ObsInputPar</span></code></a>.</li>
+<a class="reference internal" href="mangadap.par.obsinput.html#mangadap.par.obsinput.ObsInputPar" title="mangadap.par.obsinput.ObsInputPar"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.par.obsinput.ObsInputPar</span></code></a>.</li>
 <li><strong>drpver</strong> (<em>str</em>) – (<strong>Optional</strong>) DRP version.  Default is to use
-<a class="reference internal" href="#mangadap.config.defaults.default_drp_version" title="mangadap.config.defaults.default_drp_version"><code class="xref py py-func docutils literal"><span class="pre">default_drp_version()</span></code></a>.</li>
+<a class="reference internal" href="#mangadap.config.defaults.default_drp_version" title="mangadap.config.defaults.default_drp_version"><code class="xref py py-func docutils literal notranslate"><span class="pre">default_drp_version()</span></code></a>.</li>
 <li><strong>dapver</strong> (<em>str</em>) – (<strong>Optional</strong>) DAP version.  Default is to use
-<a class="reference internal" href="#mangadap.config.defaults.default_dap_version" title="mangadap.config.defaults.default_dap_version"><code class="xref py py-func docutils literal"><span class="pre">default_dap_version()</span></code></a>.</li>
+<a class="reference internal" href="#mangadap.config.defaults.default_dap_version" title="mangadap.config.defaults.default_dap_version"><code class="xref py py-func docutils literal notranslate"><span class="pre">default_dap_version()</span></code></a>.</li>
 <li><strong>analysis_path</strong> (<em>str</em>) – (<strong>Optional</strong>) Path to the root analysis
-directory.  Default is to use <a class="reference internal" href="#mangadap.config.defaults.default_analysis_path" title="mangadap.config.defaults.default_analysis_path"><code class="xref py py-func docutils literal"><span class="pre">default_analysis_path()</span></code></a></li>
+directory.  Default is to use <a class="reference internal" href="#mangadap.config.defaults.default_analysis_path" title="mangadap.config.defaults.default_analysis_path"><code class="xref py py-func docutils literal notranslate"><span class="pre">default_analysis_path()</span></code></a></li>
 <li><strong>directory_path</strong> (<em>str</em>) – (<strong>Optional</strong>) Path to the directory with
 the DAP output files.  Default is to use
-<a class="reference internal" href="#mangadap.config.defaults.default_dap_common_path" title="mangadap.config.defaults.default_dap_common_path"><code class="xref py py-func docutils literal"><span class="pre">default_dap_common_path()</span></code></a></li>
+<a class="reference internal" href="#mangadap.config.defaults.default_dap_common_path" title="mangadap.config.defaults.default_dap_common_path"><code class="xref py py-func docutils literal notranslate"><span class="pre">default_dap_common_path()</span></code></a></li>
 </ul>
 </td>
 </tr>
@@ -496,11 +501,11 @@ the DAP output files.  Default is to use
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>drpver</strong> (<em>str</em>) – (<strong>Optional</strong>) DRP version.  Default is to use
-<a class="reference internal" href="#mangadap.config.defaults.default_drp_version" title="mangadap.config.defaults.default_drp_version"><code class="xref py py-func docutils literal"><span class="pre">default_drp_version()</span></code></a>.</li>
+<a class="reference internal" href="#mangadap.config.defaults.default_drp_version" title="mangadap.config.defaults.default_drp_version"><code class="xref py py-func docutils literal notranslate"><span class="pre">default_drp_version()</span></code></a>.</li>
 <li><strong>dapver</strong> (<em>str</em>) – (<strong>Optional</strong>) DAP version.  Default is to use
-<a class="reference internal" href="#mangadap.config.defaults.default_dap_version" title="mangadap.config.defaults.default_dap_version"><code class="xref py py-func docutils literal"><span class="pre">default_dap_version()</span></code></a>.</li>
+<a class="reference internal" href="#mangadap.config.defaults.default_dap_version" title="mangadap.config.defaults.default_dap_version"><code class="xref py py-func docutils literal notranslate"><span class="pre">default_dap_version()</span></code></a>.</li>
 <li><strong>analysis_path</strong> (<em>str</em>) – (<strong>Optional</strong>) Path to the root analysis
-directory.  Default is to use <a class="reference internal" href="#mangadap.config.defaults.default_analysis_path" title="mangadap.config.defaults.default_analysis_path"><code class="xref py py-func docutils literal"><span class="pre">default_analysis_path()</span></code></a></li>
+directory.  Default is to use <a class="reference internal" href="#mangadap.config.defaults.default_analysis_path" title="mangadap.config.defaults.default_analysis_path"><code class="xref py py-func docutils literal notranslate"><span class="pre">default_analysis_path()</span></code></a></li>
 </ul>
 </td>
 </tr>
@@ -512,13 +517,6 @@ directory.  Default is to use <a class="reference internal" href="#mangadap.conf
 </tr>
 </tbody>
 </table>
-</dd></dl>
-
-<dl class="function">
-<dt id="mangadap.config.defaults.default_dap_source">
-<code class="descclassname">mangadap.config.defaults.</code><code class="descname">default_dap_source</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/config/defaults.html#default_dap_source"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.config.defaults.default_dap_source" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return the root path to the DAP source directory using the
-environmental variable MANGADAP_DIR.</p>
 </dd></dl>
 
 <dl class="function">
@@ -540,9 +538,9 @@ MANGADAP_VER.  If that environmental variable does not exist,
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>plate</strong> (<em>int</em>) – Plate number</li>
 <li><strong>drpver</strong> (<em>str</em>) – (<strong>Optional</strong>) DRP version.  Default is to use
-<a class="reference internal" href="#mangadap.config.defaults.default_drp_version" title="mangadap.config.defaults.default_drp_version"><code class="xref py py-func docutils literal"><span class="pre">default_drp_version()</span></code></a>.</li>
+<a class="reference internal" href="#mangadap.config.defaults.default_drp_version" title="mangadap.config.defaults.default_drp_version"><code class="xref py py-func docutils literal notranslate"><span class="pre">default_drp_version()</span></code></a>.</li>
 <li><strong>redux_path</strong> (<em>str</em>) – (<strong>Optional</strong>) Path to the root reduction
-directory.  Default is to use <a class="reference internal" href="#mangadap.config.defaults.default_redux_path" title="mangadap.config.defaults.default_redux_path"><code class="xref py py-func docutils literal"><span class="pre">default_redux_path()</span></code></a>.</li>
+directory.  Default is to use <a class="reference internal" href="#mangadap.config.defaults.default_redux_path" title="mangadap.config.defaults.default_redux_path"><code class="xref py py-func docutils literal notranslate"><span class="pre">default_redux_path()</span></code></a>.</li>
 </ul>
 </td>
 </tr>
@@ -561,12 +559,6 @@ directory.  Default is to use <a class="reference internal" href="#mangadap.conf
 <code class="descclassname">mangadap.config.defaults.</code><code class="descname">default_drp_version</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/config/defaults.html#default_drp_version"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.config.defaults.default_drp_version" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the DRP version defined by the environmental variable
 MANGADRP_VER.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="mangadap.config.defaults.default_idlutils_dir">
-<code class="descclassname">mangadap.config.defaults.</code><code class="descname">default_idlutils_dir</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/config/defaults.html#default_idlutils_dir"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.config.defaults.default_idlutils_dir" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return the default IDLUTILS directory.</p>
 </dd></dl>
 
 <dl class="function">
@@ -594,7 +586,7 @@ Options are: ‘LINCUBE’, ‘LINRSS’, ‘LOGCUBE’, ‘LOGRSS’, or
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">str</p>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal"><span class="pre">ValueError</span></code> – Raised if mode is not a valid option.</p>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code> – Raised if mode is not a valid option.</p>
 </td>
 </tr>
 </tbody>
@@ -607,7 +599,7 @@ Options are: ‘LINCUBE’, ‘LINRSS’, ‘LOGCUBE’, ‘LOGRSS’, or
 <dd><p>Return the default plateTarget files in mangacore and their
 associated catalog indices.  The catalog indices are determined
 assuming the file names are of the form:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="s1">&#39;plateTargets-</span><span class="si">{0}</span><span class="s1">.par&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">catalog_id</span><span class="p">)</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s1">&#39;plateTargets-</span><span class="si">{0}</span><span class="s1">.par&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">catalog_id</span><span class="p">)</span>
 </pre></div>
 </div>
 <table class="docutils field-list" frame="void" rules="none">
@@ -651,7 +643,7 @@ environmental variable MANGA_SPECTRO_REDUX.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>drpver</strong> (<em>str</em>) – (<strong>Optional</strong>) DRP version.  Default is to use
-<a class="reference internal" href="#mangadap.config.defaults.default_drp_version" title="mangadap.config.defaults.default_drp_version"><code class="xref py py-func docutils literal"><span class="pre">default_drp_version()</span></code></a>.</td>
+<a class="reference internal" href="#mangadap.config.defaults.default_drp_version" title="mangadap.config.defaults.default_drp_version"><code class="xref py py-func docutils literal notranslate"><span class="pre">default_drp_version()</span></code></a>.</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Path to reduction directory</td>
 </tr>
@@ -673,6 +665,18 @@ regridding the DRP RSS spectra into the CUBE format.</p>
 <code class="descclassname">mangadap.config.defaults.</code><code class="descname">default_regrid_sigma</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/config/defaults.html#default_regrid_sigma"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.config.defaults.default_regrid_sigma" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the default standard deviation of the Gaussian kernel used
 when regridding the DRP RSS spectra into the CUBE format.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mangadap.config.defaults.idlutils_dir">
+<code class="descclassname">mangadap.config.defaults.</code><code class="descname">idlutils_dir</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/config/defaults.html#idlutils_dir"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.config.defaults.idlutils_dir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the default IDLUTILS directory.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="mangadap.config.defaults.sdss_maskbits_file">
+<code class="descclassname">mangadap.config.defaults.</code><code class="descname">sdss_maskbits_file</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/config/defaults.html#sdss_maskbits_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.config.defaults.sdss_maskbits_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the path to the sdss maskbits yanny file.</p>
 </dd></dl>
 
 </div>

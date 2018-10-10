@@ -1,5 +1,5 @@
-mangadap\.par\.analysisplan module
-==================================
+mangadap.par.analysisplan module
+================================
 
 .. automodule:: mangadap.par.analysisplan
     :members:

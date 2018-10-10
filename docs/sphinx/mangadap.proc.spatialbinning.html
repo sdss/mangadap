@@ -104,7 +104,7 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.survey.html">mangadap.survey package</a></li>
-<li class="toctree-l3"><a class="reference internal" href="mangadap.test.html">mangadap.test package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="mangadap.tests.html">mangadap.tests package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="mangadap.util.html">mangadap.util package</a></li>
 </ul>
 </li>
@@ -192,7 +192,7 @@
 <dt><em>Source location</em>:</dt>
 <dd>$MANGADAP_DIR/python/mangadap/proc/spatialbins.py</dd>
 <dt><em>Imports and python version compliance</em>:</dt>
-<dd><div class="first last highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<dd><div class="first last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">unicode_literals</span>
@@ -205,9 +205,10 @@
 <span class="kn">from</span> <span class="nn">scipy</span> <span class="k">import</span> <span class="n">sparse</span>
 <span class="kn">from</span> <span class="nn">astropy.io</span> <span class="k">import</span> <span class="n">fits</span>
 
+<span class="kn">from</span> <span class="nn">vorbin.voronoi_2d_binning</span> <span class="k">import</span> <span class="n">voronoi_2d_binning</span>
+
 <span class="kn">from</span> <span class="nn">..par.parset</span> <span class="k">import</span> <span class="n">ParSet</span>
 <span class="kn">from</span> <span class="nn">..util.geometry</span> <span class="k">import</span> <span class="n">SemiMajorAxisCoo</span>
-<span class="kn">from</span> <span class="nn">..contrib.voronoi_2d_binning</span> <span class="k">import</span> <span class="n">voronoi_2d_binning</span>
 <span class="kn">from</span> <span class="nn">..util.covariance</span> <span class="k">import</span> <span class="n">Covariance</span>
 </pre></div>
 </div>
@@ -217,13 +218,15 @@
 <dt><em>Revision history</em>:</dt>
 <dd><div class="first last line-block">
 <div class="line"><strong>01 Apr 2016</strong>: Implementation begun by K. Westfall (KBW)</div>
+<div class="line"><strong>22 May 2018</strong>: (KBW) Import vorbin package version of
+voronoi_2d_binning</div>
 </div>
 </dd>
 </dl>
 <dl class="class">
 <dt id="mangadap.proc.spatialbinning.GlobalBinning">
 <em class="property">class </em><code class="descclassname">mangadap.proc.spatialbinning.</code><code class="descname">GlobalBinning</code><a class="reference internal" href="_modules/mangadap/proc/spatialbinning.html#GlobalBinning"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.spatialbinning.GlobalBinning" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#mangadap.proc.spatialbinning.SpatialBinning" title="mangadap.proc.spatialbinning.SpatialBinning"><code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.spatialbinning.SpatialBinning</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#mangadap.proc.spatialbinning.SpatialBinning" title="mangadap.proc.spatialbinning.SpatialBinning"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.proc.spatialbinning.SpatialBinning</span></code></a></p>
 <p>Class that performs the global binning.</p>
 <dl class="staticmethod">
 <dt id="mangadap.proc.spatialbinning.GlobalBinning.bin_index">
@@ -235,13 +238,13 @@
 <dl class="class">
 <dt id="mangadap.proc.spatialbinning.RadialBinning">
 <em class="property">class </em><code class="descclassname">mangadap.proc.spatialbinning.</code><code class="descname">RadialBinning</code><span class="sig-paren">(</span><em>par=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/spatialbinning.html#RadialBinning"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.spatialbinning.RadialBinning" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#mangadap.proc.spatialbinning.SpatialBinning" title="mangadap.proc.spatialbinning.SpatialBinning"><code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.spatialbinning.SpatialBinning</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#mangadap.proc.spatialbinning.SpatialBinning" title="mangadap.proc.spatialbinning.SpatialBinning"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.proc.spatialbinning.SpatialBinning</span></code></a></p>
 <p>Class that performs the radial binning.</p>
 <dl class="method">
 <dt id="mangadap.proc.spatialbinning.RadialBinning._r_start_step">
 <code class="descname">_r_start_step</code><span class="sig-paren">(</span><em>r</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/spatialbinning.html#RadialBinning._r_start_step"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.spatialbinning.RadialBinning._r_start_step" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bin starting radii are:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">rs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;radii&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;radii&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
 <span class="n">re</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;radii&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
 <span class="n">nr</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;radii&#39;</span><span class="p">][</span><span class="mi">2</span><span class="p">])</span>
 <span class="n">starting_radii</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">logspace</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">rs</span><span class="p">),</span> <span class="n">numpy</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">re</span><span class="p">),</span> <span class="n">num</span><span class="o">=</span><span class="n">nr</span><span class="p">,</span>
@@ -268,9 +271,9 @@
 <dl class="class">
 <dt id="mangadap.proc.spatialbinning.RadialBinningPar">
 <em class="property">class </em><code class="descclassname">mangadap.proc.spatialbinning.</code><code class="descname">RadialBinningPar</code><span class="sig-paren">(</span><em>center</em>, <em>pa</em>, <em>ell</em>, <em>radius_scale</em>, <em>radii</em>, <em>log_step</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/spatialbinning.html#RadialBinningPar"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.spatialbinning.RadialBinningPar" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet" title="mangadap.par.parset.ParSet"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.parset.ParSet</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet" title="mangadap.par.parset.ParSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.par.parset.ParSet</span></code></a></p>
 <p>Class with parameters used by the radial binning algorithm.  See
-<a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet" title="mangadap.par.parset.ParSet"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.parset.ParSet</span></code></a> for attributes.</p>
+<a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet" title="mangadap.par.parset.ParSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.par.parset.ParSet</span></code></a> for attributes.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -324,7 +327,7 @@ geometric series.</li>
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="http://docs.astropy.org/en/stable/io/fits/api/headers.html#header">astropy.io.fits.Header</a></td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal"><span class="pre">TypeError</span></code> – Raised if input is not an
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal notranslate"><span class="pre">TypeError</span></code> – Raised if input is not an
 <a class="reference external" href="http://docs.astropy.org/en/stable/io/fits/api/headers.html#header">astropy.io.fits.Header</a> object.</td>
 </tr>
 </tbody>
@@ -336,14 +339,14 @@ geometric series.</li>
 <dl class="class">
 <dt id="mangadap.proc.spatialbinning.SpatialBinning">
 <em class="property">class </em><code class="descclassname">mangadap.proc.spatialbinning.</code><code class="descname">SpatialBinning</code><span class="sig-paren">(</span><em>bintype</em>, <em>par=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/spatialbinning.html#SpatialBinning"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.spatialbinning.SpatialBinning" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Base class for spatially binning data.</p>
 </dd></dl>
 
 <dl class="class">
 <dt id="mangadap.proc.spatialbinning.VoronoiBinning">
 <em class="property">class </em><code class="descclassname">mangadap.proc.spatialbinning.</code><code class="descname">VoronoiBinning</code><span class="sig-paren">(</span><em>par=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/spatialbinning.html#VoronoiBinning"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.spatialbinning.VoronoiBinning" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#mangadap.proc.spatialbinning.SpatialBinning" title="mangadap.proc.spatialbinning.SpatialBinning"><code class="xref py py-class docutils literal"><span class="pre">mangadap.proc.spatialbinning.SpatialBinning</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#mangadap.proc.spatialbinning.SpatialBinning" title="mangadap.proc.spatialbinning.SpatialBinning"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.proc.spatialbinning.SpatialBinning</span></code></a></p>
 <p>Class that wraps the contributed voronoi binning code.</p>
 <dl class="method">
 <dt id="mangadap.proc.spatialbinning.VoronoiBinning.bin_index">
@@ -354,10 +357,10 @@ geometric series.</li>
 <dt id="mangadap.proc.spatialbinning.VoronoiBinning.sn_calculation_calibrate_noise">
 <code class="descname">sn_calculation_calibrate_noise</code><span class="sig-paren">(</span><em>index</em>, <em>signal</em>, <em>noise</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/spatialbinning.html#VoronoiBinning.sn_calculation_calibrate_noise"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.spatialbinning.VoronoiBinning.sn_calculation_calibrate_noise" title="Permalink to this definition">¶</a></dt>
 <dd><p>Calculate the S/N using a calibration of the S/N following:</p>
-<div class="math">
+<div class="math notranslate nohighlight">
 \[N_{\rm calib} = N_{\rm nominal} (1 + \alpha\ \log N_{\rm bin})\]</div>
-<p>where <span class="math">\(N_{\rm bin}\)</span> is the number of binned spaxels and
-<span class="math">\(\alpha\)</span> is an empirically derived constant used to adjust
+<p>where <span class="math notranslate nohighlight">\(N_{\rm bin}\)</span> is the number of binned spaxels and
+<span class="math notranslate nohighlight">\(\alpha\)</span> is an empirically derived constant used to adjust
 the noise for the affects of covariance.</p>
 </dd></dl>
 
@@ -371,7 +374,7 @@ the noise for the affects of covariance.</p>
 <dt id="mangadap.proc.spatialbinning.VoronoiBinning.sn_calculation_no_covariance">
 <code class="descname">sn_calculation_no_covariance</code><span class="sig-paren">(</span><em>index</em>, <em>signal</em>, <em>noise</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/spatialbinning.html#VoronoiBinning.sn_calculation_no_covariance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.spatialbinning.VoronoiBinning.sn_calculation_no_covariance" title="Permalink to this definition">¶</a></dt>
 <dd><p>S/N calculation built to match the requirements of
-<code class="xref py py-func docutils literal"><span class="pre">mangadap.contrib.voronoi_2d_binning()</span></code>.</p>
+<code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.contrib.voronoi_2d_binning()</span></code>.</p>
 <p>This calculation is identical to the one provided directly by
 the code.</p>
 </dd></dl>
@@ -381,9 +384,9 @@ the code.</p>
 <dl class="class">
 <dt id="mangadap.proc.spatialbinning.VoronoiBinningPar">
 <em class="property">class </em><code class="descclassname">mangadap.proc.spatialbinning.</code><code class="descname">VoronoiBinningPar</code><span class="sig-paren">(</span><em>target_snr</em>, <em>signal</em>, <em>noise</em>, <em>covar</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mangadap/proc/spatialbinning.html#VoronoiBinningPar"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mangadap.proc.spatialbinning.VoronoiBinningPar" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet" title="mangadap.par.parset.ParSet"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.parset.ParSet</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet" title="mangadap.par.parset.ParSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.par.parset.ParSet</span></code></a></p>
 <p>Class with parameters used by the Voronoi binning algorithm.  See
-<a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet" title="mangadap.par.parset.ParSet"><code class="xref py py-class docutils literal"><span class="pre">mangadap.par.parset.ParSet</span></code></a> for attributes.</p>
+<a class="reference internal" href="mangadap.par.parset.html#mangadap.par.parset.ParSet" title="mangadap.par.parset.ParSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.par.parset.ParSet</span></code></a> for attributes.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -396,13 +399,13 @@ on-sky position to bin.</li>
 <li><strong>noise</strong> (<em>array-like</em>) – The array of noise measurements for each
 on-sky position to bin.  If not provided, <em>covar</em> must be
 provided and be a full covariance matrix.</li>
-<li><strong>(</strong><strong>float</strong><strong>, </strong><strong>numpy.ndarray</strong><strong>,</strong> (<em>covar</em>) – <p><code class="xref py py-class docutils literal"><span class="pre">mangadap.util.Covariance</span></code>,
+<li><strong>(</strong><strong>float</strong><strong>, </strong><strong>numpy.ndarray</strong><strong>,</strong> (<em>covar</em>) – <p><code class="xref py py-class docutils literal notranslate"><span class="pre">mangadap.util.Covariance</span></code>,
 <a class="reference external" href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.spmatrix.html">scipy.sparse.spmatrix</a>): Covariance matrix or calibration
 normalization.  For the latter, the value is used to
 renormalize the noise according to the following equation:</p>
-<p>where <span class="math">\(N_{\rm bin}\)</span> is the number of binned spaxels
-and <span class="math">\(\alpha\)</span> is the value provided.  See
-<code class="xref py py-func docutils literal"><span class="pre">mangadap.contrib.voronoi_2d_binning._sn_func()</span></code>.</p>
+<p>where <span class="math notranslate nohighlight">\(N_{\rm bin}\)</span> is the number of binned spaxels
+and <span class="math notranslate nohighlight">\(\alpha\)</span> is the value provided.  See
+<code class="xref py py-func docutils literal notranslate"><span class="pre">mangadap.contrib.voronoi_2d_binning._sn_func()</span></code>.</p>
 </li>
 </ul>
 </td>
@@ -430,7 +433,7 @@ and <span class="math">\(\alpha\)</span> is the value provided.  See
 </tr>
 <tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="http://docs.astropy.org/en/stable/io/fits/api/headers.html#header">astropy.io.fits.Header</a></td>
 </tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal"><span class="pre">TypeError</span></code> – Raised if input is not an
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal notranslate"><span class="pre">TypeError</span></code> – Raised if input is not an
 <a class="reference external" href="http://docs.astropy.org/en/stable/io/fits/api/headers.html#header">astropy.io.fits.Header</a> object.</td>
 </tr>
 </tbody>

@@ -1,5 +1,5 @@
-mangadap\.util\.constants module
-================================
+mangadap.util.constants module
+==============================
 
 .. automodule:: mangadap.util.constants
     :members:

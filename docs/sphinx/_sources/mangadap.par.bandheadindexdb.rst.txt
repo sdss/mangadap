@@ -1,5 +1,5 @@
-mangadap\.par\.bandheadindexdb module
-=====================================
+mangadap.par.bandheadindexdb module
+===================================
 
 .. automodule:: mangadap.par.bandheadindexdb
     :members:

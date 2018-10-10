@@ -10,45 +10,6 @@ A class hierarchy that performs the stellar-continuum fitting.
 *Source location*:
     $MANGADAP_DIR/python/mangadap/proc/stellarcontinuummodel.py
 
-*Imports and python version compliance*:
-    ::
-
-        from __future__ import division
-        from __future__ import print_function
-        from __future__ import absolute_import
-        from __future__ import unicode_literals
-
-        import sys
-        import warnings
-        if sys.version > '3':
-            long = int
-
-        import os
-        import glob
-        import logging
-        import numpy
-
-        from astropy.io import fits
-        import astropy.constants
-
-        from ..drpfits import DRPFits
-        from ..par.parset import ParSet
-        from ..par.artifactdb import ArtifactDB
-        from ..par.emissionlinedb import EmissionLineDB
-        from ..util.log import log_output
-        from ..util.fitsutil import DAPFitsUtil
-        from ..util.fileio import rec_to_fits_type
-        from ..util.instrument import spectrum_velocity_scale
-        from ..util.bitmask import BitMask
-        from ..util.pixelmask import SpectralPixelMask
-        from ..util.parser import DefaultConfig
-        from ..config.defaults import dap_source_dir, default_dap_file_name
-        from ..config.defaults import default_dap_method, default_dap_method_path
-        from .spatiallybinnedspectra import SpatiallyBinnedSpectra
-        from .templatelibrary import TemplateLibrary
-        from .ppxffit import PPXFFitPar, PPXFFit
-        from .util import select_proc_method
-
 *Class usage examples*:
         Add examples
 
@@ -104,7 +65,8 @@ from ..par.emissionlinedb import EmissionLineDB
 from ..util.log import log_output
 from ..util.fitsutil import DAPFitsUtil
 from ..util.fileio import rec_to_fits_type
-from ..util.instrument import spectral_coordinate_step, spectrum_velocity_scale, SpectralResolution
+from ..util.sampling import spectral_coordinate_step, spectrum_velocity_scale
+from ..util.resolution import SpectralResolution
 from ..util.bitmask import BitMask
 from ..util.pixelmask import SpectralPixelMask
 from ..util.parser import DefaultConfig
@@ -1237,8 +1199,12 @@ class StellarContinuumModel:
         """
         Reset the mask of the stellar continuum to a continuous window
         from the minimum to maximum valid wavelength.
-        """
 
+        .. todo::
+            - Allow continuum to be n-dimensional and use
+              `numpy.apply_along_axis`.
+
+        """
         spatial_shape = DAPFitsUtil.get_spatial_shape(continuum.shape, dispaxis)
         if len(spatial_shape) != 1:
             raise ValueError('Input array should be two-dimensional!')
