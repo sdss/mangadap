@@ -1117,7 +1117,7 @@ class Sasuke(EmissionLineFit):
 
         used_ebv = False
         if self.reddening is not None and model_reddening is not None:
-            model_fit_par['EBV'][spec_to_fit,:] = model_reddening
+            model_fit_par['EBV'][spec_to_fit] = model_reddening
             used_ebv = True
 
         # Flattened input and output kinematics
