@@ -404,7 +404,7 @@ class Sasuke(EmissionLineFit):
         self.nobj = None
         self.npix_obj = None
         self.input_obj_mask = None
-        self.obj_to_fit = None
+#        self.obj_to_fit = None
         self.input_cz = None
         self.velscale = None
         self.waverange = None
@@ -2007,10 +2007,6 @@ class Sasuke(EmissionLineFit):
                 = PPXFFit.check_objects(obj_wave, obj_flux, obj_ferr=obj_ferr, obj_sres=obj_sres)
         self.nobj, self.npix_obj = self.obj_flux.shape
         self.waverange = PPXFFit.set_wavelength_range(self.nobj, self.obj_wave, waverange)
-        if not self.quiet:
-            log_output(self.loggers, 1, logging.INFO,
-                       'Number of object spectra to fit: {0}/{1}'.format(
-                            numpy.sum(self.obj_to_fit), self.nobj))
         # guess_kin are in "ppxf" velocities
         self.input_cz, guess_kin = PPXFFit.check_input_kinematics(self.nobj, guess_redshift,
                                                                   guess_dispersion)
@@ -2257,28 +2253,6 @@ class Sasuke(EmissionLineFit):
                             for i in range(self.ncomp) ]
 
         #---------------------------------------------------------------
-        # Report the input checks/results
-        if not self.quiet:
-            if self.nstpl > 0:
-                log_output(self.loggers, 1, logging.INFO,
-                           'Number of stellar templates: {0}'.format(self.nstpl))
-            log_output(self.loggers, 1, logging.INFO, 'Pixel scale: {0} km/s'.format(
-                                                                            self.velscale))
-            log_output(self.loggers, 1, logging.INFO, 'Pixel scale ratio: {0}'.format(
-                                                                            self.velscale_ratio))
-            log_output(self.loggers, 1, logging.INFO, 'Dispersion limits: {0} - {1}'.format(
-                                                                            *self.sigma_limits))
-            log_output(self.loggers, 1, logging.INFO, 'Model degrees of freedom: {0}'.format(
-                                                                            self.dof+self.ntpl))
-            log_output(self.loggers, 1, logging.INFO, 'Number of tied parameters: {0}'.format(
-                            0 if self.tied is None else
-                            self.nfree_kin + numpy.sum(self.comp_moments[self.comp_moments < 0])))
-            if self.remap_flux is not None:
-                log_output(self.loggers, 1, logging.INFO,
-                           'Emission-line fits remapped to a set of {0} spectra.'.format(
-                            self.nremap))
-
-        #---------------------------------------------------------------
         # Initialize the output arrays.  This is done here for many of
         # these objects only in case PPXFFit.initialize_pixels_to_fit()
         # fails and the code returns without running the pPXF fitting.
@@ -2413,6 +2387,36 @@ class Sasuke(EmissionLineFit):
             mask_binned = mask_binned[bins_to_fit,:]
             tpl_to_use = self.tpl_to_use[bins_to_fit,:]
             comp_start_kin = self.comp_start_kin[bins_to_fit,:]
+
+        #---------------------------------------------------------------
+        # Report the input/prep checks/results
+        if not self.quiet:
+            if self.remap_flux is None:
+                log_output(self.loggers, 1, logging.INFO,
+                           'Number of spectra to fit: {0}/{1}'.format(numpy.sum(spec_to_fit),
+                                                                      self.nobj))
+            else:
+                log_output(self.loggers, 1, logging.INFO,
+                           'Number of original spectra to fit: {0}/{1}'.format(
+                           numpy.sum(bins_to_fit), self.nobj))
+                log_output(self.loggers, 1, logging.INFO,
+                           'Emission-line fits remapped to a set of {0}/{1} spectra.'.format(
+                            spec_to_fit, self.nremap))
+
+            if self.nstpl > 0:
+                log_output(self.loggers, 1, logging.INFO,
+                           'Number of stellar templates: {0}'.format(self.nstpl))
+            log_output(self.loggers, 1, logging.INFO, 'Pixel scale: {0} km/s'.format(
+                                                                            self.velscale))
+            log_output(self.loggers, 1, logging.INFO, 'Pixel scale ratio: {0}'.format(
+                                                                            self.velscale_ratio))
+            log_output(self.loggers, 1, logging.INFO, 'Dispersion limits: {0} - {1}'.format(
+                                                                            *self.sigma_limits))
+            log_output(self.loggers, 1, logging.INFO, 'Model degrees of freedom: {0}'.format(
+                                                                            self.dof+self.ntpl))
+            log_output(self.loggers, 1, logging.INFO, 'Number of tied parameters: {0}'.format(
+                            0 if self.tied is None else
+                            self.nfree_kin + numpy.sum(self.comp_moments[self.comp_moments < 0])))
 
         # Run the fitter
         model_flux[spec_to_fit,start:end], model_eml_flux[spec_to_fit,start:end], _model_mask, \
@@ -2588,7 +2592,9 @@ class Sasuke(EmissionLineFit):
             f = PPXFModel(_stpl_flux.T,
                           _obj_flux.data[i,model_fit_par['BEGPIX'][i]:model_fit_par['ENDPIX'][i]],
                           _velscale, velscale_ratio=_velscale_ratio, vsyst=vsyst[i],
-                          moments=smoments, degree=degree, mdegree=mdegree, reddening=ebv)
+                          moments=smoments, degree=degree, mdegree=mdegree,
+                          lam=_obj_wave[model_fit_par['BEGPIX'][i]:model_fit_par['ENDPIX'][i]],
+                          reddening=ebv)
 
             models[i,model_fit_par['BEGPIX'][i]:model_fit_par['ENDPIX'][i]] \
                         = f(kin[i,:], model_fit_par['TPLWGT'][i,:nstpl],
