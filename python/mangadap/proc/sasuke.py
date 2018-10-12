@@ -2588,7 +2588,9 @@ class Sasuke(EmissionLineFit):
             f = PPXFModel(_stpl_flux.T,
                           _obj_flux.data[i,model_fit_par['BEGPIX'][i]:model_fit_par['ENDPIX'][i]],
                           _velscale, velscale_ratio=_velscale_ratio, vsyst=vsyst[i],
-                          moments=smoments, degree=degree, mdegree=mdegree, reddening=ebv)
+                          moments=smoments, degree=degree, mdegree=mdegree,
+                          lam=_obj_wave[model_fit_par['BEGPIX'][i]:model_fit_par['ENDPIX'][i]],
+                          reddening=ebv)
 
             models[i,model_fit_par['BEGPIX'][i]:model_fit_par['ENDPIX'][i]] \
                         = f(kin[i,:], model_fit_par['TPLWGT'][i,:nstpl],
