@@ -2460,6 +2460,9 @@ class Sasuke(EmissionLineFit):
                                                               'DIDNOTUSE')
         model_mask[spec_to_fit,end:] = self.bitmask.turn_on(model_mask[spec_to_fit,end:],
                                                             'DIDNOTUSE')
+        if not numpy.all(spec_to_fit):
+            indx = numpy.invert(spec_to_fit)
+            model_mask[indx,:] = self.bitmask.turn_on(model_mask[indx,:], 'DIDNOTUSE')
 
         #---------------------------------------------------------------
         # Save the results
