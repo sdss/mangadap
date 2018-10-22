@@ -28,6 +28,7 @@ import warnings
 import numpy
 from scipy import interpolate
 import astropy.constants
+import pdb
 
 def spectral_coordinate_step(wave, log=False, base=10.0):
     """
@@ -57,8 +58,7 @@ def spectral_coordinate_step(wave, log=False, base=10.0):
 
 def spectrum_velocity_scale(wave):
     """
-    Determine the velocity sampling of an input wavelength coordinate
-    vector.
+    Determine the velocity sampling of an input wavelength vector when log sampled
     
     .. note::
         The wavelength vector is assumed to be geometrically sampled!
@@ -78,44 +78,44 @@ def spectrum_velocity_scale(wave):
                                                                          base=numpy.exp(1.))
 
 
-def angstroms_per_pixel(wave, log=False, base=10.0, regular=True):
-    """
-    Return a vector with the angstroms per pixel at each channel.
+# def angstroms_per_pixel(wave, log=False, base=10.0, regular=True):
+#     """
+#     Return a vector with the angstroms per pixel at each channel.
 
-    When `regular=True`, the function assumes that the wavelengths are
-    either sampled linearly or geometrically.  Otherwise, it calculates
-    the size of each pixel as the difference between the wavelength
-    coordinates.  The first and last pixels are assumed to have a width
-    as determined by assuming the coordinate is at it's center.
+#     When `regular=True`, the function assumes that the wavelengths are
+#     either sampled linearly or geometrically.  Otherwise, it calculates
+#     the size of each pixel as the difference between the wavelength
+#     coordinates.  The first and last pixels are assumed to have a width
+#     as determined by assuming the coordinate is at it's center.
 
-    Args:
-        wave (numpy.ndarray): (Geometric) centers of the spectrum pixels
-            in angstroms.
-        log (numpy.ndarray): (**Optional**) The vector is geometrically
-            sampled.
-        base (float): (**Optional**) Base of the logarithm used in the
-            geometric sampling.
-        regular (bool): (**Optional**) The vector is regularly sampled.
+#     Args:
+#         wave (numpy.ndarray): (Geometric) centers of the spectrum pixels
+#             in angstroms.
+#         log (numpy.ndarray): (**Optional**) The vector is geometrically
+#             sampled.
+#         base (float): (**Optional**) Base of the logarithm used in the
+#             geometric sampling.
+#         regular (bool): (**Optional**) The vector is regularly sampled.
             
 
-    Returns:
-        numpy.ndarray: The angstroms per pixel.
-    """
-    if regular:
-        ang_per_pix = spectral_coordinate_step(wave, log=log, base=base)
-        if log:
-            ang_per_pix *= wave*numpy.log(base)
-    else:
-        ang_per_pix = numpy.diff([(3*wave[0]-wave[1])/2] 
-                                    + ((wave[1:] + wave[:-1])/2).tolist()
-                                    + [(3*wave[-1]-wave[-2])/2])
-    return ang_per_pix
+#     Returns:
+#         numpy.ndarray: The angstroms per pixel.
+#     """
+#     if regular:
+#         ang_per_pix = spectral_coordinate_step(wave, log=log, base=base)
+#         if log:
+#             ang_per_pix *= wave*numpy.log(base)
+#     else:
+#         ang_per_pix = numpy.diff([(3*wave[0]-wave[1])/2] 
+#                                     + ((wave[1:] + wave[:-1])/2).tolist()
+#                                     + [(3*wave[-1]-wave[-2])/2])
+#     return ang_per_pix
 
 
 def _pixel_centers(xlim, npix, log=False, base=10.0):
     """
     Determine the centers of pixels in a linearly or geometrically
-    sampled vector.
+    sampled vector given first, last and number of pixels
 
     Args:
         xlim (numpy.ndarray) : (Geometric) Centers of the first and last
@@ -128,7 +128,7 @@ def _pixel_centers(xlim, npix, log=False, base=10.0):
             natural logarithm.
 
     Returns:
-        numpy.ndarray, float: A vector with the (npix+1) borders of the
+        numpy.ndarray, float: A vector with the npix centres of the
         pixels and the sampling rate.  If logarithmically binned, the
         sampling is the step in :math`\log x`.
     """
@@ -144,7 +144,8 @@ def _pixel_centers(xlim, npix, log=False, base=10.0):
 
 def _pixel_borders(xlim, npix, log=False, base=10.0):
     """
-    Determine the borders of the pixels in a vector.
+    Determine the borders of the pixels in a vector given the first, last and 
+    number of pixels
 
     Args:
         xlim (numpy.ndarray) : (Geometric) Centers of the first and last
@@ -174,7 +175,7 @@ def _pixel_borders(xlim, npix, log=False, base=10.0):
 
 def resample_vector_npix(outRange=None, dx=None, log=False, base=10.0, default=None):
     """
-    Determine the number of pixels needed to resample the vector.
+    Determine the number of pixels needed to resample a vector given first, last pixel and dx
 
     Args:
         outRange (list or numpy.ndarray) : Two-element array with the
@@ -411,10 +412,11 @@ class Resample:
         # Get the input coordinates
         self.x = None
         self.xborders = None
+        # this defines the self.x and self.xborders
         self._input_coordinates(x, xRange, xBorders, inLog, base)
 
         # If conserving integral, assume input is integrated over pixel
-        # width and convert to a density function to be integrated
+        # width and convert to a density function (divide by pixel size)
         if conserve:
             self.y /= (numpy.diff(self.xborders)[None,:] if self.twod \
                                 else numpy.diff(self.xborders))
@@ -422,13 +424,16 @@ class Resample:
         # Get the output coordinates
         self.outx = None
         self.outborders = None
+        # this defines the self.outx and self.outborders
         self._output_coordinates(newRange, newpix, newLog, newdx, base)
 
         # Perform the resampling
         self.outy = self._resample_step(self.y) if step else self._resample_linear(self.y)
        
+        
         # The mask and errors are always interpolated as a step function
         self.oute = None if self.e is None else self._resample_step(self.e, quad=True)
+        
         self.outf = self._resample_step(numpy.invert(self.m).astype(int)) \
                         / numpy.diff(self.outborders)
 
@@ -555,7 +560,9 @@ class Resample:
         """Resample the vectors."""
 
         # Convert y to a step function
+        #repeat each element of the input vector twice
         _v = numpy.repeat(v, 2, axis=1) if self.twod else numpy.repeat(v, 2)
+        #repeat each element of the inout border array, except the first one, rwice
         _x = numpy.repeat(self.xborders, 2)[1:-1]
 
         # Combine the input coordinates and the output borders into a
@@ -581,9 +588,15 @@ class Resample:
         k = numpy.arange(combinedX.size)[border]
 
         # Use reduceat to calculate the integral
-        out = numpy.add.reduceat(integrand, k[:-1], axis=-1) if k[-1] == combinedX.size-1 \
+        if self.twod:
+            out = numpy.array(numpy.add.reduceat(integrand, k[:-1], axis=-1)) if k[-1] == combinedX.size-1 \
+                            else numpy.array(numpy.add.reduceat(integrand, k, axis=-1))[:, 0:-1]
+            
+        else:
+            out = numpy.add.reduceat(integrand, k[:-1], axis=-1) if k[-1] == combinedX.size-1 \
                             else numpy.add.reduceat(integrand, k, axis=-1)[:-1]
-
+            
+        
         return numpy.sqrt(out) if quad else out
 
 
