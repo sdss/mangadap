@@ -78,38 +78,38 @@ def spectrum_velocity_scale(wave):
                                                                          base=numpy.exp(1.))
 
 
-# def angstroms_per_pixel(wave, log=False, base=10.0, regular=True):
-#     """
-#     Return a vector with the angstroms per pixel at each channel.
+def angstroms_per_pixel(wave, log=False, base=10.0, regular=True):
+    """
+    Return a vector with the angstroms per pixel at each channel.
 
-#     When `regular=True`, the function assumes that the wavelengths are
-#     either sampled linearly or geometrically.  Otherwise, it calculates
-#     the size of each pixel as the difference between the wavelength
-#     coordinates.  The first and last pixels are assumed to have a width
-#     as determined by assuming the coordinate is at it's center.
+    When `regular=True`, the function assumes that the wavelengths are
+    either sampled linearly or geometrically.  Otherwise, it calculates
+    the size of each pixel as the difference between the wavelength
+    coordinates.  The first and last pixels are assumed to have a width
+    as determined by assuming the coordinate is at its center.
 
-#     Args:
-#         wave (numpy.ndarray): (Geometric) centers of the spectrum pixels
-#             in angstroms.
-#         log (numpy.ndarray): (**Optional**) The vector is geometrically
-#             sampled.
-#         base (float): (**Optional**) Base of the logarithm used in the
-#             geometric sampling.
-#         regular (bool): (**Optional**) The vector is regularly sampled.
-            
+    Args:
+        wave (`numpy.ndarray`):
+            (Geometric) centers of the spectrum pixels in angstroms.
+        log (`numpy.ndarray`, optional):
+            The vector is geometrically sampled.
+        base (:obj:`float`, optional):
+            Base of the logarithm used in the geometric sampling.
+        regular (:obj:`bool`, optional):
+            The vector is regularly sampled.
 
-#     Returns:
-#         numpy.ndarray: The angstroms per pixel.
-#     """
-#     if regular:
-#         ang_per_pix = spectral_coordinate_step(wave, log=log, base=base)
-#         if log:
-#             ang_per_pix *= wave*numpy.log(base)
-#     else:
-#         ang_per_pix = numpy.diff([(3*wave[0]-wave[1])/2] 
-#                                     + ((wave[1:] + wave[:-1])/2).tolist()
-#                                     + [(3*wave[-1]-wave[-2])/2])
-#     return ang_per_pix
+    Returns:
+        numpy.ndarray: The angstroms per pixel.
+    """
+    if regular:
+        ang_per_pix = spectral_coordinate_step(wave, log=log, base=base)
+        if log:
+            ang_per_pix *= wave*numpy.log(base)
+    else:
+        ang_per_pix = numpy.diff([(3*wave[0]-wave[1])/2] 
+                                    + ((wave[1:] + wave[:-1])/2).tolist()
+                                    + [(3*wave[-1]-wave[-2])/2])
+    return ang_per_pix
 
 
 def _pixel_centers(xlim, npix, log=False, base=10.0):
@@ -552,7 +552,7 @@ class Resample:
 
         # Use reduceat to calculate the integral
         out = numpy.add.reduceat(integrand, k[:-1], axis=-1) if k[-1] == combinedX.size-1 \
-                        else numpy.add.reduceat(integrand, k, axis=-1)[:-1]
+                        else numpy.add.reduceat(integrand, k, axis=-1)[...,:-1]
     
         return numpy.sqrt(out) if quad else out
 
@@ -560,9 +560,10 @@ class Resample:
         """Resample the vectors."""
 
         # Convert y to a step function
-        #repeat each element of the input vector twice
+        #  - repeat each element of the input vector twice
         _v = numpy.repeat(v, 2, axis=1) if self.twod else numpy.repeat(v, 2)
-        #repeat each element of the inout border array, except the first one, rwice
+        #  - repeat each element of the border array twice, and remove
+        #  the first and last elements
         _x = numpy.repeat(self.xborders, 2)[1:-1]
 
         # Combine the input coordinates and the output borders into a
@@ -584,17 +585,20 @@ class Resample:
 
         # Get the indices where the data should be reduced
         border = numpy.insert(numpy.zeros(_x.size, dtype=bool), indx,
-                                numpy.ones(self.outborders.size, dtype=bool))
+                              numpy.ones(self.outborders.size, dtype=bool))
         k = numpy.arange(combinedX.size)[border]
 
         # Use reduceat to calculate the integral
-        if self.twod:
-            out = numpy.array(numpy.add.reduceat(integrand, k[:-1], axis=-1)) if k[-1] == combinedX.size-1 \
-                            else numpy.array(numpy.add.reduceat(integrand, k, axis=-1))[:, 0:-1]
-            
-        else:
-            out = numpy.add.reduceat(integrand, k[:-1], axis=-1) if k[-1] == combinedX.size-1 \
-                            else numpy.add.reduceat(integrand, k, axis=-1)[:-1]
+        out = numpy.add.reduceat(integrand, k[:-1], axis=-1) if k[-1] == combinedX.size-1 \
+                    else numpy.add.reduceat(integrand, k, axis=-1)[...,:-1]
+#        if self.twod:
+#            out = numpy.array(numpy.add.reduceat(integrand, k[:-1], axis=-1)) \
+#                        if k[-1] == combinedX.size-1 else \
+#                        numpy.array(numpy.add.reduceat(integrand, k, axis=-1))[:, 0:-1]
+#            
+#        else:
+#            out = numpy.add.reduceat(integrand, k[:-1], axis=-1) if k[-1] == combinedX.size-1 \
+#                            else numpy.add.reduceat(integrand, k, axis=-1)[:-1]
             
         
         return numpy.sqrt(out) if quad else out
