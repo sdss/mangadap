@@ -1770,8 +1770,7 @@ class construct_cube_file:
         prihdr, binlist, mask = self.binned_data_cube(prihdr, binned_spectra,
                                                       binned_spectra_3d_hdu)
 
-        # Model spectra: [ 'MODEL', 'EMLINE', 'EMLINE_BASE',
-        # 'EMLINE_MASK']
+        # Model spectra: [ 'MODEL', 'EMLINE', 'STCNT', 'STCNT_MASK' ]
         prihdr, modlist, mask = self.model_cubes(prihdr, binned_spectra, stellar_continuum,
                                                  stellar_continuum_3d_hdu, emission_line_model,
                                                  emission_line_model_3d_hdu, mask=mask)
