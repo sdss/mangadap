@@ -28,7 +28,6 @@ import warnings
 import numpy
 from scipy import interpolate
 import astropy.constants
-import pdb
 
 def spectral_coordinate_step(wave, log=False, base=10.0):
     """
