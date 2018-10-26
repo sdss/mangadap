@@ -1,5 +1,4 @@
-2.2.3dev
---------
+2.2.3dev --------
  - Put in default paths when environmental variables not defined and
    warn user, both when running setup.py and when importing mangadap
  - Start testing suite (still very limited)
@@ -19,6 +18,8 @@
  - Fix some bugs in the bandpass integral functions introduced during
    recent testing.
  - Add spectral indices test
+ - Change model-cube data model to use `STCNT` and `STCNT_MASK`
+   extensions and remove the `EMLINE_BASE` and `EMLINE_MASK` extensions.
 
 TODO:
  - Documentation of config examples are out of date!
