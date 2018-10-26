@@ -1770,7 +1770,7 @@ class construct_cube_file:
         prihdr, binlist, mask = self.binned_data_cube(prihdr, binned_spectra,
                                                       binned_spectra_3d_hdu)
 
-        # Model spectra: [ 'MODEL', 'EMLINE', 'STCNT', 'STCNT_MASK' ]
+        # Model spectra: [ 'MODEL', 'EMLINE', 'STELLAR', 'STELLAR_MASK' ]
         prihdr, modlist, mask = self.model_cubes(prihdr, binned_spectra, stellar_continuum,
                                                  stellar_continuum_3d_hdu, emission_line_model,
                                                  emission_line_model_3d_hdu, mask=mask)
@@ -1797,7 +1797,7 @@ class construct_cube_file:
                                   *(binlist[:2]),   # FLUX, IVAR
                                   *masklist,        # MASK
                                   *(binlist[2:]),   # WAVE, REDCORR
-                                  *modlist,         # MODEL, EMLINE, STCNT, STCNT_MASK
+                                  *modlist,         # MODEL, EMLINE, STELLAR, STELLAR_MASK
                                   *binidlist        # BINID
                                 ])
         #---------------------------------------------------------------
@@ -2022,12 +2022,12 @@ class construct_cube_file:
     def model_cubes(self, prihdr, binned_spectra, stellar_continuum, stellar_continuum_3d_hdu,
                     emission_line_model, emission_line_model_3d_hdu, mask=None):
         """
-        Constructs the 'MODEL', 'EMLINE', 'STCNT', and 'STCNT_MASK'
+        Constructs the 'MODEL', 'EMLINE', 'STELLAR', and 'STELLAR_MASK'
         model cube extensions, adds the model information to the header,
         and appends data to the mask.
         """
         #---------------------------------------------------------------
-        ext = ['MODEL', 'EMLINE', 'STCNT', 'STCNT_MASK']
+        ext = ['MODEL', 'EMLINE', 'STELLAR', 'STELLAR_MASK']
 
         if binned_spectra is None or stellar_continuum is None or emission_line_model is None:
             # Construct and return empty hdus
@@ -2048,9 +2048,9 @@ class construct_cube_file:
                 DAPFitsUtil.finalize_dap_header(self.base_cubehdr, 'EMLINE',
                                                 bunit='1E-17 erg/s/cm^2/ang/spaxel', qual=True,
                                                 prepend=False),
-                DAPFitsUtil.finalize_dap_header(self.base_cubehdr, 'STCNT',
+                DAPFitsUtil.finalize_dap_header(self.base_cubehdr, 'STELLAR',
                                                 bunit='1E-17 erg/s/cm^2/ang/spaxel', qual=True),
-                DAPFitsUtil.finalize_dap_header(self.base_cubehdr, 'STCNT', hduclas2='QUALITY',
+                DAPFitsUtil.finalize_dap_header(self.base_cubehdr, 'STELLAR', hduclas2='QUALITY',
                                                 bit_type=self.bitmask.minimum_dtype())
               ]
 
