@@ -11,46 +11,6 @@ the MaNGA Data Analysis Pipeline (DAP).
 *Source location*:
     $MANGADAP_DIR/python/mangadap/dapfits.py
 
-*Imports and python version compliance*:
-    ::
-
-        from __future__ import print_function
-        from __future__ import division
-        from __future__ import absolute_import
-        from __future__ import unicode_literals
-
-        import sys
-        if sys.version > '3':
-            long = int
-
-        import logging
-        import time
-        import os
-        import numpy
-        import warnings
-
-        from astropy.wcs import WCS
-        from astropy.io import fits
-        import astropy.constants
-
-        from .drpfits import DRPFits, DRPQuality3DBitMask
-        from .util.fitsutil import DAPFitsUtil
-        from .util.bitmask import BitMask
-        from .util.log import log_output
-        from .util.fileio import channel_dictionary
-        from .util.exception_tools import print_frame
-        from .par.obsinput import ObsInputPar
-        from .config.defaults import default_drp_version, dap_source_dir, default_dap_version
-        from .config.defaults import default_dap_par_file, default_analysis_path
-        from .config.defaults import default_dap_method, default_dap_method_path
-        from .config.defaults import default_dap_file_name
-        from .proc.reductionassessments import ReductionAssessment
-        from .proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
-        from .proc.stellarcontinuummodel import StellarContinuumModel
-        from .proc.emissionlinemoments import EmissionLineMoments
-        from .proc.emissionlinemodel import EmissionLineModel
-        from .proc.spectralindices import SpectralIndices
-
 *Class usage examples*:
     Add some usage comments here!
 
@@ -1800,16 +1760,17 @@ class construct_cube_file:
         #---------------------------------------------------------------
         # Initialize the pixel mask
         self.bitmask = DAPCubeBitMask(dapsrc=dapsrc)
-
+        # This is the base level mask with bits pulled from the DRP cube
         self.bin_mask = self._initialize_mask(binned_spectra, binned_spectra_3d_hdu)
 
         #---------------------------------------------------------------
         # Construct the hdu list for each input object.
+        # This adds the binning-specific flags to the mask
         # Binned spectra: ['FLUX', 'IVAR', 'WAVE', 'REDCORR']
-        prihdr, binlist, mask = self.binned_data_cube(prihdr, binned_spectra, binned_spectra_3d_hdu)
+        prihdr, binlist, mask = self.binned_data_cube(prihdr, binned_spectra,
+                                                      binned_spectra_3d_hdu)
 
-        # Model spectra: [ 'MODEL', 'EMLINE', 'EMLINE_BASE',
-        # 'EMLINE_MASK']
+        # Model spectra: [ 'MODEL', 'EMLINE', 'STELLAR', 'STELLAR_MASK' ]
         prihdr, modlist, mask = self.model_cubes(prihdr, binned_spectra, stellar_continuum,
                                                  stellar_continuum_3d_hdu, emission_line_model,
                                                  emission_line_model_3d_hdu, mask=mask)
@@ -1833,11 +1794,11 @@ class construct_cube_file:
 
         # Ensure extensions are in the correct order
         self.hdu = fits.HDUList([ fits.PrimaryHDU(header=prihdr),
-                                  *(binlist[:2]),
-                                  *masklist,
-                                  *(binlist[2:]),
-                                  *modlist,
-                                  *binidlist
+                                  *(binlist[:2]),   # FLUX, IVAR
+                                  *masklist,        # MASK
+                                  *(binlist[2:]),   # WAVE, REDCORR
+                                  *modlist,         # MODEL, EMLINE, STELLAR, STELLAR_MASK
+                                  *binidlist        # BINID
                                 ])
         #---------------------------------------------------------------
 
@@ -1997,12 +1958,12 @@ class construct_cube_file:
                   'TRUNCATED', 'PPXF_REJECT', 'INVALID_ERROR', 'ARTIFACT' ]
         indx = emission_line_model.bitmask.flagged(emission_line_model_3d_hdu['MASK'].data,
                                                    flag=flags)
-        _mask[indx] = self.bitmask.turn_on(_mask[indx], 'ELIGNORED')
+        _mask[indx] = self.bitmask.turn_on(_mask[indx], 'FITIGNORED') #'ELIGNORED')
 
         # Set which pixels failed during the fit
         indx = emission_line_model.bitmask.flagged(emission_line_model_3d_hdu['MASK'].data,
                                                    flag=['FIT_FAILED', 'NEAR_BOUND'])
-        _mask[indx] = self.bitmask.turn_on(_mask[indx], 'ELFAILED')
+        _mask[indx] = self.bitmask.turn_on(_mask[indx], 'FITFAILED') #'ELFAILED')
 
         return self._include_no_model_mask(_mask)
 
@@ -2061,12 +2022,12 @@ class construct_cube_file:
     def model_cubes(self, prihdr, binned_spectra, stellar_continuum, stellar_continuum_3d_hdu,
                     emission_line_model, emission_line_model_3d_hdu, mask=None):
         """
-        Constructs the 'MODEL', 'EMLINE', 'EMLINE_BASE', and
-        'EMLINE_MASK' model cube extensions, adds the model information
-        to the header, and construct the stellar-continuum mask.
+        Constructs the 'MODEL', 'EMLINE', 'STELLAR', and 'STELLAR_MASK'
+        model cube extensions, adds the model information to the header,
+        and appends data to the mask.
         """
         #---------------------------------------------------------------
-        ext = ['MODEL', 'EMLINE', 'EMLINE_BASE', 'EMLINE_MASK']
+        ext = ['MODEL', 'EMLINE', 'STELLAR', 'STELLAR_MASK']
 
         if binned_spectra is None or stellar_continuum is None or emission_line_model is None:
             # Construct and return empty hdus
@@ -2085,11 +2046,12 @@ class construct_cube_file:
                                                 bunit='1E-17 erg/s/cm^2/ang/spaxel', qual=True,
                                                 prepend=False),
                 DAPFitsUtil.finalize_dap_header(self.base_cubehdr, 'EMLINE',
+                                                bunit='1E-17 erg/s/cm^2/ang/spaxel', qual=True,
+                                                prepend=False),
+                DAPFitsUtil.finalize_dap_header(self.base_cubehdr, 'STELLAR',
                                                 bunit='1E-17 erg/s/cm^2/ang/spaxel', qual=True),
-                DAPFitsUtil.finalize_dap_header(self.base_cubehdr, 'EMLINE',
-                                                bunit='1E-17 erg/s/cm^2/ang/spaxel', qual=True),
-                DAPFitsUtil.finalize_dap_header(self.base_cubehdr, 'EMLINE', hduclas2='QUALITY',
-                                                 bit_type=self.bitmask.minimum_dtype())
+                DAPFitsUtil.finalize_dap_header(self.base_cubehdr, 'STELLAR', hduclas2='QUALITY',
+                                                bit_type=self.bitmask.minimum_dtype())
               ]
 
         #---------------------------------------------------------------
@@ -2100,20 +2062,22 @@ class construct_cube_file:
         # with reddening
         model = binned_spectra.galext.apply(model, deredden=False)
         line = binned_spectra.galext.apply(emission_line_model_3d_hdu['FLUX'].data, deredden=False)
-        base = binned_spectra.galext.apply(emission_line_model_3d_hdu['BASE'].data, deredden=False)
+        scnt = binned_spectra.galext.apply(stellar_continuum_3d_hdu['FLUX'].data, deredden=False)
 
         # Stellar continuum mask
-        scmask = self._get_stellar_continuum_mask(stellar_continuum, stellar_continuum_3d_hdu,
-                                                  mask=mask)
+        # This adds the stellar-continuum mask bits to the binned
+        # spectra mask bits
+        scnt_mask = self._get_stellar_continuum_mask(stellar_continuum, stellar_continuum_3d_hdu,
+                                                     mask=mask)
         # Emission-line Mask
-        elmask = self._get_emission_line_model_mask(emission_line_model,
-                                                    emission_line_model_3d_hdu, mask=mask)
+        line_mask = self._get_emission_line_model_mask(emission_line_model,
+                                                       emission_line_model_3d_hdu, mask=mask)
 
         data = [model.astype(self.float_dtype), line.astype(self.float_dtype),
-                base.astype(self.float_dtype), elmask]
+                scnt.astype(self.float_dtype), scnt_mask]
 
         # Return the primary header and the list of HDUs
-        return prihdr, DAPFitsUtil.list_of_image_hdus(data, hdr, ext), scmask
+        return prihdr, DAPFitsUtil.list_of_image_hdus(data, hdr, ext), line_mask
 
 
     def _set_no_model(self, mask):

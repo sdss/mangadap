@@ -843,18 +843,19 @@ class PPXFFit(StellarKinematicsFit):
     def initialize_model_mask(obj_wave, obj_flux, mask=None, bitmask=None, velocity_offset=None):
         model_mask = numpy.zeros(obj_flux.shape,
                                  dtype=bool if bitmask is None else bitmask.minimum_dtype())
-        if mask is not None:
-            # Include the mask, if provided
-            if isinstance(mask, numpy.ndarray):
-                if mask is not None and mask.shape != obj_flux.shape:
-                    raise ValueError('Shape of object mask array must match its flux array.')
-                model_mask = mask if bitmask is None else mask.astype(bitmask.minimum_dtype())
-            if isinstance(mask, SpectralPixelMask):
-                model_mask = mask.boolean(obj_wave, nspec=obj_flux.shape[0],
-                                          velocity_offsets=velocity_offset) \
-                                if bitmask is None else \
-                                    mask.bits(bitmask, obj_wave, nspec=obj_flux.shape[0],
-                                              velocity_offsets=velocity_offset)
+        if mask is None:
+            return model_mask
+
+        # Include the mask, if provided
+        if isinstance(mask, numpy.ndarray):
+            if mask is not None and mask.shape != obj_flux.shape:
+                raise ValueError('Shape of object mask array must match its flux array.')
+            model_mask = mask if bitmask is None else mask.astype(bitmask.minimum_dtype())
+        if isinstance(mask, SpectralPixelMask):
+            model_mask = mask.boolean(obj_wave, nspec=obj_flux.shape[0],
+                                      velocity_offsets=velocity_offset) if bitmask is None \
+                            else mask.bits(bitmask, obj_wave, nspec=obj_flux.shape[0],
+                                           velocity_offsets=velocity_offset)
         return model_mask
 
 

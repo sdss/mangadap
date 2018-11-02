@@ -2459,6 +2459,15 @@ class Sasuke(EmissionLineFit):
         _model_mask[indx] = self.bitmask.turn_on(_model_mask[indx], PPXFFit.rej_flag)
         model_mask[spec_to_fit,start:end] = _model_mask
 
+        # Flag pixels that weren't in the fitted range
+        model_mask[spec_to_fit,:start] = self.bitmask.turn_on(model_mask[spec_to_fit,:start],
+                                                              'DIDNOTUSE')
+        model_mask[spec_to_fit,end:] = self.bitmask.turn_on(model_mask[spec_to_fit,end:],
+                                                            'DIDNOTUSE')
+        if not numpy.all(spec_to_fit):
+            indx = numpy.invert(spec_to_fit)
+            model_mask[indx,:] = self.bitmask.turn_on(model_mask[indx,:], 'DIDNOTUSE')
+
         #---------------------------------------------------------------
         # Save the results
         if self.nremap == 0:
