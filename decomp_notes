@@ -1,0 +1,72 @@
+------------------------------------------------------------------------
+1. BD Decomp
+------------------------------------------------------------------------
+    - GalFit SDSS r-band image to get bulge disk decomp
+    - rerun GalFit on r-band image from DRP cube, mainly to refit
+      magnitude and account for PSF
+    - Use GalFit result to create disk-only and bulge-only image at
+      MaNGA pixel scale with MaNGA PSF
+
+------------------------------------------------------------------------
+2. Binning and first fit of stellar kinematics
+------------------------------------------------------------------------
+    - Bin the DRP cube to a given S/N
+    - Bin the disk-only and bulge-only images from GalFit to the same
+      binning
+    - Fit stellar kinematics for each bin assuming a single kinematic
+      component using SSPs
+
+    DRPFits
+    ReductionAssessments
+    SpatiallyBinnedSpectra
+    StellarContinuumModel
+
+------------------------------------------------------------------------
+3. Construct disk-only and bulge-only templates
+------------------------------------------------------------------------
+    - Deredshift all spectra
+    - Construct disk-only and bulge-only spectra by weighting the
+      deredshifted cube by the binned GalFit images
+    - Fit the bulge and disk spectra with SSPs
+    - Use weighted templates to construct "bulge" and "disk" template
+      spectra
+
+    SpectralStack
+    TemplateLibrary
+    PPXFFit
+
+------------------------------------------------------------------------
+4. Fit kinematics of disk and bulge
+------------------------------------------------------------------------
+    - Fit all bins with the bulge and disk templates set in their own
+      component to get the kinematics for each bin
+
+    Details of fitting the stellar kinematics for two components should
+    be worked out:
+        - 5x5 grid in velocities (bulge v vs. disk v)
+
+    PPXFFit
+    NewClass
+
+------------------------------------------------------------------------
+5. Optimize the bulge-only and disk-only template mix (for each bin)
+------------------------------------------------------------------------
+    - Fit all bins with all SSP templates but with fixed kinematics
+    - Construct a disk-only and bulge-only template spectrum, either one
+      for each bin or one for all bins
+
+    PPXFFit
+
+------------------------------------------------------------------------
+6. Iteration
+------------------------------------------------------------------------
+    - Iterate over 4 and 5 until the kinematics and template mix
+      "converge" or afer a certain fixed number of iterations
+
+------------------------------------------------------------------------
+7.  Finalize the stellar population properties
+------------------------------------------------------------------------
+    - Use the weights from the final fit to determine the stellar
+      population properties/star-formation history
+
+
