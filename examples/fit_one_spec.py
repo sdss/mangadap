@@ -25,10 +25,10 @@ from mangadap.proc.emissionlinemodel import EmissionLineModelBitMask
 
 #-----------------------------------------------------------------------------
 
-def get_redshift(plt, ifu, drpall_file):
-#    hdu = fits.open(os.path.join(os.environ['MANGA_SPECTRO_REDUX'], os.environ['MANGADRP_VER'],
-#                                 'drpall-{0}.fits'.format(os.environ['MANGADRP_VER'])))
-    hdu = fits.open(drpall_file)
+def get_redshift(plt, ifu): #, drpall_file):
+    hdu = fits.open(os.path.join(os.environ['MANGA_SPECTRO_REDUX'], os.environ['MANGADRP_VER'],
+                                 'drpall-{0}.fits'.format(os.environ['MANGADRP_VER'])))
+#    hdu = fits.open(drpall_file)
     indx = hdu[1].data['PLATEIFU'] == '{0}-{1}'.format(plt, ifu)
     return hdu[1].data['NSA_Z'][indx][0]
 
@@ -41,7 +41,7 @@ def get_spectrum(plt, ifu, x, y, directory_path=None):
     flux = drpf.copy_to_masked_array(ext='FLUX', flag=drpf.do_not_fit_flags())
     ivar = drpf.copy_to_masked_array(ext='IVAR', flag=drpf.do_not_fit_flags())
     return drpf['WAVE'].data, flux[flat_indx,:], ivar[flat_indx,:], sres[flat_indx,:]
-        
+
 
 #-----------------------------------------------------------------------------
 
@@ -49,7 +49,7 @@ if __name__ == '__main__':
     t = time.clock()
 
     # Plate-IFU to use
-    plt = 7815
+    plt = 8138
     ifu = 3702
     # Spaxel coordinates
     x = 21
@@ -74,14 +74,14 @@ if __name__ == '__main__':
     velscale_ratio = 4
 
     # Get the redshift
-    drpall_file = './data/drpall-v2_4_3.fits'
-    z = numpy.array([get_redshift(plt, ifu, drpall_file)])
+    #drpall_file = os.path.join(os.environ['MANGA_SPECTRO_REDUX'], 'drpall-v2_3_1.fits')
+    z = numpy.array([get_redshift(plt, ifu)]) #, drpall_file)])
     print('Redshift: {0}'.format(z[0]))
     dispersion = numpy.array([100.])
 
     # Read a spectrum
     print('reading spectrum')
-    wave, flux, ivar, sres = get_spectrum(plt, ifu, x, y, directory_path='./data')
+    wave, flux, ivar, sres = get_spectrum(plt, ifu, x, y) #, directory_path='./data')
 
 #    pyplot.plot(wave, flux)
 #    pyplot.show()
@@ -113,6 +113,7 @@ if __name__ == '__main__':
                    ensemble=False, velscale_ratio=velscale_ratio, mask=sc_pixel_mask,
                    matched_resolution=False, tpl_sres=sc_tpl_sres, obj_sres=sres, degree=8,
                    moments=2, plot=fit_plots)
+    import pdb; pdb.set_trace()
 
     # Remask the continuum fit
     sc_continuum = StellarContinuumModel.reset_continuum_mask_window(
@@ -214,4 +215,3 @@ if __name__ == '__main__':
     pyplot.show()
 
     print('Elapsed time: {0} seconds'.format(time.clock() - t))
-
