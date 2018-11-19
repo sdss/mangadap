@@ -1,0 +1,64 @@
+==================================================
+# IMAGE and GALFIT CONTROL PARAMETERS
+A) input # Galaxy image filename
+B) imgblock-8084-3703.fits #Output image block
+C) J032528.70+001642.7-sigma.fits # Galaxy sigma image
+D) J032528.70+001642.7-bpsf.fits # PSF image
+E) 1                   # PSF fine sampling factor relative to data 
+F) none
+G) galcons                # File with parameter constraints (ASCII file) 
+H) 136 296 112 272 	#Image region to fit. Check this???
+I) 100 100
+J) 19             # Magnitude photometric zeropoint was 24.8
+K) 0.5 0.5        	     # Plate scale (dx dy)   [arcsec per pixel]
+O) regular             # Display type (regular, curses, both)
+P) 3                   # Options: 0=normal run; 1,2=make model/imgblock & quit
+U) -1 			#Non-parametric component
+
+
+# THE OBJECT LIST BELOW can be however long or short as the complexity
+# requires.  The user has complete freedom to mix and match the components
+# by duplicating each object block.
+
+# INITIAL FITTING PARAMETERS
+#
+# column 1:  Parameter number
+# column 2: 
+#          -- Parameter 0: the allowed functions are: sersic, nuker, expdisk
+#	      edgedisk, devauc, king, moffat, gaussian, ferrer, psf, sky
+#	   -- Parameter 1-10: value of the initial parameters
+#          -- Parameter C0: For diskiness/boxiness
+#             <0 = disky
+#             >0 = boxy
+#          -- Parameter Z: Outputting image options, the options are:
+#             0 = normal, i.e. subtract final model from the data to create
+#		  the residual image
+#	      1 = Leave in the model -- do not subtract from the data
+#
+# column 3: allow parameter to vary (yes = 1, no = 0)
+# column 4: comment
+
+# Sersic function
+
+ 0) sersic             # Object type
+1) 216.5 192.5 0 0
+ 3) 15.70      1       # total magnitude was 18.00   
+4) 16.741854       1       #     R_e              [Pixels]
+ 5) 4       1       # Sersic exponent (deVauc=4, expdisk=1)  
+9) 0.81339395       1       # axis ratio (b/a)
+10) 127.680023     1        # Position angle (deg)
+ Z) 0                  #  Skip this model in output image?  (yes=1, no=0)
+
+# Exponential function
+
+ 0) sersic            # Object type
+1) 216.5 192.5 0 0 
+ 3) 15.70       1       # total magnitude was 18
+ 4) 20.0       1       #     Rs               [Pixels]
+5) 1    0
+9) 0.70769995 1             #axis ratio of disk (b/a)
+10) 127.680023 1        #Position angle (deg)
+
+
+
+

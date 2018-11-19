@@ -22,6 +22,9 @@ import fileinput
 import requests
 from requests.auth import HTTPBasicAuth
 import time
+# MaNGA functions
+from mangadap.drpfits import DRPFits
+from mangadap.proc.reductionassessments import *
 # My functions:
 import galfit_utils
 #import feedme_files
@@ -29,10 +32,9 @@ import galfit_utils
 
 #-----------------------------------------------------------------------------
 # Step 1 - TODO: Run Galfit on SDSS r-band image
-# - Run Galfit on MaNGA r-band image
+# - Run Galfit on MaNGA r-band image √
 # - Use Galfit result to create disk-only and bulge-only image at MaNGA pixel
-# scale with MaNGA PSF NOTE: Ask Steven how to convolve the model to the orig
-# pixel scale
+# scale with MaNGA PSF √
 #-----------------------------------------------------------------------------
 # Step 2 - Binning and first fit of kinematics
 #-----------------------------------------------------------------------------
@@ -87,7 +89,7 @@ def readspectra(plate, id, vor):
     up = sdss_verify.readlines()
 
     cube_top_level_url='https://data.sdss.org/sas/mangawork/manga/spectro/redux/MPL-7/'
-    if os.path.isfile('/Users/ppzaf/Work/MaNGA/dap/master/temp_files/manga-'+str(plate)+'-'+str(id)+'-LOGCUBE.fits.gz'):
+    if os.path.isfile('/Users/ppzaf/Work/MaNGA/dap/master/examples/manga-'+str(plate)+'-'+str(id)+'-LOGCUBE.fits.gz'):
         print('Cube file exists!')
         pass
     else:
@@ -96,7 +98,7 @@ def readspectra(plate, id, vor):
             print('##############################################')
             print('Obtaining CUBEFILE...')
             print('##############################################')
-            with open('/Users/ppzaf/Work/MaNGA/dap/master/temp_files/manga-'+str(plate)+'-'+str(id)+'-LOGCUBE.fits.gz', 'wb') as file:
+            with open('/Users/ppzaf/Work/MaNGA/dap/master/examples/manga-'+str(plate)+'-'+str(id)+'-LOGCUBE.fits.gz', 'wb') as file:
                 file.write(r.content)
         else:
             print('No MaNGA data for plate and ID provided: ' +cube_top_level_url+str(plate)+'/stack/manga-'+str(plate)+'-'+str(id)+'-LOGCUBE.fits.gz')
@@ -105,12 +107,12 @@ def readspectra(plate, id, vor):
             print('##############################################')
             print('Obtaining RSSFILE...')
             print('##############################################')
-            with open('/Users/ppzaf/Work/MaNGA/dap/master/temp_files/manga-'+str(plate)+'-'+str(id)+'-LOGRSS.fits.gz', 'wb') as file:
+            with open('/Users/ppzaf/Work/MaNGA/dap/master/examples/manga-'+str(plate)+'-'+str(id)+'-LOGRSS.fits.gz', 'wb') as file:
                 file.write(r.content)
         else:
             print('No MaNGA data for plate and ID provided: ' +cube_top_level_url+str(plate)+'/stack/manga-'+str(plate)+'-'+str(id)+'-LOGRSS.fits.gz')
 
-    hdulist = fits.open('/Users/ppzaf/Work/MaNGA/dap/master/temp_files/manga-'+str(plate)+'-'+str(id)+'-LOGCUBE.fits.gz') #Extract what we need from the cube file.
+    hdulist = fits.open('/Users/ppzaf/Work/MaNGA/dap/master/examples/manga-'+str(plate)+'-'+str(id)+'-LOGCUBE.fits.gz') #Extract what we need from the cube file.
     flux = hdulist['FLUX'].data
     ivar = hdulist['IVAR'].data
     mask = hdulist['MASK']. data
@@ -123,7 +125,7 @@ def readspectra(plate, id, vor):
     mask = np.transpose(mask, axes=(2,1,0))
     # MAPS
     maps_top_level_url='https://data.sdss.org/sas/mangawork/manga/spectro/analysis/MPL-7/'
-    if os.path.isfile('/Users/ppzaf/Work/MaNGA/dap/master/temp_files/manga-'+str(plate)+'-'+str(id)+'-MAPS-'+str(vor)+'-GAU-MILESHC.fits.gz'):
+    if os.path.isfile('/Users/ppzaf/Work/MaNGA/dap/master/examples/manga-'+str(plate)+'-'+str(id)+'-MAPS-'+str(vor)+'-GAU-MILESHC.fits.gz'):
         print('Maps file exists!')
         pass
     else:
@@ -132,19 +134,19 @@ def readspectra(plate, id, vor):
             print('##############################################')
             print('Obtaining MAPSFILE...')
             print('##############################################')
-            with open('/Users/ppzaf/Work/MaNGA/dap/master/temp_files/manga-'+str(plate)+'-'+str(id)+'-MAPS-'+str(vor)+'-GAU-MILESHC.fits.gz', 'wb') as file:
+            with open('/Users/ppzaf/Work/MaNGA/dap/master/examples/manga-'+str(plate)+'-'+str(id)+'-MAPS-'+str(vor)+'-GAU-MILESHC.fits.gz', 'wb') as file:
                 file.write(r.content)
         else:
             print('No MaNGA data for plate and ID provided: ' +maps_top_level_url+str(vor)+'-GAU-MILESHC/'+str(plate)+'/'+str(id)+'/manga-'+str(plate)+'-'+str(id)+'-MAPS-'+str(vor)+'-GAU-MILESHC.fits.gz')
-    hdulist2 = fits.open('/Users/ppzaf/Work/MaNGA/dap/master/temp_files/manga-'+str(plate)+'-'+str(id)+'-MAPS-'+str(vor)+'-GAU-MILESHC.fits.gz')
+    hdulist2 = fits.open('/Users/ppzaf/Work/MaNGA/dap/master/examples/manga-'+str(plate)+'-'+str(id)+'-MAPS-'+str(vor)+'-GAU-MILESHC.fits.gz')
     stellar_vel = hdulist2['STELLAR_VEL'].data
     stellar_sig = hdulist2['STELLAR_SIGMA'].data #Must be corrected using stellar_sigmascorr quantity to obtain astrophysical dispersion
     stellar_sig_corr = hdulist2['STELLAR_SIGMACORR'].data
     stellar_mask = hdulist2['STELLAR_VEL_MASK'].data
     header = hdulist2['PRIMARY'].header
     sigma_sig = np.sqrt( np.power(stellar_sig,2) - np.power(stellar_sig_corr,2) )
-    #os.remove('/Users/ppzaf/Work/MaNGA/dap/master/temp_files/manga-'+str(plate)+'-'+str(ifu)+'-LOGCUBE-'+str(vor)+'-GAU-MILESHC.fits.gz')
-    #os.remove('/Users/ppzaf/Work/MaNGA/dap/master/temp_files/manga-'+str(plate)+'-'+str(ifu)+'-MAPS-'+str(vor)+'-GAU-MILESHC.fits.gz')
+    #os.remove('/Users/ppzaf/Work/MaNGA/dap/master/examples/manga-'+str(plate)+'-'+str(ifu)+'-LOGCUBE-'+str(vor)+'-GAU-MILESHC.fits.gz')
+    #os.remove('/Users/ppzaf/Work/MaNGA/dap/master/examples/manga-'+str(plate)+'-'+str(ifu)+'-MAPS-'+str(vor)+'-GAU-MILESHC.fits.gz')
 
     return flux, ivar, mask, wave, rimg, rpsf, stellar_vel, stellar_sig, header
 
@@ -180,6 +182,9 @@ def deredshift(flux, wave, stellar_vel, stellar_sig, ivar, c, z):
             ivars[i,j,:] = result['ivar']
     return waves, fluxes, ivars, header
 
+def run_galfitm(plate, ifu, feedme_filename):
+    #narrowband_feedme_filename = '%s-%s-narrowband-feedme' % (plate, ifu)
+    subprocess.call("/usr/local/src/galfitM/galfitm-1.2.1-osx %s" % (feedme_filename), shell=True )
 #
 #
 #-----------------------------------------------------------------------------
@@ -187,6 +192,9 @@ def deredshift(flux, wave, stellar_vel, stellar_sig, ivar, c, z):
 #-----------------------------------------------------------------------------
 #TODO: Galfit step on Sloan image. For now, skip straight to MaNGA.
 c = 299792.458 # km/s
+#NOTE: Change these!!!
+Rb = 3.19
+Rd = 7.92
 vor='HYB10'
 start = time.time()
 # 1) Import cube - Both maps and cubefile are flipped up-down c.f. Marvin. You HAVEN'T fixed this yet.
@@ -206,4 +214,29 @@ for i in range (10895, 10896): # 7443-9102 is for testing.
     print('###################################')
     print('Preparing single broadband image')
     print('###################################')
-    galfit_utils.broadband_images(flux, ivar, mask, header, t['plate'][i], t['ifudsgn'][i], vor)
+    summed_image = galfit_utils.broadband_images(flux, ivar, mask, header, t['plate'][i], t['ifudsgn'][i], vor)
+    #TODO: Find a way of incorporating Rb and Rd into drpall file? Match with Simard.
+    galfit_utils.write_feedme(t['plate'][i], t['ifudsgn'][i], summed_image, Rb, Rd, header)
+    print('########################################')
+    print('Running Galfit on single broadband image')
+    print('########################################')
+    feedme_filename = '%s-%s-feedme' % (t['plate'][i], t['ifudsgn'][i])
+    run_galfitm(t['plate'][i], t['ifudsgn'][i], feedme_filename)
+
+#-----------------------------------------------------------------------------
+# STEP 2
+#-----------------------------------------------------------------------------
+# Bin cube to desired SN (Let's start with 30 and hopefully reduce)
+#drpf = DRPFits(obs['plate'], obs['ifudesign'], obs['mode'], drpver=_drpver, redux_path=redux_path, directory_path=directory_path, read=True)
+drpver=os.environ['MANGADRP_VER']
+redux_path = os.path.join(os.environ['MANGA_SPECTRO_REDUX'], drpver)
+directory_path = os.path.join(redux_path, str(t['plate'][i]), 'stack')
+drpf = DRPFits(t['plate'][i], t['ifudsgn'][i], 'CUBE', drpver=drpver, redux_path = redux_path, directory_path=directory_path, read=True)
+pa = 51.07
+ell = 0.25 # (1-b/a)
+#rdxqa = ReductionAssessment('SNRR', drpf, pa=obs['pa'], ell=obs['ell'], clobber=False)
+rdxqa = ReductionAssessment('SNRR', drpf, pa=pa, ell=ell, clobber=False)
+binned_spectra = SpatiallyBinnedSpectra('VOR30', drpf, rdxqa, reff=obs['reff'], clobber=False)
+
+stellar_continuum = StellarContinuumModel('GAU-MILESSP', binned_spectra, guess_vel=obs['vel'], guess_sig=obs['vdisp'],
+                                          clobber=False)
