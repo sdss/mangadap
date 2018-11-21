@@ -25,6 +25,8 @@ import time
 # MaNGA functions
 from mangadap.drpfits import DRPFits
 from mangadap.proc.reductionassessments import *
+from mangadap.proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
+from mangadap.proc.stellarcontinuummodel import StellarContinuumModel
 # My functions:
 import galfit_utils
 #import feedme_files
@@ -38,8 +40,8 @@ import galfit_utils
 #-----------------------------------------------------------------------------
 # Step 2 - Binning and first fit of kinematics
 #-----------------------------------------------------------------------------
-# - Bin the DRP cube to a given S:N
-# - Bin the disk-only and bulge-only images from Galfit to the same S:N
+# - Bin the DRP cube to a given S:N √
+# - Bin the disk-only and bulge-only images from Galfit to the same S:N √
 # - Fit stellar kinematics for each bin assuming a single kinematic component
 #using SSPs
 #
@@ -232,11 +234,42 @@ drpver=os.environ['MANGADRP_VER']
 redux_path = os.path.join(os.environ['MANGA_SPECTRO_REDUX'], drpver)
 directory_path = os.path.join(redux_path, str(t['plate'][i]), 'stack')
 drpf = DRPFits(t['plate'][i], t['ifudsgn'][i], 'CUBE', drpver=drpver, redux_path = redux_path, directory_path=directory_path, read=True)
+#Use defaults.py?
 pa = 51.07
 ell = 0.25 # (1-b/a)
 #rdxqa = ReductionAssessment('SNRR', drpf, pa=obs['pa'], ell=obs['ell'], clobber=False)
 rdxqa = ReductionAssessment('SNRR', drpf, pa=pa, ell=ell, clobber=False)
-binned_spectra = SpatiallyBinnedSpectra('VOR30', drpf, rdxqa, reff=obs['reff'], clobber=False)
+reff = 4.956
+binned_spectra = SpatiallyBinnedSpectra('VOR30', drpf, rdxqa, reff=reff, clobber=False)
+# - Bin the disk-only and bulge-only images from Galfit to the same S:N
+analysis_path = os.path.join(os.environ['MANGA_SPECTRO_ANALYSIS'], drpver, os.environ['MANGADAP_VER'], 'common', str(t['plate'][i]), str(t['ifudsgn'][i]))
+hdu1 = fits.open(os.path.join(analysis_path, 'manga-'+ str(t['plate'][i]) + '-' + str(t['ifudsgn'][i]) + '-SNRR-VOR30.fits.gz'))
+binid = hdu1['BINID'].data
 
-stellar_continuum = StellarContinuumModel('GAU-MILESSP', binned_spectra, guess_vel=obs['vel'], guess_sig=obs['vdisp'],
-                                          clobber=False)
+#Load in disk and bulge-only images from subcomps.fits
+hdu2 = fits.open('subcomps.fits')
+bulge = hdu2[1].data #image
+disk = hdu2[2].data #image
+# Sum the flux in each Voronoi bin for bulge and disk regions
+# TODO: My god, find a more efficient way to do this!
+new_bulge_array, new_disk_array = np.empty_like(binid), np.empty_like(binid)
+summed_fluxes_bulge, summed_fluxes_disk = np.zeros(np.max(binid)+1), np.zeros(np.max(binid)+1)
+for k in range(0,np.max(binid)): #for each bin 1-109 in test case:
+    for i in range(0, binid.shape[0]):
+        for j in range(0, binid.shape[1]):
+            if binid[i,j] == k:
+                summed_fluxes_bulge[k]+=(bulge[i,j])
+                summed_fluxes_disk[k]+=(disk[i,j])
+#Now assign the summed fluxes back to a map
+for i in range(0, binid.shape[0]):
+    for j in range(0, binid.shape[1]):
+        new_bulge_array[i,j] = summed_fluxes_bulge[binid[i,j]]
+        new_disk_array[i,j] = summed_fluxes_disk[binid[i,j]]
+bulge_frac = np.divide(new_bulge_array, np.add(new_bulge_array, new_disk_array))
+guess_vel = c*0.0916
+guess_sig = 100
+stellar_continuum = StellarContinuumModel('GAU-MILESSSP', binned_spectra, guess_vel=guess_vel, guess_sig=guess_sig, clobber=False)
+
+#-----------------------------------------------------------------------------
+# STEP 3
+#-----------------------------------------------------------------------------
