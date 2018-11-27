@@ -1047,6 +1047,14 @@ class TemplateLibrary:
         if not self.library['in_vacuum']:
             self.hdu['WAVE'].data = airtovac(self.hdu['WAVE'].data)
 
+        # TODO: This conversion to vacuum wavelengths is non-linear.
+        # This is accounted for in the resampling of the spectra (the
+        # pixel size can be non-uniform), but *not* the resolution
+        # matching.  This is okay for DR15 because we never resolution
+        # match the data, but it will matter when we start to do that by
+        # switching templates between the stellar and gas kinematics
+        # fit.
+
 #        pyplot.plot(self.hdu['WAVE'].data[0,:], self.hdu['FLUX'].data[0,:], 'g')
 #        pyplot.show()
 
