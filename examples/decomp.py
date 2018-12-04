@@ -31,6 +31,7 @@ from mangadap.proc.stellarcontinuummodel import StellarContinuumModel
 # My functions:
 import galfit_utils
 from kinematic_utils import *
+from one_spec import *
 #import feedme_files
 #import make_images
 
@@ -268,9 +269,11 @@ for i in range (10895, 10896): # 7443-9102 is for testing.
     flux_m = np.transpose(flux_m, axes=(1,0))
     ivar_m = np.transpose(ivar_m, axes=(1,0))
     waves, fluxes, ivars = deredshift(flux_m, wave_b, ivar_m, stell_vel, stell_sig, c, z)
-
+    print('#####################################')
+    print('Fitting single bulge and disk spectra')
+    print('#####################################')
     # Construct disk-only and bulge-only spectra by weighting the deredshifted cube by the binned GalFit images
     # Alternatively, create a single bulge and disk spectrum the way I've done it before.
-    bulge_spec, disk_spec = create_single_spec(fluxes, bin_disk, signal, Rb)
+    bulge_spec, bulge_ivar, disk_spec, disk_ivar = create_single_spec(fluxes, ivars, bin_disk, signal, Rb) #Disk spec is farked at the moment - Nans
     # Fit the bulge and disk spectra with SSPs
-    
+    cont_wave, cont_flux, cont_mask, cont_par = fit_one_spect(7443, 9102, bulge_spec, bulge_ivar, waves[0,:]) #Runs through, but crappy results.

@@ -35,18 +35,22 @@ def deredshift(flux, wave, ivar, stellar_vel, stellar_sig, c, z): # Deredshift v
         ivars[i,:] = result['ivar']
     return waves, fluxes, ivars
 
-def create_single_spec(fluxes, bin_disk, signal, Rb):
-    #Function creates a single bulge and disk spectrum from deredshifted cube and weights by m_flux?
-    bulge_specs, disk_specs = np.zeros(fluxes.shape[1]), np.zeros(fluxes.shape[1])
+def create_single_spec(fluxes, ivars, bin_disk, signal, Rb):
+    #Function creates a single bulge and disk spectrum from deredshifted cube and weights by 'signal' (proxy for m_flux?)
+    bulge_specs, disk_specs, bulge_ivars, disk_ivars, = np.zeros(fluxes.shape[1]), np.zeros(fluxes.shape[1]), np.zeros(fluxes.shape[1]), np.zeros(fluxes.shape[1])
     bulge_weights, disk_weights = [0], [0]
     for i in range(0, len(bin_disk)):
         if bin_disk[i] < Rb: #if the centre of the bin is within a bulge effective radius.
             bulge_specs = np.vstack((bulge_specs, fluxes[i,:]))
+            bulge_ivars = np.vstack((bulge_ivars, ivars[i,:]))
             bulge_weights.append(signal[i])
         elif bin_disk[i] > (2*Rb):
             disk_specs = np.vstack((disk_specs, fluxes[i,:]))
+            disk_ivars = np.vstack((disk_ivars, ivars[i,:]))
             disk_weights.append(signal[i])
     #Calculate averages
     bulge_spec = np.average(bulge_specs, axis=0, weights=bulge_weights)
     disk_spec = np.average(disk_specs, axis=0, weights=disk_weights)
-    return bulge_spec, disk_spec
+    bulge_ivar = np.average(bulge_ivars, axis=0, weights = bulge_weights)  #NOTE: Is averaging the right thing to do with the IVARS?
+    disk_ivar = np.average(disk_ivars, axis=0, weights = disk_weights)
+    return bulge_spec, bulge_ivar, disk_spec, disk_ivar
