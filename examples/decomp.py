@@ -55,8 +55,8 @@ from one_spec import *
 # - Deredshift all spectra - Speclite √
 # - Construct disk-only and bulge-only spectra by weighting the deredshifted
 # cube by the binned GalFit images √
-# - Fit the bulge and disk spectra with SSPs
-# - Use weighted templates to construct "bulge" and "disk" template spectra
+# - Fit the bulge and disk spectra with SSPs √
+# - Use weighted templates to construct "bulge" and "disk" template spectra √
 #
 # SpectralStack (or SpecLite), TemplateLibrary, PPXFFit
 #-----------------------------------------------------------------------------
@@ -232,11 +232,12 @@ for i in range (10895, 10896): # 7443-9102 is for testing.
                     summed_fluxes_bulge[k]+=(bulge[l,j])
                     summed_fluxes_disk[k]+=(disk[l,j])
     #Now assign the summed fluxes back to a map
-    for l in range(0, binid.shape[0]):
-        for j in range(0, binid.shape[1]):
-            new_bulge_array[l,j] = summed_fluxes_bulge[binid[l,j]]
-            new_disk_array[l,j] = summed_fluxes_disk[binid[l,j]]
-    bulge_frac = np.divide(new_bulge_array, np.add(new_bulge_array, new_disk_array))
+    #for l in range(0, binid.shape[0]):
+    #    for j in range(0, binid.shape[1]):
+    #        new_bulge_array[l,j] = summed_fluxes_bulge[binid[l,j]]
+    #        new_disk_array[l,j] = summed_fluxes_disk[binid[l,j]]
+    #bulge_frac = np.divide(new_bulge_array, np.add(new_bulge_array, new_disk_array))
+    bulge_frac = np.divide(summed_fluxes_bulge, np.add(summed_fluxes_bulge, summed_fluxes_disk))
     z = 0.0916
     guess_vel = c*z
     guess_sig = 100
@@ -252,7 +253,7 @@ for i in range (10895, 10896): # 7443-9102 is for testing.
     kin = par['KIN'] # These vals are total vel and sigma one for each bin
     stell_vel = kin[:,0]
     stell_sig = kin[:,1]
-    flux_b = hdu4['FLUX'].data
+    flux_b = hdu4['FLUX'].data #Not yet deredshifted..
     ivar_b = hdu4['IVAR'].data
     mask_b = hdu4['MASK'].data
     wave_b = hdu4['WAVE'].data
@@ -275,5 +276,17 @@ for i in range (10895, 10896): # 7443-9102 is for testing.
     # Construct disk-only and bulge-only spectra by weighting the deredshifted cube by the binned GalFit images
     # Alternatively, create a single bulge and disk spectrum the way I've done it before.
     bulge_spec, bulge_ivar, disk_spec, disk_ivar = create_single_spec(fluxes, ivars, bin_disk, signal, Rb) #Disk spec is farked at the moment - Nans
-    # Fit the bulge and disk spectra with SSPs
-    cont_wave, cont_flux, cont_mask, cont_par = fit_one_spect(7443, 9102, bulge_spec, bulge_ivar, waves[0,:]) #Runs through, but crappy results.
+    # Fit the bulge and disk spectra with SSPs (Just bulge at the moment, until I fix disk spectra)
+    cont_par_bulge, sc_tpl_bulge = fit_one_spect(str(t['plate'][i]) , str(t['ifudsgn'][i]), bulge_spec, bulge_ivar, waves[0,:], drpf) #This doesn't currenty work - WHY NOT?!
+    cont_par_disk, sc_tpl_disk = fit_one_spect(str(t['plate'][i]) , str(t['ifudsgn'][i]), disk_spec, disk_ivar, waves[0,:], drpf) #This doesn't currenty work - WHY NOT?!
+    save_spec_fits_files(cont_par_bulge, sc_tpl_bulge, cont_par_disk, sc_tpl_disk) #Save bulge and disk spectra for use as template files
+    #-----------------------------------------------------------------------------
+    # Step 4 - Fit kinematics of disk and bulge
+    #-----------------------------------------------------------------------------
+    #run ppxffit for every bin and set components and use only bulge and disk spec.
+    #Do once for bulge spaxels and once for disk spaxels?
+    print('########################################')
+    print('Fitting cube with bulge and disk spectra')
+    print('########################################')
+    for j in range(0, tpl_wgts.shape[1]): #For every bin - deredshifted? NO?
+        fit_bulge_spec(str(t['plate'][i]), str(t['ifudsgn'][i]), bulge_frac[j], wave_b, flux_m[j,:], ivar_m[j,:])

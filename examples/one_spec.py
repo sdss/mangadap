@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# An excerpt from Kyle's script fit_one_spec.py
+# An excerpt from Kyle's script fit_one_spec.py, and other functions for stellar continuum fitting
 import os
 import time
 import numpy
@@ -20,6 +20,7 @@ from mangadap.proc.templatelibrary import TemplateLibrary
 from mangadap.proc.emissionlinemoments import EmissionLineMoments
 from mangadap.proc.sasuke import Sasuke
 from mangadap.proc.ppxffit import PPXFFit
+from mangadap.proc.ppxffit_frac import PPXFFit_frac
 from mangadap.proc.stellarcontinuummodel import StellarContinuumModel, StellarContinuumModelBitMask
 from mangadap.proc.emissionlinemodel import EmissionLineModelBitMask
 
@@ -45,61 +46,165 @@ def get_redshift(plt, ifu): #, drpall_file):
 
 #-----------------------------------------------------------------------------
 
-def fit_one_spect(plt, ifu, flux, ivar, wave):
-    if __name__ == '__main__':
-        t = time.clock()
+def fit_one_spect(plt, ifu, flux, ivar, wave, drpf):
+#    if __name__ == '__main__':
+#        t = time.clock()
 
-        # Show the ppxf plots
-    #    fit_plots = True
-        fit_plots = False
+    # Show the ppxf plots
+#    fit_plots = True
+    fit_plots = False
 
-        # Template keywords
-        sc_tpl_key = 'MILES_SSP'
-        el_tpl_key = 'MILES_SSP'
-    #    el_tpl_key = 'BC03', 'MILESHC'
 
-        # Emission-line database keywords
-        elmom_key = 'ELBMILES'
-        elfit_key = 'ELPMILES'
-    #    elmom_key = 'ELBTT'
-    #    elfit_key = 'ELPT4'
+    fit_plots=True
+    # Template keywords
+    sc_tpl_key = 'MILES_SSP'
+    el_tpl_key = 'MILES_SSP'
+#    el_tpl_key = 'BC03', 'MILESHC'
 
-        # Template pixel scale a factor of 4 smaller than galaxy data 70
-        velscale_ratio = 4 #??
-        velscale_ratio = 70
-        # Get the redshift
-        #drpall_file = os.path.join(os.environ['MANGA_SPECTRO_REDUX'], 'drpall-v2_3_1.fits')
-        #z = numpy.array([get_redshift(plt, ifu)]) #, drpall_file)])
-        z=0
-        #print('Redshift: {0}'.format(z[0]))
-        dispersion = numpy.array([300.])
-        sres = drpf.spectral_resolution(toarray=True, fill=True, pre=True).data
-        sres = sres[1000,:] # Blantant fudge as sres is 4096 x x4593, and needs to be sam shape as flux vector
-        # Fitting functions expect data to be in 2D arrays (for now):
-        flux = flux.reshape(1,-1)
-        ferr = numpy.ma.power(ivar, -0.5).reshape(1,-1)
-        #sres = sres.reshape(1,-1)
+    # Emission-line database keywords
+    elmom_key = 'ELBMILES'
+    elfit_key = 'ELPMILES'
+#    elmom_key = 'ELBTT'
+#    elfit_key = 'ELPT4'
 
-        #-------------------------------------------------------------------
-        # Fit the stellar continuum
+    # Template pixel scale a factor of 4 smaller than galaxy data 70
+    velscale_ratio = 4 #??
+    # Get the redshift
+    #drpall_file = os.path.join(os.environ['MANGA_SPECTRO_REDUX'], 'drpall-v2_3_1.fits')
+    #z = numpy.array([get_redshift(plt, ifu)]) #, drpall_file)])
+    z=0
+    #print('Redshift: {0}'.format(z[0]))
+    dispersion = numpy.array([300.])
+    sres = drpf.spectral_resolution(toarray=True, fill=True, pre=True).data
+    sres = sres[1000,:] # Blantant fudge as sres is 4096 x x4593, and needs to be same shape as flux vector
+    # Fitting functions expect data to be in 2D arrays (for now):
+    flux = flux.reshape(1,-1)
+    ferr = numpy.ma.power(ivar, -0.5).reshape(1,-1)
 
-        # Mask the 5577 sky line and the emission lines
-        sc_pixel_mask = SpectralPixelMask(artdb=ArtifactDB('BADSKY'), emldb=EmissionLineDB('ELPFULL'))
+    #-------------------------------------------------------------------
+    # Fit the stellar continuum
 
-        # Construct the template library
-        sc_tpl = TemplateLibrary(sc_tpl_key, match_to_drp_resolution=False,
-                                 velscale_ratio=velscale_ratio, spectral_step=1e-4, log=True,
-                                 hardcopy=False)
-        sc_tpl_sres = numpy.mean(sc_tpl['SPECRES'].data, axis=0).ravel()
+    # Mask the 5577 sky line and the emission lines
+    sc_pixel_mask = SpectralPixelMask(artdb=ArtifactDB('BADSKY'), emldb=EmissionLineDB('ELPFULL'))
 
-        # Instantiate the fitting class
-        ppxf = PPXFFit(StellarContinuumModelBitMask())
+    # Construct the template library
+    sc_tpl = TemplateLibrary(sc_tpl_key, match_to_drp_resolution=True,
+                             velscale_ratio=velscale_ratio, spectral_step=1e-4, log=True,
+                             hardcopy=False)
 
-        # Perform the fit
-        cont_wave, cont_flux, cont_mask, cont_par \
-            = ppxf.fit(sc_tpl['WAVE'].data.copy(), sc_tpl['FLUX'].data.copy(), wave, flux, ferr,
-                       z, dispersion, iteration_mode='no_global_wrej', reject_boxcar=100,
-                       ensemble=False, velscale_ratio=velscale_ratio, mask=sc_pixel_mask,
-                       matched_resolution=False, tpl_sres=sc_tpl_sres, obj_sres=sres, degree=-1,
-                       moments=2, plot=fit_plots) #Degree was 8
-        return cont_wave, cont_flux, cont_mask, cont_par
+    sc_tpl_sres = numpy.mean(sc_tpl['SPECRES'].data, axis=0).ravel()
+
+    # Instantiate the fitting class
+    ppxf = PPXFFit(StellarContinuumModelBitMask())
+
+    # Perform the fit
+    cont_wave, cont_flux, cont_mask, cont_par \
+        = ppxf.fit(sc_tpl['WAVE'].data.copy(), sc_tpl['FLUX'].data.copy(), wave, flux, ferr,
+                   z, dispersion, iteration_mode='no_global_wrej', reject_boxcar=100,
+                   ensemble=False, velscale_ratio=velscale_ratio, mask=sc_pixel_mask,
+                   matched_resolution=False, tpl_sres=sc_tpl_sres, obj_sres=sres, degree=-1,
+                   moments=2, plot=fit_plots) #Degree was 8
+
+    return cont_par, sc_tpl, sres
+
+def save_spec_fits_files(cont_par_bulge, sc_tpl_bulge, cont_par_disk, sc_tpl_disk):
+    #Use weighted templates to construct "bulge" and "disk" template spectra
+    tpl_wgts = cont_par_bulge['TPLWGT']
+    #Multiply the templates by the weights
+    tpl_lams = sc_tpl_bulge['WAVE'].data
+    tpl_fluxes = sc_tpl_bulge['FLUX'].data
+    temp_arr = numpy.empty_like(tpl_fluxes)
+    for k in range(0,tpl_wgts.shape[1]):
+        temp_arr[k,:] = numpy.multiply(tpl_fluxes[k,:], tpl_wgts[0,k])
+    bulge_model_spec = temp_arr.sum(axis=0) #Also need to do the same for the disk
+    bulge_model_norm = numpy.divide(bulge_model_spec, numpy.median(bulge_model_spec)) #Normalise for ppxf
+    # Save as fits file
+    hdr = fits.Header()
+    hdr['NAXIS'] = len(bulge_model_norm)
+    hdr['CRVAL1'] = numpy.min(tpl_lams)
+    hdr['CDELT1'] = (tpl_lams[1]- tpl_lams[0])
+    hdr['CRPIX1'] = 1
+    hduu = fits.PrimaryHDU(bulge_model_norm, header=hdr)
+    hduu.writeto('/Users/ppzaf/Work/MaNGA/dap/master/data/spectral_templates/my_spec/bulge_spec.fits', overwrite=True)
+
+    tpl_wgts = cont_par_disk['TPLWGT']
+    #Multiply the templates by the weights
+    tpl_lams = sc_tpl_disk['WAVE'].data
+    tpl_fluxes = sc_tpl_disk['FLUX'].data
+    temp_arr = numpy.empty_like(tpl_fluxes)
+    for k in range(0,tpl_wgts.shape[1]):
+        temp_arr[k,:] = numpy.multiply(tpl_fluxes[k,:], tpl_wgts[0,k])
+    disk_model_spec = temp_arr.sum(axis=0)
+    disk_model_norm = numpy.divide(disk_model_spec, numpy.median(disk_model_spec)) #Normalise for ppxf
+    # Save as fits file
+    hdr = fits.Header()
+    hdr['NAXIS'] = len(disk_model_norm)
+    hdr['CRVAL1'] = numpy.min(tpl_lams)
+    hdr['CDELT1'] = (tpl_lams[1]- tpl_lams[0])
+    hdr['CRPIX1'] = 1
+    hduu = fits.PrimaryHDU(disk_model_norm, header=hdr)
+    hduu.writeto('/Users/ppzaf/Work/MaNGA/dap/master/data/spectral_templates/my_spec/disk_spec.fits', overwrite=True)
+
+
+
+def fit_bulge_spec(plt, ifu, frac, wave, flux, ivar, sres):
+    #Fit each bin using fraction of bulge light in each as 'component' and the single bulge and disk model spectra
+    #I constructed
+    fit_plots = True
+    #flux = bulge_spec
+    #ivar = bulge_ivar
+    #wave = wave_b
+    fit_plots=True
+    # Template keywords
+    sc_tpl_key = 'MY_SPEC'
+    el_tpl_key = 'MY_SPEC'
+#    el_tpl_key = 'BC03', 'MILESHC'
+
+    # Emission-line database keywords
+    elmom_key = 'ELBMILES'
+    elfit_key = 'ELPMILES'
+#    elmom_key = 'ELBTT'
+#    elfit_key = 'ELPT4'
+
+    # Template pixel scale a factor of 4 smaller than galaxy data 70
+    velscale_ratio = 4 #??
+    # Get the redshift
+    #drpall_file = os.path.join(os.environ['MANGA_SPECTRO_REDUX'], 'drpall-v2_3_1.fits')
+    z = numpy.array([get_redshift(plt, ifu)]) #, drpall_file)])
+    #print('Redshift: {0}'.format(z[0]))
+    dispersion = numpy.array([300.])
+    #sres = drpf.spectral_resolution(toarray=True, fill=True, pre=True).data
+    #sres = sres[1000,:] # Blantant fudge as sres is 4096 x x4593, and needs to be same shape as flux vector
+    # Fitting functions expect data to be in 2D arrays (for now):
+    flux = flux.reshape(1,-1)
+    ferr = numpy.ma.power(ivar, -0.5).reshape(1,-1)
+
+    #-------------------------------------------------------------------
+    # Fit the stellar continuum
+
+    # Mask the 5577 sky line and the emission lines
+    sc_pixel_mask = SpectralPixelMask(artdb=ArtifactDB('BADSKY'), emldb=EmissionLineDB('ELPFULL'))
+
+    # Construct the template library
+    sc_tpl = TemplateLibrary(sc_tpl_key, match_to_drp_resolution=True,
+                             velscale_ratio=velscale_ratio, spectral_step=1e-4, log=True,
+                             hardcopy=False)
+
+    sc_tpl_sres = numpy.mean(sc_tpl['SPECRES'].data, axis=0).ravel()
+
+    # Instantiate the fitting class
+    ppxf2 = PPXFFit_frac(StellarContinuumModelBitMask())
+
+    # Perform the fit
+    cont_wave, cont_flux, cont_mask, cont_par \
+        = ppxf_frac.fit(sc_tpl['WAVE'].data.copy(), sc_tpl['FLUX'].data.copy(), wave, flux, ferr,
+                   z, dispersion, frac, iteration_mode='no_global_wrej', reject_boxcar=100,
+                   ensemble=False, velscale_ratio=velscale_ratio, mask=sc_pixel_mask,
+                   matched_resolution=False, tpl_sres=sc_tpl_sres, obj_sres=sres, degree=-1,
+                   moments=2, plot=fit_plots) #Degree was 8
+
+    return cont_wave, cont_flux, cont_mask, cont_par, sc_tpl
+
+    #Will firstly have to construct the 'template library' of two templates. Probably have to save \
+    #bulge_model_spec and disk_model_spec to the spectral templates diectory and make an .ini file
+    #Also, figure out how to set the component flag of ppxf from ppxf.fit

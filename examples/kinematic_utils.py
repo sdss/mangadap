@@ -12,7 +12,7 @@ def deredshift(flux, wave, ivar, stellar_vel, stellar_sig, c, z): # Deredshift v
     FWHM_diff, sigma_corr = [],[]
     flux_smooth = np.empty((flux.shape[0], flux.shape[1]))#, flux.shape[2]))
     for i in range(0,flux.shape[0]): #for every bin
-        if stellar_sig[i] <= sig_max:
+        if stellar_sig[i] < sig_max:
             FWHM_diff = np.sqrt((((2.355*sig_max)/velscale)**2)-((2.355*stellar_sig[i])/velscale)**2)
             sigma_corr = FWHM_diff/2.355 #?z
             flux_smooth[i,:] = ndimage.filters.gaussian_filter1d(flux[i,:], sigma_corr) #may have to switch this line
@@ -22,7 +22,7 @@ def deredshift(flux, wave, ivar, stellar_vel, stellar_sig, c, z): # Deredshift v
             flux_smooth[i,:] = flux[i,:]
 
 
-    z_map = (stellar_vel/c) +z #Mask should come into this somewhere.
+    z_map = (stellar_vel/c)# +z #Mask should come into this somewhere.
 
     waves, fluxes, ivars = np.empty((flux.shape[0], flux.shape[1])),np.empty((flux.shape[0], flux.shape[1])), np.empty((flux.shape[0], flux.shape[1]))
     #waves, fluxes = np.empty((flux.shape[0], flux.shape[1])), np.empty((flux.shape[0], flux.shape[1]))
@@ -45,6 +45,7 @@ def create_single_spec(fluxes, ivars, bin_disk, signal, Rb):
             bulge_ivars = np.vstack((bulge_ivars, ivars[i,:]))
             bulge_weights.append(signal[i])
         elif bin_disk[i] > (2*Rb):
+            print('bin in disk! %s' % i)
             disk_specs = np.vstack((disk_specs, fluxes[i,:]))
             disk_ivars = np.vstack((disk_ivars, ivars[i,:]))
             disk_weights.append(signal[i])
