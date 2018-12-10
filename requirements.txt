@@ -1,9 +1,10 @@
 # Package dependencies of the MaNGA DAP
 astropy>=3.0
 matplotlib>=2.2.0
-numpy>=1.15.0
+numpy>=1.15.4
 ppxf==6.7.12
 pydl>=0.6.0
+requests>=2.20
 scipy>=1.1
 vorbin==3.1.3
 

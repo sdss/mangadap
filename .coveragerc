@@ -1,0 +1,9 @@
+[run]
+branch = true
+
+omit =
+    python/mangadap/tests/*
+
+[report]
+omit =
+    python/mangadap/tests/*
