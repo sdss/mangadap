@@ -39,7 +39,7 @@ install:
     - source activate test_env
     - pip install -U pip wheel --quiet
     - pip install --upgrade setuptools --quiet
-    - pip install -r requirements.txt --quiet
+    - pip install -r requirements_dev.txt --quiet
     - python setup.py install
 
 script:

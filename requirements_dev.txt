@@ -1,0 +1,8 @@
+# MaNGA DAP documentation requirements
+
+-r requirements.txt
+
+Sphinx>=1.6.5
+pytest>=3.0.7
+pytest-cov>=2.4.0
+
