@@ -113,20 +113,23 @@ def test_sasuke():
     # Fit statistics
     assert numpy.allclose(el_fit['RCHI2'],
                     numpy.array([2.30526714, 1.19355894, 1.54887132, 1.84447282, 3.14657599,
-                                 0.        , 1.03495789, 0.86928516])), 'Chi-square different'
+                                 0.        , 1.03495789, 0.86928516]),
+                          rtol=0.0, atol=1e-4), 'Reduced chi-square different'
 
     assert numpy.allclose(el_fit['RMS'],
                     numpy.array([0.03624053, 0.0191412 , 0.03661278, 0.02454041, 0.05073471,
-                                 0.        , 0.01283324, 0.01245004])), 'RMS different'
+                                 0.        , 0.01283324, 0.01245004]),
+                          rtol=0.0, atol=1e-5), 'RMS different'
 
     assert numpy.allclose(el_fit['FRMS'],
                     numpy.array([0.02098079, 0.02650329, 0.02718797, 0.03478277, 0.01857   ,
-                                 0.        , 1.12984714, 0.10961989])), 'Fractional RMS different'
+                                 0.        , 1.12984714, 0.10961989]),
+                          rtol=0.0, atol=1e-5), 'Fractional RMS different'
 
     assert numpy.allclose(el_fit['ABSRESID'][:,2],
                     numpy.array([0.07080605, 0.0374927 , 0.07063608, 0.0476781 , 0.10087567,
-                                 0.        , 0.02704224, 0.02432112])), \
-                    'Median absolute residual different'
+                                 0.        , 0.02704224, 0.02432112]),
+                          rtol=0.0, atol=1e-5), 'Median absolute residual different'
 
     # All lines should have the same velocity
     assert numpy.all(numpy.all(el_par['KIN'][:,:,0] == el_par['KIN'][:,None,0,0], axis=1)), \
@@ -135,13 +138,13 @@ def test_sasuke():
     # Test velocity values
     assert numpy.allclose(el_par['KIN'][:,0,0],
                 numpy.array([14694.03503013, 14882.17193222, 14767.1212133 ,  8159.47649202,
-                              9258.7217533 ,     0.        ,  5131.13183361,  5432.3821883 ])), \
-                'Velocities are different'
+                              9258.7217533 ,     0.        ,  5131.13183361,  5432.3821883 ]),
+                          rtol=0.0, atol=1e-2), 'Velocities are different'
 
     # H-alpha dispsersions
     # TODO: Need some better examples!
     assert numpy.allclose(el_par['KIN'][:,18,1],
                 numpy.array([1000.47576421, 1000.47576421,  224.68070585,  114.02429333,
-                             170.88750393,    0.        ,   81.28290423,   50.12936608])), \
-                'H-alpha dispersions are different'
+                             170.88750393,    0.        ,   81.28290423,   50.12936608]),
+                          rtol=0.0, atol=1e-1), 'H-alpha dispersions are different'
 

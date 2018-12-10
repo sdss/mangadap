@@ -91,8 +91,8 @@ def test_ppxffit():
                                                        [ 9261.89551736,   201.84993174],
                                                        [    0.        ,     0.        ],
                                                        [ 5126.52362297,    66.93778845],
-                                                       [ 5458.11430831,    51.92792211]])), \
-                'Kinematics are different'
+                                                       [ 5458.11430831,    51.92792211]]),
+                          rtol=0.0, atol=1e-2), 'Kinematics are different'
     assert numpy.allclose(fit_par['KINERR'], numpy.array([[ 1.9709821 ,  1.85886101],
                                                           [ 1.44396882,  1.65099111],
                                                           [ 2.39500413,  2.34584906],
@@ -100,40 +100,37 @@ def test_ppxffit():
                                                           [ 1.10522357,  1.11307583],
                                                           [ 0.        ,  0.        ],
                                                           [25.50804271, 30.41783466],
-                                                          [ 4.46678658,  7.40489565]])), \
-                'Kinematic errors are different'
+                                                          [ 4.46678658,  7.40489565]]),
+                          rtol=0.0, atol=1e-2), 'Kinematic errors are different'
 
     # Velocity dispersion corrections
     assert numpy.allclose(fit_par['SIGMACORR_SRES'],
                           numpy.array([24.03388208, 11.76975482, 27.80845511, 38.76085538,
-                                       23.00081717,  0.        , 63.36255328, 24.45657423])), \
-                'SRES corrections are different'
+                                       23.00081717,  0.        , 63.36255328, 24.45657423]),
+                          rtol=0.0, atol=1e-2), 'SRES corrections are different'
     assert numpy.allclose(fit_par['SIGMACORR_EMP'],
                           numpy.array([22.45805838,  0.        , 25.8235458 , 38.03511325,
-                                       18.04372944,  0.        , 69.11989189,  0.        ])), \
-                'EMP corrections are different'
+                                       18.04372944,  0.        , 69.11989189,  0.        ]),
+                          rtol=0.0, atol=1e-2), 'EMP corrections are different'
 
     # Figures of merit
     assert numpy.allclose(fit_par['RCHI2'],
                           numpy.array([1.96704896, 1.17507642, 1.49607667, 1.55779108,
-                                       2.55917584, 0.        , 1.06372982, 0.87424217])), \
-                'Reduced chi-square different'
+                                       2.55917584, 0.        , 1.06372982, 0.87424217]),
+                          rtol=0.0, atol=1e-4), 'Reduced chi-square different'
 
     assert numpy.allclose(fit_par['RMS'],
                           numpy.array([0.0337455 , 0.0189093 , 0.03541922, 0.02358469,
-                                       0.04709133, 0.        , 0.01608275, 0.01622584])), \
-                'RMS different'
+                                       0.04709133, 0.        , 0.01608275, 0.01622584]),
+                          rtol=0.0, atol=1e-5), 'RMS different'
 
     assert numpy.allclose(fit_par['FRMS'],
                           numpy.array([0.01892738, 0.02500785, 0.02596966, 0.03601668,
-                                       0.01834503, 0.        , 8.59674419, 0.18296954])), \
-                'Fractional RMS different'
+                                       0.01834503, 0.        , 8.59674419, 0.18296954]),
+                          rtol=0.0, atol=1e-5), 'Fractional RMS different'
 
     assert numpy.allclose(fit_par['ABSRESID'][:,2],
                           numpy.array([0.06758258, 0.03682331, 0.06943672, 0.0472579 ,
-                                       0.09572067, 0.        , 0.03088698, 0.02879618])), \
-                'Median absolute residual different'
-
-#if __name__ == '__main__':
-    #test_ppxffit()
+                                       0.09572067, 0.        , 0.03088698, 0.02879618]),
+                          rtol=0.0, atol=1e-5), 'Median absolute residual different'
 
