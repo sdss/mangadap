@@ -1,5 +1,10 @@
 # The MaNGA Data Analysis Pipeline
 
+[![Build Status](https://travis-ci.org/sdss/mangadap.svg?branch=master)](https://travis-ci.org/sdss/mangadap)
+[![Coverage Status](https://coveralls.io/repos/github/sdss/mangadap/badge.svg?branch=master)](https://coveralls.io/github/sdss/mangadap?branch=master)
+[![Doc Status](https://sdss-mangadap.readthedocs.io/en/latest/?badge=latest)](https://sdss-mangadap.readthedocs.io/en/latest/)
+[![astropy](http://img.shields.io/badge/powered%20by-AstroPy-orange.svg?style=flat)](http://www.astropy.org/)
+
 The MaNGA data-analysis pipeline (MaNGA DAP) is the survey-led software
 package that analyzes the data produced by the MaNGA data-reduction
 pipeline (MaNGA DRP) to produced physical properties derived from the
