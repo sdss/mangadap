@@ -1,0 +1,50 @@
+
+filter_secrets: false
+
+language: python
+
+cache:
+  pip: true
+  timeout: 1000
+
+sudo: false
+
+python:
+    - '3.6'
+
+os:
+    - linux
+
+env:
+  global:
+  matrix:
+
+matrix:
+  fast_finish: true
+
+notifications:
+  email: false
+
+branches:
+    - master
+
+before_install:
+    - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O ~/miniconda.sh
+    - bash ~/miniconda.sh -b -p $HOME/miniconda
+    - export PATH="$HOME/miniconda/bin:$PATH"
+    - conda update --yes conda
+
+install:
+    - conda create --yes -n test_env python=$TRAVIS_PYTHON_VERSION pip numpy scipy matplotlib --quiet
+    - source activate test_env
+    - pip install -U pip wheel --quiet
+    - pip install --upgrade setuptools --quiet
+    - pip install -r requirements.txt --quiet
+    - python setup.py install
+
+script:
+    - pytest python/mangadap/tests --cov python/mangadap --cov-report html
+
+after_success:
+    - coveralls
+
