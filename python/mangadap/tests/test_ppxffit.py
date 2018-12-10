@@ -122,15 +122,15 @@ def test_ppxffit():
     assert numpy.allclose(fit_par['RMS'],
                           numpy.array([0.0337455 , 0.0189093 , 0.03541922, 0.02358469,
                                        0.04709133, 0.        , 0.01608275, 0.01622584]),
-                          rtol=0.0, atol=1e-5), 'RMS different'
+                          rtol=0.0, atol=1e-4), 'RMS different'
 
     assert numpy.allclose(fit_par['FRMS'],
                           numpy.array([0.01892738, 0.02500785, 0.02596966, 0.03601668,
                                        0.01834503, 0.        , 8.59674419, 0.18296954]),
-                          rtol=0.0, atol=1e-5), 'Fractional RMS different'
+                          rtol=0.0, atol=1e-4), 'Fractional RMS different'
 
     assert numpy.allclose(fit_par['ABSRESID'][:,2],
                           numpy.array([0.06758258, 0.03682331, 0.06943672, 0.0472579 ,
                                        0.09572067, 0.        , 0.03088698, 0.02879618]),
-                          rtol=0.0, atol=1e-5), 'Median absolute residual different'
+                          rtol=0.0, atol=1e-4), 'Median absolute residual different'
 
