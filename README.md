@@ -1,11 +1,16 @@
 # The MaNGA Data Analysis Pipeline
 
+[![Build Status](https://travis-ci.org/sdss/mangadap.svg?branch=master)](https://travis-ci.org/sdss/mangadap)
+[![Coverage Status](https://coveralls.io/repos/github/sdss/mangadap/badge.svg?branch=master)](https://coveralls.io/github/sdss/mangadap?branch=master)
+[![Doc Status](https://readthedocs.org/projects/sdss-mangadap/badge/?version=latest)](https://sdss-mangadap.readthedocs.io/en/latest/)
+[![astropy](http://img.shields.io/badge/powered%20by-AstroPy-orange.svg?style=flat)](http://www.astropy.org/)
+
 The MaNGA data-analysis pipeline (MaNGA DAP) is the survey-led software
 package that analyzes the data produced by the MaNGA data-reduction
 pipeline (MaNGA DRP) to produced physical properties derived from the
 MaNGA spectroscopy.
 
-For DR15 (version 2.2.2), these quantities are:
+For DR15 (version 2.2.1), these quantities are:
 
  - Spatially stacked spectra
  - Stellar kinematics (V and sigma)
@@ -30,22 +35,42 @@ To install, first export the code from git:
 This **will not include the documentation submodules**; see [Cloning the
 full repo](#cloning-the-full-repo) below)
 
+---
+
+**The current `master` branch is in-development and should not be used.**
+The DR15 version of the can be accessed by switching the to 2.2.1 tag:
+
+`git checkout 2.2.1`
+
+This version of the code does not have a setup script, so you manually
+need to add `./mangadap/python` to your python path.  The following
+directions are for installing the code from the `master` branch.
+
+After the next tag (2.3, before the end of 2018), we will keep the
+`master` branch tied to the most recent tag.
+
 ----
 
-There are a few ways to install (always from within the top-level directory of the repo):
+There are a few ways to install (always from within the top-level
+directory of the repo):
 
- - To install the DAP, run: `python3 setup.py install`
+ - To install the DAP, run::
+    
+    `python3 setup.py install`
 
-   On MacOSX, you may need to add `CC=clang`, i.e.: `CC=clang python3 setup.py install`
+   On MacOSX, you may need to add `CC=clang`, i.e.::
+   
+    `CC=clang python3 setup.py install`
 
- - To install the DAP in a way that makes it easier to develop, run: `python3 setup.py develop`
-
+ - To install the DAP in a way that makes it easier to develop, run:
+   `python3 setup.py develop`
  - To install the DAP and update its dependencies as necessary, run:
    `pip3 install -e .`
 
 ----
 
-The tests are rather lacking still, but you can test the installation using
+The tests are rather lacking still, but you can test the installation
+using
 
 `python3 setup.py test`
 
@@ -95,7 +120,10 @@ below.
  - `$MANGADAP_VER` is only used to set the path names, not to select the
    specific version of the pipeline to use
 
-These environmental variables can be added to your `.bash_profile` file in your home directory or be included in a script that is sourced when you want to run the DAP.  The added lines to your `.bash_profile` file could look something like this:
+These environmental variables can be added to your `.bash_profile` file
+in your home directory or be included in a script that is sourced when
+you want to run the DAP.  The added lines to your `.bash_profile` file
+could look something like this:
 
 ```
 export MANGA_SPECTRO_REDUX=/Volumes/MaNGA/redux
@@ -116,9 +144,11 @@ It's possible to have both Marvin and the DAP point to the same
 directory, but beware that this may mean that some of the files get
 overwritten.
 
-## Usage
-
 ## Citation
+
+The DAP papers are currently under internal review and will be posted to
+arXiv before the Seattle AAS meeting.  The page will be updated with the
+appropriate citations at that point.
 
 ## Cloning the full repo
 

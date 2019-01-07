@@ -45,7 +45,7 @@ if __name__ == '__main__':
     ax.set_xlim([-0.01, 1.01])
     ax.set_ylim(ylim)
 
-#    for ifu,clr in zip([ifulist[1],ifulist[-1]],[c[1],c[-1]]):
+#    for ifu,clr in zip([ifulist[1],ifulist[-2]],[c[1],c[-2]]):
     for ifu,clr in zip(ifulist,c):
         drpf = DRPFits(7495, ifu, 'CUBE', drpver='v2_4_3', read=True)
         print(drpf.file_path())
@@ -62,9 +62,9 @@ if __name__ == '__main__':
         ax.step(_fgoodpix, 1-(numpy.arange(len(srt), dtype=float)+1)/len(srt),
                     color=clr, lw=1.5, zorder=3)
 
-    ax.text(0.50, -0.1, r'$\delta\lambda$', horizontalalignment='center',
+    ax.text(0.50, -0.1, r'$\delta\Lambda$', horizontalalignment='center',
             verticalalignment='center', transform=ax.transAxes)
-    ax.text(-0.12, 0.50, r'$\delta\Omega (>\delta\lambda)$', horizontalalignment='center',
+    ax.text(-0.12, 0.50, r'$\delta\Omega (>\delta\Lambda)$', horizontalalignment='center',
             verticalalignment='center', transform=ax.transAxes, rotation='vertical')
 
     ax.text(0.05, 0.32, r'7495-19xx', horizontalalignment='left', verticalalignment='center',
@@ -78,27 +78,31 @@ if __name__ == '__main__':
     ax.text(0.05, 0.08, r'7495-127xx', horizontalalignment='left', verticalalignment='center',
             transform=ax.transAxes, color=cmap(normed_color(5)))
 
-    ax.plot([0.8,0.8], ylim, linestyle='--', lw=1, color='0.6', zorder=2)
+    ax.plot([0.8,0.8], ylim, dashes=[10,5], lw=2, color='k', zorder=2)
 
     lim = [-5, fgoodpix_saved.shape[0]+4]
 
-    ax = fig.add_axes([0.60,0.13,0.22,0.22], facecolor='0.9')
+    ax = fig.add_axes([0.45,0.13,0.22,0.22], facecolor='0.9')
     ax.set_xlim(lim)
     ax.set_ylim(lim)
     ax.tick_params(which='both', bottom=False, left=False)
     ax.xaxis.set_major_formatter(ticker.NullFormatter())
     ax.yaxis.set_major_formatter(ticker.NullFormatter())
-    cax = fig.add_axes([0.825, 0.13, 0.01, 0.22])
-    img = ax.imshow(fgoodpix_saved.T, origin='lower', interpolation='nearest', cmap='gray')
+    cax = fig.add_axes([0.675, 0.13, 0.01, 0.22])
+    img = ax.imshow(fgoodpix_saved.T, origin='lower', interpolation='nearest', cmap='gray',
+                    vmin=0.5, vmax=None) #0.9)#,
+                    #norm=colors.LogNorm(vmin=0.1, vmax=1.0))
     cb = pyplot.colorbar(img, cax=cax)
+#    cb.locator = ticker.LogLocator(base=10, subs=(1.,2.,4.,))
+#    cb.update_ticks()
     cax.tick_params(labelsize=10)
-    cax.text(3.5, 0.95, r'$\delta\lambda$', horizontalalignment='center',
+    cax.text(3.5, 0.95, r'$\delta\Lambda$', horizontalalignment='center',
              verticalalignment='center', transform=cax.transAxes, fontsize=12)
 
     ax.text(-0.06, 0.05, r'7495-12704', horizontalalignment='center', verticalalignment='bottom',
             transform=ax.transAxes, rotation='vertical')
     
-    ofile='../ms/figs/good_spaxel_growth.pdf'
+    ofile='../ms/figs/good_spaxel_growth_test.pdf'
 #    ofile=None
     if ofile is None:
         pyplot.show()

@@ -1,0 +1,6 @@
+# MaNGA DAP documentation requirements
+
+-r requirements.txt
+
+Sphinx>=1.6.5
+
