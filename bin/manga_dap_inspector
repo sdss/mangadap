@@ -536,20 +536,31 @@ def build_model_spectra(hdu, masked=True):
                                           mask=bm.flagged(hdu['MASK'].data.T,
                                                           flag=['FITIGNORED', 'FITFAILED']))
 
-        model_emission = numpy.ma.MaskedArray(hdu['EMLINE'].data.T + hdu['EMLINE_BASE'].data.T,
+        model_emission = numpy.ma.MaskedArray(hdu['MODEL'].data.T - hdu['STELLAR'].data.T,
                                               mask=bm.flagged(hdu['MASK'].data.T,
                                                               flag=['FITIGNORED', 'FITFAILED',
                                                                     'ELIGNORED', 'ELFAILED']))
 
-        model_continuum = numpy.ma.MaskedArray(hdu['MODEL'].data.T - hdu['EMLINE'].data.T
-                                                    - hdu['EMLINE_BASE'].data.T,
+        model_continuum = numpy.ma.MaskedArray(hdu['MODEL'].data.T - hdu['EMLINE'].data.T,
                                                mask=bm.flagged(hdu['MASK'].data.T,
                                                                flag=['FITIGNORED', 'FITFAILED']))
+
+#        model_emission = numpy.ma.MaskedArray(hdu['EMLINE'].data.T + hdu['EMLINE_BASE'].data.T,
+#                                              mask=bm.flagged(hdu['MASK'].data.T,
+#                                                              flag=['FITIGNORED', 'FITFAILED',
+#                                                                    'ELIGNORED', 'ELFAILED']))
+#
+#        model_continuum = numpy.ma.MaskedArray(hdu['MODEL'].data.T - hdu['EMLINE'].data.T
+#                                                    - hdu['EMLINE_BASE'].data.T,
+#                                               mask=bm.flagged(hdu['MASK'].data.T,
+#                                                               flag=['FITIGNORED', 'FITFAILED']))
     else:
         masked_spec = hdu['FLUX'].data.copy().T
         model_spec = hdu['MODEL'].data.copy().T
-        model_emission = hdu['EMLINE'].data.T + hdu['EMLINE_BASE'].data.T
-        model_continuum = hdu['MODEL'].data.T - hdu['EMLINE'].data.T - hdu['EMLINE_BASE'].data.T
+        model_emission = hdu['MODEL'].data.T - hdu['STELLAR'].data.T
+        model_continuum = hdu['MODEL'].data.T - hdu['EMLINE'].data.T
+#        model_emission = hdu['EMLINE'].data.T + hdu['EMLINE_BASE'].data.T
+#        model_continuum = hdu['MODEL'].data.T - hdu['EMLINE'].data.T - hdu['EMLINE_BASE'].data.T
 
     return wave, masked_spec, model_spec, model_continuum, model_emission
 

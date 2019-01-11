@@ -7,40 +7,6 @@ Implements an emission-line fitting class that largely wraps pPXF.
     Copyright (c) 2017, SDSS-IV/MaNGA Pipeline Group
         Licensed under BSD 3-clause license - see LICENSE.rst
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/proc/sasuke.py
-
-*Imports and python version compliance*:
-    ::
-
-        from __future__ import division
-        from __future__ import print_function
-        from __future__ import absolute_import
-        from __future__ import unicode_literals
-
-        import sys
-        import warnings
-        if sys.version > '3':
-            long = int
-
-        import time
-        import os
-        import logging
-
-        import numpy
-        from scipy import interpolate, fftpack
-        import astropy.constants
-
-        from ..par.parset import ParSet
-        from ..par.emissionlinedb import EmissionLineDB
-        from ..util.fileio import init_record_array
-        from ..util.log import log_output
-        from ..util.pixelmask import SpectralPixelMask
-        from .spatiallybinnedspectra import SpatiallyBinnedSpectra
-        from .stellarcontinuummodel import StellarContinuumModel
-        from .spectralfitting import EmissionLineFit
-        from .util import sample_growth
-
 *Class usage examples*:
         Add examples
 
@@ -1776,7 +1742,7 @@ class Sasuke(EmissionLineFit):
         with MaNGA spectra.
 
         If the spectral resolution is not matched between the templates
-        and the object spectra, the provided stellar_kinematics is
+        and the object spectra, the provided `stellar_kinematics` are
         expected to include any resolution difference; i.e., it is
         **not** the astrophysical velocity dispersion.
 
@@ -1854,7 +1820,7 @@ class Sasuke(EmissionLineFit):
                 The kinematics to use for the stellar component.  If the
                 spectral resolution of the templates is different from
                 the galaxy data, the provided stellar velocity
-                dispersions *must* include the the (assumed
+                dispersions *must* include the (assumed
                 wavelength-independent) quadrature difference in the
                 template and galaxy instrumental resolutions.  The
                 stellar kinematics are **fixed** for all calls made to
@@ -2401,7 +2367,7 @@ class Sasuke(EmissionLineFit):
                            numpy.sum(bins_to_fit), self.nobj))
                 log_output(self.loggers, 1, logging.INFO,
                            'Emission-line fits remapped to a set of {0}/{1} spectra.'.format(
-                            spec_to_fit, self.nremap))
+                            numpy.sum(spec_to_fit), self.nremap))
 
             if self.nstpl > 0:
                 log_output(self.loggers, 1, logging.INFO,
@@ -2426,8 +2392,8 @@ class Sasuke(EmissionLineFit):
                                                       self.velscale, self.velscale_ratio,
                                                       self.tpl_comp, self.gas_tpl,
                                                       self.comp_moments, comp_start_kin,
-                                                      tied=self.tied, degree=self.degree,
-                                                      mdegree=self.mdegree,
+                                                      vgrp=self.tpl_vgrp, sgrp=self.tpl_sgrp,
+                                                      degree=self.degree, mdegree=self.mdegree,
                                                       reddening=self.reddening,
                                                       reject_boxcar=self.reject_boxcar,
                                                       vsyst=self.base_velocity,

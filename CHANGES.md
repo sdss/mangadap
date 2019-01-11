@@ -1,4 +1,6 @@
-2.2.3dev --------
+2.2.3dev
+--------
+
  - Put in default paths when environmental variables not defined and
    warn user, both when running setup.py and when importing mangadap
  - Start testing suite (still very limited)
@@ -20,6 +22,11 @@
  - Add spectral indices test
  - Change model-cube data model to use `STCNT` and `STCNT_MASK`
    extensions and remove the `EMLINE_BASE` and `EMLINE_MASK` extensions.
+ - Allow the emission-line fitter to use the bin ID numbers directly
+   instead of matching the spaxels to bins by coordinate proximity
+ - Construction of the paramter tying object in the emission-line fitter
+   is now done just before each spectrum is fit by ppxf (not globally in
+   Sasuke) to better handle when components are omitted.
 
 TODO:
  - Documentation of config examples are out of date!

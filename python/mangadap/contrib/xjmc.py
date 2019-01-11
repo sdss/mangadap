@@ -152,7 +152,7 @@ def _ppxf_component_setup(component, gas_template, start, single_gas_component=F
     _moments[stellar_components] *= -1
     if n_gas_components == 1:
         # Force a single gas component
-        _moments = np.append( _moments[_moments < 0], [ 2 ])
+        _moments = np.append(_moments[_moments < 0], [2])
 
     # Reset the starting values for the kinematics
     _start = np.empty(len(start), dtype=object)
@@ -209,69 +209,139 @@ def _ppxf_component_setup(component, gas_template, start, single_gas_component=F
 #                    ppxf.rebin(tt[:npix_tpl*velscale_ratio], velscale_ratio)[:npix_obj]
 #    return c
 
+def _construct_tied(component, vgrp, sgrp, moments):
+    """
+    Construct the tied object for input to pPXF based on the compoents,
+    velocity groups, and velocity dispersion groups.
+    """
+    if vgrp is None and sgrp is None:
+        # Nothing to tie!
+        return None
 
-def _validate_templates_components(templates, gas_template, component, moments, mask, start, tied,
-                                   tpl_to_use, velscale, velscale_ratio=None, vsyst=0):
+    # Build the tied parameters as a vector
+    tied = np.full(np.sum(np.absolute(moments)), '', dtype=object)
+    tpli = np.arange(len(component))
+    ncomp = np.amax(component)+1
+    for i in range(ncomp):
+        # Do not allow tying to fixed components?
+        if moments[i] < 0:
+            continue
+
+        # Velocity group of this component
+        if vgrp is not None:
+            indx = np.unique(component[tpli[vgrp == i]])
+            if len(indx) > 1:
+                parn = [ 0 + np.sum(np.absolute(moments[:j])) for j in indx ]
+                tied[parn[1:]] = 'p[{0}]'.format(parn[0])
+            
+        # Sigma group of this component
+        if sgrp is not None:
+            indx = np.unique(component[tpli[sgrp == i]])
+            if len(indx) > 1:
+                parn = [ 1 + np.sum(np.absolute(moments[:j])) for j in indx ]
+                tied[parn[1:]] = 'p[{0}]'.format(parn[0])
+
+    # Check if anything is actually tied
+    if np.array_equal(np.unique(tied), ['']):
+        return None
+
+    # Return after restructuring the vector into a list
+    s = [np.sum(np.absolute(moments[:i])) for i in range(ncomp)]
+    return [tied[s[i]:s[i]+np.absolute(moments[i])].tolist() for i in range(ncomp)]
+
+
+def _reset_components(c, valid):
+    # Select valid components
+    _c = c[valid]
+    # Map between old and new component numbers
+    c_map, inv = np.unique(_c, return_inverse=True)
+    # Return the new component numbers and the old-to-new map
+    return np.arange(len(c_map))[inv], c_map
+
+
+def _validate_templates_components(templates, gas_template, component, vgrp, sgrp, moments, mask,
+                                   start, tpl_to_use, velscale, velscale_ratio=None, vsyst=0):
     """
     Check that templates are valid in the sense that they have non-zero
-    components in valid pixel regions.  If all templates are valid, the
-    returned data is identical to the input.  If not, the returned data
-    are restructured as necessary for running pPXF.
+    components in valid pixel regions.
+    
+    If all templates are valid, the returned data is identical to the
+    input.  If not, the returned data are restructured as necessary for
+    running pPXF.
     
     The start vector is used to set the guess offset (including vsyst)
     between the provided mask and the template.  The tpl_to_use vector
     is used to set a tempate as invalid.
 
-    ..warning::
-        Unclear what happens if an entire component is lost!
-
     Args:
-        templates (numpy.ndarray): Templates library to use for fitting.
-            Shape is (NTPLPIX,NTPL).
-        gas_template (numpy.ndarray): Boolean vector that selects the
-            gas templates.  Shape is (NTPL,).
-        component (numpy.ndarray): Integer vector identifying the
-            kinematic component for each template.  Shape is (NTPL,).
-        moments (numpy.ndarray): Integer vector with the number of
-            kinematic moments for each component.  Shape is (NCOMP,).
-        mask (numpy.ndarray): Boolean vector that selects the pixels in
-            the object spectrum to fit (i.e., mask=True for pixels to
-            fit and mask=False for pixels to ignore).  As in pPXF, the
-            length is expected to be less than or equal to NTPLPIX in
-            the template spectra.
-        start (list): The starting kinematics for each kinematic
-            component.  Length is NCOMP.
-        tied (list): The pPXF tying list establishing which parameters
-            should be tied during the fit.  Length is NCOMP, and each
-            component has length NMOM.
-        tpl_to_use (numpy.ndarray):  In addition to removing
-            unconstrained templates, this boolean vector selects that
-            should even be considered in the fit.  Shape is (NTPL,).
-        velscale (float): The pixel scale of the object spectrum to fit
-            in km/s.
-        velscale_ratio (int): (**Optional**) The ratio between the
-            object and template pixel scale.
-        vsyst (float): (**Optional**) The pseudo velocity shift between
-            the template and object spectra just due to the difference
-            in the starting wavelength.
+        templates (numpy.ndarray):
+            Templates library to use for fitting.  Shape is
+            (NTPLPIX,NTPL).
+        gas_template (numpy.ndarray):
+            Boolean vector that selects the gas templates.  Shape is
+            (NTPL,).
+        component (numpy.ndarray):
+            Integer vector identifying the kinematic component for each
+            template.  Shape is (NTPL,).
+        vgrp (array-like):
+            The integer velocity group associated with each template.
+            Shape is (:math:`N_{\rm tpl},), but can be None.
+        sgrp (array-like):
+            The integer sigma group associated with each template.
+            Shape is (:math:`N_{\rm tpl},), but can be None. 
+        moments (numpy.ndarray):
+            Integer vector with the number of kinematic moments for each
+            component.  Shape is (NCOMP,).
+        mask (numpy.ndarray):
+            Boolean vector that selects the pixels in the object
+            spectrum to fit (i.e., mask=True for pixels to fit and
+            mask=False for pixels to ignore).  As in pPXF, the length is
+            expected to be less than or equal to NTPLPIX in the template
+            spectra.
+        start (list):
+            The starting kinematics for each kinematic component.
+            Length is NCOMP.
+        tpl_to_use (numpy.ndarray):
+            In addition to removing unconstrained templates, this
+            boolean vector selects that should even be considered in the
+            fit.  Shape is (NTPL,).
+        velscale (float):
+            The pixel scale of the object spectrum to fit in km/s.
+        velscale_ratio (:obj:`int`, optional):
+            The ratio between the object and template pixel scale.
+        vsyst (:obj:`float`, optional): 
+            The pseudo velocity shift between the template and object
+            spectra just due to the difference in the starting
+            wavelength.
 
     Returns:
-        numpy.ndarray: Eight arrays are returned: (1) Boolean vector
-        with which templates were valid (length is NTPL), (2) the valid
-        set of templates to pass to pPXF [shape is (NTPLPIX,_NTPL)], (3)
-        the boolean vector selecting gas templates (length is _NTPL),
-        (4) an integer vector mapping the input component number to the
-        output component number (i.e., component_map[0] is the original
-        component number for the downselected 0th component; length is
-        _NCOMP), (5) the new component number for the downselected
-        templates (length is _NTPL), (6) the number of moments for the
-        new components (length is _NCOMP), (7) the starting kinematics
-        for each new component (length is _NCOMP), and (8) the parameter
-        tying object reordered as necessary for the new component list
-        (**this needs to be checked**).
+        Ten arrays are returned: 
+            - (1) Boolean vector with which templates were valid (length
+              is NTPL), 
+            - (2) the valid set of templates to pass to pPXF [shape is
+              (NTPLPIX,_NTPL)], 
+            - (3) the boolean vector selecting gas templates (length is
+              _NTPL),
+            - (4) an integer vector mapping the input component number
+              to the output component number (i.e., component_map[0] is
+              the original component number for the downselected 0th
+              component; length is _NCOMP), 
+            - (5) the new component number for the downselected
+              templates (length is _NTPL), 
+            - (6) the new velocity group number for the downselected
+              templates (length is _NTPL), 
+            - (7) the new sigma group number for the downselected
+              templates (length is _NTPL), 
+            - (8) the number of moments for the new components (length
+              is _NCOMP), 
+            - (9) the starting kinematics for each new component
+              (length is _NCOMP), and 
+            - (10) the parameter tying object reordered as necessary for
+              the new component list (**this needs to be checked**).
 
     Raises:
-        ValueError: Raised if no templates are valid.
+        ValueError:
+            Raised if no templates are valid.
 
     """
 #    # Get the FFT of the templates
@@ -320,41 +390,29 @@ def _validate_templates_components(templates, gas_template, component, moments, 
 
     # All templates are valid, just return the input
     if np.all(valid):
-        return valid, templates, gas_template, np.arange(ncomp), component, moments, start, tied
+        return valid, templates, gas_template, np.arange(ncomp), component, \
+                    vgrp, sgrp, moments, start
 
     # None (!) of the templates are valid
-    if np.sum(valid) == 0:
+    if not np.any(valid):
         raise ValueError('No valid templates in fit!')
 
     # Templates to fit
     _templates = templates[valid,:]
     # Set which are gas templates
     _gas_template = gas_template[valid]
-    # Sequential template numbers
-    _component = component[valid]
-    # Map between old and new component numbers
-    component_map = np.unique(_component)
 
-    if not np.array_equal(component_map, np.arange(ncomp)):
-        # Subset of components are not in sequence so they need to be remapped
-        remapped_component = _component.copy()
-        # Starting kinematics for each component
-        _start = []
-        _tied = None if tied is None else []
-        for i, cm in enumerate(component_map):
-            indx = _component == cm
-            remapped_component[indx] = i
-            _start += [start[cm]]
-            if tied is not None:
-                _tied += [tied[cm]]
-        _component = remapped_component
-        _moments = moments[component_map]
-    else:
-        _start = start
-        _tied = tied
-        _moments = moments
+    # Reset components, moments, and starting kinematics
+    _component, component_map = _reset_components(component, valid)
+    _moments = moments[component_map]
+    _start = [start[cm] for cm in component_map]
+    # Reset velocity groups
+    _vgrp = None if vgrp is None else _reset_components(vgrp, valid)[0]
+    # Reset velocity dispersion groups
+    _sgrp = None if sgrp is None else _reset_components(sgrp, valid)[0]
 
-    return valid, _templates, _gas_template, component_map, _component, _moments, _start, _tied
+    return valid, _templates, _gas_template, component_map, _component, \
+                _vgrp, _sgrp, _moments, _start
 
 
 def _reorder_solution(ppsol, pperr, component_map, moments, start=None, fill_value=-999.):
@@ -364,23 +422,27 @@ def _reorder_solution(ppsol, pperr, component_map, moments, start=None, fill_val
     removed during the template validation.
 
     Args:
-        ppsol (list): The pPXF solution parameters
-        pperr (list): The formal errors on the pPXF solution parameters
-        component_map (numpy.ndarray): An integer vector mapping the
-            input component number to the output component number; i.e.,
-            component_map[0] is the original component number for the
-            downselected 0th component; length is _NCOMP.
-        moments (list): The number of moments for the *original* set of
-            components; length is NCOMP.
-        start (list): (**Optional**) The starting kinematics for the
-            *original* set of components.  If provided, the starting
-            values are included in the output parameter object for
-            components that were not included in the pPPXF fit;
-            otherwise, the unfit components are given placeholder
-            parameter values.
-        fill_value (float): (**Optional**) The placeholder value to give
-            parameters and errors for components not included in the
-            pPXF fit.
+        ppsol (list):
+            The pPXF solution parameters
+        pperr (list):
+            The formal errors on the pPXF solution parameters
+        component_map (numpy.ndarray):
+            An integer vector mapping the input component number to the
+            output component number; i.e., component_map[0] is the
+            original component number for the downselected 0th
+            component; length is _NCOMP.
+        moments (list):
+            The number of moments for the *original* set of components;
+            length is NCOMP.
+        start (:obj:`list`, optional): 
+            The starting kinematics for the *original* set of
+            components.  If provided, the starting values are included
+            in the output parameter object for components that were not
+            included in the pPPXF fit; otherwise, the unfit components
+            are given placeholder parameter values.
+        fill_value (:obj:`float`, optional):
+            The placeholder value to give parameters and errors for
+            components not included in the pPXF fit.
 
     Returns:
         list: Two lists with the rearranged best-fitting parameters and
@@ -409,78 +471,101 @@ def _reorder_solution(ppsol, pperr, component_map, moments, start=None, fill_val
 
 def _fit_iteration(templates, wave, flux, noise, velscale, start, moments, component, gas_template,
                    tpl_to_use=None, reject_boxcar=101, velscale_ratio=None, degree=-1, mdegree=0,
-                   reddening=None, tied=None, mask=None, vsyst=0, plot=False, quiet=True,
+                   reddening=None, vgrp=None, sgrp=None, mask=None, vsyst=0, plot=False, quiet=True,
                    sigma_rej=3.):
     """
     Run a single fit+rejection iteration of the pPXF fit for all input
     spectra with the provided set of constraints/options.
 
     Args: 
-        templates (numpy.ndarray): Full template library.  Shape is
-            (NTPL,NTPLPIX).
-        wave (numpy.ndarray): Wavelength vector.  Shape is (NPIX,).
-        flux (numpy.ndarray): Object spectra to fit.  Shape is
-            (NSPEC,NPIX).
-        noise (numpy.ndarray): Error in the object spectra to fit.
-            Shape is (NSPEC,NPIX).
-        velscale (float): The pixel scale of the object spectra in km/s.
-        start (list): The starting kinematics for each kinematic
-            component.  Length is NCOMP.
-        moments (numpy.ndarray): Integer vector with the number of
-            kinematic moments for each component.  Shape is (NCOMP,).
-        component (numpy.ndarray): Integer vector identifying the
-            kinematic component for each template.  Shape is (NTPL,).
-        gas_template (numpy.ndarray): Boolean vector that selects the
-            gas templates.  Shape is (NTPL,).
-        tpl_to_use (numpy.ndarray):  (**Optional**) Boolean vector
-            selecting templates to consider during the fit.  Shape is
-            (NTPL,).  If None, all templates are used in the fit.
-        reject_boxcar (int): (**Optional**) Size of the window for the
-            rejection statistics.  Should be an odd number and larger
-            and 10.  Default is 101.  If None, no rejection iteration is
-            performed.
-        velscale_ratio (int): (**Optional**) The ratio between the
-            object and template pixel scale.
-        degree (int): (**Optional**) Order of the additive polynomial to
-            include in the fit.  Not included by default.
-        mdegree (int): (**Optional**) Order of the multiplicative
-            polynomial to fit.  Not included by default.
-        reddening (float): (**Optional**) Initial E(B-V) guess for
-            reddening (uses ppxf-default Calzetti 2000 model).  No
-            attentuation fit by default.
-        tied (list): (**Optional**) List of parameters to tie during the
-            fit.
-        mask (numpy.ndarray): (**Optional**) Boolean vector that selects
-            the pixels in the object spectra to fit (i.e., mask=True for
-            pixels to fit and mask=False for pixels to ignore).  Shape
-            is (NSPEC,NPIX).  All pixels are fit by default.
-        vsyst (float): (**Optional**) The pseudo velocity shift between
-            the template and object spectra just due to the difference
-            in the starting wavelength.
-        plot (bool): (**Optional**) Show the pPXF fit plot at each
-            iteration.  Default is to skip the plot.
-        quiet (bool): (**Optional**) Suppress output to the terminal
-            (default).
-        sigma_rej (float): (**Optional**) Sigma values used for the rejection.
-            Default is 3.
+        templates (numpy.ndarray):
+            Full template library.  Shape is (NTPL,NTPLPIX).
+        wave (numpy.ndarray):
+            Wavelength vector.  Shape is (NPIX,).
+        flux (numpy.ndarray):
+            Object spectra to fit.  Shape is (NSPEC,NPIX).
+        noise (numpy.ndarray):
+            Error in the object spectra to fit.  Shape is (NSPEC,NPIX).
+        velscale (float):
+            The pixel scale of the object spectra in km/s.
+        start (list):
+            The starting kinematics for each kinematic component.
+            Length is NCOMP.
+        moments (numpy.ndarray):
+            Integer vector with the number of kinematic moments for each
+            component.  Shape is (NCOMP,).
+        component (numpy.ndarray):
+            Integer vector identifying the kinematic component for each
+            template.  Shape is (NTPL,).
+        gas_template (numpy.ndarray):
+            Boolean vector that selects the gas templates.  Shape is
+            (NTPL,).
+        tpl_to_use (numpy.ndarray, optional):
+            Boolean vector selecting templates to consider during the
+            fit.  Shape is (NTPL,).  If None, all templates are used in
+            the fit.
+        reject_boxcar (:obj:`int`, optional):
+            Size of the window for the rejection statistics.  Should be
+            an odd number and larger and 10.  Default is 101.  If None,
+            no rejection iteration is performed.
+        velscale_ratio (:obj:`int`, optional):
+            The ratio between the object and template pixel scale.
+        degree (:obj:`int`, optional):
+            Order of the additive polynomial to include in the fit.  Not
+            included by default.
+        mdegree (:obj:`int`, optional):
+            Order of the multiplicative polynomial to fit.  Not included
+            by default.
+        reddening (:obj:`float`, optional):
+            Initial E(B-V) guess for reddening (uses ppxf-default
+            Calzetti 2000 model).  No attentuation fit by default.
+        vgrp (array-like, optional):
+            The integer velocity group associated with each template.
+            Shape is (:math:`N_{\rm tpl},). 
+        sgrp (array-like, optional):
+            The integer sigma group associated with each template.
+            Shape is (:math:`N_{\rm tpl},). 
+        mask (numpy.ndarray, optional):
+            Boolean vector that selects the pixels in the object spectra
+            to fit (i.e., mask=True for pixels to fit and mask=False for
+            pixels to ignore).  Shape is (NSPEC,NPIX).  All pixels are
+            fit by default.
+        vsyst (:obj:`float`, optional):
+            The pseudo velocity shift between the template and object
+            spectra just due to the difference in the starting
+            wavelength.
+        plot (:obj:`bool`, optional):
+            Show the pPXF fit plot at each iteration.  Default is to
+            skip the plot.
+        quiet (:obj:`bool`, optional):
+            Suppress output to the terminal (default).
+        sigma_rej (:obj:`float`, optional):
+            Sigma values used for the rejection.  Default is 3.
             
     Returns:
-        numpy.ndarray: Eleven arrays are returned: (1) The best-fitting
-        model for each spectrum [shape is (NSPEC,NPIX)]; (2) the
-        best-fitting emission-line-only model for each spectrum [shape
-        is (NSPEC,NPIX)]; (3) a boolean array that is True for all
-        spectral pixels included in the fit [shape is (NSPEC,NPIX)]; (4)
-        the best-fitting weight for each template in each spectrum
-        [shape is (NSPEC,NTPL)]; (5) the error in the best-fitting
-        template weights [shape is (NSPEC,NTPL)]; (6) the coefficients
-        of the additive polynomial for each spectrum [shape is
-        (NSPEC,DEGREE+1)]; (7) the coefficients of the multiplicative
-        polynomial for each spectrum [shape is (NSPEC,MDEGREE)]; (8) the
-        best-fitting reddening values for each spectrum [shape is
-        (NSPEC,)]; (9) the input kinematics for each fit [shape is
-        (NSPEC,sum(MOMENTS)]; (10) the best-fit kinematics for each fit
-        [shape is (NSPEC,sum(MOMENTS)]; (11) the formal error in the
-        best-fit kinematics for each fit [shape is (NSPEC,sum(MOMENTS)].
+        Eleven arrays are returned::
+            - (1) The best-fitting model for each spectrum [shape is
+              (NSPEC,NPIX)];
+            - (2) the best-fitting emission-line-only model for each
+              spectrum [shape is (NSPEC,NPIX)]; 
+            - (3) a boolean array that is True for all spectral pixels
+              included in the fit [shape is (NSPEC,NPIX)]; 
+            - (4) the best-fitting weight for each template in each
+              spectrum [shape is (NSPEC,NTPL)]; 
+            - (5) the error in the best-fitting template weights [shape
+              is (NSPEC,NTPL)]; 
+            - (6) the coefficients of the additive polynomial for each
+              spectrum [shape is (NSPEC,DEGREE+1)]; -(7) the
+              coefficients of the multiplicative polynomial for each
+              spectrum [shape is (NSPEC,MDEGREE)];
+            - (8) the best-fitting reddening values for each spectrum
+              [shape is (NSPEC,)]; 
+            - (9) the input kinematics for each fit [shape is
+              (NSPEC,sum(MOMENTS)]; 
+            - (10) the best-fit kinematics for each fit [shape is
+              (NSPEC,sum(MOMENTS)]; 
+            - (11) the formal error in the best-fit kinematics for each
+              fit [shape is (NSPEC,sum(MOMENTS)].
 
     """
     # Some useful shape numbers
@@ -516,17 +601,25 @@ def _fit_iteration(templates, wave, flux, noise, velscale, start, moments, compo
         # Report progress
         print('Fitting spectrum: {0}/{1}'.format(i+1,nspec), end='\r')
 
+        # Confirm that all templates and components are valid and
+        # rearrange component arrays, if necessary
+        valid_templates, _templates, _gas_template, component_map, _component, _vgrp, _sgrp, \
+                _moments, _start \
+                        = _validate_templates_components(templates, gas_template, component, vgrp,
+                                                         sgrp, moments, model_mask[i,:], start[i], 
+                                                         _tpl_to_use[i,:], velscale,
+                                                         velscale_ratio=velscale_ratio,
+                                                         vsyst=vsyst)
+
+        # Construct the parameter tying structure
+        tied = _construct_tied(_component, _vgrp, _sgrp, _moments)
+
         # Run the first fit
         if plot:
             plt.clf()
-        valid_templates, _templates, _gas_template, component_map, _component, _moments, _start, \
-                _tied = _validate_templates_components(templates, gas_template, component, moments,
-                                                       model_mask[i,:], start[i], tied,
-                                                       _tpl_to_use[i,:], velscale,
-                                                       velscale_ratio=velscale_ratio, vsyst=vsyst)
         pp = ppxf.ppxf(_templates.T, flux[i,:], noise[i,:], velscale, _start,
                        velscale_ratio=velscale_ratio, plot=plot, moments=_moments, degree=degree,
-                       mdegree=mdegree, lam=wave, reddening=reddening, tied=_tied,
+                       mdegree=mdegree, lam=wave, reddening=reddening, tied=tied,
                        mask=model_mask[i,:], vsyst=vsyst, component=_component,
                        gas_component=_gas_template, quiet=quiet, linear=linear)
         if plot:
@@ -550,20 +643,27 @@ def _fit_iteration(templates, wave, flux, noise, velscale, start, moments, compo
             # the starting values from the original input
             sol, err = _reorder_solution(pp.sol, pp.error, component_map, moments, start=start[i])
 
-            # Refit using best-fit kinematics from previous fit
+            # Confirm that all templates and components are valid and
+            # rearrange component arrays, if necessary
+            valid_templates, _templates, _gas_template, component_map, _component, _vgrp, _sgrp, \
+                    _moments, _start \
+                            = _validate_templates_components(templates, gas_template, component,
+                                                             vgrp, sgrp, moments, model_mask[i,:],
+                                                             sol, _tpl_to_use[i,:], velscale,
+                                                             velscale_ratio=velscale_ratio,
+                                                             vsyst=vsyst)
+
+            # Construct the parameter tying structure
+            tied = _construct_tied(_component, _vgrp, _sgrp, _moments)
+
+            # Refit using best-fit kinematics from previous fit as
+            # initial guesses
             if plot:
                 plt.clf()
-            valid_templates, _templates, _gas_template, component_map, _component, _moments, \
-                    _start, _tied = _validate_templates_components(templates, gas_template,
-                                                                   component, moments,
-                                                                   model_mask[i,:], sol, tied,
-                                                                   _tpl_to_use[i,:], velscale,
-                                                                   velscale_ratio=velscale_ratio,
-                                                                   vsyst=vsyst)
             pp = ppxf.ppxf(_templates.T, flux[i,:], noise[i,:], velscale, _start,
                            velscale_ratio=velscale_ratio, plot=plot, moments=_moments,
                            degree=degree, mdegree=mdegree, lam=wave, reddening=reddening,
-                           tied=_tied, mask=model_mask[i,:], vsyst=vsyst, component=_component,
+                           tied=tied, mask=model_mask[i,:], vsyst=vsyst, component=_component,
                            gas_component=_gas_template, quiet=quiet, linear=linear)
             if plot:
                 plt.show()
@@ -598,33 +698,98 @@ def _fit_iteration(templates, wave, flux, noise, velscale, start, moments, compo
                     kininp, kin, kin_err
 
 
-def _combine_stellar_templates(templates, gas_template, wgts, component):
+def _set_to_using_optimal_templates(nspec, ntpl, wgts, component, vgrp=None, sgrp=None):
+    # Set the gas templates
+    _gas_template = np.ones(ntpl, dtype=bool)
+    _gas_template[:nspec] = False
+    ngas = np.sum(_gas_template)
+   
+    # Set which templates to use with each spectrum; do not use optimal
+    # templates where the stellar continuum was given no weight
+    _tpl_to_use = np.zeros((nspec,ntpl), dtype=bool)
+    _tpl_to_use[:,nspec:] = True
+    _tpl_to_use[np.arange(nspec),np.arange(nspec)] = np.sum(wgts[:nspec,:], axis=1) > 0
+
+    # Update the components
+    _component = np.append(np.zeros(nspec, dtype=int), component[-ngas:])
+
+    # Check that the components make sense
+    if np.any(np.unique(_component) != np.arange(np.amax(_component)+1)):
+        raise ValueError('Problem constructing new component vector.  Likely more than one '
+                         'stellar component.')
+
+    # Update the kinematic groups
+    _vgrp = None if vgrp is None else np.append(np.zeros(nspec, dtype=int), vgrp[-ngas:])
+    _sgrp = None if sgrp is None else np.append(np.zeros(nspec, dtype=int), sgrp[-ngas:])
+
+    return _gas_template, _tpl_to_use, _component, _vgrp, _sgrp
+
+
+def _combine_stellar_templates(templates, gas_template, wgts, component, vgrp=None, sgrp=None):
     """
-    Construct the optimal stellar template for each fitted spectrum.
+    Reconstruct the set of templates used to fit each spectrum.
+
+    Based on an initial fit to the spectra, construct a single optimal
+    stellar template to use for each spectrum, and combine those with
+    the existing gas templates.  Each optimal stellar-continuum template
+    is set to the zeroth component.
+
+    .. warning::
+
+        - There can only be one stellar component per fit.
+        - It is possible for some optimal stellar-continuum templates to
+          be 0 everywhere.  In this case, the template is excluded from
+          the array selecting which templates to include in the fit;
+          however, that template *is* assigned a component.  These
+          details are handled by :func:`_ppxf_component_setup`.
+  
+    .. todo::
+        - Allow for different template construct modes?  E.g., use all,
+          use anything that was non-zero in the first fit, or use
+          single optimal template (as done now).
 
     Args:
-        templates (numpy.ndarray): Templates library to use for fitting.
-            Shape is (NTPLPIX,NTPL).
-        gas_template (numpy.ndarray): Boolean vector that selects the
-            gas templates.  Shape is (NTPL,).
-        wgts (numpy.ndarray):  The best-fitting template weights for
-            each template in each spectrum.  Shape is (NSPEC,NTPL).
-        component (numpy.ndarray): Integer vector identifying the
-            kinematic component for each template.  Shape is (NTPL,).
+        templates (numpy.ndarray):
+            Templates library to use for fitting.  Shape is
+            (NTPLPIX,NTPL).
+        gas_template (numpy.ndarray):
+            Boolean vector that selects the gas templates.  Shape is
+            (NTPL,).
+        wgts (numpy.ndarray):
+            The best-fitting template weights for each template in each
+            spectrum.  Shape is (NSPEC,NTPL).
+        component (numpy.ndarray):
+            Integer vector identifying the kinematic component for each
+            template.  Shape is (NTPL,).
+        vgrp (array-like, optional):
+            The integer velocity group associated with each template.
+            Shape is (:math:`N_{\rm tpl},), but can be None.
+        sgrp (array-like, optional):
+            The integer sigma group associated with each template.
+            Shape is (:math:`N_{\rm tpl},), but can be None. 
 
     Returns:
-        numpy.ndarray: Five arrays are returned: (1) the weights of only
-        the stellar templates used in constructing each optimal template
-        [shape is (NSPEC,NTPL)]; (2) the optimal stellar templates for
-        each spectrum with the gas templates appended [shape is
-        (NSPEC+NGASTPL,NPIXTPL)]; (3) a boolean array that selects the
-        gas templates [shape is (NSPEC+NGASTPL,); (4) boolean array
-        selecting which templates to use with each spectrum [shape is
-        (NSPEC,NSPEC+NGASTPL)]; (5) integer array setting the component
-        associated with each template [shape is (NSPEC+NGASTPL)].
+        Seven arrays are returned::
+            - (1) the weights of only the stellar templates used in
+              constructing each optimal template [shape is
+              (NSPEC,NTPL)]; 
+            - (2) the optimal stellar templates for each spectrum with
+              the gas templates appended [shape is
+              (NSPEC+NGASTPL,NPIXTPL)]; 
+            - (3) a boolean array that selects the gas templates [shape
+              is (NSPEC+NGASTPL,); 
+            - (4) boolean array selecting which templates to use with
+              each spectrum [shape is (NSPEC,NSPEC+NGASTPL)]
+            - (5) integer array setting the component associated with
+              each template [shape is (NSPEC+NGASTPL)].
+            - (6) integer array setting the velocity group associated
+              with each template [shape is (NSPEC+NGASTPL)].
+            - (7) integer array setting the sigma group associated with
+              each template [shape is (NSPEC+NGASTPL)].
 
     Raises:
-        ValueError: Raised if there is more than one stellar component.
+        ValueError:
+            Raised if there is more than one stellar component.
 
     """
     # Get the best-fit templates for each bin
@@ -634,56 +799,47 @@ def _combine_stellar_templates(templates, gas_template, wgts, component):
 
     # Update the list of templates
     _templates = np.append(np.atleast_2d(optimal_template), templates[gas_template,:], axis=0)
-    _gas_template = np.ones(_templates.shape[0], dtype=bool)
-    _gas_template[:optimal_template.shape[0]] = False
-   
-    # Set which templates to use with each spectrum
-    nspec = wgts.shape[0]
-    _tpl_to_use = np.zeros((nspec,_templates.shape[0]), dtype=bool)
-    _tpl_to_use[:,nspec:] = True
-    _tpl_to_use[np.arange(nspec),np.arange(nspec)] = True
 
-    # Update the components
-    _component = np.append(np.zeros(nspec).astype(int), component[gas_template])
-
-    # Check that the components make sense
-    if np.any(np.unique(_component) != np.arange(np.amax(_component)+1)):
-        raise ValueError('Problem constructing new component vector.  Likely more than one '
-                         'stellar component.')
+    # Update the relevant vectors
+    _gas_template, _tpl_to_use, _component, _vgrp, _sgrp \
+            = _set_to_using_optimal_templates(stellar_wgts.shape[0], _templates.shape[0],
+                                              stellar_wgts, component, vgrp=vgrp, sgrp=sgrp)
 
     # Return new template list
-    return stellar_wgts, _templates, _gas_template, _tpl_to_use, _component
+    return stellar_wgts, _templates, _gas_template, _tpl_to_use, _component, _vgrp, _sgrp
 
 
 def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velscale_ratio,
-                            inp_component, gas_template, inp_moments, inp_start, tied=None,
-                            degree=-1, mdegree=0, reddening=None, reject_boxcar=101, vsyst=0,
-                            tpl_to_use=None, flux_binned=None, noise_binned=None, mask_binned=None,
-                            x_binned=None, y_binned=None, x=None, y=None, plot=False, quiet=False,
-                            debug=False, sigma_rej=3.):
-
+                            inp_component, gas_template, inp_moments, inp_start, vgrp=None,
+                            sgrp=None, degree=-1, mdegree=0, reddening=None, reject_boxcar=101,
+                            vsyst=0, tpl_to_use=None, bin_id=None, flux_binned=None,
+                            noise_binned=None, mask_binned=None, x_binned=None, y_binned=None,
+                            x=None, y=None, plot=False, quiet=False, debug=False, sigma_rej=3.):
     """
     Main calling function for fitting stellar-continuum and nebular
     emission lines in many spectra using pPXF.
 
-    This is a generalization of :func:`emline_fitter_with_ppxf` provided
-    by Xihan Ji and Michele Cappellari.
+    This is a generalization of the original function provided by Xihan
+    Ji and Michele Cappellari.
     
     The function *does not* fit for the stellar kinematics; these are
     fixed during the fit (as provided in `inp_start`) and should have
-    resulted from a previous fit to the stellar-continuum only.  The
-    number of stellar kinematic moments must have been the same for all
-    spectra, and there can only be one stellar component.
+    resulted from a previous fit to the stellar-continuum only; see
+    :class:`mangadap.proc.ppxffit.PPXFFit`.  The number of stellar
+    kinematic moments must have been the same for all spectra, and there
+    can only be one stellar component.
 
-    The templates are expected to be an integer number of velscale_ratio
-    in length; see
+    The templates are expected to be an integer number of
+    `velscale_ratio` in length; see
     :func:`mangadap.proc.ppxffit.PPXFFit.check_templates`.
 
     The fitting procedure can be performed for a single set of spectra,
     or a set of spectra that are remapped from an input set of binned
     spectra.  The latter operation is selected by providing the binned
-    flux, error, and mask arrays and the binned and unbinned on-sky
-    coordinates (see argument description below).
+    flux, error, and mask arrays.  The individual spectra can be mapped
+    to a binned spectrum using binned and unbinned on-sky coordinates or
+    by providing the bin indices directly (see argument description
+    below).
 
     When the binned spectra are provided, the fitting procedure is as
     follows:
@@ -714,10 +870,17 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
     template, instead of basing the optimal template on the initial fit
     to the binned spectrum.
 
+    To tie the kinematics assigned to each template, you have to assign
+    them to velocity or velocity dispersion (sigma) groups using `vgrp`
+    and `sgrp`, respectively.  These arrays are used to construct the
+    ppxf `tied` argument, appropriate for each spectrum fit.
+
+    Each template is identified as a gas template using the provided
+    `gas_template` argument.
+
     .. todo::
-        - Allow a pre-assignment of each remapped spectrum to the binned
-          spectra.
         - Allow mask(s) to be optional
+        - Update the docs
 
     Args:
         templates (numpy.ndarray):
@@ -754,9 +917,12 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
             element has shape (NMOM,), such that the number of moments
             can be different for each component.  NCOMP and NMOM should
             be the same for all object spectra.
-        tied (:obj:`list`, optional):
-            List of parameters to tie during the fit.  Shape is
-            (NCOMP,).
+        vgrp (array-like, optional):
+            The integer velocity group associated with each template.
+            Shape is (:math:`N_{\rm tpl},). 
+        sgrp (array-like, optional):
+            The integer sigma group associated with each template.
+            Shape is (:math:`N_{\rm tpl},). 
         degree (:obj:`int`, optional):
             Order of the additive polynomial to include in the fit.  Not
             included by default.
@@ -780,6 +946,14 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
             provided, the shape must be (NBIN,NTPL) when providing the
             binned data and (NSPEC,NTPL) when no binned data are
             provided.
+        bin_id (numpy.ndarray, optional):
+            Bin index associated with each spectrum.  Ignored if binned
+            spectra are not provided.  If binned spectra are provided,
+            and this is None, coordinates must be provided and they are
+            used to associate each bin with a binned spectrum just based
+            by proximity.  If provided, this associates each spectrum to
+            the binned spectrum to use for the stellar kinematics.
+            Shape is (NSPEC,).
         flux_binned (numpy.ndarray, optional):
             Binned spectra with previous fits to the stellar kinematics.
             See purpose above.
@@ -806,23 +980,29 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
             correct shape.  No fits are performed.
    
     Returns:
-        numpy.ndarray: Eleven arrays are returned: (1) The best-fitting
-        model for each spectrum [shape is (NSPEC,NPIX)]; (2) the
-        best-fitting emission-line-only model for each spectrum [shape
-        is (NSPEC,NPIX)]; (3) a boolean array that is True for all
-        spectral pixels included in the fit [shape is (NSPEC,NPIX)]; (4)
-        the best-fitting weight for each template in each spectrum
-        [shape is (NSPEC,NTPL)]; (5) the error in the best-fitting
-        template weights [shape is (NSPEC,NTPL)]; (6) the coefficients
-        of the additive polynomial for each spectrum [shape is
-        (NSPEC,DEGREE+1)], None if not fit; (7) the coefficients of the
-        multiplicative polynomial for each spectrum [shape is
-        (NSPEC,MDEGREE)]; (8) the best-fitting reddening values for each
-        spectrum [shape is (NSPEC,)], None if not fit; (9) the input
-        kinematics for each fit [shape is (NSPEC,sum(MOMENTS)], None if
-        not fit; (10) the best-fit kinematics for each fit [shape is
-        (NSPEC,sum(MOMENTS)]; (11) the formal error in the best-fit
-        kinematics for each fit [shape is (NSPEC,sum(MOMENTS)].
+        Eleven arrays are returned:
+            - (1) The best-fitting model for each spectrum [shape is
+              (NSPEC,NPIX)]; 
+            - (2) the best-fitting emission-line-only model for each
+              spectrum [shape is (NSPEC,NPIX)]; 
+            - (3) a boolean array that is True for all spectral pixels
+              included in the fit [shape is (NSPEC,NPIX)]; 
+            - (4) the best-fitting weight for each template in each
+              spectrum [shape is (NSPEC,NTPL)]; 
+            - (5) the error in the best-fitting template weights [shape
+              is (NSPEC,NTPL)]; 
+            - (6) the coefficients of the additive polynomial for each
+              spectrum [shape is (NSPEC,DEGREE+1)], None if not fit; 
+            - (7) the coefficients of the multiplicative polynomial for
+              each spectrum [shape is (NSPEC,MDEGREE)]; 
+            - (8) the best-fitting reddening values for each spectrum
+              [shape is (NSPEC,)], None if not fit; 
+            - (9) the input kinematics for each fit [shape is
+              (NSPEC,sum(MOMENTS)], None if not fit; 
+            - (10) the best-fit kinematics for each fit [shape is
+              (NSPEC,sum(MOMENTS)]; 
+            - (11) the formal error in the best-fit kinematics for each
+              fit [shape is (NSPEC,sum(MOMENTS)].
 
     Raises:
         NotImplementedError:
@@ -841,20 +1021,27 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
     if np.sum(gas_template) != templates.shape[0] and np.amax(inp_component[~gas_template]) != 0:
         raise NotImplementedError('Can only fit one stellar component!')
 
-    # Confirm which binned datasets were provided (mask_binned can be
-    # None)
-    binned_data_provided = np.array([ x is not None for x in [flux_binned, noise_binned,
-                                                              x_binned, y_binned, x, y] ])
-    if np.any(binned_data_provided) and not np.all(binned_data_provided):
-        raise ValueError('To use bin-remapping mode, must provide all of the following: '
-                         'flux_binned, noise_binned, x_binned, y_binned, x, y')
-
     # There must be data for all spectra to proceed
     if np.any(np.invert(np.any(mask, axis=1))):
         raise ValueError('All spectra must have at least some pixels to fit!')
 
-    # Set the fitting mode
-    mode = 'fitBins' if np.all(binned_data_provided) else 'noBins'
+    # Confirm necessary binned data provided, if any is provided
+    binned_spectra_provided = flux_binned is not None and noise_binned is not None
+    can_match_binned_spectra = bin_id is not None \
+                                or np.all([a is not None for a in [x_binned, y_binned, x, y]])
+    if binned_spectra_provided and not can_match_binned_spectra:
+        raise ValueError('Cannot match binned and unbinned spectra; provide the ID matches '
+                         'directly or provide coordinates for a proximity match.')
+    if not binned_spectra_provided and can_match_binned_spectra:
+        warnings.warn('Binned spectra not (or incorrectly) provided; ignoring some arguments.')
+
+    # If binned data is provided, get the binning match
+    mode = 'noBins'         # Fitting mode
+    _bin_id = None
+    if binned_spectra_provided and can_match_binned_spectra:
+        mode = 'fitBins'    # Fitting mode
+        _bin_id = np.argmin(np.square(x[:,None]-x_binned) + np.square(y[:,None]-y_binned), axis=1) \
+                            if bin_id is None else bin_id
 
     # Check the shape of provided template flags
     if tpl_to_use is not None:
@@ -869,12 +1056,22 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
     nspec, nwave = flux.shape
     if mode == 'noBins' and len(inp_start) != nspec:
         raise ValueError('Input starting kinematic arrays do not match the input spectra.')
+    if mode == 'fitBins' and len(_bin_id) != nspec:
+        raise ValueError('Length if array matching spectra to bins is incorrect.')
     if len(wave) != nwave:
         raise ValueError('Mismatch of wavelength vector with provided spectra.')
 
     # Get the number of templates and the number of kinematic parameters
     ntpl, npix_tpl = templates.shape
     nkin = np.sum(np.absolute(inp_moments))
+
+    # Check that the number of components is correct
+    if len(inp_component) != ntpl:
+        raise ValueError('Must assign each template to a kinematic component.')
+    if vgrp is not None and len(vgrp) != ntpl:
+        raise ValueError('If provided, must assign each template to a velocity group.')
+    if sgrp is not None and len(sgrp) != ntpl:
+        raise ValueError('If provided, must assign each template to a sigma group.')
 
     # Instantiate the output
     model_flux = np.zeros(flux.shape, dtype=float)
@@ -895,32 +1092,32 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
     # If debugging, just return the initialized output
     if debug:
         warnings.warn('JUST DEBUGGING.  NO EMISSION-LINE FITS PERFORMED!!')
-        if mode == 'fitBins':
-            # - Get the index of the nearest bin for every spaxel
-            nearest_bin = np.argmin(np.square(x[:,None] - x_binned)
-                                        + np.square(y[:,None] - y_binned), axis=1)
-        else:
-            nearest_bin = np.arange(nspec)
+#        if mode == 'fitBins':
+#            # - Get the index of the nearest bin for every spaxel
+#            nearest_bin = np.argmin(np.square(x[:,None] - x_binned)
+#                                        + np.square(y[:,None] - y_binned), axis=1)
+#        else:
+#            nearest_bin = np.arange(nspec)
         kininp = np.array([np.concatenate(tuple(inp_start[0]))]*nspec)
         kin = kininp
         kinerr = kin/10
         return model_flux, model_eml_flux, model_mask, tpl_wgt, tpl_wgt_err, addcoef, multcoef, \
-                    ebv, kininp, kin, kin_err, nearest_bin
+                    ebv, kininp, kin, kin_err, _bin_id #nearest_bin
 
-    # First fit the binned data
+    # Fit the binned data
     if mode == 'fitBins':
 
-        # If binned data provided, the input starting kinematics arrays
-        # must be sized appropriately for the binned data 
+        # For the binned data, the input starting kinematics arrays
+        # must have the appropriate shape
         nbin = flux_binned.shape[0]
         if len(inp_start) != nbin:
             raise ValueError('Input starting kinematic arrays do not match the binned spectra.')
         if len(wave) != flux_binned.shape[1]:
             raise ValueError('Mismatch of wavelength vector with provided binned spectra.')
 
-        # First fit the binned data:
+        # First fit iteration:
         # - Stellar components with fixed kinematics
-        # - All gas templates in a single component
+        # - All gas templates in a single component (no parameter tying)
         component, moments, start = _ppxf_component_setup(inp_component, gas_template, inp_start,
                                                           single_gas_component=True)
         _, _, _, binned_tpl_wgts, _, _, _, _, _, binned_kin, _ \
@@ -931,56 +1128,61 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
                                      mask=mask_binned, vsyst=vsyst, plot=plot, quiet=quiet,
                                      sigma_rej=sigma_rej)
 
-        valid_bin_str_fit = np.sum(binned_tpl_wgts[:,np.invert(gas_template)], axis=1) > 0
-        valid_bin_fit = np.sum(binned_tpl_wgts, axis=1) > 0
-        nvalid_bin_str_fit = np.sum(valid_bin_str_fit)
+#        # - Determine which bins have applied non-zero weights to any
+#        #   stellar template
+#        valid_bin_str_fit = np.sum(binned_tpl_wgts[:,np.invert(gas_template)], axis=1) > 0
+#        nvalid_bin_str_fit = np.sum(valid_bin_str_fit)
 
-        # - Create new template set with the optimal stellar template
-        #   for each spectrum, only using those with valid stellar
-        #   weights
-        stellar_wgts, _templates, _gas_template, _tpl_to_use, _component \
+        # - Create a new template set that includes the optimal stellar
+        #   template for each *binned* spectrum based on the
+        #   best-fitting weights from above.  Propagate the changes to
+        #   the components and groups.
+        stellar_wgts, _templates, _gas_template, _tpl_to_use, _component, _vgrp, _sgrp \
                     = _combine_stellar_templates(templates, gas_template,
-                                                 binned_tpl_wgts[valid_bin_str_fit,:],
-                                                 inp_component)
+#                                                 binned_tpl_wgts[valid_bin_str_fit,:],
+                                                 binned_tpl_wgts, inp_component, vgrp, sgrp)
 
-        # - Get the index of the nearest bin for every spaxel
-        nearest_bin = np.argmin(np.square(x[:, None] - x_binned[valid_bin_str_fit]) 
-                                    + np.square(y[:, None] - y_binned[valid_bin_str_fit]), axis=1)
+#        # - Get the index of the nearest bin for every spaxel
+#        nearest_bin = np.argmin(np.square(x[:, None] - x_binned[valid_bin_str_fit]) 
+#                                    + np.square(y[:, None] - y_binned[valid_bin_str_fit]), axis=1)
 
-        # - Use the binned data as the starting guess for the nearest
-        #   spaxel
-        stellar_wgts = stellar_wgts[nearest_bin,:]
-        _templates = np.append(_templates[:nvalid_bin_str_fit,:][nearest_bin,:],
-                                    _templates[nvalid_bin_str_fit:,:], axis=0)
-        _gas_template = np.zeros(_templates.shape[0], dtype=bool)
-        _gas_template[nspec:] = True
+        # - Use the binned data as the starting guess for the spaxels
+#        stellar_wgts = stellar_wgts[nearest_bin,:]
+#        _templates = np.append(_templates[:nvalid_bin_str_fit,:][nearest_bin,:],
+#                                    _templates[nvalid_bin_str_fit:,:], axis=0)
 
-        _tpl_to_use = np.zeros((nspec,_templates.shape[0]), dtype=bool)
-        _tpl_to_use[:,_gas_template] = True
-        _tpl_to_use[np.arange(nspec),np.arange(nspec)] = True
-
-        _component = np.append(np.zeros(nspec, dtype=int), _component[nvalid_bin_str_fit:])
-
-        # - Use the starting positions from the fit to the bins for the
-        #   fit to the individual spaxels
+        # - Restructure the relevant arrays to prepare for the fits to
+        #   the *individual* spectra.  Propagate the changes to the
+        #   components and groups.
+        stellar_wgts = stellar_wgts[_bin_id,:]
+        _templates = np.append(_templates[:nbin,:][_bin_id,:], _templates[nbin:,:], axis=0)
+        _gas_template, _tpl_to_use, _component, _vgrp, _sgrp \
+                = _set_to_using_optimal_templates(nspec, _templates.shape[0], stellar_wgts,
+                                                  _component, vgrp=_vgrp, sgrp=_sgrp)
+    
+        # - Use the best-fit parameters from the binned spectra as the
+        #   starting guesses for the fits to the the individual spaxels
         n_gas_comp = len(np.unique(_component[_gas_template]))
-        _start = inp_start[nearest_bin]
-        gas_start = binned_kin[valid_bin_str_fit,np.absolute(moments[0]):][nearest_bin,:]
+        _start = inp_start[_bin_id]
+        gas_start = binned_kin[:,np.absolute(moments[0]):][_bin_id,:]
         for i in range(nspec):
             _start[i,1:] = np.array([ [gas_start[i].tolist()]*n_gas_comp ])
-
     else:
-        nearest_bin = np.arange(nspec)
+        # Binned spectra were not provided, prepare to fit the
+        # individual spectra by just pointing to the input
+        _bin_id = np.arange(nspec)
         stellar_wgts = None
         _templates = templates
         _gas_template = gas_template
         _tpl_to_use = tpl_to_use
         _component = inp_component
+        _vgrp = vgrp
+        _sgrp = sgrp
         _start = inp_start
 
-
-    # Fit the data iteratively:
-    #  - Fit with all the gas templates as part of one component
+    # First fit to the individual spectra
+    #  - Fit with all the gas templates as part of one component (no
+    #    parameter tying)
     component, moments, start = _ppxf_component_setup(_component, _gas_template, _start,
                                                       single_gas_component=True)
     model_mask = mask.copy()
@@ -992,16 +1194,17 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
                              quiet=quiet, sigma_rej=sigma_rej)
 
     if mode == 'noBins':
-        # - If no previous fit to binned spectra, create new template
-        #   set with the optimal stellar template for each spectrum
-        # TODO: Template modes:
-        #   - use all
-        #   - use anything that was non-zero in the first fit
-        #   - use single, optimal template
-        stellar_wgts, _templates, _gas_template, _tpl_to_use, _component \
-                    = _combine_stellar_templates(_templates, _gas_template, tpl_wgts, _component)
+        # If binned spectra were not provided, the fit above is the
+        # first fit to the individual spectra using all
+        # stellar-continuum templates.  Use the result of that fit to
+        # construct the optimal template for each spectrum, and
+        # restructure the relevant component arrays.
+        stellar_wgts, _templates, _gas_template, _tpl_to_use, _component, _vgrp, _sgrp \
+                    = _combine_stellar_templates(_templates, _gas_template, tpl_wgts, _component,
+                                                 _vgrp, _sgrp)
 
-    # - Use this result to reset the starting estimates for the gas kinematics
+    # Second fit to the individual spectra
+    # - Use first fit to to reset the starting estimates for the gas kinematics
     all_stellar_moments = np.sum(np.absolute(moments[:-1]))
     gas_start = kin[:,all_stellar_moments:]
     component, moments, start = _ppxf_component_setup(_component, _gas_template, _start,
@@ -1013,9 +1216,10 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
                                                   moments, component, _gas_template,
                                                   tpl_to_use=_tpl_to_use, reject_boxcar=None,
                                                   velscale_ratio=velscale_ratio, degree=degree,
-                                                  mdegree=mdegree, reddening=reddening, tied=tied,
-                                                  mask=model_mask, vsyst=vsyst, plot=plot,
-                                                  quiet=quiet, sigma_rej=sigma_rej)
+                                                  mdegree=mdegree, reddening=reddening,
+                                                  vgrp=_vgrp, sgrp=_sgrp, mask=model_mask,
+                                                  vsyst=vsyst, plot=plot, quiet=quiet,
+                                                  sigma_rej=sigma_rej)
 
     # - Use the single output weight to renormalize the individual
     #   stellar template weights (only one of the weights for the
@@ -1027,5 +1231,5 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
     _tpl_wgts_err[:,gas_template] = tpl_wgts_err[:,_gas_template]
 
     return model_flux, model_eml_flux, model_mask, _tpl_wgts, _tpl_wgts_err, addcoef, multcoef, \
-                    ebv, kininp, kin, kin_err, nearest_bin
+                    ebv, kininp, kin, kin_err, _bin_id
 

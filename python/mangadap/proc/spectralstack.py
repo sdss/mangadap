@@ -902,6 +902,8 @@ class SpectralStack():
         .. todo:
             - Allow for renormalization of spectra before stacking.
               Where and how, TBD.
+            - If only one spectrum returned, return flux array as a
+              single vector?
 
         Args:
             wave (numpy.ndarray):
