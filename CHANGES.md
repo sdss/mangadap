@@ -27,6 +27,10 @@
  - Construction of the paramter tying object in the emission-line fitter
    is now done just before each spectrum is fit by ppxf (not globally in
    Sasuke) to better handle when components are omitted.
+ - When deconstructing bins into spaxels, the second fit iteration
+   *only* fits spaxels that are components of binned spectra and does
+   not refit spectra that constitute an entire bin themselves.  I.e.
+   this removes some largely redundant fitting.
 
 TODO:
  - Documentation of config examples are out of date!

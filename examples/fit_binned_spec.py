@@ -53,8 +53,9 @@ if __name__ == '__main__':
     plt = 7815
     ifu = 3702
     # Spaxel coordinates
-    x = numpy.array([21,20])
-    y = numpy.array([21,21])
+    x = numpy.array([21,20,19])
+    y = numpy.array([21,21,21])
+    binid=numpy.array([0,0,1])
     # Number of spectra
     nspec = len(x)
 
@@ -105,11 +106,11 @@ if __name__ == '__main__':
     else:
         # Stack them into a single spectrum
         wave_binned, flux_binned, fsdev_binned, npix_binned, ivar_binned, sres_binned, \
-                covar_binned = SpectralStack().stack(wave, flux, ivar=ivar, sres=sres)
+                covar_binned = SpectralStack().stack(wave, flux, binid=binid, ivar=ivar, sres=sres)
         ferr_binned = numpy.ma.power(ivar_binned, -0.5)
-        x_binned = numpy.array([numpy.mean(x)])
-        y_binned = numpy.array([numpy.mean(y)])
-        z_binned = numpy.array([numpy.mean(z)])
+        x_binned = numpy.array([numpy.mean(x[binid == i]) for i in numpy.unique(binid)])
+        y_binned = numpy.array([numpy.mean(y[binid == i]) for i in numpy.unique(binid)])
+        z_binned = numpy.array([numpy.mean(z[binid == i]) for i in numpy.unique(binid)])
         dispersion_binned = numpy.array([numpy.mean(dispersion)])
 
     if usr_plots:
@@ -215,9 +216,9 @@ if __name__ == '__main__':
                          stellar_kinematics=stellar_kinematics, etpl_sinst_mode='offset',
                          etpl_sinst_min=10., velscale_ratio=velscale_ratio,
                          matched_resolution=False, mdegree=8, plot=fit_plots,
-                         remap_flux=flux, remap_ferr=ferr, remap_mask=el_pixel_mask,
-                         remap_sres=sres, remap_skyx=x, remap_skyy=y, obj_skyx=x_binned,
-                         obj_skyy=y_binned)
+                         remapid=binid, remap_flux=flux, remap_ferr=ferr,
+                         remap_mask=el_pixel_mask, remap_sres=sres, remap_skyx=x, remap_skyy=y,
+                         obj_skyx=x_binned, obj_skyy=y_binned)
 
     # Get the stellar continuum that was fit for the emission lines
     elcmask = eml_mask > 0
@@ -228,14 +229,15 @@ if __name__ == '__main__':
 
     # Plot the result
     if usr_plots:
-        pyplot.plot(wave, flux[0,:], label='Data')
-        pyplot.plot(wave, model_flux[0,:], label='Model')
-        pyplot.plot(wave, el_continuum[0,:], label='EL Cont.')
-        pyplot.plot(wave, sc_continuum[0,:], label='SC Cont.')
-        pyplot.legend()
-        pyplot.xlabel('Wavelength')
-        pyplot.ylabel('Flux')
-        pyplot.show()
+        for i in range(flux.shape[0]):
+            pyplot.plot(wave, flux[i,:], label='Data')
+            pyplot.plot(wave, model_flux[i,:], label='Model')
+            pyplot.plot(wave, el_continuum[i,:], label='EL Cont.')
+            pyplot.plot(wave, sc_continuum[binid[i],:], label='SC Cont.')
+            pyplot.legend()
+            pyplot.xlabel('Wavelength')
+            pyplot.ylabel('Flux')
+            pyplot.show()
 
     # Remeasure the emission-line moments with the new continuum
     new_elmom = EmissionLineMoments.measure_moments(momdb, wave, flux, continuum=el_continuum,

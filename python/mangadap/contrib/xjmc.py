@@ -102,32 +102,37 @@ def _ppxf_component_setup(component, gas_template, start, single_gas_component=F
         However, this **is not checked** by the function.
 
     Args:
-        component (numpy.ndarray): The full list of components for all
-            templates.  The total number of components is NCOMP.
-        gas_template (numpy.ndarray): A boolean array identifying the
-            gas templates.
-        start (list, numpy.ndarray): The starting kinematics to use for
-            each object spectrum.  Shape is (NOBJ,); each element has
-            shape (NCOMP,); each component element has shape (NMOM,),
-            such that the number of moments can be different for each
-            component.  NCOMP and NMOM should be the same for all object
-            spectra.
-        single_gas_component (bool): (**Optional**) Flag to force all
-            gas components to have the same kinematics.
-        gas_start (list, numpy.ndarray): (**Optional**) The starting
-            kinematics to use for the gas components.  Shape must be
-            (NOBJ,2).
+        component (:obj:`numpy.ndarray`):
+            The full list of components for all templates.  The total
+            number of components is NCOMP.
+        gas_template (:obj:`numpy.ndarray`):
+            A boolean array identifying the gas templates.
+        start (:obj:`list`, :obj:`numpy.ndarray`):
+            The starting kinematics to use for each object spectrum.
+            Shape is (NOBJ,); each element has shape (NCOMP,); each
+            component element has shape (NMOM,), such that the number of
+            moments can be different for each component.  NCOMP and NMOM
+            should be the same for all object spectra.
+        single_gas_component (:obj:`bool`, optional):
+            Flag to force all gas components to have the same
+            kinematics.
+        gas_start (:obj:`list`, :obj:`numpy.ndarray`, optional):
+            The starting kinematics to use for the gas components.
+            Shape must be (NOBJ,2).
 
     Returns:
-        numpy.ndarray: Three arrays: (1) The list of downselected and
-        renumbered, if necessary, kinematic components, (2) the
-        downselected and reordered, if necessary, number of moments to
-        fit, and (3) the downselected and reordered starting guesses for
-        each component.
+        Three numpy arrays are returned:
+            - (1) The list of downselected and renumbered, if necessary,
+              kinematic components, 
+            - (2) the downselected and reordered, if necessary, number
+              of moments to fit, and 
+            - (3) the downselected and reordered starting guesses for
+              each component.
 
     Raises:
-        ValueError: Raised if the provided gas starting kinematics is
-            not correct.
+        ValueError:
+            Raised if the provided gas starting kinematics is not
+            correct.
     """
     # Number of object spectra to fit
     nobj = len(start)
@@ -812,7 +817,7 @@ def _combine_stellar_templates(templates, gas_template, wgts, component, vgrp=No
 def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velscale_ratio,
                             inp_component, gas_template, inp_moments, inp_start, vgrp=None,
                             sgrp=None, degree=-1, mdegree=0, reddening=None, reject_boxcar=101,
-                            vsyst=0, tpl_to_use=None, bin_id=None, flux_binned=None,
+                            vsyst=0, tpl_to_use=None, binid=None, flux_binned=None,
                             noise_binned=None, mask_binned=None, x_binned=None, y_binned=None,
                             x=None, y=None, plot=False, quiet=False, debug=False, sigma_rej=3.):
     """
@@ -946,7 +951,7 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
             provided, the shape must be (NBIN,NTPL) when providing the
             binned data and (NSPEC,NTPL) when no binned data are
             provided.
-        bin_id (numpy.ndarray, optional):
+        binid (numpy.ndarray, optional):
             Bin index associated with each spectrum.  Ignored if binned
             spectra are not provided.  If binned spectra are provided,
             and this is None, coordinates must be provided and they are
@@ -1027,7 +1032,7 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
 
     # Confirm necessary binned data provided, if any is provided
     binned_spectra_provided = flux_binned is not None and noise_binned is not None
-    can_match_binned_spectra = bin_id is not None \
+    can_match_binned_spectra = binid is not None \
                                 or np.all([a is not None for a in [x_binned, y_binned, x, y]])
     if binned_spectra_provided and not can_match_binned_spectra:
         raise ValueError('Cannot match binned and unbinned spectra; provide the ID matches '
@@ -1037,11 +1042,18 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
 
     # If binned data is provided, get the binning match
     mode = 'noBins'         # Fitting mode
-    _bin_id = None
+    _binid = None
     if binned_spectra_provided and can_match_binned_spectra:
-        mode = 'fitBins'    # Fitting mode
-        _bin_id = np.argmin(np.square(x[:,None]-x_binned) + np.square(y[:,None]-y_binned), axis=1) \
-                            if bin_id is None else bin_id
+        # Set fitting mode
+        mode = 'fitBins'
+        # Associate individual and binned spectra
+        _binid = np.argmin(np.square(x[:,None]-x_binned) + np.square(y[:,None]-y_binned), axis=1) \
+                            if binid is None else binid
+        # Determine which individual spectra are components of binned
+        # spectra actually made up of more than one spectrum.
+        # TODO: Only do this if binid is provided directly?
+        uniq, inv, cnt = np.unique(_binid, return_inverse=True, return_counts=True)
+        component_of_bin = cnt[inv] > 1 
 
     # Check the shape of provided template flags
     if tpl_to_use is not None:
@@ -1056,7 +1068,7 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
     nspec, nwave = flux.shape
     if mode == 'noBins' and len(inp_start) != nspec:
         raise ValueError('Input starting kinematic arrays do not match the input spectra.')
-    if mode == 'fitBins' and len(_bin_id) != nspec:
+    if mode == 'fitBins' and len(_binid) != nspec:
         raise ValueError('Length if array matching spectra to bins is incorrect.')
     if len(wave) != nwave:
         raise ValueError('Mismatch of wavelength vector with provided spectra.')
@@ -1078,8 +1090,8 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
     model_eml_flux = np.zeros(flux.shape, dtype=float)
     model_mask = np.zeros(flux.shape, dtype=bool)
 
-    tpl_wgt = np.zeros((nspec,ntpl), dtype=float)
-    tpl_wgt_err = np.zeros((nspec,ntpl), dtype=float)
+    tpl_wgts = np.zeros((nspec,ntpl), dtype=float)
+    tpl_wgts_err = np.zeros((nspec,ntpl), dtype=float)
 
     addcoef = None if degree < 0 else np.zeros((nspec,degree+1), dtype=float)
     multcoef = None if mdegree < 1 else np.zeros((nspec,mdegree), dtype=float)
@@ -1102,7 +1114,7 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
         kin = kininp
         kinerr = kin/10
         return model_flux, model_eml_flux, model_mask, tpl_wgt, tpl_wgt_err, addcoef, multcoef, \
-                    ebv, kininp, kin, kin_err, _bin_id #nearest_bin
+                    ebv, kininp, kin, kin_err, _binid #nearest_bin
 
     # Fit the binned data
     if mode == 'fitBins':
@@ -1154,23 +1166,25 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
         # - Restructure the relevant arrays to prepare for the fits to
         #   the *individual* spectra.  Propagate the changes to the
         #   components and groups.
-        stellar_wgts = stellar_wgts[_bin_id,:]
-        _templates = np.append(_templates[:nbin,:][_bin_id,:], _templates[nbin:,:], axis=0)
+        stellar_wgts = stellar_wgts[_binid,:]
+        _templates = np.append(_templates[:nbin,:][_binid,:], _templates[nbin:,:], axis=0)
         _gas_template, _tpl_to_use, _component, _vgrp, _sgrp \
                 = _set_to_using_optimal_templates(nspec, _templates.shape[0], stellar_wgts,
                                                   _component, vgrp=_vgrp, sgrp=_sgrp)
+        tpl_wgts = np.ones((nspec, nspec+np.sum(_gas_template)), dtype=float)
     
         # - Use the best-fit parameters from the binned spectra as the
         #   starting guesses for the fits to the the individual spaxels
         n_gas_comp = len(np.unique(_component[_gas_template]))
-        _start = inp_start[_bin_id]
-        gas_start = binned_kin[:,np.absolute(moments[0]):][_bin_id,:]
+        _start = inp_start[_binid]
+        gas_start = binned_kin[:,np.absolute(moments[0]):][_binid,:]
         for i in range(nspec):
             _start[i,1:] = np.array([ [gas_start[i].tolist()]*n_gas_comp ])
     else:
         # Binned spectra were not provided, prepare to fit the
         # individual spectra by just pointing to the input
-        _bin_id = np.arange(nspec)
+        _binid = np.arange(nspec)
+        component_of_bin = np.ones(nspec, dtype=bool)
         stellar_wgts = None
         _templates = templates
         _gas_template = gas_template
@@ -1182,16 +1196,30 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
 
     # First fit to the individual spectra
     #  - Fit with all the gas templates as part of one component (no
-    #    parameter tying)
+    #    parameter tying).  When binned spectra have been fit
+    #    previously, this only fits spectra that are components of a bin
+    #    with more than one spectrum!
+
     component, moments, start = _ppxf_component_setup(_component, _gas_template, _start,
                                                       single_gas_component=True)
     model_mask = mask.copy()
-    _, _, model_mask, tpl_wgts, _, _, _, _, _, kin, _ \
-            = _fit_iteration(_templates, wave, flux, noise, velscale, start, moments, component,
-                             _gas_template, tpl_to_use=_tpl_to_use, reject_boxcar=reject_boxcar,
-                             velscale_ratio=velscale_ratio, degree=degree, mdegree=mdegree,
-                             reddening=reddening, mask=model_mask, vsyst=vsyst, plot=plot,
-                             quiet=quiet, sigma_rej=sigma_rej)
+
+    # Restructure the kinematics array so that it can accept only
+    # fitting the individual spectra that themselves consisted of an
+    # entire bin
+    kin = start.copy()
+    kin = np.array([ k for k in kin ]).reshape(nspec,-1)
+
+    _, _, model_mask[component_of_bin,:], tpl_wgts[component_of_bin,:], _, _, _, _, _, \
+            kin[component_of_bin,:], _ \
+                    = _fit_iteration(_templates, wave, flux[component_of_bin,:],
+                                     noise[component_of_bin,:], velscale, start[component_of_bin],
+                                     moments, component, _gas_template,
+                                     tpl_to_use=_tpl_to_use[component_of_bin,:],
+                                     reject_boxcar=reject_boxcar, velscale_ratio=velscale_ratio,
+                                     degree=degree, mdegree=mdegree, reddening=reddening,
+                                     mask=model_mask[component_of_bin,:], vsyst=vsyst, plot=plot,
+                                     quiet=quiet, sigma_rej=sigma_rej)
 
     if mode == 'noBins':
         # If binned spectra were not provided, the fit above is the
@@ -1231,5 +1259,5 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
     _tpl_wgts_err[:,gas_template] = tpl_wgts_err[:,_gas_template]
 
     return model_flux, model_eml_flux, model_mask, _tpl_wgts, _tpl_wgts_err, addcoef, multcoef, \
-                    ebv, kininp, kin, kin_err, _bin_id
+                    ebv, kininp, kin, kin_err, _binid
 

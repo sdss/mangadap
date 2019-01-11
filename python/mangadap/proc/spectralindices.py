@@ -1006,7 +1006,7 @@ class SpectralIndices:
         # Check that the spectrum selection and emission-line model are
         # consistent
         if measure_on_unbinned_spaxels and emission_line_model is not None \
-                and not emission_line_model.method['deconstruct_bins']:
+                and emission_line_model.method['deconstruct_bins'] == 'ignore':
             raise ValueError('Cannot use this emission-line model with unbinned spaxels.')
 
         # Get the main data arrays
@@ -1857,7 +1857,7 @@ class SpectralIndices:
         #  - The EmissionLineModel fits the binned spectra or unbinned
         #    spaxels as specified by its deconstruct_bins flag
         measure_on_unbinned_spaxels = self.emission_line_model is not None \
-                and self.emission_line_model.method['deconstruct_bins']
+                and self.emission_line_model.method['deconstruct_bins'] != 'ignore'
 
         self.spatial_shape =self.binned_spectra.spatial_shape
         self.nspec = self.binned_spectra.drpf.nspec if measure_on_unbinned_spaxels \

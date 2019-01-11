@@ -107,36 +107,50 @@ class SasukePar(ParSet):
             Emission-line database with the details of the lines to be
             fit.
         continuum_templates
-            (str, :class:`mangadap.proc.templatelibrary.TemplateLibrary`):
-            (**Optional**) The new continuum template library to use
-            during the emission-line fit.
-        etpl_line_sigma_mode (str): (**Optional**) Mode used to set the
-            instrumental dispersion of the emission-line templates.
-            Mode options are explated by
+            (:obj:`str`,
+            :class:`mangadap.proc.templatelibrary.TemplateLibrary`,
+            optional): The new continuum template library to use during
+            the emission-line fit.
+        etpl_line_sigma_mode (:obj:`str`, optional): 
+            Mode used to set the instrumental dispersion of the
+            emission-line templates.  Mode options are explated by
             :func:`Sasuke.etpl_line_sigma_options`.  Default is
             'default'.
-        etpl_line_sigma_min (int,float): (**Optional**) Impose a minimum
-            emission-line sigma by offsetting the nominal trend, in
-            quadrature, to have this minimum value.  Default is 0.
-        guess_redshift (array-like): Single or per-spectrum redshift to
-            use as the initial velocity guess.
-        guess_dispersion (array-like): Single or per-spectrum velocity
-            dispersion to use as the initial guess.
-        minimum_snr (float): Minimum S/N of spectrum to fit.
-        pixelmask (:class:`mangadap.util.pixelmask.SpectralPixelMask`):
-            Mask to apply to all spectra being fit.
-        reject_boxcar (int): Size of the boxcar to use when rejecting
-            fit outliers.
-        bias (float): pPXF bias parameter.  (Irrelevant because gas is
+        etpl_line_sigma_min (scalar-like, optional):
+            Impose a minimum emission-line sigma by offsetting the
+            nominal trend, in quadrature, to have this minimum value.
+            Default is 0.
+        guess_redshift (array-like, optinal):
+            Single or per-spectrum redshift to use as the initial
+            velocity guess.
+        guess_dispersion (array-like, optional):
+            Single or per-spectrum velocity dispersion to use as the
+            initial guess.
+        minimum_snr (scalar-like, optional)
+            Minimum S/N of spectrum to fit.
+        deconstruct_bins (:obj:`str`, optional):
+            Method to use for deconstructing binned spectra into
+            individual spaxels for emission-line fitting.  See
+            :func:`Sasuke.deconstruct_bin_options`.
+        pixelmask (:class:`mangadap.util.pixelmask.SpectralPixelMask`,
+            optional): Mask to apply to all spectra being fit.
+        reject_boxcar (:obj:`int`, optional):
+            Size of the boxcar to use when rejecting fit outliers.
+        bias (:obj:`float`, optional):
+            pPXF bias parameter.  (Irrelevant because gas is currently
+            always fit with moments=2.)
+        moments (:obj:`int`, optional):
+            pPXF moments parameter.  (Irrelevant because gas is
             currently always fit with moments=2.)
-        moments (int): pPXF moments parameter.  (Irrelevant because gas is
-            currently always fit with moments=2.)
-        degree (int): pPXF degree parameter setting the degree of the
-            additive polynomials to use.
-        mdegree (int): pPXF mdegree parameter setting the degree of the
+        degree (:obj:`int`, optional):
+            pPXF degree parameter setting the degree of the additive
+            polynomials to use.
+        mdegree (:obj:`int`, optional):
+            pPXF mdegree parameter setting the degree of the
             multiplicative polynomials to use.
-        reddening (float): pPXF reddening parameter setting the initial
-            :math:`E(B-V)` to fit, based on a Calzetti law.
+        reddening (:obj:`float`, optional):
+            pPXF reddening parameter setting the initial :math:`E(B-V)`
+            to fit, based on a Calzetti law.
     """
     def __init__(self, stellar_continuum, emission_lines, continuum_templates=None,
                  etpl_line_sigma_mode=None, etpl_line_sigma_min=None, velscale_ratio=None,
@@ -148,6 +162,7 @@ class SasukePar(ParSet):
         arr_in_fl = [ numpy.ndarray, list, int, float ]
         in_fl = [ int, float ]
         etpl_mode_options = Sasuke.etpl_line_sigma_options()
+        deconstruct_options = Sasuke.deconstruct_bins_options()
 
         pars =     [ 'stellar_continuum', 'emission_lines', 'continuum_templates',
                      'etpl_line_sigma_mode', 'etpl_line_sigma_min', 'velscale_ratio',
@@ -158,12 +173,12 @@ class SasukePar(ParSet):
                      etpl_line_sigma_min, velscale_ratio, guess_redshift, guess_dispersion,
                      minimum_snr, deconstruct_bins, pixelmask, reject_boxcar, bias, moments,
                      degree, mdegree, reddening ]
-        defaults = [ None, None, None, 'default', 0.0, 1, None, None, 0.0, False, None, None, None,
-                     2, -1, 0, None ]
-        options = [ None, None, None, etpl_mode_options, None, None, None, None, None, None, None,
-                    None, None, None, None, None, None ]
+        defaults = [ None, None, None, 'default', 0.0, 1, None, None, 0.0, 'ignore', None, None,
+                     None, 2, -1, 0, None ]
+        options = [ None, None, None, etpl_mode_options, None, None, None, None, None,
+                    deconstruct_options, None, None, None, None, None, None, None ]
         dtypes =   [ StellarContinuumModel, EmissionLineDB, [str, TemplateLibrary], str, in_fl,
-                     int, arr_in_fl, arr_in_fl, in_fl, bool, SpectralPixelMask, int, in_fl, int,
+                     int, arr_in_fl, arr_in_fl, in_fl, str, SpectralPixelMask, int, in_fl, int,
                      int, int, in_fl ]
 
         ParSet.__init__(self, pars, values=values, defaults=defaults, options=options,
@@ -376,6 +391,7 @@ class Sasuke(EmissionLineFit):
         self.waverange = None
 
         # Data to remap to
+        self.remapid = None
         self.remap_flux = None
         self.remap_ferr = None
         self.remap_sres = None
@@ -550,7 +566,6 @@ class Sasuke(EmissionLineFit):
                 stellar_continuum.method['fitpar']['match_resolution'], \
                 stellar_continuum.method['fitpar']['velscale_ratio']
 
-
     @staticmethod
     def etpl_line_sigma_options():
         r"""
@@ -587,6 +602,25 @@ class Sasuke(EmissionLineFit):
         """
         return ['default', 'zero', 'offset' ]
 
+    @staticmethod
+    def deconstruct_bins_options():
+        """
+        Methods allowed for deconstructing bins are:
+
+            ``ignore``: Do not deconstruct bins (default)
+
+            ``nearest``: Use the on-sky proximity of spaxel and bin
+            centers to do associate spaxels to bins (e.g., as done in
+            DR15 hybrid binning).
+
+            ``binid``: Use the known association between spaxels and
+            bins based on which spaxels were used to construct the
+            binned spectra.
+        
+        Returns:
+            list: List of allowed options.
+        """
+        return [ 'ignore', 'nearest', 'binid' ]
 
     def _check_remapping_coordinates(self, obj_skyx, obj_skyy, remap_skyx, remap_skyy):
         if any(x is None for x in [obj_skyx, obj_skyy, remap_skyx, remap_skyy]):
@@ -1476,17 +1510,26 @@ class Sasuke(EmissionLineFit):
             print(par['moments'])
             raise NotImplementedError('Number of gas moments can only be two.')
 
-        if par['deconstruct_bins']:
+        if par['deconstruct_bins'] != 'ignore':
             # TODO: Only need to refit "bins" that are made up of more
             # than one spaxel...
 
-            # Get the individual spaxel data
+            # Get the individual spaxel data; this returns spaxels of
+            # the entire cube.
             _, spaxel_flux, spaxel_ferr = EmissionLineFit.get_spectra_to_fit(binned_spectra.drpf,
                                                                         pixelmask=par['pixelmask'],
                                                                         error=True)
             # Apply the Galactic extinction
             spaxel_flux, spaxel_ferr = binned_spectra.galext.apply(spaxel_flux, err=spaxel_ferr,
                                                                    deredden=True)
+
+            # Depending on the deconstruction method, get the bin ID 
+            if par['deconstruct_bins'] == 'nearest':
+                binid = None
+            elif par['deconstruct_bins'] == 'binid':
+                binid = binned_spectra['BINID'].data.ravel()
+            else:
+                raise ValueError('Unknown bin deconstruction method.')
 
             # TODO: set minimum_fraction as a keyword.  Set to 0.8 by
             # default
@@ -1527,6 +1570,7 @@ class Sasuke(EmissionLineFit):
                                                        else stellar_kinematics[bins_to_fit,:],
                                etpl_sinst_mode=par['etpl_line_sigma_mode'],
                                etpl_sinst_min=par['etpl_line_sigma_min'],
+                               remapid = None if binid is None else binid[spaxel_to_fit],
                                remap_flux=spaxel_flux[spaxel_to_fit,:],
                                remap_ferr=spaxel_ferr[spaxel_to_fit,:],
                                remap_mask=par['pixelmask'],
@@ -1619,7 +1663,7 @@ class Sasuke(EmissionLineFit):
         # stellar-continuum + emission-line fit:
         if par['stellar_continuum'] is not None:
 
-            if par['deconstruct_bins']:
+            if par['deconstruct_bins'] != 'ignore':
 
                 # Get the stellar continuum.  The model extends over
                 # over regions masked during the fit, but 0 outside the
@@ -1715,11 +1759,12 @@ class Sasuke(EmissionLineFit):
     def fit(self, emission_lines, obj_wave, obj_flux, obj_ferr=None, obj_mask=None, obj_sres=None,
             guess_redshift=None, guess_dispersion=None, reject_boxcar=None, stpl_wave=None,
             stpl_flux=None, stpl_sres=None, stpl_to_use=None, stellar_kinematics=None,
-            etpl_sinst_mode='default', etpl_sinst_min=0, remap_flux=None, remap_ferr=None,
-            remap_mask=None, remap_sres=None, remap_skyx=None, remap_skyy=None, obj_skyx=None,
-            obj_skyy=None, velscale_ratio=None, matched_resolution=True, waverange=None, bias=None,
-            degree=-1, mdegree=0, reddening=None, max_velocity_range=400., alias_window=None,
-            dvtol=1e-10, loggers=None, quiet=False, plot=False, sigma_rej=3.):
+            etpl_sinst_mode='default', etpl_sinst_min=0, remapid=None, remap_flux=None,
+            remap_ferr=None, remap_mask=None, remap_sres=None, remap_skyx=None, remap_skyy=None,
+            obj_skyx=None, obj_skyy=None, velscale_ratio=None, matched_resolution=True,
+            waverange=None, bias=None, degree=-1, mdegree=0, reddening=None,
+            max_velocity_range=400., alias_window=None, dvtol=1e-10, loggers=None, quiet=False,
+            plot=False, sigma_rej=3.):
             #moments=2,
         r"""
         Fit a set of emission lines using pPXF to all provided spectra.
@@ -1838,6 +1883,16 @@ class Sasuke(EmissionLineFit):
                 templates results in values that are below this value,
                 the whole function is offset in quadrature such that no
                 value goes below the minimum.  Default is 0 km/s.
+            remapid (numpy.ndarray, optional):
+                The index of the input spectrum associated with each
+                remapped spectrum.  This is ignored if remapping is not
+                done.  If remapping spectra are provided, and this is
+                None, coordinates must be provided and this vector is
+                constructed by associating each remapped spectrum to the
+                input spectra just based by proximity.  If provided,
+                this also associates each remapped spectrum to the
+                spectrum to use for the stellar kinematics.  Shape is
+                (:math:`N_{\rm remap}`,).
             remap_flux (numpy.ndarray, optional):
                 Ultimately the spectra to be modeled, if provided.  The
                 nominal usage is, e.g., if the object spectra
@@ -1979,15 +2034,29 @@ class Sasuke(EmissionLineFit):
 
         # Check the remapping data, if provided
         if remap_flux is not None:
+            # Check the input spectra
             _, self.remap_flux, self.remap_ferr, self.remap_sres \
                         = PPXFFit.check_objects(obj_wave, remap_flux, obj_ferr=remap_ferr,
                                                 obj_sres=remap_sres)
             self.nremap = self.remap_flux.shape[0]
-            self.obj_skyx, self.obj_skyy, self.remap_skyx, self.remap_skyy \
+
+            # Check that the remapping can be done
+            self.remapid = remapid
+            if self.remapid is not None and len(self.remapid) != self.nremap:
+                raise ValueError('Incorrect number of remapping IDs provided.')
+            if self.remapid is None:
+                # Remapping using coordinates
+                self.obj_skyx, self.obj_skyy, self.remap_skyx, self.remap_skyy \
                         = self._check_remapping_coordinates(obj_skyx, obj_skyy,
                                                             remap_skyx, remap_skyy)
+            else:
+                self.obj_skyx = None
+                self.obj_skyy = None
+                self.remap_skyx = None
+                self.remap_skyy = None
         else:
             self.nremap = 0
+            self.remapid = None
             self.remap_flux = None
             self.remap_ferr = None
             self.remap_sres = None
@@ -2332,6 +2401,9 @@ class Sasuke(EmissionLineFit):
         if self.nremap == 0:
             mask = numpy.invert(self.obj_flux.mask[:,start:end])
             spec_to_fit = numpy.any(mask, axis=1)
+            binid = None
+            skyx = None
+            skyy = None
             flux = self.obj_flux.data[spec_to_fit,start:end]
             ferr = self.obj_ferr.data[spec_to_fit,start:end]
             mask = mask[spec_to_fit,:]
@@ -2340,14 +2412,21 @@ class Sasuke(EmissionLineFit):
             flux_binned = None
             ferr_binned = None
             mask_binned = None
+            x_binned = None
+            y_binned = None
         else:
             mask = numpy.invert(self.remap_flux.mask[:,start:end])
             spec_to_fit = numpy.any(mask, axis=1)
+            binid = None if self.remapid is None else self.remapid[spec_to_fit]
+            skyx = self.remap_skyx[spec_to_fit] if binid is None else None
+            skyy = self.remap_skyy[spec_to_fit] if binid is None else None
             flux = self.remap_flux.data[spec_to_fit,start:end]
             ferr = self.remap_ferr.data[spec_to_fit,start:end]
             mask = mask[spec_to_fit,:]
             mask_binned = numpy.invert(self.obj_flux.mask[:,start:end])
             bins_to_fit = numpy.any(mask_binned, axis=1)
+            x_binned = self.obj_skyx[bins_to_fit] if binid is None else None
+            y_binned = self.obj_skyy[bins_to_fit] if binid is None else None
             flux_binned = self.obj_flux.data[bins_to_fit,start:end]
             ferr_binned = self.obj_ferr.data[bins_to_fit,start:end]
             mask_binned = mask_binned[bins_to_fit,:]
@@ -2368,6 +2447,10 @@ class Sasuke(EmissionLineFit):
                 log_output(self.loggers, 1, logging.INFO,
                            'Emission-line fits remapped to a set of {0}/{1} spectra.'.format(
                             numpy.sum(spec_to_fit), self.nremap))
+                log_output(self.loggers, 1, logging.INFO,
+                           'Remapping is performed using preset IDs.' \
+                                if self.remapid is None else
+                           'Remapping is done using coordinate proximity.')
 
             if self.nstpl > 0:
                 log_output(self.loggers, 1, logging.INFO,
@@ -2397,14 +2480,16 @@ class Sasuke(EmissionLineFit):
                                                       reddening=self.reddening,
                                                       reject_boxcar=self.reject_boxcar,
                                                       vsyst=self.base_velocity,
-                                                      tpl_to_use=tpl_to_use,
+                                                      tpl_to_use=tpl_to_use, binid=binid,
                                                       flux_binned=flux_binned,
                                                       noise_binned=ferr_binned,
                                                       mask_binned=mask_binned,
-                                                      x_binned=self.obj_skyx,
-                                                      y_binned=self.obj_skyy, x=self.remap_skyx,
-                                                      y=self.remap_skyy, plot=plot, quiet=not plot,
+                                                      x_binned=x_binned, y_binned=y_binned,
+                                                      x=skyx, y=skyy, plot=plot, quiet=not plot,
                                                       sigma_rej=sigma_rej)
+
+        # When remapid is provided, the binid subset should be identical to
+        # nearest_bin!
 
         # Construct the bin ID numbers
         model_fit_par['BINID'] = numpy.arange(output_shape[0])

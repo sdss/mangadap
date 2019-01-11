@@ -7,45 +7,6 @@ A class hierarchy that fits the emission lines.
     Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
         Licensed under BSD 3-clause license - see LICENSE.rst
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/proc/emissionlinefits.py
-
-*Imports and python version compliance*:
-    ::
-
-        from __future__ import division
-        from __future__ import print_function
-        from __future__ import absolute_import
-        from __future__ import unicode_literals
-
-        import sys
-        import warnings
-        if sys.version > '3':
-            long = int
-        
-        import glob
-        import os
-        import logging
-        
-        import numpy
-        from astropy.io import fits
-        
-        from ..drpfits import DRPFits
-        from ..par.parset import ParSet
-        from ..par.artifactdb import ArtifactDB
-        from ..par.emissionlinedb import EmissionLineDB
-        from ..config.defaults import dap_source_dir, default_dap_file_name
-        from ..config.defaults import default_dap_method, default_dap_method_path
-        from ..util.fitsutil import DAPFitsUtil
-        from ..util.fileio import init_record_array, rec_to_fits_type, rec_to_fits_col_dim
-        from ..util.bitmask import BitMask
-        from ..util.pixelmask import SpectralPixelMask
-        from ..util.log import log_output
-        from .spatiallybinnedspectra import SpatiallyBinnedSpectra
-        from .stellarcontinuummodel import StellarContinuumModel
-        from .elric import Elric, ElricPar, GaussianLineProfile
-        from .util import select_proc_method
-
 *Class usage examples*:
     Add examples!
 
@@ -126,14 +87,21 @@ class EmissionLineModelDef(ParSet):
         Include waverange?
 
     Args:
-        key (str): Keyword used to distinguish between different
-            emission-line moment databases.
-        minimum_snr (bool): Minimum S/N of spectrum to fit
-        artifacts (str): String identifying the artifact database to use
-        emission_lines (str): String identifying the emission-line
-            database to use
-        continuum_tpl_key (str): String identifying the continuum
-            templates to use
+        key (:obj:`str`):
+            Keyword used to distinguish between different emission-line
+            moment databases.
+        minimum_snr (:obj:`bool`):
+            Minimum S/N of spectrum to fit
+        deconstruct_bins (:obj:`str`):
+            Method to use for deconstructing binned spectra into
+            individual spaxels for emission-line fitting.  See
+            :func:`mangadap.proc.sasuke.Sasuke.deconstruct_bin_options`.
+        artifacts (:obj:`str`):
+            String identifying the artifact database to use
+        emission_lines (:obj:`str`):
+            String identifying the emission-line database to use
+        continuum_tpl_key (:obj:`str`):
+            String identifying the continuum templates to use
     """
     def __init__(self, key, minimum_snr, deconstruct_bins, mom_vel_name, mom_disp_name,
                  artifacts, emission_lines, continuum_tpl_key, fitpar, fitclass, fitfunc):
@@ -145,7 +113,7 @@ class EmissionLineModelDef(ParSet):
                      'fitfunc' ]
         values =   [ key, minimum_snr, deconstruct_bins, mom_vel_name, mom_disp_name, artifacts,
                      emission_lines, continuum_tpl_key, fitpar, fitclass, fitfunc ]
-        dtypes =   [ str, in_fl, bool, str, str, str, str, str, par_opt, None, None ]
+        dtypes =   [ str, in_fl, str, str, str, str, str, str, par_opt, None, None ]
         can_call = [ False, False, False, False, False, False, False, False, False, False, True ]
 
         ParSet.__init__(self, pars, values=values, dtypes=dtypes)
@@ -225,7 +193,7 @@ def available_emission_line_modeling_methods(dapsrc=None):
         # Ensure it has the necessary elements to define the template
         # library
         validate_emission_line_modeling_method_config(cnfg)
-        deconstruct_bins = cnfg.getbool('deconstruct_bins', default=False)
+        deconstruct_bins = cnfg.get('deconstruct_bins', default='ignore')
         minimum_snr = cnfg.getfloat('minimum_snr', default=0.0)
         continuum_tpl_key = cnfg.get('continuum_templates')
 
@@ -233,7 +201,7 @@ def available_emission_line_modeling_methods(dapsrc=None):
             # Chose to use Elric: Parameter set has defaults to handle
             # missing or None values for baseline_order, window_buffer,
             # and minimum_snr
-            if deconstruct_bins:
+            if deconstruct_bins != 'ignore':
                 raise NotImplementedError('When using Elric, cannot deconstruct bins into spaxels.')
             if continuum_tpl_key is not None:
                 raise NotImplementedError('When using Elric, cannot change continuum templates.')
@@ -812,7 +780,7 @@ class EmissionLineModel:
             _model_mask = model_mask
 
         # Get the fitted spectra and errors
-        if self.method['deconstruct_bins']:
+        if self.method['deconstruct_bins'] != 'ignore':
             # Get the individual spaxels
             _, flux, ferr = EmissionLineFit.get_spectra_to_fit(self.binned_spectra.drpf,
                                                                pixelmask=self.pixelmask,
@@ -1117,8 +1085,8 @@ class EmissionLineModel:
                                                             len(self.binned_spectra.missing_bins)))
             log_output(self.loggers, 1, logging.INFO, 'With good S/N and to fit: {0}'.format(
                                                             numpy.sum(good_snr)))
-            log_output(self.loggers, 1, logging.INFO, 'Bins deconstructed in fitting: {0}'.format(
-                                                      str(self.method['deconstruct_bins'])))
+            log_output(self.loggers, 1, logging.INFO, 'Bin deconstruction method: {0}'.format(
+                                                            self.method['deconstruct_bins']))
             
         if numpy.sum(good_snr) == 0:
             raise ValueError('No good spectra to fit!')
@@ -1193,7 +1161,8 @@ class EmissionLineModel:
         # The number of models returned should be the number of "good" binned
         # spectra if the fitter does *not* deconstruct the bins.
         # TODO: This may now cause problems with Elric...
-        if not self.method['deconstruct_bins'] and model_flux.shape[0] != numpy.sum(good_snr):
+        if self.method['deconstruct_bins'] == 'ignore' \
+                and model_flux.shape[0] != numpy.sum(good_snr):
             print(model_flux.shape[0])
             print(numpy.sum(good_snr))
             raise ValueError('Unexpected returned shape of fitted emission-line models.')
@@ -1618,7 +1587,7 @@ class EmissionLineModel:
         if nearest:
             # Fill masked values with the nearest datum
             best_fit_kinematics = numpy.ma.append([eml_z], [eml_d], axis=0).T
-            if self.method['deconstruct_bins']:
+            if self.method['deconstruct_bins'] != 'ignore':
                 indx = self['BINID'].data.ravel() > -1
                 coo = self.binned_spectra.rdxqa['SPECTRUM'].data['SKY_COO'][indx,:]
             else:
