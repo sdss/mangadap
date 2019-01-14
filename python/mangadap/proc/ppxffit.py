@@ -303,7 +303,7 @@ class PPXFFitResult(object):
         self.multcoef = None if ppxf_fit is None or mdegree <= 0 else ppxf_fit.mpolyweights.copy()
         self.kin = None if ppxf_fit is None else ppxf_fit.sol.copy()
         self.kinerr = None if ppxf_fit is None else ppxf_fit.error.copy()
-        self.robust_rchi2 = None if ppxf_fit is None else ppxf_fit.chi2
+#        self.robust_rchi2 = None if ppxf_fit is None else ppxf_fit.chi2
 
         self.bestfit_comp = None
         if ppxf_fit is None or not component_fits:
@@ -1420,8 +1420,8 @@ class PPXFFit(StellarKinematicsFit):
                 result[i].bestfit += sm_obj_flux[i,result[i].start:result[i].end]
             chi = (obj_flux[i,result[i].start:result[i].end] - result[i].bestfit)[result[i].gpm] \
                         / obj_ferr[i,result[i].start:result[i].end][result[i].gpm]
-            result[i].robust_rchi2 = numpy.sum(numpy.square(chi))/(chi.size - result[i].kin.size -
-                                                                   max(self.filt_mdegree, 0))
+#            result[i].robust_rchi2 = numpy.sum(numpy.square(chi))/(chi.size - result[i].kin.size -
+#                                                                   max(self.filt_mdegree, 0))
 #            pyplot.plot(self.obj_wave[result[i].start:result[i].end],
 #                        self.obj_flux[i,result[i].start:result[i].end], color='k', lw=0.5)
 #            pyplot.plot(self.obj_wave[result[i].start:result[i].end],
@@ -1998,6 +1998,7 @@ class PPXFFit(StellarKinematicsFit):
         # iterations below
         residual = self.obj_flux - model_flux
         fractional_residual = numpy.ma.divide(self.obj_flux - model_flux, model_flux)
+        chi2 = numpy.square(numpy.ma.divide(residual, self.obj_ferr))
 
         # Instantiate a bad pixel mask to be used
         bpm = numpy.zeros_like(self.obj_wave, dtype=bool)
@@ -2093,32 +2094,38 @@ class PPXFFit(StellarKinematicsFit):
             # Kinematic errors
             model_par['KINERR'][i] = result[i].kinerr
 
-            # Mask the residuals according to the pixel fit for this
-            # spectrum
+            # Ensure that only pixels used in the fit are included in
+            # the fit metrics
             bpm[:] = True
             bpm[result[i].start+result[i].gpm] = False
+            chi2[i,bpm] = numpy.ma.masked
             residual[i,bpm] = numpy.ma.masked
             fractional_residual[i,bpm] = numpy.ma.masked
 
-            # Get the chi-square and rms metrics
-            model_par['CHI2'][i] = 0.0 if numpy.all(residual.mask[i] | self.obj_ferr.mask[i]) \
-                                    else numpy.sum(numpy.square(residual[i]/self.obj_ferr[i]))
-            model_par['RMS'][i] = 0.0 if numpy.all(residual.mask[i]) \
-                                    else numpy.sqrt(numpy.ma.mean(numpy.square(residual[i])))
-            model_par['FRMS'][i] = 0.0 if numpy.all(fractional_residual.mask[i]) \
-                            else numpy.sqrt(numpy.ma.mean(numpy.square(fractional_residual[i])))
+#            # Get the chi-square and rms metrics
+#            model_par['CHI2'][i] = 0.0 if numpy.all(residual.mask[i] | self.obj_ferr.mask[i]) \
+#                                    else numpy.sum(numpy.square(residual[i]/self.obj_ferr[i]))
+#            model_par['RMS'][i] = 0.0 if numpy.all(residual.mask[i]) \
+#                                    else numpy.sqrt(numpy.ma.mean(numpy.square(residual[i])))
+#            model_par['FRMS'][i] = 0.0 if numpy.all(fractional_residual.mask[i]) \
+#                            else numpy.sqrt(numpy.ma.mean(numpy.square(fractional_residual[i])))
+#
+#            # Chi-square
+#            model_par['RCHI2'][i] = model_par['CHI2'][i] \
+#                                        / (model_par['NPIXFIT'][i] 
+#                                            - self.dof - numpy.sum(model_par['TPLWGT'][i] > 0))
+#            model_par['ROBUST_RCHI2'][i] = result[i].robust_rchi2
 
-            # Chi-square
-            model_par['RCHI2'][i] = model_par['CHI2'][i] \
-                                        / (model_par['NPIXFIT'][i] 
-                                            - self.dof - numpy.sum(model_par['TPLWGT'][i] > 0))
-            model_par['ROBUST_RCHI2'][i] = result[i].robust_rchi2
-
-            # Get growth statistics for the residuals
-            model_par['ABSRESID'][i] = sample_growth(numpy.ma.absolute(residual[i,:]),
-                                                     [0.0, 0.68, 0.95, 0.99, 1.0])
-            model_par['FABSRESID'][i] = sample_growth(numpy.ma.absolute(fractional_residual[i,:]),
-                                                      [0.0, 0.68, 0.95, 0.99, 1.0])
+            # Get growth statistics for the three figures of merit
+            model_par['CHIGRW'][i] \
+                        = sample_growth(numpy.ma.absolute(chi2[i,:]),
+                                        [0.0, 0.68, 0.95, 0.99, 1.0], use_interpolate=False)
+            model_par['RMSGRW'][i] \
+                        = sample_growth(numpy.ma.absolute(residual[i,:]),
+                                        [0.0, 0.68, 0.95, 0.99, 1.0], use_interpolate=False)
+            model_par['FRMSGRW'][i] \
+                        = sample_growth(numpy.ma.absolute(fractional_residual[i,:]),
+                                        [0.0, 0.68, 0.95, 0.99, 1.0], use_interpolate=False)
 
             # Calculate the dispersion correction if necessary
             if not self.matched_resolution:
@@ -2128,6 +2135,14 @@ class PPXFFit(StellarKinematicsFit):
                 if err:
                     model_par['MASK'][i] = self.bitmask.turn_on(model_par['MASK'][i],
                                                                 'BAD_SIGMACORR_SRES')
+
+        # Get the figures-of-merit for each spectrum
+        model_par['CHI2'] = numpy.ma.sum(chi2, axis=1).filled(0.0)
+        model_par['RMS'] = numpy.sqrt(numpy.ma.mean(numpy.square(residual), axis=1).filled(0.0))
+        model_par['FRMS'] = numpy.sqrt(numpy.ma.mean(numpy.square(fractional_residual),
+                                                     axis=1).filled(0.0))
+        dof = numpy.sum(model_par['TPLWGT'], axis=1) + self.dof 
+        model_par['RCHI2'] = model_par['CHI2'] / (model_par['NPIXFIT'] - dof)
 
         #---------------------------------------------------------------
         # Calculate the dispersion corrections, if necessary

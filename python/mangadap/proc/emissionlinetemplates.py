@@ -9,36 +9,6 @@ use with :class:`mangadap.proc.sasuke.Sasuke`.
     Copyright (c) 2017, SDSS-IV/MaNGA Pipeline Group
         Licensed under BSD 3-clause license - see LICENSE.rst
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/proc/emissionlinetemplates.py
-
-*Imports and python version compliance*:
-    ::
-
-        from __future__ import division
-        from __future__ import print_function
-        from __future__ import absolute_import
-        from __future__ import unicode_literals
-
-        import sys
-        import warnings
-        if sys.version > '3':
-            long = int
-
-        import os
-        import time
-        import logging
-
-        import numpy
-        from scipy import interpolate
-
-        import astropy.constants
-
-        from ..util.sampling import spectrum_velocity_scale, spectral_coordinate_step
-        from ..util.log import log_output
-        from ..util import lineprofiles
-        from .spectralfitting import EmissionLineFit
-
 *Class usage examples*:
 
     To construct emission-line templates, you need a wavelength vector,

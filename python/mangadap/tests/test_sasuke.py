@@ -126,7 +126,7 @@ def test_sasuke():
                                  0.        , 1.12984714, 0.10961989]),
                           rtol=0.0, atol=1e-4), 'Fractional RMS different'
 
-    assert numpy.allclose(el_fit['ABSRESID'][:,2],
+    assert numpy.allclose(el_fit['RMSGRW'][:,2],
                     numpy.array([0.07080605, 0.0374927 , 0.07063608, 0.0476781 , 0.10087567,
                                  0.        , 0.02704224, 0.02432112]),
                           rtol=0.0, atol=1e-4), 'Median absolute residual different'

@@ -113,11 +113,11 @@ class StellarKinematicsFit(SpectralFitting):
                  ('KINERR',numpy.float,(nkin,)),
                  ('CHI2',numpy.float),
                  ('RCHI2',numpy.float),
-                 ('ROBUST_RCHI2',numpy.float),
+                 ('CHIGRW',numpy.float,(5,)),
                  ('RMS',numpy.float),
-                 ('ABSRESID',numpy.float,(5,)),
+                 ('RMSGRW',numpy.float,(5,)),
                  ('FRMS',numpy.float),
-                 ('FABSRESID',numpy.float,(5,)),
+                 ('FRMSGRW',numpy.float,(5,)),
                  ('SIGMACORR_SRES',numpy.float),
                  ('SIGMACORR_EMP',numpy.float)
                ]

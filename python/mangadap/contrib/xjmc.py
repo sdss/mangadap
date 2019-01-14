@@ -47,6 +47,99 @@ from ppxf import ppxf, capfit
 from matplotlib import pyplot as plt
 # from mangadap.proc.ppxffit import PPXFModel
 
+def ppxf_tied_parameters(component, vgrp, sgrp, moments):
+    r"""
+    Construct the object used to tie kinematic parameters in pPXF.
+
+    .. note::
+        - The components and kinematics groups can potentially have
+          reduntant information.  E.g., If all sigma groups also have
+          tied velocities, they'll be part of a component and will not
+          required a tied parameter.
+
+    .. warning::
+        - high-order moments are not currently tied, but this is
+          straight-forward to add.
+
+    Args:
+        component (array-like):
+            The kinematic component assigned to each template.  Shape is
+            :math:`(N_{\rm tpl},)`.
+        vgrp (array-like):
+            The velocity group assigned to each template.  Shape is
+            :math:`(N_{\rm tpl},)`.  Can be None for no groups.
+        sgrp (array-like):
+            The velocity-dispersion (sigma) group assigned to each
+            template.  Shape is :math:`(N_{\rm tpl},)`.  Can be None for
+            no groups.
+        moments (array-like):
+            The number of moments assigned to each component.  Can be
+            negative for fixed parameters.  Shape is :math:`(N_{\rm
+            comp},)`.
+
+    Returns:
+        list: The tied object to pass to ppxf.  Will be None if both
+        vgrp or sgrp are None or when the consolidation of the groups
+        and components result in no tying being necessary.
+
+    Raises:
+        ValueError:
+            Raised if the components or the groups are not an
+            uninterupted sequence from 0..N-1, if the moments are
+            provided for each component, or the length of the `vgrp` or
+            `sgrp` arrays do not match the input component array.
+    """
+    if vgrp is None and sgrp is None:
+        # Nothing to tie!
+        return None
+
+    # Check input
+    ncomp = np.amax(component)+1
+    if not np.array_equal(np.arange(ncomp), np.unique(component)):
+        raise ValueError('Components must range from 0..N-1.')
+    if len(moments) != ncomp:
+        raise ValueError('Must provide the number of moments for each component.')
+    ntpl = len(component)
+    if vgrp is not None and not np.array_equal(np.arange(np.amax(vgrp)+1), np.unique(vgrp)):
+        raise ValueError('Velocity groups must range from 0..N-1.')
+    if vgrp is not None and len(vgrp) != ntpl:
+        raise ValueError('Must provided a velocity group for each template.')
+    if sgrp is not None and not np.array_equal(np.arange(np.amax(sgrp)+1), np.unique(sgrp)):
+        raise ValueError('Sigma groups must range from 0..N-1.')
+    if sgrp is not None and len(sgrp) != ntpl:
+        raise ValueError('Must provided a sigma group for each template.')
+
+    # Build the tied parameters as a vector
+    tied = np.full(np.sum(np.absolute(moments)), '', dtype=object)
+    tpli = np.arange(ntpl)
+    for i in range(ncomp):
+        # Do not allow tying to fixed components?
+        if moments[i] < 0:
+            continue
+
+        # Velocity group of this component
+        if vgrp is not None:
+            indx = np.unique(component[tpli[vgrp == i]])
+            if len(indx) > 1:
+                parn = [ 0 + np.sum(np.absolute(moments[:j])) for j in indx ]
+                tied[parn[1:]] = 'p[{0}]'.format(parn[0])
+            
+        # Sigma group of this component
+        if sgrp is not None:
+            indx = np.unique(component[tpli[sgrp == i]])
+            if len(indx) > 1:
+                parn = [ 1 + np.sum(np.absolute(moments[:j])) for j in indx ]
+                tied[parn[1:]] = 'p[{0}]'.format(parn[0])
+
+    # Check if anything is actually tied
+    if np.array_equal(np.unique(tied), ['']):
+        return None
+
+    # Return after restructuring the vector into a list
+    s = [np.sum(np.absolute(moments[:i])) for i in range(ncomp)]
+    return [tied[s[i]:s[i]+np.absolute(moments[i])].tolist() for i in range(ncomp)]
+
+
 def calculate_noise(residuals, width=101):
     """
     Robust determination of the error spectrum as 1/2 of the interval
@@ -213,47 +306,6 @@ def _ppxf_component_setup(component, gas_template, start, single_gas_component=F
 #        c[i,:] = tt[:npix_obj] if velscale_ratio == 1 else \
 #                    ppxf.rebin(tt[:npix_tpl*velscale_ratio], velscale_ratio)[:npix_obj]
 #    return c
-
-def _construct_tied(component, vgrp, sgrp, moments):
-    """
-    Construct the tied object for input to pPXF based on the compoents,
-    velocity groups, and velocity dispersion groups.
-    """
-    if vgrp is None and sgrp is None:
-        # Nothing to tie!
-        return None
-
-    # Build the tied parameters as a vector
-    tied = np.full(np.sum(np.absolute(moments)), '', dtype=object)
-    tpli = np.arange(len(component))
-    ncomp = np.amax(component)+1
-    for i in range(ncomp):
-        # Do not allow tying to fixed components?
-        if moments[i] < 0:
-            continue
-
-        # Velocity group of this component
-        if vgrp is not None:
-            indx = np.unique(component[tpli[vgrp == i]])
-            if len(indx) > 1:
-                parn = [ 0 + np.sum(np.absolute(moments[:j])) for j in indx ]
-                tied[parn[1:]] = 'p[{0}]'.format(parn[0])
-            
-        # Sigma group of this component
-        if sgrp is not None:
-            indx = np.unique(component[tpli[sgrp == i]])
-            if len(indx) > 1:
-                parn = [ 1 + np.sum(np.absolute(moments[:j])) for j in indx ]
-                tied[parn[1:]] = 'p[{0}]'.format(parn[0])
-
-    # Check if anything is actually tied
-    if np.array_equal(np.unique(tied), ['']):
-        return None
-
-    # Return after restructuring the vector into a list
-    s = [np.sum(np.absolute(moments[:i])) for i in range(ncomp)]
-    return [tied[s[i]:s[i]+np.absolute(moments[i])].tolist() for i in range(ncomp)]
-
 
 def _reset_components(c, valid):
     # Select valid components
@@ -617,7 +669,7 @@ def _fit_iteration(templates, wave, flux, noise, velscale, start, moments, compo
                                                          vsyst=vsyst)
 
         # Construct the parameter tying structure
-        tied = _construct_tied(_component, _vgrp, _sgrp, _moments)
+        tied = ppxf_tied_parameters(_component, _vgrp, _sgrp, _moments)
 
         # Run the first fit
         if plot:
@@ -659,7 +711,7 @@ def _fit_iteration(templates, wave, flux, noise, velscale, start, moments, compo
                                                              vsyst=vsyst)
 
             # Construct the parameter tying structure
-            tied = _construct_tied(_component, _vgrp, _sgrp, _moments)
+            tied = ppxf_tied_parameters(_component, _vgrp, _sgrp, _moments)
 
             # Refit using best-fit kinematics from previous fit as
             # initial guesses
@@ -695,6 +747,8 @@ def _fit_iteration(templates, wave, flux, noise, velscale, start, moments, compo
         kininp[i,:] = np.concatenate(tuple(start[i]))
         kin[i,:] = np.concatenate(tuple(sol))
         kin_err[i,:] = np.concatenate(tuple(err))
+
+#        print('nspec:{0}, chi2:{1}'.format(i+1, pp.chi2*pp.ndof))
         
     # Done
     print('Fitting spectrum: {0}/{0}'.format(nspec))
