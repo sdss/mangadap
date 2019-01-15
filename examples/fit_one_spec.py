@@ -22,6 +22,7 @@ from mangadap.proc.sasuke import Sasuke
 from mangadap.proc.ppxffit import PPXFFit
 from mangadap.proc.stellarcontinuummodel import StellarContinuumModel, StellarContinuumModelBitMask
 from mangadap.proc.emissionlinemodel import EmissionLineModelBitMask
+from mangadap.proc.spectralfitting import EmissionLineFit
 
 #-----------------------------------------------------------------------------
 
@@ -185,6 +186,10 @@ if __name__ == '__main__':
                          etpl_sinst_mode='offset', etpl_sinst_min=10.,
                          velscale_ratio=velscale_ratio, matched_resolution=False, mdegree=8,
                          plot=fit_plots)
+
+    # Line-fit metrics
+    eml_eml_par = EmissionLineFit.line_metrics(emldb, wave, flux, ferr, model_flux, eml_eml_par,
+                                               model_mask=eml_mask, bitmask=emlfit.bitmask)
 
     # Get the stellar continuum that was fit for the emission lines
     elcmask = eml_mask.ravel() > 0

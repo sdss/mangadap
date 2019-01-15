@@ -1123,10 +1123,8 @@ class SpatiallyBinnedSpectra:
             return None
         return os.path.join(self.directory_path, self.output_file)
 
-    
     def info(self):
         return self.hdu.info()
-
 
     @property
     def is_unbinned(self):
@@ -1138,35 +1136,35 @@ class SpatiallyBinnedSpectra:
     def do_not_fit_flags():
         return ['DIDNOTUSE', 'FORESTAR', 'LOW_SPECCOV', 'LOW_SNR', 'NONE_IN_STACK']
 
-
     def check_fgoodpix(self, minimum_fraction=0.8):
-        """
-        Determine which spectra in :attr:`rdxqa` have a fractional
+        r"""
+        Determine which spaxels in :attr:`rdxqa` have a fractional
         spectral coverage of greater than the provided minimum fraction.
         Only these spectra will be included in the binning.
     
         Args:
-            minimum_fraction (float): (**Optional**) The minimum
-                fraction of the spectrum that must be valid for the
-                spectrum to be included in any bin.  Default is 0.8.
+            minimum_fraction (:obj:`float`, optional):
+                The minimum fraction of the spectrum that must be valid
+                for the spectrum to be included in any bin.  Default is
+                0.8.
 
         Returns:
-            numpy.ndarray : Boolean array for the spectra that satisfy
-            the criterion.
+            numpy.ndarray: Boolean array for the spectra that satisfy
+            the criterion.  The shape of the array is :math:`(N_{\rm
+            spaxel},)`.
         """
         return self.rdxqa['SPECTRUM'].data['FGOODPIX'] > minimum_fraction
 
-
-    def above_snr_limit(self, sn_limit):
+    def above_snr_limit(self, sn_limit, debug=False):
         """
         Flag bins above a provided S/N limit.
         """
-#        warnings.warn('You\'re setting all but two spectra as bad!')
-#        test = self.hdu['BINS'].data['SNR'] > sn_limit
-#        test[:-2] = False
-#        return test
+        if debug:
+            warnings.warn('You\'re setting all but two spectra as bad!')
+            test = self.hdu['BINS'].data['SNR'] > sn_limit
+            test[:-2] = False
+            return test
         return self.hdu['BINS'].data['SNR'] > sn_limit
-
 
     @staticmethod
     def spectral_resolution_options():
@@ -1189,7 +1187,6 @@ class SpatiallyBinnedSpectra:
             list : List of the available method keywords.
         """
         return ['spaxel', 'cube']
-
 
     def bin_spectra(self, drpf, rdxqa, reff=None, dapver=None, analysis_path=None,
                     directory_path=None, output_file=None, hardcopy=True, symlink_dir=None,

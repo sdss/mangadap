@@ -31,6 +31,11 @@
    *only* fits spaxels that are components of binned spectra and does
    not refit spectra that constitute an entire bin themselves.  I.e.
    this removes some largely redundant fitting.
+ - PPXFFit and Sasuke include calculations of the chi-square growth; and
+   changed the names of the growth columns in the reference files.
+ - Changed definitions of A to be the model amplitude; A/N is the model
+   amplitude divided by the median noise in the two sidebands defined
+   for the emission-line EW calculation.
 
 TODO:
  - Documentation of config examples are out of date!

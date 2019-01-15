@@ -63,7 +63,7 @@ from ..util.bitmask import BitMask
 from ..util.constants import DAPConstants
 from ..util import lineprofiles
 from ..par.emissionlinedb import EmissionLineDB
-from .bandpassfilter import emission_line_equivalent_width
+from .bandpassfilter import emission_line_equivalent_width, passband_median
 
 # For debugging
 from matplotlib import pyplot
@@ -141,7 +141,6 @@ class EmissionLineFit(SpectralFitting):
         SpectralFitting.__init__(self, 'emission_line', bitmask=bitmask, par=par)
         self.fit_method = fit_method
 
-
     @staticmethod
     def _per_emission_line_dtype(neml, nkin, mask_dtype):
         r"""
@@ -176,8 +175,6 @@ class EmissionLineFit(SpectralFitting):
                  ('EWERR', numpy.float, (neml,))
                ]
 
-
-
     @staticmethod
     def select_binned_spectra_to_fit(binned_spectra, minimum_snr=0.0, stellar_continuum=None):
         """
@@ -196,9 +193,9 @@ class EmissionLineFit(SpectralFitting):
                 to fit; see
                 :func:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra.above_snr_limit`.
             stellar_continuum
-                (:class:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel`):
-                (**Optional**) Stellar-continuum models that have been
-                fit to the binned spectra, if available.  The current
+                (:class:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel`,
+                optional): Stellar-continuum models that have been fit
+                to the binned spectra, if available.  The current
                 function will only return True for spectra that are both
                 above the S/N limit and have good stellar-continuum
                 models.
@@ -226,36 +223,71 @@ class EmissionLineFit(SpectralFitting):
 
         return bins_to_fit
 
-
     @staticmethod
-    def get_spectra_to_fit(spectra, pixelmask=None, select=None, error=False):
-        """
+    def get_spectra_to_fit(binned_spectra, pixelmask=None, select=None, error=False,
+                           original_spaxels=False):
+        r"""
         Get the spectra to fit during the emission-line fitting.
 
         Args:
-            spectra (:class:`mangadap.drpfits.DRPFits`,
-                :class:`mangadap.proc.spatiallybinnedspectra.SpatiallBinnedSpectra`):
-                Object with the spectra to fit.  Can be one of the
-                provided objects.  This works because both have
-                `copy_to_masked_array` and `do_not_fit_flags` methods.
+            binned_spectra
+                (:class:`mangadap.proc.spatiallybinnedspectra.SpatiallBinnedSpectra`):
+                Object with the spectra to fit.
             pixelmask
-                (:class:`mangadap.util.pixelmask.SpectralPixelMask`):
-                (**Optional**) Pixel mask to apply.
-            select (numpy.ndarray): (**Optional**) Select specific
-                spectra to return.
-            error (bool): (**Optional**) Return 1-sigma errors instead
-                of inverse variance.
+                (:class:`mangadap.util.pixelmask.SpectralPixelMask`,
+                optional): Pixel mask to apply.
+            select (`numpy.ndarray`, optional):
+                Select specific spectra to return.  Must have the
+                correct shape; cf. `original_spaxels`.
+            error (:obj:`bool`, optional):
+                Return :math:`1\sigma` errors instead of inverse
+                variance.
+            original_spaxels (:obj:`bool`, optional):
+                Instead of the binned spectra, use the `drpf` attribute
+                of the `binned_spectra` object to return the original
+                spaxels, corrected for Galactic extinction.
 
         Returns:
-            numpy.ma.MaskedArray: Two masked arrays: the flux data and
-            the uncertainties, either as 1-sigma error or the inverse
-            variance.
-
+            Four objects are returned:
+                - (1) The wavelength vector of the spectra,
+                - (2) a masked numpy array with the flux data,
+                - (3) a masked numpy array with the error data (returned
+                  as either inverse variance or :math:`1\sigma`,
+                - (4) and an array with the spectral resolution for each
+                  spectrum, based on the internal binned spectra
+                  parameters.
         """
         # Grab the spectra
-        wave = spectra['WAVE'].data.copy()
-        flux = spectra.copy_to_masked_array(flag=spectra.do_not_fit_flags())
-        ivar = spectra.copy_to_masked_array(ext='IVAR', flag=spectra.do_not_fit_flags())
+        wave = binned_spectra['WAVE'].data.copy()
+
+        if original_spaxels:
+            flags = binned_spectra.drpf.do_not_fit_flags()
+            flux = binned_spectra.drpf.copy_to_masked_array(flag=flags)
+            ivar = binned_spectra.copy_to_masked_array(ext='IVAR', flag=flags)
+            flux, ferr = binned_spectra.galext.apply(flux, ivar=ivar, deredden=True)
+
+            # Get the spectral resolution:
+            # - stack_sres sets whether or not the spectral resolution
+            #   is determined on a per-spaxel basis or with a single
+            #   vector
+            stack_sres = binned_spectra.method['stackpar']['stack_sres']
+            # - prepixel_sres sets if the prepixelized version of the
+            #   LSF measurements were used
+            prepixel_sres = binned_spectra.method['prepixel_sres']
+            # This pulls out the appropiate spectral resolution
+            sres = binned_spectra.drpf.spectral_resolution(ext=None if stack_sres else 'SPECRES',
+                                                           toarray=True, fill=True,
+                                                           pre=prepixel_sres)
+        else:
+            flags = binned_spectra.do_not_fit_flags()
+            flux = binned_spectra.copy_to_masked_array(flag=flags)
+            ivar = binned_spectra.copy_to_masked_array(ext='IVAR', flag=flags)
+            sres = binned_spectra.copy_to_array(ext='SPECRES')
+            _sres = numpy.ma.MaskedArray(sres.copy(), mask=numpy.invert(sres > 0))
+            # TODO: Use apply_along_axis?
+            for i in range(sres.shape[0]):
+                sres[i,:] = interpolate_masked_vector(_sres[i,:])
+
         nspec = flux.shape[0]
 
         # Convert inverse variance to error
@@ -265,13 +297,12 @@ class EmissionLineFit(SpectralFitting):
 
         # Mask any pixels in the pixel mask
         if pixelmask is not None:
-            indx = pixelmask.boolean(spectra['WAVE'].data, nspec=nspec)
+            indx = pixelmask.boolean(binned_spectra['WAVE'].data, nspec=nspec)
             flux[indx] = numpy.ma.masked
             ivar[indx] = numpy.ma.masked
         
         _select = numpy.ones(nspec, dtype=bool) if select is None else select
-        return wave, flux[_select,:], ivar[_select,:]
-
+        return wave, flux[_select,:], ivar[_select,:], sres[_select,:]
 
     @staticmethod
     def check_and_prep_input(wave, flux, ivar=None, mask=None, sres=None, continuum=None,
@@ -345,7 +376,6 @@ class EmissionLineFit(SpectralFitting):
         # Return all arrays (even if None)
         return _flux, _err, _sres, _continuum, _redshift, _dispersion
 
-
     @staticmethod
     def subtract_continuum(flux, continuum):
         """
@@ -367,7 +397,6 @@ class EmissionLineFit(SpectralFitting):
         continuum_subtracted_flux.mask[no_continuum] = False
 
         return continuum_subtracted_flux, no_continuum
-
 
     @staticmethod
     def instrumental_dispersion(wave, sres, restwave, cz):
@@ -419,7 +448,6 @@ class EmissionLineFit(SpectralFitting):
 #        pyplot.show()
 
         return c / interpolator((cz/c + 1.0) * restwave)/DAPConstants.sig2fwhm
-
 
     @staticmethod
     def check_emission_line_database(emldb, wave=None, check_par=True):
@@ -518,7 +546,6 @@ class EmissionLineFit(SpectralFitting):
                 raise ValueError('Provided {0} log boundaries designations, but expected '
                                  '{1}.'.format(emldb['log_bnd'][i].size, npar*emldb['ncomp'][i]))
 
-
     @staticmethod
     def measure_equivalent_width(wave, flux, emission_lines, model_eml_par, mask=None,
                                  redshift=None, bitmask=None, checkdb=True):
@@ -590,5 +617,161 @@ class EmissionLineFit(SpectralFitting):
                     = bitmask.turn_on(model_eml_par['MASK'][numpy.invert(pos)],
                                       'NON_POSITIVE_CONTINUUM')
 
+    @staticmethod
+    def line_metrics(emission_lines, wave, flux, ferr, model_flux, model_eml_par,
+                     mask=None, model_mask=None, bitmask=None, window=15):
+        """
+        Calculate fit-quality metrics near each emission line.
+
+        .. todo::
+            - Allow window to be defined in angstroms?
+
+        Args:
+            emission_lines
+                (:class:`mangadap.par.emissionlinedb.EmissionLineDB`):
+                Emission-line database use during the fit.
+            wave (`numpy.ndarray`):
+                Wavelength vector for object spectra.  Shape is
+                (:math:`N_{\rm pix}`,).
+            flux (`numpy.ndarray`):
+                Object spectra that have been fit.  Can be provided as a
+                `numpy.ma.MaskedArray`_.  Shape is (:math:`N_{\rm
+                spec},N_{\rm pix}`).
+            ferr (`numpy.ndarray`)
+                :math:`1\sigma` errors in the object spectra.  Can be
+                provided as a `numpy.ma.MaskedArray`_.  Shape is
+                (:math:`N_{\rm spec},N_{\rm pix}`).
+            model_flux (`numpy.ndarray`):
+                Best-fitting model spectra
+                Object spectra that have been fit.  Can be provided as a
+                `numpy.ma.MaskedArray`_.  Shape is (:math:`N_{\rm
+                spec},N_{\rm pix}`).
+            model_eml_par (`numpy.recarray`):
+                A numpy record array with data type given by
+                :func:`_per_emission_line_dtype`.  Uses 'FLUX', 'KIN', and
+                'MASK'; and then sets LINE_ columns.
+            mask (`numpy.ndarray`, optional):
+                A mask for the object spectra that have been fit.  Added
+                to mask attribute of `flux` if it is a
+                `numpy.ma.MaskedArray`_.
+            model_mask (`numpy.ndarray`, optional):
+                A *boolean* numpy array with the mask for the model
+                spectra.  Added to mask attribute of `model_flux` if it
+                is a `numpy.ma.MaskedArray`_.
+            bitmask (:class:`mangadap.util.bitmask.BitMask`, optional):
+                The `BitMask` object used to interpret the MASK column
+                in the `model_eml_par` object.  If None, the MASK column
+                is ignored.
+            window (:obj:`int`, optional):
+                The width of the window used to compute the metrics
+                around each line in number of pixels.
+
+        Returns:
+            `numpy.recarray`: Return the input `model_eml_par` after
+            filling the LINE_PIXC, AMP, ANR, LINE_NSTAT, LINE_CHI2,
+            LINE_RMS, and LINE_FRMS columns.
+
+        Raises:
+            ValueError: Raised if various checks of the input array
+            sizes are incorrect.
+        """
+        # Check shapes and set masks for all arrays
+        _wave = numpy.atleast_1d(wave)
+        if _wave.ndim > 1:
+            raise ValueError('Wavelength must be a 1D vector.')
+
+        _flux = flux if isinstance(flux, numpy.ma.MaskedArray) else numpy.ma.MaskedArray(flux)
+        _flux = numpy.ma.atleast_2d(_flux)
+        if _flux.ndim > 2:
+            raise ValueError('Flux must be 1 or 2D.')
+        if _flux.shape[1] != len(_wave):
+            raise ValueError('Flux has different spectral channels than the wavelength vector.')
+
+        _ferr = ferr if isinstance(ferr, numpy.ma.MaskedArray) else numpy.ma.MaskedArray(ferr)
+        _ferr = numpy.ma.atleast_2d(_ferr)
+        if _ferr.shape != _flux.shape:
+            raise ValueError('Flux and errors must have the same shape.')
+
+        _mask = numpy.zeros_like(_flux, dtype=bool) if mask is None \
+                        else numpy.atleast_2d(mask).astype(bool)
+        if _mask.shape != _flux.shape:
+            raise ValueError('Flux and mask must have the same shape.')
+        _flux.mask |= _mask
+        _ferr.mask |= _mask
+
+        _model_flux = model_flux if isinstance(model_flux, numpy.ma.MaskedArray) \
+                        else numpy.ma.MaskedArray(model_flux)
+        _model_flux = numpy.ma.atleast_2d(_model_flux)
+        if _flux.shape != _model_flux.shape:
+            raise ValueError('Flux and model must have the same shape.')
+
+        _model_mask = numpy.zeros_like(_flux, dtype=bool) if model_mask is None \
+                        else numpy.atleast_2d(model_mask).astype(bool)
+        if _model_mask.shape != _flux.shape:
+            raise ValueError('Flux and model mask must have the same shape.')
+        _model_flux.mask |= _model_mask
+
+        # Spectra for figures of merit
+        resid = numpy.square(_flux-_model_flux)
+        fresid = numpy.square(numpy.ma.divide(_flux-_model_flux, _model_flux))
+        chisqr = numpy.square(numpy.ma.divide(_flux-_model_flux, _ferr))
+        spec_mask = resid.mask | fresid.mask | chisqr.mask
+        resid[spec_mask] = numpy.ma.masked
+        fresid[spec_mask] = numpy.ma.masked
+        chisqr[spec_mask] = numpy.ma.masked
+
+        # Get the pixel at which to center the metric calculations
+        eml_mask = numpy.zeros(model_eml_par['MASK'].shape, dtype=bool) if bitmask is None else\
+                        bitmask.flagged(model_eml_par['MASK'],
+                                        flag=['INSUFFICIENT_DATA', 'FIT_FAILED', 'UNDEFINED_COVAR',
+                                              'NEAR_BOUND'])
+        z = numpy.ma.MaskedArray(model_eml_par['KIN'][:,:,0]/astropy.constants.c.to('km/s').value,
+                                 mask=eml_mask)
+        sample_wave = emission_lines['restwave'][None,:]*(1+z)
+        interp = interp1d(wave, numpy.arange(wave.size), bounds_error=False, fill_value=-1,
+                          assume_sorted=True)
+        model_eml_par['LINE_PIXC'] = numpy.around(interp(sample_wave.data)).astype(int)
+        model_eml_par['LINE_PIXC'][sample_wave.mask] = -1
+        eml_mask = (model_eml_par['LINE_PIXC'] < 0) | (model_eml_par['LINE_PIXC'] >= wave.size)
+
+        # Get the fitted line amplitude
+        sigma_ang = model_eml_par['KIN'][:,:,1]*sample_wave/astropy.constants.c.to('km/s').value
+        model_eml_par['AMP'] = model_eml_par['FLUX']/numpy.sqrt(2*numpy.pi)/sigma_ang
+
+        # Shift the bands to the appropriate redshift
+        _bluebands = emission_lines['blueside'][None,:,:]*(1.0+z[:,:,None])
+        _redbands = emission_lines['redside'][None,:,:]*(1.0+z[:,:,None])
+
+        # Get the mean noise in the sidebands to either side of each
+        # emission line
+        noise = numpy.zeros_like(model_eml_par['AMP'], dtype=float)
+        nspec = len(model_eml_par)
+        for i in range(nspec):
+            _bluenoise = passband_median(_wave, _ferr[i,:], passband=_bluebands[i,:,:])
+            _rednoise = passband_median(_wave, _ferr[i,:], passband=_redbands[i,:,:])
+            noise[i,:] = (_bluenoise + _rednoise)/2.
+        model_eml_par['ANR'] = model_eml_par['AMP']/noise
+
+        neml = len(emission_lines)
+        for i in range(neml):
+            print('Getting fit metrics for line: {0}/{1}'.format(i+1, neml), end='\r')
+            start = model_eml_par['LINE_PIXC'][:,i] - window//2
+            end = start + window
+            m = numpy.zeros(flux.shape, dtype=float)
+            for j in range(nspec):
+                if eml_mask[j,i]:
+                    continue
+                m[j,start[j]:end[j]] = 1.
+            m[spec_mask] = 0.
+
+            model_eml_par['LINE_NSTAT'][:,i] = numpy.sum(m,axis=1)
+            model_eml_par['LINE_RMS'][:,i] = numpy.ma.sqrt(numpy.ma.mean(m*resid,axis=1)
+                                                           ).filled(0.0)
+            model_eml_par['LINE_FRMS'][:,i] = numpy.ma.sqrt(numpy.ma.mean(m*fresid,axis=1)
+                                                            ).filled(0.0)
+            model_eml_par['LINE_CHI2'][:,i] = numpy.ma.sum(m*chisqr,axis=1).filled(0.0)
+
+        print('Getting fit metrics for line: {0}/{0}'.format(neml))
+        return model_eml_par
 
 

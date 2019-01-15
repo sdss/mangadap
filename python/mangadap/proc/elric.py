@@ -1325,16 +1325,15 @@ class Elric(EmissionLineFit):
 
         # Get the data arrays to fit
         good_snr = binned_spectra.above_snr_limit(par['minimum_snr'])
-        wave, flux, ivar = EmissionLineFit.get_spectra_to_fit(binned_spectra,
-                                                              pixelmask=par['pixelmask'],
-                                                              select=good_snr)
+        wave, flux, ivar, sres = EmissionLineFit.get_spectra_to_fit(binned_spectra,
+                                                                    pixelmask=par['pixelmask'],
+                                                                    select=good_snr)
 
         # Return the fitted data
         model_wave, model_flux, model_base, model_mask, model_fit_par, model_eml_par \
                 = self.fit(binned_spectra['WAVE'].data, flux, par['emission_lines'],
-                           ivar=ivar, sres=binned_spectra['SPECRES'].data.copy()[good_snr,:],
-                           continuum=continuum[good_snr,:], base_order=par['base_order'],
-                           window_buffer=par['window_buffer'],
+                           ivar=ivar, sres=sres, continuum=continuum[good_snr,:],
+                           base_order=par['base_order'], window_buffer=par['window_buffer'],
                            guess_redshift=par['guess_redshift'][good_snr],
                            guess_dispersion=par['guess_dispersion'][good_snr], loggers=loggers,
                            quiet=quiet)

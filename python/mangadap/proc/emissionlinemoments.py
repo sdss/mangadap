@@ -1243,15 +1243,9 @@ class EmissionLineMoments:
 
         #---------------------------------------------------------------
         # Get the spectra to use for the measurements
-        wave, flux, ivar = EmissionLineFit.get_spectra_to_fit(self.binned_spectra.drpf
-                                                                if measure_on_unbinned_spaxels
-                                                                else self.binned_spectra,
-                                                              pixelmask=self.pixelmask,
-                                                              select=good_snr)
-        # Make sure that the spectra have been corrected for Galactic
-        # extinction
-        if measure_on_unbinned_spaxels:
-            flux, ivar = binned_spectra.galext.apply(flux, ivar=ivar, deredden=True)
+        wave, flux, ivar, sres = EmissionLineFit.get_spectra_to_fit(self.binned_spectra,
+                                                    pixelmask=self.pixelmask, select=good_snr,
+                                                    original_spaxels=measure_on_unbinned_spaxels)
 
         # Get the continuum if there is any
         if eml_stellar_continuum_available:
@@ -1259,24 +1253,17 @@ class EmissionLineMoments:
                 binid = numpy.full(self.binned_spectra.spatial_shape, -1, dtype=int)
                 binid.ravel()[good_snr] = numpy.arange(self.nbins)
                 continuum = self.emission_line_model.fill_continuum_to_match(binid)
-                specres_ext='SPECRES' if self.binned_spectra.method['spec_res'] == 'cube' else None
-                sres = self.binned_spectra.drpf.spectral_resolution(ext=specres_ext, toarray=True,
-                                    pre=self.binned_spectra.method['prepixel_sres'], fill=True)
-                sres = sres.data[good_snr,:]    # spectral_resolution returns a masked array
             else:
                 continuum = self.emission_line_model.fill_continuum_to_match(
                                                 self.binned_spectra['BINID'].data,
                                                 missing=self.binned_spectra.missing_bins)
-                sres = binned_spectra['SPECRES'].data.copy()[good_snr,:]
         elif self.stellar_continuum is not None:
-            continuum = self.stellar_continuum.fill_to_match(
-                                self.binned_spectra['BINID'].data,
-                                missing=self.binned_spectra.missing_bins)
-            sres = binned_spectra['SPECRES'].data.copy()[good_snr,:]
-        _redshift = self.redshift[good_snr]
+            continuum = self.stellar_continuum.fill_to_match(self.binned_spectra['BINID'].data,
+                                                        missing=self.binned_spectra.missing_bins)
 
         #---------------------------------------------------------------
         # Perform the moment measurements
+        _redshift = self.redshift[good_snr]
         measurements = self.measure_moments(self.momdb, wave, flux, ivar=ivar, sres=sres,
                                             continuum=continuum, redshift=_redshift,
                                             bitmask=self.bitmask)
@@ -1288,15 +1275,7 @@ class EmissionLineMoments:
                                                             flag=['BLUE_EMPTY', 'RED_EMPTY']))
 
         # Set the line center at the center of the primary passband
-#        line_center = (1.0+_redshift)[:,None]*numpy.mean(self.momdb['primary'], axis=1)[None,:]
         line_center = (1.0+_redshift)[:,None]*self.momdb['restwave'][None,:]
-#        line_center = (1.0+measurements['MOM1']/astropy.constants.c.to('km/s').value) \
-#                            * self.momdb['restwave'][None,:]
-
-#        pyplot.scatter(line_center_1, line_center_2, marker='.', s=50, color='k', lw=0, zorder=2)
-#        pyplot.plot([0,10000], [0,10000], color='r', zorder=1)
-#        pyplot.show()
-
         measurements['BMED'], measurements['RMED'], pos, measurements['EWCONT'], \
                 measurements['EW'], measurements['EWERR'] \
                         = emission_line_equivalent_width(wave, flux, self.momdb['blueside'],
@@ -1304,9 +1283,6 @@ class EmissionLineMoments:
                                                          measurements['FLUX'], redshift=_redshift,
                                                          line_flux_err=measurements['FLUXERR'],
                                                          include_band=include_band)
-
-        # TODO: This is also now set in measure_moments; remove this?
-        measurements['REDSHIFT'] = _redshift
 
         # Flag non-positive measurements
         measurements['MASK'][include_band & numpy.invert(pos)] \
@@ -1323,11 +1299,6 @@ class EmissionLineMoments:
         if measure_on_unbinned_spaxels:
             measurements_binid = numpy.full(self.binned_spectra.spatial_shape, -1, dtype=int)
             measurements_binid.ravel()[good_snr] = numpy.arange(self.nbins)
-
-#        # Set the undefined bands
-#        measurements['MASK'][:,self.momdb.dummy] \
-#                    = self.bitmask.turn_on(measurements['MASK'][:,self.momdb.dummy],
-#                                           'UNDEFINED_BANDS')
 
         #---------------------------------------------------------------
         # Initialize the header

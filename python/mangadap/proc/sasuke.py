@@ -1306,24 +1306,20 @@ class Sasuke(EmissionLineFit):
         # Get the data arrays to fit
         # TODO: May also want to exclude pixels rejected during stellar
         # kinematics fit
-        wave, flux, ferr = EmissionLineFit.get_spectra_to_fit(binned_spectra,
-                                                              pixelmask=par['pixelmask'],
-                                                              error=True)
-        sres = binned_spectra.copy_to_array(ext='SPECRES')
-        _sres = numpy.ma.MaskedArray(sres.copy(), mask=numpy.invert(sres > 0))
-        for i in range(sres.shape[0]):
-            sres[i,:] = interpolate_masked_vector(_sres[i,:])
+        wave, flux, ferr, sres = EmissionLineFit.get_spectra_to_fit(binned_spectra,
+                                                                    pixelmask=par['pixelmask'],
+                                                                    error=True)
 
         # Get the binned spectra that meet the S/N criterion
         bins_to_fit = EmissionLineFit.select_binned_spectra_to_fit(binned_spectra,
                                                                    minimum_snr=par['minimum_snr'],
                                                         stellar_continuum=par['stellar_continuum'])
-        # Get the stellar templates.
+
+        # Get the stellar templates
         stellar_templates, matched_resolution, velscale_ratio \
                 = self.get_stellar_templates(par, binned_spectra.drpf,
                                              z=numpy.mean(par['guess_redshift'][bins_to_fit]),
                                              loggers=loggers, quiet=quiet)
-
         stpl_wave = None if stellar_templates is None else stellar_templates['WAVE'].data
         stpl_flux = None if stellar_templates is None else stellar_templates['FLUX'].data
         if not quiet:
@@ -1355,23 +1351,20 @@ class Sasuke(EmissionLineFit):
             raise NotImplementedError('Number of gas moments can only be two.')
 
         if par['deconstruct_bins'] != 'ignore':
-            # TODO: Only need to refit "bins" that are made up of more
-            # than one spaxel...
+            # Get the individual spaxel data; this returns all spaxels
+            # in the original datacube
+            _, spaxel_flux, spaxel_ferr, spaxel_sres \
+                    = EmissionLineFit.get_spectra_to_fit(binned_spectra,
+                                                         pixelmask=par['pixelmask'], error=True,
+                                                         original_spaxels=True)
 
-            # Get the individual spaxel data; this returns spaxels of
-            # the entire cube.
-            _, spaxel_flux, spaxel_ferr = EmissionLineFit.get_spectra_to_fit(binned_spectra.drpf,
-                                                                        pixelmask=par['pixelmask'],
-                                                                        error=True)
-            # Apply the Galactic extinction
-            spaxel_flux, spaxel_ferr = binned_spectra.galext.apply(spaxel_flux, err=spaxel_ferr,
-                                                                   deredden=True)
-
+            # Select spaxels to fit based on how many meet the valid
+            # spectral range criterion.
             # TODO: set minimum_fraction as a keyword.  Set to 0.8 by
             # default
             spaxel_to_fit = binned_spectra.check_fgoodpix()
 
-            # Depending on the deconstruction method, get the bin ID 
+            # Depending on the deconstruction method, get the bin ID
             if par['deconstruct_bins'] == 'nearest':
                 binid = None
             elif par['deconstruct_bins'] == 'binid':
@@ -1384,22 +1377,10 @@ class Sasuke(EmissionLineFit):
             else:
                 raise ValueError('Unknown bin deconstruction method.')
 
-            # Get the spectral resolution:
-            # - stack_sres sets whether or not the spectral resolution
-            #   is determined on a per-spaxel basis or with a single
-            #   vector
-            stack_sres = binned_spectra.method['stackpar']['stack_sres']
-            # - prepixel_sres sets if the prepixelized version of the
-            #   LSF measurements were used
-            prepixel_sres = binned_spectra.method['prepixel_sres']
-            # This pulls out the appropiate spectral resolution
-            spaxel_sres = binned_spectra.drpf.spectral_resolution(
-                                            ext=None if stack_sres else 'SPECRES', toarray=True,
-                                            fill=True, pre=prepixel_sres)
-            # Spaxel coordinates; shape is (Nspaxel,)
+            # Get the spaxel spatial coordinates; shape is (Nspaxel,)
             spaxel_x = binned_spectra.rdxqa['SPECTRUM'].data['SKY_COO'][:,0]
             spaxel_y = binned_spectra.rdxqa['SPECTRUM'].data['SKY_COO'][:,1]
-            # Get the binned coordinates
+            # Get the binned spatial coordinates; shape is (Nbin,)
             bin_x = binned_spectra['BINS'].data['SKY_COO'][:,0]
             bin_y = binned_spectra['BINS'].data['SKY_COO'][:,1]
 
@@ -1428,11 +1409,8 @@ class Sasuke(EmissionLineFit):
                                remap_skyy=spaxel_y[spaxel_to_fit], obj_skyx=bin_x[bins_to_fit],
                                obj_skyy=bin_y[bins_to_fit], velscale_ratio=velscale_ratio,
                                matched_resolution=matched_resolution, bias=par['bias'],
-#                               degree=-1, mdegree=0,
                                degree=par['degree'], mdegree=par['mdegree'],
-                               reddening=par['reddening'],
-                               #moments=par['moments'],
-                               loggers=loggers, quiet=quiet)
+                               reddening=par['reddening'], loggers=loggers, quiet=quiet)
 
             # Convert the index number of the nearest bin to the BIN ID
             # number
@@ -1442,13 +1420,12 @@ class Sasuke(EmissionLineFit):
             model_binid = numpy.full(binned_spectra.spatial_shape, -1, dtype=int)
             model_binid.ravel()[spaxel_to_fit] = numpy.arange(numpy.sum(spaxel_to_fit))
 
-            # Add the equivalent width data
-#            redshift = model_eml_par['KIN'][:,0]/astropy.constants.c.to('km/s').value
-            # TODO: Redshift is set to fitted redshift.  Should it use
-            # this or the input guess?
+            # Add the equivalent width data; redshift to apply is taken
+            # from the emission-line parameters object.
+            # TODO: Emission-line equivalent-width measurements should
+            # be put in EmissionLineModel...
             EmissionLineFit.measure_equivalent_width(wave, spaxel_flux[spaxel_to_fit,:],
                                                      par['emission_lines'], model_eml_par,
-                                                     #redshift=redshift,
                                                      bitmask=self.bitmask, checkdb=False)
         else:
             # Return the fits to the binned data
@@ -1468,11 +1445,8 @@ class Sasuke(EmissionLineFit):
                                etpl_sinst_min=par['etpl_line_sigma_min'],
                                velscale_ratio=velscale_ratio,
                                matched_resolution=matched_resolution, bias=par['bias'],
-#                               degree=-1, mdegree=0,
                                degree=par['degree'], mdegree=par['mdegree'],
-                               reddening=par['reddening'],
-                               #moments=par['moments'],
-                               loggers=loggers, quiet=quiet)
+                               reddening=par['reddening'], loggers=loggers, quiet=quiet)
 
             # Save the the bin ID numbers indices based on the spectra
             # selected to be fit
@@ -1486,15 +1460,12 @@ class Sasuke(EmissionLineFit):
             # Bin IDs are the same as on input
             model_binid = None
 
-            # Add the equivalent width data
-#            redshift=par['guess_redshift'][bins_to_fit],
-            # TODO: Redshift is set to fitted redshift.  Should it use
-            # this or the input guess?  Should the EWs be measured in
-            # EmissionLineModel instead?  (Computation not specific to
-            # Sasuke...)
+            # Add the equivalent width data; redshift to apply is taken
+            # from the emission-line parameters object.
+            # TODO: Emission-line equivalent-width measurements should
+            # be put in EmissionLineModel...
             EmissionLineFit.measure_equivalent_width(wave, flux[bins_to_fit,:],
                                                      par['emission_lines'], model_eml_par,
-                                                     #redshift=redshift,
                                                      bitmask=self.bitmask, checkdb=False)
 
         # Reset the equivalent widths to the fill value.  The error
@@ -1513,7 +1484,6 @@ class Sasuke(EmissionLineFit):
         if par['stellar_continuum'] is not None:
 
             if par['deconstruct_bins'] != 'ignore':
-
                 # Get the stellar continuum.  The model extends over
                 # over regions masked during the fit, but 0 outside the
                 # spectral range of the fit.
@@ -1521,25 +1491,11 @@ class Sasuke(EmissionLineFit):
                                                     binned_spectra['BINID'].data,
                                                     missing=binned_spectra.missing_bins)
 
-#                print(type(sc_continuum))
-#                for _i in range(10):
-#                    pyplot.plot(binned_spectra['WAVE'].data, sc_continuum.data[_i,:])
-#                    pyplot.plot(binned_spectra['WAVE'].data, sc_continuum[_i,:])
-#                    pyplot.show()
-
                 # Construct the full 3D cube for the stellar continuum
                 sc_model_flux = DAPFitsUtil.reconstruct_cube(binned_spectra.drpf.shape,
                                                              binned_spectra['BINID'].data.ravel(),
                                                              sc_continuum.filled(0.0)
                                                             ).reshape(-1,self.npix_obj)
-
-#                print(type(sc_model_flux))
-#                print(sc_model_flux.shape)
-#                nx = sc_model_flux.shape[0]
-#                for _i in range(10):
-##                    pyplot.plot(binned_spectra['WAVE'].data, sc_model_flux.data[_i,_i,:])
-#                    pyplot.plot(binned_spectra['WAVE'].data, sc_model_flux[nx//2+_i-5,nx//2+_i-5,:])
-#                    pyplot.show()
 
                 # Construct the full 3D cube of the new stellar
                 # continuum from the combined stellar-continuum +
@@ -1550,25 +1506,11 @@ class Sasuke(EmissionLineFit):
                                                            ).reshape(-1,self.npix_obj)
                 el_continuum = StellarContinuumModel.reset_continuum_mask_window(el_continuum)
 
-#                print(type(el_continuum))
-#                print(el_continuum.shape)
-#                nx = el_continuum.shape[0]
-#                for _i in range(10):
-##                    pyplot.plot(binned_spectra['WAVE'].data, el_continuum.data[_i,_i,:])
-#                    pyplot.plot(binned_spectra['WAVE'].data, el_continuum[nx//2+_i-5,nx//2+_i-5,:])
-#                    pyplot.show()
-
                 # Get the difference, restructure it to match the shape
                 # of the emission-line models
                 model_eml_base = (el_continuum - sc_model_flux)[spaxel_to_fit,:]
 #                if model_mask is not None:
 #                    model_eml_base[model_mask==0] = 0.0
-
-#                print(type(model_eml_base))
-#                print(model_eml_base.shape)
-#                for _i in range(10):
-#                    pyplot.plot(binned_spectra['WAVE'].data, model_eml_base[_i,:])
-#                    pyplot.show()
 
             else:
                 el_continuum = StellarContinuumModel.reset_continuum_mask_window(
@@ -1579,28 +1521,6 @@ class Sasuke(EmissionLineFit):
         else:
             model_eml_base = numpy.zeros(model_flux.shape, dtype=float)
 
-#        pyplot.plot(model_wave, flux[spec_to_fit,:][0,:], color='k', lw=1, zorder=1)
-#        pyplot.plot(model_wave, stellar_continuum[spec_to_fit,:][0,:], color='C0', lw=1.0,
-#                    zorder=2)
-#        pyplot.plot(model_wave, model_eml_flux[0,:], color='C1', lw=1.0, zorder=3)
-#        pyplot.plot(model_wave, model_eml_base[0,:], color='C2', lw=1.0, zorder=4)
-#        pyplot.plot(model_wave, eml_continuum[0,:], color='C3', lw=1.0, zorder=4)
-#        pyplot.show()
-
-#        print(par['emission_lines']['name'])
-#        print(model_eml_par['FLUX'][0,:])
-#        print(model_eml_par['FLUXERR'][0,:])
-        
-        # Only return model and model parameters for the *fitted*
-        # spectra
-#        print(type(model_eml_flux))
-#        print(type(model_eml_base))
-#        print(type(model_mask))
-#        for _i in range(10):
-#            pyplot.plot(binned_spectra['WAVE'].data, model_eml_flux[_i,:])
-#            pyplot.plot(binned_spectra['WAVE'].data, model_eml_base[_i,:])
-#            pyplot.plot(binned_spectra['WAVE'].data, model_mask[_i,:])
-#            pyplot.show()
         return model_eml_flux, model_eml_base, model_mask, model_fit_par, model_eml_par,\
                     model_binid
 
@@ -1836,24 +1756,30 @@ class Sasuke(EmissionLineFit):
                 Suppress all terminal and logging output.
 
         Returns:
-            numpy.ndarray, numpy.recarray: The function returns: (1) the
-            wavelength vector for the model spectra (should be the same
-            as obj_wave), (2) the best-fitting model spectra, (3) the
-            best-fitting emission-line only spectra, (4) the bitmask
-            values, (5) the per spectrum ppxf result, and (6) the per
-            spectrum emission-line parameters.  The first object is a
-            numpy.ndarray instance with shape :math:`(N_{\rm pix},)`,
-            the next 3 objects are numpy.ndarray instances with shape
-            :math:`(N_{\rm spec}, N_{\rm pix})`, and the last two are
-            numpy.recarray instances with shape :math:`(N_{\rm spec},)`.
+            The function returns 6 arrays:
+                - (1) the wavelength vector for the model spectra
+                  (should be the same as obj_wave), 
+                - (2) the best-fitting model spectra,
+                - (3) the best-fitting emission-line only spectra, 
+                - (4) the bitmask values, 
+                - (5) the per spectrum ppxf result, and 
+                - (6) the per spectrum emission-line parameters.
+
+            The first object is a numpy.ndarray instance with shape
+            :math:`(N_{\rm pix},)`, the next 3 objects are numpy.ndarray
+            instances with shape :math:`(N_{\rm spec}, N_{\rm pix})`,
+            and the last two are numpy.recarray instances with shape
+            :math:`(N_{\rm spec},)`.
 
         Raises:
-            ValueError: Raised if the length of the spectra, errors, or
-                mask does not match the length of the wavelength array;
+            ValueError:
+                Raised if the length of the spectra, errors, or mask
+                does not match the length of the wavelength array;
                 raised if the wavelength, redshift, or dispersion arrays
                 are not 1D vectors; and raised if the number of
                 redshifts or dispersions is not a single value or the
                 same as the number of input spectra.
+
         """
 
         #---------------------------------------------------------------

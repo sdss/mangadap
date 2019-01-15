@@ -23,6 +23,7 @@ from mangadap.proc.sasuke import Sasuke
 from mangadap.proc.ppxffit import PPXFFit
 from mangadap.proc.stellarcontinuummodel import StellarContinuumModel, StellarContinuumModelBitMask
 from mangadap.proc.emissionlinemodel import EmissionLineModelBitMask
+from mangadap.proc.spectralfitting import EmissionLineFit
 
 #-----------------------------------------------------------------------------
 
@@ -87,7 +88,7 @@ if __name__ == '__main__':
     dispersion = numpy.full_like(z, 100.)
 
     # Read the spectra
-    print('reading spectrum')
+    print('reading spectra')
     wave, flux, ivar, sres = get_spectra(plt, ifu, x, y) #, directory_path='./data')
     ferr = numpy.ma.power(ivar, -0.5)
 
@@ -104,7 +105,7 @@ if __name__ == '__main__':
         z_binned = z.copy()
         dispersion_binned = dispersion.copy()
     else:
-        # Stack them into a single spectrum
+        # Stack the spectra
         wave_binned, flux_binned, fsdev_binned, npix_binned, ivar_binned, sres_binned, \
                 covar_binned = SpectralStack().stack(wave, flux, binid=binid, ivar=ivar, sres=sres)
         ferr_binned = numpy.ma.power(ivar_binned, -0.5)
@@ -193,9 +194,6 @@ if __name__ == '__main__':
         stellar_kinematics[:,1] = numpy.ma.sqrt(numpy.square(cont_par['KIN'][:,1]) -
                                                     numpy.square(cont_par['SIGMACORR_EMP']))
     
-#    # Set the stellar kinematics for each unbinned spectrum
-#    stellar_kinematics = numpy.repeat(stellar_kinematics,nspec,axis=0)
-#
     # Mask the 5577 sky line
     el_pixel_mask = SpectralPixelMask(artdb=ArtifactDB('BADSKY'))
 
@@ -219,6 +217,10 @@ if __name__ == '__main__':
                          remapid=binid, remap_flux=flux, remap_ferr=ferr,
                          remap_mask=el_pixel_mask, remap_sres=sres, remap_skyx=x, remap_skyy=y,
                          obj_skyx=x_binned, obj_skyy=y_binned)
+
+    # Line-fit metrics
+    eml_eml_par = EmissionLineFit.line_metrics(emldb, wave, flux, ferr, model_flux, eml_eml_par,
+                                               model_mask=eml_mask, bitmask=emlfit.bitmask)
 
     # Get the stellar continuum that was fit for the emission lines
     elcmask = eml_mask > 0
@@ -253,6 +255,8 @@ if __name__ == '__main__':
         pyplot.xlabel('Wavelength')
         pyplot.ylabel('Summed-Gaussian Difference')
         pyplot.show()
+
+    # TODO: Add the spectral index calls...
 
     print('Elapsed time: {0} seconds'.format(time.clock() - t))
 
