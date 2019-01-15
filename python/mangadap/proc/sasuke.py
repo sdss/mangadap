@@ -2414,3 +2414,43 @@ class Sasuke(EmissionLineFit):
         print('Constructing continuum for spectrum: {0}/{0}'.format(nobj))
         return models
 
+    @staticmethod
+    def fit_figures_of_merit(model_fit_par):
+        """
+        Parse the model fit parameters into only the set of fit-quality
+        metrics per fitted spectrum.
+
+        This is primarily used to set the output data for the MAPS file.
+
+        Args:
+            model_fit_par (`numpy.recarray`):
+                The array with the fit parameters produced by
+                :func:`Sasuke.fit`.  Must have the datatype defined by
+                :func:`Sasuke._per_firt_dtype`.
+
+        Returns:
+            Two objects are returned: a list of names to assign each row
+            (length is NFOM) and a 2D array with the figures of merit
+            for each spectrum (shape is NSPEC x NFOM).
+        """
+
+        names = ['rms', 'frms', 'rchi2',
+                 '68th perc frac resid', '99th perc frac resid', 'max frac resid',
+                 '68th perc per pix chi2', '99th perc per pix chi2', 'max per pix chi2']
+        units = ['1E-17 erg/s/cm^2/ang/spaxel'] + ['']*8
+        nspec = len(model_fit_par)
+        fom = numpy.zeros((nspec, 9), dtype=float)
+        fom[:,0] = model_fit_par['RMS']
+        fom[:,1] = model_fit_par['FRMS']
+        fom[:,2] = model_fit_par['RCHI2']
+        fom[:,3] = model_fit_par['FRMSGRW'][:,1]
+        fom[:,4] = model_fit_par['FRMSGRW'][:,3]
+        fom[:,5] = model_fit_par['FRMSGRW'][:,4]
+        fom[:,6] = model_fit_par['CHIGRW'][:,1]
+        fom[:,7] = model_fit_par['CHIGRW'][:,3]
+        fom[:,8] = model_fit_par['CHIGRW'][:,4]
+
+        return names, units, fom
+        
+
+        

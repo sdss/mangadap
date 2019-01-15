@@ -36,6 +36,13 @@
  - Changed definitions of A to be the model amplitude; A/N is the model
    amplitude divided by the median noise in the two sidebands defined
    for the emission-line EW calculation.
+ - Consolidated figures-of-merit for the stellar-continuum
+   fitting into a single MAPS extension and added additional quantities.
+ - Added MAPS with the amplitude, A/N, and local reduced chi-square for
+   each line fit in the emission-line modeling.
+ - Added MAPS with the full-spectrum figures-of-merit for the
+   emission-line module, similar to the stellar-continuum output from
+   ppxf.
 
 TODO:
  - Documentation of config examples are out of date!

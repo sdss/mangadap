@@ -1378,31 +1378,6 @@ class EmissionLineModel:
                                         unique_bins=DAPFitsUtil.unique_bins(self.hdu['BINID'].data))
 
 
-#    def fill_to_match(self, binned_spectra, include_base=False):
-#        """
-#        Get the emission-line models that match the shape of the
-#        provided binned_spectra.
-#        """
-#        if binned_spectra is self.binned_spectra:
-#            emission_lines = self.copy_to_array()
-#            if include_base:
-#                emission_lines += self.copy_to_array(ext='BASE')
-#            emission_lines = numpy.ma.MaskedArray(emission_lines)
-#
-#            # Number of models matches the numbers of bins
-#            if binned_spectra.nbins == self.nmodels:
-#                return emission_lines
-#    
-#            # Fill in bins with no models with masked zeros
-#            _emission_lines = numpy.ma.zeros(binned_spectra['FLUX'].data.shape, dtype=float)
-#            _emission_lines[:,:] = numpy.ma.masked
-#            for i,j in enumerate(self.hdu['EMLDATA'].data['BINID_INDEX']):
-#                _emission_lines[j,:] = emission_lines[i,:]
-#            return _emission_lines
-#
-#        raise NotImplementedError('Can only match to internal binned_spectra.')
-
-
     def fill_to_match(self, binid, include_base=False, missing=None):
         """
         Get the emission-line model that matches the input bin ID
@@ -1716,5 +1691,30 @@ class EmissionLineModel:
         return numpy.array([ '{0}-{1}'.format(n,int(w)) \
                         for n,w in zip(self['PAR'].data['NAME'],
                                        self['PAR'].data['RESTWAVE']) ])
+
+    def fit_figures_of_merit(self):
+        """
+        Use the fitting class to set the figures-of-merit of the full
+        fit.
+
+        This is primarily used to set the output data for the MAPS file.
+        
+        Returns:
+            Three objects are returned: a list of names to assign each
+            column (length is NFOM), the units of the data in this
+            column (length is NFOM), and a 2D array with the figures of
+            merit for each spectrum (shape is NSPEC x NFOM).  If the
+            fitting class used does not have a `fit_figures_of_merit`
+            function, the name is set to 'null', the unit is an empty
+            string, and the data is a (NMOD,1) array of zeros.
+        """
+        try:
+            names, units, fom = self.method['fitclass'].fit_figures_of_merit(self.hdu['FIT'].data)
+        except:
+            names = ['null']
+            units = ['']
+            fom = numpy.zeros((self.nmodels,1), dtype=float)
+        return names, units, fom
+        
 
 

@@ -1234,17 +1234,20 @@ class construct_maps_file:
         return DAPFitsUtil.list_of_image_hdus(data, hdr, ext)
 
 
+    @staticmethod
+    def _join_maps(a):
+        return numpy.array(a).transpose(1,2,0)
+
     def stellar_continuum_maps(self, prihdr, stellar_continuum):
         """
         Construct the 'STELLAR_VEL', 'STELLAR_VEL_IVAR',
         'STELLAR_VEL_MASK', 'STELLAR_SIGMA', 'STELLAR_SIGMA_IVAR',
         'STELLAR_SIGMA_MASK', 'STELLAR_SIGMACORR',
-        'STELLAR_CONT_FRESID', and 'STELLAR_CONT_RCHI2' maps extensions.
+        'STELLAR_FOM' maps extensions.
         """
         #---------------------------------------------------------------
         ext = [ 'STELLAR_VEL', 'STELLAR_VEL_IVAR', 'STELLAR_VEL_MASK', 'STELLAR_SIGMA',
-                'STELLAR_SIGMA_IVAR', 'STELLAR_SIGMA_MASK', 'STELLAR_SIGMACORR',
-                'STELLAR_CONT_FRESID', 'STELLAR_CONT_RCHI2' ]
+                'STELLAR_SIGMA_IVAR', 'STELLAR_SIGMA_MASK', 'STELLAR_SIGMACORR', 'STELLAR_FOM' ]
 
         if stellar_continuum is None:
             # Construct and return the empty hdus
@@ -1254,6 +1257,10 @@ class construct_maps_file:
         # Add data to the primary header
         prihdr = stellar_continuum._initialize_primary_header(hdr=prihdr)
         prihdr = stellar_continuum._add_method_header(prihdr)
+
+        # Figure-of-merit units
+        fomunits = ['']*9
+        fomunits[0] = '1E-17 erg/s/cm^2/ang/spaxel'
 
         #---------------------------------------------------------------
         # Get the extension headers
@@ -1271,16 +1278,21 @@ class construct_maps_file:
                 DAPFitsUtil.finalize_dap_header(self.singlechannel_maphdr, 'STELLAR_SIGMA',
                                                 hduclas2='QUALITY', err=True,
                                                 bit_type=self.bitmask.minimum_dtype()),
-                DAPFitsUtil.finalize_dap_header(self.singlechannel_maphdr, 'STELLAR_SIGMACORR',
-                                                bunit='km/s'),
-#                DAPFitsUtil.finalize_dap_header(self.multichannel_maphdr, 'STELLAR_SIGMACORR',
-#                                                multichannel=True, bunit='km/s',
-#                                                channel_names=['resolution difference', 'fit']),
-                DAPFitsUtil.finalize_dap_header(self.multichannel_maphdr, 'STELLAR_CONT_FRESID',
+#                DAPFitsUtil.finalize_dap_header(self.singlechannel_maphdr, 'STELLAR_SIGMACORR',
+#                                                bunit='km/s'),
+                DAPFitsUtil.finalize_dap_header(self.multichannel_maphdr, 'STELLAR_SIGMACORR',
+                                                multichannel=True, bunit='km/s',
+                                                channel_names=['resolution difference', 'fit']),
+                DAPFitsUtil.finalize_dap_header(self.multichannel_maphdr, 'STELLAR_FOM',
                                                 multichannel=True,
-                                                channel_names=['68th percentile',
-                                                               '99th percentile']),
-                DAPFitsUtil.finalize_dap_header(self.singlechannel_maphdr, 'STELLAR_CONT_RCHI2')
+                                                channel_names=['rms', 'frms', 'rchi2',
+                                                               '68th perc frac resid',
+                                                               '99th perc frac resid',
+                                                               'max frac resid',
+                                                               '68th perc per pix chi2',
+                                                               '99th perc per pix chi2',
+                                                               'max per pix chi2'],
+                                                channel_units=fomunits)
               ]
 
 
@@ -1293,30 +1305,25 @@ class construct_maps_file:
                                                     -2).filled(0.0), self.nsa_redshift, ivar=True),
                 stellar_continuum['PAR'].data['KIN'][:,1],
                 numpy.ma.power(stellar_continuum['PAR'].data['KINERR'][:,1], -2).filled(0.0),
-# Error in empirical correction, only output difference in resolution
-# vectors
-#                stellar_continuum['PAR'].data['SIGMACORR_EMP'],
+                stellar_continuum['PAR'].data['SIGMACORR_EMP'],
                 stellar_continuum['PAR'].data['SIGMACORR_SRES'],
-                stellar_continuum['PAR'].data['FABSRESID'][:,1],
-                stellar_continuum['PAR'].data['FABSRESID'][:,3],
+                stellar_continuum['PAR'].data['RMS'],
+                stellar_continuum['PAR'].data['FRMS'],
                 stellar_continuum['PAR'].data['RCHI2'],
+                stellar_continuum['PAR'].data['FRMSGRW'][:,1],
+                stellar_continuum['PAR'].data['FRMSGRW'][:,3],
+                stellar_continuum['PAR'].data['FRMSGRW'][:,4],
+                stellar_continuum['PAR'].data['CHIGRW'][:,1],
+                stellar_continuum['PAR'].data['CHIGRW'][:,3],
+                stellar_continuum['PAR'].data['CHIGRW'][:,4],
                 stellar_continuum['PAR'].data['MASK']
               ]
 
+        # Data types
         dtypes = [self.float_dtype]*(len(arr)-1) + [arr[-1].dtype.name]
 
         # Bin index
         bin_indx = stellar_continuum['BINID'].data.copy().ravel()
-##        pyplot.imshow(bin_indx.reshape(self.drpf.spatial_shape), origin='lower', interpolation='nearest')
-##        pyplot.show()
-#
-#        pyplot.imshow(DAPFitsUtil.reconstruct_map(self.spatial_shape, bin_indx, stellar_continuum['PAR'].data['KIN'][:,0]), origin='lower', interpolation='nearest')
-#        pyplot.show()
-#
-#        print(stellar_continuum['PAR'].data['KIN'][:,0])
-#
-#        print('nbin: {0}'.format(numpy.sum(bin_indx > -1)))    
-#        exit()
 
         # Remap the data to the DRP spatial shape
         arr = list(DAPFitsUtil.reconstruct_map(self.spatial_shape, bin_indx, arr, dtype=dtypes))
@@ -1328,21 +1335,7 @@ class construct_maps_file:
 
         # Organize the extension data
         data = arr[0:2] + [ vel_mask ] + arr[2:4] + [ sig_mask ] \
-                    + [ arr[4], numpy.array(arr[5:7]).transpose(1,2,0), arr[7] ]
-#        data = arr[0:2] + [ vel_mask ] + arr[2:4] + [ sig_mask ] \
-#                    + [ numpy.array(arr[4:6]).transpose(1,2,0),
-#                        numpy.array(arr[6:8]).transpose(1,2,0), arr[8] ]
-
-#        for i,d in enumerate(data):
-#            if len(d.shape) == 2:
-#                print(i+1)
-#                pyplot.imshow(d, origin='lower', interpolation='nearest')
-#                pyplot.show()
-#        exit()
-
-#        print(data, hdr, ext)
-#        print(len(data), len(hdr), len(ext))
-#        exit()
+                    + [ self._join_maps(arr[4:6]), self._join_maps(arr[6:-1]) ]
 
         #---------------------------------------------------------------
         # Return the map hdus
@@ -1443,13 +1436,15 @@ class construct_maps_file:
         'EMLINE_GFLUX_MASK', 'EMLINE_GEW', 'EMLINE_GEW_IVAR',
         'EMLINE_GEW_MASK', 'EMLINE_GVEL', 'EMLINE_GVEL_IVAR',
         'EMLINE_GVEL_MASK', 'EMLINE_GSIGMA', 'EMLINE_GSIGMA_IVAR',
-        'EMLINE_GSIGMA_MASK', 'EMLINE_INSTSIGMA', 'EMLINE_TPLSIGMA' map extensions.
+        'EMLINE_GSIGMA_MASK', 'EMLINE_INSTSIGMA', 'EMLINE_TPLSIGMA',
+        'EMLINE_GA', 'EMLINE_GANR', 'EMLINE_FOM', 'EMLINE_LFOM' map extensions.
         """
         #---------------------------------------------------------------
         ext = [ 'EMLINE_GFLUX', 'EMLINE_GFLUX_IVAR', 'EMLINE_GFLUX_MASK', 'EMLINE_GEW',
                 'EMLINE_GEW_IVAR', 'EMLINE_GEW_MASK', 'EMLINE_GVEL', 'EMLINE_GVEL_IVAR',
                 'EMLINE_GVEL_MASK', 'EMLINE_GSIGMA', 'EMLINE_GSIGMA_IVAR', 'EMLINE_GSIGMA_MASK',
-                'EMLINE_INSTSIGMA', 'EMLINE_TPLSIGMA' ]
+                'EMLINE_INSTSIGMA', 'EMLINE_TPLSIGMA', 'EMLINE_GA', 'EMLINE_GANR', 'EMLINE_FOM',
+                'EMLINE_LFOM' ]
 
         if emission_line_model is None:
             # Construct and return the empty hdus
@@ -1468,7 +1463,7 @@ class construct_maps_file:
 
         # Create the basic header for all extensions
         if 'data' in emission_line_model['PAR'].__dict__:
-            names= [ '{0}-{1}'.format(n,int(w)) \
+            names = [ '{0}-{1}'.format(n,int(w)) \
                         for n,w in zip(emission_line_model['PAR'].data['NAME'],
                                        emission_line_model['PAR'].data['RESTWAVE']) ]
             base_hdr = DAPFitsUtil.add_channel_names(self.multichannel_maphdr if multichannel
@@ -1476,7 +1471,11 @@ class construct_maps_file:
         else:
             # TODO: This should throw a ValueError, not just a warning
             warnings.warn('Emission-line model does not include channel names!')
+            names = None
             base_hdr = self.multichannel_maphdr if multichannel else self.singlechannel_maphdr
+
+        # Get the figure of merit data to output
+        fom_names, fom_units, fom_data = emission_line_model.fit_figures_of_merit()
        
         hdr = [ DAPFitsUtil.finalize_dap_header(base_hdr, 'EMLINE_GFLUX', err=True, qual=True,
                                                 bunit='1E-17 erg/s/cm^2/spaxel',
@@ -1513,51 +1512,90 @@ class construct_maps_file:
                 DAPFitsUtil.finalize_dap_header(base_hdr, 'EMLINE_INSTSIGMA', bunit='km/s',
                                                 multichannel=multichannel),
                 DAPFitsUtil.finalize_dap_header(base_hdr, 'EMLINE_TPLSIGMA', bunit='km/s',
-                                                multichannel=multichannel)
+                                                multichannel=multichannel),
+                DAPFitsUtil.finalize_dap_header(base_hdr, 'EMLINE_GA',
+                                                bunit='1E-17 erg/s/cm^2/ang/spaxel',
+                                                multichannel=multichannel),
+                DAPFitsUtil.finalize_dap_header(base_hdr, 'EMLINE_GANR',
+                                                multichannel=multichannel),
+                DAPFitsUtil.finalize_dap_header(self.multichannel_maphdr, 'EMLINE_FOM',
+                                                multichannel=True, channel_names=fom_names,
+                                                channel_units=fom_units),
+                DAPFitsUtil.finalize_dap_header(base_hdr, 'EMLINE_LFOM', multichannel=multichannel)
               ]
 
         #---------------------------------------------------------------
         # Get the data arrays
-        narr = 11
+        # ---
+        # Fluxes
+        n_arr_with_eml_channels = 0
         arr = [ emission_line_model['EMLDATA'].data['FLUX'][:,m]
                     for m in range(emission_line_model.neml) ]
+        n_arr_with_eml_channels += 1
+        # Flux errors
         arr += [ numpy.ma.power(emission_line_model['EMLDATA'].data['FLUXERR'][:,m],
                                 -2).filled(0.0) for m in range(emission_line_model.neml) ]
+        n_arr_with_eml_channels += 1
+        # Equivalent width
         arr += [ emission_line_model['EMLDATA'].data['EW'][:,m]
                     for m in range(emission_line_model.neml) ]
+        n_arr_with_eml_channels += 1
+        # Equivalent width errors
         arr += [ numpy.ma.power(emission_line_model['EMLDATA'].data['EWERR'][:,m],
                                 -2).filled(0.0) for m in range(emission_line_model.neml) ]
+        n_arr_with_eml_channels += 1
+        # Velocities
         arr += [ DAPFitsUtil.redshift_to_Newtonian_velocity(
                         emission_line_model['EMLDATA'].data['KIN'][:,m,0], self.nsa_redshift)
                     for m in range(emission_line_model.neml) ]
+        n_arr_with_eml_channels += 1
+        # Velocity errors
         arr += [ DAPFitsUtil.redshift_to_Newtonian_velocity(
                         numpy.ma.power(emission_line_model['EMLDATA'].data['KINERR'][:,m,0],
                                        -2).filled(0.0), self.nsa_redshift, ivar=True) \
                     for m in range(emission_line_model.neml) ]
+        n_arr_with_eml_channels += 1
+        # Velocity dispersions
         arr += [ emission_line_model['EMLDATA'].data['KIN'][:,m,1]
                     for m in range(emission_line_model.neml) ]
+        n_arr_with_eml_channels += 1
+        # Velocity dispersion errors
         arr += [ numpy.ma.power(emission_line_model['EMLDATA'].data['KINERR'][:,m,1],
                                 -2).filled(0.0) for m in range(emission_line_model.neml) ]
+        n_arr_with_eml_channels += 1
+        # Instrumental dispersions
         arr += [ emission_line_model['EMLDATA'].data['SIGMAINST'][:,m]
                     for m in range(emission_line_model.neml) ]
+        n_arr_with_eml_channels += 1
+        # Template velocity dispersions
         arr += [ emission_line_model['EMLDATA'].data['SIGMATPL'][:,m]
                     for m in range(emission_line_model.neml) ]
+        n_arr_with_eml_channels += 1
+        # Amplitude
+        arr += [ emission_line_model['EMLDATA'].data['AMP'][:,m]
+                    for m in range(emission_line_model.neml) ]
+        n_arr_with_eml_channels += 1
+        # A/N
+        arr += [ emission_line_model['EMLDATA'].data['ANR'][:,m]
+                    for m in range(emission_line_model.neml) ]
+        n_arr_with_eml_channels += 1
+        # Line reduced chi-square
+        mp = 3  # Number of model parameters, TODO: get this from emission_line_model...
+        reduced_chi2 = numpy.ma.divide(emission_line_model['EMLDATA'].data['LINE_CHI2'],
+                                       emission_line_model['EMLDATA'].data['LINE_NSTAT'] 
+                                            - mp).filled(-999.)
+        arr += [ reduced_chi2[:,m] for m in range(emission_line_model.neml) ]
+        n_arr_with_eml_channels += 1
+        # Full spectrum fit-quality metrics (if available)
+        nfom = len(fom_names)
+        arr += [ fom_data[:,m] for m in range(nfom) ]
+        # Mask data
         arr += [ emission_line_model['EMLDATA'].data['MASK'][:,m]
                     for m in range(emission_line_model.neml) ]
 
-        dtypes = [self.float_dtype]*(len(arr)-emission_line_model.neml) \
+        # Data types
+        dtypes = [self.float_dtype]*(n_arr_with_eml_channels*emission_line_model.neml + nfom) \
                         + [a.dtype.name for a in arr[-emission_line_model.neml:]]
-
-##        t = [ numpy.ma.power(emission_line_model['EMLDATA'].data['KINERR'][:,m,1],
-##                                -2).filled(0.0) for m in range(emission_line_model.neml) ]
-#        t = [ emission_line_model['EMLDATA'].data['KINERR'][:,m,1]
-#                                 for m in range(emission_line_model.neml) ]
-#        for k,_t in enumerate(t):
-##            print(k, numpy.sum(_t > 1e20))
-#            print(k, numpy.amin(_t))
-#
-##        print('len(arr): ', len(arr))
-##        print('not finite arr: ', [numpy.sum(numpy.invert(numpy.isfinite(a))) for a in arr])
 
         # Bin index
         bin_indx = emission_line_model['BINID'].data.copy().ravel()
@@ -1565,13 +1603,11 @@ class construct_maps_file:
         # Remap the data to the DRP spatial shape
         arr = list(DAPFitsUtil.reconstruct_map(self.spatial_shape, bin_indx, arr, dtype=dtypes))
 
-        data = [ numpy.array(arr[emission_line_model.neml*i:
-                                 emission_line_model.neml*(i+1)]).transpose(1,2,0) \
-                        for i in range(narr) ]
-
-#        print(len(data))
-#        print(data[7].shape)
-#        print([numpy.sum(numpy.invert(numpy.isfinite(d))) for d in data])
+        # Join the maps for each emission line in the set of quantities 
+        data = [ _join_maps(arr[emission_line_model.neml*i:emission_line_model.neml*(i+1)])
+                        for i in range(n_arr_with_eml_channels) ]
+        data += [ _join_maps(arr[-emission_line_model.neml-nfom:-emission_line_model.neml]) ]
+        data += [ _join_maps(arr[-emission_line_model.neml:]) ]
 
         # Get the masks
         base_mask = self._emission_line_model_mask_to_map_mask(emission_line_model, data[-1].copy())
@@ -1580,7 +1616,7 @@ class construct_maps_file:
 
         # Organize the extension data
         data = data[:2] + [ base_mask ] + data[2:4] + [ base_mask ] + data[4:6] + [ base_mask ] \
-                + data[6:8] + [ sig_mask ] + data[8:10]
+                + data[6:8] + [ sig_mask ] + data[8:-1]
 
         #---------------------------------------------------------------
         # Return the map hdus
