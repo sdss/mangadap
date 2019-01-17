@@ -286,8 +286,6 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
                                         dapsrc=dapsrc, analysis_path=_analysis_path,
                                         clobber=plan['elmom_clobber'][i], loggers=loggers)
         
-        import pdb; pdb.set_trace()
-
         #---------------------------------------------------------------
         # Emission-line Fit
         #---------------------------------------------------------------
@@ -316,7 +314,6 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
 #
 #        test = emission_line_model._get_line_fit_metrics(model_flux, model_base, model_mask, eml_par, model_binid)
 #
-        import pdb; pdb.set_trace()
 
 #        cen = drpf.spatial_shape[0]//2
 #        indx = emission_line_model['BINID'].data[cen,cen]
@@ -385,8 +382,6 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
                                           emission_line_model=emission_line_model, dapsrc=dapsrc,
                                           analysis_path=_analysis_path,
                                           clobber=plan['elmom_clobber'][i], loggers=loggers)
-
-        import pdb; pdb.set_trace()
 
 #        print(emission_line_moments['ELMMNTS'].data['FLUX'].shape)
 #

@@ -739,9 +739,6 @@ class EmissionLineFit(SpectralFitting):
 
         # Get the fitted line amplitude
         sigma_ang = model_eml_par['KIN'][:,:,1]*sample_wave/astropy.constants.c.to('km/s').value
-        model_eml_par['AMP'] = model_eml_par['FLUX']/numpy.sqrt(2*numpy.pi)/sigma_ang
-        if not numpy.all(numpy.isfinite(model_eml_par['AMP'])):
-            import pdb; pdb.set_trace()
         sigma_ang = numpy.ma.MaskedArray(sigma_ang, mask=numpy.invert(sigma_ang > 0))
         model_eml_par['AMP'] = numpy.ma.divide(model_eml_par['FLUX'], sigma_ang).filled(0.0) \
                                     / numpy.sqrt(2*numpy.pi)
@@ -766,8 +763,6 @@ class EmissionLineFit(SpectralFitting):
             _rednoise = numpy.ma.MaskedArray(_rednoise, mask=numpy.invert(_rednoise > 0))
             noise[i,:] = ((_bluenoise + _rednoise)/2.).filled(0.0)
         model_eml_par['ANR'] = numpy.ma.divide(model_eml_par['AMP'], noise).filled(0.0)
-
-        import pdb; pdb.set_trace()
 
         neml = len(emission_lines)
         for i in range(neml):
