@@ -10,48 +10,6 @@ file is created.
     Copyright (c) 2017, SDSS-IV/MaNGA Pipeline Group
         Licensed under BSD 3-clause license - see LICENSE.rst
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/dapall.py
-
-*Imports and python version compliance*:
-    ::
-
-        from __future__ import division
-        from __future__ import print_function
-        from __future__ import absolute_import
-        from __future__ import unicode_literals
-
-        import sys
-        if sys.version > '3':
-            long = int
-
-        import numpy
-        import logging
-        import time
-        import os
-
-        from scipy import interpolate
-
-        from astropy.io import fits
-        import astropy.constants
-        from astropy.cosmology import FlatLambdaCDM
-        import astropy.units
-        from astropy.stats import sigma_clip
-
-        from ..drpfits import DRPFits, DRPQuality3DBitMask
-        from ..dapfits import DAPMapsBitMask, DAPQualityBitMask
-        from ..par.analysisplan import AnalysisPlanSet
-        from .drpcomplete import DRPComplete
-        from ..config import defaults
-        from ..util.fileio import init_record_array, rec_to_fits_type, channel_dictionary
-        from ..proc.util import select_proc_method
-        from ..par.absorptionindexdb import AbsorptionIndexDB
-        from ..par.bandheadindexdb import BandheadIndexDB
-        from ..par.emissionlinedb import EmissionLineDB
-        from ..proc.spectralindices import SpectralIndicesDef, available_spectral_index_databases
-        from ..proc.emissionlinemodel import EmissionLineModelDef
-        from ..proc.emissionlinemodel import available_emission_line_modeling_methods
-
 *Class usage examples*:
     Add some usage comments here!
 

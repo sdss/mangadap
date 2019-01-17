@@ -1075,13 +1075,13 @@ class Sasuke(EmissionLineFit):
 
             # Get growth statistics for the three figures of merit
             model_fit_par['CHIGRW'][i,:] \
-                        = sample_growth(numpy.ma.absolute(chi2[i,:]),
+                        = sample_growth(numpy.ma.sqrt(chi2[i,:]).compressed(),
                                         [0.0, 0.68, 0.95, 0.99, 1.0], use_interpolate=False)
             model_fit_par['RMSGRW'][i,:] \
-                        = sample_growth(numpy.ma.absolute(residual[i,:]),
+                        = sample_growth(numpy.ma.absolute(residual[i,:]).compressed(),
                                         [0.0, 0.68, 0.95, 0.99, 1.0], use_interpolate=False)
             model_fit_par['FRMSGRW'][i,:] \
-                        = sample_growth(numpy.ma.absolute(fractional_residual[i,:]),
+                        = sample_growth(numpy.ma.absolute(fractional_residual[i,:]).compressed(),
                                         [0.0, 0.68, 0.95, 0.99, 1.0], use_interpolate=False)
 
             if used_apoly or used_mpoly or used_ebv:

@@ -44,6 +44,9 @@
    emission-line module, similar to the stellar-continuum output from
    ppxf.
  - Major changes to survey-level code: drpcomplete.py and rundap.py.
+ - Fixed minor issue in EmissionLineMoments.single_band_moments that
+   caused many "UserWarning: Warning: converting a masked element to
+   nan." messages.
 
 TODO:
  - Documentation of config examples are out of date!
