@@ -279,13 +279,13 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
         #---------------------------------------------------------------
         # Emission-line Moment measurements
         #---------------------------------------------------------------
-        warnings.filterwarnings('error', message='Warning: converting a masked element to nan.')
+#        warnings.filterwarnings('error', message='Warning: converting a masked element to nan.')
         emission_line_moments = None if plan['elmom_key'][i] is None else \
                     EmissionLineMoments(plan['elmom_key'][i], binned_spectra,
                                         stellar_continuum=stellar_continuum, redshift=nsa_redshift,
                                         dapsrc=dapsrc, analysis_path=_analysis_path,
                                         clobber=plan['elmom_clobber'][i], loggers=loggers)
-        
+
         #---------------------------------------------------------------
         # Emission-line Fit
         #---------------------------------------------------------------

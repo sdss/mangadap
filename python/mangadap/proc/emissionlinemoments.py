@@ -7,46 +7,6 @@ A class hierarchy that measures moments of the observed emission lines.
     Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
         Licensed under BSD 3-clause license - see LICENSE.rst
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/proc/emissionlinemoments.py
-
-*Imports and python version compliance*:
-    ::
-
-        from __future__ import division
-        from __future__ import print_function
-        from __future__ import absolute_import
-        from __future__ import unicode_literals
-
-        import sys
-        import warnings
-        if sys.version > '3':
-            long = int
-
-        import glob
-        import os
-        import logging
-        import numpy
-
-        from astropy.io import fits
-        import astropy.constants
-
-        from ..config.defaults import dap_source_dir, default_dap_file_name
-        from ..config.defaults import default_dap_method, default_dap_method_path
-        from ..util.fileio import init_record_array, rec_to_fits_type
-        from ..util.bitmask import BitMask
-        from ..util.pixelmask import SpectralPixelMask
-        from ..util.log import log_output
-        from ..util.parser import DefaultConfig
-        from ..par.parset import ParSet
-        from ..par.artifactdb import ArtifactDB
-        from ..par.emissionmomentsdb import EmissionMomentsDB
-        from .spatiallybinnedspectra import SpatiallyBinnedSpectra
-        from .stellarcontinuummodel import StellarContinuumModel
-        from .bandpassfilter import passband_integral, passband_integrated_width, passband_median
-        from .bandpassfilter import passband_integrated_mean, passband_weighted_mean
-        from .util import select_proc_method
-
 *Class usage examples*:
     Add examples!
 
@@ -741,9 +701,14 @@ class EmissionLineMoments:
             undefined 2nd moment
 
         """
+        _passband = numpy.atleast_1d(passband)
+        if _passband.ndim > 1:
+            raise ValueError('Should only pass a single band to single_band_moments.')
+        if len(_passband) != 2:
+            raise ValueError('Band should be a list of 2 numbers.')
         # Get the fraction of the passband that is unmasked
         interval_frac = passband_integrated_width(wave, spec, passband=passband, log=True) \
-                                / numpy.diff(passband).ravel()
+                                / numpy.diff(passband)[0]
         incomplete = interval_frac < 1.0
         empty = numpy.invert(interval_frac > 0.0)
         if empty:
@@ -774,14 +739,20 @@ class EmissionLineMoments:
 
         # Set masked values to 0.0
         undefined_mom1 = False
-        if isinstance(mom1, numpy.ma.MaskedArray) and mom1.mask:
+        if isinstance(mom1, numpy.ma.core.MaskedConstant) and mom1.mask:
             mom1 = 0.0
+            mom1err = 0.0
             undefined_mom1 = True
         undefined_mom2 = False
-        if isinstance(mom2, numpy.ma.MaskedArray) and mom2.mask:
+        if isinstance(mom2, numpy.ma.core.MaskedConstant) and mom2.mask:
             mom2 = 0.0
+            mom2err = 0.0
             undefined_mom2 = True
-        
+        if isinstance(mom1err, numpy.ma.core.MaskedConstant) and mom1err.mask:
+            mom1err = 0.0
+        if isinstance(mom2err, numpy.ma.core.MaskedConstant) and mom2err.mask:
+            mom2err = 0.0
+
         return flux, fluxerr, mom1, mom1err, mom2, mom2err, incomplete, empty, False, \
                     undefined_mom1, undefined_mom2
 
@@ -847,7 +818,7 @@ class EmissionLineMoments:
             _spec = spec - cont if len(spec.shape) == 1 else spec[_spec_n[i],:] - cont
 
             flux[i], fluxerr[i], mom1[i], mom1err[i], mom2[i], mom2err[i], incomplete[i], \
-                    empty[i], divbyzero[i], undefined_mom1[i], undefined_mom2[i] \
+                        empty[i], divbyzero[i], undefined_mom1[i], undefined_mom2[i] \
                         = EmissionLineMoments.single_band_moments(wave, _spec, p, restwave[i],
                                                                   err=err)
 

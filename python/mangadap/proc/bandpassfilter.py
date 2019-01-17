@@ -454,6 +454,9 @@ def passband_weighted_mean(x, y, z, passband=None, borders=False, yerr=None, zer
         \epsilon_\mu^2 = \frac{1}{S(y)^2} (S((z-\mu)^2 \epsilon_y^2) +
         S(y^2\epsilon_z^2)).
 
+    .. todo::
+        -doc the args
+
     Returns:
         numpy.ma.MaskedArray: Two masked arrays with the
         passband-weighted mean and its error.  The error is returned as
