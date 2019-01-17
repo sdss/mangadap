@@ -12,31 +12,6 @@ Defines a class to keep track of MaNGA MPL dependencies and versioning.
     Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
         Licensed under BSD 3-clause license - see LICENSE.rst
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/mangampl.py
-
-*Imports and python version compliance*:
-    ::
-
-        from __future__ import division
-        from __future__ import print_function
-        from __future__ import absolute_import
-        from __future__ import unicode_literals
-
-        import sys
-        if sys.version > '3':
-            long = int
-
-        import os
-        from distutils.version import StrictVersion
-
-        # For version checking
-        import numpy
-        import scipy
-        import matplotlib
-        import astropy
-        import pydl
-
 *Class usage examples*:
 
     .. todo::

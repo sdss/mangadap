@@ -62,6 +62,7 @@ import astropy.constants
 from ..util.bitmask import BitMask
 from ..util.constants import DAPConstants
 from ..util import lineprofiles
+from ..util.filter import interpolate_masked_vector
 from ..par.emissionlinedb import EmissionLineDB
 from .bandpassfilter import emission_line_equivalent_width, passband_median
 
@@ -263,7 +264,7 @@ class EmissionLineFit(SpectralFitting):
         if original_spaxels:
             flags = binned_spectra.drpf.do_not_fit_flags()
             flux = binned_spectra.drpf.copy_to_masked_array(flag=flags)
-            ivar = binned_spectra.copy_to_masked_array(ext='IVAR', flag=flags)
+            ivar = binned_spectra.drpf.copy_to_masked_array(ext='IVAR', flag=flags)
             flux, ferr = binned_spectra.galext.apply(flux, ivar=ivar, deredden=True)
 
             # Get the spectral resolution:
@@ -283,11 +284,8 @@ class EmissionLineFit(SpectralFitting):
             flux = binned_spectra.copy_to_masked_array(flag=flags)
             ivar = binned_spectra.copy_to_masked_array(ext='IVAR', flag=flags)
             sres = binned_spectra.copy_to_array(ext='SPECRES')
-            _sres = numpy.ma.MaskedArray(sres.copy(), mask=numpy.invert(sres > 0))
-            # TODO: Use apply_along_axis?
-            for i in range(sres.shape[0]):
-                sres[i,:] = interpolate_masked_vector(_sres[i,:])
-
+            sres = numpy.apply_along_axis(interpolate_masked_vector, 1,
+                                    numpy.ma.MaskedArray(sres, mask=numpy.invert(sres > 0)))
         nspec = flux.shape[0]
 
         # Convert inverse variance to error
@@ -619,7 +617,7 @@ class EmissionLineFit(SpectralFitting):
 
     @staticmethod
     def line_metrics(emission_lines, wave, flux, ferr, model_flux, model_eml_par,
-                     mask=None, model_mask=None, bitmask=None, window=15):
+                     mask=None, model_mask=None, bitmask=None, window=15, fill_redshift=False):
         """
         Calculate fit-quality metrics near each emission line.
 
@@ -665,6 +663,11 @@ class EmissionLineFit(SpectralFitting):
             window (:obj:`int`, optional):
                 The width of the window used to compute the metrics
                 around each line in number of pixels.
+            fill_redshift (:obj:`bool`, optional):
+                Fill any masked velocity measurement to the masked
+                median of the velocities for the unmasked lines in the
+                same spectrum when constructing the redshifted bands.
+                If False, the A/N measurement is masked.
 
         Returns:
             `numpy.recarray`: Return the input `model_eml_par` after
@@ -737,20 +740,34 @@ class EmissionLineFit(SpectralFitting):
         # Get the fitted line amplitude
         sigma_ang = model_eml_par['KIN'][:,:,1]*sample_wave/astropy.constants.c.to('km/s').value
         model_eml_par['AMP'] = model_eml_par['FLUX']/numpy.sqrt(2*numpy.pi)/sigma_ang
+        if not numpy.all(numpy.isfinite(model_eml_par['AMP'])):
+            import pdb; pdb.set_trace()
+        sigma_ang = numpy.ma.MaskedArray(sigma_ang, mask=numpy.invert(sigma_ang > 0))
+        model_eml_par['AMP'] = numpy.ma.divide(model_eml_par['FLUX'], sigma_ang).filled(0.0) \
+                                    / numpy.sqrt(2*numpy.pi)
 
         # Shift the bands to the appropriate redshift
-        _bluebands = emission_lines['blueside'][None,:,:]*(1.0+z[:,:,None])
-        _redbands = emission_lines['redside'][None,:,:]*(1.0+z[:,:,None])
+        nspec = len(model_eml_par)
+        if numpy.any(z.mask) and fill_redshift:
+            z_per_spec = numpy.ma.median(z, axis=1)
+            for i in range(nspec):
+                z[i,z.mask[i,:]] = z_per_spec[i]
+
+        _bluebands = emission_lines['blueside'][None,:,:]*(1.0+z.data[:,:,None])
+        _redbands = emission_lines['redside'][None,:,:]*(1.0+z.data[:,:,None])
 
         # Get the mean noise in the sidebands to either side of each
         # emission line
         noise = numpy.zeros_like(model_eml_par['AMP'], dtype=float)
-        nspec = len(model_eml_par)
         for i in range(nspec):
             _bluenoise = passband_median(_wave, _ferr[i,:], passband=_bluebands[i,:,:])
+            _bluenoise = numpy.ma.MaskedArray(_bluenoise, mask=numpy.invert(_bluenoise > 0))
             _rednoise = passband_median(_wave, _ferr[i,:], passband=_redbands[i,:,:])
-            noise[i,:] = (_bluenoise + _rednoise)/2.
-        model_eml_par['ANR'] = model_eml_par['AMP']/noise
+            _rednoise = numpy.ma.MaskedArray(_rednoise, mask=numpy.invert(_rednoise > 0))
+            noise[i,:] = ((_bluenoise + _rednoise)/2.).filled(0.0)
+        model_eml_par['ANR'] = numpy.ma.divide(model_eml_par['AMP'], noise).filled(0.0)
+
+        import pdb; pdb.set_trace()
 
         neml = len(emission_lines)
         for i in range(neml):

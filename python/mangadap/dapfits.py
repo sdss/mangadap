@@ -1526,9 +1526,8 @@ class construct_maps_file:
 
         #---------------------------------------------------------------
         # Get the data arrays
-        # ---
-        # Fluxes
         n_arr_with_eml_channels = 0
+        # Fluxes
         arr = [ emission_line_model['EMLDATA'].data['FLUX'][:,m]
                     for m in range(emission_line_model.neml) ]
         n_arr_with_eml_channels += 1
@@ -1604,10 +1603,10 @@ class construct_maps_file:
         arr = list(DAPFitsUtil.reconstruct_map(self.spatial_shape, bin_indx, arr, dtype=dtypes))
 
         # Join the maps for each emission line in the set of quantities 
-        data = [ _join_maps(arr[emission_line_model.neml*i:emission_line_model.neml*(i+1)])
+        data = [ self._join_maps(arr[emission_line_model.neml*i:emission_line_model.neml*(i+1)])
                         for i in range(n_arr_with_eml_channels) ]
-        data += [ _join_maps(arr[-emission_line_model.neml-nfom:-emission_line_model.neml]) ]
-        data += [ _join_maps(arr[-emission_line_model.neml:]) ]
+        data += [ self._join_maps(arr[-emission_line_model.neml-nfom:-emission_line_model.neml]) ]
+        data += [ self._join_maps(arr[-emission_line_model.neml:]) ]
 
         # Get the masks
         base_mask = self._emission_line_model_mask_to_map_mask(emission_line_model, data[-1].copy())

@@ -277,7 +277,8 @@ def drpfits_list(platelist, ifudesignlist, modelist, combinatorics=False, drpver
 
     # Set the directory path based on the provided main path
     return [DRPFits(platelist_[i], ifudesignlist_[i], modelist_[i], drpver=drpver,
-                    redux_path=redux_path, directory_path=directory_path) \
+                    redux_path=redux_path, directory_path=directory_path, read=False,
+                    checksum=False) \
             for i in range(0,nn)]
 
 

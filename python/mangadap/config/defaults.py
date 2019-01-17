@@ -160,6 +160,24 @@ def default_drp_directory_path(plate, drpver=None, redux_path=None):
     return os.path.join(redux_path, str(plate), 'stack')
 
 
+def default_drpall_file(drpver=None, redux_path=None):
+    """
+    Return the path to the DRPall file.
+
+    Args:
+        drpver (:obj:`str`, optional):
+            DRP version.  Default is to use :func:`default_drp_version`.
+        redux_path (:obj:`str`, optional):
+            Path to the root reduction directory.  Default is to use
+            :func:`default_redux_path`.
+
+    Returns:
+        :obj:`str`: Full path to the DRPall fits file.
+    """
+    _drpver = default_drp_version() if drpver is None else drpver
+    _redux_path = default_redux_path(drpver=_drpver) if redux_path is None else redux_path
+    return os.path.join(_redux_path, 'drpall-{0}.fits'.format(_drpver))
+
 # TODO: Are these values kept in MANGACORE somewhere?
 def default_cube_pixelscale():
     """

@@ -24,9 +24,9 @@
    extensions and remove the `EMLINE_BASE` and `EMLINE_MASK` extensions.
  - Allow the emission-line fitter to use the bin ID numbers directly
    instead of matching the spaxels to bins by coordinate proximity
- - Construction of the paramter tying object in the emission-line fitter
-   is now done just before each spectrum is fit by ppxf (not globally in
-   Sasuke) to better handle when components are omitted.
+ - Construction of the parameter tying object in the emission-line
+   fitter is now done just before each spectrum is fit by ppxf (not
+   globally in Sasuke) to better handle when components are omitted.
  - When deconstructing bins into spaxels, the second fit iteration
    *only* fits spaxels that are components of binned spectra and does
    not refit spectra that constitute an entire bin themselves.  I.e.
@@ -36,13 +36,14 @@
  - Changed definitions of A to be the model amplitude; A/N is the model
    amplitude divided by the median noise in the two sidebands defined
    for the emission-line EW calculation.
- - Consolidated figures-of-merit for the stellar-continuum
-   fitting into a single MAPS extension and added additional quantities.
+ - Consolidated figures-of-merit for the stellar-continuum fitting into
+   a single MAPS extension and added additional quantities.
  - Added MAPS with the amplitude, A/N, and local reduced chi-square for
    each line fit in the emission-line modeling.
  - Added MAPS with the full-spectrum figures-of-merit for the
    emission-line module, similar to the stellar-continuum output from
    ppxf.
+ - Major changes to survey-level code: drpcomplete.py and rundap.py.
 
 TODO:
  - Documentation of config examples are out of date!
@@ -51,6 +52,7 @@ TODO:
  - Fix MASKNAME in reference files
  - Add DAP versioning to reference files
  - Fix ELMREBIN in 2nd round of moment calculations
+ - Stop transposing the datacube data!
 
 2.2.2 (Not released)
 --------------------

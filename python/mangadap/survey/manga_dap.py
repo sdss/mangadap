@@ -279,14 +279,14 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
         #---------------------------------------------------------------
         # Emission-line Moment measurements
         #---------------------------------------------------------------
+        warnings.filterwarnings('error', message='Warning: converting a masked element to nan.')
         emission_line_moments = None if plan['elmom_key'][i] is None else \
                     EmissionLineMoments(plan['elmom_key'][i], binned_spectra,
                                         stellar_continuum=stellar_continuum, redshift=nsa_redshift,
                                         dapsrc=dapsrc, analysis_path=_analysis_path,
                                         clobber=plan['elmom_clobber'][i], loggers=loggers)
-#                                        clobber=False, loggers=loggers)
-
-#        ha_flux = emission_line_moments['ELMMNTS'].data['FLUX'][:,18].copy()
+        
+        import pdb; pdb.set_trace()
 
         #---------------------------------------------------------------
         # Emission-line Fit
@@ -305,6 +305,18 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
                                      minimum_error=numpy.finfo(numpy.float32).eps,
                                      dapsrc=dapsrc, analysis_path=_analysis_path,
                                      clobber=plan['elfit_clobber'][i], loggers=loggers)
+
+#        import pdb; pdb.set_trace()
+#
+#        model_flux = emission_line_model['FLUX'].data
+#        model_base = emission_line_model['BASE'].data
+#        model_mask = emission_line_model['MASK'].data
+#        model_binid = emission_line_model['BINID'].data
+#        eml_par = emission_line_model['EMLDATA'].data
+#
+#        test = emission_line_model._get_line_fit_metrics(model_flux, model_base, model_mask, eml_par, model_binid)
+#
+        import pdb; pdb.set_trace()
 
 #        cen = drpf.spatial_shape[0]//2
 #        indx = emission_line_model['BINID'].data[cen,cen]
@@ -373,6 +385,8 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
                                           emission_line_model=emission_line_model, dapsrc=dapsrc,
                                           analysis_path=_analysis_path,
                                           clobber=plan['elmom_clobber'][i], loggers=loggers)
+
+        import pdb; pdb.set_trace()
 
 #        print(emission_line_moments['ELMMNTS'].data['FLUX'].shape)
 #

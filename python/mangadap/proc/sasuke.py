@@ -701,7 +701,7 @@ class Sasuke(EmissionLineFit):
         # Determine if the parameter is near the fill value indicating
         # that it was not included in the fit
         tol = 1e-5                      # !! HARDCODED !!
-        no_data = kin - fill_value < tol
+        no_data = numpy.absolute(kin - fill_value) < tol
 
         # If the parameter was not fit, parameter not near any boundary
         near_bound[no_data] = False

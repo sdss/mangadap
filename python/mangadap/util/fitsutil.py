@@ -438,6 +438,8 @@ class DAPFitsUtil:
             new_arr[i].ravel()[indx] = _arr[i][unique_bins[reconstruct[indx]]].copy()
             s = numpy.sum(numpy.invert(numpy.isfinite(new_arr[i])))
             if s > 0:
+                print(i+1, narr)
+                import pdb; pdb.set_trace()
                 print('dtype: ', _dtype[i])
                 a = numpy.sum(numpy.invert(numpy.isfinite(_arr[i][unique_bins[reconstruct[indx]]])))
                 print('not finite input:', a)
