@@ -8,9 +8,6 @@ the MaNGA Data Analysis Pipeline (DAP).
     Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
         Licensed under BSD 3-clause license - see LICENSE.rst
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/dapfits.py
-
 *Class usage examples*:
     Add some usage comments here!
 
