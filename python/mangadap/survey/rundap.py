@@ -805,7 +805,6 @@ class rundap:
             queue.create(label=self.label, nodes=self.nodes, qos=self.qos, umask=self.umask,
                          walltime=self.walltime, ppn=ppn, cpus=cpus)
 
-
     # Files:
     #       - mangadap-{plate}-{ifudesign}-LOG{mode} = script file = *
     #       - *.ready = script/directory is ready for queue submission

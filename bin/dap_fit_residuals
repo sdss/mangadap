@@ -1,0 +1,820 @@
+#!/usr/bin/env python3
+
+import os
+import time
+import numpy
+
+from scipy.special import erf
+from scipy import interpolate
+
+from matplotlib import pyplot, ticker, rc, colors, cm, colorbar, image
+
+from astropy.io import fits
+import astropy.constants
+
+from mangadap.proc.util import growth_lim, sample_growth
+from mangadap.util.bitmask import BitMask
+
+from mangadap.util.fitsutil import DAPFitsUtil
+
+from mangadap.util.fileio import init_record_array, rec_to_fits_type, rec_to_fits_col_dim
+from mangadap.util.filter import BoxcarFilter
+from mangadap.util.sampling import Resample, spectral_coordinate_step
+from mangadap.proc.spectralstack import SpectralStack
+from mangadap.util.mapping import map_extent, map_beam_patch
+
+#-----------------------------------------------------------------------------
+def init_ax(fig, pos, facecolor=None, grid=False):
+    ax = fig.add_axes(pos, facecolor=facecolor)
+    ax.minorticks_on()
+    ax.tick_params(which='major', length=6) #, direction='in')
+    ax.tick_params(which='minor', length=3) #, direction='in')
+    if grid:
+        ax.grid(True, which='major', color='0.8', zorder=1, linestyle='-', lw=0.5)
+    return ax
+
+
+def init_image_ax(fig, pos):
+    ax = fig.add_axes(pos, facecolor='0.9')
+    ax.minorticks_on()
+    ax.grid(True, which='major', color='0.8', zorder=0, linestyle='-')
+    ax.minorticks_on()
+    ax.tick_params(which='major', length=6, direction='in')
+    ax.tick_params(which='minor', length=3, direction='in')
+    return ax
+
+
+def get_files(redux_path, analysis_path, plt, ifu, daptype, output_path):
+
+    rpath = os.path.join(redux_path, str(plt), 'stack')
+    drp_file = os.path.join(rpath, 'manga-{0}-{1}-LOGCUBE.fits.gz'.format(plt,ifu))
+    image_file = os.path.join(rpath, 'images', '{0}.png'.format(ifu))
+
+    apath = os.path.join(analysis_path, daptype, str(plt), str(ifu))
+    maps_file = os.path.join(apath, 'manga-{0}-{1}-MAPS-{2}.fits.gz'.format(plt,ifu,daptype))
+    cube_file = os.path.join(apath, 'manga-{0}-{1}-LOGCUBE-{2}.fits.gz'.format(plt,ifu,daptype))
+
+    fom_file = os.path.join(output_path, '{0}-{1}-fom.fits'.format(plt, ifu))
+
+    return drp_file, image_file, maps_file, cube_file, fom_file
+
+
+def velocity_register(wave, y, v):
+
+    nspec = y.shape[0]
+    if wave.size != y.shape[1]:
+        raise ValueError('Incorrect spectral length.')
+
+    newRange = list(SpectralStack.min_max_wave(wave, -v))
+    dw = spectral_coordinate_step(wave, log=True)
+
+    # Shift the first unmasked one just to get the output shape
+    for k in range(y.shape[0]):
+        if numpy.sum(numpy.invert(y.mask[k,:])) > 0:
+            break
+
+    rest_wave = wave/(1+v[k]/astropy.constants.c.to('km/s').value)
+    resamp = Resample(y[k,:], x=rest_wave, inLog=True, newRange=newRange, newdx=dw)
+
+    reg_y = numpy.ma.MaskedArray(numpy.zeros((y.shape[0], resamp.outx.size), dtype=float))
+    reg_wave = resamp.outx.copy()
+    for k in range(y.shape[0]):
+        if numpy.sum(numpy.invert(y.mask[k,:])) == 0:
+            reg_y[k,:] = numpy.ma.masked
+            continue
+        rest_wave = wave/(1+v[k]/astropy.constants.c.to('km/s').value)
+        resamp = Resample(y[k,:], x=rest_wave, inLog=True, newRange=newRange, newdx=dw)
+        reg_y[k,:] = resamp.outy
+        reg_y[k,resamp.outf<0.9] = numpy.ma.masked
+
+    return reg_wave, reg_y
+
+
+def fom(plt, ifu, snr, resid_2d, fresid_2d, chi2_2d, rchi2, rms, frms, ofile=None):
+
+    snr_lim = numpy.exp(growth_lim(numpy.ma.log(snr), 0.95, fac=1.3))
+
+    chi2_lim = numpy.exp(growth_lim(numpy.ma.log(chi2_2d.compressed()), 1.0, fac=1.1))
+    if chi2_lim[0] < 1e-2:
+        chi2_lim[0] = 1e-2
+
+    resid_lim = numpy.exp(growth_lim(numpy.ma.log(resid_2d.compressed()), 1.0, fac=1.1))
+    if resid_lim[0] < 1e-3:
+        resid_lim[0] = 1e-3
+
+    fresid_lim = numpy.exp(growth_lim(numpy.ma.log(fresid_2d.compressed()), 1.0, fac=1.1))
+    if fresid_lim[0] < 5e-3:
+        fresid_lim[0] = 5e-3
+
+    w,h = pyplot.figaspect(1)
+    fig = pyplot.figure(figsize=(1.5*w,1.5*h))
+
+    rax = init_ax(fig, [0.07, 0.50, 0.30, 0.35], facecolor='0.9', grid=True)
+    rax.set_xlim(resid_lim)
+    rax.set_ylim([1e-4,2])
+    rax.set_yscale('log')
+    rax.set_xscale('log')
+    rax.text(0.5, -0.15, r'$|\Delta|$', ha='center', va='center', transform=rax.transAxes)
+    rax.text(0.1, 0.5, r'1-Growth', horizontalalignment='center',
+             verticalalignment='center', transform=rax.transAxes, rotation='vertical')
+
+    fax = init_ax(fig, [0.37, 0.50, 0.30, 0.35], facecolor='0.9', grid=True)
+    fax.set_xlim(fresid_lim)
+    fax.set_ylim([1e-4,2])
+    fax.set_yscale('log')
+    fax.set_xscale('log')
+    fax.yaxis.set_major_formatter(ticker.NullFormatter())
+    fax.text(0.5, 1.2, '{0}-{1}'.format(plt, ifu), horizontalalignment='center',
+             verticalalignment='center', transform=fax.transAxes, fontsize=26)
+    fax.text(0.5, -0.15, r'$|\Delta|/m$', ha='center', va='center', transform=fax.transAxes)
+
+    cax = init_ax(fig, [0.67, 0.50, 0.30, 0.35], facecolor='0.9', grid=True)
+    cax.set_xlim(numpy.sqrt(chi2_lim))
+    cax.set_ylim([1e-4,2])
+    cax.set_yscale('log')
+    cax.set_xscale('log')
+    cax.yaxis.set_major_formatter(ticker.NullFormatter())
+    cax.text(0.5, -0.15, r'$\chi$', ha='center', va='center', transform=cax.transAxes)
+
+    cmap = cm.get_cmap('viridis')
+    cnorm = colors.LogNorm(vmin=snr_lim[0], vmax=snr_lim[1])
+    cbax = fig.add_axes([0.69, 0.86, 0.2, 0.01])
+
+    cb = colorbar.ColorbarBase(cbax, norm=cnorm, cmap=cmap, orientation='horizontal')
+    cb.ax.tick_params(axis='x', which='both', bottom=False, top=True, labelbottom=False,
+                      labeltop=True)
+    cbax.text(1.1, 0.5, r'S/N$_g$', ha='center', va='center', transform=cbax.transAxes)
+
+    snr_srt = numpy.argsort(snr)
+
+    for i in range(chi2_2d.shape[0]):
+        j = snr_srt[i]
+        if numpy.all(chi2_2d.mask[j,:]):
+            continue
+
+        t = resid_2d[j,:].compressed()
+        s = numpy.argsort(t)
+        rax.step(t[s], 1-numpy.arange(len(t)).astype(float)/len(t), where='pre',
+                 color=cmap(cnorm(snr[j])), lw=0.7)
+
+        t = fresid_2d[j,:].compressed()
+        s = numpy.argsort(t)
+        fax.step(t[s], 1-numpy.arange(len(t)).astype(float)/len(t), where='pre',
+                 color=cmap(cnorm(snr[j])), lw=0.7)
+
+        t = numpy.sqrt(chi2_2d[j,:].compressed())
+        s = numpy.argsort(t)
+        cax.step(t[s], 1-numpy.arange(len(t)).astype(float)/len(t), where='pre',
+                 color=cmap(cnorm(snr[j])), lw=0.7)
+
+    x = numpy.linspace(0,5,100)
+    g = (erf(x/numpy.sqrt(2)) - erf(-x/numpy.sqrt(2)))/2.
+    interp = interpolate.interp1d(g, x)
+    cax.plot(x,1-g, color='k')
+
+    chi2_lim = numpy.exp(growth_lim(numpy.ma.log(rchi2), 1.0, fac=2.0))
+#    chi2_lim = numpy.array([0.5, 10])
+    rms_lim = numpy.exp(growth_lim(numpy.ma.log(rms), 1.0, fac=2.0))
+#    rms_lim = numpy.array([1e-3,1])
+    frms_lim = numpy.exp(growth_lim(numpy.ma.log(frms), 1.0, fac=2.0))
+#    frms_lim = numpy.array([1e-2,10])
+    snr_lim = numpy.exp(growth_lim(numpy.ma.log(snr), 1.0, fac=2.0))
+#    snr_lim = numpy.array([0.9, 100])
+
+    rax = init_ax(fig, [0.07, 0.15, 0.30, 0.25], facecolor='0.9', grid=True)
+    rax.set_xlim(rms_lim)
+    rax.set_ylim(snr_lim)
+    rax.set_yscale('log')
+    rax.set_xscale('log')
+    rax.scatter(rms, snr,
+                marker='.', s=20, color='k', lw=0, alpha=0.5)
+    rax.text(0.5, -0.25, r'$RMS$', ha='center', va='center', transform=rax.transAxes)
+    rax.text(0.1, 0.5, r'S/N$_g$', horizontalalignment='center',
+             verticalalignment='center', transform=rax.transAxes, rotation='vertical')
+
+    fax = init_ax(fig, [0.37, 0.15, 0.30, 0.25], facecolor='0.9', grid=True)
+    fax.set_xlim(frms_lim)
+    fax.set_ylim(snr_lim)
+    fax.set_yscale('log')
+    fax.set_xscale('log')
+    fax.yaxis.set_major_formatter(ticker.NullFormatter())
+    fax.scatter(frms, snr,
+                marker='.', s=20, color='k', lw=0, alpha=0.5)
+    fax.text(0.5, -0.25, r'$fRMS$', ha='center', va='center', transform=fax.transAxes)
+
+    cax = init_ax(fig, [0.67, 0.15, 0.30, 0.25], facecolor='0.9', grid=True)
+    cax.set_xlim(chi2_lim)
+    cax.set_ylim(snr_lim)
+    cax.set_yscale('log')
+    cax.set_xscale('log')
+    cax.yaxis.set_major_formatter(ticker.NullFormatter())
+    cax.scatter(rchi2, snr,
+                marker='.', s=20, color='k', lw=0, alpha=0.5)
+    cax.text(0.5, -0.25, r'$\chi^2_\nu$', ha='center', va='center', transform=cax.transAxes)
+    
+    if ofile is None:
+        pyplot.show()
+    else:
+        fig.canvas.print_figure(ofile, dpi=150)
+    fig.clear()
+    pyplot.close(fig)
+
+
+def fom_lambda(plt, ifu, wave, flux, error, model, wave_limits=None, ofile=None):
+
+    nspec = flux.shape[1]
+    resid = numpy.ma.absolute(flux-model)
+    fresid = numpy.ma.absolute(numpy.ma.divide(resid, model))
+    chi = numpy.ma.absolute(numpy.ma.divide(resid,error))
+    snr = numpy.ma.divide(flux, error)
+
+    bc = BoxcarFilter(100)
+    resid_sm = bc.smooth(resid)
+    fresid_sm = bc.smooth(fresid)
+    chi_sm = bc.smooth(chi)
+
+    flux_lim = growth_lim(flux, 0.99, fac=1.1)
+    if flux_lim[0] < 0:
+        flux_lim[0] = 0
+    snr_lim= numpy.exp(growth_lim(numpy.ma.log(snr).compressed(), 0.99, fac=1.1))
+    resid_lim = numpy.exp(growth_lim(numpy.ma.log(resid).compressed(), 0.95, fac=1.3))
+    fresid_lim = numpy.exp(growth_lim(numpy.ma.log(fresid).compressed(), 0.95, fac=1.3))
+#    chi_lim = numpy.exp(growth_lim(numpy.ma.log(chi.compressed()), 0.95, fac=1.3, midpoint=0))
+    chi_lim = numpy.array([0.1, 10.0])
+#    if chi2_lim[0] < 1e-2:
+#        chi2_lim[0] = 1e-2
+
+    l0 = numpy.log10(wave[0])
+    dl = spectral_coordinate_step(wave, log=True)
+    wave_bins = numpy.power(10, l0-dl/2 + dl*numpy.arange(len(wave)+1))
+    spec_bins = 0.5+numpy.arange(nspec+1)
+
+    w,h = pyplot.figaspect(1)
+    fig = pyplot.figure(figsize=(1.5*w,1.5*h))
+
+    ax = init_ax(fig, [0.2, 0.87, 0.60, 0.12], facecolor='0.95', grid=True)
+    ax.set_xlim(wave_limits)
+    ax.set_ylim(flux_lim)
+    ax.xaxis.set_major_formatter(ticker.NullFormatter())
+    ax.plot(wave, numpy.ma.mean(flux, axis=1), color='k', lw=0.5)
+    ax.text(-0.2, 0.5, r'Flux', horizontalalignment='center',
+            verticalalignment='center', rotation='vertical', transform=ax.transAxes)
+    axt = ax.twinx()
+    axt.set_xlim(wave_limits)
+    axt.set_ylim(snr_lim)
+    axt.set_yscale('log')
+    axt.tick_params(axis='y', colors='0.5')
+    axt.xaxis.set_major_formatter(ticker.NullFormatter())
+    axt.plot(wave, numpy.ma.mean(snr, axis=1), color='0.5', lw=0.5)
+    axt.text(1.1, 0.5, r'S/N$_g$', horizontalalignment='center',
+            verticalalignment='center', rotation='vertical', transform=axt.transAxes,
+            color='0.5')
+
+    ax = init_ax(fig, [0.2, 0.75, 0.60, 0.12], facecolor='0.95', grid=True)
+    ax.set_xlim(wave_limits)
+    ax.set_ylim(resid_lim)
+    ax.xaxis.set_major_formatter(ticker.NullFormatter())
+#    ax.plot(wave, numpy.ma.mean(resid_sm, axis=0), color='C3')
+    ax.plot(wave, numpy.ma.mean(resid, axis=1), color='k', lw=0.5)
+    ax.text(-0.2, 0.5, r'$|\Delta|$', horizontalalignment='center',
+            verticalalignment='center', rotation='vertical', transform=ax.transAxes)
+
+    ax = init_ax(fig, [0.2, 0.63, 0.60, 0.12], facecolor='0.95', grid=True)
+    ax.set_xlim(wave_limits)
+    ax.set_ylim(fresid_lim)
+    ax.set_yscale('log')
+    ax.xaxis.set_major_formatter(ticker.NullFormatter())
+    ax.plot(wave, numpy.ma.mean(fresid, axis=1), color='k', lw=0.5)
+    ax.text(-0.2, 0.5, r'$|\Delta|/m$', horizontalalignment='center',
+            verticalalignment='center', rotation='vertical', transform=ax.transAxes)
+
+    ax = init_ax(fig, [0.2, 0.51, 0.60, 0.12], facecolor='0.95', grid=True)
+    ax.set_xlim(wave_limits)
+    ax.set_ylim(chi_lim)
+    ax.set_yscale('log')
+    ax.plot(wave, numpy.ma.mean(chi, axis=0), color='k', lw=0.5)
+    ax.text(0.5, -0.38, r'Wavelength ($\AA$)', horizontalalignment='center',
+            verticalalignment='center', transform=ax.transAxes)
+    ax.text(-0.2, 0.5, r'$|\Delta|/\epsilon$', horizontalalignment='center',
+            verticalalignment='center', rotation='vertical', transform=ax.transAxes)
+
+    ax.text(1.23, 0.0, '{0}-{1}'.format(plt, ifu), horizontalalignment='center',
+            verticalalignment='bottom', rotation='vertical', transform=ax.transAxes, fontsize=26)
+
+    ax = init_ax(fig, [0.07, 0.23, 0.30, 0.16], facecolor='0.95')
+    ax.set_xlim(wave_limits)
+    ax.set_ylim([0.5,nspec+0.5])
+    ax.xaxis.set_major_formatter(ticker.NullFormatter())
+    im = ax.pcolormesh(wave_bins, spec_bins, resid,
+                       norm=colors.LogNorm(vmin=resid_lim[0], vmax=resid_lim[1]),
+                       cmap='viridis', zorder=4, lw=0, rasterized=True)
+    ax = init_ax(fig, [0.07, 0.07, 0.30, 0.16], facecolor='0.95')
+    ax.set_xlim(wave_limits)
+    ax.set_ylim([0.5,nspec+0.5])
+    ax.pcolormesh(wave_bins, spec_bins, resid_sm,
+                  norm=colors.LogNorm(vmin=resid_lim[0], vmax=resid_lim[1]),
+                  cmap='viridis', zorder=4, lw=0, rasterized=True)
+    cax = fig.add_axes([0.07, 0.40, 0.20, 0.01])
+    cb = pyplot.colorbar(im, cax=cax, orientation='horizontal') #, format=FormatStrFormatter('%d'))
+    cb.ax.tick_params(axis='x', which='both', bottom=False, top=True, labelbottom=False,
+                      labeltop=True)
+    cax.text(1.05, 0.5, r'$|\Delta|$', horizontalalignment='left', verticalalignment='center',
+            transform=cax.transAxes, fontsize=10)
+    
+    ax = init_ax(fig, [0.37, 0.23, 0.30, 0.16], facecolor='0.95')
+    ax.set_xlim(wave_limits)
+    ax.set_ylim([0.5,nspec+0.5])
+    ax.xaxis.set_major_formatter(ticker.NullFormatter())
+    ax.yaxis.set_major_formatter(ticker.NullFormatter())
+    im = ax.pcolormesh(wave_bins, spec_bins, fresid,
+                       norm=colors.LogNorm(vmin=fresid_lim[0], vmax=fresid_lim[1]),
+                       cmap='viridis', zorder=4, lw=0, rasterized=True)
+    ax = init_ax(fig, [0.37, 0.07, 0.30, 0.16], facecolor='0.95')
+    ax.set_xlim(wave_limits)
+    ax.set_ylim([0.5,nspec+0.5])
+    ax.yaxis.set_major_formatter(ticker.NullFormatter())
+    ax.pcolormesh(wave_bins, spec_bins, fresid_sm,
+                  norm=colors.LogNorm(vmin=fresid_lim[0], vmax=fresid_lim[1]),
+                  cmap='viridis', zorder=4, lw=0, rasterized=True)
+    ax.text(0.5, -0.30, r'Wavelength ($\AA$)', horizontalalignment='center',
+            verticalalignment='center', transform=ax.transAxes)
+    cax = fig.add_axes([0.37, 0.40, 0.20, 0.01])
+    cb = pyplot.colorbar(im, cax=cax, orientation='horizontal') #, format=FormatStrFormatter('%d'))
+    cb.ax.tick_params(axis='x', which='both', bottom=False, top=True, labelbottom=False,
+                      labeltop=True)
+    cax.text(1.05, 0.5, r'$|\Delta|/m$', horizontalalignment='left', verticalalignment='center',
+            transform=cax.transAxes, fontsize=10)
+
+    ax = init_ax(fig, [0.67, 0.23, 0.30, 0.16], facecolor='0.95')
+    ax.set_xlim(wave_limits)
+    ax.set_ylim([0.5,nspec+0.5])
+    ax.xaxis.set_major_formatter(ticker.NullFormatter())
+    ax.yaxis.set_major_formatter(ticker.NullFormatter())
+    im = ax.pcolormesh(wave_bins, spec_bins, chi,
+                       norm=colors.LogNorm(vmin=chi_lim[0], vmax=chi_lim[1]),
+                       cmap='RdBu_r', zorder=4, lw=0, rasterized=True)
+    ax = init_ax(fig, [0.67, 0.07, 0.30, 0.16], facecolor='0.95')
+    ax.set_xlim(wave_limits)
+    ax.set_ylim([0.5,nspec+0.5])
+    ax.yaxis.set_major_formatter(ticker.NullFormatter())
+    ax.pcolormesh(wave_bins, spec_bins, chi_sm,
+                  norm=colors.LogNorm(vmin=chi_lim[0], vmax=chi_lim[1]),
+                  cmap='RdBu_r', zorder=4, lw=0, rasterized=True)
+    cax = fig.add_axes([0.67, 0.40, 0.20, 0.01])
+    cb = pyplot.colorbar(im, cax=cax, orientation='horizontal') #, format=FormatStrFormatter('%d'))
+    cb.ax.tick_params(axis='x', which='both', bottom=False, top=True, labelbottom=False,
+                      labeltop=True)
+    cax.text(1.05, 0.5, r'$|\Delta|/\epsilon$', horizontalalignment='left',
+             verticalalignment='center', transform=cax.transAxes, fontsize=10)
+
+    if ofile is None:
+        pyplot.show()
+    else:
+        fig.canvas.print_figure(ofile, dpi=150)
+    fig.clear()
+    pyplot.close(fig)
+
+
+def gmr_data(drp_file):
+    if not os.path.isfile(drp_file):
+        raise FileNotFoundError('{0} does not exist!'.format(drp_file))
+
+    hdu = fits.open(drp_file)
+    gmr_map = -2.5*numpy.ma.log10(numpy.ma.MaskedArray(hdu['GIMG'].data,
+                                                       mask=numpy.invert(hdu['GIMG'].data>0))
+                                    / numpy.ma.MaskedArray(hdu['RIMG'].data,
+                                                           mask=numpy.invert(hdu['RIMG'].data>0)))
+    hdu.close()
+    del hdu
+    return gmr_map
+
+
+def masked_imshow(fig, ax, cax, data, extent=None, norm=None, vmin=None, vmax=None, cmap='viridis',
+                  zorder=0, cbformat=None, subs=None):
+    if numpy.sum(data.mask) != numpy.prod(data.shape):
+        if norm is None:
+            img = ax.imshow(data, origin='lower', interpolation='nearest', extent=extent,
+                            vmin=vmin, vmax=vmax, cmap=cmap, zorder=zorder)
+        else:
+            img = ax.imshow(data, origin='lower', interpolation='nearest', extent=extent,
+                            norm=norm, cmap=cmap, zorder=zorder)
+
+        cb = fig.colorbar(img, cax=cax) if cbformat is None else \
+                    fig.colorbar(img, cax=cax, format=cbformat)
+        if subs is not None:
+            cb.locator = ticker.LogLocator(base=10, subs=(1.,2.,4.,))
+            cb.update_ticks()
+    else:
+        _norm = colors.Normalize(vmin=vmin, vmax=vmax) if norm is None else norm
+        cb = colorbar.ColorbarBase(cax, cmap=cmap, norm=norm)
+
+
+def fom_maps(plt, ifu, drp_file, image_file, snr, rms, frms, rchi2, chi_growth, extent=None,
+             ofile=None):
+
+    gmr = gmr_data(drp_file)
+
+    gmr_lim = growth_lim(gmr, 0.95, fac=1.10)
+    snr_lim = numpy.power(10., growth_lim(numpy.ma.log10(snr), 0.90, fac=1.05))
+    snr_lim[0] = max(0.1, snr_lim[0])
+    rms_lim = numpy.power(10., growth_lim(numpy.ma.log10(rms), 0.90, fac=1.05))
+    frm_lim = numpy.power(10., growth_lim(numpy.ma.log10(frms), 0.90, fac=1.05))
+    chi_lim = [1/4, 4]
+    c68_lim = [1/4, 4]
+    c99_lim = [2.6/4, 2.6*4]
+    crt_lim = [0.8, 2]
+
+    left = 0.035
+    bott = 0.08
+    imwd = 0.24
+    hbuf = 0.08
+    cbuf = 0.005
+    cbwd = 0.01
+    vbuf = 0.03
+
+    font = { 'size' : 6 }
+    rc('font', **font)
+
+    w,h = pyplot.figaspect(1)
+    fig = pyplot.figure(figsize=(1.5*w,1.5*h))
+
+    i,j=0,2
+    ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
+    if os.path.isfile(image_file):
+        img = image.imread(image_file)
+        ax.imshow(img)
+        ax.text(0.95, 0.95, r'SDSS', color='white', ha='right', va='center', transform=ax.transAxes)
+    else:
+        ax.text(0.5, 0.5, 'No Image', horizontalalignment='center', verticalalignment='center',
+                transform=ax.transAxes, fontsize=20)
+    ax.axes.get_xaxis().set_visible(False)
+    ax.axes.get_yaxis().set_visible(False)
+
+    i,j=1,2
+    ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
+    cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
+    masked_imshow(fig, ax, cax, snr, extent=extent,
+                  norm=colors.LogNorm(vmin=snr_lim[0], vmax=snr_lim[1]), cmap='viridis',
+                  zorder=3)
+    ax.set_xlim(extent[:2])
+    ax.set_ylim(extent[2:])
+    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
+    ax.text(0.95, 0.95, r'S/N$_g$', ha='right', va='center', transform=ax.transAxes, zorder=4)
+
+    i,j=2,2
+    ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
+    cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
+    masked_imshow(fig, ax, cax, gmr, extent=extent, vmin=gmr_lim[0], vmax=gmr_lim[1],
+                  cmap='RdBu_r', zorder=3)
+    ax.set_xlim(extent[:2])
+    ax.set_ylim(extent[2:])
+    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
+    ax.text(0.95, 0.95, r'$g-r$', ha='right', va='center', transform=ax.transAxes, zorder=4)
+
+    i,j=0,1
+    ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
+    cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
+    masked_imshow(fig, ax, cax, rms, extent=extent,
+                  norm=colors.LogNorm(vmin=rms_lim[0], vmax=rms_lim[1]), cmap='viridis',
+                  zorder=3)
+    ax.set_xlim(extent[:2])
+    ax.set_ylim(extent[2:])
+    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
+    ax.text(0.95, 0.95, r'RMS', ha='right', va='center', transform=ax.transAxes, zorder=4)
+
+    i,j=1,1
+    ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
+    cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
+    masked_imshow(fig, ax, cax, frms, extent=extent,
+                  norm=colors.LogNorm(vmin=frm_lim[0], vmax=frm_lim[1]), cmap='viridis',
+                  zorder=3)
+    ax.set_xlim(extent[:2])
+    ax.set_ylim(extent[2:])
+    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
+    ax.text(0.95, 0.95, r'fRMS', ha='right', va='center', transform=ax.transAxes, zorder=4)
+
+    i,j=2,1
+    ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
+    cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
+    masked_imshow(fig, ax, cax, rchi2, extent=extent,
+                  norm=colors.LogNorm(vmin=chi_lim[0], vmax=chi_lim[1]), cmap='RdBu_r',
+                  zorder=3)
+    ax.set_xlim(extent[:2])
+    ax.set_ylim(extent[2:])
+    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
+    ax.text(0.95, 0.95, r'$\chi^2$', ha='right', va='center', transform=ax.transAxes, zorder=4)
+
+    i,j=0,0
+    ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
+    cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
+    masked_imshow(fig, ax, cax, chi_growth[0], extent=extent,
+                  norm=colors.LogNorm(vmin=c68_lim[0], vmax=c68_lim[1]), cmap='viridis',
+                  zorder=3)
+    ax.set_xlim(extent[:2])
+    ax.set_ylim(extent[2:])
+    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
+    ax.text(0.95, 0.95, r'68% Growth $|\Delta|/\epsilon$', ha='right', va='center',
+            transform=ax.transAxes, zorder=4)
+
+    i,j=1,0
+    ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
+    cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
+    masked_imshow(fig, ax, cax, chi_growth[2], extent=extent,
+                  norm=colors.LogNorm(vmin=c99_lim[0], vmax=c99_lim[1]), cmap='viridis',
+                  zorder=3)
+    ax.set_xlim(extent[:2])
+    ax.set_ylim(extent[2:])
+    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
+    ax.text(0.95, 0.95, r'99% Growth $|\Delta|/\epsilon$', ha='right', va='center',
+            transform=ax.transAxes, zorder=4)
+
+    x = numpy.linspace(0,5,100)
+    g = (erf(x/numpy.sqrt(2)) - erf(-x/numpy.sqrt(2)))/2.
+    interp = interpolate.interp1d(g, x)
+    m = interp([0.68, 0.95, 0.99])
+    i,j=2,0
+    ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
+    cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
+    masked_imshow(fig, ax, cax, numpy.ma.divide(chi_growth[2],chi_growth[0])*m[0]/m[2],
+                  extent=extent, vmin=crt_lim[0], vmax=crt_lim[1], cmap='RdBu_r',
+                  zorder=3)
+    ax.set_xlim(extent[:2])
+    ax.set_ylim(extent[2:])
+    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
+    ax.text(0.95, 0.95, r'99%/68% wrt Gaussian', ha='right', va='center', transform=ax.transAxes,
+            zorder=4)
+
+    if ofile is None:
+        pyplot.show()
+    else:
+        fig.canvas.print_figure(ofile, dpi=150)
+    fig.clear()
+    pyplot.close(fig)
+
+
+def fit_resid_plot(drp_file, image_file, maps_file, cube_file, fom_file, plt, ifu, output_path,
+                   overwrite=False):
+
+    bc = BoxcarFilter(100)
+    cube_hdu = fits.open(cube_file)
+    maps_hdu = fits.open(maps_file)
+    fom_hdu = fits.open(fom_file)        
+
+    extent = map_extent(maps_hdu, 'SPX_MFLUX')
+
+    #-------------------------------------------------------------------
+    # STELLAR CONTINUUM FITTING
+    #-------------------------------------------------------------------
+    sc_snr = numpy.ma.MaskedArray(fom_hdu['SCMAP'].data[0],
+                                  mask=fom_hdu['SCMAP_MASK'].data[0].astype(bool))
+    sc_rms = numpy.ma.MaskedArray(fom_hdu['SCMAP'].data[1],
+                                  mask=fom_hdu['SCMAP_MASK'].data[1].astype(bool))
+    sc_frms = numpy.ma.MaskedArray(fom_hdu['SCMAP'].data[2],
+                                   mask=fom_hdu['SCMAP_MASK'].data[2].astype(bool))
+    sc_chi2 = numpy.ma.MaskedArray(fom_hdu['SCMAP'].data[3],
+                                   mask=fom_hdu['SCMAP_MASK'].data[3].astype(bool))
+    sc_rchi2 = numpy.ma.MaskedArray(fom_hdu['SCMAP'].data[4],
+                                    mask=fom_hdu['SCMAP_MASK'].data[4].astype(bool))
+    sc_chi_growth = numpy.ma.MaskedArray(fom_hdu['SCGRW'].data[2],
+                                         mask=numpy.invert(fom_hdu['SCGRW'].data[2] > 0))
+
+    ofile = os.path.join(output_path, '{0}-{1}-sc-fom-maps.png'.format(plt,ifu))
+    if not os.path.isfile(ofile) or overwrite:
+        fom_maps(plt, ifu, drp_file, image_file, sc_snr, sc_rms, sc_frms, sc_rchi2,
+                 sc_chi_growth, extent=extent, ofile=ofile)
+
+    uniq, indx = numpy.unique(fom_hdu['SCBINID'].data.ravel(), return_index=True)
+    indx = indx[1:]
+    srt = numpy.argsort(sc_rchi2.ravel()[indx])
+
+    sc_flux_2d = numpy.ma.MaskedArray(fom_hdu['SCRSS'].data[0],
+                                      mask=fom_hdu['SCRSS_MASK'].data[0].astype(bool))[srt,:]
+    sc_snr_2d = numpy.ma.MaskedArray(fom_hdu['SCRSS'].data[1],
+                                     mask=fom_hdu['SCRSS_MASK'].data[1].astype(bool))[srt,:]
+    sc_resid_2d = numpy.ma.MaskedArray(fom_hdu['SCRSS'].data[2],
+                                     mask=fom_hdu['SCRSS_MASK'].data[2].astype(bool))[srt,:]
+    sc_fresid_2d = numpy.ma.MaskedArray(fom_hdu['SCRSS'].data[3],
+                                        mask=fom_hdu['SCRSS_MASK'].data[3].astype(bool))[srt,:]
+    sc_chi2_2d = numpy.ma.MaskedArray(fom_hdu['SCRSS'].data[4],
+                                      mask=fom_hdu['SCRSS_MASK'].data[4].astype(bool))[srt,:]
+
+    sc_snr = sc_snr.ravel()[indx][srt]
+    sc_rms = sc_rms.filled(0.0).ravel()[indx][srt]
+    sc_frms = sc_frms.filled(0.0).ravel()[indx][srt]
+    sc_rchi2 = sc_rchi2.filled(0.0).ravel()[indx][srt]
+
+    sc_chi2_2d_sm = bc.smooth(sc_chi2_2d)
+    sc_resid_2d_sm = bc.smooth(sc_resid_2d)
+    sc_fresid_2d_sm = bc.smooth(sc_fresid_2d)
+
+    ofile = os.path.join(output_path, '{0}-{1}-sc-fom.png'.format(plt,ifu))
+    if not os.path.isfile(ofile) or overwrite:
+        fom(plt, ifu, sc_snr, sc_resid_2d, sc_fresid_2d, sc_chi2_2d, sc_rchi2, sc_rms, sc_frms,
+            ofile=ofile)
+
+    ofile = os.path.join(output_path, '{0}-{1}-sc-fom-lambda.png'.format(plt,ifu))
+    if not os.path.isfile(ofile) or overwrite:
+        fom_lambda(plt, ifu, cube_hdu['WAVE'].data, sc_snr, sc_flux_2d, sc_snr_2d, sc_resid_2d,
+                   sc_resid_2d, sc_resid_2d_sm, sc_fresid_2d, sc_fresid_2d, sc_fresid_2d_sm,
+                   sc_chi2_2d, sc_chi2_2d, sc_chi2_2d_sm, ofile=ofile)
+
+    #-------------------------------------------------------------------
+    # EMISSION-LINE FITTING
+    #-------------------------------------------------------------------
+    el_snr = numpy.ma.MaskedArray(fom_hdu['ELMAP'].data[0],
+                                  mask=fom_hdu['ELMAP_MASK'].data[0].astype(bool))
+    el_rms = numpy.ma.MaskedArray(fom_hdu['ELMAP'].data[1],
+                                  mask=fom_hdu['ELMAP_MASK'].data[1].astype(bool))
+    el_frms = numpy.ma.MaskedArray(fom_hdu['ELMAP'].data[2],
+                                   mask=fom_hdu['ELMAP_MASK'].data[2].astype(bool))
+    el_chi2 = numpy.ma.MaskedArray(fom_hdu['ELMAP'].data[3],
+                                   mask=fom_hdu['ELMAP_MASK'].data[3].astype(bool))
+    el_rchi2 = numpy.ma.MaskedArray(fom_hdu['ELMAP'].data[4],
+                                   mask=fom_hdu['ELMAP_MASK'].data[4].astype(bool))
+    el_chi_growth = numpy.ma.MaskedArray(fom_hdu['ELGRW'].data[2],
+                                         mask=numpy.invert(fom_hdu['ELGRW'].data[2] > 0))
+
+    ofile = os.path.join(output_path, '{0}-{1}-el-fom-maps.png'.format(plt,ifu))
+    if not os.path.isfile(ofile) or overwrite:
+        fom_maps(plt, ifu, drp_file, image_file, el_snr, el_rms, el_frms, el_rchi2,
+                 el_chi_growth, extent=extent, ofile=ofile)
+
+    uniq, indx = numpy.unique(fom_hdu['ELBINID'].data.ravel(), return_index=True)
+    indx = indx[1:]
+    srt = numpy.argsort(el_rchi2.ravel()[indx])
+
+    el_flux_2d = numpy.ma.MaskedArray(fom_hdu['ELRSS'].data[0],
+                                      mask=fom_hdu['ELRSS_MASK'].data[0].astype(bool))[srt,:]
+    el_snr_2d = numpy.ma.MaskedArray(fom_hdu['ELRSS'].data[1],
+                                     mask=fom_hdu['ELRSS_MASK'].data[1].astype(bool))[srt,:]
+    el_resid_2d = numpy.ma.MaskedArray(fom_hdu['ELRSS'].data[2],
+                                     mask=fom_hdu['ELRSS_MASK'].data[2].astype(bool))[srt,:]
+    el_fresid_2d = numpy.ma.MaskedArray(fom_hdu['ELRSS'].data[3],
+                                        mask=fom_hdu['ELRSS_MASK'].data[3].astype(bool))[srt,:]
+    el_chi2_2d = numpy.ma.MaskedArray(fom_hdu['ELRSS'].data[4],
+                                      mask=fom_hdu['ELRSS_MASK'].data[4].astype(bool))[srt,:]
+
+    el_snr = el_snr.ravel()[indx][srt]
+    el_rms = el_rms.filled(0.0).ravel()[indx][srt]
+    el_frms = el_frms.filled(0.0).ravel()[indx][srt]
+    el_rchi2 = el_rchi2.filled(0.0).ravel()[indx][srt]
+
+    el_chi2_2d_sm = bc.smooth(el_chi2_2d)
+    el_resid_2d_sm = bc.smooth(el_resid_2d)
+    el_fresid_2d_sm = bc.smooth(el_fresid_2d)
+
+    ofile = os.path.join(output_path, '{0}-{1}-el-fom.png'.format(plt,ifu))
+    if not os.path.isfile(ofile) or overwrite:
+        fom(plt, ifu, el_snr, el_resid_2d, el_fresid_2d, el_chi2_2d, el_rchi2, el_rms, el_frms,
+            ofile=ofile)
+
+    ofile = os.path.join(output_path, '{0}-{1}-el-fom-lambda.png'.format(plt,ifu))
+    if not os.path.isfile(ofile) or overwrite:
+        fom_lambda(plt, ifu, cube_hdu['WAVE'].data, el_snr, el_flux_2d, el_snr_2d, el_resid_2d,
+                   el_resid_2d, el_resid_2d_sm, el_fresid_2d, el_fresid_2d, el_fresid_2d_sm,
+                   el_chi2_2d, el_chi2_2d, el_chi2_2d_sm, ofile=ofile)
+
+
+def get_fom_plots(redux_path, analysis_path, plt, output_path, daptype='HYB10-GAU-MILESHC',
+                  ifus=[1901, 1902, 3701, 3702, 3703, 3704, 6101, 6102, 6103, 6104, 9101, 9102,
+                        12701, 12702, 12703, 12704, 12705], overwrite=False):
+
+    # Get the size of the array. One row per emission-line fit
+    for ifu in ifus:
+        files = get_files(redux_path, analysis_path, plt, ifu, daptype, output_path)
+        if not numpy.all([os.path.isfile(f) for f in files]):
+            continue
+        fit_resid_plot(files[0], files[1], files[2], files[3], files[4], plt, ifu, output_path,
+                       overwrite=overwrite)
+
+
+def get_stellar_continuum_data(dapcube):
+    # Get the data
+    hdu = fits.open(dapcube)
+
+    # Find the unique bins and get rid of -1 bins
+    binid = hdu['BINID'][1,:,:].ravel()
+    uniq, indx = map(lambda x: x[1:], numpy.unique(binid, return_index=True))
+
+    # Get the unique fluxes, errors, and models
+    npix = hdu['FLUX'].data.shape[0]
+    flux = numpy.ma.MaskedArray(hdu['FLUX'].data.reshape(npix,-1),
+                                mask=hdu['MASK'].data.reshape(npix,-1) > 0)[:,indx]
+    error = numpy.ma.power(numpy.ma.MaskedArray(hdu['IVAR'].data.reshape(npix,-1),
+                                                mask=hdu['MASK'].data.reshape(npix,-1) > 0),
+                           -0.5)[:,indx]
+    model = numpy.ma.MaskedArray(hdu['STELLAR'].data.reshape(npix,-1),
+                                 mask=hdu['STELLAR_MASK'].data.reshape(npix,-1) > 0)[:,indx]
+    return hdu['WAVE'].data, flux, error, model
+
+def get_emission_line_data(drpcube, dapcube, daptype):
+    # Get the data
+    hdu = fits.open(dapcube)
+
+    # Get the observed spectra and errors
+    if 'HYB' in daptype:
+        # Fits are to unbinned spectra from DRP datacube
+        drp_hdu = fits.open(drpcube)
+        npix = drp_hdu['FLUX'].data.shape[0]
+        flux = numpy.ma.MaskedArray(drp_hdu['FLLUX'].data.reshape(,-1),
+                                    mask=drp_hdu['MASK'].data.reshape(npix,-1) > 0)
+        error = numpy.ma.power(numpy.ma.MaskedArray(drphdu['IVAR'].data.reshape(npix,-1),
+                                            mask=hdu['MASK'].data.reshape(npix,-1) > 0), -0.5)
+        drp_hdu.close()
+    else:
+        # Fits are to binned spectra from DAP datacube
+        npix = hdu['FLUX'].data.shape[0]
+        flux = numpy.ma.MaskedArray(hdu['FLUX'].data.reshape(npix,-1),
+                                    mask=hdu['MASK'].data.reshape(npix,-1) > 0)
+        error = numpy.ma.power(numpy.ma.MaskedArray(hdu['IVAR'].data.reshape(npix,-1),
+                                                    mask=hdu['MASK'].data.reshape(npix,-1) > 0),
+                               -0.5)
+   
+    # Find the unique bins and get rid of -1 bins
+    binid = hdu['BINID'][3,:,:].ravel()
+    uniq, indx = map(lambda x: x[1:], numpy.unique(binid, return_index=True))
+
+    flux = flux[:,indx]
+    error = error[:,indx]
+    model = numpy.ma.MaskedArray(hdu['MODEL'].data.reshape(npix,-1),
+                                 mask=hdu['MASK'].data.reshape(npix,-1) > 0)[:,indx]
+
+    return hdu['WAVE'].data, flux, error, model
+
+def fit_residuals(drpver, redux_path, dapver, analysis_path, daptype, plate, ifudesign):
+
+    plan_qa_dir = default_dap_method_path(daptype, plate=plate, ifudesign=ifudesign, qa=True,
+                                          drpver=drpver, dapver=dapver,
+                                          analysis_path=analysis_path)
+    if not os.path.isdir(plan_qa_dir):
+        os.makedirs(plan_qa_dir)
+
+    rpath = os.path.join(redux_path, str(plt), 'stack')
+    drp_file = os.path.join(rpath, 'manga-{0}-{1}-LOGCUBE.fits.gz'.format(plt,ifu))
+    image_file = os.path.join(rpath, 'images', '{0}.png'.format(ifu))
+
+    apath = os.path.join(analysis_path, daptype, str(plt), str(ifu))
+    maps_file = os.path.join(apath, 'manga-{0}-{1}-MAPS-{2}.fits.gz'.format(plt,ifu,daptype))
+    cube_file = os.path.join(apath, 'manga-{0}-{1}-LOGCUBE-{2}.fits.gz'.format(plt,ifu,daptype))
+
+    # Stellar continuum fit qa plot
+    wave, flux, error, model = get_stellar_continuum_data(cube_file)
+    ofile = os.path.join(plan_qa_dir, 'manga-{0}-{1}-LOGCUBE-{2}-sc-fitqa-lambda.png'.format(
+                                plate, ifudesign, daptype))
+    wave_limits = [3550,7400]
+    fom_lambda(plate, ifudesign, flux, error, model, wave_limits=wave_limits) #, ofile=ofile)
+
+    # Emission-line fit qa plot
+    wave, flux, error, model = get_emission_line_data(drp_file, cube_file, daptype)
+    ofile = os.path.join(plan_qa_dir, 'manga-{0}-{1}-LOGCUBE-{2}-el-fitqa-lambda.png'.format(
+                                plate, ifudesign, daptype))
+    wave_limits = [3550,7400]
+    fom_lambda(plate, ifudesign, flux, error, model, wave_limits=wave_limits) #, ofile=ofile)
+    
+
+#-----------------------------------------------------------------------------
+
+if __name__ == '__main__':
+    t = time.clock()
+
+    parser = ArgumentParser()
+
+    parser.add_argument('plate', type=int, help='plate ID to process')
+    parser.add_argument('ifudesign', type=int, help='IFU design to process')
+
+    parser.add_argument('--drpver', type=str, help='DRP version', default=None)
+    parser.add_argument('--dapver', type=str, help='DAP version', default=None)
+    parser.add_argument('--dap_src', type=str, help='Top-level directory with the DAP source code;'
+                        ' defaults to $MANGADAP_DIR', default=None)
+    parser.add_argument("--analysis_path", type=str, help="main DAP output path", default=None)
+
+    parser.add_argument("--plan_file", type=str, help="parameter file with the MaNGA DAP "
+                        "execution plan to use instead of the default" , default=None)
+
+    parser.add_argument('--daptype', type=str, help='DAP processing type', default=None)
+    parser.add_argument('--normal_backend', dest='bgagg', action='store_false', default=True)
+
+    arg = parser.parse_args()
+
+    if arg.bgagg:
+        pyplot.switch_backend('agg')
+
+    # Set the the analysis path and make sure it exists
+    analysis_path = default_analysis_path(drpver=arg.drpver, dapver=arg.dapver) \
+                            if arg.analysis_path is None else arg.analysis_path
+
+    daptypes = []
+    if arg.daptype is None:
+        plan_file = default_dap_plan_file(drpver=arg.drpver, dapver=arg.dapver,
+                                          analysis_path=arg.analysis_path) \
+                                            if arg.plan_file is None else arg.plan_file
+        analysisplan = AnalysisPlanSet.from_par_file(plan_file)
+        daptypes = [ default_dap_method(plan=p) for p in analysisplan ]
+    else:
+        daptypes = [arg.daptype]
+
+    for daptype in daptypes:
+        fit_residuals(drpver, redux_path, dapver, analysis_path, daptype, arg.plate, arg.ifudesign)
+
+    print('Elapsed time: {0} seconds'.format(time.clock() - t))
+
