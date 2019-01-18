@@ -1038,7 +1038,7 @@ class rundap:
             for i in range(nplan):
                 # Generate the ref subdirectory for this plan
                 path = defaults.default_dap_method_path(
-                                default.default_dap_method(plan=plan.data[i]), plate=plate,
+                                defaults.default_dap_method(plan=plan.data[i]), plate=plate,
                                 ifudesign=ifudesign, ref=True, drpver=self.mpl.drpver,
                                 dapver=self.dapver, analysis_path=self.analysis_path)
                 create_symlink(parfile, path, relative_symlink=relative_symlink, clobber=clobber,
