@@ -527,7 +527,7 @@ class rundap:
             raise ValueError('Input file should contain 2 columns, plate and ifu.')
         return db[:,0].astype(int).tolist(), db[:,1].astype(int).tolist()
 
-    def_read_arg(self):
+    def _read_arg(self):
         """Read and interpret the terminal command-line arguments.
 
         Function uses the argparse module, which provide a --help option
