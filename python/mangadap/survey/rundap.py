@@ -101,16 +101,13 @@ from mangadap import __version__
 
 from .drpcomplete import DRPComplete
 from ..drpfits import DRPFits
-from ..config.defaults import default_redux_path, default_drp_directory_path
-from ..config.defaults import default_analysis_path, default_dap_common_path
-from ..config.defaults import default_dap_method, default_dap_method_path, default_dap_file_root
-from ..config.defaults import default_dap_par_file, default_dap_plan_file
+from ..config import defaults
 from ..util.exception_tools import print_frame
 from ..util.parser import arginp_to_list
 from ..util.fileio import create_symlink
 from .mangampl import MaNGAMPL
 from ..par.analysisplan import AnalysisPlanSet
-from . import util
+#from . import util
 
 class rundap:
     r"""
@@ -316,10 +313,7 @@ class rundap:
         self.strictver = strictver
         self.mpl = mplver
         self.redux_path = redux_path
-
-        # TODO: This feels out-dated
-        self.dapver = util.product_version(simple=True, product='mangadap') \
-                            if dapver is None else dapver
+        self.dapver = dapver
         self.analysis_path = analysis_path
 
         # List of files to analyze
@@ -395,12 +389,13 @@ class rundap:
             e = sys.exc_info()
             print_frame(e[0])
             raise ValueError('MPL is undefined: {0}'.format(e[1]))
+        self.dapver = defaults.default_dap_version() if self.dapver is None else self.dapver
 
         # Set the output paths
-        self.redux_path = default_redux_path(self.mpl.drpver) if self.redux_path is None \
-                                                              else str(self.redux_path)
-        self.analysis_path = default_analysis_path(self.mpl.drpver, self.dapver) \
-                             if self.analysis_path is None else str(self.analysis_path)
+        self.redux_path = defaults.default_redux_path(self.mpl.drpver) \
+                                    if self.redux_path is None else str(self.redux_path)
+        self.analysis_path = defaults.default_analysis_path(self.mpl.drpver, self.dapver) \
+                                    if self.analysis_path is None else str(self.analysis_path)
 
         # Set the subdirectory from which the scripts are sourced and
         # the various log files are written.  Currently based on start
@@ -410,8 +405,9 @@ class rundap:
 
         # Make sure there is an analysis plan
         if self.plan_file is None:
-            self.plan_file = default_dap_plan_file(drpver=self.mpl.drpver, dapver=self.dapver,
-                                                   analysis_path=self.analysis_path)
+            self.plan_file = defaults.default_dap_plan_file(drpver=self.mpl.drpver,
+                                                            dapver=self.dapver,
+                                                            analysis_path=self.analysis_path)
         if not os.path.isfile(self.plan_file):
             raise FileNotFoundError('No file: {0}'.format(self.plan_file))
 
@@ -531,7 +527,7 @@ class rundap:
             raise ValueError('Input file should contain 2 columns, plate and ifu.')
         return db[:,0].astype(int).tolist(), db[:,1].astype(int).tolist()
 
-    def _read_arg(self):
+    def_read_arg(self):
         """Read and interpret the terminal command-line arguments.
 
         Function uses the argparse module, which provide a --help option
@@ -743,8 +739,9 @@ class rundap:
             os.makedirs(path)
 
         # Generate the main common path
-        path = default_dap_common_path(plate=plate, ifudesign=ifudesign, drpver=self.mpl.drpver,
-                                       dapver=self.dapver, analysis_path=self.analysis_path)
+        path = defaults.default_dap_common_path(plate=plate, ifudesign=ifudesign,
+                                                drpver=self.mpl.drpver, dapver=self.dapver,
+                                                analysis_path=self.analysis_path)
         if not os.path.isdir(path):
             os.makedirs(path)
 
@@ -752,9 +749,10 @@ class rundap:
         plan = AnalysisPlanSet.from_par_file(self.plan_file)
         for i in range(plan.nplans):
             # Generate the ref subdirectory for this plan
-            path = default_dap_method_path(default_dap_method(plan=plan.data[i]), plate=plate,
-                                           ifudesign=ifudesign, ref=True, drpver=self.mpl.drpver,
-                                           dapver=self.dapver, analysis_path=self.analysis_path)
+            path = defaults.default_dap_method_path(defaults.default_dap_method(plan=plan.data[i]),
+                                                    plate=plate, ifudesign=ifudesign, ref=True,
+                                                    drpver=self.mpl.drpver, dapver=self.dapver,
+                                                    analysis_path=self.analysis_path)
             if not os.path.isdir(path):
                 os.makedirs(path)
 
@@ -907,7 +905,7 @@ class rundap:
                 touch file.
         """
         # Get the name of the status file        
-        root = default_dap_file_root(plate, ifudesign, mode=mode)
+        root = defaults.default_dap_file_root(plate, ifudesign, mode=mode)
         self.set_status(os.path.join(self.calling_path, str(plate), str(ifudesign), root),
                         status)
         
@@ -1026,8 +1024,9 @@ class rundap:
         self._check_paths(plate, ifudesign)
 
         # Create the parameter file
-        parfile = default_dap_par_file(plate, ifudesign, mode, drpver=self.mpl.drpver,
-                                       dapver=self.dapver, analysis_path=self.analysis_path)
+        parfile = defaults.default_dap_par_file(plate, ifudesign, mode, drpver=self.mpl.drpver,
+                                                dapver=self.dapver,
+                                                analysis_path=self.analysis_path)
 
         # Write the par file if it doesn't exist
         if not os.path.isfile(parfile) or clobber:
@@ -1038,16 +1037,16 @@ class rundap:
             nplan = plan.nplans
             for i in range(nplan):
                 # Generate the ref subdirectory for this plan
-                path = default_dap_method_path(default_dap_method(plan=plan.data[i]), plate=plate,
-                                               ifudesign=ifudesign, ref=True,
-                                               drpver=self.mpl.drpver, dapver=self.dapver,
-                                               analysis_path=self.analysis_path)
+                path = defaults.default_dap_method_path(default_dap_method(plan=plan.data[i]),
+                                                        plate=plate, ifudesign=ifudesign, ref=True,
+                                                        drpver=self.mpl.drpver, dapver=self.dapver,
+                                                        analysis_path=self.analysis_path)
                 create_symlink(parfile, path, relative_symlink=relative_symlink, clobber=clobber,
                                quiet=True)
 
         # Set the root path for the scripts, inputs, outputs, and logs
         _calling_path = os.path.join(self.calling_path, str(plate), str(ifudesign))
-        scr_file_root = default_dap_file_root(plate, ifudesign)
+        scr_file_root = defaults.default_dap_file_root(plate, ifudesign)
 
         # Set the names for the script, stdout, and stderr files
         scriptfile = os.path.join(_calling_path, scr_file_root)
