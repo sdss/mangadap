@@ -26,34 +26,6 @@ from mangadap.util.mapping import map_extent, map_beam_patch
 
 #-----------------------------------------------------------------------------
 
-#def growth_lim(a, lim, fac, midpoint=None, default=[0., 1.]):
-#    _a = a.compressed()
-#    if len(_a) == 0:
-#        return default
-#    srt = numpy.ma.argsort(_a)
-#    start = int(len(_a)*(1.0-lim)/2)
-#    end = int(len(_a)*(lim + (1.0-lim)/2))
-#    Da = (_a[srt[end]] - _a[srt[start]])*fac
-#    mid = (_a[srt[start]] + _a[srt[end]])/2 if midpoint is None else midpoint
-##    print(start)
-##    print(end)
-##    print(Da)
-##    print(mid)
-#    return [ mid - Da/2, mid + Da/2 ]
-
-    
-#def column_dictionary(hdu, ext):
-#    columndict = {}
-#    for k, v in hdu[ext].header.items():
-#        if k[0] == 'C':
-#            try:
-#                i = int(k[1:])-1
-#            except ValueError:
-#                continue
-#            columndict[v] = i
-#    return columndict
-
-
 def init_ax(fig, pos):
     ax = fig.add_axes(pos, facecolor='0.9')
     ax.minorticks_on()
@@ -256,16 +228,6 @@ def spotcheck_images(analysis_path, daptype, plate, ifudesign, ofile=None, drpve
     t = numpy.ma.append(d4000, dn4000)
 #    d4000_lim = growth_lim(t, 0.90, 1.05)
     d4000_lim = [ 1.0, 2.5 ]
-
-#    print(flux_lim)
-#    print(snr_lim)
-#    print(bin_lim)
-#    print(res_lim)
-#    print(chi_lim)
-#    print(vel_lim)
-#    print(sig_lim)
-#    print(hflx_lim)
-#    print(d4000_lim)
 
     font = { 'size' : 6 }
     rc('font', **font)
