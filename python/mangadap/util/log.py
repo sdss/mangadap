@@ -7,24 +7,6 @@ Logging routines.
     Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
         Licensed under BSD 3-clause license - see LICENSE.rst
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/util/log.py
-
-*Imports and python version compliance*:
-    ::
-
-        from __future__ import division
-        from __future__ import print_function
-        from __future__ import absolute_import
-        from __future__ import unicode_literals
-
-        import sys
-        if sys.version > '3':
-            long = int
-
-        import logging
-        import warnings
-
 *Revision history*:
     | **21 Mar 2016**: Original implementation by K. Westfall (KBW)
     | **05 May 2017**: (KBW) Clean up the documentation
@@ -46,17 +28,22 @@ if sys.version > '3':
 import logging
 import warnings
 
-# TODO: Move much of this to __init__ ?
+from astropy.wcs import FITSFixedWarning
 
-def init_DAP_logging(log, simple_warnings=True, append=False):
+def init_DAP_logging(log, simple_warnings=True, append=False, keep_fits_warnings=False):
     """
     Initialize the logging preferences for the DAP.
 
     Args:
-        log (str): File with log output.
-        simple_warnings (bool): (**Optional**) Shorten warning messages.
-        append (bool): (**Optional**) Append new log messages to
-            existing log file; if False, file is overwritten.
+        log (:obj:`str`):
+            File with log output.
+        simple_warnings (:obj:`bool`, optional):
+            Shorten warning messages.
+        append (:obj:`bool`, optional):
+            Append new log messages to existing log file; if False, file
+            is overwritten.
+        keep_fits_warning (:obj:`bool`, optional):
+            Flag to not ignore FITSFixedWarning messages.
 
     .. todo::
         Use a file with the logging configuration.  See:
@@ -76,6 +63,8 @@ def init_DAP_logging(log, simple_warnings=True, append=False):
 
     # Set warnings format
     warnings.simplefilter('always')
+    if not keep_fits_warnings:
+        warnings.simplefilter('ignore', FITSFixedWarning)
     warnings.filterwarnings('ignore', 'unclosed file')
     logging.captureWarnings(True)
     if simple_warnings:

@@ -7,45 +7,6 @@ Provides the main wrapper function for the MaNGA DAP.
     Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
         Licensed under BSD 3-clause license - see LICENSE.rst
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/survey/manga_dap.py
-
-*Imports and python version compliance*:
-    ::
-
-        from __future__ import division
-        from __future__ import print_function
-        from __future__ import absolute_import
-        from __future__ import unicode_literals
-
-        import sys
-        if sys.version > '3':
-            long = int
-
-        import logging
-        import resource
-        import time
-        import os
-        import warnings
-        import numpy
-
-        import astropy.constants
-
-        from ..config.defaults import default_drp_version, default_dap_version
-        from ..config.defaults import default_analysis_path, default_dap_method
-        from ..config.defaults import default_dap_method_path
-        from ..util.log import init_DAP_logging, module_logging, log_output
-        from ..drpfits import DRPFits
-        from ..par.obsinput import ObsInputPar
-        from ..par.analysisplan import AnalysisPlanSet
-        from ..proc.reductionassessments import ReductionAssessment
-        from ..proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
-        from ..proc.stellarcontinuummodel import StellarContinuumModel
-        from ..proc.emissionlinemoments import EmissionLineMoments
-        from ..proc.emissionlinemodel import EmissionLineModel
-        from ..proc.spectralindices import SpectralIndices
-        from ..dapfits import construct_maps_file, construct_cube_file
-        
 *Usage*:
     Add usage examples
 
