@@ -160,7 +160,7 @@ def spotcheck_images(analysis_path, daptype, plate, ifudesign, ofile=None, drpve
                                   mask=bm.flagged(hdu['STELLAR_SIGMA_MASK'].data, 'DONOTUSE'))
     ustrsig = numpy.ma.MaskedArray(hdu['STELLAR_SIGMA'].data.copy(),
                                   mask=numpy.invert(bm.flagged(hdu['STELLAR_SIGMA_MASK'].data,
-                                                               'UNRELIABLE'))
+                                                               'UNRELIABLE')))
     ustrsig[numpy.invert(numpy.ma.getmaskarray(ustrsig))] = 0.0
 
     hasflx = numpy.ma.MaskedArray(hdu['EMLINE_SFLUX'].data.copy()[emline['Ha-6564'],:,:],
