@@ -1286,9 +1286,9 @@ class construct_maps_file:
                                                                '68th perc frac resid',
                                                                '99th perc frac resid',
                                                                'max frac resid',
-                                                               '68th perc per pix chi2',
-                                                               '99th perc per pix chi2',
-                                                               'max per pix chi2'],
+                                                               '68th perc per pix chi',
+                                                               '99th perc per pix chi',
+                                                               'max per pix chi'],
                                                 channel_units=fomunits)
               ]
 
@@ -1612,7 +1612,7 @@ class construct_maps_file:
 
         # Organize the extension data
         data = data[:2] + [ base_mask ] + data[2:4] + [ base_mask ] + data[4:6] + [ base_mask ] \
-                + data[6:8] + [ sig_mask ] + data[8:-1]
+                + data[6:8] + [ sig_mask ] + data[8:-3] + [data[-2], data[-3]]
 
         #---------------------------------------------------------------
         # Return the map hdus
@@ -1792,27 +1792,24 @@ class construct_cube_file:
         #---------------------------------------------------------------
         # Initialize the pixel mask
         self.bitmask = DAPCubeBitMask(dapsrc=dapsrc)
-        # This is the base level mask with bits pulled from the DRP cube
-        self.bin_mask = self._initialize_mask(binned_spectra, binned_spectra_3d_hdu)
 
         #---------------------------------------------------------------
         # Construct the hdu list for each input object.
         # This adds the binning-specific flags to the mask
-        # Binned spectra: ['FLUX', 'IVAR', 'WAVE', 'REDCORR']
-        prihdr, binlist, mask = self.binned_data_cube(prihdr, binned_spectra,
-                                                      binned_spectra_3d_hdu)
+        # Binned spectra: ['FLUX', 'IVAR', 'MASK', 'WAVE', 'REDCORR']
+        prihdr, binlist = self.binned_data_cube(prihdr, binned_spectra, binned_spectra_3d_hdu)
 
-        # Model spectra: [ 'MODEL', 'EMLINE', 'STELLAR', 'STELLAR_MASK' ]
-        prihdr, modlist, mask = self.model_cubes(prihdr, binned_spectra, stellar_continuum,
-                                                 stellar_continuum_3d_hdu, emission_line_model,
-                                                 emission_line_model_3d_hdu, mask=mask)
+        # Model spectra: [ 'MODEL', 'MODEL_MASK', 'EMLINE', 'STELLAR', 'STELLAR_MASK' ]
+        prihdr, modlist = self.model_cubes(prihdr, binned_spectra, stellar_continuum,
+                                           stellar_continuum_3d_hdu, emission_line_model,
+                                           emission_line_model_3d_hdu)
 
-        # Finalize the (stellar-continuum) mask
-        masklist = DAPFitsUtil.list_of_image_hdus([mask],
-                        [ DAPFitsUtil.finalize_dap_header(self.base_cubehdr, 'FLUX',
-                                                          hduclas2='QUALITY', err=True,
-                                                          bit_type=self.bitmask.minimum_dtype(),
-                                                          prepend=False) ], ['MASK'])
+#        # Finalize the (stellar-continuum) mask
+#        masklist = DAPFitsUtil.list_of_image_hdus([mask],
+#                        [ DAPFitsUtil.finalize_dap_header(self.base_cubehdr, 'FLUX',
+#                                                          hduclas2='QUALITY', err=True,
+#                                                          bit_type=self.bitmask.minimum_dtype(),
+#                                                          prepend=False) ], ['MASK'])
 
         # Get the BINIDs
         binidlist = combine_binid_extensions(self.drpf, binned_spectra, stellar_continuum, None,
@@ -1826,24 +1823,22 @@ class construct_cube_file:
 
         # Ensure extensions are in the correct order
         self.hdu = fits.HDUList([ fits.PrimaryHDU(header=prihdr),
-                                  *(binlist[:2]),   # FLUX, IVAR
-                                  *masklist,        # MASK
-                                  *(binlist[2:]),   # WAVE, REDCORR
-                                  *modlist,         # MODEL, EMLINE, STELLAR, STELLAR_MASK
-                                  *binidlist        # BINID
+                                  *binlist,   # FLUX, IVAR, MASK, WAVE, REDCORR
+                                  *modlist,   # MODEL, MODEL_MASK, EMLINE, STELLAR, STELLAR_MASK
+                                  *binidlist  # BINID
                                 ])
         #---------------------------------------------------------------
 
         # Check that the path exists
         if not os.path.isdir(self.directory_path):
             os.makedirs(self.directory_path)
+
         # Write the model cube file
         DAPFitsUtil.write(self.hdu, ofile, clobber=clobber, checksum=True, loggers=self.loggers,
                           quiet=self.quiet)
         # End
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '-'*50)
-
 
     def _set_paths(self, directory_path, dapver, analysis_path, output_file, binned_spectra,
                    stellar_continuum):
@@ -1856,7 +1851,6 @@ class construct_cube_file:
             raise ValueError('Could not define output directory path.')
 
         # Set the output directory path
-        # TODO: Get DAP version from __version__ string
         self.method = default_dap_method(binned_spectra=binned_spectra,
                                          stellar_continuum=stellar_continuum) \
                                 if directory_path is None else None
@@ -1871,149 +1865,155 @@ class construct_cube_file:
                                                  self.method, mode='LOGCUBE') \
                                     if output_file is None else str(output_file)
 
+#    def _initialize_mask(self, binned_spectra, binned_spectra_3d_hdu):
+#        """
+#        Initialize the mask based on the DRP cube mask.
+#
+#        Set IVARINVALID by testing for invalid inverse variance data.
+#        THIS SHOULD BE A TEST THAT IS INCLUDED IN THE BINNED_SPECTRA
+#        OBJECT.  This should match the flags from the stellar continuum
+#        model object.
+#
+#        Copy the FORESTAR flags from the DRP file to the this one
+#        """
+#        mask = numpy.zeros(self.shape, dtype=self.bitmask.minimum_dtype())
+#        if binned_spectra is None:
+#            return mask
+#
+#        indx = numpy.invert(binned_spectra_3d_hdu['IVAR'].data > 0) \
+#                    | numpy.invert(numpy.isfinite(binned_spectra_3d_hdu['IVAR'].data))
+#        mask[indx] = self.bitmask.turn_on(mask[indx], 'IVARINVALID')
+#
+#        indx = binned_spectra.bitmask.flagged(binned_spectra_3d_hdu['MASK'].data, flag='FORESTAR')
+#        mask[indx] = self.bitmask.turn_on(mask[indx], 'FORESTAR')
+#
+#        return mask
 
-    def _initialize_mask(self, binned_spectra, binned_spectra_3d_hdu):
+    def _get_data_mask(self, binned_spectra, binned_spectra_3d_hdu):
         """
-        Initialize the mask based on the DRP cube mask.
-
-        Set IVARINVALID by testing for invalid inverse variance data.
-        THIS SHOULD BE A TEST THAT IS INCLUDED IN THE BINNED_SPECTRA
-        OBJECT.  This should match the flags from the stellar continuum
-        model object.
-
-        Copy the FORESTAR flags from the DRP file to the this one
+        For the binned spectra:
+            - consolidate ANY flag except NO_STDDEV from binned_spectra
+              into IGNORED; done use SpatiallyBinnedSpectra.do_not_fit_flags
+            - propagate NONE_IN_STACK from binned_spectra into
+              FLUXINVALID
+            - propagate IVARINVALID and FORESTAR
         """
-        mask = numpy.zeros(self.shape, dtype=self.bitmask.minimum_dtype())
-        if binned_spectra is None:
-            return mask
+        # Initialize the mask
+        mask = numpy.zeros(binned_spectra_3d_hdu['MASK'].data.shape,
+                           dtype=self.bitmask.minimum_dtype())
 
-        indx = numpy.invert(binned_spectra_3d_hdu['IVAR'].data > 0) \
-                    | numpy.invert(numpy.isfinite(binned_spectra_3d_hdu['IVAR'].data))
+        # Consolidate DIDNOTUSE, FORESTAR, LOW_SPECCOV, LOW_SNR from
+        # binned_spectra into IGNORED
+        flags = binned_spectra.do_not_fit_flags()
+        indx = binned_spectra.bitmask.flagged(binned_spectra_3d_hdu['MASK'].data, flag=flags)
+        mask[indx] = self.bitmask.turn_on(mask[indx], 'IGNORED')
+
+        # Propagate NONE_IN_STACK from binned_spectra into FLUXINVALID
+        indx = binned_spectra.bitmask.flagged(binned_spectra_3d_hdu['MASK'].data,
+                                              flag='NONE_IN_STACK')
+        mask[indx] = self.bitmask.turn_on(mask[indx], 'FLUXINVALID')
+
+        # Propagate IVARINVALID
+        indx = binned_spectra.bitmask.flagged(binned_spectra_3d_hdu['MASK'].data,
+                                              flag='IVARINVALID')
         mask[indx] = self.bitmask.turn_on(mask[indx], 'IVARINVALID')
 
+        # Propagate FORESTAR
         indx = binned_spectra.bitmask.flagged(binned_spectra_3d_hdu['MASK'].data, flag='FORESTAR')
         mask[indx] = self.bitmask.turn_on(mask[indx], 'FORESTAR')
 
         return mask
 
-
-#    def _assign_cube_arrays(self):
-#        """
-#        Set :attr:`cube_arrays`, which contains the list of extensions in
-#        :attr:`hdu` that contain spectral data.
-#        """
-#        self.cube_arrays = [ 'FLUX', 'IVAR', 'MASK', 'MODEL', 'EMLINE', 'EMLINE_BASE',
-#                             'EMLINE_MASK', 'BINID' ]
-
-
-    def _get_data_mask(self, binned_spectra, binned_spectra_3d_hdu):
-        """
-        For the binned spectra:
-            - consolidate DIDNOTUSE, LOW_SPECCOV, LOW_SNR from
-              binned_spectra into IGNORED
-            - consolidate NONE_IN_STACK from binned_spectra into
-              FLUXINVALID
-        """
-        # Copy the base-level mask
-        mask = self.bin_mask.copy()
-
-        # Draw from binned_spectra
-        flags = [ 'DIDNOTUSE', 'LOW_SPECCOV', 'LOW_SNR' ]
-        indx = binned_spectra.bitmask.flagged(binned_spectra_3d_hdu['MASK'].data, flag=flags)
-        mask[indx] = self.bitmask.turn_on(mask[indx], 'IGNORED')
-
-        indx = binned_spectra.bitmask.flagged(binned_spectra_3d_hdu['MASK'].data,
-                                              flag='NONE_IN_STACK')
-        mask[indx] = self.bitmask.turn_on(mask[indx], 'FLUXINVALID')
-
-        return mask
-
-
-    def _get_stellar_continuum_mask(self, stellar_continuum, stellar_continuum_3d_hdu, mask=None):
+    def _get_stellar_continuum_mask(self, stellar_continuum, stellar_continuum_3d_hdu):
         """
         For the stellar continuum models:
-            - copy INVALID_ERROR into IVARINVALID
-            - copy ARTIFACTs
-            - consolidate DIDNOTUSE, LOW_SNR, OUTSIDE_RANGE, EML_REGION, TPL_PIXELS, TRUNCATED,
-              PPXF_REJECT, INVALID_ERROR, ARTIFACT into FITIGNORED
-            - consolidate FIT_FAILED and NEAR_BOUND into FITFAILED
+            - propagate FORESTAR
+            - propagate INVALID_ERROR into IVARINVALID
+            - propagate ARTIFACTs
+            - consolidate DIDNOTUSE, FORESTAR, LOW_SNR, ARTIFACT,
+              OUTSIDE_RANGE, EML_REGION, TPL_PIXELS, TRUNCATED,
+              PPXF_REJECT, INVALID_ERROR, NO_FIT into FITIGNORED
+            - consolidate FIT_FAILED into FITFAILED
         """
-        # Copy the base-level mask
-        _mask = self.bin_mask.copy() if mask is None else mask.copy()
+        # Initialize
+        mask = numpy.zeros(stellar_continuum_3d_hdu['MASK'].data.shape,
+                           dtype=self.bitmask.minimum_dtype())
 
-        # Flag invalid errors and artifacts
+        # Propagate FORESTAR
+        indx = stellar_continuum.bitmask.flagged(stellar_continuum_3d_hdu['MASK'].data,
+                                                 flag='FORESTAR')
+        mask[indx] = self.bitmask.turn_on(mask[indx], 'FORESTAR')
+
+        # Propagate invalid errors
         indx = stellar_continuum.bitmask.flagged(stellar_continuum_3d_hdu['MASK'].data,
                                                  flag='INVALID_ERROR')
-        _mask[indx] = self.bitmask.turn_on(_mask[indx], 'IVARINVALID')
+        mask[indx] = self.bitmask.turn_on(mask[indx], 'IVARINVALID')
+
+        # Propagate artifacts
         indx = stellar_continuum.bitmask.flagged(stellar_continuum_3d_hdu['MASK'].data,
                                                  flag='ARTIFACT')
-        _mask[indx] = self.bitmask.turn_on(_mask[indx], 'ARTIFACT')
+        mask[indx] = self.bitmask.turn_on(mask[indx], 'ARTIFACT')
 
         # Set which pixel were ignored in the fit
-        flags = [ 'DIDNOTUSE', 'LOW_SNR', 'OUTSIDE_RANGE', 'EML_REGION', 'TPL_PIXELS',
-                  'TRUNCATED', 'PPXF_REJECT', 'INVALID_ERROR', 'ARTIFACT' ]
+        flags = ['DIDNOTUSE', 'FORESTAR', 'LOW_SNR', 'ARTIFACT', 'OUTSIDE_RANGE', 'EML_REGION',
+                 'TPL_PIXELS', 'TRUNCATED', 'PPXF_REJECT', 'INVALID_ERROR', 'NO_FIT' ]
         indx = stellar_continuum.bitmask.flagged(stellar_continuum_3d_hdu['MASK'].data, flag=flags)
-        _mask[indx] = self.bitmask.turn_on(_mask[indx], 'FITIGNORED')
+        mask[indx] = self.bitmask.turn_on(mask[indx], 'FITIGNORED')
 
         # Set which pixels failed during the fit
-        # TODO: What do I do with BAD_SIGMA?
         indx = stellar_continuum.bitmask.flagged(stellar_continuum_3d_hdu['MASK'].data,
-                                                 flag=['FIT_FAILED', 'NEAR_BOUND'])
-        _mask[indx] = self.bitmask.turn_on(_mask[indx], 'FITFAILED')
+                                                 flag='FIT_FAILED')
+        mask[indx] = self.bitmask.turn_on(mask[indx], 'FITFAILED')
 
-        return self._include_no_model_mask(_mask)
+        return self._include_no_model_mask(mask)
 
-
-    def _get_emission_line_model_mask(self, emission_line_model, emission_line_model_3d_hdu,
-                                      mask=None):
+    def _get_emission_line_model_mask(self, emission_line_model, emission_line_model_3d_hdu):
         """
         For the emission-line models:
-            - copy INVALID_ERROR into IVARINVALID
-            - copy ARTIFACTs
-            - consolidate DIDNOTUSE, LOW_SNR, OUTSIDE_RANGE, EML_REGION, TPL_PIXELS, TRUNCATED,
-              PPXF_REJECT, INVALID_ERROR, ARTIFACT into ELIGNORED
-            - consolidate FIT_FAILED and NEAR_BOUND into ELFAILED
+            - propagate FORESTAR
+            - propagate ARTIFACT
+            - consolidate DIDNOTUSE, FORESTAR, LOW_SNR, ARTIFACT,
+              OUTSIDE_RANGE, TPL_PIXELS, TRUNCATED, PPXF_REJECT,
+              INVALID_ERROR into FITIGNORED
         """
-        # Copy the base-level mask
-        _mask = self.bin_mask.copy() if mask is None else mask.copy()
+        # Initialize
+        mask = numpy.zeros(emission_line_model_3d_hdu['MASK'].data.shape,
+                           dtype=self.bitmask.minimum_dtype())
 
-        # Flag invalid errors and artifacts
+        # Flag FORESTAR
         indx = emission_line_model.bitmask.flagged(emission_line_model_3d_hdu['MASK'].data,
-                                                   flag='INVALID_ERROR')
-        _mask[indx] = self.bitmask.turn_on(_mask[indx], 'IVARINVALID')
+                                                   flag='FORESTAR')
+        mask[indx] = self.bitmask.turn_on(mask[indx], 'FORESTAR')
+
+        # Flag artifacts
         indx = emission_line_model.bitmask.flagged(emission_line_model_3d_hdu['MASK'].data,
                                                    flag='ARTIFACT')
-        _mask[indx] = self.bitmask.turn_on(_mask[indx], 'ARTIFACT')
+        mask[indx] = self.bitmask.turn_on(mask[indx], 'ARTIFACT')
 
         # Set which pixel were ignored in the fit
-        flags = [ 'DIDNOTUSE', 'LOW_SNR', 'OUTSIDE_RANGE', 'TPL_PIXELS',
-                  'TRUNCATED', 'PPXF_REJECT', 'INVALID_ERROR', 'ARTIFACT' ]
+        flags = ['DIDNOTUSE', 'FORESTAR', 'LOW_SNR', 'ARTIFACT', 'OUTSIDE_RANGE', 'TPL_PIXELS',
+                 'TRUNCATED', 'PPXF_REJECT', 'INVALID_ERROR' ]
         indx = emission_line_model.bitmask.flagged(emission_line_model_3d_hdu['MASK'].data,
                                                    flag=flags)
-        _mask[indx] = self.bitmask.turn_on(_mask[indx], 'FITIGNORED') #'ELIGNORED')
+        mask[indx] = self.bitmask.turn_on(mask[indx], 'FITIGNORED')
 
-        # Set which pixels failed during the fit
-        indx = emission_line_model.bitmask.flagged(emission_line_model_3d_hdu['MASK'].data,
-                                                   flag=['FIT_FAILED', 'NEAR_BOUND'])
-        _mask[indx] = self.bitmask.turn_on(_mask[indx], 'FITFAILED') #'ELFAILED')
-
-        return self._include_no_model_mask(_mask)
-
+        return self._include_no_model_mask(mask)
 
     def binned_data_cube(self, prihdr, binned_spectra, binned_spectra_3d_hdu):
         """
-        Constructs the 'FLUX', 'IVAR', 'WAVE', and 'REDCORR' model cube
-        extensions, and begins the construction of the 'MASK'.
+        Constructs the 'FLUX', 'IVAR', 'MASK', 'WAVE', and 'REDCORR'
+        model cube extensions, and begins the construction of the
+        'MASK'.
 
         Returns the primary header, a list of ImageHDUs, and the mask
         array.
         """
         #---------------------------------------------------------------
-        ext = ['FLUX', 'IVAR', 'WAVE', 'REDCORR']
+        ext = ['FLUX', 'IVAR', 'MASK', 'WAVE', 'REDCORR']
 
         if binned_spectra is None:
             # Construct and return the empty hdus
-            return prihdr, DAPFitsUtil.empty_hdus(ext), None
+            return prihdr, DAPFitsUtil.empty_hdus(ext)
 
         #---------------------------------------------------------------
         # Add data to the primary header
@@ -2032,8 +2032,10 @@ class construct_cube_file:
                 DAPFitsUtil.finalize_dap_header(self.base_cubehdr, 'FLUX', hduclas2='ERROR',
                                                 bunit='(1E-17 erg/s/cm^2/ang/spaxel)^{-2}',
                                                 qual=True, prepend=False),
-                None,
-                None
+                DAPFitsUtil.finalize_dap_header(self.base_cubehdr, 'FLUX', hduclas2='QUALITY',
+                                                err=True, bit_type=self.bitmask.minimum_dtype(),
+                                                prepend=False),
+                None, None
               ]
 
         #---------------------------------------------------------------
@@ -2045,25 +2047,24 @@ class construct_cube_file:
 
         # Return the primary header, the list of ImageHDUs, and the mask
         data = [ flux.astype(self.float_dtype), ivar.astype(self.float_dtype),
+                 self._get_data_mask(binned_spectra, binned_spectra_3d_hdu),
                  binned_spectra['WAVE'].data.copy().astype(self.float_dtype),
                  binned_spectra['REDCORR'].data.copy().astype(self.float_dtype) ]
-        return prihdr, DAPFitsUtil.list_of_image_hdus(data, hdr, ext), \
-                    self._get_data_mask(binned_spectra, binned_spectra_3d_hdu)
-
+        return prihdr, DAPFitsUtil.list_of_image_hdus(data, hdr, ext)
 
     def model_cubes(self, prihdr, binned_spectra, stellar_continuum, stellar_continuum_3d_hdu,
-                    emission_line_model, emission_line_model_3d_hdu, mask=None):
+                    emission_line_model, emission_line_model_3d_hdu):
         """
-        Constructs the 'MODEL', 'EMLINE', 'STELLAR', and 'STELLAR_MASK'
-        model cube extensions, adds the model information to the header,
-        and appends data to the mask.
+        Constructs the 'MODEL', 'MODEL_MASK', 'EMLINE', 'STELLAR', and
+        'STELLAR_MASK' model cube extensions, adds the model information
+        to the header, and appends data to the mask.
         """
         #---------------------------------------------------------------
-        ext = ['MODEL', 'EMLINE', 'STELLAR', 'STELLAR_MASK']
+        ext = ['MODEL', 'MODEL_MASK', 'EMLINE', 'STELLAR', 'STELLAR_MASK']
 
         if binned_spectra is None or stellar_continuum is None or emission_line_model is None:
             # Construct and return empty hdus
-            return prihdr, DAPFitsUtil.empty_hdus(ext), mask
+            return prihdr, DAPFitsUtil.empty_hdus(ext)
 
         #---------------------------------------------------------------
         # Add the model data to the primary header
@@ -2075,11 +2076,11 @@ class construct_cube_file:
         #---------------------------------------------------------------
         # Get the extension headers
         hdr = [ DAPFitsUtil.finalize_dap_header(self.base_cubehdr, 'MODEL',
-                                                bunit='1E-17 erg/s/cm^2/ang/spaxel', qual=True,
-                                                prepend=False),
+                                                bunit='1E-17 erg/s/cm^2/ang/spaxel', qual=True),
+                DAPFitsUtil.finalize_dap_header(self.base_cubehdr, 'MODEL', hduclas2='QUALITY',
+                                                bit_type=self.bitmask.minimum_dtype()),
                 DAPFitsUtil.finalize_dap_header(self.base_cubehdr, 'EMLINE',
-                                                bunit='1E-17 erg/s/cm^2/ang/spaxel', qual=True,
-                                                prepend=False),
+                                                bunit='1E-17 erg/s/cm^2/ang/spaxel'),
                 DAPFitsUtil.finalize_dap_header(self.base_cubehdr, 'STELLAR',
                                                 bunit='1E-17 erg/s/cm^2/ang/spaxel', qual=True),
                 DAPFitsUtil.finalize_dap_header(self.base_cubehdr, 'STELLAR', hduclas2='QUALITY',
@@ -2096,30 +2097,23 @@ class construct_cube_file:
         line = binned_spectra.galext.apply(emission_line_model_3d_hdu['FLUX'].data, deredden=False)
         scnt = binned_spectra.galext.apply(stellar_continuum_3d_hdu['FLUX'].data, deredden=False)
 
-        # Stellar continuum mask
-        # This adds the stellar-continuum mask bits to the binned
-        # spectra mask bits
-        scnt_mask = self._get_stellar_continuum_mask(stellar_continuum, stellar_continuum_3d_hdu,
-                                                     mask=mask)
-        # Emission-line Mask
-        line_mask = self._get_emission_line_model_mask(emission_line_model,
-                                                       emission_line_model_3d_hdu, mask=mask)
-
-        data = [model.astype(self.float_dtype), line.astype(self.float_dtype),
-                scnt.astype(self.float_dtype), scnt_mask]
+        # Compile the data arrays
+        data = [model.astype(self.float_dtype),
+                self._get_emission_line_model_mask(emission_line_model,
+                                                   emission_line_model_3d_hdu),
+                line.astype(self.float_dtype), scnt.astype(self.float_dtype),
+                self._get_stellar_continuum_mask(stellar_continuum, stellar_continuum_3d_hdu)]
 
         # Return the primary header and the list of HDUs
-        return prihdr, DAPFitsUtil.list_of_image_hdus(data, hdr, ext), line_mask
-
+        return prihdr, DAPFitsUtil.list_of_image_hdus(data, hdr, ext)
 
     def _set_no_model(self, mask):
         indx = numpy.arange(len(mask))[numpy.invert(mask > 0)]
         if len(indx) == 0:
             return mask
         mask[:indx[0]] = self.bitmask.turn_on(mask[:indx[0]], 'NOMODEL')
-        mask[indx[-1]:] = self.bitmask.turn_on(mask[indx[-1]:], 'NOMODEL')
+        mask[indx[-1]+1:] = self.bitmask.turn_on(mask[indx[-1]+1:], 'NOMODEL')
         return mask
-
 
     def _include_no_model_mask(self, mask):
         """
@@ -2128,11 +2122,8 @@ class construct_cube_file:
 
         Modeled off of StellarContiuumModel.reset_continuum_mask_window.
         """
-        # No pixels are masked!
-        if numpy.sum(mask > 0) == 0:
-            return mask
-
-        return numpy.apply_along_axis(self._set_no_model, 2, mask)
+        return mask if numpy.sum(mask > 0) == 0 else \
+                    numpy.apply_along_axis(self._set_no_model, 2, mask)
 
 
 #-----------------------------------------------------------------------

@@ -40,6 +40,13 @@ def fit_one_cube(plt, ifu, drpall_file=None, directory_path=None, analysis_path=
                                           elfit_key='EFITMB',
                                           spindex_key='INDXEN') ])
 
+#    plan = AnalysisPlanSet([ AnalysisPlan(drpqa_key='SNRG',
+#                                          bin_key='VOR10',
+#                                          continuum_key='GAU-MILESHC',
+#                                          elmom_key='EMOMM',
+#                                          elfit_key='EFITM',
+#                                          spindex_key='INDXEN') ])
+
     # Run it!
     return manga_dap(obs, plan, verbose=2, directory_path=directory_path,
                      analysis_path=analysis_path)

@@ -2,6 +2,7 @@
 
 import os
 import time
+import argparse
 import numpy
 
 from scipy.special import erf
@@ -12,6 +13,7 @@ from matplotlib import pyplot, ticker, rc, colors, cm, colorbar, image
 from astropy.io import fits
 import astropy.constants
 
+from mangadap.config import defaults
 from mangadap.proc.util import growth_lim, sample_growth
 from mangadap.util.bitmask import BitMask
 
@@ -22,6 +24,8 @@ from mangadap.util.filter import BoxcarFilter
 from mangadap.util.sampling import Resample, spectral_coordinate_step
 from mangadap.proc.spectralstack import SpectralStack
 from mangadap.util.mapping import map_extent, map_beam_patch
+
+from mangadap.util.fileio import channel_dictionary
 
 #-----------------------------------------------------------------------------
 def init_ax(fig, pos, facecolor=None, grid=False):
@@ -90,21 +94,21 @@ def velocity_register(wave, y, v):
     return reg_wave, reg_y
 
 
-def fom(plt, ifu, snr, resid_2d, fresid_2d, chi2_2d, rchi2, rms, frms, ofile=None):
+def fom_growth(plt, ifu, flux, error, model, snrg, rms, frms, rchi2, ofile=None):
 
-    snr_lim = numpy.exp(growth_lim(numpy.ma.log(snr), 0.95, fac=1.3))
+    nspec = flux.shape[1]
+    resid = numpy.ma.absolute(flux-model)
+    fresid = numpy.ma.divide(resid, model)
+    chi = numpy.ma.divide(resid, error)
 
-    chi2_lim = numpy.exp(growth_lim(numpy.ma.log(chi2_2d.compressed()), 1.0, fac=1.1))
-    if chi2_lim[0] < 1e-2:
-        chi2_lim[0] = 1e-2
+    snr_lim = numpy.exp(growth_lim(numpy.ma.log(snrg).compressed(), 0.95, fac=1.3))
 
-    resid_lim = numpy.exp(growth_lim(numpy.ma.log(resid_2d.compressed()), 1.0, fac=1.1))
-    if resid_lim[0] < 1e-3:
-        resid_lim[0] = 1e-3
-
-    fresid_lim = numpy.exp(growth_lim(numpy.ma.log(fresid_2d.compressed()), 1.0, fac=1.1))
-    if fresid_lim[0] < 5e-3:
-        fresid_lim[0] = 5e-3
+    chi_lim = numpy.exp(growth_lim(numpy.ma.log(chi).compressed(), 0.8, fac=1.1))
+    chi_lim[1] = numpy.ma.amax(chi)*2
+    resid_lim = numpy.exp(growth_lim(numpy.ma.log(resid).compressed(), 0.9, fac=1.1))
+    resid_lim[1] = numpy.ma.amax(resid)*2
+    fresid_lim = numpy.exp(growth_lim(numpy.ma.log(fresid).compressed(), 0.9, fac=1.1))
+    fresid_lim[1] = numpy.ma.amax(fresid)*2
 
     w,h = pyplot.figaspect(1)
     fig = pyplot.figure(figsize=(1.5*w,1.5*h))
@@ -129,12 +133,13 @@ def fom(plt, ifu, snr, resid_2d, fresid_2d, chi2_2d, rchi2, rms, frms, ofile=Non
     fax.text(0.5, -0.15, r'$|\Delta|/m$', ha='center', va='center', transform=fax.transAxes)
 
     cax = init_ax(fig, [0.67, 0.50, 0.30, 0.35], facecolor='0.9', grid=True)
-    cax.set_xlim(numpy.sqrt(chi2_lim))
+    cax.set_xlim(chi_lim)
     cax.set_ylim([1e-4,2])
     cax.set_yscale('log')
     cax.set_xscale('log')
     cax.yaxis.set_major_formatter(ticker.NullFormatter())
-    cax.text(0.5, -0.15, r'$\chi$', ha='center', va='center', transform=cax.transAxes)
+    cax.text(0.5, -0.15, r'$|\Delta|/\epsilon$', ha='center', va='center',
+             transform=cax.transAxes)
 
     cmap = cm.get_cmap('viridis')
     cnorm = colors.LogNorm(vmin=snr_lim[0], vmax=snr_lim[1])
@@ -143,50 +148,46 @@ def fom(plt, ifu, snr, resid_2d, fresid_2d, chi2_2d, rchi2, rms, frms, ofile=Non
     cb = colorbar.ColorbarBase(cbax, norm=cnorm, cmap=cmap, orientation='horizontal')
     cb.ax.tick_params(axis='x', which='both', bottom=False, top=True, labelbottom=False,
                       labeltop=True)
-    cbax.text(1.1, 0.5, r'S/N$_g$', ha='center', va='center', transform=cbax.transAxes)
+    cbax.text(1.05, 0.5, r'S/N$_g$', ha='left', va='center', transform=cbax.transAxes)
 
-    snr_srt = numpy.argsort(snr)
+    snr_srt = numpy.argsort(snrg)
 
-    for i in range(chi2_2d.shape[0]):
+    for i in range(nspec):
         j = snr_srt[i]
-        if numpy.all(chi2_2d.mask[j,:]):
+        if numpy.all(chi.mask[j,:]):
             continue
 
-        t = resid_2d[j,:].compressed()
+        t = resid[:,j].compressed()
         s = numpy.argsort(t)
         rax.step(t[s], 1-numpy.arange(len(t)).astype(float)/len(t), where='pre',
-                 color=cmap(cnorm(snr[j])), lw=0.7)
+                 color=cmap(cnorm(snrg[j])), lw=0.7)
 
-        t = fresid_2d[j,:].compressed()
+        t = fresid[:,j].compressed()
         s = numpy.argsort(t)
         fax.step(t[s], 1-numpy.arange(len(t)).astype(float)/len(t), where='pre',
-                 color=cmap(cnorm(snr[j])), lw=0.7)
+                 color=cmap(cnorm(snrg[j])), lw=0.7)
 
-        t = numpy.sqrt(chi2_2d[j,:].compressed())
+        t = chi[:,j].compressed()
         s = numpy.argsort(t)
         cax.step(t[s], 1-numpy.arange(len(t)).astype(float)/len(t), where='pre',
-                 color=cmap(cnorm(snr[j])), lw=0.7)
+                 color=cmap(cnorm(snrg[j])), lw=0.7)
 
     x = numpy.linspace(0,5,100)
     g = (erf(x/numpy.sqrt(2)) - erf(-x/numpy.sqrt(2)))/2.
     interp = interpolate.interp1d(g, x)
     cax.plot(x,1-g, color='k')
 
-    chi2_lim = numpy.exp(growth_lim(numpy.ma.log(rchi2), 1.0, fac=2.0))
-#    chi2_lim = numpy.array([0.5, 10])
-    rms_lim = numpy.exp(growth_lim(numpy.ma.log(rms), 1.0, fac=2.0))
-#    rms_lim = numpy.array([1e-3,1])
-    frms_lim = numpy.exp(growth_lim(numpy.ma.log(frms), 1.0, fac=2.0))
-#    frms_lim = numpy.array([1e-2,10])
-    snr_lim = numpy.exp(growth_lim(numpy.ma.log(snr), 1.0, fac=2.0))
-#    snr_lim = numpy.array([0.9, 100])
+    chi2_lim = numpy.exp(growth_lim(numpy.ma.log(rchi2).compressed(), 1.0, fac=2.0))
+    rms_lim = numpy.exp(growth_lim(numpy.ma.log(rms).compressed(), 1.0, fac=2.0))
+    frms_lim = numpy.exp(growth_lim(numpy.ma.log(frms).compressed(), 1.0, fac=2.0))
+    snr_lim = numpy.exp(growth_lim(numpy.ma.log(snrg).compressed(), 1.0, fac=2.0))
 
     rax = init_ax(fig, [0.07, 0.15, 0.30, 0.25], facecolor='0.9', grid=True)
     rax.set_xlim(rms_lim)
     rax.set_ylim(snr_lim)
     rax.set_yscale('log')
     rax.set_xscale('log')
-    rax.scatter(rms, snr,
+    rax.scatter(rms, snrg,
                 marker='.', s=20, color='k', lw=0, alpha=0.5)
     rax.text(0.5, -0.25, r'$RMS$', ha='center', va='center', transform=rax.transAxes)
     rax.text(0.1, 0.5, r'S/N$_g$', horizontalalignment='center',
@@ -198,7 +199,7 @@ def fom(plt, ifu, snr, resid_2d, fresid_2d, chi2_2d, rchi2, rms, frms, ofile=Non
     fax.set_yscale('log')
     fax.set_xscale('log')
     fax.yaxis.set_major_formatter(ticker.NullFormatter())
-    fax.scatter(frms, snr,
+    fax.scatter(frms, snrg,
                 marker='.', s=20, color='k', lw=0, alpha=0.5)
     fax.text(0.5, -0.25, r'$fRMS$', ha='center', va='center', transform=fax.transAxes)
 
@@ -208,7 +209,7 @@ def fom(plt, ifu, snr, resid_2d, fresid_2d, chi2_2d, rchi2, rms, frms, ofile=Non
     cax.set_yscale('log')
     cax.set_xscale('log')
     cax.yaxis.set_major_formatter(ticker.NullFormatter())
-    cax.scatter(rchi2, snr,
+    cax.scatter(rchi2, snrg,
                 marker='.', s=20, color='k', lw=0, alpha=0.5)
     cax.text(0.5, -0.25, r'$\chi^2_\nu$', ha='center', va='center', transform=cax.transAxes)
     
@@ -222,25 +223,47 @@ def fom(plt, ifu, snr, resid_2d, fresid_2d, chi2_2d, rchi2, rms, frms, ofile=Non
 
 def fom_lambda(plt, ifu, wave, flux, error, model, wave_limits=None, ofile=None):
 
+    if wave_limits is not None:
+        indx = (wave < wave_limits[0]) | (wave > wave_limits[1])
+        flux[indx,:] = numpy.ma.masked
+        error[indx,:] = numpy.ma.masked
+        model[indx,:] = numpy.ma.masked
+    else:
+        indx = numpy.arange(len(wave))[numpy.any(numpy.invert(model.mask), axis=1)]
+        wave_limits = [wave[indx[0]], wave[indx[-1]]]
+
     nspec = flux.shape[1]
     resid = numpy.ma.absolute(flux-model)
     fresid = numpy.ma.absolute(numpy.ma.divide(resid, model))
     chi = numpy.ma.absolute(numpy.ma.divide(resid,error))
     snr = numpy.ma.divide(flux, error)
 
+    mean_flux = numpy.ma.mean(flux, axis=1)
+    mean_snr = numpy.ma.mean(snr, axis=1)
+    mean_resid = numpy.ma.mean(resid, axis=1)
+    mean_fresid = numpy.ma.mean(fresid, axis=1)
+    mean_chi = numpy.ma.mean(chi, axis=1)
+
     bc = BoxcarFilter(100)
     resid_sm = bc.smooth(resid)
     fresid_sm = bc.smooth(fresid)
     chi_sm = bc.smooth(chi)
 
-    flux_lim = growth_lim(flux, 0.99, fac=1.1)
-    if flux_lim[0] < 0:
-        flux_lim[0] = 0
-    snr_lim= numpy.exp(growth_lim(numpy.ma.log(snr).compressed(), 0.99, fac=1.1))
-    resid_lim = numpy.exp(growth_lim(numpy.ma.log(resid).compressed(), 0.95, fac=1.3))
-    fresid_lim = numpy.exp(growth_lim(numpy.ma.log(fresid).compressed(), 0.95, fac=1.3))
-#    chi_lim = numpy.exp(growth_lim(numpy.ma.log(chi.compressed()), 0.95, fac=1.3, midpoint=0))
-    chi_lim = numpy.array([0.1, 10.0])
+    spec_lim = [-10, nspec+10]
+#    flux_lim = growth_lim(flux, 0.99, fac=1.1)
+#    if flux_lim[0] < 0:
+#        flux_lim[0] = 0
+#    pyplot.hist(numpy.ma.log(flux).compressed(), bins=100)
+#    pyplot.show()
+#
+#    import pdb; pdb.set_trace()
+
+    flux_lim = numpy.exp(growth_lim(numpy.ma.log(mean_flux).compressed(), 0.99, fac=2.0))
+    snr_lim = numpy.exp(growth_lim(numpy.ma.log(mean_snr).compressed(), 0.99, fac=2.0))
+    resid_lim = numpy.exp(growth_lim(numpy.ma.log(mean_resid).compressed(), 0.99, fac=2.0))
+    fresid_lim = numpy.exp(growth_lim(numpy.ma.log(mean_fresid).compressed(), 0.99, fac=2.0))
+    chi_lim = numpy.exp(growth_lim(numpy.ma.log(mean_chi).compressed(), 0.99, fac=2.0, midpoint=0))
+#   chi_lim = numpy.array([0.1, 10.0])
 #    if chi2_lim[0] < 1e-2:
 #        chi2_lim[0] = 1e-2
 
@@ -255,6 +278,7 @@ def fom_lambda(plt, ifu, wave, flux, error, model, wave_limits=None, ofile=None)
     ax = init_ax(fig, [0.2, 0.87, 0.60, 0.12], facecolor='0.95', grid=True)
     ax.set_xlim(wave_limits)
     ax.set_ylim(flux_lim)
+    ax.set_yscale('log')
     ax.xaxis.set_major_formatter(ticker.NullFormatter())
     ax.plot(wave, numpy.ma.mean(flux, axis=1), color='k', lw=0.5)
     ax.text(-0.2, 0.5, r'Flux', horizontalalignment='center',
@@ -266,13 +290,14 @@ def fom_lambda(plt, ifu, wave, flux, error, model, wave_limits=None, ofile=None)
     axt.tick_params(axis='y', colors='0.5')
     axt.xaxis.set_major_formatter(ticker.NullFormatter())
     axt.plot(wave, numpy.ma.mean(snr, axis=1), color='0.5', lw=0.5)
-    axt.text(1.1, 0.5, r'S/N$_g$', horizontalalignment='center',
+    axt.text(1.1, 0.5, r'S/N', horizontalalignment='center',
             verticalalignment='center', rotation='vertical', transform=axt.transAxes,
             color='0.5')
 
     ax = init_ax(fig, [0.2, 0.75, 0.60, 0.12], facecolor='0.95', grid=True)
     ax.set_xlim(wave_limits)
     ax.set_ylim(resid_lim)
+    ax.set_yscale('log')
     ax.xaxis.set_major_formatter(ticker.NullFormatter())
 #    ax.plot(wave, numpy.ma.mean(resid_sm, axis=0), color='C3')
     ax.plot(wave, numpy.ma.mean(resid, axis=1), color='k', lw=0.5)
@@ -292,7 +317,7 @@ def fom_lambda(plt, ifu, wave, flux, error, model, wave_limits=None, ofile=None)
     ax.set_xlim(wave_limits)
     ax.set_ylim(chi_lim)
     ax.set_yscale('log')
-    ax.plot(wave, numpy.ma.mean(chi, axis=0), color='k', lw=0.5)
+    ax.plot(wave, numpy.ma.mean(chi, axis=1), color='k', lw=0.5)
     ax.text(0.5, -0.38, r'Wavelength ($\AA$)', horizontalalignment='center',
             verticalalignment='center', transform=ax.transAxes)
     ax.text(-0.2, 0.5, r'$|\Delta|/\epsilon$', horizontalalignment='center',
@@ -303,15 +328,15 @@ def fom_lambda(plt, ifu, wave, flux, error, model, wave_limits=None, ofile=None)
 
     ax = init_ax(fig, [0.07, 0.23, 0.30, 0.16], facecolor='0.95')
     ax.set_xlim(wave_limits)
-    ax.set_ylim([0.5,nspec+0.5])
+    ax.set_ylim(spec_lim)
     ax.xaxis.set_major_formatter(ticker.NullFormatter())
-    im = ax.pcolormesh(wave_bins, spec_bins, resid,
+    im = ax.pcolormesh(wave_bins, spec_bins, resid.T,
                        norm=colors.LogNorm(vmin=resid_lim[0], vmax=resid_lim[1]),
                        cmap='viridis', zorder=4, lw=0, rasterized=True)
     ax = init_ax(fig, [0.07, 0.07, 0.30, 0.16], facecolor='0.95')
     ax.set_xlim(wave_limits)
-    ax.set_ylim([0.5,nspec+0.5])
-    ax.pcolormesh(wave_bins, spec_bins, resid_sm,
+    ax.set_ylim(spec_lim)
+    ax.pcolormesh(wave_bins, spec_bins, resid_sm.T,
                   norm=colors.LogNorm(vmin=resid_lim[0], vmax=resid_lim[1]),
                   cmap='viridis', zorder=4, lw=0, rasterized=True)
     cax = fig.add_axes([0.07, 0.40, 0.20, 0.01])
@@ -323,17 +348,17 @@ def fom_lambda(plt, ifu, wave, flux, error, model, wave_limits=None, ofile=None)
     
     ax = init_ax(fig, [0.37, 0.23, 0.30, 0.16], facecolor='0.95')
     ax.set_xlim(wave_limits)
-    ax.set_ylim([0.5,nspec+0.5])
+    ax.set_ylim(spec_lim)
     ax.xaxis.set_major_formatter(ticker.NullFormatter())
     ax.yaxis.set_major_formatter(ticker.NullFormatter())
-    im = ax.pcolormesh(wave_bins, spec_bins, fresid,
+    im = ax.pcolormesh(wave_bins, spec_bins, fresid.T,
                        norm=colors.LogNorm(vmin=fresid_lim[0], vmax=fresid_lim[1]),
                        cmap='viridis', zorder=4, lw=0, rasterized=True)
     ax = init_ax(fig, [0.37, 0.07, 0.30, 0.16], facecolor='0.95')
     ax.set_xlim(wave_limits)
-    ax.set_ylim([0.5,nspec+0.5])
+    ax.set_ylim(spec_lim)
     ax.yaxis.set_major_formatter(ticker.NullFormatter())
-    ax.pcolormesh(wave_bins, spec_bins, fresid_sm,
+    ax.pcolormesh(wave_bins, spec_bins, fresid_sm.T,
                   norm=colors.LogNorm(vmin=fresid_lim[0], vmax=fresid_lim[1]),
                   cmap='viridis', zorder=4, lw=0, rasterized=True)
     ax.text(0.5, -0.30, r'Wavelength ($\AA$)', horizontalalignment='center',
@@ -347,17 +372,17 @@ def fom_lambda(plt, ifu, wave, flux, error, model, wave_limits=None, ofile=None)
 
     ax = init_ax(fig, [0.67, 0.23, 0.30, 0.16], facecolor='0.95')
     ax.set_xlim(wave_limits)
-    ax.set_ylim([0.5,nspec+0.5])
+    ax.set_ylim(spec_lim)
     ax.xaxis.set_major_formatter(ticker.NullFormatter())
     ax.yaxis.set_major_formatter(ticker.NullFormatter())
-    im = ax.pcolormesh(wave_bins, spec_bins, chi,
+    im = ax.pcolormesh(wave_bins, spec_bins, chi.T,
                        norm=colors.LogNorm(vmin=chi_lim[0], vmax=chi_lim[1]),
                        cmap='RdBu_r', zorder=4, lw=0, rasterized=True)
     ax = init_ax(fig, [0.67, 0.07, 0.30, 0.16], facecolor='0.95')
     ax.set_xlim(wave_limits)
-    ax.set_ylim([0.5,nspec+0.5])
+    ax.set_ylim(spec_lim)
     ax.yaxis.set_major_formatter(ticker.NullFormatter())
-    ax.pcolormesh(wave_bins, spec_bins, chi_sm,
+    ax.pcolormesh(wave_bins, spec_bins, chi_sm.T,
                   norm=colors.LogNorm(vmin=chi_lim[0], vmax=chi_lim[1]),
                   cmap='RdBu_r', zorder=4, lw=0, rasterized=True)
     cax = fig.add_axes([0.67, 0.40, 0.20, 0.01])
@@ -409,16 +434,17 @@ def masked_imshow(fig, ax, cax, data, extent=None, norm=None, vmin=None, vmax=No
         cb = colorbar.ColorbarBase(cax, cmap=cmap, norm=norm)
 
 
-def fom_maps(plt, ifu, drp_file, image_file, snr, rms, frms, rchi2, chi_growth, extent=None,
-             ofile=None):
+def fom_maps(plt, ifu, image_file, snr, color, rms, frms, rchi2, chi_grw, extent=None,
+             fit='sc', ofile=None):
 
-    gmr = gmr_data(drp_file)
+    color_lim = numpy.exp(growth_lim(numpy.ma.log(color), 0.95, fac=1.1)) \
+                    if fit != 'sc' else growth_lim(color, 0.95, fac=1.10)
 
-    gmr_lim = growth_lim(gmr, 0.95, fac=1.10)
     snr_lim = numpy.power(10., growth_lim(numpy.ma.log10(snr), 0.90, fac=1.05))
-    snr_lim[0] = max(0.1, snr_lim[0])
+#    snr_lim[0] = max(0.1, snr_lim[0])
     rms_lim = numpy.power(10., growth_lim(numpy.ma.log10(rms), 0.90, fac=1.05))
     frm_lim = numpy.power(10., growth_lim(numpy.ma.log10(frms), 0.90, fac=1.05))
+
     chi_lim = [1/4, 4]
     c68_lim = [1/4, 4]
     c99_lim = [2.6/4, 2.6*4]
@@ -459,17 +485,26 @@ def fom_maps(plt, ifu, drp_file, image_file, snr, rms, frms, rchi2, chi_growth, 
     ax.set_xlim(extent[:2])
     ax.set_ylim(extent[2:])
     ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
-    ax.text(0.95, 0.95, r'S/N$_g$', ha='right', va='center', transform=ax.transAxes, zorder=4)
+    ax.text(0.95, 0.95, r'S/N$_g$' if fit == 'sc' else r'H$\alpha$ A/N', ha='right', va='center',
+            transform=ax.transAxes, zorder=4)
 
     i,j=2,2
     ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
     cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
-    masked_imshow(fig, ax, cax, gmr, extent=extent, vmin=gmr_lim[0], vmax=gmr_lim[1],
-                  cmap='RdBu_r', zorder=3)
+    kwargs = {}
+    if fit == 'sc':
+        # Plotting the g-r color
+        kwargs['vmin'] = color_lim[0]
+        kwargs['vmax'] = color_lim[1]
+    else:
+        # Plotting H-alpha/H-beta flux ratio
+        kwargs['norm'] = colors.LogNorm(vmin=color_lim[0], vmax=color_lim[1])
+    masked_imshow(fig, ax, cax, color, extent=extent, cmap='RdBu_r', zorder=3, **kwargs)
     ax.set_xlim(extent[:2])
     ax.set_ylim(extent[2:])
     ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
-    ax.text(0.95, 0.95, r'$g-r$', ha='right', va='center', transform=ax.transAxes, zorder=4)
+    ax.text(0.95, 0.95, r'$g-r$' if fit == 'sc' else r'H$\alpha$/H$\beta$', ha='right',
+            va='center', transform=ax.transAxes, zorder=4)
 
     i,j=0,1
     ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
@@ -507,7 +542,7 @@ def fom_maps(plt, ifu, drp_file, image_file, snr, rms, frms, rchi2, chi_growth, 
     i,j=0,0
     ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
     cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
-    masked_imshow(fig, ax, cax, chi_growth[0], extent=extent,
+    masked_imshow(fig, ax, cax, chi_grw[0], extent=extent,
                   norm=colors.LogNorm(vmin=c68_lim[0], vmax=c68_lim[1]), cmap='viridis',
                   zorder=3)
     ax.set_xlim(extent[:2])
@@ -519,7 +554,7 @@ def fom_maps(plt, ifu, drp_file, image_file, snr, rms, frms, rchi2, chi_growth, 
     i,j=1,0
     ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
     cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
-    masked_imshow(fig, ax, cax, chi_growth[2], extent=extent,
+    masked_imshow(fig, ax, cax, chi_grw[1], extent=extent,
                   norm=colors.LogNorm(vmin=c99_lim[0], vmax=c99_lim[1]), cmap='viridis',
                   zorder=3)
     ax.set_xlim(extent[:2])
@@ -531,11 +566,11 @@ def fom_maps(plt, ifu, drp_file, image_file, snr, rms, frms, rchi2, chi_growth, 
     x = numpy.linspace(0,5,100)
     g = (erf(x/numpy.sqrt(2)) - erf(-x/numpy.sqrt(2)))/2.
     interp = interpolate.interp1d(g, x)
-    m = interp([0.68, 0.95, 0.99])
+    m = interp([0.68, 0.99])
     i,j=2,0
     ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
     cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
-    masked_imshow(fig, ax, cax, numpy.ma.divide(chi_growth[2],chi_growth[0])*m[0]/m[2],
+    masked_imshow(fig, ax, cax, numpy.ma.divide(chi_grw[1],chi_grw[0])*m[0]/m[1],
                   extent=extent, vmin=crt_lim[0], vmax=crt_lim[1], cmap='RdBu_r',
                   zorder=3)
     ax.set_xlim(extent[:2])
@@ -688,69 +723,173 @@ def get_fom_plots(redux_path, analysis_path, plt, output_path, daptype='HYB10-GA
                        overwrite=overwrite)
 
 
-def get_stellar_continuum_data(dapcube):
+def get_stellar_continuum_data(dapmaps, dapcube):
     # Get the data
-    hdu = fits.open(dapcube)
+    cube_hdu = fits.open(dapcube)
 
     # Find the unique bins and get rid of -1 bins
-    binid = hdu['BINID'][1,:,:].ravel()
+    binid = cube_hdu['BINID'].data[1,:,:].ravel()
     uniq, indx = map(lambda x: x[1:], numpy.unique(binid, return_index=True))
 
     # Get the unique fluxes, errors, and models
-    npix = hdu['FLUX'].data.shape[0]
-    flux = numpy.ma.MaskedArray(hdu['FLUX'].data.reshape(npix,-1),
-                                mask=hdu['MASK'].data.reshape(npix,-1) > 0)[:,indx]
-    error = numpy.ma.power(numpy.ma.MaskedArray(hdu['IVAR'].data.reshape(npix,-1),
-                                                mask=hdu['MASK'].data.reshape(npix,-1) > 0),
+    npix = cube_hdu['FLUX'].data.shape[0]
+    flux = numpy.ma.MaskedArray(cube_hdu['FLUX'].data.reshape(npix,-1),
+                                mask=cube_hdu['MASK'].data.reshape(npix,-1) > 0)[:,indx]
+    error = numpy.ma.power(numpy.ma.MaskedArray(cube_hdu['IVAR'].data.reshape(npix,-1),
+                                                mask=cube_hdu['MASK'].data.reshape(npix,-1) > 0),
                            -0.5)[:,indx]
-    model = numpy.ma.MaskedArray(hdu['STELLAR'].data.reshape(npix,-1),
-                                 mask=hdu['STELLAR_MASK'].data.reshape(npix,-1) > 0)[:,indx]
-    return hdu['WAVE'].data, flux, error, model
+    model = numpy.ma.MaskedArray(cube_hdu['STELLAR'].data.reshape(npix,-1),
+                                 mask=cube_hdu['STELLAR_MASK'].data.reshape(npix,-1) > 0)[:,indx]
 
-def get_emission_line_data(drpcube, dapcube, daptype):
+    # Get the associated S/N and fit metrics
+    maps_hdu = fits.open(dapmaps)
+    snrg = maps_hdu['BIN_SNR'].data.ravel()[indx]
+    rms = maps_hdu['STELLAR_FOM'].data[0,:,:].ravel()[indx]
+    frms = maps_hdu['STELLAR_FOM'].data[1,:,:].ravel()[indx]
+    rchi2 = maps_hdu['STELLAR_FOM'].data[2,:,:].ravel()[indx]
+
+    t = numpy.ma.divide(flux-model,model)
+    t = numpy.ma.sqrt(numpy.ma.mean(numpy.square(t), axis=0))
+    tmap = numpy.ma.masked_all(cube_hdu['BINID'].data[1,:,:].shape, dtype=float).ravel()
+    tmap[indx] = t
+
+    frms_map = numpy.ma.masked_all(cube_hdu['BINID'].data[1,:,:].shape, dtype=float).ravel()
+    frms_map[indx] = frms
+
+    import pdb; pdb.set_trace()
+
+    pyplot.imshow(frms_map.reshape(cube_hdu['BINID'].data.shape[1:]), origin='lower',
+                  interpolation='nearest')
+    pyplot.show()
+
+    import pdb; pdb.set_trace()
+
+    pyplot.imshow(tmap.reshape(cube_hdu['BINID'].data.shape[1:]), origin='lower',
+                  interpolation='nearest')
+    pyplot.show()
+
+    import pdb; pdb.set_trace()
+
+    return cube_hdu['WAVE'].data, flux, error, model, snrg, rms, frms, rchi2
+
+
+def get_stellar_continuum_fom_maps(drpcube, dapmaps):
+
+    # Get the associated S/N and fit metrics
+    maps_hdu = fits.open(dapmaps)
+    snrg = numpy.ma.MaskedArray(maps_hdu['BIN_SNR'].data,
+                                mask=numpy.invert(maps_hdu['BIN_SNR'].data > 0))
+    mask = maps_hdu['STELLAR_VEL_MASK'].data > 0
+    rms = numpy.ma.MaskedArray(maps_hdu['STELLAR_FOM'].data[0,:,:], mask=mask)
+    frms = numpy.ma.MaskedArray(maps_hdu['STELLAR_FOM'].data[1,:,:], mask=mask)
+    rchi2 = numpy.ma.MaskedArray(maps_hdu['STELLAR_FOM'].data[2,:,:], mask=mask)
+    chi_grw = numpy.ma.MaskedArray(maps_hdu['STELLAR_FOM'].data[6:,:,:])
+    chi_grw[0,mask] = numpy.ma.masked
+    chi_grw[1,mask] = numpy.ma.masked
+    chi_grw[2,mask] = numpy.ma.masked
+
+    extent = map_extent(maps_hdu, 'SPX_MFLUX')
+
+    return extent, snrg, gmr_data(drpcube), rms, frms, rchi2, chi_grw
+
+
+def get_emission_line_data(drpcube, daptype, dapmaps, dapcube):
     # Get the data
-    hdu = fits.open(dapcube)
+    cube_hdu = fits.open(dapcube)
+    maps_hdu = fits.open(dapmaps)
 
     # Get the observed spectra and errors
     if 'HYB' in daptype:
         # Fits are to unbinned spectra from DRP datacube
         drp_hdu = fits.open(drpcube)
         npix = drp_hdu['FLUX'].data.shape[0]
-        flux = numpy.ma.MaskedArray(drp_hdu['FLLUX'].data.reshape(,-1),
+        flux = numpy.ma.MaskedArray(drp_hdu['FLUX'].data.reshape(npix,-1),
                                     mask=drp_hdu['MASK'].data.reshape(npix,-1) > 0)
-        error = numpy.ma.power(numpy.ma.MaskedArray(drphdu['IVAR'].data.reshape(npix,-1),
-                                            mask=hdu['MASK'].data.reshape(npix,-1) > 0), -0.5)
+        error = numpy.ma.power(numpy.ma.MaskedArray(drp_hdu['IVAR'].data.reshape(npix,-1),
+                                            mask=drp_hdu['MASK'].data.reshape(npix,-1) > 0), -0.5)
         drp_hdu.close()
+        snrg = maps_hdu['SPX_SNR'].data.ravel()
+
     else:
         # Fits are to binned spectra from DAP datacube
-        npix = hdu['FLUX'].data.shape[0]
-        flux = numpy.ma.MaskedArray(hdu['FLUX'].data.reshape(npix,-1),
-                                    mask=hdu['MASK'].data.reshape(npix,-1) > 0)
-        error = numpy.ma.power(numpy.ma.MaskedArray(hdu['IVAR'].data.reshape(npix,-1),
-                                                    mask=hdu['MASK'].data.reshape(npix,-1) > 0),
+        npix = cube_hdu['FLUX'].data.shape[0]
+        flux = numpy.ma.MaskedArray(cube_hdu['FLUX'].data.reshape(npix,-1),
+                                    mask=cube_hdu['MASK'].data.reshape(npix,-1) > 0)
+        error = numpy.ma.power(numpy.ma.MaskedArray(cube_hdu['IVAR'].data.reshape(npix,-1),
+                                                mask=cube_hdu['MASK'].data.reshape(npix,-1) > 0),
                                -0.5)
+        snrg = maps_hdu['BIN_SNR'].data.ravel()
    
     # Find the unique bins and get rid of -1 bins
-    binid = hdu['BINID'][3,:,:].ravel()
+    binid = cube_hdu['BINID'].data[3,:,:].ravel()
     uniq, indx = map(lambda x: x[1:], numpy.unique(binid, return_index=True))
 
     flux = flux[:,indx]
     error = error[:,indx]
-    model = numpy.ma.MaskedArray(hdu['MODEL'].data.reshape(npix,-1),
-                                 mask=hdu['MASK'].data.reshape(npix,-1) > 0)[:,indx]
+    model = numpy.ma.MaskedArray(cube_hdu['MODEL'].data.reshape(npix,-1),
+                                 mask=cube_hdu['MODEL_MASK'].data.reshape(npix,-1) > 0)[:,indx]
 
-    return hdu['WAVE'].data, flux, error, model
+    # Get the associated S/N and fit metrics
+    snrg = snrg[indx]
+    rms = maps_hdu['EMLINE_FOM'].data[0,:,:].ravel()[indx]
+    frms = maps_hdu['EMLINE_FOM'].data[1,:,:].ravel()[indx]
+    rchi2 = maps_hdu['EMLINE_FOM'].data[2,:,:].ravel()[indx]
 
-def fit_residuals(drpver, redux_path, dapver, analysis_path, daptype, plate, ifudesign):
+    t = numpy.ma.divide(flux-model,model)
+    t = numpy.ma.sqrt(numpy.ma.mean(numpy.square(t), axis=0))
+    tmap = numpy.ma.masked_all(cube_hdu['BINID'].data[3,:,:].shape, dtype=float).ravel()
+    tmap[indx] = t
 
-    plan_qa_dir = default_dap_method_path(daptype, plate=plate, ifudesign=ifudesign, qa=True,
-                                          drpver=drpver, dapver=dapver,
-                                          analysis_path=analysis_path)
+    pyplot.imshow(maps_hdu['EMLINE_FOM'].data[1,:,:], origin='lower', interpolation='nearest')
+    pyplot.show()
+
+    import pdb; pdb.set_trace()
+
+    pyplot.imshow(tmap.reshape(cube_hdu['BINID'].data[3,:,:].shape), origin='lower',
+                  interpolation='nearest')
+    pyplot.show()
+
+    import pdb; pdb.set_trace()
+
+    return cube_hdu['WAVE'].data, flux, error, model, snrg, rms, frms, rchi2
+
+def get_emission_line_fom_maps(dapmaps):
+
+    maps_hdu = fits.open(dapmaps)
+    eml = channel_dictionary(maps_hdu, 'EMLINE_GFLUX')
+    anr = numpy.ma.MaskedArray(maps_hdu['EMLINE_GANR'].data[eml['Ha-6564'],...],
+                               mask=maps_hdu['EMLINE_GFLUX_MASK'].data[eml['Ha-6564'],...] > 0)
+    ha = numpy.ma.MaskedArray(maps_hdu['EMLINE_GFLUX'].data[eml['Ha-6564'],...],
+                              mask=maps_hdu['EMLINE_GFLUX_MASK'].data[eml['Ha-6564'],...] > 0)
+    hb = numpy.ma.MaskedArray(maps_hdu['EMLINE_GFLUX'].data[eml['Hb-4862'],...],
+                              mask=maps_hdu['EMLINE_GFLUX_MASK'].data[eml['Hb-4862'],...] > 0)
+    aob = numpy.ma.divide(ha, hb)
+
+    # Get the associated S/N and fit metrics
+    rms = numpy.ma.MaskedArray(maps_hdu['EMLINE_FOM'].data[0,:,:])
+    rms[numpy.invert(rms > 0)] = numpy.ma.masked
+    frms = numpy.ma.MaskedArray(maps_hdu['EMLINE_FOM'].data[1,:,:])
+    frms[numpy.invert(frms > 0)] = numpy.ma.masked
+    rchi2 = numpy.ma.MaskedArray(maps_hdu['EMLINE_FOM'].data[2,:,:])
+    rchi2[numpy.invert(rchi2 > 0)] = numpy.ma.masked
+    chi_grw = numpy.ma.MaskedArray(maps_hdu['EMLINE_FOM'].data[6:,:,:])
+    chi_grw[numpy.invert(chi_grw > 0)] = numpy.ma.masked
+
+    extent = map_extent(maps_hdu, 'SPX_MFLUX')
+
+    return extent, anr, aob, rms, frms, rchi2, chi_grw
+
+
+def fit_residuals(drpver, redux_path, dapver, analysis_path, daptype, plt, ifu):
+
+    plan_qa_dir = defaults.default_dap_method_path(daptype, plate=plt, ifudesign=ifu, qa=True,
+                                                   drpver=drpver, dapver=dapver,
+                                                   analysis_path=analysis_path)
     if not os.path.isdir(plan_qa_dir):
         os.makedirs(plan_qa_dir)
 
-    rpath = os.path.join(redux_path, str(plt), 'stack')
-    drp_file = os.path.join(rpath, 'manga-{0}-{1}-LOGCUBE.fits.gz'.format(plt,ifu))
+    rpath = os.path.join(redux_path, str(plt))
+    drp_file = os.path.join(rpath, 'stack', 'manga-{0}-{1}-LOGCUBE.fits.gz'.format(plt,ifu))
     image_file = os.path.join(rpath, 'images', '{0}.png'.format(ifu))
 
     apath = os.path.join(analysis_path, daptype, str(plt), str(ifu))
@@ -758,26 +897,35 @@ def fit_residuals(drpver, redux_path, dapver, analysis_path, daptype, plate, ifu
     cube_file = os.path.join(apath, 'manga-{0}-{1}-LOGCUBE-{2}.fits.gz'.format(plt,ifu,daptype))
 
     # Stellar continuum fit qa plot
-    wave, flux, error, model = get_stellar_continuum_data(cube_file)
-    ofile = os.path.join(plan_qa_dir, 'manga-{0}-{1}-LOGCUBE-{2}-sc-fitqa-lambda.png'.format(
-                                plate, ifudesign, daptype))
-    wave_limits = [3550,7400]
-    fom_lambda(plate, ifudesign, flux, error, model, wave_limits=wave_limits) #, ofile=ofile)
+    wave, flux, error, model, snrg, rms, frms, rchi2 \
+            = get_stellar_continuum_data(maps_file, cube_file)
+#    ofile = os.path.join(plan_qa_dir, 'manga-{0}-{1}-LOGCUBE-{2}-sc-fitqa-lambda.png'.format(
+#                                plt, ifu, daptype))
+#    fom_lambda(plt, ifu, wave, flux, error, model) #, ofile=ofile)
+#    fom_growth(plt, ifu, flux, error, model, snrg, rms, frms, rchi2) #, ofile=ofile)
+#    extent, snrg, gmr, rms, frms, rchi2, chi_grw \
+#            = get_stellar_continuum_fom_maps(drp_file, maps_file)
+#    fom_maps(plt, ifu, image_file, snrg, gmr, rms, frms, rchi2, chi_grw, extent=extent, fit='sc')
+#             #, ofile=ofile)
 
     # Emission-line fit qa plot
-    wave, flux, error, model = get_emission_line_data(drp_file, cube_file, daptype)
-    ofile = os.path.join(plan_qa_dir, 'manga-{0}-{1}-LOGCUBE-{2}-el-fitqa-lambda.png'.format(
-                                plate, ifudesign, daptype))
-    wave_limits = [3550,7400]
-    fom_lambda(plate, ifudesign, flux, error, model, wave_limits=wave_limits) #, ofile=ofile)
-    
+    wave, flux, error, model, snrg, rms, frms, rchi2 \
+            = get_emission_line_data(drp_file, daptype, maps_file, cube_file)
+#    ofile = os.path.join(plan_qa_dir, 'manga-{0}-{1}-LOGCUBE-{2}-el-fitqa-lambda.png'.format(
+#                                plt, ifu, daptype))
+    fom_lambda(plt, ifu, wave, flux, error, model) #, ofile=ofile)
+#    fom_growth(plt, ifu, flux, error, model, snrg, rms, frms, rchi2) #, ofile=ofile)
+    extent, anr, aob, rms, frms, rchi2, chi_grw \
+            = get_emission_line_fom_maps(maps_file)
+    fom_maps(plt, ifu, image_file, anr, aob, rms, frms, rchi2, chi_grw, extent=extent, fit='el')
+             #, ofile=ofile)
 
 #-----------------------------------------------------------------------------
 
 if __name__ == '__main__':
     t = time.clock()
 
-    parser = ArgumentParser()
+    parser = argparse.ArgumentParser()
 
     parser.add_argument('plate', type=int, help='plate ID to process')
     parser.add_argument('ifudesign', type=int, help='IFU design to process')
@@ -786,6 +934,7 @@ if __name__ == '__main__':
     parser.add_argument('--dapver', type=str, help='DAP version', default=None)
     parser.add_argument('--dap_src', type=str, help='Top-level directory with the DAP source code;'
                         ' defaults to $MANGADAP_DIR', default=None)
+    parser.add_argument("--redux_path", type=str, help="main DRP output path", default=None)
     parser.add_argument("--analysis_path", type=str, help="main DAP output path", default=None)
 
     parser.add_argument("--plan_file", type=str, help="parameter file with the MaNGA DAP "
@@ -799,22 +948,25 @@ if __name__ == '__main__':
     if arg.bgagg:
         pyplot.switch_backend('agg')
 
-    # Set the the analysis path and make sure it exists
-    analysis_path = default_analysis_path(drpver=arg.drpver, dapver=arg.dapver) \
+    # Set the paths
+    redux_path = defaults.default_redux_path(drpver=arg.drpver) \
+                        if arg.redux_path is None else arg.redux_path
+    analysis_path = defaults.default_analysis_path(drpver=arg.drpver, dapver=arg.dapver) \
                             if arg.analysis_path is None else arg.analysis_path
 
     daptypes = []
     if arg.daptype is None:
-        plan_file = default_dap_plan_file(drpver=arg.drpver, dapver=arg.dapver,
+        plan_file = defaults.default_dap_plan_file(drpver=arg.drpver, dapver=arg.dapver,
                                           analysis_path=arg.analysis_path) \
                                             if arg.plan_file is None else arg.plan_file
         analysisplan = AnalysisPlanSet.from_par_file(plan_file)
-        daptypes = [ default_dap_method(plan=p) for p in analysisplan ]
+        daptypes = [ defaults.default_dap_method(plan=p) for p in analysisplan ]
     else:
         daptypes = [arg.daptype]
 
     for daptype in daptypes:
-        fit_residuals(drpver, redux_path, dapver, analysis_path, daptype, arg.plate, arg.ifudesign)
+        fit_residuals(arg.drpver, redux_path, arg.dapver, analysis_path, daptype, arg.plate,
+                      arg.ifudesign)
 
     print('Elapsed time: {0} seconds'.format(time.clock() - t))
 

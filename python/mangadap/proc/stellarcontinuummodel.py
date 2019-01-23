@@ -625,36 +625,12 @@ class StellarContinuumModel:
                                                    flag='FORESTAR')
         mask[indx] = self.bitmask.turn_on(mask[indx], 'FORESTAR')
 
-        # Turn on the flag stating that the S/N in the spectrum was
-        # below the requested limit
-        low_snr = numpy.invert(self.binned_spectra['BINID'].data == self.hdu['BINID'].data)
-        indx = numpy.array([low_snr]*self.nwave).transpose(1,2,0)
-        mask[indx] = self.bitmask.turn_on(mask[indx], flag='LOW_SNR')
+        # Propagate the MAPMASK to the full cube
+        for f in ['DIDNOTUSE', 'FORESTAR', 'LOW_SNR']:
+            indx = self.bitmask.flagged(self['MAPMASK'].data, f)
+            mask[indx,:] = self.bitmask.turn_on(mask[indx,:], f)
 
         return mask
-
-
-#    def _check_snr(self):
-#        """
-#        Determine which spectra in :attr:`binned_spectra` have a S/N
-#        greater than the minimum set by :attr:`method`.  Only these
-#        spectra will be analyzed.
-#    
-#        Returns:
-#            numpy.ndarray : Boolean array for the spectra that satisfy
-#            the criterion.
-#        """
-##        print(self.binned_spectra['BINS'].data['SNR'])
-##        print(self.method['minimum_snr'])
-#        return self.binned_spectra.above_snr_limit(self.method['minimum_snr'])
-
-
-#    def _bins_to_fit(self):
-#        """Return flags for the bins to fit."""
-#        return (self._check_snr()) \
-#                    & ~(numpy.array([ b in self.binned_spectra.missing_bins \
-#                                        for b in numpy.arange(self.binned_spectra.nbins)]))
-
 
     def _assign_spectral_arrays(self):
         """
@@ -663,7 +639,6 @@ class StellarContinuumModel:
         """
         self.spectral_arrays = [ 'FLUX', 'MASK' ]
 
-
     def _assign_image_arrays(self):
         """
         Set :attr:`image_arrays`, which contains the list of extensions
@@ -671,12 +646,10 @@ class StellarContinuumModel:
         """
         self.image_arrays = [ 'BINID' ]
 
-
-    def _get_missing_models(self):
-        good_snr = self.binned_spectra.above_snr_limit(self.method['minimum_snr'])
+    def _get_missing_models(self, debug=False):
+        good_snr = self.binned_spectra.above_snr_limit(self.method['minimum_snr'], debug=debug)
         return numpy.sort(self.binned_spectra['BINS'].data['BINID'][numpy.invert(good_snr)].tolist()
                                 + self.binned_spectra.missing_bins) 
-
 
     def _construct_2d_hdu(self, good_snr, model_flux, model_mask, model_par):
         """
@@ -888,7 +861,9 @@ class StellarContinuumModel:
 
         #---------------------------------------------------------------
         # Get the good spectra
-        good_snr = self.binned_spectra.above_snr_limit(self.method['minimum_snr'])
+#        debug = True
+        debug = False
+        good_snr = self.binned_spectra.above_snr_limit(self.method['minimum_snr'], debug=debug)
 
         # Report
         if not self.quiet:
@@ -937,7 +912,7 @@ class StellarContinuumModel:
             self.hardcopy = True
             if not self.quiet:
                 log_output(self.loggers, 1, logging.INFO, 'Using existing file')
-            self.read(checksum=self.checksum)
+            self.read(checksum=self.checksum, debug=debug)
             if not self.quiet:
                 log_output(self.loggers, 1, logging.INFO, '-'*50)
             return
@@ -947,7 +922,7 @@ class StellarContinuumModel:
         # Mask should be fully defined within the fitting function
         model_wave, model_flux, model_mask, model_par \
                 = self.method['fitfunc'](self.binned_spectra, par=self.method['fitpar'],
-                                         loggers=self.loggers, quiet=self.quiet)
+                                         loggers=self.loggers, quiet=self.quiet, debug=debug)
 
         # The number of models returned should match the number of
         # "good" spectra
@@ -960,7 +935,7 @@ class StellarContinuumModel:
 
         # Set the number of models and the missing models
         self.nmodels = model_flux.shape[0]
-        self.missing_models = self._get_missing_models()
+        self.missing_models = self._get_missing_models(debug=debug)
 
         # Report
         if not self.quiet:
@@ -1034,7 +1009,7 @@ class StellarContinuumModel:
                           loggers=self.loggers, quiet=self.quiet) 
 
 
-    def read(self, ifile=None, strict=True, checksum=False):
+    def read(self, ifile=None, strict=True, checksum=False, debug=False):
         """
         Read an existing file with an existing set of stellar-continuum
         models.
@@ -1081,7 +1056,7 @@ class StellarContinuumModel:
             self.method['fitpar'].fromheader(self.hdu['PRIMARY'].header)
 
         self.nmodels = self.hdu['FLUX'].shape[0]
-        self.missing_models = self._get_missing_models()
+        self.missing_models = self._get_missing_models(debug=debug)
 
 
     def copy_to_array(self, ext='FLUX', waverange=None, include_missing=False):

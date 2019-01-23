@@ -895,10 +895,10 @@ class Sasuke(EmissionLineFit):
         # Calculate the model residuals, which are masked where the data
         # were not fit
         residual = flux - model_flux
-        fractional_residual = numpy.ma.divide(flux - model_flux, model_flux)
+        fractional_residual = numpy.ma.divide(residual, model_flux)
         chi2 = numpy.square(numpy.ma.divide(residual, ferr))
 
-        # Get the (reduced) chi-square for each spectrum
+        # Get the figures-of-merit for each spectrum
         model_fit_par['CHI2'] = numpy.ma.sum(chi2, axis=1).filled(0.0)
         # Get the (fractional) residual RMS for each spectrum
         model_fit_par['RMS'] = numpy.sqrt(numpy.ma.mean(numpy.square(residual),
@@ -988,14 +988,14 @@ class Sasuke(EmissionLineFit):
         if numpy.sum(indx) > 0:
             model_fit_par['MASK'][indx] = self.bitmask.turn_on(model_fit_par['MASK'][indx],
                                                                'NEAR_BOUND')
-            model_mask[indx,:] = self.bitmask.turn_on(model_mask[indx,:], 'NEAR_BOUND')
+#            model_mask[indx,:] = self.bitmask.turn_on(model_mask[indx,:], 'NEAR_BOUND')
 
         # - Flag the spectrum was not fit
         if not numpy.all(spec_to_fit):
             indx = numpy.invert(spec_to_fit)
             model_fit_par['MASK'][indx] = self.bitmask.turn_on(model_fit_par['MASK'][indx],
                                                                'NO_FIT')
-            model_mask[indx,:] = self.bitmask.turn_on(model_mask[indx,:], 'NO_FIT')
+#            model_mask[indx,:] = self.bitmask.turn_on(model_mask[indx,:], 'NO_FIT')
 
         # Convert the velocities from pixel units to cz
         model_fit_par['KININP'][:,vel_indx], _ \
@@ -1227,7 +1227,8 @@ class Sasuke(EmissionLineFit):
         # No stellar templates available
         return None, None, None
 
-    def fit_SpatiallyBinnedSpectra(self, binned_spectra, par=None, loggers=None, quiet=False):
+    def fit_SpatiallyBinnedSpectra(self, binned_spectra, par=None, loggers=None, quiet=False,
+                                   debug=False):
         """
         This DAP-specific function interprets the DAP-specific classes
         and constructs call(s) to the general :func:`fit` function to
@@ -1303,6 +1304,9 @@ class Sasuke(EmissionLineFit):
         if binned_spectra.hdu is None:
             raise ValueError('Provided SpatiallyBinnedSpectra object is undefined!')
 
+        #plot = debug
+        plot = False
+
         # Get the data arrays to fit
         # TODO: May also want to exclude pixels rejected during stellar
         # kinematics fit
@@ -1313,7 +1317,8 @@ class Sasuke(EmissionLineFit):
         # Get the binned spectra that meet the S/N criterion
         bins_to_fit = EmissionLineFit.select_binned_spectra_to_fit(binned_spectra,
                                                                    minimum_snr=par['minimum_snr'],
-                                                        stellar_continuum=par['stellar_continuum'])
+                                                        stellar_continuum=par['stellar_continuum'],
+                                                                   debug=debug)
 
         # Get the stellar templates
         stellar_templates, matched_resolution, velscale_ratio \
@@ -1362,7 +1367,9 @@ class Sasuke(EmissionLineFit):
             # spectral range criterion.
             # TODO: set minimum_fraction as a keyword.  Set to 0.8 by
             # default
-            spaxel_to_fit = binned_spectra.check_fgoodpix()
+            spaxel_to_fit = EmissionLineFit.select_spaxels_to_fit(binned_spectra,
+                                                                  bins_to_fit=bins_to_fit,
+                                                                  debug=debug)
 
             # Depending on the deconstruction method, get the bin ID
             if par['deconstruct_bins'] == 'nearest':
@@ -1410,7 +1417,7 @@ class Sasuke(EmissionLineFit):
                                obj_skyy=bin_y[bins_to_fit], velscale_ratio=velscale_ratio,
                                matched_resolution=matched_resolution, bias=par['bias'],
                                degree=par['degree'], mdegree=par['mdegree'],
-                               reddening=par['reddening'], loggers=loggers, quiet=quiet)
+                               reddening=par['reddening'], loggers=loggers, quiet=quiet, plot=plot)
 
             # Convert the index number of the nearest bin to the BIN ID
             # number
@@ -1446,7 +1453,7 @@ class Sasuke(EmissionLineFit):
                                velscale_ratio=velscale_ratio,
                                matched_resolution=matched_resolution, bias=par['bias'],
                                degree=par['degree'], mdegree=par['mdegree'],
-                               reddening=par['reddening'], loggers=loggers, quiet=quiet)
+                               reddening=par['reddening'], loggers=loggers, quiet=quiet, plot=plot)
 
             # Save the the bin ID numbers indices based on the spectra
             # selected to be fit
@@ -2436,7 +2443,7 @@ class Sasuke(EmissionLineFit):
 
         names = ['rms', 'frms', 'rchi2',
                  '68th perc frac resid', '99th perc frac resid', 'max frac resid',
-                 '68th perc per pix chi2', '99th perc per pix chi2', 'max per pix chi2']
+                 '68th perc per pix chi', '99th perc per pix chi', 'max per pix chi']
         units = ['1E-17 erg/s/cm^2/ang/spaxel'] + ['']*8
         nspec = len(model_fit_par)
         fom = numpy.zeros((nspec, 9), dtype=float)

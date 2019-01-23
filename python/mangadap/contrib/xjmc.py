@@ -1081,6 +1081,7 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
         raise NotImplementedError('Can only fit one stellar component!')
 
     # There must be data for all spectra to proceed
+    # TODO: Mask cannot be None
     if np.any(np.invert(np.any(mask, axis=1))):
         raise ValueError('All spectra must have at least some pixels to fit!')
 
@@ -1142,7 +1143,8 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
     # Instantiate the output
     model_flux = np.zeros(flux.shape, dtype=float)
     model_eml_flux = np.zeros(flux.shape, dtype=float)
-    model_mask = np.zeros(flux.shape, dtype=bool)
+#    model_mask = np.zeros(flux.shape, dtype=bool)
+    model_mask = mask.copy()
 
     tpl_wgts = np.zeros((nspec,ntpl), dtype=float)
     tpl_wgts_err = np.zeros((nspec,ntpl), dtype=float)
@@ -1158,12 +1160,6 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
     # If debugging, just return the initialized output
     if debug:
         warnings.warn('JUST DEBUGGING.  NO EMISSION-LINE FITS PERFORMED!!')
-#        if mode == 'fitBins':
-#            # - Get the index of the nearest bin for every spaxel
-#            nearest_bin = np.argmin(np.square(x[:,None] - x_binned)
-#                                        + np.square(y[:,None] - y_binned), axis=1)
-#        else:
-#            nearest_bin = np.arange(nspec)
         kininp = np.array([np.concatenate(tuple(inp_start[0]))]*nspec)
         kin = kininp
         kinerr = kin/10
@@ -1186,7 +1182,7 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
         # - All gas templates in a single component (no parameter tying)
         component, moments, start = _ppxf_component_setup(inp_component, gas_template, inp_start,
                                                           single_gas_component=True)
-        _, _, _, binned_tpl_wgts, _, _, _, _, _, binned_kin, _ \
+        _, _, _mask, binned_tpl_wgts, _, _, _, _, _, binned_kin, _ \
                     = _fit_iteration(templates, wave, flux_binned, noise_binned, velscale, start,
                                      moments, component, gas_template, tpl_to_use=tpl_to_use,
                                      reject_boxcar=reject_boxcar, velscale_ratio=velscale_ratio,
@@ -1226,7 +1222,13 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
                 = _set_to_using_optimal_templates(nspec, _templates.shape[0], stellar_wgts,
                                                   _component, vgrp=_vgrp, sgrp=_sgrp)
         tpl_wgts = np.ones((nspec, nspec+np.sum(_gas_template)), dtype=float)
-    
+
+        # - For bins that are also individual spaxels, update the mask
+        # to include the rejected pixels
+        if not np.all(component_of_bin):
+            single_spaxel_bin = np.invert(component_of_bin)
+            model_mask[single_spaxel_bin,:] &= _mask[_binid[single_spaxel_bin],:]
+
         # - Use the best-fit parameters from the binned spectra as the
         #   starting guesses for the fits to the the individual spaxels
         n_gas_comp = len(np.unique(_component[_gas_template]))
@@ -1256,7 +1258,6 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
 
     component, moments, start = _ppxf_component_setup(_component, _gas_template, _start,
                                                       single_gas_component=True)
-    model_mask = mask.copy()
 
     # Restructure the kinematics array so that it can accept only
     # fitting the individual spectra that themselves consisted of an

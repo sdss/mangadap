@@ -177,7 +177,8 @@ class EmissionLineFit(SpectralFitting):
                ]
 
     @staticmethod
-    def select_binned_spectra_to_fit(binned_spectra, minimum_snr=0.0, stellar_continuum=None):
+    def select_binned_spectra_to_fit(binned_spectra, minimum_snr=0.0, stellar_continuum=None,
+                                     debug=False):
         """
         Select binned spectra for which to fit emission lines.
 
@@ -206,7 +207,7 @@ class EmissionLineFit(SpectralFitting):
             binned_spectra object to fit.
         """
 
-        bins_to_fit = binned_spectra.above_snr_limit(minimum_snr)
+        bins_to_fit = binned_spectra.above_snr_limit(minimum_snr, debug=debug)
         if stellar_continuum is None:
             return bins_to_fit
 
@@ -218,11 +219,35 @@ class EmissionLineFit(SpectralFitting):
         with_good_continuum[stellar_continuum['PAR'].data['BINID_INDEX'][indx]] = True
         bins_to_fit &= with_good_continuum
 
-#        warnings.warn('DEBUG!!')
-#        k = numpy.argmin(numpy.arange(len(bins_to_fit))[bins_to_fit])
-#        bins_to_fit[k+1:] = False
+        if debug:
+            warnings.warn('DEBUG!!')
+            indx = numpy.arange(len(bins_to_fit))[bins_to_fit]
+#            numpy.random.shuffle(indx)
+            bins_to_fit[indx[2:]] = False
 
         return bins_to_fit
+
+    @staticmethod
+    def select_spaxels_to_fit(binned_spectra, bins_to_fit=None, debug=False):
+        """
+        Select binned spectra for which to fit emission lines.
+        """
+        if not debug:
+            return binned_spectra.check_fgoodpix()
+
+        warnings.warn('DEBUG!!')
+
+        uniq, indx = map(lambda x : x[1:], numpy.unique(binned_spectra['BINID'].data.ravel(),
+                                                        return_index=True))
+        spaxels_to_fit = numpy.zeros(numpy.prod(binned_spectra['BINID'].data.shape), dtype=bool)
+        spaxels_to_fit[indx[bins_to_fit]] = True
+        return spaxels_to_fit
+
+#        spaxels_to_fit = binned_spectra.check_fgoodpix()
+#        indx = numpy.arange(len(spaxels_to_fit))[spaxels_to_fit]
+#        numpy.random.shuffle(indx)
+#        spaxels_to_fit[indx[10:]] = False
+#        return spaxels_to_fit
 
     @staticmethod
     def get_spectra_to_fit(binned_spectra, pixelmask=None, select=None, error=False,
@@ -265,7 +290,7 @@ class EmissionLineFit(SpectralFitting):
             flags = binned_spectra.drpf.do_not_fit_flags()
             flux = binned_spectra.drpf.copy_to_masked_array(flag=flags)
             ivar = binned_spectra.drpf.copy_to_masked_array(ext='IVAR', flag=flags)
-            flux, ferr = binned_spectra.galext.apply(flux, ivar=ivar, deredden=True)
+            flux, ivar = binned_spectra.galext.apply(flux, ivar=ivar, deredden=True)
 
             # Get the spectral resolution:
             # - stack_sres sets whether or not the spectral resolution

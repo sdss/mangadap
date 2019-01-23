@@ -297,7 +297,7 @@ def growth_lim(a, lim, fac=1.0, midpoint=None, default=[0., 1.]):
     if end == len(_a):
         end -= 1
 
-    # Set the full range and increase it by the provovided factor
+    # Set the full range and increase it by the provided factor
     Da = (_a[srt[end]] - _a[srt[start]])*fac
 
     # Set the midpoint if not provided

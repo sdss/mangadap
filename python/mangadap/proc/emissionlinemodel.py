@@ -320,9 +320,6 @@ class EmissionLineModel:
         self.checksum = checksum
         self.shape = None
         self.spatial_shape = None
-#       nspec is never used and it won't be correct if the bins are
-#       deconstructed.
-#        self.nspec = None
         self.spatial_index = None
         self.spectral_arrays = None
         self._assign_spectral_arrays()
@@ -695,24 +692,13 @@ class EmissionLineModel:
                                                    flag='FORESTAR')
         mask[indx] = self.bitmask.turn_on(mask[indx], 'FORESTAR')
 
-        # Turn on the flag stating that an individual bin/spaxel was not
-        # used, anything without a non-negative binid, in the fit
-        indx = self['BINID'].data < 0
-        mask[indx,:] = self.bitmask.turn_on(mask[indx,:], 'DIDNOTUSE')
-
-        # Turn on the flag stating that an individual bin/spaxel was not
-        # used because the S/N was too low
-        indx = (self['BINID'].data < 0) & (self.binned_spectra['BINID'].data > -1)
-        mask[indx,:] = self.bitmask.turn_on(mask[indx,:], 'LOW_SNR')
-
-#        # Turn on the flag stating that the S/N in the spectrum was
-#        # below the requested limit
-#        low_snr = numpy.invert(self.binned_spectra['BINID'].data == self.hdu['BINID'].data)
-#        indx = numpy.array([low_snr]*self.nwave).transpose(1,2,0)
-#        mask[indx] = self.bitmask.turn_on(mask[indx], flag='LOW_SNR')
+        # Propagate the MAPMASK to the full cube
+        for f in ['DIDNOTUSE', 'FORESTAR', 'LOW_SNR']:
+            indx = self.bitmask.flagged(self['MAPMASK'].data, f)
+            mask[indx,:] = self.bitmask.turn_on(mask[indx,:], f)
 
         return mask
-    
+
     def _assign_spectral_arrays(self):
         self.spectral_arrays = [ 'FLUX', 'BASE', 'MASK' ]
 
@@ -723,15 +709,15 @@ class EmissionLineModel:
         """
         self.image_arrays = [ 'BINID' ]
 
-    def _get_missing_models(self, unique_bins=None):
+    def _get_missing_models(self, unique_bins=None, debug=False):
         if unique_bins is None:
-            good_snr = self.binned_spectra.above_snr_limit(self.method['minimum_snr'])
+            good_snr = self.binned_spectra.above_snr_limit(self.method['minimum_snr'], debug=debug)
             return numpy.sort(self.binned_spectra.missing_bins + 
                         self.binned_spectra['BINS'].data['BINID'][numpy.invert(good_snr)].tolist())
         return SpatiallyBinnedSpectra._get_missing_bins(unique_bins)
 
     def _get_line_fit_metrics(self, model_flux, model_base, model_mask, model_eml_par,
-                              model_binid=None, window=15):
+                              model_binid=None, window=15, debug=False):
         """
         Compute fit-quality metrics near each fitted line.
 
@@ -793,7 +779,13 @@ class EmissionLineModel:
         # Get the fitted spectra
         if self.method['deconstruct_bins'] != 'ignore':
             # The models should be for the individual spaxels
-            spaxel_to_fit = self.binned_spectra.check_fgoodpix()
+            bins_to_fit = EmissionLineFit.select_binned_spectra_to_fit(self.binned_spectra,
+                                                        minimum_snr=self.method['minimum_snr'],
+                                                        stellar_continuum=self.stellar_continuum,
+                                                                       debug=debug)
+            spaxel_to_fit = EmissionLineFit.select_spaxels_to_fit(self.binned_spectra,
+                                                                  bins_to_fit=bins_to_fit,
+                                                                  debug=debug)
             wave, flux, ferr, _ = EmissionLineFit.get_spectra_to_fit(self.binned_spectra,
                                                                      pixelmask=self.pixelmask,
                                                                      select=spaxel_to_fit,
@@ -803,7 +795,8 @@ class EmissionLineModel:
             # The models should be for the binned spectra
             bins_to_fit = EmissionLineFit.select_binned_spectra_to_fit(self.binned_spectra,
                                                         minimum_snr=self.method['minimum_snr'],
-                                                        stellar_continuum=self.stellar_continuum)
+                                                        stellar_continuum=self.stellar_continuum,
+                                                                       debug=debug)
             wave, flux, ferr, _ = EmissionLineFit.get_spectra_to_fit(self.binned_spectra,
                                                                      pixelmask=self.pixelmask,
                                                                      select=bins_to_fit, error=True)
@@ -893,6 +886,10 @@ class EmissionLineModel:
         # Get the spatial map mask
         map_mask = numpy.zeros(self.spatial_shape, dtype=self.bitmask.minimum_dtype())
 
+        # Always isolate any spaxels with foreground stars
+        indx = self.binned_spectra.bitmask.flagged(self.binned_spectra['MAPMASK'].data, 'FORESTAR')
+        map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'FORESTAR')
+
         # Allow the fitting function to redefine the bin IDs associated
         # with each model
         if model_binid is None:
@@ -900,10 +897,7 @@ class EmissionLineModel:
             # binning step
             indx = self.binned_spectra['MAPMASK'].data > 0
             map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'DIDNOTUSE')
-            # Isolate any spaxels with foreground stars
-            indx = self.binned_spectra.bitmask.flagged(self.binned_spectra['MAPMASK'].data,
-                                                       'FORESTAR')
-            map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'FORESTAR')
+
             # Get the bins that were below the S/N limit
             indx = numpy.invert(DAPFitsUtil.reconstruct_map(self.spatial_shape,
                                                     self.binned_spectra['BINID'].data.ravel(),
@@ -1028,9 +1022,6 @@ class EmissionLineModel:
 
         self.shape = self.binned_spectra.shape
         self.spatial_shape =self.binned_spectra.spatial_shape
-#       nspec is never used and it won't be correct if the bins are
-#       deconstructed.
-#        self.nspec = self.binned_spectra.nspec
         self.spatial_index = self.binned_spectra.spatial_index.copy()
         self.dispaxis = self.binned_spectra.dispaxis
         self.nwave = self.binned_spectra.nwave
@@ -1040,10 +1031,12 @@ class EmissionLineModel:
 
         #---------------------------------------------------------------
         # Get the good spectra
-        # TODO: Put this in a function that can be used by Sasuke...
+#        debug=True
+        debug=False
         good_snr = EmissionLineFit.select_binned_spectra_to_fit(self.binned_spectra,
                                                         minimum_snr=self.method['minimum_snr'],
-                                                        stellar_continuum=self.stellar_continuum)
+                                                        stellar_continuum=self.stellar_continuum,
+                                                                debug=debug)
 
         # Report
         if not self.quiet:
@@ -1090,7 +1083,7 @@ class EmissionLineModel:
             self.hardcopy = True
             if not self.quiet:
                 log_output(self.loggers, 1, logging.INFO, 'Using existing file')
-            self.read(checksum=self.checksum)
+            self.read(checksum=self.checksum, debug=debug)
             if not self.quiet:
                 log_output(self.loggers, 1, logging.INFO, '-'*50)
             return
@@ -1102,7 +1095,7 @@ class EmissionLineModel:
         # equivalent widths be done here?
         model_flux, model_base, model_mask, model_fit_par, model_eml_par, model_binid = \
                 self.method['fitfunc'](self.binned_spectra, par=self.method['fitpar'],
-                                       loggers=self.loggers, quiet=self.quiet)
+                                       loggers=self.loggers, quiet=self.quiet, debug=debug)
 
         # Impose a minimum error because of the conversion to inverse
         # variance when constructing a MAPS file; applied to the error
@@ -1143,7 +1136,7 @@ class EmissionLineModel:
         # Set the number of models and the missing models
         self.nmodels = model_flux.shape[0]
         unique_bins = None if model_binid is None else numpy.unique(model_binid.ravel())
-        self.missing_models = self._get_missing_models(unique_bins=unique_bins)
+        self.missing_models = self._get_missing_models(unique_bins=unique_bins, debug=debug)
 
         # Report
         if not self.quiet:
@@ -1155,7 +1148,8 @@ class EmissionLineModel:
 
         # Compute the line-fit metrics
         model_eml_par = self._get_line_fit_metrics(model_flux, model_base, model_mask,
-                                                   model_eml_par, model_binid=model_binid)
+                                                   model_eml_par, model_binid=model_binid,
+                                                   debug=debug)
 
         # Construct the 2d hdu list that only contains the fitted models
         self.hardcopy = hardcopy
@@ -1233,7 +1227,7 @@ class EmissionLineModel:
                           loggers=self.loggers, quiet=self.quiet) 
 
 
-    def read(self, ifile=None, strict=True, checksum=False):
+    def read(self, ifile=None, strict=True, checksum=False, debug=False):
         """
         Read an existing file with an existing set of emission-line
         models.
@@ -1298,7 +1292,7 @@ class EmissionLineModel:
         self.nmodels = self.hdu['FLUX'].shape[0]
         unique_bins = numpy.unique(self.hdu['BINID'].data.ravel()) \
                             if self.hdu['PRIMARY'].header['ELREBIN'] else None
-        self.missing_models = self._get_missing_models(unique_bins=unique_bins)
+        self.missing_models = self._get_missing_models(unique_bins=unique_bins, debug=debug)
 
 
     def copy_to_array(self, ext='FLUX', waverange=None, include_missing=False):

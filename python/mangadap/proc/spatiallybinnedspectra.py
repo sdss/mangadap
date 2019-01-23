@@ -694,22 +694,25 @@ class SpatiallyBinnedSpectra:
         return hdr
 
 
-    def _initialize_cube_mask(self):
+    def _finalize_cube_mask(self, mask):
         """
-        Initialize the mask, copying the DIDNOTUSE and FORESTAR bits
-        from the DRP file, and setting the LOW_SPECCOV and LOW_SNR bits
+        Finalize the mask after the 2D mask in self has already been
+        reconstructed into a 3D cube.
+        
+        This mostly handles the masks for regions outside the IFU field
+        of view.
+
+        This propagates the DIDNOTUSE and FORESTAR bits
+        from the DRP file, and sets the LOW_SPECCOV and LOW_SNR bits
         based on the input boolean arrays.
 
         Returns:
-            numpy.ndarray : Bitmask array.
+            numpy.ndarray: Bitmask array.
         """
 
         # Get the spaxels with good spectral coverage and S/N
         good_fgoodpix = self.check_fgoodpix()
         good_snr = self._check_snr()
-
-        # Initialize to all zeros
-        mask = numpy.zeros(self.shape, dtype=self.bitmask.minimum_dtype())
 
         # Turn on the flag stating that the pixel wasn't used
         indx = self.drpf.bitmask.flagged(self.drpf['MASK'].data,
@@ -1134,7 +1137,7 @@ class SpatiallyBinnedSpectra:
 
     @staticmethod
     def do_not_fit_flags():
-        return ['DIDNOTUSE', 'FORESTAR', 'LOW_SPECCOV', 'LOW_SNR', 'NONE_IN_STACK']
+        return ['DIDNOTUSE', 'FORESTAR', 'LOW_SPECCOV', 'LOW_SNR', 'NONE_IN_STACK', 'IVARINVALID']
 
     def check_fgoodpix(self, minimum_fraction=0.8):
         r"""
@@ -1162,7 +1165,8 @@ class SpatiallyBinnedSpectra:
         if debug:
             warnings.warn('You\'re setting all but two spectra as bad!')
             test = self.hdu['BINS'].data['SNR'] > sn_limit
-            test[:-2] = False
+            indx = numpy.arange(len(test))[test]
+            test[indx[2:]] = False
             return test
         return self.hdu['BINS'].data['SNR'] > sn_limit
 
@@ -1187,6 +1191,35 @@ class SpatiallyBinnedSpectra:
             list : List of the available method keywords.
         """
         return ['spaxel', 'cube']
+
+    def get_mask_array_from_drpfits(self, drpf, select=None):
+        """
+        Convert the DRP mask for individual spaxels to the binned
+        spectra mask.
+
+        Any pixel with bit flags in the list returned by
+        :func:`mangadap.drpfits.DRPFits.do_not_stack_flags` are
+        consolidated into the DIDNOTUSE flag.  Any FORESTAR flags are
+        propagated.
+        """
+        drp_mask = drpf.copy_to_array(ext='MASK')
+        if select is not None:
+            drp_mask = drp_mask[select,:]
+
+        # Initialize
+        mask = numpy.zeros(drp_mask.shape, dtype=self.bitmask.minimum_dtype())
+
+        # Consolidate pixels flagged to be excluded from any
+        # stacking into DIDNOTUSE
+        flags = drpf.do_not_stack_flags()
+        indx = drpf.bitmask.flagged(drp_mask, flag=flags)
+        mask[indx] = self.bitmask.turn_on(mask[indx], 'DIDNOTUSE')
+
+        # Propagate the FORESTAR flags
+        indx = drpf.bitmask.flagged(drp_mask, flag='FORESTAR')
+        mask[indx] = self.bitmask.turn_on(mask[indx], 'FORESTAR')
+
+        return mask
 
     def bin_spectra(self, drpf, rdxqa, reff=None, dapver=None, analysis_path=None,
                     directory_path=None, output_file=None, hardcopy=True, symlink_dir=None,
@@ -1360,7 +1393,18 @@ class SpatiallyBinnedSpectra:
                                              flag=drpf.do_not_stack_flags())[good_spec,:]
             npix = numpy.ones(flux.shape, dtype=numpy.int)
             npix[numpy.ma.getmaskarray(flux)] = 0
-            mask = drpf.copy_to_array(ext='MASK')[good_spec,:]
+
+            # Build the mask, converting from the DRP bits to the
+            # BinnedSpectra bits
+            mask = self.get_mask_array_from_drpfits(drpf, select=good_spec)
+
+            # Mask anything with an invalid ivar
+            # TODO: Not sure this is necessary
+            indx = numpy.invert(ivar > 0)
+            if numpy.any(indx):
+                flux.mask |= indx
+                ivar.mask |= indx
+                mask[indx] = self.bitmask.turn_on(mask[indx], ['IVARINVALID', 'DIDNOTUSE'])
 
             # The definition of the extension below:
             # - If the user wants the single resolution vector for the
@@ -1492,6 +1536,8 @@ class SpatiallyBinnedSpectra:
         stack_mask[indx] = self.bitmask.turn_on(stack_mask[indx], ['NONE_IN_STACK', 'NO_STDDEV'])
         indx = numpy.invert(stack_npix>1)
         stack_mask[indx] = self.bitmask.turn_on(stack_mask[indx], 'NO_STDDEV')
+        indx = numpy.invert(stack_ivar>0)
+        stack_mask[indx] = self.bitmask.turn_on(stack_mask[indx], ['IVARINVALID', 'DIDNOTUSE'])
 
         #---------------------------------------------------------------
         # Fill the table with the per-bin data (BEFORE applying the
@@ -1555,14 +1601,15 @@ class SpatiallyBinnedSpectra:
         stack_flux = self.hdu['FLUX'].data.copy()
         stack_sdev = self.hdu['FLUXD'].data.copy()
         stack_ivar = self.hdu['IVAR'].data.copy()
+        stack_mask = self.hdu['MASK'].data.copy()
         stack_npix = self.hdu['NPIX'].data.copy()
         stack_sres = self.hdu['SPECRES'].data.copy()
 
         # Reconstruct the stacked spectra into a DRP-like datacube
         flux, mask, sdev, ivar, npix, sres \
                 = DAPFitsUtil.reconstruct_cube(self.shape, bin_indx.ravel(),
-                                               [ stack_flux, numpy.ma.getmaskarray(stack_flux),
-                                                 stack_sdev, stack_ivar, stack_npix, stack_sres ])
+                                               [stack_flux, stack_mask, stack_sdev, stack_ivar,
+                                                stack_npix, stack_sres ])
 
         # TODO: Move this to the Covariance class?
         if self.covariance is not None:
@@ -1578,19 +1625,19 @@ class SpatiallyBinnedSpectra:
 #                    linestyle='-', color='b')
 #        pyplot.show()
 
-        # Initialize the basics of the mask
-        mask_bit_values = self._initialize_cube_mask()
+        # Finalize the mask
+        mask = self._finalize_cube_mask(mask)
 
-        # Add flags based on the availability of pixels to stack
-        indx = numpy.invert(npix>0)
-        mask_bit_values[indx] = self.bitmask.turn_on(mask_bit_values[indx],
-                                                     ['NONE_IN_STACK', 'NO_STDDEV'])
-        indx = numpy.invert(npix>1)
-        mask_bit_values[indx] = self.bitmask.turn_on(mask_bit_values[indx], 'NO_STDDEV')
-
-        # DEBUG
-        if numpy.sum( (mask_bit_values == 0) & mask ) > 0:
-            raise ValueError('Something should have been masked!')
+#        # Add flags based on the availability of pixels to stack
+#        indx = numpy.invert(npix>0)
+#        mask_bit_values[indx] = self.bitmask.turn_on(mask_bit_values[indx],
+#                                                     ['NONE_IN_STACK', 'NO_STDDEV'])
+#        indx = numpy.invert(npix>1)
+#        mask_bit_values[indx] = self.bitmask.turn_on(mask_bit_values[indx], 'NO_STDDEV')
+#
+#        # DEBUG
+#        if numpy.sum( (mask_bit_values == 0) & mask ) > 0:
+#            raise ValueError('Something should have been masked!')
 
 #        pyplot.imshow(bin_indx.reshape(self.drpf.spatial_shape).T, origin='lower',
 #                      interpolation='nearest')
@@ -1612,7 +1659,7 @@ class SpatiallyBinnedSpectra:
         hdu = fits.HDUList([ fits.PrimaryHDU(header=pri_hdr),
                              fits.ImageHDU(data=flux, header=cube_hdr, name='FLUX'),
                              fits.ImageHDU(data=ivar, header=cube_hdr, name='IVAR'),
-                             fits.ImageHDU(data=mask_bit_values, header=cube_hdr, name='MASK'),
+                             fits.ImageHDU(data=mask, header=cube_hdr, name='MASK'),
                              self.hdu['WAVE'].copy(),
                              fits.ImageHDU(data=sres, header=cube_hdr, name='SPECRES'),
                              self.hdu['REDCORR'].copy(),
