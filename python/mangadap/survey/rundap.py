@@ -821,7 +821,8 @@ class rundap:
             ppn = 16
             cpus = ppn if self.cpus is None else min(self.cpus, ppn)
             queue.create(label=self.label, nodes=self.nodes, qos=self.qos, umask=self.umask,
-                         walltime=self.walltime, ppn=ppn, cpus=cpus)
+                         walltime=self.walltime, ppn=ppn, cpus=cpus,
+                         partition='ember', alloc='sdss')
 
         return queue
 
