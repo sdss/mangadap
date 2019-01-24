@@ -800,10 +800,17 @@ class rundap:
         # Instantiate
         queue = pbs.queue(verbose=not self.quiet)
 
-        if self.q is not None:
-            # Expect to select the queue only when submitting to the
-            # Portsmouth cluster, sciama.  In this case, the number of
-            # nodes is queue dependent, and qos is not set
+        if self.q == 'ember':
+            # Submitting to Utah ember cluster
+            ppn = 12
+            cpus = ppn if self.cpus is None else min(self.cpus, ppn)
+            queue.create(label=self.label, nodes=self.nodes, qos=self.qos, umask=self.umask,
+                         walltime=self.walltime, ppn=ppn, cpus=cpus, partition='ember',
+                         alloc='sdss')
+        elif self.q is not None:
+            # All other self.q values expected for Portsmouth cluster,
+            # sciama.  In this case, the number of nodes is queue
+            # dependent, and qos is not set
             if self.q == 'sciama1.q':
                 ppn = 12
             elif self.q == 'sciama3.q':
@@ -821,8 +828,7 @@ class rundap:
             ppn = 16
             cpus = ppn if self.cpus is None else min(self.cpus, ppn)
             queue.create(label=self.label, nodes=self.nodes, qos=self.qos, umask=self.umask,
-                         walltime=self.walltime, ppn=ppn, cpus=cpus,
-                         partition='ember', alloc='sdss')
+                         walltime=self.walltime, ppn=ppn, cpus=cpus)
 
         return queue
 
