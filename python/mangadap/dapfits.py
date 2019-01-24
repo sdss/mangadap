@@ -663,11 +663,11 @@ class construct_maps_file:
         # Get the base map headers
         self.multichannel_maphdr \
                 = DAPFitsUtil.build_map_header(self.drpf,
-                                'K Westfall & B Andrews <westfall@ucolick.org, andrewsb@pitt.edu>',
+                                'K Westfall <westfall@ucolick.org> & SDSS-IV Data Group',
                                                multichannel=True, maskname='MANGA_DAPPIXMASK')
         self.singlechannel_maphdr \
                 = DAPFitsUtil.build_map_header(self.drpf,
-                                'K Westfall & B Andrews <westfall@ucolick.org, andrewsb@pitt.edu>',
+                                'K Westfall <westfall@ucolick.org> & SDSS-IV Data Group',
                                                maskname='MANGA_DAPPIXMASK')
 
         #---------------------------------------------------------------
@@ -1786,7 +1786,7 @@ class construct_cube_file:
 
         # Get the base map header
         self.base_cubehdr = DAPFitsUtil.build_cube_header(self.drpf,
-                                'K Westfall & B Andrews <westfall@ucolick.org, andrewsb@pitt.edu>',
+                                'K Westfall <westfall@ucolick.org> & SDSS-IV Data Group',
                                                         maskname='MANGA_DAPSPECMASK')
 
         #---------------------------------------------------------------
@@ -2138,7 +2138,7 @@ def combine_binid_extensions(drpf, binned_spectra, stellar_continuum, emission_l
         raise ValueError('DRP file must be provided.')
 
     hdr = DAPFitsUtil.finalize_dap_header( DAPFitsUtil.build_map_header(drpf,
-                                'K Westfall & B Andrews <westfall@ucolick.org, andrewsb@pitt.edu>',
+                                        'K Westfall <westfall@ucolick.org> & SDSS-IV Data Group',
                                                     multichannel=True, maskname='MANGA_DAPPIXMASK'),
                                           'BINID', multichannel=True,
                                           channel_names=[ 'Binned spectra', 'Stellar continua',
@@ -2198,8 +2198,7 @@ def finalize_dap_primary_header(prihdr, drpf, obs, binned_spectra, stellar_conti
     if drp3qualbm.flagged(drpf['PRIMARY'].header['DRP3QUAL'], flag='CRITICAL'):
         if not quiet:
             log_output(loggers, 1, logging.INFO, 'DRP File is flagged CRITICAL!')
-        dapqual = dapqualbm.turn_on(dapqual, 'CRITICAL')
-        dapqual = dapqualbm.turn_on(dapqual, 'DRPCRIT')
+        dapqual = dapqualbm.turn_on(dapqual, ['CRITICAL', 'DRPCRIT'])
 
     # Flag the file as CRITICAL if the stellar continuum fits are bad
     # for all spectra
@@ -2208,7 +2207,9 @@ def finalize_dap_primary_header(prihdr, drpf, obs, binned_spectra, stellar_conti
                                                  ['NO_FIT', 'FIT_FAILED', 'INSUFFICIENT_DATA',
                                                   'NEAR_BOUND'])
         if numpy.all(mask):
-            dapqual = dapqualbm.turn_on(dapqual, 'CRITICAL')
+            dapqual = dapqualbm.turn_on(dapqual, ['CRITICAL', 'DAPCRIT'])
+
+    # TODO: Do similar checks for the other major modules
 
     # Signify that the Voronoi binning resulted in a single bin
     if binned_spectra is not None and binned_spectra.method['binclass'] is not None \
@@ -2230,7 +2231,7 @@ def finalize_dap_primary_header(prihdr, drpf, obs, binned_spectra, stellar_conti
     prihdr['DAPQUAL'] = (dapqual, 'DAP quality bitmask')
 
     # Finalize authors
-    prihdr['AUTHOR'] = 'K Westfall, B Andrews <westfall@ucolick.org, andrewsb@pitt.edu>'
+    prihdr['AUTHOR'] = 'K Westfall <westfall@ucolick.org>'
 
     return prihdr
 

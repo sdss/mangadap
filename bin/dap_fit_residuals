@@ -11,18 +11,12 @@ from scipy import interpolate
 from matplotlib import pyplot, ticker, rc, colors, cm, colorbar, image
 
 from astropy.io import fits
-import astropy.constants
 
 from mangadap.config import defaults
-from mangadap.proc.util import growth_lim, sample_growth
-from mangadap.util.bitmask import BitMask
+from mangadap.proc.util import growth_lim
 
-from mangadap.util.fitsutil import DAPFitsUtil
-
-from mangadap.util.fileio import init_record_array, rec_to_fits_type, rec_to_fits_col_dim
 from mangadap.util.filter import BoxcarFilter
-from mangadap.util.sampling import Resample, spectral_coordinate_step
-from mangadap.proc.spectralstack import SpectralStack
+from mangadap.util.sampling import spectral_coordinate_step
 from mangadap.util.mapping import map_extent, map_beam_patch
 
 from mangadap.util.fileio import channel_dictionary
@@ -48,53 +42,7 @@ def init_image_ax(fig, pos):
     return ax
 
 
-def get_files(redux_path, analysis_path, plt, ifu, daptype, output_path):
-
-    rpath = os.path.join(redux_path, str(plt), 'stack')
-    drp_file = os.path.join(rpath, 'manga-{0}-{1}-LOGCUBE.fits.gz'.format(plt,ifu))
-    image_file = os.path.join(rpath, 'images', '{0}.png'.format(ifu))
-
-    apath = os.path.join(analysis_path, daptype, str(plt), str(ifu))
-    maps_file = os.path.join(apath, 'manga-{0}-{1}-MAPS-{2}.fits.gz'.format(plt,ifu,daptype))
-    cube_file = os.path.join(apath, 'manga-{0}-{1}-LOGCUBE-{2}.fits.gz'.format(plt,ifu,daptype))
-
-    fom_file = os.path.join(output_path, '{0}-{1}-fom.fits'.format(plt, ifu))
-
-    return drp_file, image_file, maps_file, cube_file, fom_file
-
-
-def velocity_register(wave, y, v):
-
-    nspec = y.shape[0]
-    if wave.size != y.shape[1]:
-        raise ValueError('Incorrect spectral length.')
-
-    newRange = list(SpectralStack.min_max_wave(wave, -v))
-    dw = spectral_coordinate_step(wave, log=True)
-
-    # Shift the first unmasked one just to get the output shape
-    for k in range(y.shape[0]):
-        if numpy.sum(numpy.invert(y.mask[k,:])) > 0:
-            break
-
-    rest_wave = wave/(1+v[k]/astropy.constants.c.to('km/s').value)
-    resamp = Resample(y[k,:], x=rest_wave, inLog=True, newRange=newRange, newdx=dw)
-
-    reg_y = numpy.ma.MaskedArray(numpy.zeros((y.shape[0], resamp.outx.size), dtype=float))
-    reg_wave = resamp.outx.copy()
-    for k in range(y.shape[0]):
-        if numpy.sum(numpy.invert(y.mask[k,:])) == 0:
-            reg_y[k,:] = numpy.ma.masked
-            continue
-        rest_wave = wave/(1+v[k]/astropy.constants.c.to('km/s').value)
-        resamp = Resample(y[k,:], x=rest_wave, inLog=True, newRange=newRange, newdx=dw)
-        reg_y[k,:] = resamp.outy
-        reg_y[k,resamp.outf<0.9] = numpy.ma.masked
-
-    return reg_wave, reg_y
-
-
-def fom_growth(plt, ifu, flux, error, model, snrg, rms, frms, rchi2, ofile=None):
+def fom_growth(plt, ifu, flux, error, model, snrg, rms, frms, rchi2, fit='sc', ofile=None):
 
     nspec = flux.shape[1]
     resid = numpy.ma.absolute(flux-model)
@@ -118,7 +66,7 @@ def fom_growth(plt, ifu, flux, error, model, snrg, rms, frms, rchi2, ofile=None)
     rax.set_ylim([1e-4,2])
     rax.set_yscale('log')
     rax.set_xscale('log')
-    rax.text(0.5, -0.15, r'$|\Delta|$', ha='center', va='center', transform=rax.transAxes)
+    rax.text(0.5, -0.17, r'$|\Delta|$', ha='center', va='center', transform=rax.transAxes)
     rax.text(0.1, 0.5, r'1-Growth', horizontalalignment='center',
              verticalalignment='center', transform=rax.transAxes, rotation='vertical')
 
@@ -128,9 +76,11 @@ def fom_growth(plt, ifu, flux, error, model, snrg, rms, frms, rchi2, ofile=None)
     fax.set_yscale('log')
     fax.set_xscale('log')
     fax.yaxis.set_major_formatter(ticker.NullFormatter())
-    fax.text(0.5, 1.2, '{0}-{1}'.format(plt, ifu), horizontalalignment='center',
-             verticalalignment='center', transform=fax.transAxes, fontsize=26)
-    fax.text(0.5, -0.15, r'$|\Delta|/m$', ha='center', va='center', transform=fax.transAxes)
+    label = '{0}-{1}'.format(plt, ifu)
+    label += (' STELLAR' if fit == 'sc' else ' EMLINE')
+    fax.text(0.5, 1.3, label, horizontalalignment='center',
+             verticalalignment='center', transform=fax.transAxes, fontsize=22)
+    fax.text(0.5, -0.17, r'$|\Delta|/m$', ha='center', va='center', transform=fax.transAxes)
 
     cax = init_ax(fig, [0.67, 0.50, 0.30, 0.35], facecolor='0.9', grid=True)
     cax.set_xlim(chi_lim)
@@ -138,8 +88,9 @@ def fom_growth(plt, ifu, flux, error, model, snrg, rms, frms, rchi2, ofile=None)
     cax.set_yscale('log')
     cax.set_xscale('log')
     cax.yaxis.set_major_formatter(ticker.NullFormatter())
-    cax.text(0.5, -0.15, r'$|\Delta|/\epsilon$', ha='center', va='center',
+    cax.text(0.5, -0.17, r'$|\Delta|/\epsilon$', ha='center', va='center',
              transform=cax.transAxes)
+
 
     cmap = cm.get_cmap('viridis')
     cnorm = colors.LogNorm(vmin=snr_lim[0], vmax=snr_lim[1])
@@ -216,12 +167,13 @@ def fom_growth(plt, ifu, flux, error, model, snrg, rms, frms, rchi2, ofile=None)
     if ofile is None:
         pyplot.show()
     else:
-        fig.canvas.print_figure(ofile, dpi=150)
+        print('Writing: {0}'.format(ofile))
+        fig.canvas.print_figure(ofile, bbox_inches='tight', dpi=100)
     fig.clear()
     pyplot.close(fig)
 
 
-def fom_lambda(plt, ifu, wave, flux, error, model, wave_limits=None, ofile=None):
+def fom_lambda(plt, ifu, wave, flux, error, model, fit='sc', wave_limits=None, ofile=None):
 
     if wave_limits is not None:
         indx = (wave < wave_limits[0]) | (wave > wave_limits[1])
@@ -272,6 +224,9 @@ def fom_lambda(plt, ifu, wave, flux, error, model, wave_limits=None, ofile=None)
     wave_bins = numpy.power(10, l0-dl/2 + dl*numpy.arange(len(wave)+1))
     spec_bins = 0.5+numpy.arange(nspec+1)
 
+    font = { 'size' : 10 }
+    rc('font', **font)
+
     w,h = pyplot.figaspect(1)
     fig = pyplot.figure(figsize=(1.5*w,1.5*h))
 
@@ -281,7 +236,7 @@ def fom_lambda(plt, ifu, wave, flux, error, model, wave_limits=None, ofile=None)
     ax.set_yscale('log')
     ax.xaxis.set_major_formatter(ticker.NullFormatter())
     ax.plot(wave, numpy.ma.mean(flux, axis=1), color='k', lw=0.5)
-    ax.text(-0.2, 0.5, r'Flux', horizontalalignment='center',
+    ax.text(-0.15, 0.5, r'Flux', horizontalalignment='center',
             verticalalignment='center', rotation='vertical', transform=ax.transAxes)
     axt = ax.twinx()
     axt.set_xlim(wave_limits)
@@ -301,7 +256,7 @@ def fom_lambda(plt, ifu, wave, flux, error, model, wave_limits=None, ofile=None)
     ax.xaxis.set_major_formatter(ticker.NullFormatter())
 #    ax.plot(wave, numpy.ma.mean(resid_sm, axis=0), color='C3')
     ax.plot(wave, numpy.ma.mean(resid, axis=1), color='k', lw=0.5)
-    ax.text(-0.2, 0.5, r'$|\Delta|$', horizontalalignment='center',
+    ax.text(-0.15, 0.5, r'$|\Delta|$', horizontalalignment='center',
             verticalalignment='center', rotation='vertical', transform=ax.transAxes)
 
     ax = init_ax(fig, [0.2, 0.63, 0.60, 0.12], facecolor='0.95', grid=True)
@@ -310,7 +265,7 @@ def fom_lambda(plt, ifu, wave, flux, error, model, wave_limits=None, ofile=None)
     ax.set_yscale('log')
     ax.xaxis.set_major_formatter(ticker.NullFormatter())
     ax.plot(wave, numpy.ma.mean(fresid, axis=1), color='k', lw=0.5)
-    ax.text(-0.2, 0.5, r'$|\Delta|/m$', horizontalalignment='center',
+    ax.text(-0.15, 0.5, r'$|\Delta|/m$', horizontalalignment='center',
             verticalalignment='center', rotation='vertical', transform=ax.transAxes)
 
     ax = init_ax(fig, [0.2, 0.51, 0.60, 0.12], facecolor='0.95', grid=True)
@@ -318,13 +273,16 @@ def fom_lambda(plt, ifu, wave, flux, error, model, wave_limits=None, ofile=None)
     ax.set_ylim(chi_lim)
     ax.set_yscale('log')
     ax.plot(wave, numpy.ma.mean(chi, axis=1), color='k', lw=0.5)
-    ax.text(0.5, -0.38, r'Wavelength ($\AA$)', horizontalalignment='center',
+    ax.text(0.5, -0.41, r'Wavelength ($\AA$)', horizontalalignment='center',
             verticalalignment='center', transform=ax.transAxes)
-    ax.text(-0.2, 0.5, r'$|\Delta|/\epsilon$', horizontalalignment='center',
+    ax.text(-0.15, 0.5, r'$|\Delta|/\epsilon$', horizontalalignment='center',
             verticalalignment='center', rotation='vertical', transform=ax.transAxes)
 
-    ax.text(1.23, 0.0, '{0}-{1}'.format(plt, ifu), horizontalalignment='center',
-            verticalalignment='bottom', rotation='vertical', transform=ax.transAxes, fontsize=26)
+    label = '{0}-{1}'.format(plt, ifu)
+    label += (' STELLAR' if fit == 'sc' else ' EMLINE')
+    ax.text(1.23, -0.3, label, horizontalalignment='center',
+            verticalalignment='bottom', rotation='vertical', transform=ax.transAxes,
+            fontsize=22)
 
     ax = init_ax(fig, [0.07, 0.23, 0.30, 0.16], facecolor='0.95')
     ax.set_xlim(wave_limits)
@@ -339,11 +297,11 @@ def fom_lambda(plt, ifu, wave, flux, error, model, wave_limits=None, ofile=None)
     ax.pcolormesh(wave_bins, spec_bins, resid_sm.T,
                   norm=colors.LogNorm(vmin=resid_lim[0], vmax=resid_lim[1]),
                   cmap='viridis', zorder=4, lw=0, rasterized=True)
-    cax = fig.add_axes([0.07, 0.40, 0.20, 0.01])
+    cax = fig.add_axes([0.07, 0.395, 0.20, 0.01])
     cb = pyplot.colorbar(im, cax=cax, orientation='horizontal') #, format=FormatStrFormatter('%d'))
     cb.ax.tick_params(axis='x', which='both', bottom=False, top=True, labelbottom=False,
                       labeltop=True)
-    cax.text(1.05, 0.5, r'$|\Delta|$', horizontalalignment='left', verticalalignment='center',
+    cax.text(1.05, 0.7, r'$|\Delta|$', horizontalalignment='left', verticalalignment='center',
             transform=cax.transAxes, fontsize=10)
     
     ax = init_ax(fig, [0.37, 0.23, 0.30, 0.16], facecolor='0.95')
@@ -363,11 +321,11 @@ def fom_lambda(plt, ifu, wave, flux, error, model, wave_limits=None, ofile=None)
                   cmap='viridis', zorder=4, lw=0, rasterized=True)
     ax.text(0.5, -0.30, r'Wavelength ($\AA$)', horizontalalignment='center',
             verticalalignment='center', transform=ax.transAxes)
-    cax = fig.add_axes([0.37, 0.40, 0.20, 0.01])
+    cax = fig.add_axes([0.37, 0.395, 0.20, 0.01])
     cb = pyplot.colorbar(im, cax=cax, orientation='horizontal') #, format=FormatStrFormatter('%d'))
     cb.ax.tick_params(axis='x', which='both', bottom=False, top=True, labelbottom=False,
                       labeltop=True)
-    cax.text(1.05, 0.5, r'$|\Delta|/m$', horizontalalignment='left', verticalalignment='center',
+    cax.text(1.05, 0.7, r'$|\Delta|/m$', horizontalalignment='left', verticalalignment='center',
             transform=cax.transAxes, fontsize=10)
 
     ax = init_ax(fig, [0.67, 0.23, 0.30, 0.16], facecolor='0.95')
@@ -385,17 +343,18 @@ def fom_lambda(plt, ifu, wave, flux, error, model, wave_limits=None, ofile=None)
     ax.pcolormesh(wave_bins, spec_bins, chi_sm.T,
                   norm=colors.LogNorm(vmin=chi_lim[0], vmax=chi_lim[1]),
                   cmap='RdBu_r', zorder=4, lw=0, rasterized=True)
-    cax = fig.add_axes([0.67, 0.40, 0.20, 0.01])
+    cax = fig.add_axes([0.67, 0.395, 0.20, 0.01])
     cb = pyplot.colorbar(im, cax=cax, orientation='horizontal') #, format=FormatStrFormatter('%d'))
     cb.ax.tick_params(axis='x', which='both', bottom=False, top=True, labelbottom=False,
                       labeltop=True)
-    cax.text(1.05, 0.5, r'$|\Delta|/\epsilon$', horizontalalignment='left',
+    cax.text(1.05, 0.7, r'$|\Delta|/\epsilon$', horizontalalignment='left',
              verticalalignment='center', transform=cax.transAxes, fontsize=10)
 
     if ofile is None:
         pyplot.show()
     else:
-        fig.canvas.print_figure(ofile, dpi=150)
+        print('Writing: {0}'.format(ofile))
+        fig.canvas.print_figure(ofile, bbox_inches='tight', dpi=100)
     fig.clear()
     pyplot.close(fig)
 
@@ -487,6 +446,11 @@ def fom_maps(plt, ifu, image_file, snr, color, rms, frms, rchi2, chi_grw, extent
     ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.95, 0.95, r'S/N$_g$' if fit == 'sc' else r'H$\alpha$ A/N', ha='right', va='center',
             transform=ax.transAxes, zorder=4)
+
+    label = '{0}-{1}'.format(plt, ifu)
+    label += (' STELLAR' if fit == 'sc' else ' EMLINE')
+    ax.text(0.5, 1.1, label, horizontalalignment='center',
+            verticalalignment='bottom', transform=ax.transAxes, fontsize=26)
 
     i,j=2,2
     ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
@@ -582,145 +546,10 @@ def fom_maps(plt, ifu, image_file, snr, color, rms, frms, rchi2, chi_grw, extent
     if ofile is None:
         pyplot.show()
     else:
-        fig.canvas.print_figure(ofile, dpi=150)
+        print('Writing: {0}'.format(ofile))
+        fig.canvas.print_figure(ofile, bbox_inches='tight', dpi=100)
     fig.clear()
     pyplot.close(fig)
-
-
-def fit_resid_plot(drp_file, image_file, maps_file, cube_file, fom_file, plt, ifu, output_path,
-                   overwrite=False):
-
-    bc = BoxcarFilter(100)
-    cube_hdu = fits.open(cube_file)
-    maps_hdu = fits.open(maps_file)
-    fom_hdu = fits.open(fom_file)        
-
-    extent = map_extent(maps_hdu, 'SPX_MFLUX')
-
-    #-------------------------------------------------------------------
-    # STELLAR CONTINUUM FITTING
-    #-------------------------------------------------------------------
-    sc_snr = numpy.ma.MaskedArray(fom_hdu['SCMAP'].data[0],
-                                  mask=fom_hdu['SCMAP_MASK'].data[0].astype(bool))
-    sc_rms = numpy.ma.MaskedArray(fom_hdu['SCMAP'].data[1],
-                                  mask=fom_hdu['SCMAP_MASK'].data[1].astype(bool))
-    sc_frms = numpy.ma.MaskedArray(fom_hdu['SCMAP'].data[2],
-                                   mask=fom_hdu['SCMAP_MASK'].data[2].astype(bool))
-    sc_chi2 = numpy.ma.MaskedArray(fom_hdu['SCMAP'].data[3],
-                                   mask=fom_hdu['SCMAP_MASK'].data[3].astype(bool))
-    sc_rchi2 = numpy.ma.MaskedArray(fom_hdu['SCMAP'].data[4],
-                                    mask=fom_hdu['SCMAP_MASK'].data[4].astype(bool))
-    sc_chi_growth = numpy.ma.MaskedArray(fom_hdu['SCGRW'].data[2],
-                                         mask=numpy.invert(fom_hdu['SCGRW'].data[2] > 0))
-
-    ofile = os.path.join(output_path, '{0}-{1}-sc-fom-maps.png'.format(plt,ifu))
-    if not os.path.isfile(ofile) or overwrite:
-        fom_maps(plt, ifu, drp_file, image_file, sc_snr, sc_rms, sc_frms, sc_rchi2,
-                 sc_chi_growth, extent=extent, ofile=ofile)
-
-    uniq, indx = numpy.unique(fom_hdu['SCBINID'].data.ravel(), return_index=True)
-    indx = indx[1:]
-    srt = numpy.argsort(sc_rchi2.ravel()[indx])
-
-    sc_flux_2d = numpy.ma.MaskedArray(fom_hdu['SCRSS'].data[0],
-                                      mask=fom_hdu['SCRSS_MASK'].data[0].astype(bool))[srt,:]
-    sc_snr_2d = numpy.ma.MaskedArray(fom_hdu['SCRSS'].data[1],
-                                     mask=fom_hdu['SCRSS_MASK'].data[1].astype(bool))[srt,:]
-    sc_resid_2d = numpy.ma.MaskedArray(fom_hdu['SCRSS'].data[2],
-                                     mask=fom_hdu['SCRSS_MASK'].data[2].astype(bool))[srt,:]
-    sc_fresid_2d = numpy.ma.MaskedArray(fom_hdu['SCRSS'].data[3],
-                                        mask=fom_hdu['SCRSS_MASK'].data[3].astype(bool))[srt,:]
-    sc_chi2_2d = numpy.ma.MaskedArray(fom_hdu['SCRSS'].data[4],
-                                      mask=fom_hdu['SCRSS_MASK'].data[4].astype(bool))[srt,:]
-
-    sc_snr = sc_snr.ravel()[indx][srt]
-    sc_rms = sc_rms.filled(0.0).ravel()[indx][srt]
-    sc_frms = sc_frms.filled(0.0).ravel()[indx][srt]
-    sc_rchi2 = sc_rchi2.filled(0.0).ravel()[indx][srt]
-
-    sc_chi2_2d_sm = bc.smooth(sc_chi2_2d)
-    sc_resid_2d_sm = bc.smooth(sc_resid_2d)
-    sc_fresid_2d_sm = bc.smooth(sc_fresid_2d)
-
-    ofile = os.path.join(output_path, '{0}-{1}-sc-fom.png'.format(plt,ifu))
-    if not os.path.isfile(ofile) or overwrite:
-        fom(plt, ifu, sc_snr, sc_resid_2d, sc_fresid_2d, sc_chi2_2d, sc_rchi2, sc_rms, sc_frms,
-            ofile=ofile)
-
-    ofile = os.path.join(output_path, '{0}-{1}-sc-fom-lambda.png'.format(plt,ifu))
-    if not os.path.isfile(ofile) or overwrite:
-        fom_lambda(plt, ifu, cube_hdu['WAVE'].data, sc_snr, sc_flux_2d, sc_snr_2d, sc_resid_2d,
-                   sc_resid_2d, sc_resid_2d_sm, sc_fresid_2d, sc_fresid_2d, sc_fresid_2d_sm,
-                   sc_chi2_2d, sc_chi2_2d, sc_chi2_2d_sm, ofile=ofile)
-
-    #-------------------------------------------------------------------
-    # EMISSION-LINE FITTING
-    #-------------------------------------------------------------------
-    el_snr = numpy.ma.MaskedArray(fom_hdu['ELMAP'].data[0],
-                                  mask=fom_hdu['ELMAP_MASK'].data[0].astype(bool))
-    el_rms = numpy.ma.MaskedArray(fom_hdu['ELMAP'].data[1],
-                                  mask=fom_hdu['ELMAP_MASK'].data[1].astype(bool))
-    el_frms = numpy.ma.MaskedArray(fom_hdu['ELMAP'].data[2],
-                                   mask=fom_hdu['ELMAP_MASK'].data[2].astype(bool))
-    el_chi2 = numpy.ma.MaskedArray(fom_hdu['ELMAP'].data[3],
-                                   mask=fom_hdu['ELMAP_MASK'].data[3].astype(bool))
-    el_rchi2 = numpy.ma.MaskedArray(fom_hdu['ELMAP'].data[4],
-                                   mask=fom_hdu['ELMAP_MASK'].data[4].astype(bool))
-    el_chi_growth = numpy.ma.MaskedArray(fom_hdu['ELGRW'].data[2],
-                                         mask=numpy.invert(fom_hdu['ELGRW'].data[2] > 0))
-
-    ofile = os.path.join(output_path, '{0}-{1}-el-fom-maps.png'.format(plt,ifu))
-    if not os.path.isfile(ofile) or overwrite:
-        fom_maps(plt, ifu, drp_file, image_file, el_snr, el_rms, el_frms, el_rchi2,
-                 el_chi_growth, extent=extent, ofile=ofile)
-
-    uniq, indx = numpy.unique(fom_hdu['ELBINID'].data.ravel(), return_index=True)
-    indx = indx[1:]
-    srt = numpy.argsort(el_rchi2.ravel()[indx])
-
-    el_flux_2d = numpy.ma.MaskedArray(fom_hdu['ELRSS'].data[0],
-                                      mask=fom_hdu['ELRSS_MASK'].data[0].astype(bool))[srt,:]
-    el_snr_2d = numpy.ma.MaskedArray(fom_hdu['ELRSS'].data[1],
-                                     mask=fom_hdu['ELRSS_MASK'].data[1].astype(bool))[srt,:]
-    el_resid_2d = numpy.ma.MaskedArray(fom_hdu['ELRSS'].data[2],
-                                     mask=fom_hdu['ELRSS_MASK'].data[2].astype(bool))[srt,:]
-    el_fresid_2d = numpy.ma.MaskedArray(fom_hdu['ELRSS'].data[3],
-                                        mask=fom_hdu['ELRSS_MASK'].data[3].astype(bool))[srt,:]
-    el_chi2_2d = numpy.ma.MaskedArray(fom_hdu['ELRSS'].data[4],
-                                      mask=fom_hdu['ELRSS_MASK'].data[4].astype(bool))[srt,:]
-
-    el_snr = el_snr.ravel()[indx][srt]
-    el_rms = el_rms.filled(0.0).ravel()[indx][srt]
-    el_frms = el_frms.filled(0.0).ravel()[indx][srt]
-    el_rchi2 = el_rchi2.filled(0.0).ravel()[indx][srt]
-
-    el_chi2_2d_sm = bc.smooth(el_chi2_2d)
-    el_resid_2d_sm = bc.smooth(el_resid_2d)
-    el_fresid_2d_sm = bc.smooth(el_fresid_2d)
-
-    ofile = os.path.join(output_path, '{0}-{1}-el-fom.png'.format(plt,ifu))
-    if not os.path.isfile(ofile) or overwrite:
-        fom(plt, ifu, el_snr, el_resid_2d, el_fresid_2d, el_chi2_2d, el_rchi2, el_rms, el_frms,
-            ofile=ofile)
-
-    ofile = os.path.join(output_path, '{0}-{1}-el-fom-lambda.png'.format(plt,ifu))
-    if not os.path.isfile(ofile) or overwrite:
-        fom_lambda(plt, ifu, cube_hdu['WAVE'].data, el_snr, el_flux_2d, el_snr_2d, el_resid_2d,
-                   el_resid_2d, el_resid_2d_sm, el_fresid_2d, el_fresid_2d, el_fresid_2d_sm,
-                   el_chi2_2d, el_chi2_2d, el_chi2_2d_sm, ofile=ofile)
-
-
-def get_fom_plots(redux_path, analysis_path, plt, output_path, daptype='HYB10-GAU-MILESHC',
-                  ifus=[1901, 1902, 3701, 3702, 3703, 3704, 6101, 6102, 6103, 6104, 9101, 9102,
-                        12701, 12702, 12703, 12704, 12705], overwrite=False):
-
-    # Get the size of the array. One row per emission-line fit
-    for ifu in ifus:
-        files = get_files(redux_path, analysis_path, plt, ifu, daptype, output_path)
-        if not numpy.all([os.path.isfile(f) for f in files]):
-            continue
-        fit_resid_plot(files[0], files[1], files[2], files[3], files[4], plt, ifu, output_path,
-                       overwrite=overwrite)
 
 
 def get_stellar_continuum_data(dapmaps, dapcube):
@@ -747,28 +576,6 @@ def get_stellar_continuum_data(dapmaps, dapcube):
     rms = maps_hdu['STELLAR_FOM'].data[0,:,:].ravel()[indx]
     frms = maps_hdu['STELLAR_FOM'].data[1,:,:].ravel()[indx]
     rchi2 = maps_hdu['STELLAR_FOM'].data[2,:,:].ravel()[indx]
-
-    t = numpy.ma.divide(flux-model,model)
-    t = numpy.ma.sqrt(numpy.ma.mean(numpy.square(t), axis=0))
-    tmap = numpy.ma.masked_all(cube_hdu['BINID'].data[1,:,:].shape, dtype=float).ravel()
-    tmap[indx] = t
-
-    frms_map = numpy.ma.masked_all(cube_hdu['BINID'].data[1,:,:].shape, dtype=float).ravel()
-    frms_map[indx] = frms
-
-    import pdb; pdb.set_trace()
-
-    pyplot.imshow(frms_map.reshape(cube_hdu['BINID'].data.shape[1:]), origin='lower',
-                  interpolation='nearest')
-    pyplot.show()
-
-    import pdb; pdb.set_trace()
-
-    pyplot.imshow(tmap.reshape(cube_hdu['BINID'].data.shape[1:]), origin='lower',
-                  interpolation='nearest')
-    pyplot.show()
-
-    import pdb; pdb.set_trace()
 
     return cube_hdu['WAVE'].data, flux, error, model, snrg, rms, frms, rchi2
 
@@ -835,22 +642,6 @@ def get_emission_line_data(drpcube, daptype, dapmaps, dapcube):
     frms = maps_hdu['EMLINE_FOM'].data[1,:,:].ravel()[indx]
     rchi2 = maps_hdu['EMLINE_FOM'].data[2,:,:].ravel()[indx]
 
-    t = numpy.ma.divide(flux-model,model)
-    t = numpy.ma.sqrt(numpy.ma.mean(numpy.square(t), axis=0))
-    tmap = numpy.ma.masked_all(cube_hdu['BINID'].data[3,:,:].shape, dtype=float).ravel()
-    tmap[indx] = t
-
-    pyplot.imshow(maps_hdu['EMLINE_FOM'].data[1,:,:], origin='lower', interpolation='nearest')
-    pyplot.show()
-
-    import pdb; pdb.set_trace()
-
-    pyplot.imshow(tmap.reshape(cube_hdu['BINID'].data[3,:,:].shape), origin='lower',
-                  interpolation='nearest')
-    pyplot.show()
-
-    import pdb; pdb.set_trace()
-
     return cube_hdu['WAVE'].data, flux, error, model, snrg, rms, frms, rchi2
 
 def get_emission_line_fom_maps(dapmaps):
@@ -896,29 +687,36 @@ def fit_residuals(drpver, redux_path, dapver, analysis_path, daptype, plt, ifu):
     maps_file = os.path.join(apath, 'manga-{0}-{1}-MAPS-{2}.fits.gz'.format(plt,ifu,daptype))
     cube_file = os.path.join(apath, 'manga-{0}-{1}-LOGCUBE-{2}.fits.gz'.format(plt,ifu,daptype))
 
+
     # Stellar continuum fit qa plot
+    ofile_root = os.path.join(plan_qa_dir, 'manga-{0}-{1}-LOGCUBE-{2}-sc-fitqa'.format(
+                                plt, ifu, daptype))
     wave, flux, error, model, snrg, rms, frms, rchi2 \
             = get_stellar_continuum_data(maps_file, cube_file)
-#    ofile = os.path.join(plan_qa_dir, 'manga-{0}-{1}-LOGCUBE-{2}-sc-fitqa-lambda.png'.format(
-#                                plt, ifu, daptype))
-#    fom_lambda(plt, ifu, wave, flux, error, model) #, ofile=ofile)
-#    fom_growth(plt, ifu, flux, error, model, snrg, rms, frms, rchi2) #, ofile=ofile)
-#    extent, snrg, gmr, rms, frms, rchi2, chi_grw \
-#            = get_stellar_continuum_fom_maps(drp_file, maps_file)
-#    fom_maps(plt, ifu, image_file, snrg, gmr, rms, frms, rchi2, chi_grw, extent=extent, fit='sc')
-#             #, ofile=ofile)
+    ofile = '{0}-lambda.png'.format(ofile_root)
+    fom_lambda(plt, ifu, wave, flux, error, model, fit='sc', ofile=ofile)
+    ofile = '{0}-growth.png'.format(ofile_root)
+    fom_growth(plt, ifu, flux, error, model, snrg, rms, frms, rchi2, fit='sc', ofile=ofile)
+    extent, snrg, gmr, rms, frms, rchi2, chi_grw \
+            = get_stellar_continuum_fom_maps(drp_file, maps_file)
+    ofile = '{0}-maps.png'.format(ofile_root)
+    fom_maps(plt, ifu, image_file, snrg, gmr, rms, frms, rchi2, chi_grw, extent=extent, fit='sc',
+             ofile=ofile)
 
     # Emission-line fit qa plot
+    ofile_root = os.path.join(plan_qa_dir, 'manga-{0}-{1}-LOGCUBE-{2}-el-fitqa'.format(
+                                plt, ifu, daptype))
     wave, flux, error, model, snrg, rms, frms, rchi2 \
             = get_emission_line_data(drp_file, daptype, maps_file, cube_file)
-#    ofile = os.path.join(plan_qa_dir, 'manga-{0}-{1}-LOGCUBE-{2}-el-fitqa-lambda.png'.format(
-#                                plt, ifu, daptype))
-    fom_lambda(plt, ifu, wave, flux, error, model) #, ofile=ofile)
-#    fom_growth(plt, ifu, flux, error, model, snrg, rms, frms, rchi2) #, ofile=ofile)
+    ofile = '{0}-lambda.png'.format(ofile_root)
+    fom_lambda(plt, ifu, wave, flux, error, model, fit='el', ofile=ofile)
+    ofile = '{0}-growth.png'.format(ofile_root)
+    fom_growth(plt, ifu, flux, error, model, snrg, rms, frms, rchi2, fit='el', ofile=ofile)
     extent, anr, aob, rms, frms, rchi2, chi_grw \
             = get_emission_line_fom_maps(maps_file)
-    fom_maps(plt, ifu, image_file, anr, aob, rms, frms, rchi2, chi_grw, extent=extent, fit='el')
-             #, ofile=ofile)
+    ofile = '{0}-maps.png'.format(ofile_root)
+    fom_maps(plt, ifu, image_file, anr, aob, rms, frms, rchi2, chi_grw, extent=extent, fit='el',
+             ofile=ofile)
 
 #-----------------------------------------------------------------------------
 
