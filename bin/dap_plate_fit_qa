@@ -3,6 +3,7 @@
 import os
 import time
 import argparse
+import warnings
 import numpy
 
 from scipy.special import erf
@@ -130,6 +131,11 @@ def plate_fit_qa(dapver, analysis_path, daptype, plt):
     d_ifus, sc_pltifu, sc_snrg, sc_frms, sc_rchi, el_pltifu, el_snrg, el_frms, el_rchi \
             = compile_data(dapver, analysis_path, daptype, plt)
 
+    # Check if there's anything to plot
+    if len(sc_pltifu) == 0 & len(el_pltifu) == 0:
+        warnings('No PLATEIFU analysis complete for plate={0}, daptype={1}.'.format(plt, daptype))
+        return
+
     # Basic coding check
     assert numpy.array_equal(c_ifus, d_ifus), 'Coding error'
 
@@ -197,8 +203,8 @@ def plate_fit_qa(dapver, analysis_path, daptype, plt):
         lw = 0 if i < 10 else 0.5
 
         # Find the correct data
-        sc_indx = numpy.array(sc_pltifu) == pltifu[i]
-        el_indx = numpy.array(el_pltifu) == pltifu[i]
+        sc_indx = [False] if len(sc_pltifu) == 0 else numpy.array(sc_pltifu) == pltifu[i]
+        el_indx = [False] if len(el_pltifu) == 0 else numpy.array(el_pltifu) == pltifu[i]
 
         if numpy.sum(sc_indx) == 0 and numpy.sum(el_indx) == 0:
             continue

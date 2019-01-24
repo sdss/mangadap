@@ -42,135 +42,173 @@ def init_image_ax(fig, pos):
     return ax
 
 
-def fom_growth(plt, ifu, flux, error, model, snrg, rms, frms, rchi2, fit='sc', ofile=None):
+def masked_imshow(fig, ax, cax, data, extent=None, norm=None, vmin=None, vmax=None, cmap='viridis',
+                  zorder=0, cbformat=None, subs=None):
+    if numpy.sum(data.mask) != numpy.prod(data.shape):
+        if norm is None:
+            img = ax.imshow(data, origin='lower', interpolation='nearest', extent=extent,
+                            vmin=vmin, vmax=vmax, cmap=cmap, zorder=zorder)
+        else:
+            img = ax.imshow(data, origin='lower', interpolation='nearest', extent=extent,
+                            norm=norm, cmap=cmap, zorder=zorder)
 
-    nspec = flux.shape[1]
-    resid = numpy.ma.absolute(flux-model)
-    fresid = numpy.ma.divide(resid, model)
-    chi = numpy.ma.divide(resid, error)
-
-    snr_lim = numpy.exp(growth_lim(numpy.ma.log(snrg).compressed(), 0.95, fac=1.3))
-
-    chi_lim = numpy.exp(growth_lim(numpy.ma.log(chi).compressed(), 0.8, fac=1.1))
-    chi_lim[1] = numpy.ma.amax(chi)*2
-    resid_lim = numpy.exp(growth_lim(numpy.ma.log(resid).compressed(), 0.9, fac=1.1))
-    resid_lim[1] = numpy.ma.amax(resid)*2
-    fresid_lim = numpy.exp(growth_lim(numpy.ma.log(fresid).compressed(), 0.9, fac=1.1))
-    fresid_lim[1] = numpy.ma.amax(fresid)*2
-
-    w,h = pyplot.figaspect(1)
-    fig = pyplot.figure(figsize=(1.5*w,1.5*h))
-
-    rax = init_ax(fig, [0.07, 0.50, 0.30, 0.35], facecolor='0.9', grid=True)
-    rax.set_xlim(resid_lim)
-    rax.set_ylim([1e-4,2])
-    rax.set_yscale('log')
-    rax.set_xscale('log')
-    rax.text(0.5, -0.17, r'$|\Delta|$', ha='center', va='center', transform=rax.transAxes)
-    rax.text(0.1, 0.5, r'1-Growth', horizontalalignment='center',
-             verticalalignment='center', transform=rax.transAxes, rotation='vertical')
-
-    fax = init_ax(fig, [0.37, 0.50, 0.30, 0.35], facecolor='0.9', grid=True)
-    fax.set_xlim(fresid_lim)
-    fax.set_ylim([1e-4,2])
-    fax.set_yscale('log')
-    fax.set_xscale('log')
-    fax.yaxis.set_major_formatter(ticker.NullFormatter())
-    label = '{0}-{1}'.format(plt, ifu)
-    label += (' STELLAR' if fit == 'sc' else ' EMLINE')
-    fax.text(0.5, 1.3, label, horizontalalignment='center',
-             verticalalignment='center', transform=fax.transAxes, fontsize=22)
-    fax.text(0.5, -0.17, r'$|\Delta|/m$', ha='center', va='center', transform=fax.transAxes)
-
-    cax = init_ax(fig, [0.67, 0.50, 0.30, 0.35], facecolor='0.9', grid=True)
-    cax.set_xlim(chi_lim)
-    cax.set_ylim([1e-4,2])
-    cax.set_yscale('log')
-    cax.set_xscale('log')
-    cax.yaxis.set_major_formatter(ticker.NullFormatter())
-    cax.text(0.5, -0.17, r'$|\Delta|/\epsilon$', ha='center', va='center',
-             transform=cax.transAxes)
-
-
-    cmap = cm.get_cmap('viridis')
-    cnorm = colors.LogNorm(vmin=snr_lim[0], vmax=snr_lim[1])
-    cbax = fig.add_axes([0.69, 0.86, 0.2, 0.01])
-
-    cb = colorbar.ColorbarBase(cbax, norm=cnorm, cmap=cmap, orientation='horizontal')
-    cb.ax.tick_params(axis='x', which='both', bottom=False, top=True, labelbottom=False,
-                      labeltop=True)
-    cbax.text(1.05, 0.5, r'S/N$_g$', ha='left', va='center', transform=cbax.transAxes)
-
-    snr_srt = numpy.argsort(snrg)
-
-    for i in range(nspec):
-        j = snr_srt[i]
-        if numpy.all(chi.mask[j,:]):
-            continue
-
-        t = resid[:,j].compressed()
-        s = numpy.argsort(t)
-        rax.step(t[s], 1-numpy.arange(len(t)).astype(float)/len(t), where='pre',
-                 color=cmap(cnorm(snrg[j])), lw=0.7)
-
-        t = fresid[:,j].compressed()
-        s = numpy.argsort(t)
-        fax.step(t[s], 1-numpy.arange(len(t)).astype(float)/len(t), where='pre',
-                 color=cmap(cnorm(snrg[j])), lw=0.7)
-
-        t = chi[:,j].compressed()
-        s = numpy.argsort(t)
-        cax.step(t[s], 1-numpy.arange(len(t)).astype(float)/len(t), where='pre',
-                 color=cmap(cnorm(snrg[j])), lw=0.7)
-
-    x = numpy.linspace(0,5,100)
-    g = (erf(x/numpy.sqrt(2)) - erf(-x/numpy.sqrt(2)))/2.
-    interp = interpolate.interp1d(g, x)
-    cax.plot(x,1-g, color='k')
-
-    chi2_lim = numpy.exp(growth_lim(numpy.ma.log(rchi2).compressed(), 1.0, fac=2.0))
-    rms_lim = numpy.exp(growth_lim(numpy.ma.log(rms).compressed(), 1.0, fac=2.0))
-    frms_lim = numpy.exp(growth_lim(numpy.ma.log(frms).compressed(), 1.0, fac=2.0))
-    snr_lim = numpy.exp(growth_lim(numpy.ma.log(snrg).compressed(), 1.0, fac=2.0))
-
-    rax = init_ax(fig, [0.07, 0.15, 0.30, 0.25], facecolor='0.9', grid=True)
-    rax.set_xlim(rms_lim)
-    rax.set_ylim(snr_lim)
-    rax.set_yscale('log')
-    rax.set_xscale('log')
-    rax.scatter(rms, snrg,
-                marker='.', s=20, color='k', lw=0, alpha=0.5)
-    rax.text(0.5, -0.25, r'$RMS$', ha='center', va='center', transform=rax.transAxes)
-    rax.text(0.1, 0.5, r'S/N$_g$', horizontalalignment='center',
-             verticalalignment='center', transform=rax.transAxes, rotation='vertical')
-
-    fax = init_ax(fig, [0.37, 0.15, 0.30, 0.25], facecolor='0.9', grid=True)
-    fax.set_xlim(frms_lim)
-    fax.set_ylim(snr_lim)
-    fax.set_yscale('log')
-    fax.set_xscale('log')
-    fax.yaxis.set_major_formatter(ticker.NullFormatter())
-    fax.scatter(frms, snrg,
-                marker='.', s=20, color='k', lw=0, alpha=0.5)
-    fax.text(0.5, -0.25, r'$fRMS$', ha='center', va='center', transform=fax.transAxes)
-
-    cax = init_ax(fig, [0.67, 0.15, 0.30, 0.25], facecolor='0.9', grid=True)
-    cax.set_xlim(chi2_lim)
-    cax.set_ylim(snr_lim)
-    cax.set_yscale('log')
-    cax.set_xscale('log')
-    cax.yaxis.set_major_formatter(ticker.NullFormatter())
-    cax.scatter(rchi2, snrg,
-                marker='.', s=20, color='k', lw=0, alpha=0.5)
-    cax.text(0.5, -0.25, r'$\chi^2_\nu$', ha='center', va='center', transform=cax.transAxes)
-    
-    if ofile is None:
-        pyplot.show()
+        cb = fig.colorbar(img, cax=cax) if cbformat is None else \
+                    fig.colorbar(img, cax=cax, format=cbformat)
+        if subs is not None:
+            cb.locator = ticker.LogLocator(base=10, subs=(1.,2.,4.,))
+            cb.update_ticks()
     else:
-        print('Writing: {0}'.format(ofile))
-        fig.canvas.print_figure(ofile, bbox_inches='tight', dpi=100)
-    fig.clear()
-    pyplot.close(fig)
+        _norm = colors.Normalize(vmin=vmin, vmax=vmax) if norm is None else norm
+        cb = colorbar.ColorbarBase(cax, cmap=cmap, norm=norm)
+
+
+def gmr_data(drp_file):
+    if not os.path.isfile(drp_file):
+        raise FileNotFoundError('{0} does not exist!'.format(drp_file))
+
+    hdu = fits.open(drp_file)
+    gmr_map = -2.5*numpy.ma.log10(numpy.ma.MaskedArray(hdu['GIMG'].data,
+                                                       mask=numpy.invert(hdu['GIMG'].data>0))
+                                    / numpy.ma.MaskedArray(hdu['RIMG'].data,
+                                                           mask=numpy.invert(hdu['RIMG'].data>0)))
+    hdu.close()
+    del hdu
+    return gmr_map
+
+
+def get_stellar_continuum_data(dapmaps, dapcube):
+
+    if not os.path.isfile(dapmaps):
+        raise FileNotFoundError('{0} does not exist.'.format(dapmaps))
+    if not os.path.isfile(dapcube):
+        raise FileNotFoundError('{0} does not exist.'.format(dapcube))
+
+    # Get the data
+    cube_hdu = fits.open(dapcube)
+
+    # Find the unique bins and get rid of -1 bins
+    binid = cube_hdu['BINID'].data[1,:,:].ravel()
+    uniq, indx = map(lambda x: x[1:], numpy.unique(binid, return_index=True))
+
+    # Get the unique fluxes, errors, and models
+    npix = cube_hdu['FLUX'].data.shape[0]
+    flux = numpy.ma.MaskedArray(cube_hdu['FLUX'].data.reshape(npix,-1),
+                                mask=cube_hdu['MASK'].data.reshape(npix,-1) > 0)[:,indx]
+    error = numpy.ma.power(numpy.ma.MaskedArray(cube_hdu['IVAR'].data.reshape(npix,-1),
+                                                mask=cube_hdu['MASK'].data.reshape(npix,-1) > 0),
+                           -0.5)[:,indx]
+    model = numpy.ma.MaskedArray(cube_hdu['STELLAR'].data.reshape(npix,-1),
+                                 mask=cube_hdu['STELLAR_MASK'].data.reshape(npix,-1) > 0)[:,indx]
+
+    # Get the associated S/N and fit metrics
+    maps_hdu = fits.open(dapmaps)
+    snrg = maps_hdu['BIN_SNR'].data.ravel()[indx]
+    rms = maps_hdu['STELLAR_FOM'].data[0,:,:].ravel()[indx]
+    frms = maps_hdu['STELLAR_FOM'].data[1,:,:].ravel()[indx]
+    rchi2 = maps_hdu['STELLAR_FOM'].data[2,:,:].ravel()[indx]
+
+    return cube_hdu['WAVE'].data, flux, error, model, snrg, rms, frms, rchi2
+
+
+def get_stellar_continuum_fom_maps(drpcube, dapmaps):
+
+    if not os.path.isfile(dapmaps):
+        raise FileNotFoundError('{0} does not exist.'.format(dapmaps))
+
+    # Get the associated S/N and fit metrics
+    maps_hdu = fits.open(dapmaps)
+    snrg = numpy.ma.MaskedArray(maps_hdu['BIN_SNR'].data,
+                                mask=numpy.invert(maps_hdu['BIN_SNR'].data > 0))
+    mask = maps_hdu['STELLAR_VEL_MASK'].data > 0
+    rms = numpy.ma.MaskedArray(maps_hdu['STELLAR_FOM'].data[0,:,:], mask=mask)
+    frms = numpy.ma.MaskedArray(maps_hdu['STELLAR_FOM'].data[1,:,:], mask=mask)
+    rchi2 = numpy.ma.MaskedArray(maps_hdu['STELLAR_FOM'].data[2,:,:], mask=mask)
+    chi_grw = numpy.ma.MaskedArray(maps_hdu['STELLAR_FOM'].data[6:,:,:])
+    chi_grw[0,mask] = numpy.ma.masked
+    chi_grw[1,mask] = numpy.ma.masked
+    chi_grw[2,mask] = numpy.ma.masked
+
+    extent = map_extent(maps_hdu, 'SPX_MFLUX')
+
+    return extent, snrg, gmr_data(drpcube), rms, frms, rchi2, chi_grw
+
+
+def get_emission_line_data(drpcube, daptype, dapmaps, dapcube):
+    if not os.path.isfile(dapmaps):
+        raise FileNotFoundError('{0} does not exist.'.format(dapmaps))
+    if not os.path.isfile(dapcube):
+        raise FileNotFoundError('{0} does not exist.'.format(dapcube))
+
+    # Get the data
+    cube_hdu = fits.open(dapcube)
+    maps_hdu = fits.open(dapmaps)
+
+    # Get the observed spectra and errors
+    if 'HYB' in daptype:
+        if not os.path.isfile(drpcube):
+            raise FileNotFoundError('{0} does not exist.'.format(drpcube))
+        # Fits are to unbinned spectra from DRP datacube
+        drp_hdu = fits.open(drpcube)
+        npix = drp_hdu['FLUX'].data.shape[0]
+        flux = numpy.ma.MaskedArray(drp_hdu['FLUX'].data.reshape(npix,-1),
+                                    mask=drp_hdu['MASK'].data.reshape(npix,-1) > 0)
+        error = numpy.ma.power(numpy.ma.MaskedArray(drp_hdu['IVAR'].data.reshape(npix,-1),
+                                            mask=drp_hdu['MASK'].data.reshape(npix,-1) > 0), -0.5)
+        drp_hdu.close()
+        snrg = maps_hdu['SPX_SNR'].data.ravel()
+
+    else:
+        # Fits are to binned spectra from DAP datacube
+        npix = cube_hdu['FLUX'].data.shape[0]
+        flux = numpy.ma.MaskedArray(cube_hdu['FLUX'].data.reshape(npix,-1),
+                                    mask=cube_hdu['MASK'].data.reshape(npix,-1) > 0)
+        error = numpy.ma.power(numpy.ma.MaskedArray(cube_hdu['IVAR'].data.reshape(npix,-1),
+                                                mask=cube_hdu['MASK'].data.reshape(npix,-1) > 0),
+                               -0.5)
+        snrg = maps_hdu['BIN_SNR'].data.ravel()
+   
+    # Find the unique bins and get rid of -1 bins
+    binid = cube_hdu['BINID'].data[3,:,:].ravel()
+    uniq, indx = map(lambda x: x[1:], numpy.unique(binid, return_index=True))
+
+    flux = flux[:,indx]
+    error = error[:,indx]
+    model = numpy.ma.MaskedArray(cube_hdu['MODEL'].data.reshape(npix,-1),
+                                 mask=cube_hdu['MODEL_MASK'].data.reshape(npix,-1) > 0)[:,indx]
+
+    # Get the associated S/N and fit metrics
+    snrg = snrg[indx]
+    rms = maps_hdu['EMLINE_FOM'].data[0,:,:].ravel()[indx]
+    frms = maps_hdu['EMLINE_FOM'].data[1,:,:].ravel()[indx]
+    rchi2 = maps_hdu['EMLINE_FOM'].data[2,:,:].ravel()[indx]
+
+    return cube_hdu['WAVE'].data, flux, error, model, snrg, rms, frms, rchi2
+
+def get_emission_line_fom_maps(dapmaps):
+
+    maps_hdu = fits.open(dapmaps)
+    eml = channel_dictionary(maps_hdu, 'EMLINE_GFLUX')
+    anr = numpy.ma.MaskedArray(maps_hdu['EMLINE_GANR'].data[eml['Ha-6564'],...],
+                               mask=maps_hdu['EMLINE_GFLUX_MASK'].data[eml['Ha-6564'],...] > 0)
+    ha = numpy.ma.MaskedArray(maps_hdu['EMLINE_GFLUX'].data[eml['Ha-6564'],...],
+                              mask=maps_hdu['EMLINE_GFLUX_MASK'].data[eml['Ha-6564'],...] > 0)
+    hb = numpy.ma.MaskedArray(maps_hdu['EMLINE_GFLUX'].data[eml['Hb-4862'],...],
+                              mask=maps_hdu['EMLINE_GFLUX_MASK'].data[eml['Hb-4862'],...] > 0)
+    aob = numpy.ma.divide(ha, hb)
+
+    # Get the associated S/N and fit metrics
+    rms = numpy.ma.MaskedArray(maps_hdu['EMLINE_FOM'].data[0,:,:])
+    rms[numpy.invert(rms > 0)] = numpy.ma.masked
+    frms = numpy.ma.MaskedArray(maps_hdu['EMLINE_FOM'].data[1,:,:])
+    frms[numpy.invert(frms > 0)] = numpy.ma.masked
+    rchi2 = numpy.ma.MaskedArray(maps_hdu['EMLINE_FOM'].data[2,:,:])
+    rchi2[numpy.invert(rchi2 > 0)] = numpy.ma.masked
+    chi_grw = numpy.ma.MaskedArray(maps_hdu['EMLINE_FOM'].data[6:,:,:])
+    chi_grw[numpy.invert(chi_grw > 0)] = numpy.ma.masked
+
+    extent = map_extent(maps_hdu, 'SPX_MFLUX')
+
+    return extent, anr, aob, rms, frms, rchi2, chi_grw
 
 
 def fom_lambda(plt, ifu, wave, flux, error, model, fit='sc', wave_limits=None, ofile=None):
@@ -352,38 +390,135 @@ def fom_lambda(plt, ifu, wave, flux, error, model, fit='sc', wave_limits=None, o
     pyplot.close(fig)
 
 
-def gmr_data(drp_file):
-    if not os.path.isfile(drp_file):
-        raise FileNotFoundError('{0} does not exist!'.format(drp_file))
+def fom_growth(plt, ifu, flux, error, model, snrg, rms, frms, rchi2, fit='sc', ofile=None):
 
-    hdu = fits.open(drp_file)
-    gmr_map = -2.5*numpy.ma.log10(numpy.ma.MaskedArray(hdu['GIMG'].data,
-                                                       mask=numpy.invert(hdu['GIMG'].data>0))
-                                    / numpy.ma.MaskedArray(hdu['RIMG'].data,
-                                                           mask=numpy.invert(hdu['RIMG'].data>0)))
-    hdu.close()
-    del hdu
-    return gmr_map
+    nspec = flux.shape[1]
+    resid = numpy.ma.absolute(flux-model)
+    fresid = numpy.ma.divide(resid, model)
+    chi = numpy.ma.divide(resid, error)
+
+    snr_lim = numpy.exp(growth_lim(numpy.ma.log(snrg).compressed(), 0.95, fac=1.3))
+
+    chi_lim = numpy.exp(growth_lim(numpy.ma.log(chi).compressed(), 0.8, fac=1.1))
+    chi_lim[1] = numpy.ma.amax(chi)*2
+    resid_lim = numpy.exp(growth_lim(numpy.ma.log(resid).compressed(), 0.9, fac=1.1))
+    resid_lim[1] = numpy.ma.amax(resid)*2
+    fresid_lim = numpy.exp(growth_lim(numpy.ma.log(fresid).compressed(), 0.9, fac=1.1))
+    fresid_lim[1] = numpy.ma.amax(fresid)*2
+
+    w,h = pyplot.figaspect(1)
+    fig = pyplot.figure(figsize=(1.5*w,1.5*h))
+
+    rax = init_ax(fig, [0.07, 0.50, 0.30, 0.35], facecolor='0.9', grid=True)
+    rax.set_xlim(resid_lim)
+    rax.set_ylim([1e-4,2])
+    rax.set_yscale('log')
+    rax.set_xscale('log')
+    rax.text(0.5, -0.17, r'$|\Delta|$', ha='center', va='center', transform=rax.transAxes)
+    rax.text(0.1, 0.5, r'1-Growth', horizontalalignment='center',
+             verticalalignment='center', transform=rax.transAxes, rotation='vertical')
+
+    fax = init_ax(fig, [0.37, 0.50, 0.30, 0.35], facecolor='0.9', grid=True)
+    fax.set_xlim(fresid_lim)
+    fax.set_ylim([1e-4,2])
+    fax.set_yscale('log')
+    fax.set_xscale('log')
+    fax.yaxis.set_major_formatter(ticker.NullFormatter())
+    label = '{0}-{1}'.format(plt, ifu)
+    label += (' STELLAR' if fit == 'sc' else ' EMLINE')
+    fax.text(0.5, 1.3, label, horizontalalignment='center',
+             verticalalignment='center', transform=fax.transAxes, fontsize=22)
+    fax.text(0.5, -0.17, r'$|\Delta|/m$', ha='center', va='center', transform=fax.transAxes)
+
+    cax = init_ax(fig, [0.67, 0.50, 0.30, 0.35], facecolor='0.9', grid=True)
+    cax.set_xlim(chi_lim)
+    cax.set_ylim([1e-4,2])
+    cax.set_yscale('log')
+    cax.set_xscale('log')
+    cax.yaxis.set_major_formatter(ticker.NullFormatter())
+    cax.text(0.5, -0.17, r'$|\Delta|/\epsilon$', ha='center', va='center',
+             transform=cax.transAxes)
 
 
-def masked_imshow(fig, ax, cax, data, extent=None, norm=None, vmin=None, vmax=None, cmap='viridis',
-                  zorder=0, cbformat=None, subs=None):
-    if numpy.sum(data.mask) != numpy.prod(data.shape):
-        if norm is None:
-            img = ax.imshow(data, origin='lower', interpolation='nearest', extent=extent,
-                            vmin=vmin, vmax=vmax, cmap=cmap, zorder=zorder)
-        else:
-            img = ax.imshow(data, origin='lower', interpolation='nearest', extent=extent,
-                            norm=norm, cmap=cmap, zorder=zorder)
+    cmap = cm.get_cmap('viridis')
+    cnorm = colors.LogNorm(vmin=snr_lim[0], vmax=snr_lim[1])
+    cbax = fig.add_axes([0.69, 0.86, 0.2, 0.01])
 
-        cb = fig.colorbar(img, cax=cax) if cbformat is None else \
-                    fig.colorbar(img, cax=cax, format=cbformat)
-        if subs is not None:
-            cb.locator = ticker.LogLocator(base=10, subs=(1.,2.,4.,))
-            cb.update_ticks()
+    cb = colorbar.ColorbarBase(cbax, norm=cnorm, cmap=cmap, orientation='horizontal')
+    cb.ax.tick_params(axis='x', which='both', bottom=False, top=True, labelbottom=False,
+                      labeltop=True)
+    cbax.text(1.05, 0.5, r'S/N$_g$', ha='left', va='center', transform=cbax.transAxes)
+
+    snr_srt = numpy.argsort(snrg)
+
+    for i in range(nspec):
+        j = snr_srt[i]
+        if numpy.all(chi.mask[j,:]):
+            continue
+
+        t = resid[:,j].compressed()
+        s = numpy.argsort(t)
+        rax.step(t[s], 1-numpy.arange(len(t)).astype(float)/len(t), where='pre',
+                 color=cmap(cnorm(snrg[j])), lw=0.7)
+
+        t = fresid[:,j].compressed()
+        s = numpy.argsort(t)
+        fax.step(t[s], 1-numpy.arange(len(t)).astype(float)/len(t), where='pre',
+                 color=cmap(cnorm(snrg[j])), lw=0.7)
+
+        t = chi[:,j].compressed()
+        s = numpy.argsort(t)
+        cax.step(t[s], 1-numpy.arange(len(t)).astype(float)/len(t), where='pre',
+                 color=cmap(cnorm(snrg[j])), lw=0.7)
+
+    x = numpy.linspace(0,5,100)
+    g = (erf(x/numpy.sqrt(2)) - erf(-x/numpy.sqrt(2)))/2.
+    interp = interpolate.interp1d(g, x)
+    cax.plot(x,1-g, color='k')
+
+    chi2_lim = numpy.exp(growth_lim(numpy.ma.log(rchi2).compressed(), 1.0, fac=2.0))
+    rms_lim = numpy.exp(growth_lim(numpy.ma.log(rms).compressed(), 1.0, fac=2.0))
+    frms_lim = numpy.exp(growth_lim(numpy.ma.log(frms).compressed(), 1.0, fac=2.0))
+    snr_lim = numpy.exp(growth_lim(numpy.ma.log(snrg).compressed(), 1.0, fac=2.0))
+
+    rax = init_ax(fig, [0.07, 0.15, 0.30, 0.25], facecolor='0.9', grid=True)
+    rax.set_xlim(rms_lim)
+    rax.set_ylim(snr_lim)
+    rax.set_yscale('log')
+    rax.set_xscale('log')
+    rax.scatter(rms, snrg,
+                marker='.', s=20, color='k', lw=0, alpha=0.5)
+    rax.text(0.5, -0.25, r'$RMS$', ha='center', va='center', transform=rax.transAxes)
+    rax.text(0.1, 0.5, r'S/N$_g$', horizontalalignment='center',
+             verticalalignment='center', transform=rax.transAxes, rotation='vertical')
+
+    fax = init_ax(fig, [0.37, 0.15, 0.30, 0.25], facecolor='0.9', grid=True)
+    fax.set_xlim(frms_lim)
+    fax.set_ylim(snr_lim)
+    fax.set_yscale('log')
+    fax.set_xscale('log')
+    fax.yaxis.set_major_formatter(ticker.NullFormatter())
+    fax.scatter(frms, snrg,
+                marker='.', s=20, color='k', lw=0, alpha=0.5)
+    fax.text(0.5, -0.25, r'$fRMS$', ha='center', va='center', transform=fax.transAxes)
+
+    cax = init_ax(fig, [0.67, 0.15, 0.30, 0.25], facecolor='0.9', grid=True)
+    cax.set_xlim(chi2_lim)
+    cax.set_ylim(snr_lim)
+    cax.set_yscale('log')
+    cax.set_xscale('log')
+    cax.yaxis.set_major_formatter(ticker.NullFormatter())
+    cax.scatter(rchi2, snrg,
+                marker='.', s=20, color='k', lw=0, alpha=0.5)
+    cax.text(0.5, -0.25, r'$\chi^2_\nu$', ha='center', va='center', transform=cax.transAxes)
+    
+    if ofile is None:
+        pyplot.show()
     else:
-        _norm = colors.Normalize(vmin=vmin, vmax=vmax) if norm is None else norm
-        cb = colorbar.ColorbarBase(cax, cmap=cmap, norm=norm)
+        print('Writing: {0}'.format(ofile))
+        fig.canvas.print_figure(ofile, bbox_inches='tight', dpi=100)
+    fig.clear()
+    pyplot.close(fig)
 
 
 def fom_maps(plt, ifu, image_file, snr, color, rms, frms, rchi2, chi_grw, extent=None,
@@ -545,125 +680,6 @@ def fom_maps(plt, ifu, image_file, snr, color, rms, frms, rchi2, chi_grw, extent
     pyplot.close(fig)
 
 
-def get_stellar_continuum_data(dapmaps, dapcube):
-    # Get the data
-    cube_hdu = fits.open(dapcube)
-
-    # Find the unique bins and get rid of -1 bins
-    binid = cube_hdu['BINID'].data[1,:,:].ravel()
-    uniq, indx = map(lambda x: x[1:], numpy.unique(binid, return_index=True))
-
-    # Get the unique fluxes, errors, and models
-    npix = cube_hdu['FLUX'].data.shape[0]
-    flux = numpy.ma.MaskedArray(cube_hdu['FLUX'].data.reshape(npix,-1),
-                                mask=cube_hdu['MASK'].data.reshape(npix,-1) > 0)[:,indx]
-    error = numpy.ma.power(numpy.ma.MaskedArray(cube_hdu['IVAR'].data.reshape(npix,-1),
-                                                mask=cube_hdu['MASK'].data.reshape(npix,-1) > 0),
-                           -0.5)[:,indx]
-    model = numpy.ma.MaskedArray(cube_hdu['STELLAR'].data.reshape(npix,-1),
-                                 mask=cube_hdu['STELLAR_MASK'].data.reshape(npix,-1) > 0)[:,indx]
-
-    # Get the associated S/N and fit metrics
-    maps_hdu = fits.open(dapmaps)
-    snrg = maps_hdu['BIN_SNR'].data.ravel()[indx]
-    rms = maps_hdu['STELLAR_FOM'].data[0,:,:].ravel()[indx]
-    frms = maps_hdu['STELLAR_FOM'].data[1,:,:].ravel()[indx]
-    rchi2 = maps_hdu['STELLAR_FOM'].data[2,:,:].ravel()[indx]
-
-    return cube_hdu['WAVE'].data, flux, error, model, snrg, rms, frms, rchi2
-
-
-def get_stellar_continuum_fom_maps(drpcube, dapmaps):
-
-    # Get the associated S/N and fit metrics
-    maps_hdu = fits.open(dapmaps)
-    snrg = numpy.ma.MaskedArray(maps_hdu['BIN_SNR'].data,
-                                mask=numpy.invert(maps_hdu['BIN_SNR'].data > 0))
-    mask = maps_hdu['STELLAR_VEL_MASK'].data > 0
-    rms = numpy.ma.MaskedArray(maps_hdu['STELLAR_FOM'].data[0,:,:], mask=mask)
-    frms = numpy.ma.MaskedArray(maps_hdu['STELLAR_FOM'].data[1,:,:], mask=mask)
-    rchi2 = numpy.ma.MaskedArray(maps_hdu['STELLAR_FOM'].data[2,:,:], mask=mask)
-    chi_grw = numpy.ma.MaskedArray(maps_hdu['STELLAR_FOM'].data[6:,:,:])
-    chi_grw[0,mask] = numpy.ma.masked
-    chi_grw[1,mask] = numpy.ma.masked
-    chi_grw[2,mask] = numpy.ma.masked
-
-    extent = map_extent(maps_hdu, 'SPX_MFLUX')
-
-    return extent, snrg, gmr_data(drpcube), rms, frms, rchi2, chi_grw
-
-
-def get_emission_line_data(drpcube, daptype, dapmaps, dapcube):
-    # Get the data
-    cube_hdu = fits.open(dapcube)
-    maps_hdu = fits.open(dapmaps)
-
-    # Get the observed spectra and errors
-    if 'HYB' in daptype:
-        # Fits are to unbinned spectra from DRP datacube
-        drp_hdu = fits.open(drpcube)
-        npix = drp_hdu['FLUX'].data.shape[0]
-        flux = numpy.ma.MaskedArray(drp_hdu['FLUX'].data.reshape(npix,-1),
-                                    mask=drp_hdu['MASK'].data.reshape(npix,-1) > 0)
-        error = numpy.ma.power(numpy.ma.MaskedArray(drp_hdu['IVAR'].data.reshape(npix,-1),
-                                            mask=drp_hdu['MASK'].data.reshape(npix,-1) > 0), -0.5)
-        drp_hdu.close()
-        snrg = maps_hdu['SPX_SNR'].data.ravel()
-
-    else:
-        # Fits are to binned spectra from DAP datacube
-        npix = cube_hdu['FLUX'].data.shape[0]
-        flux = numpy.ma.MaskedArray(cube_hdu['FLUX'].data.reshape(npix,-1),
-                                    mask=cube_hdu['MASK'].data.reshape(npix,-1) > 0)
-        error = numpy.ma.power(numpy.ma.MaskedArray(cube_hdu['IVAR'].data.reshape(npix,-1),
-                                                mask=cube_hdu['MASK'].data.reshape(npix,-1) > 0),
-                               -0.5)
-        snrg = maps_hdu['BIN_SNR'].data.ravel()
-   
-    # Find the unique bins and get rid of -1 bins
-    binid = cube_hdu['BINID'].data[3,:,:].ravel()
-    uniq, indx = map(lambda x: x[1:], numpy.unique(binid, return_index=True))
-
-    flux = flux[:,indx]
-    error = error[:,indx]
-    model = numpy.ma.MaskedArray(cube_hdu['MODEL'].data.reshape(npix,-1),
-                                 mask=cube_hdu['MODEL_MASK'].data.reshape(npix,-1) > 0)[:,indx]
-
-    # Get the associated S/N and fit metrics
-    snrg = snrg[indx]
-    rms = maps_hdu['EMLINE_FOM'].data[0,:,:].ravel()[indx]
-    frms = maps_hdu['EMLINE_FOM'].data[1,:,:].ravel()[indx]
-    rchi2 = maps_hdu['EMLINE_FOM'].data[2,:,:].ravel()[indx]
-
-    return cube_hdu['WAVE'].data, flux, error, model, snrg, rms, frms, rchi2
-
-def get_emission_line_fom_maps(dapmaps):
-
-    maps_hdu = fits.open(dapmaps)
-    eml = channel_dictionary(maps_hdu, 'EMLINE_GFLUX')
-    anr = numpy.ma.MaskedArray(maps_hdu['EMLINE_GANR'].data[eml['Ha-6564'],...],
-                               mask=maps_hdu['EMLINE_GFLUX_MASK'].data[eml['Ha-6564'],...] > 0)
-    ha = numpy.ma.MaskedArray(maps_hdu['EMLINE_GFLUX'].data[eml['Ha-6564'],...],
-                              mask=maps_hdu['EMLINE_GFLUX_MASK'].data[eml['Ha-6564'],...] > 0)
-    hb = numpy.ma.MaskedArray(maps_hdu['EMLINE_GFLUX'].data[eml['Hb-4862'],...],
-                              mask=maps_hdu['EMLINE_GFLUX_MASK'].data[eml['Hb-4862'],...] > 0)
-    aob = numpy.ma.divide(ha, hb)
-
-    # Get the associated S/N and fit metrics
-    rms = numpy.ma.MaskedArray(maps_hdu['EMLINE_FOM'].data[0,:,:])
-    rms[numpy.invert(rms > 0)] = numpy.ma.masked
-    frms = numpy.ma.MaskedArray(maps_hdu['EMLINE_FOM'].data[1,:,:])
-    frms[numpy.invert(frms > 0)] = numpy.ma.masked
-    rchi2 = numpy.ma.MaskedArray(maps_hdu['EMLINE_FOM'].data[2,:,:])
-    rchi2[numpy.invert(rchi2 > 0)] = numpy.ma.masked
-    chi_grw = numpy.ma.MaskedArray(maps_hdu['EMLINE_FOM'].data[6:,:,:])
-    chi_grw[numpy.invert(chi_grw > 0)] = numpy.ma.masked
-
-    extent = map_extent(maps_hdu, 'SPX_MFLUX')
-
-    return extent, anr, aob, rms, frms, rchi2, chi_grw
-
-
 def fit_residuals(drpver, redux_path, dapver, analysis_path, daptype, plt, ifu):
 
     plan_qa_dir = defaults.default_dap_method_path(daptype, plate=plt, ifudesign=ifu, qa=True,
@@ -679,7 +695,6 @@ def fit_residuals(drpver, redux_path, dapver, analysis_path, daptype, plt, ifu):
     apath = os.path.join(analysis_path, daptype, str(plt), str(ifu))
     maps_file = os.path.join(apath, 'manga-{0}-{1}-MAPS-{2}.fits.gz'.format(plt,ifu,daptype))
     cube_file = os.path.join(apath, 'manga-{0}-{1}-LOGCUBE-{2}.fits.gz'.format(plt,ifu,daptype))
-
 
     # Stellar continuum fit qa plot
     ofile_root = os.path.join(plan_qa_dir, 'manga-{0}-{1}-LOGCUBE-{2}-sc-fitqa'.format(

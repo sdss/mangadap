@@ -58,13 +58,12 @@ Utah.
         :class:`mangadap.survey.mangampl.MaNGAMPL`.
     | **23 Aug 2017**: (KBW) Include ppxffit QA plots.
     | **29 Aug 2017**: (KBW) Include DAPall post-processing.
-
     | **16 Jan 2019**: (KBW) Major changes: Only one operation mode
-
         (daily, all, redo removed; code always run in "redo" mode).
         Remove old "prior" options.  Setup done using DRPall by default,
         but option to use mangacore/platetargets.  'CUBE' vs. 'RSS' no
         longer an option, only analyzes CUBEs.
+    | **23 Jan 2019**: (KBW) Add fit QA plots
 
 .. _PEP 8: https://www.python.org/dev/peps/pep-0008
 .. _PEP 257: https://www.python.org/dev/peps/pep-0257
@@ -200,16 +199,18 @@ class rundap:
             Flag to create the DAP log files.
         dapproc (:obj:`bool`, optional):
             Flag to execute the main DAP processing.
-        plots (:obj:`bool`, optional):
-            Create the QA plots.
-        vebose (:obj:`int`, optional):
-            Verbosity level between 0 and 2.
-        build_dapall (:obj:`bool`, optional):
-            Create the script that constructs the DAPall file after the
-            analysis has finished.  Only submitted to the cluster if
-            `report_progress` is True.
+        pltifu_plots (:obj:`bool`, optional):
+            Create the QA plate-ifu specific plots.
+        post_process (:obj:`bool`, optional):
+            Prepare (and possibly perform) the post processing steps:
+            create the DAPall file and its associated QA plots, and the
+            fit QA plots for each plate.
+        post_plots (:obj:`bool`, optional):
+            Create the post-processing QA plots.
         report_progress (:obj:`bool`, optional):
             Report the progress of the analysis.
+        vebose (:obj:`int`, optional):
+            Verbosity level between 0 and 2.
         label (:obj:`str`, optional):
             Label to use in cluster queue.
         nodes (:obj:`int`, optional):
@@ -254,6 +255,8 @@ class rundap:
             files.
         plan_file (str): Name of the plan file to use for ALL DRP data
             in this run.
+        plan (:class:`AnalysisPlanSet`): The set of analysis plans
+        daptypes (:obj:`list`): This list of daptypes, one per plan
         platelist (list): List of plates to analyze.
         ifudesignlist (list): List of ifudesigns to analyze.
         combinatorics (bool): Use all unique combinations of the entered
@@ -265,8 +268,9 @@ class rundap:
         on_disk (bool): See above
         log (str): See above
         dapproc (bool): Flag to execute the main DAP processing
-        plots (bool): Create the QA plots
-        build_dapall (:obj:`bool`): See above
+        pltifu_plots (bool): Create the QA plate-ifu specific plots
+        post_process (:obj:`bool`): See above
+        post_plots (:obj:`bool`): See above
         report_progress (:obj:`bool`): See abve
         label (str): Label to use in cluster queue.
         nodes (int): Number of cluster nodes to use.
@@ -299,8 +303,8 @@ class rundap:
                  strictver=True, mplver=None, redux_path=None, dapver=None, analysis_path=None,
                  plan_file=None, platelist=None, ifudesignlist=None, combinatorics=False,
                  list_file=None, use_platetargets=False, platetargets=None, on_disk=False,
-                 log=False, dapproc=True, plots=True, verbose=0, build_dapall=False,
-                 report_progress=False, label='mangadap', nodes=1, cpus=None, qos=None,
+                 log=False, dapproc=True, pltifu_plots=True, post_process=False, post_plots=False,
+                 report_progress=False, verbose=0, label='mangadap', nodes=1, cpus=None, qos=None,
                  umask='0027', walltime='240:00:00', hard=True, create=False, submit=False,
                  queue=None):
 
@@ -312,9 +316,9 @@ class rundap:
         # Override environment
         self.strictver = strictver
         self.mpl = mplver
-        self.redux_path = redux_path
+        self.redux_path = None if redux_path is None else os.path.abspath(redux_path)
         self.dapver = dapver
-        self.analysis_path = analysis_path
+        self.analysis_path = None if analysis_path is None else os.path.abspath(analysis_path)
 
         # List of files to analyze
         self.plan_file = plan_file
@@ -339,15 +343,14 @@ class rundap:
         # Set the options for output
         self.log = log
         self.dapproc = dapproc
-        self.plots = plots
-        self.verbose = verbose
-
-        # Build the DAPall file (and any QA plots)
-        self.build_dapall = build_dapall
+        self.pltifu_plots = pltifu_plots
+        self.post_process = post_process
+        self.post_plots = post_plots
 
         # Report the progess of the cluster, otherwise just finish
         # script
         self.report_progress = report_progress
+        self.verbose = verbose
 
         # Cluster queue keywords
         self.label = label
@@ -365,22 +368,43 @@ class rundap:
         if console:
             self._read_arg()
 
-        # Make sure there's something to be done
+        # Only print the version of the DAP
+        if self.print_version:
+            print('DAP Version: {0}'.format(__version__))
+            return
+
+        # If submitting to the cluster, make sure that scripts will be
+        # created!
+        if not self.create and self.submit:
+            self.create = True
+
+        # If setting qos, the number of nodes must be 1
+        if self.qos is not None and self.nodes > 1:
+            raise ValueError('When selecting the fast node, must have nodes=1!')
+
+        # Check processing steps
         nproc = 0
         processes = []
         if self.dapproc:
             nproc += 1
             processes += [ 'Main DAP blocks' ]
-        if self.plots:
+        if self.pltifu_plots:
             nproc += 1
-            processes += [ 'QA plots' ]
+            processes += [ 'PLATEIFU-specific QA plots' ]
+        if self.post_process:
+            nproc += 1
+            processes += [ 'DAPall' ]
+        if self.post_plots:
+            nproc += 1
+            processes += [ 'DAPall and PLATE-specific QA plots' ]
         if nproc < 1:
             raise ValueError('No processing steps requested!')
 
-        # Only print the version of the DAP
-        if self.print_version:
-            print('DAP Version: {0}'.format(__version__))
-            return
+        if (self.dapproc or self.plateifu_plots) and self.submit and self.post_process \
+                and not self.report_progress:
+            warnings.warn('If both processing and post processing, need to report progress.  '
+                          'Setting to report progress.')
+            self.report_progress = True
 
         # Make sure the selected MPL version is available
         try:
@@ -393,9 +417,11 @@ class rundap:
 
         # Set the output paths
         self.redux_path = defaults.default_redux_path(self.mpl.drpver) \
-                                    if self.redux_path is None else str(self.redux_path)
+                                    if self.redux_path is None \
+                                    else os.path.abspath(self.redux_path)
         self.analysis_path = defaults.default_analysis_path(self.mpl.drpver, self.dapver) \
-                                    if self.analysis_path is None else str(self.analysis_path)
+                                    if self.analysis_path is None \
+                                    else os.path.abspath(self.analysis_path)
 
         # Set the subdirectory from which the scripts are sourced and
         # the various log files are written.  Currently based on start
@@ -422,6 +448,15 @@ class rundap:
         if not os.path.isfile(self.plan_file):
             shutil.copy2(_plan_file, self.plan_file)
 
+        # Construct the DAPTYPEs and check that the plans yeild a fully
+        # unique list
+        # TODO: This should probably be check done in AnalysisPlanSet
+        self.plan = AnalysisPlanSet.from_par_file(self.plan_file)
+        self.daptypes = [defaults.default_dap_method(plan=self.plan.data[i]) 
+                            for i in range(self.plan.nplans)]
+        if len(numpy.unique(self.daptypes)) != self.plan.nplans:
+            raise ValueError('Plans in {0} do not yield unique DAPTYPEs.'.format(self.plan_file))
+
         # Alert the user of the versions to be used
         if self.q is not None:
             print('Attempting to submit to queue: {0}'.format(self.q))
@@ -435,15 +470,6 @@ class rundap:
         print('  PLAN FILE: {0}'.format(self.plan_file))
         print('Processing steps added to scripts:')
         print('        {0}'.format(processes))
-
-        # If submitting to the cluster, make sure that scripts will be
-        # created!
-        if not self.create and self.submit:
-            self.create = True
-
-        # If setting qos, the number of nodes must be 1
-        if self.qos is not None and self.nodes > 1:
-            raise ValueError('When selecting the fast node, must have nodes=1!')
 
         # Create and update the DRPComplete file if necessary
         self.drpc = DRPComplete(platetargets=self.platetargets, drpver=self.mpl.drpver,
@@ -462,14 +488,8 @@ class rundap:
         # combinatorics and file existence tests).  See, e.g.,
         # selected_drpfile_list().
 
-        # Prep the verbosity of the queue if submitting
-        if self.create:
-            self.queue = pbs.queue(verbose=not self.quiet)
-
-        # Queue label
-        self.label = '{0}_{1}'.format(self.label, self.mpl.mplver)
-
-        # Rows in the DRPComplete database with the DRP file meta data
+        # Find the rows in the DRPComplete database with the DRP file
+        # meta data
         drpc_rows = self._selected_drpfile_rows()
 
         print('Number of DRP files to process: {0}'.format(len(drpc_rows)))
@@ -477,46 +497,42 @@ class rundap:
             # If coded correctly, this function should never return here.
             return
 
-        # Create the script files for the set of drpfiles, and 
-        # submit the scripts to the queue if self.submit is true
-        self._fill_queue(drpc_rows)
+        # Construct the post-processing scripts before
+        # constructing/submitting datacube processing scripts
+        if self.post_process or self.post_plots:
+            post_queue = self._build_post_queue(drpc_rows)
 
-        # Construct the DAPall script
-        if self.build_dapall:
-            dapall_scr, dapall_out, dapall_err \
-                        = self.write_dapall_script(plots=self.plots, clobber=self.clobber)
+        # Process the relevant datacubes
+        if self.dapproc or self.plateifu_plots:
+            # Create the script files for the set of drpfiles, and
+            # submit the scripts to the queue if self.submit is true
+            proc_queue = self._build_proc_queue(drpc_rows)
 
-        # Submit the queue to the cluster
+            # Submit the queue to the cluster
+            if self.create:
+                proc_queue.commit(hard=self.hard, submit=self.submit)
+
+            # If not reporting progress, done
+            if not self.report_progress:
+                return
+
+            # Wait until the queue is finished
+            running = True
+            while running and self.submit:
+                time.sleep(60) 
+                percent_complete = proc_queue.get_percent_complete()
+                print('Percent complete ... {0:.1f}%'.format(percent_complete), end='\r')
+                if percent_complete == 100:
+                    running = False
+            print('Percent complete ... {0:.1f}%'.format(percent_complete))
+
+        if not self.post_process and not self.post_plots:
+            # Don't perform the post-processing
+            return
+
+        # Submit the post-processing queue to the cluster
         if self.create:
-            self.queue.commit(hard=self.hard, submit=self.submit)
-
-        # If nothing has been submitted, nothing left to do
-        if not self.report_progress:
-            return
-
-        # Wait until the queue is finished
-        running = True
-        while running:
-            time.sleep(60) 
-            percent_complete = self.queue.get_percent_complete()
-            print('Percent complete ... {0:.1f}%'.format(percent_complete), end='\r')
-            if percent_complete == 100:
-                running = False
-        print('Percent complete ... {0:.1f}%'.format(percent_complete))
-
-        # No DAPall script, so finish
-        if not self.build_dapall:
-            return
-
-        # Set the ready status file for the DAPall script
-        self.set_status(dapall_scr, status='ready')
-
-        # Execute the DAPall script; if it makes it here, create and
-        # submit should be true
-        dapall_queue = pbs.queue(verbose=not self.quiet)
-        self._create_queue(dapall_queue)
-        dapall_queue.append('source {0}'.format(dapall_scr), outfile=dapall_out, errfile=dapall_err)
-        dapall_queue.commit(hard=self.hard, submit=self.submit)
+            post_queue.commit(hard=self.hard, submit=self.submit)
 
     # ******************************************************************
     #  UTILITY FUNCTIONS
@@ -589,13 +605,17 @@ class rundap:
                             action="store_true", default=False)
         parser.add_argument("--no_plots", help="Do NOT create QA plots", action="store_true",
                             default=False)
+        parser.add_argument("--post", help="Create/Submit the post-processing scripts",
+                            action="store_true", default=False)
+        parser.add_argument("--post_plots", action="store_true", default=False,
+                            help="Create/Submit the post-processing plotting scripts")
 
         parser.add_argument("--dapall", action="store_true", default=False,
                             help='Wait for any individual plate-ifu processes to finish and then'
                                  'update the DAPall file')
 
         # Read arguments specific to the cluster submission behavior
-        parser.add_argument("--label", type=str, help='label for cluster job', default='mangadap')
+        parser.add_argument("--label", type=str, help='label for cluster job', default=None)
         parser.add_argument("--nodes", type=int, help='number of nodes to use in cluster',
                             default=1)
         parser.add_argument("--cpus", type=int,
@@ -675,36 +695,32 @@ class rundap:
         self.on_disk = arg.on_disk
 
         # Overwrite any existing output options
-        # NOTE: This execution means that all 4 steps will default to
-        # True if not specified on the command line.  This matches the
-        # default set by __init__()
         self.log = arg.log
         self.dapproc = not arg.no_proc
         self.plots = not arg.no_plots
+        self.post_process = arg.post
+        self.post_plots = arg.post_plots
         if self.verbose < arg.verbose:
             self.verbose = arg.verbose
-
-        # Set to construct the dapall file
-        self.build_dapall = arg.dapall
 
         # Set to report the progress of the cluster.  This is needed if
         # waiting to submit the DAPall construction script
         self.report_progress = arg.progress
 
         # Set queue keywords
-        if arg.umask is not None:
-            self.umask = arg.umask
+        if arg.label is not None:
+            self.label = arg.label
         if arg.nodes is not None:
             self.nodes = arg.nodes
         if arg.cpus is not None:
             self.cpus = arg.cpus
-        if arg.walltime is not None:
-            self.walltime = arg.walltime
         if arg.qos is not None:
             self.qos = arg.qos
             self.nodes = 1          # Force the number of nodes to be 1
         if arg.umask is not None:
             self.umask = arg.umask
+        if arg.walltime is not None:
+            self.walltime = arg.walltime
         if arg.hard is not None:
             self.hard = arg.hard
         if arg.create is not None:
@@ -745,19 +761,18 @@ class rundap:
         if not os.path.isdir(path):
             os.makedirs(path)
 
-        # Read the analysis plan
-        plan = AnalysisPlanSet.from_par_file(self.plan_file)
-        for i in range(plan.nplans):
-            # Generate the ref subdirectory for this plan
-            path = defaults.default_dap_method_path(defaults.default_dap_method(plan=plan.data[i]),
-                                                    plate=plate, ifudesign=ifudesign, ref=True,
-                                                    drpver=self.mpl.drpver, dapver=self.dapver,
+        # Check the reference directories, which creates the full plan
+        # path if necessary
+        for daptype in self.daptypes:
+            path = defaults.default_dap_method_path(daptype, plate=plate, ifudesign=ifudesign,
+                                                    ref=True, drpver=self.mpl.drpver,
+                                                    dapver=self.dapver,
                                                     analysis_path=self.analysis_path)
             if not os.path.isdir(path):
                 os.makedirs(path)
 
 
-    def _create_queue(self, queue):
+    def _create_queue(self):
         """
         Create a queue instance.
         
@@ -782,6 +797,9 @@ class rundap:
         Submissions to Utah should have their queue destination set to
         None.  However, the fast node can be selected using :attr:`qos`.
         """
+        # Instantiate
+        queue = pbs.queue(verbose=not self.quiet)
+
         if self.q is not None:
             # Expect to select the queue only when submitting to the
             # Portsmouth cluster, sciama.  In this case, the number of
@@ -805,6 +823,8 @@ class rundap:
             queue.create(label=self.label, nodes=self.nodes, qos=self.qos, umask=self.umask,
                          walltime=self.walltime, ppn=ppn, cpus=cpus)
 
+        return queue
+
     # Files:
     #       - mangadap-{plate}-{ifudesign}-LOG{mode} = script file = *
     #       - *.ready = script/directory is ready for queue submission
@@ -814,7 +834,7 @@ class rundap:
     # Other:
     #       - *.par = parameter file
     #       - *.out, *.err = stdout and stderr output from the script
-    def _fill_queue(self, drpc_rows):
+    def _build_proc_queue(self, drpc_rows):
         """
         Create a queue instance, write the script files for all CPUs
         using :func:`prepare_for_analysis` and append the job to the
@@ -859,7 +879,7 @@ class rundap:
         # once created, the queue object is treated identically for both
         # the Utah and Portsmouth clusters.
         if self.create:
-            self._create_queue(self.queue)
+            queue = self._create_queue()
        
         # Create the script files, regardless of whether or not they are
         # submitted to the queue, appending the scripts to the queue if
@@ -869,8 +889,8 @@ class rundap:
             # Write the compute script (write_compute_script also checks
             # the path exists!)
             scriptfile, stdoutfile, stderrfile \
-                    = self._write_compute_script(index, dapproc=self.dapproc, plots=self.plots,
-                                                 clobber=self.clobber)
+                    = self.write_compute_script(index, dapproc=self.dapproc, plots=self.plots,
+                                                clobber=self.clobber)
 
             # Set the status to ready
             plate = self.drpc['PLATE'][index]
@@ -878,7 +898,7 @@ class rundap:
             self.set_pltifu_status(plate, ifudesign, status='ready')
 
             if self.create:
-                self.queue.append('source {0}'.format(scriptfile), outfile=stdoutfile,
+                queue.append('source {0}'.format(scriptfile), outfile=stdoutfile,
                                   errfile=stderrfile)
                 self.set_pltifu_status(plate, ifudesign, status='queued')
             else:
@@ -886,6 +906,44 @@ class rundap:
 
         if not self.create:
             print('Preparing for analysis...{0:.1f}%'.format(100))
+
+        return queue if self.create else None
+
+    def _build_post_queue(self, drpc_rows):
+        """
+        Build the queue that performs the post-processing steps.
+        """
+        # Create the queue
+        if self.create:
+            queue = self._create_queue()
+
+        if self.post_process:
+            # Write the DAPall script and set its status
+            dapall_scr, dapall_out, dapall_err \
+                    = self.write_dapall_script(plots=self.plots, clobber=self.clobber)
+            self.set_status(dapall_scr, status='ready')
+            if self.create:
+                # Add it to the queue
+                queue.append('source {0}'.format(dapall_scr), outfile=dapall_out,
+                             errfile=dapall_err)
+                self.set_status(dapall_scr, status='queued')
+
+        # Write the plate QA plot scripts
+        if self.post_plots:
+            # Find the unique plates
+            plates = numpy.unique(self.drpc['PLATE'][drpc_rows])
+            for plt in plates:
+                # Write the plot script for this plate
+                scriptfile, stdoutfile, stderrfile \
+                        = self.write_plate_qa_script(plt, clobber=self.clobber)
+                self.set_status(scriptfile, status='ready')
+                
+                if self.create:
+                    queue.append('source {0}'.format(scriptfile), outfile=stdoutfile,
+                                 errfile=stderrfile)
+                    self.set_status(scriptfile, status='queued')
+
+        return queue if self.create else None
 
     # ******************************************************************
     # Management
@@ -983,7 +1041,7 @@ class rundap:
             raise ValueError('Should be able to find all plates and ifus.')
         return rows
 
-    def _write_compute_script(self, index, dapproc=True, plots=True, clobber=False,
+    def write_compute_script(self, index, dapproc=True, plots=True, clobber=False,
                               relative_symlink=True):
         """
         Write the MaNGA DAP script file that is sent to a single CPU to
@@ -1020,6 +1078,7 @@ class rundap:
         mode = 'CUBE'
 
         # Check that the path exists, creating it if not
+        # TODO: More efficient way to do this?
         self._check_paths(plate, ifudesign)
 
         # Create the parameter file
@@ -1032,14 +1091,12 @@ class rundap:
             # clobber defaults to True
             self.drpc.write_par(parfile, mode, index=index)
             # and create symlinks to it
-            plan = AnalysisPlanSet.from_par_file(self.plan_file)
-            nplan = plan.nplans
-            for i in range(nplan):
+            for daptype in self.daptypes:
                 # Generate the ref subdirectory for this plan
-                path = defaults.default_dap_method_path(
-                                defaults.default_dap_method(plan=plan.data[i]), plate=plate,
-                                ifudesign=ifudesign, ref=True, drpver=self.mpl.drpver,
-                                dapver=self.dapver, analysis_path=self.analysis_path)
+                path = defaults.default_dap_method_path(daptype, plate=plate, ifudesign=ifudesign,
+                                                        ref=True, drpver=self.mpl.drpver,
+                                                        dapver=self.dapver,
+                                                        analysis_path=self.analysis_path)
                 create_symlink(parfile, path, relative_symlink=relative_symlink, clobber=clobber,
                                quiet=True)
 
@@ -1058,9 +1115,7 @@ class rundap:
             return scriptfile, stdoutfile, stderrfile
 
         # Main script components are:
-        #   - (dapproc) Run the DAP processing code:
-        #       - copy/create the plan file
-        #       - execute the manga_dap via IDL
+        #   - (dapproc) Run the DAP processing code
         #   - (plots) Run the plotting scripts to plot the output
         # ONE OF THESE 2 MUST BE TRUE
 
@@ -1100,6 +1155,11 @@ class rundap:
             file.write('{0}\n'.format(command))
             file.write('\n')
 
+            command = 'dap_fit_residuals {0} {1} --analysis_path {2} --plan_file {3}'.format(
+                            plate, ifudesign, self.analysis_path, self.plan_file)
+            file.write('{0}\n'.format(command))
+            file.write('\n')
+
         # Touch the done file
         donefile = '{0}.done'.format(scriptfile)
         file.write('touch {0}\n'.format(donefile))
@@ -1135,7 +1195,7 @@ class rundap:
             os.makedirs(self.calling_path)
         
         # Set the names for the script, stdout, and stderr files
-        scriptfile = os.path.join(self.calling_path, 'dapall')
+        scriptfile = os.path.join(self.calling_path, 'build_dapall')
         stdoutfile = '{0}.out'.format(scriptfile)
         stderrfile = '{0}.err'.format(scriptfile)
 
@@ -1188,6 +1248,63 @@ class rundap:
         # Return the script file, file for stdout, and file for stderr
         return scriptfile, stdoutfile, stderrfile
     
+    def write_plate_qa_script(self, plate, clobber=False):
+        """
+        Write the script used to create the plate fit QA plot.
 
+        Args:
+            plate (:obj:`int`):
+                The plate number for the plot.
+            clobber (:obj:`bool`, optional):
+                Flag to clobber any existing files.
+
+        Returns:
+            str: Three strings with the name of the written script file,
+            the file for the output sent to STDOUT, and the file for the
+            output sent to STDERR.
+        """
+        # Check that the path exists, creating it if not
+        path = os.path.join(self.calling_path, str(plate))
+        if not os.path.isdir(path):
+            os.makedirs(path)
+        
+        # Set the names for the script, stdout, and stderr files
+        scriptfile = os.path.join(self.calling_path, str(plate), '{0}_fitqa'.format(plate))
+        stdoutfile = '{0}.out'.format(scriptfile)
+        stderrfile = '{0}.err'.format(scriptfile)
+
+        # Script file already exists, so just return
+        if os.path.exists(scriptfile) and not clobber:
+            return scriptfile, stdoutfile, stderrfile
+
+        # Open the script file and write the date as a commented header
+        # line
+        file = open(scriptfile, 'w')
+        file.write('# Auto-generated batch file\n')
+        file.write('# {0}\n'.format(time.strftime("%a %d %b %Y %H:%M:%S",time.localtime())))
+        file.write('\n')
+
+        # Create the started touch file
+        startfile = '{0}.started'.format(scriptfile)
+        file.write('touch {0}\n'.format(startfile))
+        file.write('\n')
+
+        # Command that creates the plots
+        command = 'dap_plate_fit_qa {0} --analysis_path {1} --plan_file {2}'.format(plate,
+                                                            self.analysis_path, self.plan_file)
+        file.write('{0}\n'.format(command))
+        file.write('\n')
+
+        # Touch the done file
+        donefile = '{0}.done'.format(scriptfile)
+        file.write('touch {0}\n'.format(donefile))
+        file.write('\n')
+
+        file.close()
+        ################################################################
+
+        # Return the script file, file for stdout, and file for stderr
+        return scriptfile, stdoutfile, stderrfile
+    
 
 

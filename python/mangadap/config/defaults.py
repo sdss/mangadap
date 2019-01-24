@@ -137,7 +137,7 @@ def default_redux_path(drpver=None):
     if drpver is None:
         drpver = default_drp_version()
     check_environment_variable('MANGA_SPECTRO_REDUX')
-    return os.path.join(os.environ['MANGA_SPECTRO_REDUX'], drpver)
+    return os.path.join(os.path.abspath(os.environ['MANGA_SPECTRO_REDUX']), drpver)
 
 
 def default_drp_directory_path(plate, drpver=None, redux_path=None):
@@ -155,9 +155,9 @@ def default_drp_directory_path(plate, drpver=None, redux_path=None):
         str: Path to the directory with the 3D products of the DRP
     """
     # Make sure the redux path is set
-    if redux_path is None:
-        redux_path = default_redux_path(drpver=drpver)
-    return os.path.join(redux_path, str(plate), 'stack')
+    _redux_path = default_redux_path(drpver=_drpver) \
+                        if redux_path is None else os.path.abspath(redux_path)
+    return os.path.join(_redux_path, str(plate), 'stack')
 
 
 def default_drpall_file(drpver=None, redux_path=None):
@@ -175,7 +175,8 @@ def default_drpall_file(drpver=None, redux_path=None):
         :obj:`str`: Full path to the DRPall fits file.
     """
     _drpver = default_drp_version() if drpver is None else drpver
-    _redux_path = default_redux_path(drpver=_drpver) if redux_path is None else redux_path
+    _redux_path = default_redux_path(drpver=_drpver) \
+                        if redux_path is None else os.path.abspath(redux_path)
     return os.path.join(_redux_path, 'drpall-{0}.fits'.format(_drpver))
 
 # TODO: Are these values kept in MANGACORE somewhere?
@@ -254,7 +255,7 @@ def default_analysis_path(drpver=None, dapver=None):
     if dapver is None:
         dapver = default_dap_version()
     check_environment_variable('MANGA_SPECTRO_ANALYSIS')
-    return os.path.join(os.environ['MANGA_SPECTRO_ANALYSIS'], drpver, dapver)
+    return os.path.join(os.path.abspath(os.environ['MANGA_SPECTRO_ANALYSIS']), drpver, dapver)
 
 
 def default_dap_common_path(plate=None, ifudesign=None, drpver=None, dapver=None,
@@ -285,10 +286,10 @@ def default_dap_common_path(plate=None, ifudesign=None, drpver=None, dapver=None
         raise ValueError('For IFU design subdirectory, must provide plate number.')
 
     # Get the main analysis path
-    if analysis_path is None:
-        analysis_path = default_analysis_path(drpver=drpver, dapver=dapver)
+    _analysis_path = default_analysis_path(drpver=drpver, dapver=dapver) \
+                        if analysis_path is None else os.path.abspath(analysis_path)
 
-    output_path = os.path.join(analysis_path, 'common')
+    output_path = os.path.join(_analysis_path, 'common')
     if plate is None:
         return output_path
     output_path = os.path.join(output_path, str(plate))
@@ -367,11 +368,11 @@ def default_dap_method_path(method, plate=None, ifudesign=None, qa=False, ref=Fa
         raise ValueError('Cannot provide path for both qa and ref directory.  Pick one.')
 
     # Get the main analysis path
-    if analysis_path is None:
-        analysis_path = default_analysis_path(drpver=drpver, dapver=dapver)
+    _analysis_path = default_analysis_path(drpver=drpver, dapver=dapver) \
+                        if analysis_path is None else os.path.abspath(analysis_path)
 
     # Build the plan subirectory
-    output_path = os.path.join(analysis_path, method)
+    output_path = os.path.join(_analysis_path, method)
     if plate is None:
         return output_path
     output_path = os.path.join(output_path, str(plate), str(ifudesign))
@@ -455,13 +456,12 @@ def default_dap_par_file(plate, ifudesign, mode, partype='input', drpver=None, d
         str: Full path to the DAP par file
     """
     # Make sure the directory path is defined
-    if directory_path is None:
-        directory_path = default_dap_common_path(plate=plate, ifudesign=ifudesign,
-                                                 drpver=drpver, dapver=dapver,
-                                                 analysis_path=analysis_path)
+    _directory_path = default_dap_common_path(plate=plate, ifudesign=ifudesign, drpver=drpver,
+                                             dapver=dapver, analysis_path=analysis_path) \
+                            if directory_path is None else os.path.abspath(directory_path)
     # Set the name of the par file; put this in its own function?
     par_file = '{0}-{1}.par'.format(default_dap_file_root(plate, ifudesign, mode), partype)
-    return os.path.join(directory_path, par_file)
+    return os.path.join(_directory_path, par_file)
 
     
 def default_dap_plan_file(drpver=None, dapver=None, analysis_path=None):
@@ -482,12 +482,13 @@ def default_dap_plan_file(drpver=None, dapver=None, analysis_path=None):
     # Get the main analysis path
     if dapver is None:
         dapver = default_dap_version()
-    if analysis_path is None:
-        analysis_path = default_analysis_path(drpver=drpver, dapver=dapver)
+
+    _analysis_path = default_analysis_path(drpver=drpver, dapver=dapver) \
+                        if analysis_path is None else os.path.abspath(analysis_path)
     
     # Set the name of the plan file
     plan_file = 'mangadap-plan-{0}.par'.format(dapver)
-    return os.path.join(analysis_path, plan_file)
+    return os.path.join(_analysis_path, plan_file)
 
 
 def default_dap_file_name(plate, ifudesign, output_mode, mode=None, compressed=True):
@@ -528,8 +529,8 @@ def default_plate_target_files():
     """
     # Default search string
     check_environment_variable('MANGACORE_DIR')
-    search_str = os.path.join(os.environ['MANGACORE_DIR'], 'platedesign', 'platetargets',
-                              'plateTargets*.par')
+    search_str = os.path.join(os.path.abspath(os.environ['MANGACORE_DIR']), 'platedesign',
+                              'platetargets', 'plateTargets*.par')
     file_list = glob.glob(search_str)                       # List of files
     nfiles = len(file_list)
     trgid = numpy.zeros(nfiles, dtype=numpy.int)            # Array to hold indices

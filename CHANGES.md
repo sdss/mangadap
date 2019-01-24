@@ -47,6 +47,11 @@
  - Fixed minor issue in EmissionLineMoments.single_band_moments that
    caused many "UserWarning: Warning: converting a masked element to
    nan." messages.
+ - Added MODEL_MASK to model cube file to differentiate between model
+   mask and binned spectra mask
+ - Added fit QA plots for stellar and emission line modules for each
+   PLTIFU, and a QA plot combining all observations on a given plate.
+ - Added calls to additional QA plots in rundap.py
 
 TODO:
  - Documentation of config examples are out of date!
@@ -56,6 +61,7 @@ TODO:
  - Add DAP versioning to reference files
  - Fix ELMREBIN in 2nd round of moment calculations
  - Stop transposing the datacube data!
+ - Get rid of optional dapsrc
 
 2.2.2 (Not released)
 --------------------
