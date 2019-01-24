@@ -43,7 +43,7 @@ def is_critical(dapver, analysis_path, daptype, plt):
     ifus = [1901, 1902, 3701, 3702, 3703, 3704, 6101, 6102, 6103, 6104, 9101, 9102,
             12701, 12702, 12703, 12704, 12705]
 
-    dapqualbm = DAPQualityBitMask(dapsrc=dapsrc)
+    dapqualbm = DAPQualityBitMask()
 
     critical = numpy.zeros(len(ifus), dtype=bool)
 
@@ -77,17 +77,17 @@ def compile_data(dapver, analysis_path, daptype, plt):
     for ifu in ifus:
         apath = os.path.join(analysis_path, daptype, str(plt), str(ifu))
         maps_file = os.path.join(apath, 'manga-{0}-{1}-MAPS-{2}.fits.gz'.format(plt,ifu,daptype))
-        
+
         if not os.path.isfile(maps_file):
             continue
 
         hdu = fits.open(maps_file)
 
         # Get the stellar data
-        uniq, indx = map(lambda x: x[1:], numpy.unique(maps_file['BINID'].data[1,:,:].ravel(),
+        uniq, indx = map(lambda x: x[1:], numpy.unique(hdu['BINID'].data[1,:,:].ravel(),
                                                        return_index=True))
         mask = hdu['STELLAR_VEL_MASK'].data.ravel()[indx] > 0
-        indx = indx[mask]
+        indx = indx[numpy.invert(mask)]
 
         if len(indx) > 0:
             sc_pltifu += [ '{0}-{1}'.format(plt, ifu) ]
@@ -97,10 +97,10 @@ def compile_data(dapver, analysis_path, daptype, plt):
 
         # Get the emission-line data
         eml = channel_dictionary(hdu, 'EMLINE_GFLUX')
-        uniq, indx = map(lambda x: x[1:], numpy.unique(maps_file['BINID'].data[3,:,:].ravel(),
+        uniq, indx = map(lambda x: x[1:], numpy.unique(hdu['BINID'].data[3,:,:].ravel(),
                                                        return_index=True))
         mask = hdu['EMLINE_GFLUX_MASK'].data[eml['Ha-6564'],:,:].ravel()[indx] > 0
-        indx = indx[mask]
+        indx = indx[numpy.invert(mask)]
 
         if len(indx) > 0:
             el_pltifu += [ '{0}-{1}'.format(plt, ifu) ]
@@ -119,8 +119,8 @@ def plate_fit_qa(dapver, analysis_path, daptype, plt):
     if not os.path.isdir(plate_qa_dir):
         os.makedirs(plate_qa_dir)
 
-#    ofile = os.path.join(plate_qa_dir, '{0}-fitqa.png'.format(plt))
-    ofile = None
+    ofile = os.path.join(plate_qa_dir, '{0}-fitqa.png'.format(plt))
+#    ofile = None
 
     # Determine if the analysis is a CRITICAL failure
     c_ifus, critical = is_critical(dapver, analysis_path, daptype, plt)
@@ -134,7 +134,7 @@ def plate_fit_qa(dapver, analysis_path, daptype, plt):
     assert numpy.array_equal(c_ifus, d_ifus), 'Coding error'
 
     # Make the plot
-    rc('font', size=8)
+    rc('font', size=10)
 
     w,h = pyplot.figaspect(1)
     fig = pyplot.figure(figsize=(1.5*w,1.5*h))
@@ -207,28 +207,28 @@ def plate_fit_qa(dapver, analysis_path, daptype, plt):
 
         # Plot the stellar data
         if numpy.sum(sc_indx) == 1:
-            j = numpy.where(sc_indx)[0]
-            axsc.scatter(sc_snrg[j], sc_rchi[j], marker='.', , edgecolor='k', color=c, s=s, lw=lw,
+            j = numpy.where(sc_indx)[0][0]
+            axsc.scatter(sc_snrg[j], sc_rchi[j], marker='.', edgecolor='k', color=c, s=s, lw=lw,
                          alpha=0.7, zorder=3)
-            axsf.scatter(sc_snrg[j], sc_frms[j], marker='.', , edgecolor='k', color=c, s=s, lw=lw,
+            axsf.scatter(sc_snrg[j], sc_frms[j], marker='.', edgecolor='k', color=c, s=s, lw=lw,
                          alpha=0.7, zorder=3)
         if numpy.sum(el_indx) == 1:
-            j = numpy.where(sc_indx)[0]
-            axec.scatter(sc_snrg[j], sc_rchi[j], marker='.', , edgecolor='k', color=c, s=s, lw=lw,
-                         alpha=0.7, zorder=3, label=pltifu)
-            axef.scatter(sc_snrg[j], sc_frms[j], marker='.', , edgecolor='k', color=c, s=s, lw=lw,
+            j = numpy.where(sc_indx)[0][0]
+            axec.scatter(el_snrg[j], el_rchi[j], marker='.', edgecolor='k', color=c, s=s, lw=lw,
+                         alpha=0.7, zorder=3, label=pltifu[i])
+            axef.scatter(el_snrg[j], el_frms[j], marker='.', edgecolor='k', color=c, s=s, lw=lw,
                          alpha=0.7, zorder=3)
         else:
-            axec.scatter([], [], marker='.', , edgecolor='k', color=c, s=s, lw=lw,
-                         alpha=0.7, zorder=3, label=pltifu)
+            axec.scatter([], [], marker='.', edgecolor='k', color=c, s=s, lw=lw,
+                         alpha=0.7, zorder=3, label=pltifu[i])
         
     axsc.text(-0.13, 0.5, r'$\chi^2_\nu$', ha='center', va='center', transform=axsc.transAxes,
               rotation='vertical', fontsize=12)
     axsf.text(-0.13, 0.5, r'Fractional RMS', ha='center', va='center', transform=axsf.transAxes,
               rotation='vertical', fontsize=12)
-    axsf.text(0.5, -0.11, r'S/N$_g$', ha='center', va='center', transform=axsf.transAxes,
+    axsf.text(0.5, -0.13, r'S/N$_g$', ha='center', va='center', transform=axsf.transAxes,
               fontsize=12)
-    axef.text(0.5, -0.11, r'S/N$_g$', ha='center', va='center', transform=axef.transAxes,
+    axef.text(0.5, -0.13, r'S/N$_g$', ha='center', va='center', transform=axef.transAxes,
               fontsize=12)
 
     l = axec.legend(fontsize='x-small', ncol=2, loc=2)
@@ -241,7 +241,8 @@ def plate_fit_qa(dapver, analysis_path, daptype, plt):
     if ofile is None:
         pyplot.show()
     else:
-        fig.canvas.print_figure(ofile, bbox_inches='tight', dpi=dpi)
+        print('Writing: {0}'.format(ofile))
+        fig.canvas.print_figure(ofile, bbox_inches='tight', dpi=100)
     fig.clear()
     pyplot.close(fig)
 
@@ -291,7 +292,7 @@ if __name__ == '__main__':
         daptypes = [arg.daptype]
 
     for daptype in daptypes:
-        plate_fit_qa(arg.drpver, redux_path, arg.dapver, analysis_path, daptype, arg.plate)
+        plate_fit_qa(arg.dapver, analysis_path, daptype, arg.plate)
 
     print('Elapsed time: {0} seconds'.format(time.clock() - t))
 
