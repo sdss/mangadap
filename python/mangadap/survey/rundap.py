@@ -321,7 +321,7 @@ class rundap:
         self.analysis_path = None if analysis_path is None else os.path.abspath(analysis_path)
 
         # List of files to analyze
-        self.plan_file = plan_file
+        self.plan_file = None if plan_file is None else os.path.abspath(plan_file)
         if list_file is not None and not os.path.isfile(list_file):
             raise FileNotFoundError('No file: {0}'.format(list_file))
         if list_file is None:
@@ -671,7 +671,7 @@ class rundap:
             self.analysis_path = arg.analysis_path
 
         if arg.plan_file is not None:
-            self.plan_file = arg.plan_file
+            self.plan_file = os.path.abspath(arg.plan_file)
 
         if arg.list_file is not None and not os.path.isfile(arg.list_file):
             raise FileNotFoundError('No file: {0}'.format(arg.list_file))
