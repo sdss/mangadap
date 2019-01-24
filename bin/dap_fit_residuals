@@ -202,13 +202,6 @@ def fom_lambda(plt, ifu, wave, flux, error, model, fit='sc', wave_limits=None, o
     chi_sm = bc.smooth(chi)
 
     spec_lim = [-10, nspec+10]
-#    flux_lim = growth_lim(flux, 0.99, fac=1.1)
-#    if flux_lim[0] < 0:
-#        flux_lim[0] = 0
-#    pyplot.hist(numpy.ma.log(flux).compressed(), bins=100)
-#    pyplot.show()
-#
-#    import pdb; pdb.set_trace()
 
     flux_lim = numpy.exp(growth_lim(numpy.ma.log(mean_flux).compressed(), 0.99, fac=2.0))
     snr_lim = numpy.exp(growth_lim(numpy.ma.log(mean_snr).compressed(), 0.99, fac=2.0))

@@ -265,8 +265,6 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
                                      dapsrc=dapsrc, analysis_path=_analysis_path,
                                      clobber=plan['elfit_clobber'][i], loggers=loggers)
 
-#        import pdb; pdb.set_trace()
-#
 #        model_flux = emission_line_model['FLUX'].data
 #        model_base = emission_line_model['BASE'].data
 #        model_mask = emission_line_model['MASK'].data
