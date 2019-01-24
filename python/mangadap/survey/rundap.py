@@ -804,9 +804,9 @@ class rundap:
             # Submitting to Utah ember cluster
             ppn = 12
             cpus = ppn if self.cpus is None else min(self.cpus, ppn)
+            walltime = self.walltime if int(self.walltime.split(':')[0]) < 72 else '72:00:00'
             queue.create(label=self.label, nodes=self.nodes, qos=self.qos, umask=self.umask,
-                         walltime=self.walltime, ppn=ppn, cpus=cpus, partition='ember',
-                         alloc='sdss')
+                         walltime=walltime, ppn=ppn, cpus=cpus, partition='ember', alloc='sdss')
         elif self.q is not None:
             # All other self.q values expected for Portsmouth cluster,
             # sciama.  In this case, the number of nodes is queue
