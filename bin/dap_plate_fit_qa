@@ -6,27 +6,14 @@ import argparse
 import warnings
 import numpy
 
-from scipy.special import erf
-from scipy import interpolate
-
-from matplotlib import pyplot, ticker, rc, colors, cm, colorbar, image
+from matplotlib import pyplot, ticker, rc
 
 from astropy.io import fits
-import astropy.constants
 
 from mangadap.dapfits import DAPQualityBitMask
 from mangadap.config import defaults
-from mangadap.proc.util import growth_lim, sample_growth
-from mangadap.util.bitmask import BitMask
-
-from mangadap.util.fitsutil import DAPFitsUtil
-
-from mangadap.util.fileio import init_record_array, rec_to_fits_type, rec_to_fits_col_dim
-from mangadap.util.filter import BoxcarFilter
-from mangadap.util.sampling import Resample, spectral_coordinate_step
-from mangadap.proc.spectralstack import SpectralStack
-from mangadap.util.mapping import map_extent, map_beam_patch
-
+from mangadap.proc.util import growth_lim
+from mangadap.par.analysisplan import AnalysisPlanSet
 from mangadap.util.fileio import channel_dictionary
 
 #-----------------------------------------------------------------------------

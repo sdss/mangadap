@@ -15,10 +15,10 @@ from astropy.io import fits
 from mangadap.config import defaults
 from mangadap.proc.util import growth_lim
 
+from mangadap.par.analysisplan import AnalysisPlanSet
 from mangadap.util.filter import BoxcarFilter
 from mangadap.util.sampling import spectral_coordinate_step
 from mangadap.util.mapping import map_extent, map_beam_patch
-
 from mangadap.util.fileio import channel_dictionary
 
 #-----------------------------------------------------------------------------
