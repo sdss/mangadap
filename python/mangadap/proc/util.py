@@ -143,6 +143,9 @@ def select_proc_method(method_key, method_type, method_list=None, available_func
     if numpy.sum(selected_method) == 0:
         raise KeyError('{0} is not a valid method/database/library!'.format(method_key))
     if numpy.sum(selected_method) > 1:
+        for l in method_list:
+            print('  ' + l['key'])
+        print(method_key)
         raise KeyError('Keywords are not all unique!')
 
     # Return the method selected via the input keyword
