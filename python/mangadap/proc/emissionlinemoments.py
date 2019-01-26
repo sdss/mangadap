@@ -338,10 +338,12 @@ class EmissionLineMoments:
                 moment measurements.  See :func:`measure`.
         """
         # Set the output directory path
-        continuum_method = None if self.stellar_continuum is None \
-                                else self.stellar_continuum.method['key']
-        method = default_dap_method(binned_spectra=self.binned_spectra,
-                                    continuum_method=continuum_method)
+        continuum_templates = 'None' if self.stellar_continuum is None \
+                            else self.stellar_continuum.method['fitpar']['template_library_key']
+        eml_templates = 'None' if self.emission_line_model is None \
+                            else self.emission_line_model.method['continuum_tpl_key']
+        method = default_dap_method(self.binned_spectra.method['key'], continuum_templates,
+                                    eml_templates)
         self.directory_path = default_dap_method_path(method, plate=self.binned_spectra.drpf.plate,
                                                       ifudesign=self.binned_spectra.drpf.ifudesign,
                                                       ref=True,
@@ -352,8 +354,8 @@ class EmissionLineMoments:
         # Set the output file
         ref_method = '{0}-{1}'.format(self.binned_spectra.rdxqa.method['key'],
                                       self.binned_spectra.method['key'])
-        if continuum_method is not None:
-            ref_method = '{0}-{1}'.format(ref_method, continuum_method)
+        if self.stellar_continuum is not None:
+            ref_method = '{0}-{1}'.format(ref_method, self.stellar_continuum.method['key'])
         if self.emission_line_model is not None:
             ref_method = '{0}-{1}'.format(ref_method, self.emission_line_model.method['key'])
         ref_method = '{0}-{1}'.format(ref_method, self.database['key'])

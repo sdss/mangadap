@@ -25,8 +25,6 @@ from mangadap.proc.stellarcontinuummodel import StellarContinuumModel, StellarCo
 
 from mangadap.tests.util import data_file
 
-from mangadap.par.emissionmomentsdb import EmissionMomentsDB
-from mangadap.proc.emissionlinemoments import EmissionLineMoments
 from mangadap.proc.sasuke import Sasuke
 from mangadap.proc.emissionlinemodel import EmissionLineModelBitMask
 

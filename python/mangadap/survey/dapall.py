@@ -62,9 +62,11 @@ from ..par.bandheadindexdb import BandheadIndexDB
 from ..par.emissionlinedb import EmissionLineDB
 from ..par.emissionmomentsdb import EmissionMomentsDB
 from ..proc.util import select_proc_method, sample_growth
+from ..proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
+from ..proc.stellarcontinuummodel import StellarContinuumModel
 from ..proc.emissionlinemoments import EmissionLineMomentsDef
 from ..proc.emissionlinemoments import available_emission_line_moment_databases
-from ..proc.emissionlinemodel import EmissionLineModelDef
+from ..proc.emissionlinemodel import EmissionLineModel, EmissionLineModelDef
 from ..proc.emissionlinemodel import available_emission_line_modeling_methods
 from ..proc.spectralindices import SpectralIndicesDef, available_spectral_index_databases
 
@@ -892,8 +894,15 @@ class DAPall:
             raise TypeError('Input plan must have type AnalysisPlanSet.')
 
         # Get the full list of available plan methods
-        plan_methods = numpy.array([ defaults.default_dap_method(plan=p) for p in plan ])
-
+#        plan_methods = numpy.array([ defaults.default_dap_method(plan=p) for p in plan ])
+        plan_methods = []
+        for p in plan:
+            bin_method = SpatiallyBinnedSpectra.define_method(p['bin_key'])
+            sc_method = StellarContinuumModel.define_method(p['continuum_key'])
+            el_method = EmissionLineModel.define_method(p['elfit_key'])
+            plan_methods += [defaults.default_dap_method(bin_method['key'],
+                                                sc_method['fitpar']['template_library_key'],
+                                                el_method['continuum_tpl_key'])]
         # Check that the plan methods are unique.  This should never be
         # raised, unless it also causes problems in the DAP itself.
         if len(numpy.unique(plan_methods)) != len(plan_methods):

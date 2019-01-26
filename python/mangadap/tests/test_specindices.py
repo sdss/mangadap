@@ -6,37 +6,16 @@ from __future__ import unicode_literals
 
 import pytest
 import os
-
 import numpy
-from scipy import interpolate
-from astropy.io import fits
-import astropy.constants
 
-from mangadap.drpfits import DRPFits, DRPFitsBitMask
-
-from mangadap.par.artifactdb import ArtifactDB
-from mangadap.par.emissionlinedb import EmissionLineDB
 from mangadap.par.absorptionindexdb import AbsorptionIndexDB
 from mangadap.par.bandheadindexdb import BandheadIndexDB
-
-from mangadap.util.pixelmask import SpectralPixelMask
-
 from mangadap.proc.templatelibrary import TemplateLibrary
-from mangadap.proc.ppxffit import PPXFFit
-from mangadap.proc.stellarcontinuummodel import StellarContinuumModel, StellarContinuumModelBitMask
-
-from mangadap.tests.util import data_file
-
-from mangadap.par.emissionmomentsdb import EmissionMomentsDB
-from mangadap.proc.emissionlinemoments import EmissionLineMoments
-from mangadap.proc.sasuke import Sasuke
-from mangadap.proc.emissionlinemodel import EmissionLineModelBitMask
-
 from mangadap.proc.spectralindices import SpectralIndices, SpectralIndicesBitMask
 
 import warnings
-warnings.simplefilter("ignore", UserWarning)
-warnings.simplefilter("ignore", RuntimeWarning)
+warnings.simplefilter('ignore', UserWarning)
+warnings.simplefilter('ignore', RuntimeWarning)
 
 def test_model_indices():
 

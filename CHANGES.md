@@ -52,6 +52,9 @@
  - Added fit QA plots for stellar and emission line modules for each
    PLTIFU, and a QA plot combining all observations on a given plate.
  - Added calls to additional QA plots in rundap.py
+ - Changed daptype to binning-stellartemplates-emissionlinetemplates
+   using default_dap_method.  StellarContinuumModel reference file moved
+   to the common directory.
 
 TODO:
  - Documentation of config examples are out of date!
@@ -62,6 +65,7 @@ TODO:
  - Fix ELMREBIN in 2nd round of moment calculations
  - Stop transposing the datacube data!
  - Get rid of optional dapsrc
+ - Keep all the reference files to the common directory?
 
 2.2.2 (Not released)
 --------------------

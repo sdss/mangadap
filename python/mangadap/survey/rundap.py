@@ -452,8 +452,16 @@ class rundap:
         # unique list
         # TODO: This should probably be check done in AnalysisPlanSet
         self.plan = AnalysisPlanSet.from_par_file(self.plan_file)
-        self.daptypes = [defaults.default_dap_method(plan=self.plan.data[i]) 
-                            for i in range(self.plan.nplans)]
+#        self.daptypes = [defaults.default_dap_method(plan=self.plan.data[i]) 
+#                            for i in range(self.plan.nplans)]
+        self.daptypes = []
+        for p in self.plan:
+            bin_method = SpatiallyBinnedSpectra.define_method(p['bin_key'])
+            sc_method = StellarContinuumModel.define_method(p['continuum_key'])
+            el_method = EmissionLineModel.define_method(p['elfit_key'])
+            self.daptypes += [defaults.default_dap_method(bin_method['key'],
+                                                    sc_method['fitpar']['template_library_key'],
+                                                    el_method['continuum_tpl_key'])]
         if len(numpy.unique(self.daptypes)) != self.plan.nplans:
             raise ValueError('Plans in {0} do not yield unique DAPTYPEs.'.format(self.plan_file))
 

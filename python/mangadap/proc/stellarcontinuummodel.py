@@ -64,14 +64,13 @@ from ..par.artifactdb import ArtifactDB
 from ..par.emissionlinedb import EmissionLineDB
 from ..util.log import log_output
 from ..util.fitsutil import DAPFitsUtil
-from ..util.fileio import rec_to_fits_type
+from ..util.fileio import rec_to_fits_type, create_symlink
 from ..util.sampling import spectral_coordinate_step, spectrum_velocity_scale
 from ..util.resolution import SpectralResolution
 from ..util.bitmask import BitMask
 from ..util.pixelmask import SpectralPixelMask
 from ..util.parser import DefaultConfig
-from ..config.defaults import dap_source_dir, default_dap_file_name
-from ..config.defaults import default_dap_method, default_dap_method_path
+from ..config import defaults
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .templatelibrary import TemplateLibrary
 from .ppxffit import PPXFFitPar, PPXFFit
@@ -198,7 +197,7 @@ def available_stellar_continuum_modeling_methods(dapsrc=None):
         
     """
     # Check the source directory exists
-    dapsrc = dap_source_dir() if dapsrc is None else str(dapsrc)
+    dapsrc = defaults.dap_source_dir() if dapsrc is None else str(dapsrc)
     if not os.path.isdir(dapsrc):
         raise NotADirectoryError('{0} does not exist!'.format(dapsrc))
 
@@ -277,7 +276,7 @@ class StellarContinuumModelBitMask(BitMask):
 
     """
     def __init__(self, dapsrc=None):
-        dapsrc = dap_source_dir() if dapsrc is None else str(dapsrc)
+        dapsrc = defaults.dap_source_dir() if dapsrc is None else str(dapsrc)
         BitMask.__init__(self, ini_file=os.path.join(dapsrc, 'python', 'mangadap', 'config',
                                                      'bitmasks',
                                                      'stellar_continuum_model_bits.ini'))
@@ -323,6 +322,9 @@ class StellarContinuumModel:
         hardcopy (bool): (**Optional**) Flag to write the HDUList
             attribute to disk.  Default is True; if False, the HDUList
             is only kept in memory and would have to be reconstructed.
+        symlink_dir (:obj:`str`, optional):
+            Create a symbolic link to the created file in the supplied
+            directory.  Default is to produce no symbolic link. 
         tpl_symlink_dir (str): (**Optional**) Create a symbolic link to
             the created template library file in the supplied directory.
             Default is to produce no symbolic link.
@@ -354,15 +356,14 @@ class StellarContinuumModel:
 #    @profile
     def __init__(self, method_key, binned_spectra, guess_vel, guess_sig=None,
                  method_list=None, dapsrc=None, dapver=None, analysis_path=None,
-                 directory_path=None, output_file=None, hardcopy=True, tpl_symlink_dir=None,
-                 clobber=False, checksum=False, loggers=None, quiet=False):
+                 directory_path=None, output_file=None, hardcopy=True, symlink_dir=None,
+                 tpl_symlink_dir=None, clobber=False, checksum=False, loggers=None, quiet=False):
 
         self.loggers = None
         self.quiet = False
 
         # Define the method properties
-        self.method = None
-        self._define_method(method_key, method_list=method_list, dapsrc=dapsrc)
+        self.method = self.define_method(method_key, method_list=method_list, dapsrc=dapsrc)
 
         self.binned_spectra = None
         self.guess_vel = None
@@ -372,6 +373,7 @@ class StellarContinuumModel:
         self.directory_path = None      # Set in _set_paths
         self.output_file = None
         self.hardcopy = None
+        self.symlink_dir = None
 
         # Define the bitmask
         self.bitmask = StellarContinuumModelBitMask(dapsrc=dapsrc)
@@ -398,8 +400,8 @@ class StellarContinuumModel:
         # Run the assessments of the DRP file
         self.fit(binned_spectra, guess_vel, guess_sig=guess_sig, dapsrc=dapsrc,
                  dapver=dapver, analysis_path=analysis_path, directory_path=directory_path,
-                 output_file=output_file, hardcopy=hardcopy, tpl_symlink_dir=tpl_symlink_dir,
-                 clobber=clobber, loggers=loggers, quiet=quiet)
+                 output_file=output_file, hardcopy=hardcopy, symlink_dir=symlink_dir,
+                 tpl_symlink_dir=tpl_symlink_dir, clobber=clobber, loggers=loggers, quiet=quiet)
 
 
 #    def __del__(self):
@@ -417,15 +419,15 @@ class StellarContinuumModel:
         return self.hdu[key]
 
 
-    def _define_method(self, method_key, method_list=None, dapsrc=None):
+    @staticmethod
+    def define_method(method_key, method_list=None, dapsrc=None):
         r"""
         Select the method
         """
         # Grab the specific method
-        self.method = select_proc_method(method_key, StellarContinuumModelDef,
-                                         method_list=method_list,
-                                       available_func=available_stellar_continuum_modeling_methods,
-                                         dapsrc=dapsrc)
+        return select_proc_method(method_key, StellarContinuumModelDef, method_list=method_list,
+                                  available_func=available_stellar_continuum_modeling_methods,
+                                  dapsrc=dapsrc)
 
 
     def _fill_method_par(self, dapsrc=None, dapver=None, analysis_path=None, tpl_symlink_dir=None):
@@ -503,13 +505,14 @@ class StellarContinuumModel:
             designation = '{0}-FWHM{1:.2f}'.format(self.method['fitpar']['template_library_key'],
                                                    resolution_fwhm)
             # Set the output file name
-            processed_file = default_dap_file_name(self.binned_spectra.drpf.plate,
-                                                   self.binned_spectra.drpf.ifudesign, designation)
+            processed_file = defaults.default_dap_file_name(self.binned_spectra.drpf.plate,
+                                                            self.binned_spectra.drpf.ifudesign,
+                                                            designation)
 
-            directory_path = default_dap_common_path(plate=self.binned_spectra.drpf.plate,
-                                                     ifudesign=self.binned_spectra.drpf.ifudesign,
-                                                     drpver=self.binned_spectra.drpf.drpver,
-                                                     dapver=dapver, analysis_path=analysis_path)
+            directory_path = defaults.default_dap_common_path(plate=self.binned_spectra.drpf.plate,
+                                                    ifudesign=self.binned_spectra.drpf.ifudesign,
+                                                    drpver=self.binned_spectra.drpf.drpver,
+                                                    dapver=dapver, analysis_path=analysis_path)
 
             velscale_ratio = 1 if self.method['fitpar']['velscale_ratio'] is None \
                                 else self.method['fitpar']['velscale_ratio']
@@ -527,7 +530,7 @@ class StellarContinuumModel:
         """
         Set the :attr:`directory_path` and :attr:`output_file`.  If not
         provided, the defaults are set using, respectively,
-        :func:`mangadap.config.defaults.default_dap_method_path` and
+        :func:`mangadap.config.defaults.default_dap_common_path` and
         :func:`mangadap.config.defaults.default_dap_file_name`.
 
         Args:
@@ -724,7 +727,7 @@ class StellarContinuumModel:
                 the stellar-continuum fitting.
             directory_path (str): (**Optional**) The exact path to the
                 DAP stellar-continuum file.  Default set by
-                :func:`mangadap.config.defaults.default_dap_method_path`.
+                :func:`mangadap.config.defaults.default_dap_common_path`.
             drpver (str): (**Optional**) DRP version.  Default set by
                 :func:`mangadap.config.defaults.default_drp_version`.
             dapver (str): (**Optional**) DAP version.  Default set by
@@ -742,15 +745,13 @@ class StellarContinuumModel:
             name of the output file.
         """
         # Set the output directory path
-        method = default_dap_method(binning_method=binning_method, continuum_method=method_key)
-        directory_path = default_dap_method_path(method, plate=plate, ifudesign=ifudesign,
-                                                 ref=True, drpver=drpver, dapver=dapver,
-                                                 analysis_path=analysis_path) \
+        directory_path = defaults.default_dap_common_path(plate=plate, ifudesign=ifudesign,
+                                                          drpver=drpver, dapver=dapver,
+                                                          analysis_path=analysis_path) \
                                         if directory_path is None else str(directory_path)
-
         # Set the output file
         ref_method = '{0}-{1}-{2}'.format(rdxqa_method, binning_method, method_key)
-        output_file = default_dap_file_name(plate, ifudesign, ref_method) \
+        output_file = defaults.default_dap_file_name(plate, ifudesign, ref_method) \
                                         if output_file is None else str(output_file)
         return directory_path, output_file
 
@@ -784,7 +785,7 @@ class StellarContinuumModel:
 
     def fit(self, binned_spectra, guess_vel, guess_sig=None, dapsrc=None, dapver=None,
             analysis_path=None, directory_path=None, output_file=None, hardcopy=True,
-            tpl_symlink_dir=None, clobber=False, loggers=None, quiet=False):
+            symlink_dir=None, tpl_symlink_dir=None, clobber=False, loggers=None, quiet=False):
         """
         Fit the binned spectra using the specified method.
 
@@ -792,44 +793,56 @@ class StellarContinuumModel:
             binned_spectra
                 (:class:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra`):
                 The binned spectra to fit.
-            guess_vel (float, numpy.ndarray): A single or spectrum-dependent
-                initial estimate of the redshift in km/s (:math:`cz`).
-            guess_sig (float, numpy.ndarray): (**Optional**) A single or
-                spectrum-dependent initial estimate of the velocity
-                dispersion in km/s.  Default is 100 km/s.
-            dapsrc (str): (**Optional**) Root path to the DAP source
-                directory.  If not provided, the default is defined by
+            guess_vel (:obj:`float`, `numpy.ndarray`):
+                A single or spectrum-dependent initial estimate of the
+                redshift in km/s (:math:`cz`).
+            guess_sig (:obj:`float`, `numpy.ndarray`, optional):
+                A single or spectrum-dependent initial estimate of the
+                velocity dispersion in km/s.
+            dapsrc (:obj:`str`, optional):
+                Root path to the DAP source directory.  If not provided,
+                the default is defined by
                 :func:`mangadap.config.defaults.dap_source_dir`.
-            dapver (str): (**Optional**) The DAP version to use for the
-                analysis, used to override the default defined by
+            dapver (:obj:`str`, optional):
+                The DAP version to use for the analysis paths, used to
+                override the default defined by
                 :func:`mangadap.config.defaults.default_dap_version`.
-            analysis_path (str): (**Optional**) The top-level path for
-                the DAP output files, used to override the default
-                defined by
+                This only sets the path names and does *not* change the
+                version of the code being used.
+            analysis_path (:obj:`str`, optional):
+                The top-level path for the DAP output files, used to
+                override the default defined by
                 :func:`mangadap.config.defaults.default_analysis_path`.
-            directory_path (str): The exact path to the directory with
-                DAP output that is common to number DAP "methods".  See
+            directory_path (:obj:`str`, optional):
+                The exact path to the directory with DAP output that is
+                common to number DAP "methods".  See
                 :attr:`directory_path`.
-            output_file (str): (**Optional**) Exact name for the output
-                file.  The default is to use
+            output_file (:obj:`str`, optional):
+                Exact name for the output file.  The default is to use
                 :func:`mangadap.config.defaults.default_dap_file_name`.
-            hardcopy (bool): (**Optional**) Flag to write the HDUList
-                attribute to disk.  Default is True; if False, the
-                HDUList is only kept in memory and would have to be
-                reconstructed.
-            tpl_symlink_dir (str): (**Optional**) Create a symbolic link
-                to the created template library file in the supplied
-                directory.  Default is to produce no symbolic link.
-            clobber (bool): (**Optional**) Overwrite any existing files.
-                Default is to use any existing file instead of redoing
-                the analysis and overwriting the existing output.
-            loggers (list): (**Optional**) List of `logging.Logger`_
-                objects to log progress; ignored if quiet=True.  Logging
-                is done using :func:`mangadap.util.log.log_output`.
-                Default is no logging.
-            quiet (bool): (**Optional**) Suppress all terminal and
-                logging output.  Default is False.
-
+            hardcopy (:obj:`bool`, optional):
+                Flag to write the HDUList attribute to disk.  Default is
+                True; if False, the HDUList is only kept in memory and
+                would have to be reconstructed.
+            symlink_dir (:obj:`str`, optional):
+                Create a symbolic link to the created file in the
+                supplied directory.  Default is to produce no symbolic
+                link. 
+            tpl_symlink_dir (:obj:`str`, optional):
+                Create a symbolic link to the created template library
+                file in the supplied directory.  Default is to produce
+                no symbolic link.
+            clobber (:obj:`bool`, optional):
+                Overwrite any existing files.  Default is to use any
+                existing file instead of redoing the analysis and
+                overwriting the existing output.
+            loggers (:obj:`list`, optional):
+                List of `logging.Logger`_ objects to log progress;
+                ignored if quiet=True.  Logging is done using
+                :func:`mangadap.util.log.log_output`.  Default is no
+                logging.
+            quiet (:obj:`bool`, optional):
+                Suppress all terminal and logging output. 
         """
         # Initialize the reporting
         if loggers is not None:
@@ -908,11 +921,15 @@ class StellarContinuumModel:
         #---------------------------------------------------------------
         # If the file already exists, and not clobbering, just read the
         # file
+        self.symlink_dir = symlink_dir
         if os.path.isfile(ofile) and not clobber:
             self.hardcopy = True
             if not self.quiet:
                 log_output(self.loggers, 1, logging.INFO, 'Using existing file')
             self.read(checksum=self.checksum, debug=debug)
+            # Make sure the symlink exists
+            if self.symlink_dir is not None:
+                create_symlink(ofile, self.symlink_dir, clobber=clobber)
             if not self.quiet:
                 log_output(self.loggers, 1, logging.INFO, '-'*50)
             return

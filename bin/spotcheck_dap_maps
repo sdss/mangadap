@@ -580,7 +580,14 @@ if __name__ == '__main__':
                                           analysis_path=arg.analysis_path) \
                                             if arg.plan_file is None else arg.plan_file
         analysisplan = AnalysisPlanSet.from_par_file(plan_file)
-        daptypes = [ default_dap_method(plan=p) for p in analysisplan ]
+#        daptypes = [ default_dap_method(plan=p) for p in analysisplan ]
+        for p in analysisplan:
+            bin_method = SpatiallyBinnedSpectra.define_method(p['bin_key'])
+            sc_method = StellarContinuumModel.define_method(p['continuum_key'])
+            el_method = EmissionLineModel.define_method(p['elfit_key'])
+            daptypes += [default_dap_method(bin_method['key'],
+                                            sc_method['fitpar']['template_library_key'],
+                                            el_method['continuum_tpl_key'])]
     else:
         daptypes = [arg.daptype]
 

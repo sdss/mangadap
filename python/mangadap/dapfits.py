@@ -66,10 +66,7 @@ from .util.exception_tools import print_frame
 from .util.geometry import SemiMajorAxisCoo
 from .util.covariance import Covariance
 from .par.obsinput import ObsInputPar
-from .config.defaults import default_drp_version, dap_source_dir, default_dap_version
-from .config.defaults import default_dap_par_file, default_analysis_path
-from .config.defaults import default_dap_method, default_dap_method_path
-from .config.defaults import default_dap_file_name
+from .config import defaults
 from .proc.reductionassessments import ReductionAssessment
 from .proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .proc.stellarcontinuummodel import StellarContinuumModel
@@ -86,7 +83,7 @@ class DAPQualityBitMask(BitMask):
         - Force read IDLUTILS version as opposed to internal one?
     """
     def __init__(self, dapsrc=None):
-        _dapsrc = dap_source_dir() if dapsrc is None else str(dapsrc)
+        _dapsrc = defaults.dap_source_dir() if dapsrc is None else str(dapsrc)
         BitMask.__init__(self, ini_file=os.path.join(_dapsrc, 'python', 'mangadap', 'config',
                                                      'bitmasks', 'dap_quality_bits.ini'))
 
@@ -97,7 +94,7 @@ class DAPMapsBitMask(BitMask):
         - Force read IDLUTILS version as opposed to internal one?
     """
     def __init__(self, dapsrc=None):
-        _dapsrc = dap_source_dir() if dapsrc is None else str(dapsrc)
+        _dapsrc = defaults.dap_source_dir() if dapsrc is None else str(dapsrc)
         BitMask.__init__(self, ini_file=os.path.join(_dapsrc, 'python', 'mangadap', 'config',
                                                      'bitmasks', 'dap_maps_bits.ini'))
 
@@ -108,7 +105,7 @@ class DAPCubeBitMask(BitMask):
         - Force read IDLUTILS version as opposed to internal one?
     """
     def __init__(self, dapsrc=None):
-        _dapsrc = dap_source_dir() if dapsrc is None else str(dapsrc)
+        _dapsrc = defaults.dap_source_dir() if dapsrc is None else str(dapsrc)
         BitMask.__init__(self, ini_file=os.path.join(_dapsrc, 'python', 'mangadap', 'config',
                                                      'bitmasks', 'dap_cube_bits.ini'))
 
@@ -183,14 +180,15 @@ class DAPFits:
         # TODO: Do we need drpver, dapver, analysis_path to be kept
         # by self?
         if directory_path is None:
-            self.drpver = default_drp_version() if drpver is None else str(drpver)
-            self.dapver = default_dap_version() if dapver is None else str(dapver)
-            self.analysis_path = default_analysis_path(self.drpver, self.dapver) \
+            self.drpver = defaults.default_drp_version() if drpver is None else str(drpver)
+            self.dapver = defaults.default_dap_version() if dapver is None else str(dapver)
+            self.analysis_path = defaults.default_analysis_path(self.drpver, self.dapver) \
                                  if analysis_path is None else str(analysis_path)
-            self.directory_path = default_dap_method_path(method, plate=self.plate,
-                                                          ifudesign=self.ifudesign,
-                                                          drpver=self.drpver, dapver=self.dapver,
-                                                          analysis_path=self.analysis_path)
+            self.directory_path = defaults.default_dap_method_path(method, plate=self.plate,
+                                                                   ifudesign=self.ifudesign,
+                                                                   drpver=self.drpver,
+                                                                   dapver=self.dapver,
+                                                                analysis_path=self.analysis_path)
         else:
             self.drpver = None
             self.dapver = None
@@ -198,19 +196,20 @@ class DAPFits:
             self.directory_path = str(directory_path)
 
         # Set the reference directory path
-        self.reference_path = default_dap_method_path(method, plate=self.plate,
-                                                      ifudesign=self.ifudesign, ref=True,
-                                                      drpver=self.drpver, dapver=self.dapver,
-                                                      analysis_path=self.analysis_path) \
+        self.reference_path = defaults.default_dap_method_path(method, plate=self.plate,
+                                                               ifudesign=self.ifudesign, ref=True,
+                                                               drpver=self.drpver,
+                                                               dapver=self.dapver,
+                                                               analysis_path=self.analysis_path) \
                                     if reference_path is None else reference_path
 
         # drpver, dapver, and analysis_path can be None and par_file
         # will still only use the above defined directory_path
-        self.par_file = default_dap_par_file(self.plate, self.ifudesign, 'CUBE',
-                                             drpver=self.drpver, dapver=self.dapver,
-                                             analysis_path=self.analysis_path,
-                                             directory_path=self.reference_path) \
-                                             if par_file is None else str(par_file)
+        self.par_file = defaults.default_dap_par_file(self.plate, self.ifudesign, 'CUBE',
+                                                      drpver=self.drpver, dapver=self.dapver,
+                                                      analysis_path=self.analysis_path,
+                                                      directory_path=self.reference_path) \
+                                    if par_file is None else str(par_file)
 
         # Set the bitmasks
         self.bitmask = DAPMapsBitMask()
@@ -334,7 +333,7 @@ class DAPFits:
     
     def file_name(self):
         """Return the name of the DAP file"""
-        return default_dap_file_name(self.plate, self.ifudesign, self.method, mode='MAPS')
+        return defaults.default_dap_file_name(self.plate, self.ifudesign, self.method, mode='MAPS')
 
 
     def file_path(self):
@@ -618,7 +617,7 @@ class construct_maps_file:
         self.directory_path = None
         self.output_file = None
         self._set_paths(directory_path, dapver, analysis_path, output_file, binned_spectra,
-                        stellar_continuum)
+                        stellar_continuum, emission_line_model)
 
         # Save input for reference
         self.spatial_shape = self.drpf.spatial_shape
@@ -654,8 +653,9 @@ class construct_maps_file:
         # Initialize the primary header
         prihdr = DAPFitsUtil.initialize_dap_primary_header(self.drpf, maskname='MANGA_DAPPIXMASK')
         # Add the DAP method
-        prihdr['DAPTYPE'] = (default_dap_method(binned_spectra=binned_spectra,
-                                                stellar_continuum=stellar_continuum),
+        prihdr['DAPTYPE'] = (defaults.default_dap_method(binned_spectra.method['key'],
+                                    stellar_continuum.method['fitpar']['template_library_key'],
+                                    emission_line_model.method['continuum_tpl_key']),
                              'DAP analysis method')
         # Add the format of this file
         prihdr['DAPFRMT'] = ('MAPS', 'DAP data file format')
@@ -796,7 +796,7 @@ class construct_maps_file:
 
 
     def _set_paths(self, directory_path, dapver, analysis_path, output_file, binned_spectra,
-                   stellar_continuum):
+                   stellar_continuum, emission_line_model):
         """
         Set the paths relevant to the map file.
         """
@@ -807,18 +807,21 @@ class construct_maps_file:
 
         # Set the output directory path
         # TODO: Get DAP version from __version__ string
-        self.method = default_dap_method(binned_spectra=binned_spectra,
-                                         stellar_continuum=stellar_continuum) \
+
+        self.method = defaults.default_dap_method(binned_spectra.method['key'],
+                                    stellar_continuum.method['fitpar']['template_library_key'],
+                                    emission_line_model.method['continuum_tpl_key']) \
                                 if directory_path is None else None
-        self.directory_path = default_dap_method_path(self.method, plate=self.drpf.plate,
-                                                      ifudesign=self.drpf.ifudesign,
-                                                      drpver=self.drpf.drpver, dapver=dapver,
-                                                      analysis_path=analysis_path) \
+        self.directory_path = defaults.default_dap_method_path(self.method, plate=self.drpf.plate,
+                                                               ifudesign=self.drpf.ifudesign,
+                                                               drpver=self.drpf.drpver,
+                                                               dapver=dapver,
+                                                               analysis_path=analysis_path) \
                                                 if directory_path is None else str(directory_path)
 
         # Set the output file
-        self.output_file = default_dap_file_name(self.drpf.plate, self.drpf.ifudesign,
-                                                 self.method, mode='MAPS') \
+        self.output_file = defaults.default_dap_file_name(self.drpf.plate, self.drpf.ifudesign,
+                                                          self.method, mode='MAPS') \
                                     if output_file is None else str(output_file)
 
 
@@ -1736,7 +1739,7 @@ class construct_cube_file:
         self.directory_path = None
         self.output_file = None
         self._set_paths(directory_path, dapver, analysis_path, output_file, binned_spectra,
-                        stellar_continuum)
+                        stellar_continuum, emission_line_model)
 
         # Save input for reference
         self.shape = self.drpf.shape
@@ -1778,8 +1781,9 @@ class construct_cube_file:
         # Initialize the primary header
         prihdr = DAPFitsUtil.initialize_dap_primary_header(self.drpf, maskname='MANGA_DAPSPECMASK')
         # Add the DAP method
-        prihdr['DAPTYPE'] = (default_dap_method(binned_spectra=binned_spectra,
-                                                stellar_continuum=stellar_continuum),
+        prihdr['DAPTYPE'] = (defaults.default_dap_method(binned_spectra.method['key'],
+                                    stellar_continuum.method['fitpar']['template_library_key'],
+                                    emission_line_model.method['continuum_tpl_key']),
                              'DAP analysis method')
         # Add the format of this file
         prihdr['DAPFRMT'] = ('LOGCUBE', 'DAP data file format')
@@ -1841,7 +1845,7 @@ class construct_cube_file:
             log_output(self.loggers, 1, logging.INFO, '-'*50)
 
     def _set_paths(self, directory_path, dapver, analysis_path, output_file, binned_spectra,
-                   stellar_continuum):
+                   stellar_continuum, emission_line_model):
         """
         Set the paths relevant to the map file.
         """
@@ -1851,18 +1855,20 @@ class construct_cube_file:
             raise ValueError('Could not define output directory path.')
 
         # Set the output directory path
-        self.method = default_dap_method(binned_spectra=binned_spectra,
-                                         stellar_continuum=stellar_continuum) \
+        self.method = defaults.default_dap_method(binned_spectra.method['key'],
+                                    stellar_continuum.method['fitpar']['template_library_key'],
+                                    emission_line_model.method['continuum_tpl_key']) \
                                 if directory_path is None else None
-        self.directory_path = default_dap_method_path(self.method, plate=self.drpf.plate,
-                                                      ifudesign=self.drpf.ifudesign,
-                                                      drpver=self.drpf.drpver, dapver=dapver,
-                                                      analysis_path=analysis_path) \
+        self.directory_path = defaults.default_dap_method_path(self.method, plate=self.drpf.plate,
+                                                               ifudesign=self.drpf.ifudesign,
+                                                               drpver=self.drpf.drpver,
+                                                               dapver=dapver,
+                                                               analysis_path=analysis_path) \
                                                 if directory_path is None else str(directory_path)
 
         # Set the output file
-        self.output_file = default_dap_file_name(self.drpf.plate, self.drpf.ifudesign,
-                                                 self.method, mode='LOGCUBE') \
+        self.output_file = defaults.default_dap_file_name(self.drpf.plate, self.drpf.ifudesign,
+                                                          self.method, mode='LOGCUBE') \
                                     if output_file is None else str(output_file)
 
 #    def _initialize_mask(self, binned_spectra, binned_spectra_3d_hdu):
@@ -2266,7 +2272,7 @@ def add_snr_metrics_to_header(hdr, drpf, r_re, dapsrc=None):
         FileNotFoundError: Raised if any of the response function files
             cannot be found.
     """
-    _dapsrc = dap_source_dir() if dapsrc is None else str(dapsrc)
+    _dapsrc = defaults.dap_source_dir() if dapsrc is None else str(dapsrc)
     filter_response_file = [ os.path.join(_dapsrc, 'data', 'filter_response',
                                            f) for f in [ 'gunn_2001_g_response.db',
                                                          'gunn_2001_r_response.db',

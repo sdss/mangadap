@@ -294,12 +294,19 @@ class EmissionLineModel:
         self.quiet = False
 
         # Define the database properties
-        self.method = None
-        self.pixelmask = None
-        self.artdb = None
-        self.emldb = None
-        self._define_method(method_key, method_list=method_list, artifact_list=artifact_list,
-                            emission_line_db_list=emission_line_db_list, dapsrc=dapsrc)
+        self.method = self.define_method(method_key, method_list=method_list, dapsrc=dapsrc)
+
+        # Instantiate the artifact...
+        self.artdb = None if self.method['artifacts'] is None else \
+                    ArtifactDB(self.method['artifacts'], artdb_list=artifact_list, dapsrc=dapsrc)
+        # ... the pixel mask...
+        self.pixelmask = SpectralPixelMask(artdb=self.artdb)
+        # ... and the emission-line database
+        self.emldb = None if self.method['emission_lines'] is None else \
+                        EmissionLineDB(self.method['emission_lines'],
+                                       emldb_list=emission_line_db_list, dapsrc=dapsrc)
+
+
 
         self.neml = None if self.emldb is None else self.emldb.neml
 
@@ -355,24 +362,15 @@ class EmissionLineModel:
         return self.hdu[key]
 
 
-    def _define_method(self, method_key, method_list=None, artifact_list=None,
-                       emission_line_db_list=None, dapsrc=None):
+    @staticmethod
+    def define_method(method_key, method_list=None, dapsrc=None):
         r"""
         Select the modeling method
         """
         # Grab the specific method
-        self.method = select_proc_method(method_key, EmissionLineModelDef, method_list=method_list,
-                                         available_func=available_emission_line_modeling_methods,
-                                         dapsrc=dapsrc)
-
-        # Instantiate the artifact and emission-line databases
-        self.artdb = None if self.method['artifacts'] is None else \
-                    ArtifactDB(self.method['artifacts'], artdb_list=artifact_list, dapsrc=dapsrc)
-        self.pixelmask = SpectralPixelMask(artdb=self.artdb)
-
-        self.emldb = None if self.method['emission_lines'] is None else \
-                        EmissionLineDB(self.method['emission_lines'],
-                                       emldb_list=emission_line_db_list, dapsrc=dapsrc)
+        return select_proc_method(method_key, EmissionLineModelDef, method_list=method_list,
+                                  available_func=available_emission_line_modeling_methods,
+                                  dapsrc=dapsrc)
 
 
     def _set_paths(self, directory_path, dapver, analysis_path, output_file):
@@ -393,10 +391,10 @@ class EmissionLineModel:
                 moment measurements.  See :func:`measure`.
         """
         # Set the output directory path
-        continuum_method = None if self.stellar_continuum is None \
-                                else self.stellar_continuum.method['key']
-        method = default_dap_method(binned_spectra=self.binned_spectra,
-                                    continuum_method=continuum_method)
+        continuum_templates = 'None' if self.stellar_continuum is None \
+                            else self.stellar_continuum.method['fitpar']['template_library_key']
+        method = default_dap_method(self.binned_spectra.method['key'], continuum_templates,
+                                    self.method['continuum_tpl_key'])
         self.directory_path = default_dap_method_path(method, plate=self.binned_spectra.drpf.plate,
                                                       ifudesign=self.binned_spectra.drpf.ifudesign,
                                                       ref=True,
@@ -407,8 +405,8 @@ class EmissionLineModel:
         # Set the output file
         ref_method = '{0}-{1}'.format(self.binned_spectra.rdxqa.method['key'],
                                       self.binned_spectra.method['key'])
-        if continuum_method is not None:
-            ref_method = '{0}-{1}'.format(ref_method, continuum_method)
+        if self.stellar_continuum is not None:
+            ref_method = '{0}-{1}'.format(ref_method, self.stellar_continuum.method['key'])
         ref_method = '{0}-{1}'.format(ref_method, self.method['key'])
         self.output_file = default_dap_file_name(self.binned_spectra.drpf.plate,
                                                  self.binned_spectra.drpf.ifudesign, ref_method) \

@@ -37,9 +37,7 @@ import astropy.constants
 
 from mangadap import __version__
 
-from ..config.defaults import default_drp_version, default_dap_version
-from ..config.defaults import default_analysis_path, default_dap_method
-from ..config.defaults import default_dap_method_path
+from ..config import defaults
 from ..util.log import init_DAP_logging, module_logging, log_output
 from ..drpfits import DRPFits
 from ..par.obsinput import ObsInputPar
@@ -162,8 +160,8 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
     #-------------------------------------------------------------------
     # Declare the DRP fits file
     #-------------------------------------------------------------------
-    _drpver = default_drp_version() if drpver is None else drpver
-    _dapver = default_dap_version() if dapver is None else dapver
+    _drpver = defaults.default_drp_version() if drpver is None else drpver
+    _dapver = defaults.default_dap_version() if dapver is None else dapver
     drpf = DRPFits(obs['plate'], obs['ifudesign'], obs['mode'], drpver=_drpver,
                    redux_path=redux_path, directory_path=directory_path, read=True)
     log_output(loggers, 1, logging.INFO, ' Opened DRP file: {0}\n'.format(drpf.file_path()))
@@ -176,7 +174,7 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
     del drpf_rss
 
     # Set the the analysis path and make sure it exists
-    _analysis_path = default_analysis_path(drpver=drpver, dapver=dapver) \
+    _analysis_path = defaults.default_analysis_path(drpver=drpver, dapver=dapver) \
                             if analysis_path is None else analysis_path
     if not os.path.isdir(_analysis_path):
         os.makedirs(_analysis_path)
@@ -187,14 +185,32 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
     # Iterate over plans:
     for i in range(plan.nplans):
 
-        method = default_dap_method(plan=plan[i])
-        method_dir = default_dap_method_path(method, plate=obs['plate'], ifudesign=obs['ifudesign'],
-                                             drpver=drpver, dapver=dapver,
-                                             analysis_path=_analysis_path)
-        method_ref_dir = default_dap_method_path(method, plate=obs['plate'],
-                                                 ifudesign=obs['ifudesign'], ref=True,
-                                                 drpver=drpver, dapver=dapver,
-                                                 analysis_path=_analysis_path)
+        # Construct some directories to ensure all the reference files
+        # are placed in the same path.  The references files placed in
+        # the common directory are:
+        #   - ReductionAssessments
+        #   - SpatiallyBinnedSpectra
+        #   - StellarContinuumModel
+        # These reference files are symlinked to each DAPTYPE reference
+        # directory.  The reference files specific to each DAPTYPE are
+        #   - EmissionLineMoments (although this could also go in the
+        #   common directory)
+        #   - EmissionLineModel
+        #   - SpectralIndices
+        bin_method = SpatiallyBinnedSpectra.define_method(plan['bin_key'])
+        sc_method = StellarContinuumModel.define_method(plan['continuum_key'])
+        el_method = EmissionLineModel.define_method(plan['elfit_key'])
+
+        method = defaults.default_dap_method(bin_method['key'],
+                                             sc_method['fitpar']['template_library_key'],
+                                             el_method['continuum_tpl_key'])
+        method_dir = defaults.default_dap_method_path(method, plate=obs['plate'],
+                                                      ifudesign=obs['ifudesign'], drpver=drpver,
+                                                      dapver=dapver, analysis_path=_analysis_path)
+        method_ref_dir = defaults.default_dap_method_path(method, plate=obs['plate'],
+                                                          ifudesign=obs['ifudesign'], ref=True,
+                                                          drpver=drpver, dapver=dapver,
+                                                          analysis_path=_analysis_path)
 
         log_output(loggers, 1, logging.INFO, '-'*50)
         log_output(loggers, 1, logging.INFO, '{0:^50}'.format('Plan {0}'.format(i+1)))
@@ -204,7 +220,7 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
         log_output(loggers, 1, logging.INFO, 'REF OUTPUT: {0}'.format(method_ref_dir))
 
         #---------------------------------------------------------------
-        # S/N Assessments
+        # S/N Assessments: placed in the common/ directory
         #---------------------------------------------------------------
         rdxqa = None if plan['drpqa_key'][i] is None else \
                     ReductionAssessment(plan['drpqa_key'][i], drpf, pa=obs['pa'], ell=obs['ell'],
@@ -213,7 +229,7 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
                                         clobber=plan['drpqa_clobber'][i], loggers=loggers)
 
         #---------------------------------------------------------------
-        # Spatial Binning
+        # Spatial Binning: placed in the common/ directory
         #---------------------------------------------------------------
         binned_spectra = None if plan['bin_key'][i] is None else \
                     SpatiallyBinnedSpectra(plan['bin_key'][i], drpf, rdxqa, reff=obs['reff'],
@@ -222,12 +238,13 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
                                            clobber=plan['bin_clobber'][i], loggers=loggers)
 
         #---------------------------------------------------------------
-        # Stellar Continuum Fit
+        # Stellar Continuum Fit: placed in the common/ directory
         #---------------------------------------------------------------
         stellar_continuum = None if plan['continuum_key'][i] is None else \
                     StellarContinuumModel(plan['continuum_key'][i], binned_spectra,
                                           guess_vel=obs['vel'], guess_sig=obs['vdisp'],
                                           dapsrc=dapsrc, analysis_path=_analysis_path,
+                                          symlink_dir=method_ref_dir,
                                           tpl_symlink_dir=method_ref_dir,
                                           clobber=plan['continuum_clobber'][i], loggers=loggers)
 
@@ -238,17 +255,19 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
         # To use the stellar kinematics to set the redshift:
         #   - set redshift=None
         #---------------------------------------------------------------
-        # Emission-line Moment measurements
+        # Emission-line Moment measurements: placed in the DAPTYPE/ref/
+        # directory
         #---------------------------------------------------------------
 #        warnings.filterwarnings('error', message='Warning: converting a masked element to nan.')
         emission_line_moments = None if plan['elmom_key'][i] is None else \
                     EmissionLineMoments(plan['elmom_key'][i], binned_spectra,
                                         stellar_continuum=stellar_continuum, redshift=nsa_redshift,
                                         dapsrc=dapsrc, analysis_path=_analysis_path,
+                                        directory_path=method_ref_dir,
                                         clobber=plan['elmom_clobber'][i], loggers=loggers)
 
         #---------------------------------------------------------------
-        # Emission-line Fit
+        # Emission-line Fit: placed in the DAPTYPE/ref/ directory
         #---------------------------------------------------------------
         # To use a fixed velocity dispersion for the initial guess, e.g.:
         #   - set dispersion=100.0
@@ -263,6 +282,7 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
                                      emission_line_moments=emission_line_moments, dispersion=100.0,
                                      minimum_error=numpy.finfo(numpy.float32).eps,
                                      dapsrc=dapsrc, analysis_path=_analysis_path,
+                                     directory_path=method_ref_dir,
                                      clobber=plan['elfit_clobber'][i], loggers=loggers)
 
 #        model_flux = emission_line_model['FLUX'].data
@@ -333,13 +353,15 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
         # If requested by the emission-line moments method, remeasure
         # the moments after the emission-line modeling.  This will
         # produce a new reference file that will have a different name
-        # than the one produced above.
+        # than the one produced above.  This is placed in the
+        # DAPTYPE/ref/ directory.
         #---------------------------------------------------------------
         if emission_line_moments is not None \
                 and emission_line_moments.database['redo_postmodeling']:
             emission_line_moments.measure(binned_spectra, stellar_continuum=stellar_continuum,
                                           emission_line_model=emission_line_model, dapsrc=dapsrc,
                                           analysis_path=_analysis_path,
+                                          directory_path=method_ref_dir,
                                           clobber=plan['elmom_clobber'][i], loggers=loggers)
 
 #        print(emission_line_moments['ELMMNTS'].data['FLUX'].shape)
@@ -361,13 +383,15 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
 #        pyplot.show()
 
         #---------------------------------------------------------------
-        # Spectral-Index Measurements
+        # Spectral-Index Measurements: placed in the DAPTYPE/ref/
+        # directory
         #---------------------------------------------------------------
         spectral_indices = None if plan['spindex_key'][i] is None else \
                     SpectralIndices(plan['spindex_key'][i], binned_spectra, redshift=nsa_redshift,
                                     stellar_continuum=stellar_continuum,
                                     emission_line_model=emission_line_model, dapsrc=dapsrc,
-                                    analysis_path=_analysis_path, tpl_symlink_dir=method_ref_dir,
+                                    analysis_path=_analysis_path, directory_path=method_ref_dir,
+                                    tpl_symlink_dir=method_ref_dir,
                                     clobber=plan['spindex_clobber'][i], loggers=loggers)
 
         #-------------------------------------------------------------------

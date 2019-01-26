@@ -5,28 +5,8 @@ Provides a set of functions that define and return defaults used by the
 MaNGA DAP, such as paths and file names.
 
 *License*:
-    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
+    Copyright (c) 2019, SDSS-IV/MaNGA Pipeline Group
         Licensed under BSD 3-clause license - see LICENSE.rst
-
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/config/defaults.py
-
-*Imports and python version compliance*:
-    ::
-
-        from __future__ import division
-        from __future__ import print_function
-        from __future__ import absolute_import
-        from __future__ import unicode_literals
-        
-        import sys
-        if sys.version > '3':
-            long = int
-    
-        import os
-        import glob
-        import numpy
-        from mangadap.util.exception_tools import check_environment_variable
 
 *Revision history*:
     | **23 Apr 2015**: Original implementation by K. Westfall (KBW)
@@ -296,35 +276,87 @@ def default_dap_common_path(plate=None, ifudesign=None, drpver=None, dapver=None
     return output_path if ifudesign is None else os.path.join(output_path, str(ifudesign))
 
 
-def default_dap_method(plan=None, binned_spectra=None, stellar_continuum=None,
-                       binning_method=None, continuum_method=None):
+#def default_dap_method(plan=None, binned_spectra=None, stellar_continuum=None,
+#                       binning_method=None, continuum_method=None):
+#    """
+#    Return the method for a provided plan.  The name currently uses the
+#    keyword identifiers for the binned spectra and the stellar continuum
+#    models.
+#    """
+#    if plan is not None:
+#        if not isinstance(plan['bin_key'], str) and len(plan['bin_key']) > 1:
+#            raise ValueError('Must only provide a single plan.')
+#        if not isinstance(plan['continuum_key'], str) and len(plan['continuum_key']) > 1:
+#            raise ValueError('Must only provide a single plan.')
+#        _binning_method = str(plan['bin_key'])
+#        _continuum_method = str(plan['continuum_key'])
+#    else:
+##        binning_method = 'None' if binned_spectra is None else binned_spectra.method['key']
+#        if binned_spectra is not None:
+#            _binning_method = binned_spectra.method['key']
+#        elif binning_method is not None:
+#            _binning_method = binning_method
+#        else:
+#            _binning_method = 'None'
+#        if stellar_continuum is not None:
+#            _continuum_method = stellar_continuum.method['key']
+#        elif continuum_method is not None:
+#            _continuum_method = continuum_method
+#        else:
+#            _continuum_method = 'None'
+#    return '{0}-{1}'.format(_binning_method, _continuum_method)
+
+
+def default_dap_method(binning_method, stellar_continuum_templates, emission_line_model_templates):
+
     """
-    Return the method for a provided plan.  The name currently uses the
-    keyword identifiers for the binned spectra and the stellar continuum
-    models.
+    Construct the "DAPTYPE" based on the analysis plan.
+
+    The construction is based on directly provided strings for
+    `binning_method`, `stellar_continuum_templates`, and
+    `emission_line_model_templates`.  The DAPTYPE is constructed as
+    these three strings separated by dashes.  E.g., DAPTYPE =
+    'HYB10-MILESHC-MILESHC' when the binning method is HYB10 and the
+    MILESHC library is used as templates for both the stellar and
+    emission-line fitting.
+
+    With a analysis plan file, run the following to get the list of
+    daptypes::
+
+        from mangadap.par.analysisplan import AnalysisPlanSet
+        from mangadap.proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
+        from mangadap.proc.stellarcontinuummodel import StellarContinuumModel
+        from mangadap.proc.emissionlinemodel import EmissionLineModel
+        from mangadap.config.defaults import default_dap_method
+
+        plans = AnalysisPlanSet.from_par_file(plan_file)
+        daptypes = []
+        for plan in plans:
+            bin_method = SpatiallyBinnedSpectra.define_method(plan['bin_key'])
+            sc_method = StellarContinuumModel.define_method(plan['continuum_key'])
+            el_method = EmissionLineModel.define_method(plan['elfit_key'])
+            daptypes += [default_dap_method(bin_method['key'], sc_method['template_library'],
+                                            el_method['continuum_templates'])]
+
+    Args:
+        binning_method (:obj:`str`):
+            String used to define the binning method.
+        stellar_continuum_templates (:obj:`str`):
+            String defining the template library used in the stellar
+            continuum (stellar kinematics) modeling.
+
+        emission_line_model_templates (:obj:`str`):
+            String defining the template library used in the
+            emission-line modeling.  Can be None, meaning that the
+            continuum templates are the same as used for the
+            stellar-continuum modeling.
+    Returns:
+        str: The string representation of the analysis method.
+
     """
-    if plan is not None:
-        if not isinstance(plan['bin_key'], str) and len(plan['bin_key']) > 1:
-            raise ValueError('Must only provide a single plan.')
-        if not isinstance(plan['continuum_key'], str) and len(plan['continuum_key']) > 1:
-            raise ValueError('Must only provide a single plan.')
-        _binning_method = str(plan['bin_key'])
-        _continuum_method = str(plan['continuum_key'])
-    else:
-#        binning_method = 'None' if binned_spectra is None else binned_spectra.method['key']
-        if binned_spectra is not None:
-            _binning_method = binned_spectra.method['key']
-        elif binning_method is not None:
-            _binning_method = binning_method
-        else:
-            _binning_method = 'None'
-        if stellar_continuum is not None:
-            _continuum_method = stellar_continuum.method['key']
-        elif continuum_method is not None:
-            _continuum_method = continuum_method
-        else:
-            _continuum_method = 'None'
-    return '{0}-{1}'.format(_binning_method, _continuum_method)
+    _eltpl = stellar_continuum_templates if emission_line_model_templates is None \
+                                                else emission_line_model_templates
+    return '{0}-{1}-{2}'.format(binning_method, stellar_continuum_templates, _eltpl)
 
 
 def default_dap_method_path(method, plate=None, ifudesign=None, qa=False, ref=False,

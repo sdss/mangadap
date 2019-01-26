@@ -11,38 +11,6 @@ procedures.
     Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
         Licensed under BSD 3-clause license - see LICENSE.rst
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/proc/spatiallybinnedspectra.py
-
-*Imports and python version compliance*:
-    ::
-
-        from __future__ import division
-        from __future__ import print_function
-        from __future__ import absolute_import
-        from __future__ import unicode_literals
-
-        import sys
-        import warnings
-        if sys.version > '3':
-            long = int
-        
-        import glob
-        import os.path
-        from os import remove, environ
-        from scipy import sparse
-        from astropy.io import fits
-        import time
-        import numpy
-
-        from ..par.parset import ParSet
-        from ..config.defaults import dap_source_dir, default_dap_common_path
-        from ..config.defaults import default_dap_file_name
-        from ..util.geometry import SemiMajorAxisCoo
-        from ..util.fileio import init_record_array
-        from ..util.parser import DefaultConfig
-        from ..drpfits import DRPFits
-
 *Class usage examples*:
 
     .. todo::
@@ -464,8 +432,7 @@ class SpatiallyBinnedSpectra:
         self.quiet = False
 
         # Define the method properties
-        self.method = None
-        self._define_method(method_key, method_list=method_list, dapsrc=dapsrc)
+        self.method = self.define_method(method_key, method_list=method_list, dapsrc=dapsrc)
 
         self.drpf = None
         self.rdxqa = None
@@ -521,17 +488,14 @@ class SpatiallyBinnedSpectra:
         return self.hdu[key]
 
 
-    def _define_method(self, method_key, method_list=None, dapsrc=None):
+    @staticmethod
+    def define_method(method_key, method_list=None, dapsrc=None):
         r"""
-
         Select the method
-
         """
         # Grab the specific method
-        self.method = select_proc_method(method_key, SpatiallyBinnedSpectraDef,
-                                         method_list=method_list,
-                                         available_func=available_spatial_binning_methods,
-                                         dapsrc=dapsrc)
+        return select_proc_method(method_key, SpatiallyBinnedSpectraDef, method_list=method_list,
+                                  available_func=available_spatial_binning_methods, dapsrc=dapsrc)
 
 
     def _fill_method_par(self, good_spec):
@@ -589,8 +553,7 @@ class SpatiallyBinnedSpectra:
 
     def _set_paths(self, directory_path, dapver, analysis_path, output_file):
         """
-        Set the I/O path to the processed template library.  Used to set
-        :attr:`directory_path` and :attr:`output_file`.  If not
+        Set the :attr:`directory_path` and :attr:`output_file`.  If not
         provided, the defaults are set using, respectively,
         :func:`mangadap.config.defaults.default_dap_common_path` and
         :func:`mangadap.config.defaults.default_dap_file_name`.

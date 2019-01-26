@@ -18,6 +18,9 @@ from mangadap.util.bitmask import BitMask
 from mangadap.drpfits import DRPFits
 from mangadap.config.defaults import default_dap_method, default_dap_method_path
 from mangadap.config.defaults import default_dap_file_name, sdss_maskbits_file
+from mangadap.proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
+from mangadap.proc.stellarcontinuummodel import StellarContinuumModel
+from mangadap.proc.emissionlinemodel import EmissionLineModel
 
 #-----------------------------------------------------------------------
 # Slider class
@@ -789,11 +792,16 @@ class UpdateSpectrumPlot:
         pyplot.draw()
         
 
-def generate_paths(obs, analysisplan, drpver=None, redux_path=None, dapver=None, dapsrc=None,
-                   directory_path=None, analysis_path=None):
+def generate_file_paths(obs, analysisplan, drpver=None, redux_path=None, dapver=None, dapsrc=None,
+                        directory_path=None, analysis_path=None):
 
     # Generate the paths to the MAPS and LOGCUBE files:
-    method = default_dap_method(plan=analysisplan) if directory_path is None else None
+#    method = default_dap_method(plan=analysisplan) if directory_path is None else None
+    bin_method = SpatiallyBinnedSpectra.define_method(analysisplan['bin_key'])
+    sc_method = StellarContinuumModel.define_method(analysisplan['continuum_key'])
+    el_method = EmissionLineModel.define_method(analysisplan['elfit_key'])
+    method = default_dap_method(bin_method['key'], sc_method['fitpar']['template_library_key'],
+                                el_method['continuum_tpl_key'])
     directory_path = default_dap_method_path(method, plate=obs['plate'], ifudesign=obs['ifudesign'],
                                              drpver=drpver, dapver=dapver,
                                              analysis_path=analysis_path) \
