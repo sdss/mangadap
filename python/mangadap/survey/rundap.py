@@ -106,6 +106,10 @@ from ..util.parser import arginp_to_list
 from ..util.fileio import create_symlink
 from .mangampl import MaNGAMPL
 from ..par.analysisplan import AnalysisPlanSet
+from ..proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
+from ..proc.stellarcontinuummodel import StellarContinuumModel
+from ..proc.emissionlinemodel import EmissionLineModel
+
 #from . import util
 
 class rundap:
