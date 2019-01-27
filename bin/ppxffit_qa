@@ -610,8 +610,9 @@ def ppxffit_qa_plot(plt, ifu, plan, drpver=None, redux_path=None, dapver=None, a
     bin_method = SpatiallyBinnedSpectra.define_method(plan['bin_key'])
     sc_method = StellarContinuumModel.define_method(plan['continuum_key'])
     el_method = EmissionLineModel.define_method(plan['elfit_key'])
-    method = defaults.default_dap_method(bin_method['key'], sc_method['template_library'],
-                                         el_method['continuum_templates'])
+    method = defaults.default_dap_method(bin_method['key'],
+                                         sc_method['fitpar']['template_library_key'],
+                                         el_method['continuum_tpl_key'])
     method_dir = defaults.default_dap_method_path(method, plate=plt, ifudesign=ifu, drpver=_drpver,
                                                   dapver=_dapver, analysis_path=_analysis_path)
     method_qa_dir = defaults.default_dap_method_path(method, plate=plt, ifudesign=ifu, qa=True,
