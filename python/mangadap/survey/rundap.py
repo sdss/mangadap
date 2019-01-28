@@ -404,7 +404,7 @@ class rundap:
         if nproc < 1:
             raise ValueError('No processing steps requested!')
 
-        if (self.dapproc or self.plateifu_plots) and self.submit and self.post_process \
+        if (self.dapproc or self.pltifu_plots) and self.submit and self.post_process \
                 and not self.report_progress:
             warnings.warn('If both processing and post processing, need to report progress.  '
                           'Setting to report progress.')
@@ -515,7 +515,7 @@ class rundap:
             post_queue = self._build_post_queue(drpc_rows)
 
         # Process the relevant datacubes
-        if self.dapproc or self.plateifu_plots:
+        if self.dapproc or self.pltifu_plots:
             # Create the script files for the set of drpfiles, and
             # submit the scripts to the queue if self.submit is true
             proc_queue = self._build_proc_queue(drpc_rows)
