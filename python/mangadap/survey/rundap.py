@@ -709,7 +709,7 @@ class rundap:
         # Overwrite any existing output options
         self.log = arg.log
         self.dapproc = not arg.no_proc
-        self.plots = not arg.no_plots
+        self.pltifu_plots = not arg.no_plots
         self.post_process = arg.post
         self.post_plots = arg.post_plots
         if self.verbose < arg.verbose:
