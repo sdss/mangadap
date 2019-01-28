@@ -908,8 +908,8 @@ class rundap:
             # Write the compute script (write_compute_script also checks
             # the path exists!)
             scriptfile, stdoutfile, stderrfile \
-                    = self.write_compute_script(index, dapproc=self.dapproc, plots=self.plots,
-                                                clobber=self.clobber)
+                    = self.write_compute_script(index, dapproc=self.dapproc,
+                                                plots=self.pltifu_plots, clobber=self.clobber)
 
             # Set the status to ready
             plate = self.drpc['PLATE'][index]
