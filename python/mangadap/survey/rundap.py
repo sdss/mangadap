@@ -939,7 +939,7 @@ class rundap:
         if self.post_process:
             # Write the DAPall script and set its status
             dapall_scr, dapall_out, dapall_err \
-                    = self.write_dapall_script(plots=self.plots, clobber=self.clobber)
+                    = self.write_dapall_script(plots=self.post_plots, clobber=self.clobber)
             self.set_status(dapall_scr, status='ready')
             if self.create:
                 # Add it to the queue
