@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+#queue.key()
+#
+#queue(key = )
+
 import time
 import os
 import time
@@ -35,9 +39,9 @@ def fit_one_cube(plt, ifu, drpall_file=None, directory_path=None, analysis_path=
     # Define how you want to analyze the data
     plan = AnalysisPlanSet([ AnalysisPlan(drpqa_key='SNRG',
                                           bin_key='HYB10',
-                                          continuum_key='GAU-MILESHC',
-                                          elmom_key='EMOMM',
-                                          elfit_key='EFITMB',
+                                          continuum_key='MILESHCMPL8',
+                                          elmom_key='EMOMMPL8',
+                                          elfit_key='EFITMPL8DB',
                                           spindex_key='INDXEN') ])
 
 #    plan = AnalysisPlanSet([ AnalysisPlan(drpqa_key='SNRG',

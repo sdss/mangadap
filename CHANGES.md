@@ -55,6 +55,8 @@
  - Changed daptype to binning-stellartemplates-emissionlinetemplates
    using default_dap_method.  StellarContinuumModel reference file moved
    to the common directory.
+ - Add databases and configuration files that include the HeI 3889 line
+   and the NI ~5200 doublet.
 
 TODO:
  - Documentation of config examples are out of date!
