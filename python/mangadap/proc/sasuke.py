@@ -1364,25 +1364,13 @@ class Sasuke(EmissionLineFit):
                                                          original_spaxels=True)
 
             # Select spaxels to fit based on how many meet the valid
-            # spectral range criterion.
+            # spectral range criterion.  Note: bins_to_fit is only used
+            # if debug is True.
             # TODO: set minimum_fraction as a keyword.  Set to 0.8 by
             # default
             spaxel_to_fit = EmissionLineFit.select_spaxels_to_fit(binned_spectra,
                                                                   bins_to_fit=bins_to_fit,
                                                                   debug=debug)
-
-            # Depending on the deconstruction method, get the bin ID
-            if par['deconstruct_bins'] == 'nearest':
-                binid = None
-            elif par['deconstruct_bins'] == 'binid':
-                binid = binned_spectra['BINID'].data.ravel()
-                # Fill in any spaxels with -1 binid; i.e., excluded from
-                # binning but included in emission-line fit
-                if numpy.sum(binid[spaxel_to_fit] == -1):
-                    raise NotImplementedError('Need to account for bins not included in binning '
-                                              'but used in emission-line analysis.')
-            else:
-                raise ValueError('Unknown bin deconstruction method.')
 
             # Get the spaxel spatial coordinates; shape is (Nspaxel,)
             spaxel_x = binned_spectra.rdxqa['SPECTRUM'].data['SKY_COO'][:,0]
@@ -1390,6 +1378,26 @@ class Sasuke(EmissionLineFit):
             # Get the binned spatial coordinates; shape is (Nbin,)
             bin_x = binned_spectra['BINS'].data['SKY_COO'][:,0]
             bin_y = binned_spectra['BINS'].data['SKY_COO'][:,1]
+
+            # Depending on the deconstruction method, get the bin ID
+            if par['deconstruct_bins'] == 'nearest':
+                binid = None
+            elif par['deconstruct_bins'] == 'binid':
+                # Only grab the bin IDs for the bins to be fit
+                binid = DAPFitsUtil.downselect_bins(binned_spectra['BINID'].data.ravel(),
+                                                    bins_to_fit)
+                if numpy.any(binid[spaxel_to_fit] == -1):
+                    # Some spaxels may have been excluded from any bin
+                    # used to fit the stellar kinematics.  In this case,
+                    # the spaxel *must* be associated by on-sky location
+                    # to the nearest bin.
+                    indx = spaxel_to_fit & (binid == -1)
+                    binid[indx] = numpy.argmin(numpy.square(spaxel_x[indx,None]-bin_x) 
+                                                + numpy.square(spaxel_y[indx,None]-bin_y), axis=1)
+                assert not numpy.any(binid[spaxel_to_fit] == -1), \
+                                'CODING ERROR: did not catch all the bad bin IDs.'
+            else:
+                raise ValueError('Unknown bin deconstruction method.')
 
             # Return the fits to the individual spaxel data
             model_wave, model_flux, model_eml_flux, model_mask, model_fit_par, model_eml_par \

@@ -230,7 +230,7 @@ class EmissionLineFit(SpectralFitting):
     @staticmethod
     def select_spaxels_to_fit(binned_spectra, bins_to_fit=None, debug=False):
         """
-        Select binned spectra for which to fit emission lines.
+        Select spaxels for which to fit emission lines.
         """
         if not debug:
             return binned_spectra.check_fgoodpix()
