@@ -159,6 +159,28 @@ def default_drpall_file(drpver=None, redux_path=None):
                         if redux_path is None else os.path.abspath(redux_path)
     return os.path.join(_redux_path, 'drpall-{0}.fits'.format(_drpver))
 
+def default_dapall_file(drpver=None, dapver=None, analysis_path=None):
+    """
+    Return the path to the DAPall file.
+
+    Args:
+        drpver (:obj:`str`, optional):
+            DRP version.  Default is to use :func:`default_drp_version`.
+        dapver (:obj:`str`, optional):
+            DAP version.  Default is to use :func:`default_dap_version`.
+        analysis_path (:obj:`str`, optional):
+            Path to the root analysis directory.  Default is to use
+            :func:`default_analysis_path`
+
+    Returns:
+        :obj:`str`: Full path to the DAPall fits file.
+    """
+    _drpver = default_drp_version() if drpver is None else drpver
+    _dapver = default_dap_version() if dapver is None else dapver
+    _analysis_path = default_analysis_path(drpver=_drpver, dapver=_dapver) \
+                        if analysis_path is None else os.path.abspath(analysis_path)
+    return os.path.join(_analysis_path, 'dapall-{0}-{1}.fits'.format(_drpver, _dapver))
+
 # TODO: Are these values kept in MANGACORE somewhere?
 def default_cube_pixelscale():
     """
