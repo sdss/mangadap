@@ -187,14 +187,18 @@ for i in range (10895, 10896): # 7443-9102 is for testing.
     print('###################################')
     print('Preparing single broadband image')
     print('###################################')
-    summed_image = galfit_utils.broadband_images(flux, ivar, mask, header, t['plate'][i], t['ifudsgn'][i], vor)
-    #TODO: Find a way of incorporating Rb and Rd into drpall file? Match with Simard.
-    galfit_utils.write_feedme(t['plate'][i], t['ifudsgn'][i], summed_image, Rb, Rd, header)
-    print('########################################')
-    print('Running Galfit on single broadband image')
-    print('########################################')
-    feedme_filename = '%s-%s-feedme' % (t['plate'][i], t['ifudsgn'][i])
-    run_galfitm(t['plate'][i], t['ifudsgn'][i], feedme_filename)
+    filename = 'subcomps.fits'
+    if os.path.isfile(str(filename)):
+        print('Galfit output file exists!')
+    else:
+        summed_image = galfit_utils.broadband_images(flux, ivar, mask, header, t['plate'][i], t['ifudsgn'][i], vor)
+        #TODO: Find a way of incorporating Rb and Rd into drpall file? Match with Simard.
+        galfit_utils.write_feedme(t['plate'][i], t['ifudsgn'][i], summed_image, Rb, Rd, header)
+        print('########################################')
+        print('Running Galfit on single broadband image')
+        print('########################################')
+        feedme_filename = '%s-%s-feedme' % (t['plate'][i], t['ifudsgn'][i])
+        run_galfitm(t['plate'][i], t['ifudsgn'][i], feedme_filename)
 
 #-----------------------------------------------------------------------------
 # STEP 2
@@ -261,8 +265,8 @@ for i in range (10895, 10896): # 7443-9102 is for testing.
     lwellcoo = bins['LW_ELL_COO']
     bin_disk = lwellcoo[:,0] #in arcsec. x2 to get spaxel vals
     signal = bins['SIGNAL'] # I'm not 100% sure what this is, but I think it's related to the flux in each bin, so proxy for bin_mflux.
-    flux_m = np.ma.array(flux_b, mask = mask_b)
-    ivar_m = np.ma.array(ivar_b, mask=mask_b)
+    flux_m = flux_b #np.ma.array(flux_b, mask = mask_b) #RMd for testign onlyu.
+    ivar_m = ivar_b #np.ma.array(ivar_b, mask=mask_b)
     print('###################################')
     print('de-redshifting datacube')
     print('###################################')
@@ -275,10 +279,10 @@ for i in range (10895, 10896): # 7443-9102 is for testing.
     print('#####################################')
     # Construct disk-only and bulge-only spectra by weighting the deredshifted cube by the binned GalFit images
     # Alternatively, create a single bulge and disk spectrum the way I've done it before.
-    bulge_spec, bulge_ivar, disk_spec, disk_ivar = create_single_spec(fluxes, ivars, bin_disk, signal, Rb) #Disk spec is farked at the moment - Nans
+    bulge_spec, bulge_ivar, disk_spec, disk_ivar = create_single_spec(fluxes, ivars, bin_disk, signal, Rb) #
     # Fit the bulge and disk spectra with SSPs (Just bulge at the moment, until I fix disk spectra)
-    cont_par_bulge, sc_tpl_bulge, sres = fit_one_spect(str(t['plate'][i]), str(t['ifudsgn'][i]), bulge_spec, bulge_ivar, waves[0,:], drpf) #This doesn't currenty work - WHY NOT?!
-    cont_par_disk, sc_tpl_disk, sres = fit_one_spect(str(t['plate'][i]) , str(t['ifudsgn'][i]), disk_spec, disk_ivar, waves[0,:], drpf) #This doesn't currenty work - WHY NOT?!
+    cont_par_bulge, sc_tpl_bulge, sres = fit_one_spect(str(t['plate'][i]), str(t['ifudsgn'][i]), bulge_spec, bulge_ivar, waves[0,:], drpf) #
+    cont_par_disk, sc_tpl_disk, sres = fit_one_spect(str(t['plate'][i]) , str(t['ifudsgn'][i]), disk_spec, disk_ivar, waves[0,:], drpf) #
     save_spec_fits_files(cont_par_bulge, sc_tpl_bulge, cont_par_disk, sc_tpl_disk) #Save bulge and disk spectra for use as template files
     #-----------------------------------------------------------------------------
     # Step 4 - Fit kinematics of disk and bulge
@@ -289,4 +293,4 @@ for i in range (10895, 10896): # 7443-9102 is for testing.
     print('Fitting cube with bulge and disk spectra')
     print('########################################')
     for j in range(0, 1):#tpl_wgts.shape[1]): #For every bin - deredshifted? NO?
-        fit_bulge_spec(str(t['plate'][i]), str(t['ifudsgn'][i]), bulge_frac[j], wave_b, flux_m[j,:], ivar_m[j,:], sres)
+        cont_wave, cont_flux, cont_mask, cont_par, sc_tpl = fit_bulge_spec(str(t['plate'][i]), str(t['ifudsgn'][i]), bulge_frac[j], wave_b, flux_m[j,:], ivar_m[j,:], sres) #Should I sent comp keyword here?
