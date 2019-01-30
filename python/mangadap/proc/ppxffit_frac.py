@@ -43,7 +43,7 @@ Implements a wrapper class for pPXF.
     | **22 May 2018**: (KBW) Change import to ppxf package.
     | **30 Aug 2018**: (KBW) Changed from resample1d to
         :class:`mangadap.util.sampling.Resample`.
-    | **05 Dec 2018**: (AFM) Altered ppxffit to include 'frac' keyword
+    | **05 Dec 2018**: (AFM) Altered ppxffit to include 'fraction' keyword
 
 .. todo::
 
@@ -121,7 +121,7 @@ class PPXFFitPar(ParSet):
         guess_dispersion (array-like): Initial guess for the velocity
             dispersion for each binned spectrum.
 
-        frac =
+        fraction =
 
         component =
 
@@ -151,11 +151,10 @@ class PPXFFitPar(ParSet):
 
     """
     def __init__(self, template_library_key, template_library, guess_redshift, guess_dispersion,
-                 frac, component, iteration_mode='global_template', reject_boxcar=None, filter_boxcar=None,
+                 fraction, component, iteration_mode='global_template', reject_boxcar=None, filter_boxcar=None,
                  filter_operation=None, filter_iterations=None, match_resolution=True,
                  velscale_ratio=None, minimum_snr=None, pixelmask=None, bias=None, degree=None,
                  mdegree=None, filt_degree=None, filt_mdegree=None, moments=None):
-
         arr_in_fl = [ numpy.ndarray, list, int, float ] # guess kinematics
         in_fl = [ int, float ]                          # bias, minimum S/N
 
@@ -166,11 +165,11 @@ class PPXFFitPar(ParSet):
         filter_operation_opt = [ 'divide', 'subtract' ]
 
         pars =     [ 'template_library_key', 'template_library', 'guess_redshift',
-                     'guess_dispersion', 'frac','component','iteration_mode', 'reject_boxcar', 'filter_boxcar',
+                     'guess_dispersion', 'fraction','component','iteration_mode', 'reject_boxcar', 'filter_boxcar',
                      'filter_operation', 'filter_iterations', 'match_resolution', 'velscale_ratio',
                      'minimum_snr', 'pixelmask', 'bias', 'degree', 'mdegree', 'filt_degree',
                      'filt_mdegree', 'moments' ]
-        values =   [ template_library_key, template_library, guess_redshift, guess_dispersion, frac, component,
+        values =   [ template_library_key, template_library, guess_redshift, guess_dispersion, fraction, component,
                      iteration_mode, reject_boxcar, filter_boxcar, filter_operation,
                      filter_iterations, match_resolution, velscale_ratio, minimum_snr, pixelmask,
                      bias, degree, mdegree, filt_degree, filt_mdegree, moments ]
@@ -661,7 +660,7 @@ class PPXFFit_frac(StellarKinematicsFit):
         self.velscale_ratio = None
         self.matched_resolution = None
         self.guess_kin = None
-        self.frac = None
+        self.fraction = None
         self.spectrum_start = None
         self.spectrum_end = None
         self.dof = None
@@ -960,7 +959,7 @@ class PPXFFit_frac(StellarKinematicsFit):
 
 
     def _run_fit_iteration(self, obj_flux, obj_ferr, start, end, base_velocity, tpl_flux,
-                           tpl_rfft, guess_kin, frac, component = [0,1], fix_kinematics=False, obj_to_fit=None,
+                           tpl_rfft, guess_kin, fraction, component = [0,1], fix_kinematics=False, obj_to_fit=None,
                            tpl_to_use=None, degree=None, mdegree=None, dof=None,
                            weight_errors=False, plot=False):
         r"""
@@ -989,7 +988,7 @@ class PPXFFit_frac(StellarKinematicsFit):
                 tpl pad}`, real FFT of the template spectra
             guess_kin (array): Initial guess for kinematics.  Size is
                 :math:`N_{\rm spec}\times N_{\rm moments}`.
-            frac = ?
+            fraction = ?
             components = ?
             fix_kinematics (bool): (**Optional**) Flag to fix the
                 kinematics to the input values during the fit.
@@ -1061,12 +1060,12 @@ class PPXFFit_frac(StellarKinematicsFit):
                             ppxf.ppxf(tpl_flux[tpl_to_use[i,:],:].T,
                                       obj_flux.data[i,start[i]:end[i]],
                                       obj_ferr.data[i,start[i]:end[i]], self.velscale,
-                                      guess_kin[i,:], frac, component = [0,1], velscale_ratio=self.velscale_ratio,
+                                      guess_kin[i,:], self.fraction and component=[1,0], velscale_ratio=self.velscale_ratio,
                                       goodpixels=gpm, bias=self.bias, degree=degree,
                                       mdegree=mdegree, moments=moments, vsyst=-base_velocity[i],
                                       quiet=(not plot), plot=plot, linear=linear,
                                       templates_rfft=tpl_rfft[tpl_to_use[i,:],:].T), ntpl,
-                                      weight_errors=weight_errors)
+                                      weight_errors=weight_errors) #rm self.fraction and component=[1,0], after guess_kin and before velscale_ratio
 
 #            if numpy.sum(result[i].tplwgt) == 0:
 #                print(numpy.sum(numpy.invert(numpy.isfinite(obj_ferr.data[i,start[i]:end[i]]))))
@@ -1158,7 +1157,7 @@ class PPXFFit_frac(StellarKinematicsFit):
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, 'First fit to global spectrum.')
         result = self._run_fit_iteration(global_spectrum, global_spectrum_err, start, end,
-                                         base_vel, self.tpl_flux, self.tpl_rfft, self.guess_kin, self.frac, component = [0,1],
+                                         base_vel, self.tpl_flux, self.tpl_rfft, self.guess_kin, self.fraction, component = [0,1],
                                          fix_kinematics=self.fix_kinematics, tpl_to_use=usetpl,
                                          plot=plot)
 
@@ -1176,7 +1175,7 @@ class PPXFFit_frac(StellarKinematicsFit):
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, 'Fit to global spectrum after rejection.')
         return self._run_fit_iteration(global_spectrum, global_spectrum_err, start, end,
-                                       base_vel, self.tpl_flux, self.tpl_rfft, self.guess_kin, frac, component = [0,1],
+                                       base_vel, self.tpl_flux, self.tpl_rfft, self.guess_kin, fraction, component = [0,1],
                                        fix_kinematics=self.fix_kinematics, tpl_to_use=usetpl,
                                        plot=plot)[0]
 
@@ -1310,10 +1309,10 @@ class PPXFFit_frac(StellarKinematicsFit):
             log_output(self.loggers, 1, logging.INFO,
                        'Number of object spectra to fit: {0}/{1}'.format(
                             numpy.sum(self.obj_to_fit), len(self.obj_to_fit)))
-        print('frac=' % self.frac)
+        #print('fraction=' % self.fraction)
         result = self._run_fit_iteration(self.obj_flux, self.obj_ferr, self.spectrum_start,
                                          self.spectrum_end, self.base_velocity, templates,
-                                         templates_rfft, self.guess_kin, self.frac, component = [0,1],
+                                         templates_rfft, self.guess_kin, self.fraction, component = [0,1],
                                          fix_kinematics=self.fix_kinematics,
                                          obj_to_fit=self.obj_to_fit, tpl_to_use=tpl_to_use,
                                          weight_errors=not self._mode_includes_rejection(),
@@ -1349,7 +1348,7 @@ class PPXFFit_frac(StellarKinematicsFit):
             # Refit and return results
             return self._run_fit_iteration(obj_flux, obj_ferr, self.spectrum_start,
                                            self.spectrum_end, self.base_velocity, templates,
-                                           templates_rfft, self.guess_kin, self.frac, component = [0,1],
+                                           templates_rfft, self.guess_kin, self.fraction, component = [0,1],
                                            fix_kinematics=self.fix_kinematics,
                                            obj_to_fit=obj_to_fit, tpl_to_use=tpl_to_use,
                                            weight_errors=True, plot=plot)
@@ -1396,7 +1395,7 @@ class PPXFFit_frac(StellarKinematicsFit):
                 warnings.warn('There are masked template pixels!')
             result = self._run_fit_iteration(obj_flux_filt, obj_ferr_filt, self.spectrum_start,
                                              self.spectrum_end, self.base_velocity,
-                                             tpl_flux_filt.data, tpl_flux_filt_rfft, self.guess_kin, self.frac, component = [0,1],
+                                             tpl_flux_filt.data, tpl_flux_filt_rfft, self.guess_kin, self.fraction, component = [0,1],
                                              fix_kinematics=self.fix_kinematics,
                                              obj_to_fit=obj_to_fit, tpl_to_use=tpl_to_use_filt,
                                              degree=self.filt_degree, mdegree=self.filt_mdegree,
@@ -1817,14 +1816,14 @@ class PPXFFit_frac(StellarKinematicsFit):
             model_ferr[ numpy.ma.getmaskarray(model_wlosvd_msres) ] = numpy.ma.masked
             result_wlosvd = self._run_fit_iteration(model_wlosvd, model_ferr, start, end,
                                                     self.base_velocity, model_template,
-                                                    model_template_rfft, guess_kin, frac, component = [0,1],
+                                                    model_template_rfft, guess_kin, fraction, component = [0,1],
                                                     obj_to_fit=_obj_to_fit,
                                                     tpl_to_use=model_tpl_to_use)#,
                                                     #plot=True)
 
             result_wlosvd_msres = self._run_fit_iteration(model_wlosvd_msres, model_ferr, start,
                                                           end, self.base_velocity, model_template,
-                                                          model_template_rfft, guess_kin, frac, component = [0,1],
+                                                          model_template_rfft, guess_kin, fraction, component = [0,1],
                                                           obj_to_fit=_obj_to_fit,
                                                           tpl_to_use=model_tpl_to_use)#,
                                                           #plot=True)
@@ -2232,7 +2231,7 @@ class PPXFFit_frac(StellarKinematicsFit):
                            par['template_library']['FLUX'].data.copy(),
                            binned_spectra['WAVE'].data.copy(), obj_flux[good_spec,:],
                            obj_ferr[good_spec,:], par['guess_redshift'][good_spec],
-                           par['guess_dispersion'][good_spec], frac = par['frac'], component = par['component'], iteration_mode=par['iteration_mode'],
+                           par['guess_dispersion'][good_spec], fraction = par['fraction'], component = par['component'], iteration_mode=par['iteration_mode'],
                            reject_boxcar=par['reject_boxcar'], filter_boxcar=par['filter_boxcar'],
                            filter_operation=par['filter_operation'],
                            filter_iterations=par['filter_iterations'], ensemble=True,
@@ -2260,7 +2259,7 @@ class PPXFFit_frac(StellarKinematicsFit):
 
 
     def fit(self, tpl_wave, tpl_flux, obj_wave, obj_flux, obj_ferr, guess_redshift,
-            guess_dispersion, frac, component, iteration_mode='global_template', reject_boxcar=100,
+            guess_dispersion, fraction, component, iteration_mode='global_template', reject_boxcar=100,
             filter_boxcar=100, filter_operation='divide', filter_iterations=0, ensemble=True,
             velscale_ratio=None, mask=None, usetpl=None, matched_resolution=True, tpl_sres=None,
             obj_sres=None, waverange=None, bias=None, degree=4, mdegree=0, filt_degree=4,
@@ -2288,6 +2287,8 @@ class PPXFFit_frac(StellarKinematicsFit):
             guess_dispersion (float or numpy.ndarray): Single or
                 spectrum-specific velocity dispersion used to set the
                 initial guess kinematics.
+            fraction ?
+            component ?
             iteration_mode (str): (**Optional**) Iteration sequence to
                 perform.  See :func:`iteration_modes`.
             reject_boxcar (int): (**Optional**) Size of the boxcar to
