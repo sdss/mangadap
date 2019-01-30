@@ -6,6 +6,7 @@ import numpy
 
 from astropy.io import fits
 from matplotlib import pyplot
+import glob
 
 from mangadap.drpfits import DRPFits
 from mangadap.util.fitsutil import DAPFitsUtil
@@ -109,39 +110,52 @@ def fit_one_spect(plt, ifu, flux, ivar, wave, drpf):
 
 def save_spec_fits_files(cont_par_bulge, sc_tpl_bulge, cont_par_disk, sc_tpl_disk):
     #Use weighted templates to construct "bulge" and "disk" template spectra
+    sc_tpl_key = 'MILES_SSP'
+    velscale_ratio=1
+    orig_temp = TemplateLibrary(sc_tpl_key, match_to_drp_resolution=False,
+                                 velscale_ratio=velscale_ratio, spectral_step=1e-4, log=True,
+                                 hardcopy=False)
+    #Just load all MILES templates in as an array
+    path = '/Users/ppzaf/Work/MaNGA/dap/master/data/spectral_templates/miles_ssp'
+    templates = numpy.zeros((1, 4300))
+    for filename in glob.glob(os.path.join(path, '*.fits')):
+        hdulist = fits.open(filename)
+        d = hdulist[0].data
+        templates = numpy.vstack((templates,d))
+    templates = templates[1:templates.shape[0],:] #rm first line of zeroes.
     tpl_wgts = cont_par_bulge['TPLWGT']
     #Multiply the templates by the weights
-    tpl_lams = sc_tpl_bulge['WAVE'].data
-    tpl_fluxes = sc_tpl_bulge['FLUX'].data
-    temp_arr = numpy.empty_like(tpl_fluxes)
+    #tpl_lams = sc_tpl_bulge['WAVE'].data
+    #tpl_fluxes = sc_tpl_bulge['FLUX'].data
+    temp_arr = numpy.empty_like(templates)
     for k in range(0,tpl_wgts.shape[1]):
-        temp_arr[k,:] = numpy.multiply(tpl_fluxes[k,:], tpl_wgts[0,k])
+        temp_arr[k,:] = numpy.multiply(templates[k,:], tpl_wgts[0,k])
     bulge_model_spec = temp_arr.sum(axis=0) #Also need to do the same for the disk
     bulge_model_norm = numpy.divide(bulge_model_spec, numpy.median(bulge_model_spec)) #Normalise for ppxf
     # Save as fits file
     hdr = fits.Header()
-    hdr['NAXIS'] = len(bulge_model_norm)
-    hdr['CRVAL1'] = numpy.min(tpl_lams)
-    hdr['CDELT1'] = (tpl_lams[1]- tpl_lams[0])
-    hdr['CRPIX1'] = 1
+    hdr['NAXIS'] = hdulist[0].header['NAXIS']
+    hdr['CRVAL1'] = hdulist[0].header['CRVAL1']
+    hdr['CDELT1'] = hdulist[0].header['CDELT1']
+    hdr['CRPIX1'] = hdulist[0].header['CRPIX1']
     hduu = fits.PrimaryHDU(bulge_model_norm, header=hdr)
     hduu.writeto('/Users/ppzaf/Work/MaNGA/dap/master/data/spectral_templates/my_spec/bulge_spec.fits', overwrite=True)
 
-    tpl_wgts = cont_par_disk['TPLWGT']
+    tpl_wgtsd = cont_par_disk['TPLWGT']
     #Multiply the templates by the weights
-    tpl_lams = sc_tpl_disk['WAVE'].data
-    tpl_fluxes = sc_tpl_disk['FLUX'].data
-    temp_arr = numpy.empty_like(tpl_fluxes)
-    for k in range(0,tpl_wgts.shape[1]):
-        temp_arr[k,:] = numpy.multiply(tpl_fluxes[k,:], tpl_wgts[0,k])
+    #tpl_lams = sc_tpl_disk['WAVE'].data
+    #tpl_fluxes = sc_tpl_disk['FLUX'].data
+    temp_arr = numpy.empty_like(templates)
+    for k in range(0,tpl_wgtsd.shape[1]):
+        temp_arr[k,:] = numpy.multiply(templates[k,:], tpl_wgtsd[0,k])
     disk_model_spec = temp_arr.sum(axis=0)
     disk_model_norm = numpy.divide(disk_model_spec, numpy.median(disk_model_spec)) #Normalise for ppxf
     # Save as fits file
     hdr = fits.Header()
-    hdr['NAXIS'] = len(disk_model_norm)
-    hdr['CRVAL1'] = numpy.min(tpl_lams)
-    hdr['CDELT1'] = (tpl_lams[1]- tpl_lams[0])
-    hdr['CRPIX1'] = 1
+    hdr['NAXIS'] = hdulist[0].header['NAXIS']
+    hdr['CRVAL1'] = hdulist[0].header['CRVAL1']
+    hdr['CDELT1'] = hdulist[0].header['CDELT1']
+    hdr['CRPIX1'] = hdulist[0].header['CRPIX1']
     hduu = fits.PrimaryHDU(disk_model_norm, header=hdr)
     hduu.writeto('/Users/ppzaf/Work/MaNGA/dap/master/data/spectral_templates/my_spec/disk_spec.fits', overwrite=True)
 
@@ -154,7 +168,6 @@ def fit_bulge_spec(plt, ifu, frac, wave, flux, ivar, sres):
     #flux = bulge_spec
     #ivar = bulge_ivar
     #wave = wave_b
-    fit_plots=True
     # Template keywords
     sc_tpl_key = 'MY_SPEC'
     el_tpl_key = 'MY_SPEC'
@@ -197,8 +210,8 @@ def fit_bulge_spec(plt, ifu, frac, wave, flux, ivar, sres):
 
     # Perform the fit
     cont_wave, cont_flux, cont_mask, cont_par \
-        = ppxf_frac.fit(sc_tpl['WAVE'].data.copy(), sc_tpl['FLUX'].data.copy(), wave, flux, ferr,
-                   z, dispersion, frac, iteration_mode='no_global_wrej', reject_boxcar=100,
+        = ppxf2.fit(sc_tpl['WAVE'].data.copy(), sc_tpl['FLUX'].data.copy(), wave, flux, ferr,
+                   z, dispersion, frac, component = [0,1], iteration_mode='no_global_wrej', reject_boxcar=100,
                    ensemble=False, velscale_ratio=velscale_ratio, mask=sc_pixel_mask,
                    matched_resolution=False, tpl_sres=sc_tpl_sres, obj_sres=sres, degree=-1,
                    moments=2, plot=fit_plots) #Degree was 8
@@ -208,3 +221,5 @@ def fit_bulge_spec(plt, ifu, frac, wave, flux, ivar, sres):
     #Will firstly have to construct the 'template library' of two templates. Probably have to save \
     #bulge_model_spec and disk_model_spec to the spectral templates diectory and make an .ini file
     #Also, figure out how to set the component flag of ppxf from ppxf.fit
+    #I did this! I modified the ppxf DAP module and made a new one called ppxf2. The ppxf2.fit
+    #module contans ppxf with the component keyword

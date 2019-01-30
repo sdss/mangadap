@@ -277,8 +277,8 @@ for i in range (10895, 10896): # 7443-9102 is for testing.
     # Alternatively, create a single bulge and disk spectrum the way I've done it before.
     bulge_spec, bulge_ivar, disk_spec, disk_ivar = create_single_spec(fluxes, ivars, bin_disk, signal, Rb) #Disk spec is farked at the moment - Nans
     # Fit the bulge and disk spectra with SSPs (Just bulge at the moment, until I fix disk spectra)
-    cont_par_bulge, sc_tpl_bulge = fit_one_spect(str(t['plate'][i]) , str(t['ifudsgn'][i]), bulge_spec, bulge_ivar, waves[0,:], drpf) #This doesn't currenty work - WHY NOT?!
-    cont_par_disk, sc_tpl_disk = fit_one_spect(str(t['plate'][i]) , str(t['ifudsgn'][i]), disk_spec, disk_ivar, waves[0,:], drpf) #This doesn't currenty work - WHY NOT?!
+    cont_par_bulge, sc_tpl_bulge, sres = fit_one_spect(str(t['plate'][i]), str(t['ifudsgn'][i]), bulge_spec, bulge_ivar, waves[0,:], drpf) #This doesn't currenty work - WHY NOT?!
+    cont_par_disk, sc_tpl_disk, sres = fit_one_spect(str(t['plate'][i]) , str(t['ifudsgn'][i]), disk_spec, disk_ivar, waves[0,:], drpf) #This doesn't currenty work - WHY NOT?!
     save_spec_fits_files(cont_par_bulge, sc_tpl_bulge, cont_par_disk, sc_tpl_disk) #Save bulge and disk spectra for use as template files
     #-----------------------------------------------------------------------------
     # Step 4 - Fit kinematics of disk and bulge
@@ -288,5 +288,5 @@ for i in range (10895, 10896): # 7443-9102 is for testing.
     print('########################################')
     print('Fitting cube with bulge and disk spectra')
     print('########################################')
-    for j in range(0, tpl_wgts.shape[1]): #For every bin - deredshifted? NO?
-        fit_bulge_spec(str(t['plate'][i]), str(t['ifudsgn'][i]), bulge_frac[j], wave_b, flux_m[j,:], ivar_m[j,:])
+    for j in range(0, 1):#tpl_wgts.shape[1]): #For every bin - deredshifted? NO?
+        fit_bulge_spec(str(t['plate'][i]), str(t['ifudsgn'][i]), bulge_frac[j], wave_b, flux_m[j,:], ivar_m[j,:], sres)
