@@ -102,7 +102,7 @@ def test_sasuke():
 
     # No additive coefficients
     assert numpy.all(el_fit['ADDCOEF'] == 0), \
-                'No multiplicative coefficients should exist'
+                'No additive coefficients should exist'
 
     # No multiplicative coefficients
     assert numpy.all(el_fit['MULTCOEF'] == 0), \
@@ -110,23 +110,23 @@ def test_sasuke():
 
     # Fit statistics
     assert numpy.allclose(el_fit['RCHI2'],
-                    numpy.array([2.30526714, 1.19355894, 1.54887132, 1.84447282, 3.14657599,
-                                 0.        , 1.03495789, 0.86928516]),
+                          numpy.array([2.32689404, 1.20425982, 1.56710595, 1.86633895,
+                                       3.18626651, 0.        , 1.04171535, 0.87643731]),
                           rtol=0.0, atol=1e-4), 'Reduced chi-square different'
 
     assert numpy.allclose(el_fit['RMS'],
-                    numpy.array([0.03624053, 0.0191412 , 0.03661278, 0.02454041, 0.05073471,
-                                 0.        , 0.01283324, 0.01245004]),
+                    numpy.array([0.03624053, 0.0191412 , 0.03661278, 0.02454041,
+                                 0.05073471, 0.        , 0.01283324, 0.01245004]),
                           rtol=0.0, atol=1e-4), 'RMS different'
 
     assert numpy.allclose(el_fit['FRMS'],
-                    numpy.array([0.02098079, 0.02650329, 0.02718797, 0.03478277, 0.01857   ,
-                                 0.        , 1.12984714, 0.10961989]),
+                    numpy.array([0.02098079, 0.02650329, 0.02718797, 0.03478277,
+                                 0.01857   , 0.        , 1.12984714, 0.10961989]),
                           rtol=0.0, atol=1e-4), 'Fractional RMS different'
 
     assert numpy.allclose(el_fit['RMSGRW'][:,2],
-                    numpy.array([0.07080605, 0.0374927 , 0.07063608, 0.0476781 , 0.10087567,
-                                 0.        , 0.02704224, 0.02432112]),
+                          numpy.array([0.07088299, 0.03749948, 0.07063977, 0.04767839,
+                                       0.10092644, 0.        , 0.02707473, 0.02443383]),
                           rtol=0.0, atol=1e-4), 'Median absolute residual different'
 
     # All lines should have the same velocity

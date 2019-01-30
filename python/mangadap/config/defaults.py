@@ -135,7 +135,7 @@ def default_drp_directory_path(plate, drpver=None, redux_path=None):
         str: Path to the directory with the 3D products of the DRP
     """
     # Make sure the redux path is set
-    _redux_path = default_redux_path(drpver=_drpver) \
+    _redux_path = default_redux_path(drpver=drpver) \
                         if redux_path is None else os.path.abspath(redux_path)
     return os.path.join(_redux_path, str(plate), 'stack')
 
