@@ -326,7 +326,7 @@ class DAPall:
         return { 'PLATEIFU':12, 
                  'MANGAID':10,
                  'MODE':4,
-                 'DAPTYPE':20,
+                 'DAPTYPE':30,
                  'VERSDRP2':8,
                  'VERSDRP3':8,
                  'VERSCORE':8,
