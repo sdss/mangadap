@@ -1,3 +1,20 @@
+2.3.1dev
+--------
+
+TODO:
+ - Documentation of config examples are out of date!
+ - Get rid of the filter keyword from the output headers...
+ - Change default to fix bad pixels in spectral resolution?
+ - Fix MASKNAME in reference files
+ - Add DAP versioning to reference files
+ - Fix ELMREBIN in 2nd round of moment calculations
+ - Stop transposing the datacube data!
+ - Get rid of optional dapsrc
+ - Keep all the reference files to the common directory?
+ - Fix minor issue in moment and index spaxels fit in hybrid case,
+   compared to emission-line modeling data.
+
+
 2.3.0 (31 Jan 2019)
 -------------------
 
@@ -63,19 +80,6 @@
  - Ignore minimum S/N limitation in emission-line moments and spectral
    indices for hybrid scheme as a stop-gap to minimize differences in
    moments, models, and indices BINID.
-
-TODO:
- - Documentation of config examples are out of date!
- - Get rid of the filter keyword from the output headers...
- - Change default to fix bad pixels in spectral resolution?
- - Fix MASKNAME in reference files
- - Add DAP versioning to reference files
- - Fix ELMREBIN in 2nd round of moment calculations
- - Stop transposing the datacube data!
- - Get rid of optional dapsrc
- - Keep all the reference files to the common directory?
- - Fix minor issue in moment and index spaxels fit in hybrid case,
-   compared to emission-line modeling data.
 
 2.2.2 (Not released)
 --------------------
