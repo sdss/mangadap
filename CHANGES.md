@@ -1,5 +1,5 @@
-2.2.3dev
---------
+2.3.0 (31 Jan 2019)
+-------------------
 
  - Put in default paths when environmental variables not defined and
    warn user, both when running setup.py and when importing mangadap
