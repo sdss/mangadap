@@ -57,6 +57,12 @@
    to the common directory.
  - Add databases and configuration files that include the HeI 3889 line
    and the NI ~5200 doublet.
+ - Added post-processing qa plots
+ - Fixed minor issue in propagating masks from the reference files to
+   the maps files; primarily an issue for the hybrid binning scheme.
+ - Ignore minimum S/N limitation in emission-line moments and spectral
+   indices for hybrid scheme as a stop-gap to minimize differences in
+   moments, models, and indices BINID.
 
 TODO:
  - Documentation of config examples are out of date!
@@ -68,6 +74,8 @@ TODO:
  - Stop transposing the datacube data!
  - Get rid of optional dapsrc
  - Keep all the reference files to the common directory?
+ - Fix minor issue in moment and index spaxels fit in hybrid case,
+   compared to emission-line modeling data.
 
 2.2.2 (Not released)
 --------------------

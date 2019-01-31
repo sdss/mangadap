@@ -521,10 +521,11 @@ class EmissionLineMoments:
 
     def _flag_good_spectra(self, measure_on_unbinned_spaxels):
         if measure_on_unbinned_spaxels:
-            fgoodpix = self.binned_spectra.check_fgoodpix()
-            good_snr = self.binned_spectra.rdxqa['SPECTRUM'].data['SNR'] \
-                                > self.database['minimum_snr']
-            return fgoodpix & good_snr
+            return self.binned_spectra.check_fgoodpix()
+#            fgoodpix = self.binned_spectra.check_fgoodpix()
+#            good_snr = self.binned_spectra.rdxqa['SPECTRUM'].data['SNR'] \
+#                                > self.database['minimum_snr']
+#            return fgoodpix & good_snr
         return self.binned_spectra.above_snr_limit(self.database['minimum_snr'])
 
 
