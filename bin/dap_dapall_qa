@@ -64,8 +64,8 @@ def ew_d4000(drpall, dapall, daptype, eml, spi, ofile=None):
 
     ha_indx = indx & (dapall['EMLINE_GEW_1RE'][:,eml['Ha-6564']] > -999) \
                     & (dapall['SPECINDEX_1RE'][:,spi['Dn4000']] > -999)
-    hd_indx = indx & (dapall['SPECINDEX_1RE'][:,spi['HDeltaA'] > -999) \
-                    & (dapall['SPECINDEX_1RE'][:,spi['Dn4000'] > -999)
+    hd_indx = indx & (dapall['SPECINDEX_1RE'][:,spi['HDeltaA']] > -999) \
+                    & (dapall['SPECINDEX_1RE'][:,spi['Dn4000']] > -999)
 
     is_critical = DAPQualityBitMask().flagged(dapall['DAPQUAL'], 'CRITICAL')
 
