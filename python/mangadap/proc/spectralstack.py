@@ -8,29 +8,6 @@ Stack some spectra!
     Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
         Licensed under BSD 3-clause license - see LICENSE.rst
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/proc/spatialbins.py
-
-*Imports and python version compliance*:
-    ::
-
-        from __future__ import division
-        from __future__ import print_function
-        from __future__ import absolute_import
-        from __future__ import unicode_literals
-
-        import sys
-        if sys.version > '3':
-            long = int
-        
-        import numpy
-        from scipy import sparse
-        from astropy.io import fits
-        import astropy.constants
-
-        from ..par.parset import ParSet
-        from ..util.covariance import Covariance
-
 *Class usage examples*:
 
     .. todo::
@@ -878,6 +855,12 @@ class SpectralStack():
         covar = None if par is None else \
                     self.build_covariance_data_DRPFits(drpf, par['covar_mode'], par['covar_par'])
 
+        # Make sure all the inverse variance values are valid
+        indx = numpy.invert(ivar > 0)
+        if numpy.any(indx):
+            flux.mask |= indx
+            ivar.mask |= indx
+
         return self.stack(wave, flux, binid=binid, ivar=ivar, log=True, keep_range=True) \
                     if par is None else \
                     self.stack(wave, flux, operation=par['operation'], binid=binid, ivar=ivar,
@@ -902,6 +885,8 @@ class SpectralStack():
         .. todo:
             - Allow for renormalization of spectra before stacking.
               Where and how, TBD.
+            - If only one spectrum returned, return flux array as a
+              single vector?
 
         Args:
             wave (numpy.ndarray):

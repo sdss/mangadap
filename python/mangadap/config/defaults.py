@@ -5,28 +5,8 @@ Provides a set of functions that define and return defaults used by the
 MaNGA DAP, such as paths and file names.
 
 *License*:
-    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
+    Copyright (c) 2019, SDSS-IV/MaNGA Pipeline Group
         Licensed under BSD 3-clause license - see LICENSE.rst
-
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/config/defaults.py
-
-*Imports and python version compliance*:
-    ::
-
-        from __future__ import division
-        from __future__ import print_function
-        from __future__ import absolute_import
-        from __future__ import unicode_literals
-        
-        import sys
-        if sys.version > '3':
-            long = int
-    
-        import os
-        import glob
-        import numpy
-        from mangadap.util.exception_tools import check_environment_variable
 
 *Revision history*:
     | **23 Apr 2015**: Original implementation by K. Westfall (KBW)
@@ -137,7 +117,7 @@ def default_redux_path(drpver=None):
     if drpver is None:
         drpver = default_drp_version()
     check_environment_variable('MANGA_SPECTRO_REDUX')
-    return os.path.join(os.environ['MANGA_SPECTRO_REDUX'], drpver)
+    return os.path.join(os.path.abspath(os.environ['MANGA_SPECTRO_REDUX']), drpver)
 
 
 def default_drp_directory_path(plate, drpver=None, redux_path=None):
@@ -155,10 +135,51 @@ def default_drp_directory_path(plate, drpver=None, redux_path=None):
         str: Path to the directory with the 3D products of the DRP
     """
     # Make sure the redux path is set
-    if redux_path is None:
-        redux_path = default_redux_path(drpver=drpver)
-    return os.path.join(redux_path, str(plate), 'stack')
+    _redux_path = default_redux_path(drpver=drpver) \
+                        if redux_path is None else os.path.abspath(redux_path)
+    return os.path.join(_redux_path, str(plate), 'stack')
 
+
+def default_drpall_file(drpver=None, redux_path=None):
+    """
+    Return the path to the DRPall file.
+
+    Args:
+        drpver (:obj:`str`, optional):
+            DRP version.  Default is to use :func:`default_drp_version`.
+        redux_path (:obj:`str`, optional):
+            Path to the root reduction directory.  Default is to use
+            :func:`default_redux_path`.
+
+    Returns:
+        :obj:`str`: Full path to the DRPall fits file.
+    """
+    _drpver = default_drp_version() if drpver is None else drpver
+    _redux_path = default_redux_path(drpver=_drpver) \
+                        if redux_path is None else os.path.abspath(redux_path)
+    return os.path.join(_redux_path, 'drpall-{0}.fits'.format(_drpver))
+
+def default_dapall_file(drpver=None, dapver=None, analysis_path=None):
+    """
+    Return the path to the DAPall file.
+
+    Args:
+        drpver (:obj:`str`, optional):
+            DRP version.  Default is to use :func:`default_drp_version`.
+        dapver (:obj:`str`, optional):
+            DAP version.  Default is to use :func:`default_dap_version`.
+        analysis_path (:obj:`str`, optional):
+            Path to the root analysis directory.  Default is to use
+            :func:`default_analysis_path`
+
+    Returns:
+        :obj:`str`: Full path to the DAPall fits file.
+    """
+    _drpver = default_drp_version() if drpver is None else drpver
+    _dapver = default_dap_version() if dapver is None else dapver
+    _analysis_path = default_analysis_path(drpver=_drpver, dapver=_dapver) \
+                        if analysis_path is None else os.path.abspath(analysis_path)
+    return os.path.join(_analysis_path, 'dapall-{0}-{1}.fits'.format(_drpver, _dapver))
 
 # TODO: Are these values kept in MANGACORE somewhere?
 def default_cube_pixelscale():
@@ -236,7 +257,7 @@ def default_analysis_path(drpver=None, dapver=None):
     if dapver is None:
         dapver = default_dap_version()
     check_environment_variable('MANGA_SPECTRO_ANALYSIS')
-    return os.path.join(os.environ['MANGA_SPECTRO_ANALYSIS'], drpver, dapver)
+    return os.path.join(os.path.abspath(os.environ['MANGA_SPECTRO_ANALYSIS']), drpver, dapver)
 
 
 def default_dap_common_path(plate=None, ifudesign=None, drpver=None, dapver=None,
@@ -267,45 +288,97 @@ def default_dap_common_path(plate=None, ifudesign=None, drpver=None, dapver=None
         raise ValueError('For IFU design subdirectory, must provide plate number.')
 
     # Get the main analysis path
-    if analysis_path is None:
-        analysis_path = default_analysis_path(drpver=drpver, dapver=dapver)
+    _analysis_path = default_analysis_path(drpver=drpver, dapver=dapver) \
+                        if analysis_path is None else os.path.abspath(analysis_path)
 
-    output_path = os.path.join(analysis_path, 'common')
+    output_path = os.path.join(_analysis_path, 'common')
     if plate is None:
         return output_path
     output_path = os.path.join(output_path, str(plate))
     return output_path if ifudesign is None else os.path.join(output_path, str(ifudesign))
 
 
-def default_dap_method(plan=None, binned_spectra=None, stellar_continuum=None,
-                       binning_method=None, continuum_method=None):
+#def default_dap_method(plan=None, binned_spectra=None, stellar_continuum=None,
+#                       binning_method=None, continuum_method=None):
+#    """
+#    Return the method for a provided plan.  The name currently uses the
+#    keyword identifiers for the binned spectra and the stellar continuum
+#    models.
+#    """
+#    if plan is not None:
+#        if not isinstance(plan['bin_key'], str) and len(plan['bin_key']) > 1:
+#            raise ValueError('Must only provide a single plan.')
+#        if not isinstance(plan['continuum_key'], str) and len(plan['continuum_key']) > 1:
+#            raise ValueError('Must only provide a single plan.')
+#        _binning_method = str(plan['bin_key'])
+#        _continuum_method = str(plan['continuum_key'])
+#    else:
+##        binning_method = 'None' if binned_spectra is None else binned_spectra.method['key']
+#        if binned_spectra is not None:
+#            _binning_method = binned_spectra.method['key']
+#        elif binning_method is not None:
+#            _binning_method = binning_method
+#        else:
+#            _binning_method = 'None'
+#        if stellar_continuum is not None:
+#            _continuum_method = stellar_continuum.method['key']
+#        elif continuum_method is not None:
+#            _continuum_method = continuum_method
+#        else:
+#            _continuum_method = 'None'
+#    return '{0}-{1}'.format(_binning_method, _continuum_method)
+
+
+def default_dap_method(binning_method, stellar_continuum_templates, emission_line_model_templates):
+
     """
-    Return the method for a provided plan.  The name currently uses the
-    keyword identifiers for the binned spectra and the stellar continuum
-    models.
+    Construct the "DAPTYPE" based on the analysis plan.
+
+    The construction is based on directly provided strings for
+    `binning_method`, `stellar_continuum_templates`, and
+    `emission_line_model_templates`.  The DAPTYPE is constructed as
+    these three strings separated by dashes.  E.g., DAPTYPE =
+    'HYB10-MILESHC-MILESHC' when the binning method is HYB10 and the
+    MILESHC library is used as templates for both the stellar and
+    emission-line fitting.
+
+    With a analysis plan file, run the following to get the list of
+    daptypes::
+
+        from mangadap.par.analysisplan import AnalysisPlanSet
+        from mangadap.proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
+        from mangadap.proc.stellarcontinuummodel import StellarContinuumModel
+        from mangadap.proc.emissionlinemodel import EmissionLineModel
+        from mangadap.config.defaults import default_dap_method
+
+        plans = AnalysisPlanSet.from_par_file(plan_file)
+        daptypes = []
+        for plan in plans:
+            bin_method = SpatiallyBinnedSpectra.define_method(plan['bin_key'])
+            sc_method = StellarContinuumModel.define_method(plan['continuum_key'])
+            el_method = EmissionLineModel.define_method(plan['elfit_key'])
+            daptypes += [default_dap_method(bin_method['key'], sc_method['template_library'],
+                                            el_method['continuum_templates'])]
+
+    Args:
+        binning_method (:obj:`str`):
+            String used to define the binning method.
+        stellar_continuum_templates (:obj:`str`):
+            String defining the template library used in the stellar
+            continuum (stellar kinematics) modeling.
+
+        emission_line_model_templates (:obj:`str`):
+            String defining the template library used in the
+            emission-line modeling.  Can be None, meaning that the
+            continuum templates are the same as used for the
+            stellar-continuum modeling.
+    Returns:
+        str: The string representation of the analysis method.
+
     """
-    if plan is not None:
-        if not isinstance(plan['bin_key'], str) and len(plan['bin_key']) > 1:
-            raise ValueError('Must only provide a single plan.')
-        if not isinstance(plan['continuum_key'], str) and len(plan['continuum_key']) > 1:
-            raise ValueError('Must only provide a single plan.')
-        _binning_method = str(plan['bin_key'])
-        _continuum_method = str(plan['continuum_key'])
-    else:
-#        binning_method = 'None' if binned_spectra is None else binned_spectra.method['key']
-        if binned_spectra is not None:
-            _binning_method = binned_spectra.method['key']
-        elif binning_method is not None:
-            _binning_method = binning_method
-        else:
-            _binning_method = 'None'
-        if stellar_continuum is not None:
-            _continuum_method = stellar_continuum.method['key']
-        elif continuum_method is not None:
-            _continuum_method = continuum_method
-        else:
-            _continuum_method = 'None'
-    return '{0}-{1}'.format(_binning_method, _continuum_method)
+    _eltpl = stellar_continuum_templates if emission_line_model_templates is None \
+                                                else emission_line_model_templates
+    return '{0}-{1}-{2}'.format(binning_method, stellar_continuum_templates, _eltpl)
 
 
 def default_dap_method_path(method, plate=None, ifudesign=None, qa=False, ref=False,
@@ -349,11 +422,11 @@ def default_dap_method_path(method, plate=None, ifudesign=None, qa=False, ref=Fa
         raise ValueError('Cannot provide path for both qa and ref directory.  Pick one.')
 
     # Get the main analysis path
-    if analysis_path is None:
-        analysis_path = default_analysis_path(drpver=drpver, dapver=dapver)
+    _analysis_path = default_analysis_path(drpver=drpver, dapver=dapver) \
+                        if analysis_path is None else os.path.abspath(analysis_path)
 
     # Build the plan subirectory
-    output_path = os.path.join(analysis_path, method)
+    output_path = os.path.join(_analysis_path, method)
     if plate is None:
         return output_path
     output_path = os.path.join(output_path, str(plate), str(ifudesign))
@@ -437,13 +510,12 @@ def default_dap_par_file(plate, ifudesign, mode, partype='input', drpver=None, d
         str: Full path to the DAP par file
     """
     # Make sure the directory path is defined
-    if directory_path is None:
-        directory_path = default_dap_common_path(plate=plate, ifudesign=ifudesign,
-                                                 drpver=drpver, dapver=dapver,
-                                                 analysis_path=analysis_path)
+    _directory_path = default_dap_common_path(plate=plate, ifudesign=ifudesign, drpver=drpver,
+                                             dapver=dapver, analysis_path=analysis_path) \
+                            if directory_path is None else os.path.abspath(directory_path)
     # Set the name of the par file; put this in its own function?
     par_file = '{0}-{1}.par'.format(default_dap_file_root(plate, ifudesign, mode), partype)
-    return os.path.join(directory_path, par_file)
+    return os.path.join(_directory_path, par_file)
 
     
 def default_dap_plan_file(drpver=None, dapver=None, analysis_path=None):
@@ -464,12 +536,13 @@ def default_dap_plan_file(drpver=None, dapver=None, analysis_path=None):
     # Get the main analysis path
     if dapver is None:
         dapver = default_dap_version()
-    if analysis_path is None:
-        analysis_path = default_analysis_path(drpver=drpver, dapver=dapver)
+
+    _analysis_path = default_analysis_path(drpver=drpver, dapver=dapver) \
+                        if analysis_path is None else os.path.abspath(analysis_path)
     
     # Set the name of the plan file
     plan_file = 'mangadap-plan-{0}.par'.format(dapver)
-    return os.path.join(analysis_path, plan_file)
+    return os.path.join(_analysis_path, plan_file)
 
 
 def default_dap_file_name(plate, ifudesign, output_mode, mode=None, compressed=True):
@@ -510,8 +583,8 @@ def default_plate_target_files():
     """
     # Default search string
     check_environment_variable('MANGACORE_DIR')
-    search_str = os.path.join(os.environ['MANGACORE_DIR'], 'platedesign', 'platetargets',
-                              'plateTargets*.par')
+    search_str = os.path.join(os.path.abspath(os.environ['MANGACORE_DIR']), 'platedesign',
+                              'platetargets', 'plateTargets*.par')
     file_list = glob.glob(search_str)                       # List of files
     nfiles = len(file_list)
     trgid = numpy.zeros(nfiles, dtype=numpy.int)            # Array to hold indices

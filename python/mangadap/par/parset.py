@@ -556,6 +556,8 @@ class ParDatabase(object):
         """
         return self.data[key]
 
+    def __len__(self):
+        return self.nsets
 
     @staticmethod
     def _set_dtypes(inp, i):

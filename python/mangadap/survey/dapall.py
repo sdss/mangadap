@@ -10,48 +10,6 @@ file is created.
     Copyright (c) 2017, SDSS-IV/MaNGA Pipeline Group
         Licensed under BSD 3-clause license - see LICENSE.rst
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/dapall.py
-
-*Imports and python version compliance*:
-    ::
-
-        from __future__ import division
-        from __future__ import print_function
-        from __future__ import absolute_import
-        from __future__ import unicode_literals
-
-        import sys
-        if sys.version > '3':
-            long = int
-
-        import numpy
-        import logging
-        import time
-        import os
-
-        from scipy import interpolate
-
-        from astropy.io import fits
-        import astropy.constants
-        from astropy.cosmology import FlatLambdaCDM
-        import astropy.units
-        from astropy.stats import sigma_clip
-
-        from ..drpfits import DRPFits, DRPQuality3DBitMask
-        from ..dapfits import DAPMapsBitMask, DAPQualityBitMask
-        from ..par.analysisplan import AnalysisPlanSet
-        from .drpcomplete import DRPComplete
-        from ..config import defaults
-        from ..util.fileio import init_record_array, rec_to_fits_type, channel_dictionary
-        from ..proc.util import select_proc_method
-        from ..par.absorptionindexdb import AbsorptionIndexDB
-        from ..par.bandheadindexdb import BandheadIndexDB
-        from ..par.emissionlinedb import EmissionLineDB
-        from ..proc.spectralindices import SpectralIndicesDef, available_spectral_index_databases
-        from ..proc.emissionlinemodel import EmissionLineModelDef
-        from ..proc.emissionlinemodel import available_emission_line_modeling_methods
-
 *Class usage examples*:
     Add some usage comments here!
 
@@ -60,6 +18,8 @@ file is created.
     | **29 Sep 2017**: (KBW) Force the number of emission-line
         passbands, emission-lines to fit, and spectral indices to be the
         same for all analysis methods.
+    | **30 Jan 2019**: (KBW) Add effective chi-square for emission-line
+        fits.
 
 .. _astropy.io.fits.open: http://docs.astropy.org/en/stable/io/fits/api/files.html#astropy.io.fits.open
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
@@ -104,9 +64,11 @@ from ..par.bandheadindexdb import BandheadIndexDB
 from ..par.emissionlinedb import EmissionLineDB
 from ..par.emissionmomentsdb import EmissionMomentsDB
 from ..proc.util import select_proc_method, sample_growth
+from ..proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
+from ..proc.stellarcontinuummodel import StellarContinuumModel
 from ..proc.emissionlinemoments import EmissionLineMomentsDef
 from ..proc.emissionlinemoments import available_emission_line_moment_databases
-from ..proc.emissionlinemodel import EmissionLineModelDef
+from ..proc.emissionlinemodel import EmissionLineModel, EmissionLineModelDef
 from ..proc.emissionlinemodel import available_emission_line_modeling_methods
 from ..proc.spectralindices import SpectralIndicesDef, available_spectral_index_databases
 
@@ -126,31 +88,37 @@ class DAPall:
     checks that the appropriate maps file exists. 
 
     Args:
-        plan (:class:`mangadap.par.analysisplan.AnalysisPlanSet`): The
-            plan object used by the DAP.
-        methods (str,list): (**Optional**) Specify a set of methods in
-            the DAP plan file to include in the DAPall file.  If not
-            provided, all methods in the plan file are included.
-        drpver (str): (**Optional**) DRP version.  Default determined by
+        plan (:class:`mangadap.par.analysisplan.AnalysisPlanSet`):
+            The plan object used by the DAP.
+        methods (:obj:`str`, :obj:`list`, optional):
+            Specify a set of methods in the DAP plan file to include in
+            the DAPall file.  If not provided, all methods in the plan
+            file are included.
+        drpver (:obj:`str`, optional):
+            DRP version.  Default determined by
             :func:`mangadap.config.defaults.default_drp_version`.
-        redux_path (str) : (**Optional**) Top-level directory with the
-            DRP products; default is defined by
+        redux_path (:obj:`str`, optional):
+            Top-level directory with the DRP products; default is
+            defined by
             :func:`mangadap.config.defaults.default_redux_path`.
-        dapver (str): (**Optional**) DAP version.  Default determined by
+        dapver (:obj:`str`, optional):
+            DAP version.  Default determined by
             :func:`mangadap.config.defaults.default_dap_version`.
-        dapsrc (str): (**Optional**) Source directory of the DAP.
-            Default determined by
+        dapsrc (:obj:`str`, optional):
+            Source directory of the DAP.  Default determined by
             :func:`mangadap.config.defaults.dap_source_dir`.
-        analysis_path (str) : (**Optional**) Top-level directory for the DAP
-            output data; default is defined by
+        analysis_path (:obj:`str`, optional):
+            Top-level directory for the DAP output data; default is
+            defined by
             :func:`mangadap.config.defaults.default_analysis_path`.
-        readonly(bool): (**Optional**) If it exists, open any existing
-            file and disallow any modifications of the database.
-            Default is to automatically check for any need to update the
-            file.
-        loggers (list): List of `logging.Logger`_ objects used to log
-            progress.
-        quiet (bool): Suppress all terminal and logging output.
+        readonly (:obj:`bool`, optional):
+            If it exists, open any existing file and disallow any
+            modifications of the database.  Default is to automatically
+            check for any need to update the file.
+        loggers (:obj:`list`, optional):
+            List of `logging.Logger`_ objects used to log progress.
+        quiet (:obj:`bool`, optional):
+            Suppress all terminal and logging output.
 
     Raises:
         TypeError: Raised if the input plan is not a
@@ -272,10 +240,8 @@ class DAPall:
         if self.hdu is None or not self.readonly:
             self.update(plan, methods=methods)
 
-
     def __getitem__(self, key):
         return self.hdu['DAPALL'].data[key]
-
 
     @staticmethod
     def _emission_line_moment_db_info(key, dapsrc=None):
@@ -286,7 +252,6 @@ class DAPall:
                                 dapsrc=dapsrc)
         return db['passbands'], EmissionMomentsDB(db['passbands'], dapsrc=dapsrc).channel_names()
 
-
     @staticmethod
     def _emission_line_db_info(key, dapsrc=None):
         if key == 'None':
@@ -296,7 +261,6 @@ class DAPall:
                                 dapsrc=dapsrc)
         return db['emission_lines'], \
                     EmissionLineDB(db['emission_lines'], dapsrc=dapsrc).channel_names()
-
 
     @staticmethod
     def _spectral_index_db_info(key, dapsrc=None):
@@ -313,7 +277,6 @@ class DAPall:
         if len(channels) != nindx:
             raise ValueError('Spectral index channel names not unique!')
         return db['absindex'], db['bandhead'], channels, units
-
 
     def _read(self):
         """
@@ -359,12 +322,11 @@ class DAPall:
             log_output(self.loggers, 1, logging.INFO,
                        'Number of spectral indices: {0}'.format(self.nindx))
 
-
     def _init_string_lengths(self):
         return { 'PLATEIFU':12, 
                  'MANGAID':10,
                  'MODE':4,
-                 'DAPTYPE':20,
+                 'DAPTYPE':30,
                  'VERSDRP2':8,
                  'VERSDRP3':8,
                  'VERSCORE':8,
@@ -385,7 +347,6 @@ class DAPall:
                  'SPECINDEX_UNIT':5
                }
 
-    
     def _table_dtype(self, nmom, neml, nindx):
         return [ ('PLATE', numpy.int),
                  ('IFUDESIGN', numpy.int),
@@ -447,7 +408,7 @@ class DAPall:
                  ('STELLAR_VEL_LO_CLIP', self.float_dtype),
                  ('STELLAR_VEL_HI_CLIP', self.float_dtype),
                  ('STELLAR_SIGMA_1RE', self.float_dtype),
-                 ('STELLAR_CONT_RCHI2_1RE', self.float_dtype),
+                 ('STELLAR_RCHI2_1RE', self.float_dtype),
                  ('HA_Z', self.float_dtype),
                  ('HA_GVEL_LO', self.float_dtype),
                  ('HA_GVEL_HI', self.float_dtype),
@@ -456,6 +417,7 @@ class DAPall:
                  ('HA_GSIGMA_1RE', self.float_dtype),
                  ('HA_GSIGMA_HI', self.float_dtype),
                  ('HA_GSIGMA_HI_CLIP', self.float_dtype),
+                 ('EMLINE_RCHI2_1RE', self.float_dtype),
 #                 ('EMLMOM_NAME', '<U{0:d}'.format(self.str_len['EMLMOM_NAME']*nmom)),
                  ('EMLINE_SFLUX_CEN', self.float_dtype, (nmom,)),
                  ('EMLINE_SFLUX_1RE', self.float_dtype, (nmom,)),
@@ -482,7 +444,6 @@ class DAPall:
                  ('SFR_1RE', self.float_dtype),
                  ('SFR_TOT', self.float_dtype)
                ]
-
 
     def _get_completed_observations(self):
         """
@@ -512,7 +473,6 @@ class DAPall:
         indx = drpc.can_analyze()
         return drpc['PLATE'][indx], drpc['IFUDESIGN'][indx]
 
-
     def _combine_plateifu_methods(self, plt, ifu):
         """
         Run the combinatorics to create the full list of plates,
@@ -526,7 +486,6 @@ class DAPall:
 
         return methods, plates, ifudesigns
 
-
     def _construct_maps_file_list(self, methodlist, platelist, ifulist): # plt, ifu):
         """
         Construct the list of MAPS files that should be in/added to the
@@ -536,7 +495,6 @@ class DAPall:
         return numpy.array( ['{0}/{1}/{2}/{3}/manga-{2}-{3}-MAPS-{1}.fits.gz'.format(
                                 self.analysis_path, m, p, i) 
                                     for m,p,i in zip(methodlist, platelist, ifulist) ])
-
     
     def _add_channels_to_header(self, hdr, channels, prefix, comment, units=None):
         """
@@ -553,13 +511,11 @@ class DAPall:
                 hdr[prefix+'U'+'{0}'.format(c+1).zfill(ndig)] = (units[c], comment+' unit')
         return hdr
 
-
     def _srd_snr_metric(self, dapmaps):
         """Grab the SNR metrics from the MAPS headers."""
         filters = [ 'G', 'R', 'I', 'Z' ]
         return numpy.array([dapmaps['PRIMARY'].header['SNR{0}MED'.format(f)] for f in filters]), \
                 numpy.array([dapmaps['PRIMARY'].header['SNR{0}RING'.format(f)] for f in filters])
-
 
     @staticmethod
     def _radial_coverage_metric(r, ell):
@@ -585,7 +541,6 @@ class DAPall:
             return 0.
         interp = interpolate.interp1d(coverage[indx[-1]:], binr[indx[-1]:])
         return interp(coverage_limit)
-
 
     @staticmethod
     def _binning_metrics(dapmaps):
@@ -624,7 +579,6 @@ class DAPall:
         
         return numpy.amax(r_re), bin_r_n, bin_r_snr
 
-
     def _stellar_kinematics_metrics(self, dapmaps, redshift):
 
         # Unique bins
@@ -649,9 +603,10 @@ class DAPall:
                                                               'DONOTUSE')).ravel()[unique_indx]
 
         ssig2corr = numpy.square(ssig) - numpy.square(
-                                    dapmaps['STELLAR_SIGMACORR'].data.ravel()[unique_indx])
-#                                    dapmaps['STELLAR_SIGMACORR'].data[1,:,:].ravel()[unique_indx])
-        scchi = dapmaps['STELLAR_CONT_RCHI2'].data.copy().ravel()[unique_indx]
+#                                    dapmaps['STELLAR_SIGMACORR'].data.ravel()[unique_indx])
+                                    dapmaps['STELLAR_SIGMACORR'].data[0,:,:].ravel()[unique_indx])
+
+        scchi = dapmaps['STELLAR_FOM'].data[2,:,:].copy().ravel()[unique_indx]
 
         # Convert velocities to redshift
         z = (svel*(1+redshift) + astropy.constants.c.to('km/s').value*redshift) \
@@ -683,13 +638,12 @@ class DAPall:
         stellar_sigma_1re = numpy.sqrt(stellar_sigma2_1re) if stellar_sigma2_1re > 0 else -999.
 
         # Get the median reduced chi-square
-        stellar_cont_rchi2_1re = -999. if numpy.sum(within_1re) == 0 \
+        stellar_rchi2_1re = -999. if numpy.sum(within_1re) == 0 \
                                         else numpy.median(scchi[within_1re])
 
         return stellar_z, stellar_vel_lo, stellar_vel_hi, \
                         stellar_vel_lo_clip, stellar_vel_hi_clip, stellar_sigma_1re, \
-                        stellar_cont_rchi2_1re
-
+                        stellar_rchi2_1re
 
     def _halpha_kinematics_metrics(self, dapmaps, redshift, spx_coo=False):
 
@@ -729,6 +683,7 @@ class DAPall:
         sig2corr = numpy.square(sig) - numpy.square(
                     dapmaps['EMLINE_INSTSIGMA'].data[emline['Ha-6564'],:,:].ravel()[unique_indx])
 
+        chi = dapmaps['EMLINE_FOM'].data[2,:,:].copy().ravel()[unique_indx]
 
         # Convert velocities to redshift
         z = (vel*(1+redshift) + astropy.constants.c.to('km/s').value*redshift) \
@@ -784,9 +739,14 @@ class DAPall:
         halpha_gsigma_hi_clip = numpy.sqrt(halpha_gsigma2_hi_clip) \
                                         if halpha_gsigma2_hi_clip > 0 else -999.
 
-        return halpha_z, halpha_gvel_lo, halpha_gvel_hi, halpha_gvel_lo_clip, halpha_gvel_hi_clip, \
-                        halpha_gsigma_1re, halpha_gsigma_hi, halpha_gsigma_hi_clip
+        # Get the median reduced chi-square for the emission-line module
+        emline_rchi2_1re = -999. if numpy.sum(within_1re) == 0 \
+                                        else numpy.median(chi[within_1re])
+        
 
+        return halpha_z, halpha_gvel_lo, halpha_gvel_hi, halpha_gvel_lo_clip, halpha_gvel_hi_clip, \
+                        halpha_gsigma_1re, halpha_gsigma_hi, halpha_gsigma_hi_clip, \
+                        emline_rchi2_1re
 
     def _emission_line_metrics(self, dapmaps, moment0=False, spx_coo=False):
 
@@ -844,7 +804,6 @@ class DAPall:
         return emline_flux_cen, emline_flux_1re, emline_flux_tot, emline_sb_1re, \
                         emline_sb_peak, emline_ew_1re, emline_ew_peak
 
-
     def _spectral_index_metrics(self, dapmaps, specindex_units):
 
         # Unique bins
@@ -892,16 +851,18 @@ class DAPall:
 
         return specindex_lo, specindex_hi, specindex_lo_clip, specindex_hi_clip, specindex_1re
 
-
     def file_name(self):
         """Return the name of the DRP complete database."""
-        return ('dapall-{0}-{1}.fits'.format(self.drpver, self.dapver))
-
+        name = defaults.default_dapall_file(drpver=self.drpver, dapver=self.dapver,
+                                            analysis_path=self.analysis_path)
+        return os.path.split(name)[1]
+#        return ('dapall-{0}-{1}.fits'.format(self.drpver, self.dapver))
 
     def file_path(self):
         """Return the full pat to the DRP complete database."""
-        return os.path.join(self.analysis_path, self.file_name())
-
+        return defaults.default_dapall_file(drpver=self.drpver, dapver=self.dapver,
+                                            analysis_path=self.analysis_path)
+#        return os.path.join(self.analysis_path, self.file_name())
 
     def update(self, plan, methods=None):
         """
@@ -934,8 +895,15 @@ class DAPall:
             raise TypeError('Input plan must have type AnalysisPlanSet.')
 
         # Get the full list of available plan methods
-        plan_methods = numpy.array([ defaults.default_dap_method(plan=p) for p in plan ])
-
+#        plan_methods = numpy.array([ defaults.default_dap_method(plan=p) for p in plan ])
+        plan_methods = []
+        for p in plan:
+            bin_method = SpatiallyBinnedSpectra.define_method(p['bin_key'])
+            sc_method = StellarContinuumModel.define_method(p['continuum_key'])
+            el_method = EmissionLineModel.define_method(p['elfit_key'])
+            plan_methods += [defaults.default_dap_method(bin_method['key'],
+                                                sc_method['fitpar']['template_library_key'],
+                                                el_method['continuum_tpl_key'])]
         # Check that the plan methods are unique.  This should never be
         # raised, unless it also causes problems in the DAP itself.
         if len(numpy.unique(plan_methods)) != len(plan_methods):
@@ -1167,7 +1135,7 @@ class DAPall:
             # Get the metrics for the stellar kinematics
             db['STELLAR_Z'][i], db['STELLAR_VEL_LO'][i], db['STELLAR_VEL_HI'][i], \
                     db['STELLAR_VEL_LO_CLIP'][i], db['STELLAR_VEL_HI_CLIP'][i], \
-                    db['STELLAR_SIGMA_1RE'][i], db['STELLAR_CONT_RCHI2_1RE'][i] \
+                    db['STELLAR_SIGMA_1RE'][i], db['STELLAR_RCHI2_1RE'][i] \
                             = self._stellar_kinematics_metrics(dapmaps, db['Z'][i])
 
             # Get the metrics for the emission-line kinematics
@@ -1176,8 +1144,8 @@ class DAPall:
             # spaxels
             db['HA_Z'][i], db['HA_GVEL_LO'][i], db['HA_GVEL_HI'][i], db['HA_GVEL_LO_CLIP'][i], \
                     db['HA_GVEL_HI_CLIP'][i], db['HA_GSIGMA_1RE'][i], db['HA_GSIGMA_HI'][i], \
-                    db['HA_GSIGMA_HI_CLIP'][i] = self._halpha_kinematics_metrics(dapmaps,
-                                                                                 db['Z'][i])
+                    db['HA_GSIGMA_HI_CLIP'][i], db['EMLINE_RCHI2_1RE'][i] \
+                            = self._halpha_kinematics_metrics(dapmaps, db['Z'][i])
 
             # Get the moment-based emission-line metrics
             # TODO: Check for hybrid binning method, then use

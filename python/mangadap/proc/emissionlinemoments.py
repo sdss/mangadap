@@ -7,46 +7,6 @@ A class hierarchy that measures moments of the observed emission lines.
     Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
         Licensed under BSD 3-clause license - see LICENSE.rst
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/proc/emissionlinemoments.py
-
-*Imports and python version compliance*:
-    ::
-
-        from __future__ import division
-        from __future__ import print_function
-        from __future__ import absolute_import
-        from __future__ import unicode_literals
-
-        import sys
-        import warnings
-        if sys.version > '3':
-            long = int
-
-        import glob
-        import os
-        import logging
-        import numpy
-
-        from astropy.io import fits
-        import astropy.constants
-
-        from ..config.defaults import dap_source_dir, default_dap_file_name
-        from ..config.defaults import default_dap_method, default_dap_method_path
-        from ..util.fileio import init_record_array, rec_to_fits_type
-        from ..util.bitmask import BitMask
-        from ..util.pixelmask import SpectralPixelMask
-        from ..util.log import log_output
-        from ..util.parser import DefaultConfig
-        from ..par.parset import ParSet
-        from ..par.artifactdb import ArtifactDB
-        from ..par.emissionmomentsdb import EmissionMomentsDB
-        from .spatiallybinnedspectra import SpatiallyBinnedSpectra
-        from .stellarcontinuummodel import StellarContinuumModel
-        from .bandpassfilter import passband_integral, passband_integrated_width, passband_median
-        from .bandpassfilter import passband_integrated_mean, passband_weighted_mean
-        from .util import select_proc_method
-
 *Class usage examples*:
     Add examples!
 
@@ -378,10 +338,12 @@ class EmissionLineMoments:
                 moment measurements.  See :func:`measure`.
         """
         # Set the output directory path
-        continuum_method = None if self.stellar_continuum is None \
-                                else self.stellar_continuum.method['key']
-        method = default_dap_method(binned_spectra=self.binned_spectra,
-                                    continuum_method=continuum_method)
+        continuum_templates = 'None' if self.stellar_continuum is None \
+                            else self.stellar_continuum.method['fitpar']['template_library_key']
+        eml_templates = 'None' if self.emission_line_model is None \
+                            else self.emission_line_model.method['continuum_tpl_key']
+        method = default_dap_method(self.binned_spectra.method['key'], continuum_templates,
+                                    eml_templates)
         self.directory_path = default_dap_method_path(method, plate=self.binned_spectra.drpf.plate,
                                                       ifudesign=self.binned_spectra.drpf.ifudesign,
                                                       ref=True,
@@ -392,8 +354,8 @@ class EmissionLineMoments:
         # Set the output file
         ref_method = '{0}-{1}'.format(self.binned_spectra.rdxqa.method['key'],
                                       self.binned_spectra.method['key'])
-        if continuum_method is not None:
-            ref_method = '{0}-{1}'.format(ref_method, continuum_method)
+        if self.stellar_continuum is not None:
+            ref_method = '{0}-{1}'.format(ref_method, self.stellar_continuum.method['key'])
         if self.emission_line_model is not None:
             ref_method = '{0}-{1}'.format(ref_method, self.emission_line_model.method['key'])
         ref_method = '{0}-{1}'.format(ref_method, self.database['key'])
@@ -559,10 +521,11 @@ class EmissionLineMoments:
 
     def _flag_good_spectra(self, measure_on_unbinned_spaxels):
         if measure_on_unbinned_spaxels:
-            fgoodpix = self.binned_spectra.check_fgoodpix()
-            good_snr = self.binned_spectra.rdxqa['SPECTRUM'].data['SNR'] \
-                                > self.database['minimum_snr']
-            return fgoodpix & good_snr
+            return self.binned_spectra.check_fgoodpix()
+#            fgoodpix = self.binned_spectra.check_fgoodpix()
+#            good_snr = self.binned_spectra.rdxqa['SPECTRUM'].data['SNR'] \
+#                                > self.database['minimum_snr']
+#            return fgoodpix & good_snr
         return self.binned_spectra.above_snr_limit(self.database['minimum_snr'])
 
 
@@ -741,9 +704,14 @@ class EmissionLineMoments:
             undefined 2nd moment
 
         """
+        _passband = numpy.atleast_1d(passband)
+        if _passband.ndim > 1:
+            raise ValueError('Should only pass a single band to single_band_moments.')
+        if len(_passband) != 2:
+            raise ValueError('Band should be a list of 2 numbers.')
         # Get the fraction of the passband that is unmasked
         interval_frac = passband_integrated_width(wave, spec, passband=passband, log=True) \
-                                / numpy.diff(passband).ravel()
+                                / numpy.diff(passband)[0]
         incomplete = interval_frac < 1.0
         empty = numpy.invert(interval_frac > 0.0)
         if empty:
@@ -774,14 +742,20 @@ class EmissionLineMoments:
 
         # Set masked values to 0.0
         undefined_mom1 = False
-        if isinstance(mom1, numpy.ma.MaskedArray) and mom1.mask:
+        if isinstance(mom1, numpy.ma.core.MaskedConstant) and mom1.mask:
             mom1 = 0.0
+            mom1err = 0.0
             undefined_mom1 = True
         undefined_mom2 = False
-        if isinstance(mom2, numpy.ma.MaskedArray) and mom2.mask:
+        if isinstance(mom2, numpy.ma.core.MaskedConstant) and mom2.mask:
             mom2 = 0.0
+            mom2err = 0.0
             undefined_mom2 = True
-        
+        if isinstance(mom1err, numpy.ma.core.MaskedConstant) and mom1err.mask:
+            mom1err = 0.0
+        if isinstance(mom2err, numpy.ma.core.MaskedConstant) and mom2err.mask:
+            mom2err = 0.0
+
         return flux, fluxerr, mom1, mom1err, mom2, mom2err, incomplete, empty, False, \
                     undefined_mom1, undefined_mom2
 
@@ -847,7 +821,7 @@ class EmissionLineMoments:
             _spec = spec - cont if len(spec.shape) == 1 else spec[_spec_n[i],:] - cont
 
             flux[i], fluxerr[i], mom1[i], mom1err[i], mom2[i], mom2err[i], incomplete[i], \
-                    empty[i], divbyzero[i], undefined_mom1[i], undefined_mom2[i] \
+                        empty[i], divbyzero[i], undefined_mom1[i], undefined_mom2[i] \
                         = EmissionLineMoments.single_band_moments(wave, _spec, p, restwave[i],
                                                                   err=err)
 
@@ -1169,7 +1143,7 @@ class EmissionLineMoments:
         #  - The EmissionLineModel fits the binned spectra or unbinned
         #    spaxels as specified by its deconstruct_bins flag
         measure_on_unbinned_spaxels = self.emission_line_model is not None \
-                and self.emission_line_model.method['deconstruct_bins']
+                and self.emission_line_model.method['deconstruct_bins'] != 'ignore'
 
         self.spatial_shape =self.binned_spectra.spatial_shape
         self.nspec = self.binned_spectra.drpf.nspec if measure_on_unbinned_spaxels \
@@ -1243,15 +1217,9 @@ class EmissionLineMoments:
 
         #---------------------------------------------------------------
         # Get the spectra to use for the measurements
-        wave, flux, ivar = EmissionLineFit.get_spectra_to_fit(self.binned_spectra.drpf
-                                                                if measure_on_unbinned_spaxels
-                                                                else self.binned_spectra,
-                                                              pixelmask=self.pixelmask,
-                                                              select=good_snr)
-        # Make sure that the spectra have been corrected for Galactic
-        # extinction
-        if measure_on_unbinned_spaxels:
-            flux, ivar = binned_spectra.galext.apply(flux, ivar=ivar, deredden=True)
+        wave, flux, ivar, sres = EmissionLineFit.get_spectra_to_fit(self.binned_spectra,
+                                                    pixelmask=self.pixelmask, select=good_snr,
+                                                    original_spaxels=measure_on_unbinned_spaxels)
 
         # Get the continuum if there is any
         if eml_stellar_continuum_available:
@@ -1259,24 +1227,17 @@ class EmissionLineMoments:
                 binid = numpy.full(self.binned_spectra.spatial_shape, -1, dtype=int)
                 binid.ravel()[good_snr] = numpy.arange(self.nbins)
                 continuum = self.emission_line_model.fill_continuum_to_match(binid)
-                specres_ext='SPECRES' if self.binned_spectra.method['spec_res'] == 'cube' else None
-                sres = self.binned_spectra.drpf.spectral_resolution(ext=specres_ext, toarray=True,
-                                    pre=self.binned_spectra.method['prepixel_sres'], fill=True)
-                sres = sres.data[good_snr,:]    # spectral_resolution returns a masked array
             else:
                 continuum = self.emission_line_model.fill_continuum_to_match(
                                                 self.binned_spectra['BINID'].data,
                                                 missing=self.binned_spectra.missing_bins)
-                sres = binned_spectra['SPECRES'].data.copy()[good_snr,:]
         elif self.stellar_continuum is not None:
-            continuum = self.stellar_continuum.fill_to_match(
-                                self.binned_spectra['BINID'].data,
-                                missing=self.binned_spectra.missing_bins)
-            sres = binned_spectra['SPECRES'].data.copy()[good_snr,:]
-        _redshift = self.redshift[good_snr]
+            continuum = self.stellar_continuum.fill_to_match(self.binned_spectra['BINID'].data,
+                                                        missing=self.binned_spectra.missing_bins)
 
         #---------------------------------------------------------------
         # Perform the moment measurements
+        _redshift = self.redshift[good_snr]
         measurements = self.measure_moments(self.momdb, wave, flux, ivar=ivar, sres=sres,
                                             continuum=continuum, redshift=_redshift,
                                             bitmask=self.bitmask)
@@ -1288,15 +1249,7 @@ class EmissionLineMoments:
                                                             flag=['BLUE_EMPTY', 'RED_EMPTY']))
 
         # Set the line center at the center of the primary passband
-#        line_center = (1.0+_redshift)[:,None]*numpy.mean(self.momdb['primary'], axis=1)[None,:]
         line_center = (1.0+_redshift)[:,None]*self.momdb['restwave'][None,:]
-#        line_center = (1.0+measurements['MOM1']/astropy.constants.c.to('km/s').value) \
-#                            * self.momdb['restwave'][None,:]
-
-#        pyplot.scatter(line_center_1, line_center_2, marker='.', s=50, color='k', lw=0, zorder=2)
-#        pyplot.plot([0,10000], [0,10000], color='r', zorder=1)
-#        pyplot.show()
-
         measurements['BMED'], measurements['RMED'], pos, measurements['EWCONT'], \
                 measurements['EW'], measurements['EWERR'] \
                         = emission_line_equivalent_width(wave, flux, self.momdb['blueside'],
@@ -1304,9 +1257,6 @@ class EmissionLineMoments:
                                                          measurements['FLUX'], redshift=_redshift,
                                                          line_flux_err=measurements['FLUXERR'],
                                                          include_band=include_band)
-
-        # TODO: This is also now set in measure_moments; remove this?
-        measurements['REDSHIFT'] = _redshift
 
         # Flag non-positive measurements
         measurements['MASK'][include_band & numpy.invert(pos)] \
@@ -1323,11 +1273,6 @@ class EmissionLineMoments:
         if measure_on_unbinned_spaxels:
             measurements_binid = numpy.full(self.binned_spectra.spatial_shape, -1, dtype=int)
             measurements_binid.ravel()[good_snr] = numpy.arange(self.nbins)
-
-#        # Set the undefined bands
-#        measurements['MASK'][:,self.momdb.dummy] \
-#                    = self.bitmask.turn_on(measurements['MASK'][:,self.momdb.dummy],
-#                                           'UNDEFINED_BANDS')
 
         #---------------------------------------------------------------
         # Initialize the header

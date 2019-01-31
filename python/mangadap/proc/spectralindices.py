@@ -97,9 +97,7 @@ from ..par.parset import ParSet
 from ..par.artifactdb import ArtifactDB
 from ..par.absorptionindexdb import AbsorptionIndexDB
 from ..par.bandheadindexdb import BandheadIndexDB
-from ..config.defaults import dap_source_dir, default_dap_file_name
-from ..config.defaults import default_dap_method, default_dap_method_path
-from ..config.defaults import default_dap_common_path, default_analysis_path
+from ..config import defaults
 from ..util.resolution import SpectralResolution, match_spectral_resolution
 from ..util.sampling import spectral_coordinate_step, spectrum_velocity_scale
 from ..util.fitsutil import DAPFitsUtil
@@ -210,7 +208,7 @@ def available_spectral_index_databases(dapsrc=None):
         
     """
     # Check the source directory exists
-    dapsrc = dap_source_dir() if dapsrc is None else str(dapsrc)
+    dapsrc = defaults.dap_source_dir() if dapsrc is None else str(dapsrc)
     if not os.path.isdir(dapsrc):
         raise NotADirectoryError('{0} does not exist!'.format(dapsrc))
 
@@ -262,7 +260,7 @@ class SpectralIndicesBitMask(BitMask):
 
     """
     def __init__(self, dapsrc=None):
-        dapsrc = dap_source_dir() if dapsrc is None else str(dapsrc)
+        dapsrc = defaults.dap_source_dir() if dapsrc is None else str(dapsrc)
         BitMask.__init__(self, ini_file=os.path.join(dapsrc, 'python', 'mangadap', 'config',
                                                      'bitmasks', 'spectral_indices_bits.ini'))
 
@@ -421,8 +419,6 @@ class BandheadIndices:
         # Calculate the index in the correct order
         blue_n = order == 'b_r'
         self.index = numpy.ma.zeros(self.nindx, dtype=numpy.float)
-#        import pdb
-#        pdb.set_trace()
         self.index[blue_n] = numpy.ma.divide(self.blue_continuum[blue_n],
                                              self.red_continuum[blue_n]).filled(0.0)
         self.divbyzero[blue_n] = numpy.invert(numpy.absolute(self.red_continuum[blue_n])>0.0)
@@ -703,17 +699,22 @@ class SpectralIndices:
                 moment measurements.  See :func:`measure`.
         """
         # Set the output directory path
-        method = default_dap_method(binned_spectra=self.binned_spectra,
-                                    stellar_continuum=self.stellar_continuum)
-        self.analysis_path = default_analysis_path(drpver=self.binned_spectra.drpf.drpver,
-                                                   dapver=dapver) \
+        continuum_templates = 'None' if self.stellar_continuum is None \
+                            else self.stellar_continuum.method['fitpar']['template_library_key']
+        eml_templates = 'None' if self.emission_line_model is None \
+                            else self.emission_line_model.method['continuum_tpl_key']
+        method = defaults.default_dap_method(self.binned_spectra.method['key'],
+                                             continuum_templates, eml_templates)
+        self.analysis_path = defaults.default_analysis_path(drpver=self.binned_spectra.drpf.drpver,
+                                                            dapver=dapver) \
                                     if analysis_path is None else str(analysis_path)
-        self.directory_path = default_dap_method_path(method, plate=self.binned_spectra.drpf.plate,
-                                                      ifudesign=self.binned_spectra.drpf.ifudesign,
-                                                      ref=True,
-                                                      drpver=self.binned_spectra.drpf.drpver,
-                                                      dapver=dapver,
-                                                      analysis_path=self.analysis_path) \
+        self.directory_path = defaults.default_dap_method_path(method,
+                                                    plate=self.binned_spectra.drpf.plate,
+                                                    ifudesign=self.binned_spectra.drpf.ifudesign,
+                                                    ref=True,
+                                                    drpver=self.binned_spectra.drpf.drpver,
+                                                    dapver=dapver,
+                                                    analysis_path=self.analysis_path) \
                                         if directory_path is None else str(directory_path)
 
         # Set the output file
@@ -725,8 +726,9 @@ class SpectralIndices:
             ref_method = '{0}-{1}'.format(ref_method, self.emission_line_model.method['key'])
         ref_method = '{0}-{1}'.format(ref_method, self.database['key'])
 
-        self.output_file = default_dap_file_name(self.binned_spectra.drpf.plate,
-                                                 self.binned_spectra.drpf.ifudesign, ref_method) \
+        self.output_file = defaults.default_dap_file_name(self.binned_spectra.drpf.plate,
+                                                          self.binned_spectra.drpf.ifudesign,
+                                                          ref_method) \
                                         if output_file is None else str(output_file)
 
 
@@ -934,10 +936,11 @@ class SpectralIndices:
 
     def _flag_good_spectra(self, measure_on_unbinned_spaxels):
         if measure_on_unbinned_spaxels:
-            fgoodpix = self.binned_spectra.check_fgoodpix()
-            good_snr = self.binned_spectra.rdxqa['SPECTRUM'].data['SNR'] \
-                                > self.database['minimum_snr']
-            return fgoodpix & good_snr
+            return self.binned_spectra.check_fgoodpix()
+#            fgoodpix = self.binned_spectra.check_fgoodpix()
+#            good_snr = self.binned_spectra.rdxqa['SPECTRUM'].data['SNR'] \
+#                                > self.database['minimum_snr']
+#            return fgoodpix & good_snr
         return self.binned_spectra.above_snr_limit(self.database['minimum_snr'])
 
 
@@ -1006,7 +1009,7 @@ class SpectralIndices:
         # Check that the spectrum selection and emission-line model are
         # consistent
         if measure_on_unbinned_spaxels and emission_line_model is not None \
-                and not emission_line_model.method['deconstruct_bins']:
+                and emission_line_model.method['deconstruct_bins'] == 'ignore':
             raise ValueError('Cannot use this emission-line model with unbinned spaxels.')
 
         # Get the main data arrays
@@ -1857,7 +1860,7 @@ class SpectralIndices:
         #  - The EmissionLineModel fits the binned spectra or unbinned
         #    spaxels as specified by its deconstruct_bins flag
         measure_on_unbinned_spaxels = self.emission_line_model is not None \
-                and self.emission_line_model.method['deconstruct_bins']
+                and self.emission_line_model.method['deconstruct_bins'] != 'ignore'
 
         self.spatial_shape =self.binned_spectra.spatial_shape
         self.nspec = self.binned_spectra.drpf.nspec if measure_on_unbinned_spaxels \
@@ -1952,7 +1955,7 @@ class SpectralIndices:
             # Get the template spectra to use
             replacement_templates = None if self.database['fwhm'] < 0 \
                     else self._resolution_matched_templates(dapsrc=dapsrc, dapver=dapver,
-                                                            analysis_path=analysis_path,
+                                                            analysis_path=self.analysis_path,
                                                             tpl_symlink_dir=tpl_symlink_dir)
             # Have to use the corrected velocity dispersion if templates
             # have been broadened to a new resolution; otherwise, the

@@ -10,26 +10,6 @@ higher-level classes).
     Copyright (c) 2016, SDSS-IV/MaNGA Pipeline Group
         Licensed under BSD 3-clause license - see LICENSE.rst
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/util/fitsutil.py
-
-*Imports and python version compliance*:
-    ::
-
-        from __future__ import division
-        from __future__ import print_function
-        from __future__ import absolute_import
-
-        import sys
-        if sys.version > '3':
-            long = int
-
-        import numpy
-        import warnings
-
-        from astropy.io import fits
-        import astropy.constants
-
 *Class usage examples*:
     Add some usage comments here!
 
@@ -160,7 +140,7 @@ class DAPFitsUtil:
 
         # Add the common HDUCLASS keys
         _hdr['HDUCLASS'] = ('SDSS', 'SDSS format class')
-        _hdr['HDUCLAS1'] = ('CUBE' if multichannel else 'CUBE', 'Data format')
+        _hdr['HDUCLAS1'] = ('CUBE' if multichannel else 'IMAGE', 'Data format')
         if hduclas2 == 'DATA':
             _hdr['HDUCLAS2'] = 'DATA'
             if err:
@@ -438,6 +418,7 @@ class DAPFitsUtil:
             new_arr[i].ravel()[indx] = _arr[i][unique_bins[reconstruct[indx]]].copy()
             s = numpy.sum(numpy.invert(numpy.isfinite(new_arr[i])))
             if s > 0:
+                print(i+1, narr)
                 print('dtype: ', _dtype[i])
                 a = numpy.sum(numpy.invert(numpy.isfinite(_arr[i][unique_bins[reconstruct[indx]]])))
                 print('not finite input:', a)
@@ -448,7 +429,7 @@ class DAPFitsUtil:
                 print('inp: ', _arr[i][unique_bins[reconstruct[indx]]][nf])
                 print('out: ', new_arr[i].ravel()[indx][nf])
                 new_arr[i].ravel()[indx][nf] = 0.0
-#                raise ValueError('fubar')
+                raise ValueError('fubar')
                 
         return tuple([ a for a in new_arr]) if narr > 1 else new_arr[0]
 

@@ -7,26 +7,6 @@ Classes to handle MaNGA DAP analysis plans.
     Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
         Licensed under BSD 3-clause license - see LICENSE.rst
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/par/analysisplan.py
-
-*Imports and python version compliance*:
-    ::
-
-        from __future__ import division
-        from __future__ import print_function
-        from __future__ import absolute_import
-        from __future__ import unicode_literals
-
-        import sys
-        if sys.version > '3':
-            long = int
-
-        import numpy
-        from pydl.pydlutils.yanny import yanny
-
-        from .parset import ParSet, ParDatabase
-
 *Class usage examples*:
         Add usage comments!
 
@@ -41,6 +21,7 @@ from __future__ import print_function
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
+import os
 import sys
 if sys.version > '3':
     long = int
@@ -128,6 +109,9 @@ class AnalysisPlanSet(ParDatabase):
         # TODO: The approach here (read using yanny, set to par
         # individually, then covert back to record array using
         # ParDatabase) is stupid...
+
+        if not os.path.isfile(f):
+            raise FileNotFoundError('No file {0}.'.format(f))
     
         par = yanny(filename=f, raw=True)
         if len(par['DAPPLAN']['drpqa_key']) == 0:

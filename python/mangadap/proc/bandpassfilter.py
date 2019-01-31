@@ -216,7 +216,7 @@ def passband_median(x, y, passband=None):
         return 0.0
 
     if passband is None:
-        return numpy.median(_y)
+        return numpy.ma.median(_y)
 
     _x[mask] = numpy.ma.masked
     _x = _x.compressed()
@@ -226,7 +226,7 @@ def passband_median(x, y, passband=None):
     nonzero = numpy.array([ len(ii) > 0 for ii in indx ])
     if not numpy.all(nonzero):
         warnings.warn('Returning empty passbands with median values of 0!')
-    return numpy.array([ 0.0 if len(ii) == 0 else numpy.median(_y[ii]) for ii in indx ])
+    return numpy.array([ 0.0 if len(ii) == 0 else numpy.ma.median(_y[ii]) for ii in indx ])
 
 
 def pixel_fraction_in_passband(x, passband, dx=None):
@@ -454,6 +454,9 @@ def passband_weighted_mean(x, y, z, passband=None, borders=False, yerr=None, zer
         \epsilon_\mu^2 = \frac{1}{S(y)^2} (S((z-\mu)^2 \epsilon_y^2) +
         S(y^2\epsilon_z^2)).
 
+    .. todo::
+        -doc the args
+
     Returns:
         numpy.ma.MaskedArray: Two masked arrays with the
         passband-weighted mean and its error.  The error is returned as
@@ -609,48 +612,56 @@ def emission_line_equivalent_width(wave, flux, bluebands, redbands, line_centroi
     spectra and the previously measured line flux.
 
     Args:
-
-        wave (numpy.ndarray): Vector (1D array) with the observed
-            wavelength of each spectrum in angstroms.
-        flux (numpy.ndarray): 1 or 2D array with the observed flux
-            density (units in per angstrom) with size Nspec x Nwave.
-        blueside (numpy.ndarray): Wavelength limits for the blue
-            sidebands in angstroms, with size Nbands x 2.
-        redside (numpy.ndarray): Wavelength limits for the red sidebands
-            in angstroms, with size Nbands x 2.
-        line_centroid (numpy.ndarray): Wavelengths at which to sample
-            the continuum for the equivalent width measurement.  Can be
-            anything, but should typically be the *observed* wavelength
-            of line center in angstroms, with size Nspec x Nband.
-        line_flux (numpy.ndarray): Integrated flux of the emission
-            feature with size Nspec x Nband.
-        ivar (numpy.ndarray): (**Optional**) Inverse variance in the
-            observed flux, with shape that matches flux.  Default
-            ignores error calculation.  **Currently the equivalent width
-            errors do not account for errors in the continuum
-            characterization beneath the line.  So this ivar array is
-            ignored!**
-        mask (numpy.ndarray): (**Optional**) Boolean bad-pixel mask:
-            True values are considered to be bad pixels.  Default
-            assumes all pixels are good.
-        log (bool): (**Optional**) Boolean that the spectra are
-            logarithmically sampled in wavelength.  Default is True.
-        redshift (numpy.ndarray): (**Optional**) Redshift of each
-            spectrum and each bandpass.  If a single vector is provided,
-            the length must match the number of provided spectra; if an
-            array is provided, the shape must be (Nspec,Nband).  By
-            default, all measurements are done assuming the redshift is
-            0 (i.e., that the observed and rest frames are identical).
-        line_flux_err (numpy.ndarray): (**Optional**) Errors in the line
-            flux, with size Nspec x Nband.  Default is to ignore the
-            error propagation.
-        include_band (numpy.ndarray): (**Optional**) Boolean array with
-            size Nspec x Nband used to select which bands to use in the
-            calculation for each spectrum.  Default is to include all
-            bands for all spectra. 
+        wave (`numpy.ndarray`):
+            Vector with the observed wavelength of each spectrum in
+            angstroms.
+        flux (`numpy.ndarray`):
+            Array (1 or 2) with the observed flux density (units in per
+            angstrom) with size Nspec x Nwave.
+        blueside (`numpy.ndarray`):
+            Wavelength limits for the blue sidebands in angstroms, with
+            size Nbands x 2.
+        redside (`numpy.ndarray`):
+            Wavelength limits for the red sidebands in angstroms, with
+            size Nbands x 2.
+        line_centroid (`numpy.ndarray`):
+            Wavelengths at which to sample the continuum for the
+            equivalent width measurement.  Can be anything, but should
+            typically be the *observed* wavelength of line center in
+            angstroms, with size Nspec x Nband.
+        line_flux (`numpy.ndarray`):
+            Integrated flux of the emission feature with size Nspec x
+            Nband.
+        ivar (`numpy.ndarray`, optional): 
+            Inverse variance in the observed flux, with shape that
+            matches flux.  Default ignores error calculation.
+            **Currently the equivalent width errors do not account for
+            errors in the continuum characterization beneath the line.
+            So this ivar array is ignored!**
+        mask (`numpy.ndarray`, optional): 
+            Boolean bad-pixel mask: True values are considered to be bad
+            pixels.  Default assumes all pixels are good.
+        log (:obj:`bool`, optional): 
+            Boolean that the spectra are logarithmically sampled in
+            wavelength.
+        redshift (`numpy.ndarray`, optional):
+            Redshift of each spectrum used to appropriately shift the
+            definition of the bandpasses.  If a single vector is
+            provided, the length must match the number of provided
+            spectra; if an array is provided, the shape must be
+            (Nspec,Nband).  If None, all measurements are done assuming
+            the redshift is 0 (i.e., that the observed and rest frames
+            are identical).
+        line_flux_err (`numpy.ndarray`, optional):
+            Errors in the line flux, with size Nspec x Nband.  Default
+            is to ignore the error propagation.
+        include_band (`numpy.ndarray`, optional): 
+            Boolean array with size Nspec x Nband used to select which
+            bands to use in the calculation for each spectrum.  Default
+            is to include all bands for all spectra. 
 
     Returns:
-        numpy.ndarray: Six arrays all with size Nspec x Nbands:
+        Six arrays all with size Nspec x Nbands:
             - the passband median in the blue and red sidebands
             - a boolean array if the sideband medians were measured and
               have positive values

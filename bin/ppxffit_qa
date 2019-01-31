@@ -18,7 +18,9 @@ from astropy.io import fits
 from mangadap.drpfits import DRPFits
 from mangadap.par.analysisplan import AnalysisPlanSet
 from mangadap.proc.reductionassessments import ReductionAssessment
+from mangadap.proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
 from mangadap.proc.stellarcontinuummodel import StellarContinuumModel
+from mangadap.proc.emissionlinemodel import EmissionLineModel
 from mangadap.proc.util import growth_lim
 from mangadap.util.fitsutil import DAPFitsUtil
 from mangadap.util.mapping import map_extent, map_beam_patch
@@ -557,7 +559,13 @@ def continuum_component_data(plt, ifu, plan, drpver, dapver, analysis_path, sign
 
     
 def maps_data(plt, ifu, plan, drpver, dapver, analysis_path):
-    method = defaults.default_dap_method(plan=plan)
+#    method = defaults.default_dap_method(plan=plan)
+    bin_method = SpatiallyBinnedSpectra.define_method(plan['bin_key'])
+    sc_method = StellarContinuumModel.define_method(plan['continuum_key'])
+    el_method = EmissionLineModel.define_method(plan['elfit_key'])
+    method = defaults.default_dap_method(bin_method['key'],
+                                         sc_method['fitpar']['template_library_key'],
+                                         el_method['continuum_tpl_key'])
     directory_path = defaults.default_dap_method_path(method, plate=plt, ifudesign=ifu,
                                                       drpver=drpver, dapver=dapver,
                                                       analysis_path=analysis_path)
@@ -567,13 +575,13 @@ def maps_data(plt, ifu, plan, drpver, dapver, analysis_path):
 
     mask = hdu['BINID'].data[1,:,:] < 0
     
-    r68_map = numpy.ma.MaskedArray(hdu['STELLAR_CONT_FRESID'].data[0,:,:], mask=mask)
-    r99_map = numpy.ma.MaskedArray(hdu['STELLAR_CONT_FRESID'].data[1,:,:], mask=mask)
-    rchi2_map = numpy.ma.MaskedArray(hdu['STELLAR_CONT_RCHI2'].data, mask=mask)
+    r68_map = numpy.ma.MaskedArray(hdu['STELLAR_FOM'].data[3,:,:], mask=mask)
+    r99_map = numpy.ma.MaskedArray(hdu['STELLAR_FOM'].data[4,:,:], mask=mask)
+    rchi2_map = numpy.ma.MaskedArray(hdu['STELLAR_FOM'].data[2,:,:], mask=mask)
     svel_map = numpy.ma.MaskedArray(hdu['STELLAR_VEL'].data[:,:], mask=mask)
     ssigo_map = numpy.ma.MaskedArray(hdu['STELLAR_SIGMA'].data[:,:], mask=mask)
-#    ssigcor_map = numpy.ma.MaskedArray(hdu['STELLAR_SIGMACORR'].data[1,:,:], mask=mask)
-    ssigcor_map = numpy.ma.MaskedArray(hdu['STELLAR_SIGMACORR'].data, mask=mask)
+    ssigcor_map = numpy.ma.MaskedArray(hdu['STELLAR_SIGMACORR'].data[1,:,:], mask=mask)
+#    ssigcor_map = numpy.ma.MaskedArray(hdu['STELLAR_SIGMACORR'].data, mask=mask)
     ssigc_map = numpy.ma.sqrt( numpy.square(ssigo_map) - numpy.square(ssigcor_map) )
 
     extent = map_extent(hdu, 'SPX_MFLUX')
@@ -598,7 +606,13 @@ def ppxffit_qa_plot(plt, ifu, plan, drpver=None, redux_path=None, dapver=None, a
         raise NotADirectoryError('{0} is not a directory.'.format(_analysis_path))
 
     # Get the method, it's root directory, and the qa directories
-    method = defaults.default_dap_method(plan=plan)
+#    method = defaults.default_dap_method(plan=plan)
+    bin_method = SpatiallyBinnedSpectra.define_method(plan['bin_key'])
+    sc_method = StellarContinuumModel.define_method(plan['continuum_key'])
+    el_method = EmissionLineModel.define_method(plan['elfit_key'])
+    method = defaults.default_dap_method(bin_method['key'],
+                                         sc_method['fitpar']['template_library_key'],
+                                         el_method['continuum_tpl_key'])
     method_dir = defaults.default_dap_method_path(method, plate=plt, ifudesign=ifu, drpver=_drpver,
                                                   dapver=_dapver, analysis_path=_analysis_path)
     method_qa_dir = defaults.default_dap_method_path(method, plate=plt, ifudesign=ifu, qa=True,

@@ -268,35 +268,37 @@ def rec_to_fits_col_dim(rec_element):
     return None if len(rec_element[0].shape) == 1 else str(rec_element[0].shape[::-1])
 
 
-def channel_dictionary(hdu, ext):
+def channel_dictionary(hdu, ext, prefix='C'):
     """
     Construct a dictionary of the channels in a MAPS file.
     """
     channel_dict = {}
     for k, v in hdu[ext].header.items():
-        if k[0] == 'C':
+        if k[:len(prefix)] == prefix:
             try:
-                i = int(k[1:])-1
+                i = int(k[len(prefix):])-1
             except ValueError:
                 continue
             channel_dict[v] = i
     return channel_dict
 
 
-def channel_units(hdu, ext):
+def channel_units(hdu, ext, prefix='U'):
     """
     Construct an array with the channel units.
     """
-    nchannels = 1 if len(hdu[ext].data.shape) == 2 else hdu[ext].data.shape[0]
-    channel_units = numpy.empty(nchannels, dtype=object)
+    cu = {}
     for k, v in hdu[ext].header.items():
-        if k[0] == 'U':
+        if k[:len(prefix)] == prefix:
             try:
-                i = int(k[1:])-1
+                i = int(k[len(prefix):])-1
             except ValueError:
                 continue
-            channel_units[i] = v.strip()
-    return channel_units
+            cu[i] = v.strip()
+    channel_units = numpy.empty(max(cu.keys())+1, dtype=object)
+    for k, v in cu.items():
+        channel_units[k] = v
+    return channel_units.astype(str)
 
 
 def compress_file(ifile, clobber=False):

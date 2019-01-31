@@ -115,8 +115,8 @@ def test_ppxffit():
 
     # Figures of merit
     assert numpy.allclose(fit_par['RCHI2'],
-                          numpy.array([1.96704896, 1.17507642, 1.49607667, 1.55779108,
-                                       2.55917584, 0.        , 1.06372982, 0.87424217]),
+                          numpy.array([ 1.95946775,  1.16851502,  1.48772154,  1.55023733,
+                                        2.5465503 ,  0.        ,  1.06056225,  0.87039315]),
                           rtol=0.0, atol=1e-4), 'Reduced chi-square different'
 
     assert numpy.allclose(fit_par['RMS'],
@@ -129,8 +129,9 @@ def test_ppxffit():
                                        0.01834503, 0.        , 8.59674419, 0.18296954]),
                           rtol=0.0, atol=1e-4), 'Fractional RMS different'
 
-    assert numpy.allclose(fit_par['ABSRESID'][:,2],
-                          numpy.array([0.06758258, 0.03682331, 0.06943672, 0.0472579 ,
-                                       0.09572067, 0.        , 0.03088698, 0.02879618]),
+    assert numpy.allclose(fit_par['RMSGRW'][:,2],
+
+                          numpy.array([0.06759905, 0.03682847, 0.0696026 , 0.04725984,
+                                       0.09604793, 0.        , 0.03093494, 0.02879866]),
                           rtol=0.0, atol=1e-4), 'Median absolute residual different'
 

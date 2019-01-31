@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+#queue.key()
+#
+#queue(key = )
+
 import time
 import os
 import time
@@ -35,10 +39,17 @@ def fit_one_cube(plt, ifu, drpall_file=None, directory_path=None, analysis_path=
     # Define how you want to analyze the data
     plan = AnalysisPlanSet([ AnalysisPlan(drpqa_key='SNRG',
                                           bin_key='HYB10',
-                                          continuum_key='GAU-MILESHC',
-                                          elmom_key='EMOMM',
-                                          elfit_key='EFITMDB',
+                                          continuum_key='MILESHCMPL8',
+                                          elmom_key='EMOMMPL8',
+                                          elfit_key='EFITMPL8DB',
                                           spindex_key='INDXEN') ])
+
+#    plan = AnalysisPlanSet([ AnalysisPlan(drpqa_key='SNRG',
+#                                          bin_key='VOR10',
+#                                          continuum_key='GAU-MILESHC',
+#                                          elmom_key='EMOMM',
+#                                          elfit_key='EFITM',
+#                                          spindex_key='INDXEN') ])
 
     # Run it!
     return manga_dap(obs, plan, verbose=2, directory_path=directory_path,
@@ -50,8 +61,11 @@ def fit_one_cube(plt, ifu, drpall_file=None, directory_path=None, analysis_path=
 if __name__ == '__main__':
     t = time.clock()
 
-    fit_one_cube(7815, 3702, drpall_file='./data/drpall-v2_4_3.fits', directory_path='./data',
-                 analysis_path='./output')
+#    fit_one_cube(7815, 1902, drpall_file='./data/drpall-v2_5_3.fits', directory_path='./data',
+#                 analysis_path='./output')
+
+    fit_one_cube(7815, 3702, analysis_path='./output')
+#    fit_one_cube(8485, 1901, analysis_path='./output')
 
     print('Elapsed time: {0} seconds'.format(time.clock() - t))
 

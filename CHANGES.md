@@ -1,4 +1,23 @@
-2.2.3dev --------
+2.3.1dev
+--------
+
+TODO:
+ - Documentation of config examples are out of date!
+ - Get rid of the filter keyword from the output headers...
+ - Change default to fix bad pixels in spectral resolution?
+ - Fix MASKNAME in reference files
+ - Add DAP versioning to reference files
+ - Fix ELMREBIN in 2nd round of moment calculations
+ - Stop transposing the datacube data!
+ - Get rid of optional dapsrc
+ - Keep all the reference files to the common directory?
+ - Fix minor issue in moment and index spaxels fit in hybrid case,
+   compared to emission-line modeling data.
+
+
+2.3.0 (31 Jan 2019)
+-------------------
+
  - Put in default paths when environmental variables not defined and
    warn user, both when running setup.py and when importing mangadap
  - Start testing suite (still very limited)
@@ -20,14 +39,47 @@
  - Add spectral indices test
  - Change model-cube data model to use `STCNT` and `STCNT_MASK`
    extensions and remove the `EMLINE_BASE` and `EMLINE_MASK` extensions.
-
-TODO:
- - Documentation of config examples are out of date!
- - Get rid of the filter keyword from the output headers...
- - Change default to fix bad pixels in spectral resolution?
- - Fix MASKNAME in reference files
- - Add DAP versioning to reference files
- - Fix ELMREBIN in 2nd round of moment calculations
+ - Allow the emission-line fitter to use the bin ID numbers directly
+   instead of matching the spaxels to bins by coordinate proximity
+ - Construction of the parameter tying object in the emission-line
+   fitter is now done just before each spectrum is fit by ppxf (not
+   globally in Sasuke) to better handle when components are omitted.
+ - When deconstructing bins into spaxels, the second fit iteration
+   *only* fits spaxels that are components of binned spectra and does
+   not refit spectra that constitute an entire bin themselves.  I.e.
+   this removes some largely redundant fitting.
+ - PPXFFit and Sasuke include calculations of the chi-square growth; and
+   changed the names of the growth columns in the reference files.
+ - Changed definitions of A to be the model amplitude; A/N is the model
+   amplitude divided by the median noise in the two sidebands defined
+   for the emission-line EW calculation.
+ - Consolidated figures-of-merit for the stellar-continuum fitting into
+   a single MAPS extension and added additional quantities.
+ - Added MAPS with the amplitude, A/N, and local reduced chi-square for
+   each line fit in the emission-line modeling.
+ - Added MAPS with the full-spectrum figures-of-merit for the
+   emission-line module, similar to the stellar-continuum output from
+   ppxf.
+ - Major changes to survey-level code: drpcomplete.py and rundap.py.
+ - Fixed minor issue in EmissionLineMoments.single_band_moments that
+   caused many "UserWarning: Warning: converting a masked element to
+   nan." messages.
+ - Added MODEL_MASK to model cube file to differentiate between model
+   mask and binned spectra mask
+ - Added fit QA plots for stellar and emission line modules for each
+   PLTIFU, and a QA plot combining all observations on a given plate.
+ - Added calls to additional QA plots in rundap.py
+ - Changed daptype to binning-stellartemplates-emissionlinetemplates
+   using default_dap_method.  StellarContinuumModel reference file moved
+   to the common directory.
+ - Add databases and configuration files that include the HeI 3889 line
+   and the NI ~5200 doublet.
+ - Added post-processing qa plots
+ - Fixed minor issue in propagating masks from the reference files to
+   the maps files; primarily an issue for the hybrid binning scheme.
+ - Ignore minimum S/N limitation in emission-line moments and spectral
+   indices for hybrid scheme as a stop-gap to minimize differences in
+   moments, models, and indices BINID.
 
 2.2.2 (Not released)
 --------------------

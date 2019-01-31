@@ -8,9 +8,6 @@ resolution.
     Copyright (c) 2018, SDSS-IV/MaNGA Pipeline Group
         Licensed under BSD 3-clause license - see LICENSE.rst
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/util/resolution.py
-
 *Revision history*:
     | **27 May 2015**: Original implementation by K. Westfall (KBW)
         based on downgrader_MANGA.f provided by D.  Thomas, O. Steele,
