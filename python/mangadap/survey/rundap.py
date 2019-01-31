@@ -1247,7 +1247,7 @@ class rundap:
         if plots:
             command = 'dap_dapall_qa --drpver {0} --redux_path {1}'.format(
                             self.mpl.drpver, self.redux_path) \
-                        + '--dapver {0} --analysis_path {1} --plan_file {2}'.format(
+                        + ' --dapver {0} --analysis_path {1} --plan_file {2}'.format(
                             self.dapver, self.analysis_path, self.plan_file)
             file.write('{0}\n'.format(command))
             file.write('\n')
