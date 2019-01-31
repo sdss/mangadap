@@ -832,16 +832,17 @@ class construct_maps_file:
 
 
     def _build_binning_mask(self, binned_spectra):
-
-        # Marginalize the DRP mask across wavelengths
-        mask = DAPFitsUtil.marginalize_mask(self.drpf['MASK'].data,
-                                            [ 'NOCOV', 'LOWCOV', 'DEADFIBER', 'FORESTAR',
-                                              'DONOTUSE' ], self.drpf.bitmask, self.bitmask)
-
-        # Add any bits not included in the binning algorithm
-        indx = binned_spectra.bitmask.flagged(binned_spectra['MAPMASK'].data,
-                                              flag=['LOW_SPECCOV', 'LOW_SNR'])
+        """
+        Consolidate the map mask values into NOVALUE.
+        """
+        # Consolidate everything in the map mask into NOVALUE
+        indx = binned_spectra.bitmask.flagged(binned_spectra['MAPMASK'].data)
+        mask = numpy.zeros(indx.shape, dtype=self.bitmask.minimum_dtype())
         mask[indx] = self.bitmask.turn_on(mask[indx], 'NOVALUE')
+
+        # Isolate FORESTAR
+        indx = binned_spectra.bitmask.flagged(binned_spectra['MAPMASK'].data, flag='FORESTAR')
+        mask[indx] = self.bitmask.turn_on(mask[indx], 'FORESTAR')
 
         # Marginalize the binned spectra mask just for NONE_IN_STACK and
         # convert it to NOVALUE
@@ -878,15 +879,16 @@ class construct_maps_file:
         NEGATIVE_WEIGHTS consolidated into UNRELIABLE; if
             dispersion=True, include BAD_SIGMA in this
         """
-
-        # Copy the binning mask
-        mask = self.bin_mask.copy()
-
-        # Use the stellar continuum map mask to flag low S/N
-        # bins/spaxels as NOVALUE
-        indx = stellar_continuum.bitmask.flagged(stellar_continuum['MAPMASK'].data, flag='LOW_SNR')
+        # Consolidate everything in the map mask into NOVALUE
+        indx = stellar_continuum.bitmask.flagged(stellar_continuum['MAPMASK'].data)
+        mask = numpy.zeros(indx.shape, dtype=self.bitmask.minimum_dtype())
         mask[indx] = self.bitmask.turn_on(mask[indx], 'NOVALUE')
 
+        # Isolate FORESTAR
+        indx = stellar_continuum.bitmask.flagged(stellar_continuum['MAPMASK'].data,
+                                                 flag='FORESTAR')
+        mask[indx] = self.bitmask.turn_on(mask[indx], 'FORESTAR')
+        
         # Consolidate to NOVALUE
         flgd = stellar_continuum.bitmask.flagged(sc_mask, flag=['NO_FIT', 'INSUFFICIENT_DATA' ])
         mask[flgd] = self.bitmask.turn_on(mask[flgd], 'NOVALUE')
@@ -933,15 +935,15 @@ class construct_maps_file:
 
         Second moments not provided so no need to include UNDEFINED_MOM2
         """
-
-        # Copy the binning mask
-        mask = self.bin_mask.copy()
-
-        # Use the emission-line moments map mask to flag low S/N
-        # bins/spaxels as NOVALUE
-        indx = emission_line_moments.bitmask.flagged(emission_line_moments['MAPMASK'].data,
-                                                     flag='LOW_SNR')
+        # Consolidate everything in the map mask into NOVALUE
+        indx = emission_line_moments.bitmask.flagged(emission_line_moments['MAPMASK'].data)
+        mask = numpy.zeros(indx.shape, dtype=self.bitmask.minimum_dtype())
         mask[indx] = self.bitmask.turn_on(mask[indx], 'NOVALUE')
+
+        # Isolate FORESTAR
+        indx = emission_line_moments.bitmask.flagged(emission_line_moments['MAPMASK'].data,
+                                                     flag='FORESTAR')
+        mask[indx] = self.bitmask.turn_on(mask[indx], 'FORESTAR')
 
         # Reshape the mask to include all emission lines
         mask = numpy.array([mask]*emission_line_moments.nmom).transpose(1,2,0)
@@ -987,15 +989,15 @@ class construct_maps_file:
 
         UNDEFINED_SIGMA propagated to UNRELIABLE
         """
-
-        # Copy the common mask
-        mask = self.bin_mask.copy()
-
-        # Use the emission-line model map mask to flag low S/N
-        # bins/spaxels as NOVALUE
-        indx = emission_line_model.bitmask.flagged(emission_line_model['MAPMASK'].data,
-                                                   flag='LOW_SNR')
+        # Consolidate everything in the map mask into NOVALUE
+        indx = emission_line_model.bitmask.flagged(emission_line_model['MAPMASK'].data)
+        mask = numpy.zeros(indx.shape, dtype=self.bitmask.minimum_dtype())
         mask[indx] = self.bitmask.turn_on(mask[indx], 'NOVALUE')
+
+        # Isolate FORESTAR
+        indx = emission_line_model.bitmask.flagged(emission_line_model['MAPMASK'].data,
+                                                   flag='FORESTAR')
+        mask[indx] = self.bitmask.turn_on(mask[indx], 'FORESTAR')
 
         # Reshape the mask to include all emission lines
         mask = numpy.array([mask]*emission_line_model.neml).transpose(1,2,0)
@@ -1041,14 +1043,14 @@ class construct_maps_file:
 
         Need to further assess \*_INCOMP to see if these lead to bad values (BADVALUE).
         """
-
-        # Copy the common mask
-        mask = self.bin_mask.copy()
-
-        # Use the spectral index map mask to flag low S/N bins/spaxels
-        # as NOVALUE
-        indx = spectral_indices.bitmask.flagged(spectral_indices['MAPMASK'].data, flag='LOW_SNR')
+        # Consolidate everything in the map mask into NOVALUE
+        indx = spectral_indices.bitmask.flagged(spectral_indices['MAPMASK'].data)
+        mask = numpy.zeros(indx.shape, dtype=self.bitmask.minimum_dtype())
         mask[indx] = self.bitmask.turn_on(mask[indx], 'NOVALUE')
+
+        # Isolate FORESTAR
+        indx = spectral_indices.bitmask.flagged(spectral_indices['MAPMASK'].data, flag='FORESTAR')
+        mask[indx] = self.bitmask.turn_on(mask[indx], 'FORESTAR')
 
         # Reshape the mask to include all the spectral indices
         mask = numpy.array([mask]*spectral_indices.nindx).transpose(1,2,0)

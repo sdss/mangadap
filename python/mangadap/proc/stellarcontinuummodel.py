@@ -1019,11 +1019,11 @@ class StellarContinuumModel:
         if match_DRP:
             hdu = self.construct_3d_hdu()
             DAPFitsUtil.write(hdu, self.file_path(), clobber=clobber, checksum=True,
-                              loggers=self.loggers, quiet=self.quiet)
+                              symlink_dir=self.symlink_dir, loggers=self.loggers, quiet=self.quiet)
             return
         # Just write the unique (2D) data
         DAPFitsUtil.write(self.hdu, self.file_path(), clobber=clobber, checksum=True,
-                          loggers=self.loggers, quiet=self.quiet) 
+                          symlink_dir=self.symlink_dir, loggers=self.loggers, quiet=self.quiet) 
 
 
     def read(self, ifile=None, strict=True, checksum=False, debug=False):

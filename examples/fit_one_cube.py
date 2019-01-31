@@ -64,8 +64,8 @@ if __name__ == '__main__':
 #    fit_one_cube(7815, 1902, drpall_file='./data/drpall-v2_5_3.fits', directory_path='./data',
 #                 analysis_path='./output')
 
-#    fit_one_cube(7815, 3702, analysis_path='./output')
-    fit_one_cube(8485, 1901, analysis_path='./output')
+    fit_one_cube(7815, 3702, analysis_path='./output')
+#    fit_one_cube(8485, 1901, analysis_path='./output')
 
     print('Elapsed time: {0} seconds'.format(time.clock() - t))
 
