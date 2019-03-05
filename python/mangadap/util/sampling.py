@@ -426,6 +426,9 @@ class Resample:
         # this defines the self.outx and self.outborders
         self._output_coordinates(newRange, newpix, newLog, newdx, base)
 
+        test = self._resample_step_matrix(self.y)
+        exit()
+
         # Perform the resampling
         self.outy = self._resample_step(self.y) if step else self._resample_linear(self.y)
        
@@ -459,7 +462,6 @@ class Resample:
                     self.outf[indx] = 0.
                     if self.oute is not None:
                         self.oute[indx] = 0.
-
 
     def _input_coordinates(self, x, xRange, xBorders, inLog, base):
         """
@@ -520,7 +522,10 @@ class Resample:
                         else (self.outborders[:-1]+self.outborders[1:])/2.0
 
     def _resample_linear(self, v, quad=False):
-        """Resample the vectors."""
+        """
+        Resample the vectors using a linear interpolation of the
+        function at the pixel borders.
+        """
 
         # Combine the input coordinates and the output borders
         combinedX = numpy.append(self.outborders, self.x)
@@ -556,7 +561,10 @@ class Resample:
         return numpy.sqrt(out) if quad else out
 
     def _resample_step(self, v, quad=False):
-        """Resample the vectors."""
+        """
+        Resample the vectors assuming the function is constant between
+        two existing samples.
+        """
 
         # Convert y to a step function
         #  - repeat each element of the input vector twice
@@ -590,17 +598,78 @@ class Resample:
         # Use reduceat to calculate the integral
         out = numpy.add.reduceat(integrand, k[:-1], axis=-1) if k[-1] == combinedX.size-1 \
                     else numpy.add.reduceat(integrand, k, axis=-1)[...,:-1]
-#        if self.twod:
-#            out = numpy.array(numpy.add.reduceat(integrand, k[:-1], axis=-1)) \
-#                        if k[-1] == combinedX.size-1 else \
-#                        numpy.array(numpy.add.reduceat(integrand, k, axis=-1))[:, 0:-1]
-#            
-#        else:
-#            out = numpy.add.reduceat(integrand, k[:-1], axis=-1) if k[-1] == combinedX.size-1 \
-#                            else numpy.add.reduceat(integrand, k, axis=-1)[:-1]
-            
         
         return numpy.sqrt(out) if quad else out
 
+
+    def _resample_step_matrix(self):
+        r"""
+        Build a matrix such that
+
+        .. math::
+            y = \mathbf{A} x
+
+        where :math:`x` is the input vector, :math:`y` is the resampled
+        vector, and :math:`\mathbf{A}` is the matrix operations that
+        resamples :math:`x`.
+        """
+        ny = self.outx.size
+        nx = self.x.size
+        dx = numpy.diff(self.xborders)
+
+        # Repeat each element of the border array twice, and remove the
+        # first and last elements
+        _p = numpy.repeat(numpy.arange(x.size), 2)
+        _x = numpy.repeat(self.xborders, 2)[1:-1]
+
+        # Combine the input coordinates and the output borders into a
+        # single vector
+        indx = numpy.searchsorted(_x, self.outborders)
+        combinedX = numpy.insert(_x, indx, self.outborders)
+
+        # Insert points at the borders of the output function
+        p_indx = indx.copy()
+        p_indx[indx >= _p.shape[-1]] = -1
+        combinedP = numpy.insert(_p, indx, _p[p_indx])
+
+        # Get the indices where the data should be reduced
+        border = numpy.insert(numpy.zeros(_x.size, dtype=bool), indx,
+                              numpy.ones(self.outborders.size, dtype=bool))
+        nn = numpy.where(numpy.invert(border))[0][::2]
+        k = numpy.zeros(len(combinedX), dtype=int)
+        k[border] = numpy.arange(numpy.sum(border))
+        k[nn-1] = k[nn-2]
+        k[nn] = k[nn-1]
+        start,end = numpy.where(border)[0][[0,-1]]
+
+        fraction = numpy.diff(combinedX[start:end+1])
+        indx = fraction > 0
+
+        A = numpy.zeros((ny, nx), dtype=float)
+        A[k[start:end][indx], combinedP[start:end][indx]] = fraction[indx]
+
+        return A
+
+        from matplotlib import pyplot
+        pyplot.imshow(A, origin='lower', interpolation='nearest')
+        pyplot.show()
+
+        pyplot.step(self.x, v, where='mid')
+        pyplot.plot(self.outx, numpy.dot(A,v)/numpy.diff(self.outborders))
+        pyplot.plot(self.outx, self._resample_step(v)/numpy.diff(self.outborders))
+        pyplot.show()
+        exit()
+
+        for j in range(start,end):
+            print(' {0:>3} {1:>3} {2:>3} {3:>6.3}'.format(j, k[j], combinedP[j], fraction[j-start]))
+
+        pyplot.plot(combinedX[~border], combinedP[~border])
+        pyplot.scatter(combinedX[nn], combinedP[nn], color='C3')
+        pyplot.scatter(combinedX[border], combinedP[border], color='C1')
+        for i in range(len(combinedX)):
+            pyplot.text(combinedX[i], combinedP[i]+0.1, str(k[i]))
+        pyplot.show()
+
+        exit()
 
 
