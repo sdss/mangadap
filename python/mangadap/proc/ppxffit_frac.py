@@ -159,7 +159,7 @@ class PPXFFitPar(ParSet):
         in_fl = [ int, float ]                          # bias, minimum S/N
 
         _def = self._keyword_defaults()
-
+        print('up tp here')
         iter_opt = PPXFFit_frac.iteration_modes()
         moment_opt = [ 2, 4, 6 ]
         filter_operation_opt = [ 'divide', 'subtract' ]
@@ -1060,7 +1060,7 @@ class PPXFFit_frac(StellarKinematicsFit):
                             ppxf.ppxf(tpl_flux[tpl_to_use[i,:],:].T,
                                       obj_flux.data[i,start[i]:end[i]],
                                       obj_ferr.data[i,start[i]:end[i]], self.velscale,
-                                      guess_kin[i,:], self.fraction and component=[1,0], velscale_ratio=self.velscale_ratio,
+                                      guess_kin[i,:], self.fraction, component=[1,0], velscale_ratio=self.velscale_ratio,
                                       goodpixels=gpm, bias=self.bias, degree=degree,
                                       mdegree=mdegree, moments=moments, vsyst=-base_velocity[i],
                                       quiet=(not plot), plot=plot, linear=linear,

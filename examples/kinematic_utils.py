@@ -40,7 +40,7 @@ def create_single_spec(fluxes, ivars, bin_disk, signal, Rb):
     bulge_specs, disk_specs, bulge_ivars, disk_ivars, = np.zeros(fluxes.shape[1]), np.zeros(fluxes.shape[1]), np.zeros(fluxes.shape[1]), np.zeros(fluxes.shape[1])
     bulge_weights, disk_weights = [0], [0]
     for i in range(0, len(bin_disk)):
-        if bin_disk[i] < Rb: #if the centre of the bin is within a bulge effective radius.
+        if bin_disk[i] < Rb: #if the centre of the bin is within a bulge effective radius. Why am I doing it this way at the moment?
             bulge_specs = np.vstack((bulge_specs, fluxes[i,:]))
             bulge_ivars = np.vstack((bulge_ivars, ivars[i,:]))
             bulge_weights.append(signal[i])
