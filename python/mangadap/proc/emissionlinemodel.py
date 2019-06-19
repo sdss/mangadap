@@ -104,17 +104,17 @@ class EmissionLineModelDef(ParSet):
             String identifying the continuum templates to use
     """
     def __init__(self, key, minimum_snr, deconstruct_bins, mom_vel_name, mom_disp_name,
-                 artifacts, emission_lines, continuum_tpl_key, fitpar, fitclass, fitfunc):
+                 artifacts, ism_mask, emission_lines, continuum_tpl_key, fitpar, fitclass, fitfunc):
         in_fl = [ int, float ]
         par_opt = [ ParSet, dict ]
 
         pars =     [ 'key', 'minimum_snr', 'deconstruct_bins', 'mom_vel_name', 'mom_disp_name',
-                     'artifacts', 'emission_lines', 'continuum_tpl_key', 'fitpar', 'fitclass',
+                     'artifacts', 'ism_mask', 'emission_lines', 'continuum_tpl_key', 'fitpar', 'fitclass',
                      'fitfunc' ]
         values =   [ key, minimum_snr, deconstruct_bins, mom_vel_name, mom_disp_name, artifacts,
-                     emission_lines, continuum_tpl_key, fitpar, fitclass, fitfunc ]
-        dtypes =   [ str, in_fl, str, str, str, str, str, str, par_opt, None, None ]
-        can_call = [ False, False, False, False, False, False, False, False, False, False, True ]
+                     ism_mask, emission_lines, continuum_tpl_key, fitpar, fitclass, fitfunc ]
+        dtypes =   [ str, in_fl, str, str, str, str, str, str, str, par_opt, None, None ]
+        can_call = [ False, False, False, False, False, False, False, False, False, False, False, True ]
 
         ParSet.__init__(self, pars, values=values, dtypes=dtypes)
 
@@ -197,6 +197,8 @@ def available_emission_line_modeling_methods(dapsrc=None):
         minimum_snr = cnfg.getfloat('minimum_snr', default=0.0)
         continuum_tpl_key = cnfg.get('continuum_templates')
 
+        ism_mask = cnfg.get('ism_mask')
+
         if cnfg['fit_method'] == 'elric':
             # Chose to use Elric: Parameter set has defaults to handle
             # missing or None values for baseline_order, window_buffer,
@@ -229,10 +231,12 @@ def available_emission_line_modeling_methods(dapsrc=None):
             fitclass = Sasuke(EmissionLineModelBitMask(dapsrc=dapsrc))
             fitfunc = fitclass.fit_SpatiallyBinnedSpectra
 
+
         method_list += [ EmissionLineModelDef(cnfg['key'], minimum_snr, deconstruct_bins,
-                                              cnfg.get('mom_vel_name'), cnfg.get('mom_disp_name'),
-                                              cnfg.get('artifact_mask'), cnfg['emission_lines'],
-                                              continuum_tpl_key, fitpar, fitclass, fitfunc) ]
+                                            cnfg.get('mom_vel_name'), cnfg.get('mom_disp_name'),
+                                            cnfg.get('artifact_mask'), ism_mask, cnfg['emission_lines'],
+                                            continuum_tpl_key, fitpar, fitclass, fitfunc) ]
+
 
     # Check the keywords of the libraries are all unique
     if len(numpy.unique(numpy.array([method['key'] for method in method_list]))) \
@@ -286,7 +290,7 @@ class EmissionLineModel:
 #    @profile
     def __init__(self, method_key, binned_spectra, stellar_continuum=None,
                  emission_line_moments=None, redshift=None, dispersion=None, minimum_error=None,
-                 method_list=None, artifact_list=None, emission_line_db_list=None, dapsrc=None,
+                 method_list=None, artifact_list=None, ism_line_list=None, emission_line_db_list=None, dapsrc=None,
                  dapver=None, analysis_path=None, directory_path=None, output_file=None,
                  hardcopy=True, clobber=False, checksum=False, loggers=None, quiet=False):
 
@@ -300,13 +304,17 @@ class EmissionLineModel:
         self.artdb = None if self.method['artifacts'] is None else \
                     ArtifactDB(self.method['artifacts'], artdb_list=artifact_list, dapsrc=dapsrc)
         # ... the pixel mask...
-        self.pixelmask = SpectralPixelMask(artdb=self.artdb)
+
+
+        if(self.method['ism_mask']==None):
+            self.pixelmask = SpectralPixelMask(artdb=self.artdb)
+        else:
+            # Mask ISM lines if a list is provided -- KHRR
+            self.pixelmask = SpectralPixelMask(artdb=self.artdb, emldb=EmissionLineDB(self.method['ism_mask']))
         # ... and the emission-line database
         self.emldb = None if self.method['emission_lines'] is None else \
                         EmissionLineDB(self.method['emission_lines'],
                                        emldb_list=emission_line_db_list, dapsrc=dapsrc)
-
-
 
         self.neml = None if self.emldb is None else self.emldb.neml
 
