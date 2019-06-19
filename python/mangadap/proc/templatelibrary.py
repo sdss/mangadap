@@ -1081,6 +1081,13 @@ class TemplateLibrary:
                                                        regular=self.library['in_vacuum'])
                                         for w in self.hdu['WAVE'].data])
 
+        #KHRR KLUDGE
+        if(len(ang_per_pix.shape)==1):
+            tmp_ang_per_pix = numpy.empty(self.hdu['SPECRES'].data.shape)
+            for ind in range(len(ang_per_pix)):
+                tmp_ang_per_pix[ind,:] = ang_per_pix[ind]
+            ang_per_pix = tmp_ang_per_pix
+
         # Number of pixels per resolution element
         pix_per_fwhm = numpy.ma.divide(self.hdu['WAVE'].data,
                                        self.hdu['SPECRES'].data * ang_per_pix)
