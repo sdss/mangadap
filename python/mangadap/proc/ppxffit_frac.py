@@ -161,7 +161,7 @@ class PPXFFitPar(ParSet):
         _def = self._keyword_defaults()
         print('up tp here')
         iter_opt = PPXFFit_frac.iteration_modes()
-        moment_opt = [ 2, 4, 6 ]
+#        moment_opt = [ 2, 4, 6 ]
         filter_operation_opt = [ 'divide', 'subtract' ]
 
         pars =     [ 'template_library_key', 'template_library', 'guess_redshift',
@@ -174,12 +174,12 @@ class PPXFFitPar(ParSet):
                      filter_iterations, match_resolution, velscale_ratio, minimum_snr, pixelmask,
                      bias, degree, mdegree, filt_degree, filt_mdegree, moments ]
         options =  [ None, None, None, None, None, None, iter_opt, None, None, filter_operation_opt, None,
-                     None, None, None, None, None, None, None, None, None, moment_opt ]
+                     None, None, None, None, None, None, None, None, None, None ]
         defaults = [ None, None, None, None, None, None, 'global_template', None, None, 'divide', 0, True,
                      None, None, None, _def['bias'], _def['degree'], _def['mdegree'],
                      _def['filt_degree'], _def['filt_mdegree'], _def['moments'] ]
         dtypes =   [ str, TemplateLibrary, arr_in_fl, arr_in_fl, in_fl, in_fl, str, int, int, str, int, bool, #Amelia, check these!
-                     int, in_fl, PixelMask, in_fl, int, int, int, int, int ]
+                     int, in_fl, PixelMask, in_fl, int, int, int, int, [int,list] ]
 
         ParSet.__init__(self, pars, values=values, defaults=defaults, options=options,
                         dtypes=dtypes)
@@ -305,6 +305,7 @@ class PPXFFitResult(object):
 #            self.tplwgterr = numpy.sqrt(numpy.diag(covariance_matrix))[degree+1:]
         self.addcoef = None if ppxf_fit is None or degree < 0 else ppxf_fit.polyweights.copy()
         self.multcoef = None if ppxf_fit is None or mdegree <= 0 else ppxf_fit.mpolyweights.copy()
+        # TODO: Be careful here
         self.kin = None if ppxf_fit is None else ppxf_fit.sol.copy()
         self.kinerr = None if ppxf_fit is None else ppxf_fit.error.copy()
         self.robust_rchi2 = None if ppxf_fit is None else ppxf_fit.chi2
@@ -958,9 +959,10 @@ class PPXFFit_frac(StellarKinematicsFit):
         return model_mask, err, numpy.ma.amin(pix, axis=1), numpy.ma.amax(pix, axis=1)+1
 
 
+    # TODO: have component default to None
     def _run_fit_iteration(self, obj_flux, obj_ferr, start, end, base_velocity, tpl_flux,
-                           tpl_rfft, guess_kin, fraction, component = [0,1], fix_kinematics=False, obj_to_fit=None,
-                           tpl_to_use=None, degree=None, mdegree=None, dof=None,
+                           tpl_rfft, guess_kin, fraction, component=[0,1], fix_kinematics=False,
+                           obj_to_fit=None, tpl_to_use=None, degree=None, mdegree=None, dof=None,
                            weight_errors=False, plot=False):
         r"""
         Fit all the object spectra in obj_flux.
@@ -1019,13 +1021,17 @@ class PPXFFit_frac(StellarKinematicsFit):
         _tpl_to_use = numpy.ones((nspec,ntpl), dtype=bool) if tpl_to_use is None else tpl_to_use
 
 #        input_kin = self.guess_kin if fixed_kin is None else fixed_kin
-        moments = -self.moments if fix_kinematics else self.moments
+        # TODO: Changed this
+        _fix_kinematics = numpy.atleast_1d(fix_kinematics)
+        moments = self.moments
+        if numpy.any(_fix_kinematics):
+            moments[_fix_kinematics] = -self.moments[fix_kinematics]
         degree = self.degree if degree is None else degree
         mdegree = self.mdegree if mdegree is None else mdegree
         dof = self.dof if dof is None else dof
 
 #        linear = fixed_kin is not None and mdegree < 1
-        linear = fix_kinematics and mdegree < 1
+        linear = numpy.all(fix_kinematics) and numpy.all(mdegree < 1)
 
         # Create the object to hold all the fits
         result = numpy.empty(nspec, dtype=object)
@@ -1045,7 +1051,7 @@ class PPXFFit_frac(StellarKinematicsFit):
 
             # Check if there is sufficient data for the fit
             ntpl_to_use = numpy.sum(_tpl_to_use[i,:])
-            if len(gpm) < dof+ntpl_to_use:
+            if len(gpm) < numpy.sum(dof)+ntpl_to_use:
                 if not self.quiet:
                     warnings.warn('Insufficient data points ({0}) to fit spectrum {1}'
                                   '(dof={2}).'.format(len(gpm), i+1, dof+ntpl_to_use))
@@ -1056,11 +1062,21 @@ class PPXFFit_frac(StellarKinematicsFit):
             # Run ppxf
             if plot:
                 pyplot.clf()
+
+            from IPython import embed
+            embed()
+
+            # TODO:
+            #   - Pass component into this function
+            #   - Number of components need to be the same as the number
+            #     of templates
+                
+
             result[i] = PPXFFitResult(degree, mdegree, start[i], end[i], _tpl_to_use[i,:],
                             ppxf.ppxf(tpl_flux[tpl_to_use[i,:],:].T,
                                       obj_flux.data[i,start[i]:end[i]],
                                       obj_ferr.data[i,start[i]:end[i]], self.velscale,
-                                      guess_kin[i,:], self.fraction, component=[1,0], velscale_ratio=self.velscale_ratio,
+                                      guess_kin[i,:], fraction=self.fraction, component=[1,0], velscale_ratio=self.velscale_ratio,
                                       goodpixels=gpm, bias=self.bias, degree=degree,
                                       mdegree=mdegree, moments=moments, vsyst=-base_velocity[i],
                                       quiet=(not plot), plot=plot, linear=linear,
@@ -2377,7 +2393,7 @@ class PPXFFit_frac(StellarKinematicsFit):
             filt_mdegree (int): (**Optional**) The order of the
                 multiplicative polynomial to use when fitting the
                 filtered spectra.
-            moments (int): (**Optional**) Default is 2.  From the pPXF
+            moments (int, list): (**Optional**) Default is 2.  From the pPXF
                 documentation: Order of the Gauss-Hermite moments to
                 fit. Set this keyword to 4 to fit [h3, h4] and to 6 to
                 fit [h3, h4, h5, h6]. Note that in all cases the G-H
@@ -2539,8 +2555,8 @@ class PPXFFit_frac(StellarKinematicsFit):
         self.velocity_limits, self.sigma_limits, self.gh_limits \
                     = PPXFFit_frac.losvd_limits(self.velscale)
         self.bias = bias
-        self.moments = numpy.absolute(moments)
-        self.fix_kinematics = moments < 0
+        self.moments = numpy.absolute(numpy.atleast_1d(moments))
+        self.fix_kinematics = self.moments < 0
 
         # - Degrees of freedom
         self.dof = self.moments + max(self.mdegree, 0)
@@ -2549,9 +2565,9 @@ class PPXFFit_frac(StellarKinematicsFit):
         self.filt_dof = self.moments + max(self.filt_mdegree, 0)
         if self.filt_degree >= 0:
             self.filt_dof += self.filt_degree+1
-        if self.fix_kinematics:
-            self.dof -= self.moments
-            self.filt_dof -= self.moments
+#        if self.fix_kinematics:
+        self.dof[self.fix_kinematics] -= self.moments[self.fix_kinematics]
+        self.filt_dof[self.fix_kinematics] -= self.moments[self.fix_kinematics]
 
 #        print(self.tpl_npad)
 #        print(self.npix_tpl)
@@ -2614,7 +2630,7 @@ class PPXFFit_frac(StellarKinematicsFit):
                         self._per_stellar_kinematics_dtype(self.ntpl,
                                             0 if self._mode_uses_filter() else self.degree+1,
                                             0 if self._mode_uses_filter() else max(self.mdegree,0),
-                                                           self.moments,
+                                                           numpy.sum(self.moments),
                                                            self.bitmask.minimum_dtype()))
         # Set the bins; here the ID and index are identical
         model_par['BINID'] = numpy.arange(self.nobj)
@@ -3187,6 +3203,7 @@ class PPXFFit_frac(StellarKinematicsFit):
             raise ValueError('Pixel scale of the object and template spectra must be identical.')
 
         # Moments for each kinematic component
+        # TODO: I'm sure this is going to fail
         ncomp = 1
         moments = numpy.atleast_1d(kin.size)
         _moments = numpy.full(ncomp, numpy.absolute(moments), dtype=int) if moments.size == 1 \
@@ -3347,6 +3364,7 @@ class PPXFFit_frac(StellarKinematicsFit):
         degree = -1 if len(degree) == 1 else degree[1]-1
         mdegree = model_par['MULTCOEF'].shape
         mdegree = 0 if len(mdegree) == 1 else mdegree[1]
+        # TODO: Another possible failure
         moments = model_par['KIN'].shape[1]
 
         # Only produce selected models

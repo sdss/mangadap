@@ -108,6 +108,7 @@ class StellarKinematicsFit(SpectralFitting):
                  ('USETPL',numpy.bool,(ntpl,)),
                  ('ADDCOEF',numpy.float,(nadd,)) if nadd > 1 else ('ADDCOEF',numpy.float),
                  ('MULTCOEF',numpy.float,(nmult,)) if nmult > 1 else ('MULTCOEF',numpy.float),
+                # Amelia this may need to change
                  ('KININP',numpy.float,(2,)),
                  ('KIN',numpy.float,(nkin,)),
                  ('KINERR',numpy.float,(nkin,)),

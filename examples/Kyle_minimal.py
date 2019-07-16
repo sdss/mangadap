@@ -27,16 +27,6 @@ from mangadap.proc.ppxffit_frac import PPXFFit_frac
 from mangadap.proc.stellarcontinuummodel import StellarContinuumModel, StellarContinuumModelBitMask
 from mangadap.proc.emissionlinemodel import EmissionLineModelBitMask
 
-#Values for example spectrum in example galaxy
-plt = '7443'
-ifu = '9102'
-frac = 0.8438
-wave = numpy.genfromtxt('wave.txt')
-flux = numpy.genfromtxt('flux.txt')
-ivar = numpy.genfromtxt('ivar.txt')
-sres = numpy.genfromtxt('sres.txt')
-z = 0.0916
-
 def fit_bulge_spec(plt, ifu, frac, wave, flux, ivar, sres):
     #Fit each bin using fraction of bulge light in each as 'component' and the single bulge and disk model spectra
     #I constructed
@@ -84,6 +74,9 @@ def fit_bulge_spec(plt, ifu, frac, wave, flux, ivar, sres):
     # Instantiate the fitting class
     ppxf2 = PPXFFit_frac(StellarContinuumModelBitMask())
 
+    import pdb
+    pdb.set_trace()
+
     # Perform the fit - this is where the error occurs!! moments has been changed from moments=2 to moments=[2,2], but start value has not been altered to include two components
     cont_wave, cont_flux, cont_mask, cont_par \
         = ppxf2.fit(sc_tpl['WAVE'].data.copy(), sc_tpl['FLUX'].data.copy(), wave, flux, ferr,
@@ -93,3 +86,21 @@ def fit_bulge_spec(plt, ifu, frac, wave, flux, ivar, sres):
                    moments=[2,2], plot=fit_plots) #Degree was 8
 
     return cont_wave, cont_flux, cont_mask, cont_par, sc_tpl
+
+def main():
+    #Values for example spectrum in example galaxy
+    plt = '7443'
+    ifu = '9102'
+    frac = 0.8438
+    wave = numpy.genfromtxt('wave.txt')
+    flux = numpy.genfromtxt('flux.txt')
+    ivar = numpy.genfromtxt('ivar.txt')
+    sres = numpy.genfromtxt('sres.txt')
+    z = 0.0916
+
+    fit_bulge_spec(plt, ifu, frac, wave, flux, ivar, sres)
+
+if __name__ == '__main__':
+    main()
+    
+
