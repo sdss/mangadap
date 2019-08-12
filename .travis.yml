@@ -22,8 +22,8 @@ env:
 
 matrix:
   fast_finish: true
-  allowed_failures:
-  - python: '3.7'
+  allow_failures:
+    - python: '3.7'
 
 notifications:
   email: false
