@@ -2,7 +2,7 @@
 astropy>=3.0
 matplotlib>=3.0.0
 numpy>=1.15.4
-ppxf==6.7.14
+ppxf==6.7.16
 pydl>=0.6.0
 requests>=2.20
 scipy>=1.1
