@@ -1,6 +1,8 @@
 2.3.1dev
 --------
 
+ - Hotfix to accommodate change in padding computation in ppxf>=6.7.15
+
 TODO:
  - Documentation of config examples are out of date!
  - Get rid of the filter keyword from the output headers...
