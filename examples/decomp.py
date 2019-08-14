@@ -2,6 +2,7 @@
 # Script will spectrally decompose a MaNGA datacube
 # Python environment is sdss_snakes2
 #Working environment is /Users/ppzaf/Work/MaNGA/dap/master/examples
+#remember to source ~/.bashrc
 
 #Imports
 import matplotlib, os, pickle
@@ -173,7 +174,7 @@ start = time.time()
 # 1) Import cube - Both maps and cubefile are flipped up-down c.f. Marvin. You HAVEN'T fixed this yet.
 
 t = Table.read('drpall-v2_4_3.fits')
-for i in range (10895, 10896): # 7443-9102 is for testing.
+for i in range (10895, 10896): # for every galaxy in the universe... 7443-9102 is for testing.
     print('##############################')
     print('Importing MaNGA cubes and maps')
     print('##############################')
@@ -208,8 +209,11 @@ for i in range (10895, 10896): # 7443-9102 is for testing.
     drpver=os.environ['MANGADRP_VER']
     redux_path = os.path.join(os.environ['MANGA_SPECTRO_REDUX'], drpver)
     directory_path = os.path.join(redux_path, str(t['plate'][i]), 'stack')
+    print('################')
+    print('Running DRPFits')
+    print('################')
     drpf = DRPFits(t['plate'][i], t['ifudsgn'][i], 'CUBE', drpver=drpver, redux_path = redux_path, directory_path=directory_path, read=True)
-    #Use defaults.py?
+    #Use defaults.py? - Kyle says no.
     pa = 51.07
     ell = 0.25 # (1-b/a)
     #rdxqa = ReductionAssessment('SNRR', drpf, pa=obs['pa'], ell=obs['ell'], clobber=False)
@@ -245,6 +249,7 @@ for i in range (10895, 10896): # 7443-9102 is for testing.
     z = 0.0916
     guess_vel = c*z
     guess_sig = 100
+    # - Fit stellar kinematics for each bin assuming a single kinematic component using SSPs
     stellar_continuum = StellarContinuumModel('GAU-MILESSSP', binned_spectra, guess_vel=guess_vel, guess_sig=guess_sig, clobber=False)
 
     #-----------------------------------------------------------------------------
@@ -290,7 +295,46 @@ for i in range (10895, 10896): # 7443-9102 is for testing.
     #run ppxffit for every bin and set components and use only bulge and disk spec.
     #Do once for bulge spaxels and once for disk spaxels?
     print('########################################')
-    print('Fitting cube with bulge and disk spectra')
+    print('Fitting bins with bulge and disk spectra')
     print('########################################')
-    for j in range(0, 1):#tpl_wgts.shape[1]): #For every bin - deredshifted? NO?
+    kin, kin_err= np.zeros((1,4)),np.zeros((1,4))
+    chisq = []
+    for j in range(0,np.max(binid)): #NOTE: For every bin 0,1 for testing only - deredshifted? NO?
+        print(np.max(binid))
+        print(j)
         cont_wave, cont_flux, cont_mask, cont_par, sc_tpl = fit_bulge_spec(str(t['plate'][i]), str(t['ifudsgn'][i]), bulge_frac[j], wave_b, flux_m[j,:], ivar_m[j,:], sres) #Should I sent comp keyword here?
+        kin = np.concatenate((kin, cont_par['KIN']))
+        kin_err = np.concatenate((kin_err, cont_par['KINERR']))
+        chisq.append(cont_par['CHI2'])
+    kin = np.delete(kin, 0,0)
+    kin_err= np.delete(kin, 0,0)
+    ############################################################
+    ## Map of the bulge and disk kinematics, just for testing ##
+    ############################################################
+
+    binid_spax = hdu4['BINID'].data
+    bulge_kin, disk_kin,  = np.zeros((binid_spax.shape[0],binid_spax.shape[1])), np.zeros((binid_spax.shape[0],binid_spax.shape[1]))
+    for q in range(0,binid_spax.shape[0]):
+        for w in range(0,binid_spax.shape[1]):
+            for r in range(0,len(kin)):
+                if binid_spax[q,w] == r and bulge_frac[r] > 0.5:
+                    bulge_kin[q,w] = kin[r,0]
+                elif binid_spax[q,w] == r and bulge_frac[r] < 0.5:
+                    disk_kin[q,w] = kin[r,2]
+
+    bulge_kin = np.ma.array(bulge_kin, mask=(bulge_kin==0))
+    disk_kin = np.ma.array(disk_kin, mask=(disk_kin==0))
+    cen_spax = (int(binid_spax.shape[0]/2), int(binid_spax.shape[1]/2) )
+    cen_vel = bulge_kin[cen_spax]
+    bulge_kin = bulge_kin - cen_vel
+    disk_kin = disk_kin - cen_vel
+    plt.figure(figsize=(10,4))
+    plt.subplot(1,2,1)
+    plt.title('bulge kin')
+    plt.imshow(bulge_kin, cmap='seismic')#, vmin=26054 , vmax=27799)
+    plt.colorbar(fraction=0.046, pad=0.04, label='km/s')
+    plt.subplot(1,2,2)
+    plt.title('disk kin')
+    plt.imshow(disk_kin, cmap='seismic')#, vmin=26054 , vmax =27799)
+    plt.colorbar(fraction=0.046, pad=0.04, label='km/s')
+    plt.savefig('initial_kin_fit_%s-%s.pdf' % (str(t['plate'][i]), str(t['ifudsgn'][i])))

@@ -1086,8 +1086,16 @@ class PPXFFit_frac(StellarKinematicsFit):
 
             # TODO: This is a kludge
             _guess_kin = [ guess_kin[i,:], guess_kin[i,:] ]
-            
-                
+            print('ORIGINAL GUESS_KIN= %s' % [ guess_kin[i,:], guess_kin[i,:] ])
+            guess_kin_disk = [guess_kin[i,0]-100, guess_kin[i,1] ] #Amelia, just trying something where I vary the bulge and disk starting vels
+            print('GUESS KIN DISK= %s' % guess_kin_disk)
+            print('GUESS KIN = %s' % guess_kin)
+            print('_GUESS KIN = %s' % [[ guess_kin[i,:], guess_kin_disk ]])
+            _guess_kin = [ guess_kin[i,:], guess_kin_disk ]
+            print('LOOK HERE! I HAVE CHANGED THE STARING GUESS TO %s ' % _guess_kin)
+
+
+
             result[i] = PPXFFitResult(degree, mdegree, start[i], end[i], _tpl_to_use[i,:],
                             ppxf.ppxf(tpl_flux[tpl_to_use[i,:],:].T,
                                       obj_flux.data[i,start[i]:end[i]],
@@ -1868,6 +1876,8 @@ class PPXFFit_frac(StellarKinematicsFit):
                 guess_kin[i,0] = numpy.log(nominal_redshift[i]+1) \
                                     * astropy.constants.c.to('km/s').value
                 guess_kin[i,1] = nominal_dispersion[i]
+                guess_kin_disk = [guess_kin[i,0]-100, guess_kin[i,1] ] #Amelia, just trying something where I vary the bulge and disk starting vels
+
 
             # Fit the model to the resolution-matched model
             model_ferr = numpy.ma.ones(self.obj_flux.shape, dtype=float)
@@ -2127,12 +2137,14 @@ class PPXFFit_frac(StellarKinematicsFit):
 
             # If the velocity dispersion has hit the lower limit, ONLY
             # flag the value as having a MIN_SIGMA.
-            if numpy.any(near_lower_sigma_bound):
-                near_bound[near_lower_sigma_bound] = False
+# Amelia, you commented this out, but will need TODO something about it in the future!!!!!!
+#            if numpy.any(near_lower_sigma_bound):
+#                print('THIS LOOP IS ENTERED!!!!')
+#                near_bound[near_lower_sigma_bound] = False
                 # TODO: Will need to expand mask to accomodate more than
                 # one minimum sigma bound flag per spectrum, one for
                 # each component...
-                model_par['MASK'][i] = self.bitmask.turn_on(model_par['MASK'][i], 'MIN_SIGMA')
+#                model_par['MASK'][i] = self.bitmask.turn_on(model_par['MASK'][i], 'MIN_SIGMA')
             # Otherwise, flag both the model and parameter set
             if numpy.any(near_bound):
                 if not self.quiet:
@@ -2175,6 +2187,11 @@ class PPXFFit_frac(StellarKinematicsFit):
             if self.mdegree > 0 and result[i].multcoef is not None:
                 model_par['MULTCOEF'][i] = result[i].multcoef
             # Input kinematics
+            print(self.guess_kin)
+            print(self.guess_kin[i,:].shape)
+            print(self.guess_kin[i,:])
+            print(result[i].kin.shape)
+            print(result[i].kin)
             model_par['KININP'][i] = self.guess_kin[i,:]
             # Best-fit kinematics
             model_par['KIN'][i] = result[i].kin
@@ -2221,12 +2238,13 @@ class PPXFFit_frac(StellarKinematicsFit):
         # Calculate the dispersion corrections, if necessary
         # TODO: Get the velocity dispersion corrections here and above
         # regardless of the resolution matching?
-        if not self.matched_resolution:
-            model_par['SIGMACORR_EMP'], err = self._fit_dispersion_correction(
-                                                            result, baseline_dispersion=100)
-            if numpy.sum(err) > 0:
-                model_par['MASK'][err] = self.bitmask.turn_on(model_par['MASK'][err],
-                                                              'BAD_SIGMACORR_EMP')
+        #Amelia: _fit_dispersion_correction does not work for 2 component fitting, so have just commented it out for now
+        #if not self.matched_resolution:
+        #    model_par['SIGMACORR_EMP'], err = self._fit_dispersion_correction(
+    #                                                        result, baseline_dispersion=100)
+    #        if numpy.sum(err) > 0:
+    #            model_par['MASK'][err] = self.bitmask.turn_on(model_par['MASK'][err],
+    #                                                          'BAD_SIGMACORR_EMP')
 
         #---------------------------------------------------------------
         # Test if kinematics are reliable
@@ -2624,6 +2642,8 @@ class PPXFFit_frac(StellarKinematicsFit):
         self.bias = bias
         self.moments = numpy.atleast_1d(moments)
         self.nmom = numpy.absolute(self.moments)
+        print('self.nmom= %s' % self.nmom)
+        print('sum self.nmom= %s' % numpy.sum(self.nmom))
         self.fix_kinematics = self.moments < 0
 
         # - Degrees of freedom
@@ -2703,7 +2723,7 @@ class PPXFFit_frac(StellarKinematicsFit):
                         self._per_stellar_kinematics_dtype(self.ntpl,
                                             0 if self._mode_uses_filter() else self.degree+1,
                                             0 if self._mode_uses_filter() else max(self.mdegree,0),
-                                                           numpy.sum(self.nmom),
+                                                           numpy.sum(self.nmom*2),
                                                            self.bitmask.minimum_dtype()))
         # Set the bins; here the ID and index are identical
         model_par['BINID'] = numpy.arange(self.nobj)

@@ -21,7 +21,7 @@ from mangadap.proc.templatelibrary import TemplateLibrary
 from mangadap.proc.emissionlinemoments import EmissionLineMoments
 from mangadap.proc.sasuke import Sasuke
 from mangadap.proc.ppxffit import PPXFFit
-from mangadap.proc.ppxffit_frac import PPXFFit_frac
+from mangadap.proc.ppxffit_frac_grid import PPXFFit_frac
 from mangadap.proc.stellarcontinuummodel import StellarContinuumModel, StellarContinuumModelBitMask
 from mangadap.proc.emissionlinemodel import EmissionLineModelBitMask
 
@@ -164,7 +164,7 @@ def save_spec_fits_files(cont_par_bulge, sc_tpl_bulge, cont_par_disk, sc_tpl_dis
 def fit_bulge_spec(plt, ifu, frac, wave, flux, ivar, sres):
     #Fit each bin using fraction of bulge light in each as 'component' and the single bulge and disk model spectra
     #I constructed
-    fit_plots = True
+    fit_plots = False #changed from True
     #flux = bulge_spec
     #ivar = bulge_ivar
     #wave = wave_b
