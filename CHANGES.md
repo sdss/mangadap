@@ -2,6 +2,7 @@
 --------
 
 TODO:
+ - Add channel with R in kpc
  - Documentation of config examples are out of date!
  - Get rid of the filter keyword from the output headers...
  - Change default to fix bad pixels in spectral resolution?
