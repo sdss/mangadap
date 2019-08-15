@@ -10,6 +10,7 @@ Submodules
    mangadap.tests.test_bandpassfilter
    mangadap.tests.test_drpfits
    mangadap.tests.test_emlmoments
+   mangadap.tests.test_extinction
    mangadap.tests.test_par
    mangadap.tests.test_pixelmask
    mangadap.tests.test_ppxffit
@@ -24,7 +25,7 @@ Module contents
 ---------------
 
 .. automodule:: mangadap.tests
-    :members:
-    :private-members:
-    :undoc-members:
-    :show-inheritance:
+   :members:
+   :private-members:
+   :undoc-members:
+   :show-inheritance:

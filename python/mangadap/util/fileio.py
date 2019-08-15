@@ -265,7 +265,7 @@ def rec_to_fits_col_dim(rec_element):
     the most rapidly varying; i.e. the shape is supposed to be written
     as row-major, as opposed to the native column-major order in python.
     """
-    return None if len(rec_element[0].shape) == 1 else str(rec_element[0].shape[::-1])
+    return None if len(rec_element[0].shape) <= 1 else str(rec_element[0].shape[::-1])
 
 
 def channel_dictionary(hdu, ext, prefix='C'):

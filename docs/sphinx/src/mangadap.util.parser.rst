@@ -2,7 +2,7 @@ mangadap.util.parser module
 ===========================
 
 .. automodule:: mangadap.util.parser
-    :members:
-    :private-members:
-    :undoc-members:
-    :show-inheritance:
+   :members:
+   :private-members:
+   :undoc-members:
+   :show-inheritance:

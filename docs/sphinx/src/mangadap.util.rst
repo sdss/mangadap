@@ -23,13 +23,14 @@ Submodules
    mangadap.util.pixelmask
    mangadap.util.resolution
    mangadap.util.sampling
+   mangadap.util.trace
    mangadap.util.version
 
 Module contents
 ---------------
 
 .. automodule:: mangadap.util
-    :members:
-    :private-members:
-    :undoc-members:
-    :show-inheritance:
+   :members:
+   :private-members:
+   :undoc-members:
+   :show-inheritance:

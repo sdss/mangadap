@@ -27,7 +27,7 @@ Module contents
 ---------------
 
 .. automodule:: mangadap.proc
-    :members:
-    :private-members:
-    :undoc-members:
-    :show-inheritance:
+   :members:
+   :private-members:
+   :undoc-members:
+   :show-inheritance:

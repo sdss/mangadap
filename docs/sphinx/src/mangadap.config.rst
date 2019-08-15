@@ -12,7 +12,7 @@ Module contents
 ---------------
 
 .. automodule:: mangadap.config
-    :members:
-    :private-members:
-    :undoc-members:
-    :show-inheritance:
+   :members:
+   :private-members:
+   :undoc-members:
+   :show-inheritance:

@@ -366,6 +366,12 @@ class EmissionLineModel:
     def define_method(method_key, method_list=None, dapsrc=None):
         r"""
         Select the modeling method
+
+        Args:
+            method_key (str):
+                Description
+            method_list (list):
+
         """
         # Grab the specific method
         return select_proc_method(method_key, EmissionLineModelDef, method_list=method_list,

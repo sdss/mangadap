@@ -1,5 +1,5 @@
 .. mangadap documentation master file, created by
-   sphinx-quickstart on Thu Sep 13 14:25:58 2018.
+   sphinx-quickstart on Thu Aug 15 11:46:54 2019.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
