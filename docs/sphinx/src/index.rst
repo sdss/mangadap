@@ -7,7 +7,20 @@ Welcome to mangadap's documentation!
 ====================================
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 2
+
+   intro
+
+How Tos
+=======
+
+.. toctree::
+   :maxdepth: 2
+
+   fit_one_spec
+
+.. toctree::
+   :maxdepth: 2
    :caption: Contents:
 
    mangadap
