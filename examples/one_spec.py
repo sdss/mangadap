@@ -60,6 +60,7 @@ def fit_one_spect(plt, ifu, flux, ivar, wave, drpf):
     # Template keywords
     sc_tpl_key = 'MILES_SSP'
     el_tpl_key = 'MILES_SSP'
+
 #    el_tpl_key = 'BC03', 'MILESHC'
 
     # Emission-line database keywords
@@ -171,6 +172,7 @@ def fit_bulge_spec(plt, ifu, frac, wave, flux, ivar, sres):
     # Template keywords
     sc_tpl_key = 'MY_SPEC'
     el_tpl_key = 'MY_SPEC'
+
 #    el_tpl_key = 'BC03', 'MILESHC'
 
     # Emission-line database keywords
@@ -180,10 +182,11 @@ def fit_bulge_spec(plt, ifu, frac, wave, flux, ivar, sres):
 #    elfit_key = 'ELPT4'
 
     # Template pixel scale a factor of 4 smaller than galaxy data 70
-    velscale_ratio = 4 #??
+    velscale_ratio = 4 #?? Is that still true?
     # Get the redshift
     #drpall_file = os.path.join(os.environ['MANGA_SPECTRO_REDUX'], 'drpall-v2_3_1.fits')
     z = numpy.array([get_redshift(plt, ifu)]) #, drpall_file)])
+    z = 0.0001 #trying with de-redshifted spectrum
     #print('Redshift: {0}'.format(z[0]))
     dispersion = numpy.array([300.])
     #sres = drpf.spectral_resolution(toarray=True, fill=True, pre=True).data

@@ -1087,18 +1087,42 @@ class PPXFFit_frac(StellarKinematicsFit):
             # TODO: This is a kludge
             _guess_kin = [ guess_kin[i,:], guess_kin[i,:] ]
             print('ORIGINAL GUESS_KIN= %s' % [ guess_kin[i,:], guess_kin[i,:] ])
-            guess_kin_disk = [guess_kin[i,0]-100, guess_kin[i,1] ] #Amelia, just trying something where I vary the bulge and disk starting vels
-            guess_kin_disk2 = [guess_kin[i,0]+100, guess_kin[i,1] ] #Amelia, just trying something where I vary the bulge and disk starting vels
-            print('GUESS KIN DISK= %s' % guess_kin_disk)
-            print('GUESS KIN = %s' % guess_kin)
-            print('_GUESS KIN = %s' % [[ guess_kin[i,:], guess_kin_disk ]])
-            _guess_kin = [ guess_kin[i,:], guess_kin_disk ]
-            _guess_kin2 = [ guess_kin[i,:], guess_kin_disk2 ]
-            starting_guess = numpy.concatenate((_guess_kin, _guess_kin2))
-            print(starting_guess)
-            #Try running through both of these and finding the best chisq then returning that result
+            guess_kin_disk = [guess_kin[i,0], guess_kin[i,1] ] #Amelia, just trying something where I vary the bulge and disk starting vels
+            guess_kin_disk1 = [guess_kin[i,0], guess_kin[i,1]-100 ] #Amelia, just trying something where I vary the bulge and disk starting vels
+            guess_kin_disk2 = [guess_kin[i,0]-100, guess_kin[i,1]-100 ] #Amelia, just trying something where I vary the bulge and disk starting vels
+            guess_kin_disk3 = [guess_kin[i,0]+200, guess_kin[i,1] ] #Amelia, just trying something where I vary the bulge and disk starting vels
+            guess_kin_disk4 = [guess_kin[i,0]-200, guess_kin[i,1] ] #Amelia, just trying something where I vary the bulge and disk starting vels
+            guess_kin_disk5 = [guess_kin[i,0]+50, guess_kin[i,1] ] #Amelia, just trying something where I vary the bulge and disk starting vels
+            guess_kin_disk6 = [guess_kin[i,0]-50, guess_kin[i,1] ] #Amelia, just trying something where I vary the bulge and disk starting vels
+            guess_kin_disk7 = [guess_kin[i,0]+300, guess_kin[i,1] ] #Amelia, just trying something where I vary the bulge and disk starting vels
+            guess_kin_disk8 = [guess_kin[i,0]-300, guess_kin[i,1] ] #Amelia, just trying something where I vary the bulge and disk starting vels
+            guess_kin_bulge1 = [guess_kin[i,0], guess_kin[i,1]-100 ] #Reduce bulge dispersion guess, too
 
-            for q in range(0,2): #just 2 for now
+
+            ##print('GUESS KIN DISK= %s' % guess_kin_disk)
+            #print('GUESS KIN = %s' % guess_kin)
+            #print('_GUESS KIN = %s' % [[ guess_kin[i,:], guess_kin_disk ]])
+            _guess_kin = [[ guess_kin[i,:], guess_kin_disk ]] #Regular conditions
+            _guess_kin1 = [[ guess_kin_bulge1, guess_kin_disk1 ]]
+            _guess_kin2 = [[ guess_kin[i,:], guess_kin_disk2 ]]
+            _guess_kin3 = [[ guess_kin_bulge1, guess_kin_disk3 ]]
+            _guess_kin4 = [[ guess_kin[i,:], guess_kin_disk4 ]]
+            _guess_kin5 = [[ guess_kin[i,:], guess_kin_disk5 ]]
+            _guess_kin6 = [[ guess_kin_bulge1, guess_kin_disk6 ]]
+            _guess_kin7 = [[ guess_kin[i,:], guess_kin_disk7 ]]
+            _guess_kin8 = [[ guess_kin[i,:], guess_kin_disk8 ]]
+
+            starting_guess = numpy.concatenate((_guess_kin2, _guess_kin3, _guess_kin4, _guess_kin5, _guess_kin6, _guess_kin7, _guess_kin8, _guess_kin1, _guess_kin))
+            #starting_guess = numpy.concatenate((_guess_kin, _guess_kin1, _guess_kin2))
+            #starting_guess = _guess_kin1 #See what the vel maps look like.
+            print('starting guess = %s' % starting_guess)
+            #Try running through both of these and finding the best chisq then returning that result
+            best_chi_sq = 100 #Somerthing big so the first one is definitely added
+
+            for q in range(0,9): #just 2 for now
+                print('Chi-sq loop %s/25' % q)
+                #print('Bulge input vel guess = %s' % starting_guess[0,q])
+                #print('Disk input vel guess = %s' % starting_guess[1,q])
                 result[i] = PPXFFitResult(degree, mdegree, start[i], end[i], _tpl_to_use[i,:],
                                 ppxf.ppxf(tpl_flux[tpl_to_use[i,:],:].T,
                                           obj_flux.data[i,start[i]:end[i]],
@@ -1110,6 +1134,13 @@ class PPXFFit_frac(StellarKinematicsFit):
                                           quiet=(not plot), plot=plot, linear=linear,
                                           templates_rfft=tpl_rfft[tpl_to_use[i,:],:].T), ntpl,
                                           weight_errors=weight_errors)
+                print('Chi-sq value = %s' % result[i].robust_rchi2)
+                print('Result kinematics = %s' % result[i].kin)
+                if numpy.abs(1-result[i].robust_rchi2) < best_chi_sq:
+                    best_result = result[i]
+                    best_chi_sq = result[i].robust_rchi2
+                    print('Solution improved upon!')
+            result[i] = best_result
 
             #rm self.fraction and component=[1,0], after guess_kin and before velscale_ratio
 

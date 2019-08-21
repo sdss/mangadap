@@ -285,6 +285,8 @@ for i in range (10895, 10896): # for every galaxy in the universe... 7443-9102 i
     # Construct disk-only and bulge-only spectra by weighting the deredshifted cube by the binned GalFit images
     # Alternatively, create a single bulge and disk spectrum the way I've done it before.
     bulge_spec, bulge_ivar, disk_spec, disk_ivar = create_single_spec(fluxes, ivars, bin_disk, signal, Rb) #
+#    disk_spec = disk_spec*(1/np.max(disk_spec)) #16/08 Just seeing if normalising the disk spectrum to 1 works...
+
     # Fit the bulge and disk spectra with SSPs (Just bulge at the moment, until I fix disk spectra)
     cont_par_bulge, sc_tpl_bulge, sres = fit_one_spect(str(t['plate'][i]), str(t['ifudsgn'][i]), bulge_spec, bulge_ivar, waves[0,:], drpf) #
     cont_par_disk, sc_tpl_disk, sres = fit_one_spect(str(t['plate'][i]) , str(t['ifudsgn'][i]), disk_spec, disk_ivar, waves[0,:], drpf) #
@@ -299,42 +301,67 @@ for i in range (10895, 10896): # for every galaxy in the universe... 7443-9102 i
     print('########################################')
     kin, kin_err= np.zeros((1,4)),np.zeros((1,4))
     chisq = []
-    for j in range(0,np.max(binid)): #NOTE: For every bin 0,1 for testing only - deredshifted? NO?
-        print(np.max(binid))
-        print(j)
-        cont_wave, cont_flux, cont_mask, cont_par, sc_tpl = fit_bulge_spec(str(t['plate'][i]), str(t['ifudsgn'][i]), bulge_frac[j], wave_b, flux_m[j,:], ivar_m[j,:], sres) #Should I sent comp keyword here?
+    for j in range(0,np.max(binid)): #NOTE: For every bin 0,1 for testing only - deredshifted? NO? Is that okay? Fixed. Deredshifted.
+#        cont_wave, cont_flux, cont_mask, cont_par, sc_tpl = fit_bulge_spec(str(t['plate'][i]), str(t['ifudsgn'][i]), bulge_frac[j], wave_b, flux_m[j,:], ivar_m[j,:], sres) #Should I sent comp keyword here?
+        #Try using deredshifted spectrum
+        cont_wave, cont_flux, cont_mask, cont_par, sc_tpl = fit_bulge_spec(str(t['plate'][i]), str(t['ifudsgn'][i]), bulge_frac[j], waves[j,:], fluxes[j,:], ivars[j,:], sres) #Should I sent comp keyword here?
+
         kin = np.concatenate((kin, cont_par['KIN']))
         kin_err = np.concatenate((kin_err, cont_par['KINERR']))
         chisq.append(cont_par['CHI2'])
     kin = np.delete(kin, 0,0)
     kin_err= np.delete(kin, 0,0)
-    ############################################################
-    ## Map of the bulge and disk kinematics, just for testing ##
-    ############################################################
+end = time.time()
+print('Elapsed Time = %s sec' % (end-start))
 
-    binid_spax = hdu4['BINID'].data
-    bulge_kin, disk_kin,  = np.zeros((binid_spax.shape[0],binid_spax.shape[1])), np.zeros((binid_spax.shape[0],binid_spax.shape[1]))
-    for q in range(0,binid_spax.shape[0]):
-        for w in range(0,binid_spax.shape[1]):
-            for r in range(0,len(kin)):
-                if binid_spax[q,w] == r and bulge_frac[r] > 0.5:
-                    bulge_kin[q,w] = kin[r,0]
-                elif binid_spax[q,w] == r and bulge_frac[r] < 0.5:
-                    disk_kin[q,w] = kin[r,2]
+############################################################
+## Map of the bulge and disk kinematics, just for testing ##
+############################################################
+# V V V V V V V V
+binid_spax = hdu4['BINID'].data
+bulge_kin, disk_kin, bulge_disp, disk_disp  = np.zeros((binid_spax.shape[0],binid_spax.shape[1])), np.zeros((binid_spax.shape[0],binid_spax.shape[1])), np.zeros((binid_spax.shape[0],binid_spax.shape[1])), np.zeros((binid_spax.shape[0],binid_spax.shape[1]))
+for q in range(0,binid_spax.shape[0]):
+    for w in range(0,binid_spax.shape[1]):
+        for r in range(0,len(kin)):
+            if binid_spax[q,w] == r and bulge_frac[r] > 0.5:
+                bulge_kin[q,w] = kin[r,0]
+                bulge_disp[q,w] = kin[r,1]
+            elif binid_spax[q,w] == r and bulge_frac[r] < 0.5:
+                disk_kin[q,w] = kin[r,2]
+                disk_disp[q,w] = kin[r,3]
+bulge_kin = np.ma.array(bulge_kin, mask=(bulge_kin==0))
+disk_kin = np.ma.array(disk_kin, mask=(disk_kin==0))
+bulge_disp = np.ma.array(bulge_disp, mask =(bulge_disp==0))
+disk_disp = np.ma.array(disk_disp, mask=(disk_disp==0))
+cen_spax = (int(binid_spax.shape[0]/2), int(binid_spax.shape[1]/2) )
+cen_vel = bulge_kin[cen_spax]
+bulge_kin = bulge_kin - cen_vel
+disk_kin = disk_kin - cen_vel
+plt.figure(figsize=(12,10))
+plt.subplot(2,2,1)
+plt.title('bulge vel')
+plt.imshow(np.flipud(bulge_kin), cmap='seismic', vmin=-125 , vmax=150)
+#plt.imshow(np.flipud(bulge_disp), cmap='seismic')#, vmin=-125 , vmax=150)
+plt.colorbar(fraction=0.046, pad=0.04, label='km/s')
+plt.subplot(2,2,2)
+plt.title('disk vel')
+plt.imshow(np.flipud(disk_kin), cmap='seismic', vmin=-125 , vmax =150)
+#plt.imshow(np.flipud(disk_disp), cmap='seismic')#, vmin=-125 , vmax =150)
+plt.colorbar(fraction=0.046, pad=0.04, label='km/s')
 
-    bulge_kin = np.ma.array(bulge_kin, mask=(bulge_kin==0))
-    disk_kin = np.ma.array(disk_kin, mask=(disk_kin==0))
-    cen_spax = (int(binid_spax.shape[0]/2), int(binid_spax.shape[1]/2) )
-    cen_vel = bulge_kin[cen_spax]
-    bulge_kin = bulge_kin - cen_vel
-    disk_kin = disk_kin - cen_vel
-    plt.figure(figsize=(10,4))
-    plt.subplot(1,2,1)
-    plt.title('bulge kin')
-    plt.imshow(bulge_kin, cmap='seismic')#, vmin=26054 , vmax=27799)
-    plt.colorbar(fraction=0.046, pad=0.04, label='km/s')
-    plt.subplot(1,2,2)
-    plt.title('disk kin')
-    plt.imshow(disk_kin, cmap='seismic')#, vmin=26054 , vmax =27799)
-    plt.colorbar(fraction=0.046, pad=0.04, label='km/s')
-    plt.savefig('initial_kin_fit_%s-%s.pdf' % (str(t['plate'][i]), str(t['ifudsgn'][i])))
+plt.subplot(2,2,3)
+plt.title('bulge disp')
+plt.imshow(np.flipud(bulge_disp), cmap='jet')#, vmin=-125 , vmax=150)
+plt.colorbar(fraction=0.046, pad=0.04, label='km/s')
+plt.subplot(2,2,4)
+plt.title('disk disp')
+plt.imshow(np.flipud(disk_disp), cmap='jet')#, vmin=-125 , vmax =150)
+plt.colorbar(fraction=0.046, pad=0.04, label='km/s')
+#plt.show()
+plt.savefig('initial_kin_fit_%s-%s_9.pdf' % (str(t['plate'][i]), str(t['ifudsgn'][i])))
+    # ^ ^ ^ ^ ^ ^ ^
+    ############################################################
+    ## Now need to make sure the bulge and disk kinematics are
+    ## correct. What did Martha do? ##
+    ############################################################
+    #Martha varied the starting guesses for each component in a 5x5 grid.
