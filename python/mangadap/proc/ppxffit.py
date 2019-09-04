@@ -2702,7 +2702,7 @@ class PPXFFit(StellarKinematicsFit):
         #    further limit the blue and red edges of the galaxy spectra.
         #    **This must account for the relative pixel scale.**
         now=numpy.sum(fit_indx)                 # Number of good object pixels
-        _velscale_ratio = 1 if velscale_ratio is None else velscale_ratio
+        _velscale_ratio = 1 if velscale_ratio is None else int(velscale_ratio)
         ntw=len(tpl_wave)//_velscale_ratio       # Number of template pixels
         if not quiet:
             log_output(loggers, 1, logging.INFO,
@@ -2903,7 +2903,7 @@ class PPXFFit(StellarKinematicsFit):
         """
         # Get the pixel scale
         velscale = spectrum_velocity_scale(obj_wave)
-        _velscale_ratio = 1 if velscale_ratio is None else velscale_ratio
+        _velscale_ratio = 1 if velscale_ratio is None else int(velscale_ratio)
         if not PPXFFit.obj_tpl_pixelmatch(velscale, tpl_wave, velscale_ratio=_velscale_ratio,
                                           dvtol=dvtol):
             raise ValueError('Pixel scale of the object and template spectra must be identical.')
