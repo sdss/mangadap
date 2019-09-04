@@ -423,6 +423,7 @@ class SpectralStack():
         if recalibrate_ivar:
             ratio = numpy.ma.median( variance_ratio, axis=1 )
 #            self._recalibrate_ivar_figure(ratio, ofile='ivar_calibration.pdf')
+#            exit()
 
             self.ivar = numpy.ma.power(ratio, -1.0)[:,None] * self.ivar
             return
@@ -438,10 +439,10 @@ class SpectralStack():
             w,h = pyplot.figaspect(1)
             fig = pyplot.figure(figsize=(1.5*w,1.5*h))
 
-            ax = fig.add_axes([0.2,0.2,0.7,0.53])
+            ax = fig.add_axes([0.2,0.3,0.7,0.4])
             ax.minorticks_on()
-            ax.tick_params(which='major', length=10)
-            ax.tick_params(which='minor', length=5)
+            ax.tick_params(which='major', length=10, direction='in', top=True, right=True)
+            ax.tick_params(which='minor', length=5, direction='in', top=True, right=True)
             ax.grid(True, which='major', color='0.8', zorder=0, linestyle='-', lw=0.5)
 
             nbin = numpy.sum(self.rebin_T.toarray(), axis=1)
@@ -449,12 +450,12 @@ class SpectralStack():
             ax.scatter(nbin, numpy.sqrt(ratio), marker='.', s=50, lw=0, color='k', zorder=3)
             ax.plot(mod_nbin, 1+1.62*numpy.log10(mod_nbin), color='C3', zorder=2)
 
-            ax.text(0.5, -0.16, r'$N_{\rm bin}$', horizontalalignment='center',
+            ax.text(0.5, -0.18, r'$N_{\rm bin}$', horizontalalignment='center',
                     verticalalignment='center', transform=ax.transAxes)
-            ax.text(-0.18, 0.5, r'$n_{\rm measured}/n_{\rm no\ covar}$',
+            ax.text(-0.14, 0.5, r'$f_{\rm covar}$',
                     horizontalalignment='center', verticalalignment='center',
                     transform=ax.transAxes, rotation='vertical')
-            ax.text(0.95, 0.07, '7815-1902', horizontalalignment='right',
+            ax.text(0.96, 0.1, '8249-12705', horizontalalignment='right',
                     verticalalignment='center', transform=ax.transAxes)
 
             if ofile is None:

@@ -688,7 +688,7 @@ def ppxffit_qa_plot(plt, ifu, plan, drpver=None, redux_path=None, dapver=None, a
 #-----------------------------------------------------------------------------
 
 if __name__ == '__main__':
-    t = time.clock()
+    t = time.perf_counter()
 
     parser = ArgumentParser()
 
@@ -743,7 +743,7 @@ if __name__ == '__main__':
                         redux_path=arg.redux_path, dapver=arg.dapver,
                         analysis_path=arg.analysis_path, tpl_flux_renorm=tpl_flux_renorm)
 
-    print('Elapsed time: {0} seconds'.format(time.clock() - t))
+    print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
 
 
 

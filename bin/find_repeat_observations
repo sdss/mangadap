@@ -82,7 +82,7 @@ def find_repeat_observations(output_file, drpver, redux_path, dapver, analysis_p
 #-----------------------------------------------------------------------------
 
 if __name__ == '__main__':
-    t = time.clock()
+    t = time.perf_counter()
 
     parser = ArgumentParser()
 
@@ -111,7 +111,7 @@ if __name__ == '__main__':
     find_repeat_observations(output_file, drpver, arg.redux_path, dapver, arg.analysis_path,
                              arg.directory_path)
 
-    print('Elapsed time: {0} seconds'.format(time.clock() - t))
+    print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
 
 
 

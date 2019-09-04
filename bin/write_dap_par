@@ -10,8 +10,8 @@ import sys
 if sys.version > '3':
     long = int
 
-import os.path
-from time import clock
+import os
+import time
 
 from mangadap.survey.drpcomplete import DRPComplete
 #-----------------------------------------------------------------------
@@ -35,8 +35,8 @@ def write_dap_par():
 
 
 if __name__ == '__main__':
-    t = clock()
+    t = time.perf_counter()
     write_dap_par()
-    print('Elapsed time: {0} seconds'.format(clock() - t))
+    print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
 
 

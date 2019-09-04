@@ -2,6 +2,9 @@
 --------
 
  - Hotfix to accommodate change in padding computation in ppxf>=6.7.15
+ - Change from `time.clock()` to `time.perf_counter()`
+ - Bug fix in record array dimensionality when writing to binary table
+ - Minor plotting changes for Overview paper plots
 
 TODO:
  - Documentation of config examples are out of date!
@@ -15,6 +18,10 @@ TODO:
  - Keep all the reference files to the common directory?
  - Fix minor issue in moment and index spaxels fit in hybrid case,
    compared to emission-line modeling data.
+ - Add spectral-index continuum and model indices to the MAPS files
+
+ - Add errors to DAPall
+ - Add fraction of spectra with sigma < sigma_corr to DAPall
 
 
 2.3.0 (31 Jan 2019)

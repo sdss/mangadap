@@ -549,7 +549,7 @@ def spotcheck_images(analysis_path, daptype, plate, ifudesign, ofile=None, drpve
 #-----------------------------------------------------------------------------
 
 if __name__ == '__main__':
-    t = time.clock()
+    t = time.perf_counter()
 
     parser = ArgumentParser()
 
@@ -606,7 +606,7 @@ if __name__ == '__main__':
 
         spotcheck_images(analysis_path, daptype, arg.plate, arg.ifudesign, ofile=ofile)
 
-    print('Elapsed time: {0} seconds'.format(time.clock() - t))
+    print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
 
 
 
