@@ -62,6 +62,7 @@ if sys.version > '3':
     long = int
 
 import os
+import warnings
 import gzip
 import shutil
 import logging
@@ -103,7 +104,7 @@ def readfits_1dspec(filename, log10=False):
     hdu = fits.open(filename, mode='readonly')
 
     if (len(hdu)) != 1:
-        raise Exception('{0} has more than one extension.'.format(filename))
+        warnings.warn('{0} has more than one extension.'.format(filename))
     
     if hdu[0].header['NAXIS'] != 1:
         raise Exception('{0} is not one dimensional!'.format(filename))
