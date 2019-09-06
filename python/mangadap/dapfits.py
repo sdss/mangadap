@@ -655,7 +655,8 @@ class construct_maps_file:
         # Add the DAP method
         prihdr['DAPTYPE'] = (defaults.default_dap_method(binned_spectra.method['key'],
                                     stellar_continuum.method['fitpar']['template_library_key'],
-                                    emission_line_model.method['continuum_tpl_key']),
+                                    'None' if emission_line_model is None
+                                        else emission_line_model.method['continuum_tpl_key']),
                              'DAP analysis method')
         # Add the format of this file
         prihdr['DAPFRMT'] = ('MAPS', 'DAP data file format')
@@ -810,7 +811,8 @@ class construct_maps_file:
 
         self.method = defaults.default_dap_method(binned_spectra.method['key'],
                                     stellar_continuum.method['fitpar']['template_library_key'],
-                                    emission_line_model.method['continuum_tpl_key']) \
+                                    'None' if emission_line_model is None 
+                                        else emission_line_model.method['continuum_tpl_key']) \
                                 if directory_path is None else None
         self.directory_path = defaults.default_dap_method_path(self.method, plate=self.drpf.plate,
                                                                ifudesign=self.drpf.ifudesign,
@@ -1785,7 +1787,8 @@ class construct_cube_file:
         # Add the DAP method
         prihdr['DAPTYPE'] = (defaults.default_dap_method(binned_spectra.method['key'],
                                     stellar_continuum.method['fitpar']['template_library_key'],
-                                    emission_line_model.method['continuum_tpl_key']),
+                                    'None' if emission_line_model is None
+                                        else emission_line_model.method['continuum_tpl_key']),
                              'DAP analysis method')
         # Add the format of this file
         prihdr['DAPFRMT'] = ('LOGCUBE', 'DAP data file format')
@@ -1859,7 +1862,8 @@ class construct_cube_file:
         # Set the output directory path
         self.method = defaults.default_dap_method(binned_spectra.method['key'],
                                     stellar_continuum.method['fitpar']['template_library_key'],
-                                    emission_line_model.method['continuum_tpl_key']) \
+                                    'None' if emission_line_model is None
+                                        else emission_line_model.method['continuum_tpl_key']) \
                                 if directory_path is None else None
         self.directory_path = defaults.default_dap_method_path(self.method, plate=self.drpf.plate,
                                                                ifudesign=self.drpf.ifudesign,
@@ -1984,6 +1988,9 @@ class construct_cube_file:
               OUTSIDE_RANGE, TPL_PIXELS, TRUNCATED, PPXF_REJECT,
               INVALID_ERROR into FITIGNORED
         """
+        if emission_line_model is None:
+            return None
+
         # Initialize
         mask = numpy.zeros(emission_line_model_3d_hdu['MASK'].data.shape,
                            dtype=self.bitmask.minimum_dtype())
@@ -2098,18 +2105,25 @@ class construct_cube_file:
         #---------------------------------------------------------------
         # Get the data arrays
         # Best-fitting composite model
-        model = stellar_continuum_3d_hdu['FLUX'].data + emission_line_model_3d_hdu['FLUX'].data \
-                    + emission_line_model_3d_hdu['BASE'].data
+        model = stellar_continuum_3d_hdu['FLUX'].data
+        if emission_line_model is not None:
+            model += (emission_line_model_3d_hdu['FLUX'].data
+                            + emission_line_model_3d_hdu['BASE'].data)
         # with reddening
         model = binned_spectra.galext.apply(model, deredden=False)
-        line = binned_spectra.galext.apply(emission_line_model_3d_hdu['FLUX'].data, deredden=False)
+        if emission_line_model is None:
+            line = None
+        else:
+            line = binned_spectra.galext.apply(emission_line_model_3d_hdu['FLUX'].data,
+                                               deredden=False)
+            line = line.astype(self.float_dtype)
         scnt = binned_spectra.galext.apply(stellar_continuum_3d_hdu['FLUX'].data, deredden=False)
 
         # Compile the data arrays
         data = [model.astype(self.float_dtype),
                 self._get_emission_line_model_mask(emission_line_model,
                                                    emission_line_model_3d_hdu),
-                line.astype(self.float_dtype), scnt.astype(self.float_dtype),
+                line, scnt.astype(self.float_dtype),
                 self._get_stellar_continuum_mask(stellar_continuum, stellar_continuum_3d_hdu)]
 
         # Return the primary header and the list of HDUs
