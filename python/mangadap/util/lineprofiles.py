@@ -350,7 +350,8 @@ class FFTGaussianLSF(GaussianLSF):
         """
         xsig = self.p[2]/self.dx
         x0 = (self.p[1]-x[0])/self.dx
-        npad = fftpack.next_fast_len(x.size)
+        npad = 2**int(numpy.ceil(numpy.log2(x.size)))
+#        npad = fftpack.next_fast_len(x.size)
         w = numpy.linspace(0,numpy.pi,npad//2+1)
         rfft = self.p[0]*numpy.exp(-0.5*numpy.square(w*xsig) - 1j*w*x0)
         if self.pixel:
