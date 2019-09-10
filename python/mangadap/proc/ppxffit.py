@@ -390,7 +390,8 @@ class PPXFModel():
             raise ValueError('TEMPLATES length cannot be smaller than GALAXY')
 
         # Set the FFT of the templates
-        self.npad = fftpack.next_fast_len(self.templates.shape[0])
+        self.npad = 2**int(numpy.ceil(numpy.log2(self.templates.shape[0])))
+#        self.npad = fftpack.next_fast_len(self.templates.shape[0])
         self.templates_rfft = numpy.fft.rfft(self.templates, self.npad, axis=0) \
                                 if templates_rfft is None else templates_rfft
 
@@ -2360,7 +2361,8 @@ class PPXFFit(StellarKinematicsFit):
                 = PPXFFit.check_templates(tpl_wave, tpl_flux, tpl_sres=tpl_sres,
                                           velscale_ratio=self.velscale_ratio)
         self.ntpl, self.npix_tpl = self.tpl_flux.shape
-        self.tpl_npad = fftpack.next_fast_len(self.npix_tpl)
+        self.tpl_npad = 2**int(numpy.ceil(numpy.log2(self.npix_tpl)))
+#        self.tpl_npad = fftpack.next_fast_len(self.npix_tpl)
         self.tpl_rfft = numpy.fft.rfft(self.tpl_flux, self.tpl_npad, axis=1)
 
         # - Template usage
@@ -3110,7 +3112,8 @@ class PPXFFit(StellarKinematicsFit):
             npix_tpl = _composite_template.shape[1]
 
             # Get the FFT of the composite template
-            npad = fftpack.next_fast_len(npix_tpl)
+            npad = 2**int(numpy.ceil(numpy.log2(npix_tpl)))
+#            npad = fftpack.next_fast_len(npix_tpl)
             ctmp_rfft = numpy.fft.rfft(_composite_template, npad, axis=1)
 
             # Construct the LOSVD parameter vector

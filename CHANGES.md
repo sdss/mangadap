@@ -1,7 +1,10 @@
-2.3.1dev
+2.4.0dev
 --------
 
+ - Hotfix to accommodate change in padding computation in ppxf>=6.7.15
+
 TODO:
+ - Add channel with R in kpc
  - Documentation of config examples are out of date!
  - Get rid of the filter keyword from the output headers...
  - Change default to fix bad pixels in spectral resolution?
