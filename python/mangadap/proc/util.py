@@ -202,7 +202,7 @@ def flux_to_fnu(wave, flambda, unit_norm=1e-17):
     _flambda = numpy.array(_flambda) if isinstance(_flambda, list) else _flambda
     if _wave.shape != _flambda.shape:
         raise ValueError('Wavelength and flux arrays must have the same shape.')
-    fnu = _flambda*numpy.square(_wave)*unit_norm*1e30/astropy.constants.c.to('nm/s').value
+    fnu = _flambda*numpy.square(_wave)*unit_norm*1e29/astropy.constants.c.to('angstrom/s').value
     return fnu[0] if isinstance(flambda, float) else fnu
 
 
