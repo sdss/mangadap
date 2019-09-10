@@ -1,12 +1,14 @@
-2.3.1dev
+2.4.0dev
 --------
 
  - Hotfix to accommodate change in padding computation in ppxf>=6.7.15
+ - Fixed units bug in `flux_to_fnu`
  - Change from `time.clock()` to `time.perf_counter()`
  - Bug fix in record array dimensionality when writing to binary table
  - Minor plotting changes for Overview paper plots
 
 TODO:
+ - Add channel with R in kpc
  - Documentation of config examples are out of date!
  - Get rid of the filter keyword from the output headers...
  - Change default to fix bad pixels in spectral resolution?
@@ -21,7 +23,7 @@ TODO:
  - Add spectral-index continuum and model indices to the MAPS files
 
  - Add errors to DAPall
- - Add fraction of spectra with sigma < sigma_corr to DAPall
+ - Add fraction of spectra with `sigma < sigma_corr` to DAPall
 
 
 2.3.0 (31 Jan 2019)
