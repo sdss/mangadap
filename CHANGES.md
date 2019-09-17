@@ -24,6 +24,7 @@ TODO:
 
  - Add errors to DAPall
  - Add fraction of spectra with `sigma < sigma_corr` to DAPall
+ - Fix S/N limit for line chi-square determination
 
 
 2.3.0 (31 Jan 2019)
