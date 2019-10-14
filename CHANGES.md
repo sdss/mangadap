@@ -9,14 +9,10 @@
 
 TODO:
  - Add channel with R in kpc
- - Documentation of config examples are out of date!
- - Get rid of the filter keyword from the output headers...
  - Change default to fix bad pixels in spectral resolution?
  - Fix MASKNAME in reference files
  - Add DAP versioning to reference files
  - Fix ELMREBIN in 2nd round of moment calculations
- - Stop transposing the datacube data!
- - Get rid of optional dapsrc
  - Keep all the reference files to the common directory?
  - Fix minor issue in moment and index spaxels fit in hybrid case,
    compared to emission-line modeling data.
@@ -24,8 +20,18 @@ TODO:
 
  - Add errors to DAPall
  - Add fraction of spectra with `sigma < sigma_corr` to DAPall
- - Fix S/N limit for line chi-square determination
+ - Fix S/N limit for line chi-square determination (limited to S/N>1
+   where stellar continuum is fit?)
 
+ - Test new MILES HC library
+ - Test new MaStar HC library
+ - Line FOM
+ - Add new lines from Matt
+
+ - Documentation of config examples are out of date!
+ - Get rid of the filter keyword from the output headers...
+ - Stop transposing the datacube data!
+ - Get rid of optional dapsrc
 
 2.3.0 (31 Jan 2019)
 -------------------
