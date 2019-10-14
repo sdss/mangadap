@@ -1,0 +1,94 @@
+#------------------------------------------------------------------------
+# Created by: Kyle Westfall (KBW)
+# Date: 16 Mar 2016
+#
+# Line wavelengths are "Ritz" wavelengths from NIST:
+#   http://physics.nist.gov/PhysRefData/ASD/Html/help.html
+#
+# Line wavelengths are in: VACUUM
+#
+# The columns are described in README.
+#
+# Revisions:
+#       28 Jan 2019: K. Westfall, copied from elpmiles.par.  Added He I
+#                    3889 and NI doublet.
+#------------------------------------------------------------------------
+
+typedef struct {
+    int index;
+    char name[6];
+    double lambda;
+    char waveref[3];
+    char action;
+    double relative_flux;
+    char mode[6];
+    char profile[30];
+    int ncomp;
+    int output_model;
+    double par[3];
+    int fix[3];
+    char lower_bound[3][10];
+    char upper_bound[3][10];
+    int log_bounded[3];
+    double blueside[2];
+    double redside[2];
+} DAPEML;
+
+DAPEML  29  H14     3723.0035  vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 3696.3  3716.3 } { 3738.3  3758.3 }
+DAPEML   1  OII     3727.092   vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 3696.3  3716.3 } { 3738.3  3758.3 }
+DAPEML   2  OII     3729.875   vac  f   1.000   k1  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 3696.3  3716.3 } { 3738.3  3758.3 }
+DAPEML  30  H13     3735.4365  vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 3696.3  3716.3 } { 3738.3  3758.3 }
+DAPEML  31  H12     3751.2243  vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 3696.3  3716.3 } { 3738.3  3758.3 }
+DAPEML  32  H11     3771.7080  vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 3696.3  3716.3 } { 3738.3  3758.3 }
+DAPEML   3  Hthe    3798.9826  vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 3771.5  3791.5 } { 3806.5  3826.5 }
+DAPEML   4  Heta    3836.4790  vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 3806.5  3826.5 } { 3900.2  3920.2 }
+DAPEML   5  NeIII   3869.86    vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 3806.5  3826.5 } { 3900.2  3920.2 }
+DAPEML  24  HeI     3889.749   vac  f   1.000   k6  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 200. }  { 0 0 1 }  { 3806.5  3826.5 } { 3900.2  3920.2 }
+DAPEML   6  Hzet    3890.1576  vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 3806.5  3826.5 } { 3900.2  3920.2 }
+DAPEML   7  NeIII   3968.59    vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 3938.6  3958.6 } { 3978.6  3998.6 }
+DAPEML   8  Heps    3971.2020  vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 3941.2  3961.2 } { 3981.2  4001.2 }
+DAPEML  33  SII     4069.749   vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 3941.2  3961.2 } { 3981.2  4001.2 }
+DAPEML  34  SII     4077.500   vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 3941.2  3961.2 } { 3981.2  4001.2 }
+DAPEML   9  Hdel    4102.8991  vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 4072.9  4092.9 } { 4112.9  4132.9 }
+DAPEML  10  Hgam    4341.691   vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 4311.7  4331.7 } { 4351.7  4371.7 }
+DAPEML  35  OIII    4364.435   vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 4311.7  4331.7 } { 4351.7  4371.7 }
+DAPEML  36  HeI     4472.729   vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 4311.7  4331.7 } { 4351.7  4371.7 }
+DAPEML  11  HeII    4687.015   vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 4657.0  4677.0 } { 4697.0  4717.0 }
+DAPEML  12  Hb      4862.691   vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 4798.9  4838.9 } { 4885.6  4925.6 }
+DAPEML  13  OIII    4960.295   vac  f   0.340  a14  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 4930.3  4950.3 } { 4970.3  4990.3 }
+DAPEML  14  OIII    5008.240   vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 4978.2  4998.2 } { 5018.2  5038.2 }
+DAPEML  25  NI      5199.3490  vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 200. }  { 0 0 1 }  { 5169.4  5189.4 } { 5211.7  5231.7 }
+DAPEML  26  NI      5201.7055  vac  f   1.000  k24  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 200. }  { 0 0 1 }  { 5169.4  5189.4 } { 5211.7  5231.7 }
+DAPEML  15  HeI     5877.243   vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 5847.2  5867.2 } { 5887.2  5907.2 }
+DAPEML  16  OI      6302.046   vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 6272.0  6292.0 } { 6312.0  6332.0 }
+DAPEML  17  OI      6365.535   vac  f   0.328  a16  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 6335.5  6355.5 } { 6375.5  6395.5 }
+DAPEML  18  NII     6549.86    vac  f   0.327  a20  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 6483.0  6513.0 } { 6623.0  6653.0 }
+DAPEML  19  Ha      6564.632   vac  f   1.000    f  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 6483.0  6513.0 } { 6623.0  6653.0 }
+DAPEML  20  NII     6585.271   vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 6483.0  6513.0 } { 6623.0  6653.0 }
+DAPEML  37  HeI     6679.9956  vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 6483.0  6513.0 } { 6623.0  6653.0 }
+DAPEML  21  SII     6718.294   vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 6673.0  6703.0 } { 6748.0  6778.0 }
+DAPEML  22  SII     6732.674   vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 6673.0  6703.0 } { 6748.0  6778.0 }
+DAPEML  38  HeI     7067.1252  vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 6483.0  6513.0 } { 6623.0  6653.0 }
+DAPEML  39  ArIII   7137.76    vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 6483.0  6513.0 } { 6623.0  6653.0 }
+DAPEML  40  OII     7321.003   vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 6483.0  6513.0 } { 6623.0  6653.0 }
+DAPEML  41  OII     7322.01    vac  f   1.000  k40  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 6483.0  6513.0 } { 6623.0  6653.0 }
+DAPEML  42  OII     7331.68    vac  f   1.000  k40  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 6483.0  6513.0 } { 6623.0  6653.0 }
+DAPEML  43  OII     7332.75    vac  f   1.000  k40  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 6483.0  6513.0 } { 6623.0  6653.0 }
+DAPEML  44  ArIII   7753.24    vac  f   1.000  k40  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 6483.0  6513.0 } { 6623.0  6653.0 }
+DAPEML  45  P20     8394.703   vac  f   1.000  k40  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 6483.0  6513.0 } { 6623.0  6653.0 }
+DAPEML  46  P19     8415.630   vac  f   1.000  k40  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 6483.0  6513.0 } { 6623.0  6653.0 }
+DAPEML  47  P18     8440.274   vac  f   1.000  k40  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 6483.0  6513.0 } { 6623.0  6653.0 }
+DAPEML  48  P17     8469.581   vac  f   1.000  k40  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 6483.0  6513.0 } { 6623.0  6653.0 }
+DAPEML  49  P16     8504.819   vac  f   1.000  k40  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 6483.0  6513.0 } { 6623.0  6653.0 }
+DAPEML  50  P15     8547.731   vac  f   1.000  k40  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 6483.0  6513.0 } { 6623.0  6653.0 }
+DAPEML  51  P14     8600.754   vac  f   1.000  k40  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 6483.0  6513.0 } { 6623.0  6653.0 }
+DAPEML  52  P13     8667.398   vac  f   1.000  k40  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 6483.0  6513.0 } { 6623.0  6653.0 }
+DAPEML  53  P12     8752.876   vac  f   1.000  k40  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 6483.0  6513.0 } { 6623.0  6653.0 }
+DAPEML  54  Pthe    8865.216   vac  f   1.000  k40  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 6483.0  6513.0 } { 6623.0  6653.0 }
+DAPEML  55  Peta    9017.384   vac  f   1.000  k40  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 6483.0  6513.0 } { 6623.0  6653.0 }
+DAPEML  27  SIII    9071.1     vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 9041.1  9061.1 } { 9081.1  9101.1 }
+DAPEML  56  Pzeta   9231.546   vac  f   1.000  k40  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 6483.0  6513.0 } { 6623.0  6653.0 }
+DAPEML  28  SIII    9533.2     vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 9503.2  9523.2 } { 9543.2  9563.2 }
+DAPEML  57  Peps    9548.588   vac  f   1.000  k40  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 6483.0  6513.0 } { 6623.0  6653.0 }
+DAPEML  58  Pdel   10052.123   vac  f   1.000  k40  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 6483.0  6513.0 } { 6623.0  6653.0 }
+
