@@ -310,7 +310,9 @@ class EmissionLineModel:
             self.pixelmask = SpectralPixelMask(artdb=self.artdb)
         else:
             # Mask ISM lines if a list is provided -- KHRR
-            self.pixelmask = SpectralPixelMask(artdb=self.artdb, emldb=EmissionLineDB(self.method['ism_mask']))
+            # use nsigma=2.0 to avoid masking HeI
+            self.pixelmask = SpectralPixelMask(artdb=self.artdb, \
+                                               emldb=EmissionLineDB(self.method['ism_mask']), nsig=2.0)
         # ... and the emission-line database
         self.emldb = None if self.method['emission_lines'] is None else \
                         EmissionLineDB(self.method['emission_lines'],
