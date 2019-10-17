@@ -38,10 +38,10 @@ def fit_one_cube(plt, ifu, drpall_file=None, directory_path=None, analysis_path=
 
     # Define how you want to analyze the data
     plan = AnalysisPlanSet([ AnalysisPlan(drpqa_key='SNRG',
-                                          bin_key='HYB10',
+                                          bin_key='SPX', #HYB10',
                                           continuum_key='MILESHCMPL8',
-                                          elmom_key='EMOMMPL8',
-                                          elfit_key='EFITMPL8DB',
+                                          elmom_key='EMOMMPL9MAB',
+                                          elfit_key='EFITMPL9MAB',
                                           spindex_key='INDXEN') ])
 
 #    plan = AnalysisPlanSet([ AnalysisPlan(drpqa_key='SNRG',
