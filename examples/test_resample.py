@@ -36,27 +36,27 @@ def resample_test():
     old_ferr = numpy.ma.power((hdu['IVAR'].data[:,10:12,10]).T, -0.5)
     indx = (old_wave > old_wave[0]/(1+z)) & (old_wave < old_wave[-2]/(1+z))
 
-    t = time.clock()
+    t = time.perf_counter()
     new_flux_spectres = numpy.empty((old_flux.shape[0], numpy.sum(indx)), dtype=float)
     new_ferr_spectres = numpy.empty((old_flux.shape[0], numpy.sum(indx)), dtype=float)
     for i in range(old_flux.shape[0]):
         new_flux_spectres[i,:], new_ferr_spectres[i,:] \
                 = spectres.spectres(old_wave[indx], old_wave/(1+z), old_flux[i,:].filled(0.0),
                                     spec_errs=old_ferr[i,:].filled(0.0))
-    print('SpectRes Time: ', time.clock()-t)
+    print('SpectRes Time: ', time.perf_counter()-t)
 
-    t = time.clock()
+    t = time.perf_counter()
     borders = _pixel_borders(numpy.array([old_wave[0],old_wave[-1]]), old_wave.size, log=True)[0]
     _p = numpy.repeat(borders, 2)[1:-1].reshape(-1,2)
     new_flux_brute = numpy.array([passband_integral(old_wave/(1+z), f, passband=_p, log=True)
                                         for f in old_flux.filled(0.0)])
     new_flux_brute /= (_p[:,1]-_p[:,0])[None,:]
-    print('Brute Force Time: ', time.clock()-t)
+    print('Brute Force Time: ', time.perf_counter()-t)
 
-    t = time.clock()
+    t = time.perf_counter()
     r = Resample(old_flux, e=old_ferr, x=old_wave/(1+z), newRange=[old_wave[0], old_wave[-1]],
                  inLog=True, newLog=True)
-    print('Resample Time: ', time.clock()-t)
+    print('Resample Time: ', time.perf_counter()-t)
 
     print('Mean diff:')
     print('    spectres - brute    = {0:.5e}'.format(

@@ -1222,7 +1222,7 @@ class PPXFFit(StellarKinematicsFit):
                 continue
             print('Masking and smoothing templates for object spectrum: {0}/{1}'.format(
                     i+1, losvd_kernel_rfft.shape[0]), end='\r')
-#            t = time.clock()
+#            t = time.perf_counter()
 
             # Get all the templates convolved by the LOSVD for this fit
             cnvlv_tpl_flux = numpy.fft.irfft(tpl_rfft[tpl_to_use[i],:]
@@ -1231,7 +1231,7 @@ class PPXFFit(StellarKinematicsFit):
             if self.velscale_ratio > 1:
                 cnvlv_tpl_flux = numpy.mean(cnvlv_tpl_flux.reshape(ntpl_per_obj[i], -1,
                                                                    self.velscale_ratio), axis=2)
-#            print('fft: time: {0} seconds'.format(time.clock() - t))
+#            print('fft: time: {0} seconds'.format(time.perf_counter() - t))
 
             # Get the object-spectrum mask shifted to the template frame
             _obj_mask = numpy.array([obj_mask[i,:]]*ntpl_per_obj[i], dtype=bool)
@@ -1249,19 +1249,19 @@ class PPXFFit(StellarKinematicsFit):
 
             # Smooth the template spectra using the same smoothing
             # function as used for the object data
-#            t2 = time.clock()
+#            t2 = time.perf_counter()
             sm_cnvlv_tpl_flux = bf.smooth(_cnvlv_tpl_flux)
-#            print('smooth: time: {0} seconds'.format(time.clock() - t2))
+#            print('smooth: time: {0} seconds'.format(time.perf_counter() - t2))
 
             # Interpolate the smoothing function to the original pixels
             # of the template spectra
-#            t2 = time.clock()
+#            t2 = time.perf_counter()
             pixcoo = numpy.arange(self.npix_tpl*self.ntpl)
             interpolator = interpolate.interp1d(numpy.mean(pixcoo.reshape(-1,self.velscale_ratio),
                                                            axis=1), sm_cnvlv_tpl_flux.ravel(),
                                                 fill_value='extrapolate', assume_sorted=True)
             sm_tpl_flux = interpolator(pixcoo).reshape(self.ntpl, -1)
-#            print('interpolate: time: {0} seconds'.format(time.clock() - t2))
+#            print('interpolate: time: {0} seconds'.format(time.perf_counter() - t2))
 
             # Set the filtered templates for this object spectrum
             tpls = numpy.sum(ntpl_per_obj[:i])
@@ -1272,7 +1272,7 @@ class PPXFFit(StellarKinematicsFit):
                                                              sm_tpl_flux)
             else:
                 tpl_flux_filt[tpls:tple,:] = tpl_flux[tpl_to_use[i],:] - sm_tpl_flux
-#            print('obj: {0}, total time: {1} seconds'.format(i+1, time.clock() - t))
+#            print('obj: {0}, total time: {1} seconds'.format(i+1, time.perf_counter() - t))
         
         print('Masking and smoothing templates for object spectrum:              DONE')
         return tpl_flux_filt, tpl_to_use_filt

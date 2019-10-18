@@ -1438,7 +1438,7 @@ class Elric(EmissionLineFit):
         model_eml_par['BINID'] = numpy.arange(self.nspec)
         model_eml_par['BINID_INDEX'] = numpy.arange(self.nspec)
 
-        t = time.clock()
+        t = time.perf_counter()
         # Do the fit
         velocity = self._velocity_vectors(self.wave, self.fitting_window)
         self.bestfit = numpy.empty((self.nspec,self.nwindows), dtype=object)
@@ -1727,7 +1727,7 @@ class Elric(EmissionLineFit):
 
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, 'Fits completed in {0:.4e} min.'.format(
-                       (time.clock() - t)/60))
+                       (time.perf_counter() - t)/60))
 
         return self.wave, model_flux, model_base, model_mask, model_fit_par, model_eml_par
 

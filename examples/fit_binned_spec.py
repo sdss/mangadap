@@ -48,7 +48,7 @@ def get_spectra(plt, ifu, x, y, directory_path=None):
 #-----------------------------------------------------------------------------
 
 if __name__ == '__main__':
-    t = time.clock()
+    t = time.perf_counter()
 
     # Plate-IFU to use
     plt = 7815
@@ -258,5 +258,5 @@ if __name__ == '__main__':
 
     # TODO: Add the spectral index calls...
 
-    print('Elapsed time: {0} seconds'.format(time.clock() - t))
+    print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
 

@@ -70,7 +70,7 @@ class ApertureBinning():
 
 #-----------------------------------------------------------------------------
 if __name__ == '__main__':
-    t = time.clock()
+    t = time.perf_counter()
 
     # Set the plate, ifu, and initial velocity/redshift
     plate = 7443
@@ -156,5 +156,5 @@ if __name__ == '__main__':
     construct_cube_file(drpf, binned_spectra=binned_spectra, stellar_continuum=stellar_continuum,
                         emission_line_model=emission_line_model, analysis_path=analysis_path)
 
-    print('Elapsed time: {0} seconds'.format(time.clock() - t))
+    print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
 

@@ -70,7 +70,7 @@ def create_mastar_template_spectrum():
 #-----------------------------------------------------------------------------
 
 if __name__ == '__main__':
-    t = time.clock()
+    t = time.perf_counter()
 
     # Get the list of available libraries
     tpllib_list = available_template_libraries()
@@ -182,5 +182,5 @@ if __name__ == '__main__':
     pyplot.show()
     #-------------------------------------------------------------------
 
-    print('Elapsed time: {0} seconds'.format(time.clock() - t))
+    print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
 
