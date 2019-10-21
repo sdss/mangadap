@@ -47,7 +47,7 @@ def get_spectrum(plt, ifu, x, y, directory_path=None):
 #-----------------------------------------------------------------------------
 
 if __name__ == '__main__':
-    t = time.clock()
+    t = time.perf_counter()
 
     # Plate-IFU to use
     plt = 7815
@@ -57,8 +57,8 @@ if __name__ == '__main__':
     y = 21
 
     # Show the ppxf plots
-#    fit_plots = True
-    fit_plots = False
+    fit_plots = True
+#    fit_plots = False
 
     # Show summary plots
     usr_plots = True
@@ -89,7 +89,7 @@ if __name__ == '__main__':
 
 #    pyplot.plot(wave, flux)
 #    pyplot.show()
-
+    
     # Fitting functions expect data to be in 2D arrays (for now):
     flux = flux.reshape(1,-1)
     ferr = numpy.ma.power(ivar, -0.5).reshape(1,-1)
@@ -117,6 +117,13 @@ if __name__ == '__main__':
                    ensemble=False, velscale_ratio=velscale_ratio, mask=sc_pixel_mask,
                    matched_resolution=False, tpl_sres=sc_tpl_sres, obj_sres=sres, degree=8,
                    moments=2, plot=fit_plots)
+
+#    mod_dcnvlv = PPXFFit.construct_models(sc_tpl['WAVE'].data.copy(), sc_tpl['FLUX'].data.copy(),
+#                                          wave, flux.shape, cont_par, redshift_only=True)
+#
+#    pyplot.plot(wave, cont_flux[0])
+#    pyplot.plot(wave, mod_dcnvlv[0])
+#    pyplot.show()
 
     # Remask the continuum fit
     sc_continuum = StellarContinuumModel.reset_continuum_mask_window(
@@ -225,5 +232,5 @@ if __name__ == '__main__':
         pyplot.ylabel('Summed-Gaussian Difference')
         pyplot.show()
 
-    print('Elapsed time: {0} seconds'.format(time.clock() - t))
+    print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
 

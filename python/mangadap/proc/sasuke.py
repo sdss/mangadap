@@ -2028,7 +2028,8 @@ class Sasuke(EmissionLineFit):
             self.comp_start_kin = numpy.array([ [sk.tolist()] + [gk.tolist()]*(self.ncomp-1) 
                                             for sk,gk in zip(_stellar_kinematics, guess_kin) ])
         self.ntpl, self.npix_tpl = self.tpl_flux.shape
-        self.tpl_npad = fftpack.next_fast_len(self.npix_tpl)
+        self.tpl_npad = 2**int(numpy.ceil(numpy.log2(self.npix_tpl)))
+#        self.tpl_npad = fftpack.next_fast_len(self.npix_tpl)
         self.tpl_rfft = numpy.fft.rfft(self.tpl_flux, self.tpl_npad, axis=1)
 
 #        # Set which components are gas components

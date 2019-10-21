@@ -390,7 +390,8 @@ class PPXFModel():
             raise ValueError('TEMPLATES length cannot be smaller than GALAXY')
 
         # Set the FFT of the templates
-        self.npad = fftpack.next_fast_len(self.templates.shape[0])
+        self.npad = 2**int(numpy.ceil(numpy.log2(self.templates.shape[0])))
+#        self.npad = fftpack.next_fast_len(self.templates.shape[0])
         self.templates_rfft = numpy.fft.rfft(self.templates, self.npad, axis=0) \
                                 if templates_rfft is None else templates_rfft
 
@@ -1586,7 +1587,8 @@ class PPXFFit(StellarKinematicsFit):
 #        return ppxf_fit
 
 
-    def _fit_dispersion_correction(self, result, baseline_dispersion=None):
+    def _fit_dispersion_correction(self, templates, templates_rfft, result,
+                                   baseline_dispersion=None):
         """
         Calculate the dispersion correction:
           - Construct the optimized, redshifted template *without* the
@@ -1610,8 +1612,8 @@ class PPXFFit(StellarKinematicsFit):
         # difference
         model_wlosvd = numpy.ma.empty(self.obj_flux.shape, dtype=float)
         model_wlosvd_msres = numpy.ma.empty(self.obj_flux.shape, dtype=float)
-        model_template = numpy.empty((self.nobj, self.tpl_flux.shape[1]), dtype=float)
-        model_template_rfft = numpy.empty((self.nobj, self.tpl_rfft.shape[1]), dtype=complex)
+        model_template = numpy.empty((self.nobj, templates.shape[1]), dtype=float)
+        model_template_rfft = numpy.empty((self.nobj, templates_rfft.shape[1]), dtype=complex)
         start = numpy.empty(self.nobj, dtype=int)
         end = numpy.empty(self.nobj, dtype=int)
         guess_kin = self.guess_kin.copy()
@@ -1648,14 +1650,14 @@ class PPXFFit(StellarKinematicsFit):
                 nominal_par, _moments, vj = self._fill_ppxf_par(numpy.array([0.0,
                                                                             nominal_dispersion[i]]))
                 nominal_losvd_kernel_rfft = ppxf.losvd_rfft(nominal_par, 1, _moments,
-                                                            self.tpl_rfft.shape[1], 1, 0.0,
+                                                            templates_rfft.shape[1], 1, 0.0,
                                                             self.velscale_ratio, 0.0)[:,0,0]
 
                 # Get the composite template
                 model_template[i,:] = numpy.dot(result[i].tplwgt,
-                                                self.tpl_flux[result[i].tpl_to_use,:])
+                                                templates[result[i].tpl_to_use,:])
                 model_template_rfft[i,:] = numpy.dot(result[i].tplwgt,
-                                                     self.tpl_rfft[result[i].tpl_to_use,:])
+                                                     templates_rfft[result[i].tpl_to_use,:])
 
                 # Convolve the template to the fitted velocity dispersion
                 tmp_wlosvd = numpy.fft.irfft(model_template_rfft[i,:]*nominal_losvd_kernel_rfft,
@@ -1865,7 +1867,8 @@ class PPXFFit(StellarKinematicsFit):
         model_par['MASK'][indx] = self.bitmask.turn_on(model_par['MASK'][indx], 'BAD_SIGMA')
 
 
-    def _save_results(self, global_fit_result, result, model_mask, model_par):
+    def _save_results(self, global_fit_result, templates, templates_rfft, result, model_mask,
+                      model_par):
 
         #---------------------------------------------------------------
         # Get the model spectra
@@ -2030,8 +2033,9 @@ class PPXFFit(StellarKinematicsFit):
         # TODO: Get the velocity dispersion corrections here and above
         # regardless of the resolution matching?
         if not self.matched_resolution:
-            model_par['SIGMACORR_EMP'], err = self._fit_dispersion_correction(
-                                                            result, baseline_dispersion=100)
+            model_par['SIGMACORR_EMP'], err \
+                    = self._fit_dispersion_correction(templates, templates_rfft, result,
+                                                      baseline_dispersion=100)
             if numpy.sum(err) > 0:
                 model_par['MASK'][err] = self.bitmask.turn_on(model_par['MASK'][err],
                                                               'BAD_SIGMACORR_EMP')
@@ -2360,7 +2364,8 @@ class PPXFFit(StellarKinematicsFit):
                 = PPXFFit.check_templates(tpl_wave, tpl_flux, tpl_sres=tpl_sres,
                                           velscale_ratio=self.velscale_ratio)
         self.ntpl, self.npix_tpl = self.tpl_flux.shape
-        self.tpl_npad = fftpack.next_fast_len(self.npix_tpl)
+        self.tpl_npad = 2**int(numpy.ceil(numpy.log2(self.npix_tpl)))
+#        self.tpl_npad = fftpack.next_fast_len(self.npix_tpl)
         self.tpl_rfft = numpy.fft.rfft(self.tpl_flux, self.tpl_npad, axis=1)
 
         # - Template usage
@@ -2539,7 +2544,7 @@ class PPXFFit(StellarKinematicsFit):
         # Initialize the template set according to the iteration mode
         if self._mode_uses_global_template():
             templates = numpy.dot(global_fit_result.tplwgt, self.tpl_flux).reshape(1,-1)
-            tpl_to_use = numpy.ones(1, dtype=numpy.bool)
+            tpl_to_use = numpy.ones((self.nobj,1), dtype=numpy.bool)
             templates_rfft = numpy.fft.rfft(templates, self.tpl_npad, axis=1)
         elif self._mode_uses_nonzero_templates():
             templates = self.tpl_flux
@@ -2568,7 +2573,8 @@ class PPXFFit(StellarKinematicsFit):
         #---------------------------------------------------------------
         # Save the results
         model_flux, model_mask, model_par \
-                = self._save_results(global_fit_result, result, model_mask, model_par)
+                = self._save_results(global_fit_result, templates, templates_rfft, result,
+                                     model_mask, model_par)
 
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, 'pPXF finished')
@@ -3110,7 +3116,8 @@ class PPXFFit(StellarKinematicsFit):
             npix_tpl = _composite_template.shape[1]
 
             # Get the FFT of the composite template
-            npad = fftpack.next_fast_len(npix_tpl)
+            npad = 2**int(numpy.ceil(numpy.log2(npix_tpl)))
+#            npad = fftpack.next_fast_len(npix_tpl)
             ctmp_rfft = numpy.fft.rfft(_composite_template, npad, axis=1)
 
             # Construct the LOSVD parameter vector
