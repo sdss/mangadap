@@ -707,11 +707,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--normal_backend', dest='bgagg', action='store_false', default=True)
 
-    default_tpl_flux_file = os.path.join(os.environ['MANGADAP_DIR'], 'data', 'spectral_templates',
-                                         'miles_cluster', 'mileshc_templates_fluxes.db')
-    if not os.path.isfile(default_tpl_flux_file):
-        default_tpl_flux_file = 'None'
-    parser.add_argument('--template_flux_file', type=str, default=default_tpl_flux_file,
+    parser.add_argument('--template_flux_file', type=str, default=None,
                         help='template renormalization flux file; can be set to None; '
                              'default is {0}'.format(default_tpl_flux_file))
 
@@ -726,14 +722,20 @@ if __name__ == '__main__':
                                             if arg.plan_file is None else arg.plan_file
     analysisplan = AnalysisPlanSet.from_par_file(plan_file)
 
-    # Set the template weight renormalization if a file is provided
-    tpl_renorm_file = None if arg.template_flux_file == 'None' else arg.template_flux_file
-    if tpl_renorm_file is not None:
-        tpl_flux_db = numpy.genfromtxt(tpl_renorm_file, dtype=float)
-        tpl_flux_renorm = tpl_flux_db[:,2].copy()
-        del tpl_flux_db
-    else:
-        tpl_flux_renorm = None
+    # Get the template library keyword
+    tpl_renorm_file = arg.template_flux_file
+    if tpl_renorm_file is None:
+        sc_method = StellarContinuumModel.define_method(analysisplan['continuum_key'])
+        tpl_key = sc_method['fitpar']['template_library_key']
+        library = TemplateLibrary.define_library(tpl_key)
+        library_root = os.path.split(library['file_search'])[0]
+        tpl_renorm_file = os.path.join(library_root, '{0}_fluxes.db'.format(tpl_key.lower()))
+        if not os.path.isfile(tpl_renorm_file):
+            warnings.warn('Could not find file: {0}'.format(tpl_renorm_file))
+            tpl_renorm_file = None
+
+    tpl_flux_renorm = None if tpl_renorm_file is None \
+                        else numpy.genfromtxt(tpl_renorm_file, dtype=float)[:,2]
 
     # Construct the plot for each analysis plan
     for plan in analysisplan:
