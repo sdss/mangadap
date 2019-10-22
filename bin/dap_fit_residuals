@@ -456,7 +456,7 @@ def fom_growth(plt, ifu, flux, error, model, snrg, rms, frms, rchi2, fit='sc', o
 
     for i in range(nspec):
         j = snr_srt[i]
-        if numpy.all(chi.mask[j,:]):
+        if numpy.all(chi.mask[:,j]):
             continue
 
         t = resid[:,j].compressed()
