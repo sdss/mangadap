@@ -11,8 +11,9 @@
  - Added continuum measurements for both emission-line moments and
    spectral indices to MAPS files
  - Add model spectral indices to the MAPS files
- - Added new emission-line parameter and bandpass files
+ - Added new emission-line parameter and bandpass database files
  - Added beta version of hierarchically clustered MaStar templates
+ - Fixed masking of emission-line chi-square measurements
 
 TODO:
  - Change default to fix bad pixels in spectral resolution?
@@ -20,10 +21,11 @@ TODO:
  - Fix minor issue in moment and index spaxels fit in hybrid case,
    compared to emission-line modeling data.
 
+ - Make velocity dispersion correction for spectral indices use template
+   mix from fit to the bin instead of the individual spaxels?
+
  - Add errors to DAPall
  - Add fraction of spectra with `sigma < sigma_corr` to DAPall
- - Fix S/N limit for line chi-square determination (limited to S/N>1
-   where stellar continuum is fit?)
 
  - Test new MILES HC library
  - Test new MaStar HC library
