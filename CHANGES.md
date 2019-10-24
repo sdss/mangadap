@@ -6,17 +6,19 @@
  - Change from `time.clock()` to `time.perf_counter()`
  - Bug fix in record array dimensionality when writing to binary table
  - Minor plotting changes for Overview paper plots
+ - Added a channel with R in h^-1 kpc
+ - Remove MASKNAME header keyword inherited from DRP files
+ - Added continuum measurements for both emission-line moments and
+   spectral indices to MAPS files
+ - Add model spectral indices to the MAPS files
+ - Added new emission-line parameter and bandpass files
+ - Added beta version of hierarchically clustered MaStar templates
 
 TODO:
- - Add channel with R in kpc
  - Change default to fix bad pixels in spectral resolution?
- - Fix MASKNAME in reference files
  - Add DAP versioning to reference files
- - Fix ELMREBIN in 2nd round of moment calculations
- - Keep all the reference files to the common directory?
  - Fix minor issue in moment and index spaxels fit in hybrid case,
    compared to emission-line modeling data.
- - Add spectral-index continuum and model indices to the MAPS files
 
  - Add errors to DAPall
  - Add fraction of spectra with `sigma < sigma_corr` to DAPall
@@ -25,13 +27,19 @@ TODO:
 
  - Test new MILES HC library
  - Test new MaStar HC library
- - Line FOM
- - Add new lines from Matt
+ - Line FOM flag
 
  - Documentation of config examples are out of date!
  - Get rid of the filter keyword from the output headers...
+ - Abstract input datacube reading
+ - Minimize the hurdles to running `manga_dap`; i.e., allow it to run
+   without the input and plan parameter files
  - Stop transposing the datacube data!
  - Get rid of optional dapsrc
+ - Fix ELMREBIN in 2nd round of moment calculations (not sure this is
+   still a problem...)
+ - Keep all the reference files to the common directory?
+ - Make the package pip installable
 
 2.3.0 (31 Jan 2019)
 -------------------
