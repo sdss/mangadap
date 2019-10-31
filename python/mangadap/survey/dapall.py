@@ -756,15 +756,17 @@ class DAPall:
         unique = unique[1:]
         unique_indx = indx[1:]
 
-        neml = dapmaps['EMLINE_GFLUX'].shape[0]
+        flux_ext = 'EMLINE_SFLUX' if moment0 else 'EMLINE_GFLUX'
+        neml = dapmaps[flux_ext].shape[0]
 
         # Pull the data from the maps file
         cooext = 'SPX_ELLCOO' if spx_coo else 'BIN_LWELLCOO'
         r_re = dapmaps[cooext].data.copy()[1,:,:].ravel()[unique_indx]
-        flux_ext = 'EMLINE_SFLUX' if moment0 else 'EMLINE_GFLUX'
+
         flux = numpy.ma.MaskedArray(dapmaps[flux_ext].data.copy(),
                                     mask=self.maps_bm.flagged(dapmaps[flux_ext+'_MASK'].data,
                                                     'DONOTUSE')).reshape(neml,-1)[:,unique_indx]
+
         ew_ext = 'EMLINE_SEW' if moment0 else 'EMLINE_GEW'
         ew = numpy.ma.MaskedArray(dapmaps[ew_ext].data.copy(),
                                   mask=self.maps_bm.flagged(dapmaps[ew_ext+'_MASK'].data,
