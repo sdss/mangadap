@@ -3,6 +3,10 @@
 
  - Hotfix to accommodate change in padding computation in ppxf>=6.7.15
  - Fixed units bug in `flux_to_fnu`
+ - Allow emission-line moment, modeling, and spectral-index keys to be
+   None, meaning that the DAP only fits the stellar kinematics but still
+   produces the MAPS and LOGCUBE files.
+ - Fixed bug in templates when using iteration_mode = 'global_template'
 
 TODO:
  - Add channel with R in kpc
