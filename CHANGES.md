@@ -25,8 +25,8 @@ TODO
  - Keep all the reference files to the common directory?
  - Make the package pip installable
 
-2.4.0dev
---------
+2.4.0 (31 Oct 2019)
+-------------------
 
  - Hotfix to accommodate change in padding computation in ppxf>=6.7.15
  - Fixed units bug in `flux_to_fnu`
