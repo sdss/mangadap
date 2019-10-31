@@ -12,7 +12,7 @@
  - Added continuum measurements for both emission-line moments and
    spectral indices to MAPS files
  - Add model spectral indices to the MAPS files
- - Added new emission-line parameter and bandpass database files
+ - Added new emission lines to parameter and bandpass database files
  - Added beta version of hierarchically clustered MaStar templates
  - Fixed masking of emission-line chi-square measurements
  - Adjusted fixed flux ratio of doublets based on improved calculation:
@@ -30,24 +30,21 @@ TODO:
  - Add DAP versioning to reference files
  - Fix minor issue in moment and index spaxels fit in hybrid case,
    compared to emission-line modeling data.
-
  - Make velocity dispersion correction for spectral indices use template
    mix from fit to the bin instead of the individual spaxels?
-
  - Add errors to DAPall
  - Add fraction of spectra with `sigma < sigma_corr` to DAPall
-
- - Test new MILES HC library
- - Test new MaStar HC library
- - Line FOM flag
-
+ - Reconstruct MILES HC library using same procedure used for MaStar
+   spectra
+ - Additional tests for MaStar HC library
+ - Define an emission-line FOM flag that identifies poorly fit lines
  - Documentation of config examples are out of date!
  - Get rid of the filter keyword from the output headers...
  - Abstract input datacube reading
  - Minimize the hurdles to running `manga_dap`; i.e., allow it to run
    without the input and plan parameter files
  - Stop transposing the datacube data!
- - Get rid of optional dapsrc
+ - Get rid of optional `dapsrc` keyword; now defined by the package
  - Fix ELMREBIN in 2nd round of moment calculations (not sure this is
    still a problem...)
  - Keep all the reference files to the common directory?
