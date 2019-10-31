@@ -69,8 +69,8 @@ if __name__ == '__main__':
 #    el_tpl_key = 'BC03'
 
     # Emission-line database keywords
-    elmom_key = 'ELBMPL9MAB'
-    elfit_key = 'ELPMPL9MAB'
+    elmom_key = 'ELBMPL9'
+    elfit_key = 'ELPMPL9'
 #    elmom_key = 'ELBTT'
 #    elfit_key = 'ELPT4'
 

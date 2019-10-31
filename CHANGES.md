@@ -54,6 +54,8 @@ TODO
    which use the values from Zeippen (1987), A&A, 173, 410.  In all but
    this OII 7320,7330 complex, the magnetic dipole term dominates such
    that the electric quadrapole terms are effectively irrelevant.
+ - Added a script that computes the weights used during the `ppxffit_qa`
+   plot construction.
 
 2.3.0 (31 Jan 2019)
 -------------------
