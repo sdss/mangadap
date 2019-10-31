@@ -1,3 +1,30 @@
+TODO
+----
+
+ - Change default to fix bad pixels in spectral resolution?
+ - Add DAP versioning to reference files
+ - Fix minor issue in moment and index spaxels fit in hybrid case,
+   compared to emission-line modeling data.
+ - Make velocity dispersion correction for spectral indices use template
+   mix from fit to the bin instead of the individual spaxels?
+ - Add errors to DAPall
+ - Add fraction of spectra with `sigma < sigma_corr` to DAPall
+ - Reconstruct MILES HC library using same procedure used for MaStar
+   spectra
+ - Additional tests for MaStar HC library
+ - Define an emission-line FOM flag that identifies poorly fit lines
+ - Documentation of config examples are out of date!
+ - Get rid of the filter keyword from the output headers...
+ - Abstract input datacube reading
+ - Minimize the hurdles to running `manga_dap`; i.e., allow it to run
+   without the input and plan parameter files
+ - Stop transposing the datacube data!
+ - Get rid of optional `dapsrc` keyword; now defined by the package
+ - Fix ELMREBIN in 2nd round of moment calculations (not sure this is
+   still a problem...)
+ - Keep all the reference files to the common directory?
+ - Make the package pip installable
+
 2.4.0dev
 --------
 
@@ -27,32 +54,6 @@
    which use the values from Zeippen (1987), A&A, 173, 410.  In all but
    this OII 7320,7330 complex, the magnetic dipole term dominates such
    that the electric quadrapole terms are effectively irrelevant.
-
-TODO:
-
- - Change default to fix bad pixels in spectral resolution?
- - Add DAP versioning to reference files
- - Fix minor issue in moment and index spaxels fit in hybrid case,
-   compared to emission-line modeling data.
- - Make velocity dispersion correction for spectral indices use template
-   mix from fit to the bin instead of the individual spaxels?
- - Add errors to DAPall
- - Add fraction of spectra with `sigma < sigma_corr` to DAPall
- - Reconstruct MILES HC library using same procedure used for MaStar
-   spectra
- - Additional tests for MaStar HC library
- - Define an emission-line FOM flag that identifies poorly fit lines
- - Documentation of config examples are out of date!
- - Get rid of the filter keyword from the output headers...
- - Abstract input datacube reading
- - Minimize the hurdles to running `manga_dap`; i.e., allow it to run
-   without the input and plan parameter files
- - Stop transposing the datacube data!
- - Get rid of optional `dapsrc` keyword; now defined by the package
- - Fix ELMREBIN in 2nd round of moment calculations (not sure this is
-   still a problem...)
- - Keep all the reference files to the common directory?
- - Make the package pip installable
 
 2.3.0 (31 Jan 2019)
 -------------------
