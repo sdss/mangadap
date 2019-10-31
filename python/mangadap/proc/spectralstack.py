@@ -423,7 +423,6 @@ class SpectralStack():
         if recalibrate_ivar:
             ratio = numpy.ma.median( variance_ratio, axis=1 )
 #            self._recalibrate_ivar_figure(ratio, ofile='ivar_calibration.pdf')
-#            exit()
 
             self.ivar = numpy.ma.power(ratio, -1.0)[:,None] * self.ivar
             return
