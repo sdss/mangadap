@@ -1,5 +1,5 @@
 
-__version__ = '2.4.0dev'
+__version__ = '2.4.0'
 __license__ = 'BSD3'
 __author__ = 'Kyle B. Westfall'
 __maintainer__ = 'Kyle B. Westfall'
