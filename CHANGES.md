@@ -6,7 +6,8 @@
  - Change from `time.clock()` to `time.perf_counter()`
  - Bug fix in record array dimensionality when writing to binary table
  - Minor plotting changes for Overview paper plots
- - Added a channel with R in h^-1 kpc
+ - Added a channel with R in h^-1 kpc to both the spaxel and bin
+   elliptical-coordinate extensions
  - Remove MASKNAME header keyword inherited from DRP files
  - Added continuum measurements for both emission-line moments and
    spectral indices to MAPS files
@@ -14,8 +15,17 @@
  - Added new emission-line parameter and bandpass database files
  - Added beta version of hierarchically clustered MaStar templates
  - Fixed masking of emission-line chi-square measurements
+ - Adjusted fixed flux ratio of doublets based on improved calculation:
+   `(M1_1+E2_1)/(M1_2+E2_2) * L_2/L_1`, where `M1` and `E2` are the
+   magnetic dipole and electric quadrapole Einstein A coefficients and
+   `L` is the line wavelength.  The Einstein A coefficients are all
+   taken from NIST, except for the OII 7320,7330 complext (two doublets)
+   which use the values from Zeippen (1987), A&A, 173, 410.  In all but
+   this OII 7320,7330 complex, the magnetic dipole term dominates such
+   that the electric quadrapole terms are effectively irrelevant.
 
 TODO:
+
  - Change default to fix bad pixels in spectral resolution?
  - Add DAP versioning to reference files
  - Fix minor issue in moment and index spaxels fit in hybrid case,

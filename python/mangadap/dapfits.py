@@ -1078,6 +1078,15 @@ class construct_maps_file:
 
         return self._consolidate_donotuse(mask)
 
+    @staticmethod
+    def _get_kpc_per_arcsec(z):
+        if z <= 0:
+            warnings.warn('Systemic velocity <=0; radii in h^-1 kpc not provided.')
+            return -1.
+
+        H0 = 100 * astropy.units.km / astropy.units.s / astropy.units.Mpc
+        cosmo = FlatLambdaCDM(H0=H0, Om0=0.3)
+        return numpy.radians(1/3600) * 1e3 * cosmo.angular_diameter_distance(z).value
 
     def reduction_assessment_maps(self, prihdr, obs, rdxqa):
         """
@@ -1138,16 +1147,11 @@ class construct_maps_file:
             spx_ellcoo[:,:,1] /= obs['reff']
 
             # Calculate the radius in units of h^-1 kpc
-            H0 = 100 * astropy.units.km / astropy.units.s / astropy.units.Mpc
-            cosmo = FlatLambdaCDM(H0=H0, Om0=0.3)
-            z = obs['vel']/astropy.constants.c.to('km/s').value
-            if z <= 0:
-                warnings.warn('Systemic velocity <=0; radii in h^-1 kpc not provided.')
-                spx_ellcoo[:,:,2] = -1
-            else:
-                adist = cosmo.angular_diameter_distance(z).value
-                hkpc_per_arcsec = numpy.radians(1/3600) * 1e3 * adist
+            hkpc_per_arcsec = _get_kpc_per_arcsec(obs['vel']/astropy.constants.c.to('km/s').value)
+            if hkpc_per_arcsec > 0:
                 spx_ellcoo[:,:,2] *= hkpc_per_arcsec
+            else:
+                spx_ellcoo[:,:,2] = -1
 
         spx_ellcoo[numpy.absolute(spx_ellcoo) < minimum_value] = 0.0
 
@@ -1206,9 +1210,9 @@ class construct_maps_file:
                 DAPFitsUtil.finalize_dap_header(self.multichannel_maphdr, 'BIN_LWELLCOO',
                                                 multichannel=True,
                                                 channel_names= ['Lum. weighted elliptical radius',
-                                                                'R/Re',
+                                                                'R/Re', 'R h/kpc',
                                                                 'Lum. weighted elliptical azimuth'],
-                                                channel_units=['arcsec', '', 'degrees']),
+                                                channel_units=['arcsec', '', 'kpc/h', 'degrees']),
                 DAPFitsUtil.finalize_dap_header(self.singlechannel_maphdr, 'BIN_AREA',
                                                 bunit='arcsec^2'),
                 DAPFitsUtil.finalize_dap_header(self.singlechannel_maphdr, 'BIN_FAREA'),
@@ -1230,6 +1234,7 @@ class construct_maps_file:
                 binned_spectra['BINS'].data['LW_SKY_COO'][:,1],
                 binned_spectra['BINS'].data['LW_ELL_COO'][:,0],
                 binned_spectra['BINS'].data['LW_ELL_COO'][:,0],
+                binned_spectra['BINS'].data['LW_ELL_COO'][:,0],
                 binned_spectra['BINS'].data['LW_ELL_COO'][:,1],
                 binned_spectra['BINS'].data['AREA'],
                 binned_spectra['BINS'].data['AREA_FRAC'],
@@ -1246,13 +1251,23 @@ class construct_maps_file:
         # Remap the data to the DRP spatial shape
         arr = list(DAPFitsUtil.reconstruct_map(self.spatial_shape, bin_indx, arr, dtype=dtypes))
 
-        # Get the normalized radius
-        if obs is not None:
+        # Get the normalized radii
+        if obs is None:
+            # This should never be tripped at the survey level!
+            warnings.warn('Input obs parameters not given.  Normalized radii not provided.')
+            arr[3] = (0*arr[3]-1).astype(self.float_dtype)
+            arr[4] = (0*arr[4]-1).astype(self.float_dtype)
+        else:
+            # Calculate the radius normalized by the effective radius
             arr[3] = (arr[3]/obs['reff']).astype(self.float_dtype)
+            # Calculate the radius in units of h^-1 kpc
+            hkpc_per_arcsec = _get_kpc_per_arcsec(obs['vel']/astropy.constants.c.to('km/s').value)
+            arr[4] = (arr[4]*hkpc_per_arcsec).astype(self.float_dtype) if hkpc_per_arcsec > 0 \
+                            else (0*arr[4]-1).astype(self.float_dtype)
 
         # Organize the extension data
-        data = [ numpy.array(arr[0:2]).transpose(1,2,0), numpy.array(arr[2:5]).transpose(1,2,0) ] \
-                    + arr[5:-1] + [ self.bin_mask.copy(), arr[-1] ]
+        data = [ numpy.array(arr[0:2]).transpose(1,2,0), numpy.array(arr[2:6]).transpose(1,2,0) ] \
+                    + arr[6:-1] + [ self.bin_mask.copy(), arr[-1] ]
 
         #---------------------------------------------------------------
         # Return the map hdus
