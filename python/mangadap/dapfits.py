@@ -1147,7 +1147,7 @@ class construct_maps_file:
             spx_ellcoo[:,:,1] /= obs['reff']
 
             # Calculate the radius in units of h^-1 kpc
-            hkpc_per_arcsec = _get_kpc_per_arcsec(obs['vel']/astropy.constants.c.to('km/s').value)
+            hkpc_per_arcsec = self.__class__._get_kpc_per_arcsec(obs['vel']/astropy.constants.c.to('km/s').value)
             if hkpc_per_arcsec > 0:
                 spx_ellcoo[:,:,2] *= hkpc_per_arcsec
             else:
@@ -1261,7 +1261,7 @@ class construct_maps_file:
             # Calculate the radius normalized by the effective radius
             arr[3] = (arr[3]/obs['reff']).astype(self.float_dtype)
             # Calculate the radius in units of h^-1 kpc
-            hkpc_per_arcsec = _get_kpc_per_arcsec(obs['vel']/astropy.constants.c.to('km/s').value)
+            hkpc_per_arcsec = self.__class__._get_kpc_per_arcsec(obs['vel']/astropy.constants.c.to('km/s').value)
             arr[4] = (arr[4]*hkpc_per_arcsec).astype(self.float_dtype) if hkpc_per_arcsec > 0 \
                             else (0*arr[4]-1).astype(self.float_dtype)
 
