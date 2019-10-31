@@ -199,11 +199,13 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
         #   - SpectralIndices
         bin_method = SpatiallyBinnedSpectra.define_method(plan['bin_key'][i])
         sc_method = StellarContinuumModel.define_method(plan['continuum_key'][i])
-        el_method = EmissionLineModel.define_method(plan['elfit_key'][i])
+        el_method = None if plan['elfit_key'][i] is None \
+                            else EmissionLineModel.define_method(plan['elfit_key'][i])
 
         method = defaults.default_dap_method(bin_method['key'],
                                              sc_method['fitpar']['template_library_key'],
-                                             el_method['continuum_tpl_key'])
+                                             'None' if el_method is None
+                                                else el_method['continuum_tpl_key'])
         method_dir = defaults.default_dap_method_path(method, plate=obs['plate'],
                                                       ifudesign=obs['ifudesign'], drpver=drpver,
                                                       dapver=dapver, analysis_path=_analysis_path)
