@@ -56,6 +56,8 @@ import warnings
 from astropy.wcs import WCS
 from astropy.io import fits
 import astropy.constants
+import astropy.units
+from astropy.cosmology import FlatLambdaCDM
 
 from .drpfits import DRPFits, DRPQuality3DBitMask
 from .util.fitsutil import DAPFitsUtil
@@ -1078,6 +1080,15 @@ class construct_maps_file:
 
         return self._consolidate_donotuse(mask)
 
+    @staticmethod
+    def _get_kpc_per_arcsec(z):
+        if z <= 0:
+            warnings.warn('Systemic velocity <=0; radii in h^-1 kpc not provided.')
+            return -1.
+
+        H0 = 100 * astropy.units.km / astropy.units.s / astropy.units.Mpc
+        cosmo = FlatLambdaCDM(H0=H0, Om0=0.3)
+        return numpy.radians(1/3600) * 1e3 * cosmo.angular_diameter_distance(z).value
 
     def reduction_assessment_maps(self, prihdr, obs, rdxqa):
         """
@@ -1107,8 +1118,9 @@ class construct_maps_file:
                 DAPFitsUtil.finalize_dap_header(self.multichannel_maphdr, 'SPX_ELLCOO',
                                                 multichannel=True,
                                                 channel_names=['Elliptical radius', 'R/Re',
-                                                               'Elliptical azimuth'],
-                                                channel_units=['arcsec', '', 'degrees']),
+                                                               'R h/kpc', 'Elliptical azimuth'],
+                                                channel_units=['arcsec', '', 'kpc/h',
+                                                               'degrees']),
                 DAPFitsUtil.finalize_dap_header(self.singlechannel_maphdr, 'SPX_MFLUX',
                                                 bunit='1E-17 erg/s/cm^2/ang/spaxel', err=True),
                 DAPFitsUtil.finalize_dap_header(self.singlechannel_maphdr, 'SPX_MFLUX',
@@ -1123,11 +1135,27 @@ class construct_maps_file:
         minimum_value = numpy.finfo(self.float_dtype).eps
         spx_skycoo = rdxqa['SPECTRUM'].data['SKY_COO'].copy().reshape(*self.spatial_shape, -1)
         spx_skycoo[numpy.absolute(spx_skycoo) < minimum_value] = 0.0
+
         # Elliptical coordinates
         spx_ellcoo = rdxqa['SPECTRUM'].data['ELL_COO'].copy().reshape(*self.spatial_shape, -1)
-        spx_ellcoo = numpy.repeat(spx_ellcoo, [2,1], axis=2)
-        if obs is not None:
+        spx_ellcoo = numpy.repeat(spx_ellcoo, (3,1), axis=2)
+        if obs is None:
+            # This should never be tripped at the survey level!
+            warnings.warn('Input obs parameters not given.  Normalized radii not provided.')
+            spx_ellcoo[:,:,1] = -1
+            spx_ellcoo[:,:,2] = -1
+        else:
+            # Calculate the radius normalized by the effective radius
             spx_ellcoo[:,:,1] /= obs['reff']
+
+            # Calculate the radius in units of h^-1 kpc
+            z = obs['vel']/astropy.constants.c.to('km/s').value
+            hkpc_per_arcsec = self.__class__._get_kpc_per_arcsec(z)
+            if hkpc_per_arcsec > 0:
+                spx_ellcoo[:,:,2] *= hkpc_per_arcsec
+            else:
+                spx_ellcoo[:,:,2] = -1
+
         spx_ellcoo[numpy.absolute(spx_ellcoo) < minimum_value] = 0.0
 
         # Bin signal
@@ -1185,9 +1213,9 @@ class construct_maps_file:
                 DAPFitsUtil.finalize_dap_header(self.multichannel_maphdr, 'BIN_LWELLCOO',
                                                 multichannel=True,
                                                 channel_names= ['Lum. weighted elliptical radius',
-                                                                'R/Re',
+                                                                'R/Re', 'R h/kpc',
                                                                 'Lum. weighted elliptical azimuth'],
-                                                channel_units=['arcsec', '', 'degrees']),
+                                                channel_units=['arcsec', '', 'kpc/h', 'degrees']),
                 DAPFitsUtil.finalize_dap_header(self.singlechannel_maphdr, 'BIN_AREA',
                                                 bunit='arcsec^2'),
                 DAPFitsUtil.finalize_dap_header(self.singlechannel_maphdr, 'BIN_FAREA'),
@@ -1209,6 +1237,7 @@ class construct_maps_file:
                 binned_spectra['BINS'].data['LW_SKY_COO'][:,1],
                 binned_spectra['BINS'].data['LW_ELL_COO'][:,0],
                 binned_spectra['BINS'].data['LW_ELL_COO'][:,0],
+                binned_spectra['BINS'].data['LW_ELL_COO'][:,0],
                 binned_spectra['BINS'].data['LW_ELL_COO'][:,1],
                 binned_spectra['BINS'].data['AREA'],
                 binned_spectra['BINS'].data['AREA_FRAC'],
@@ -1225,13 +1254,24 @@ class construct_maps_file:
         # Remap the data to the DRP spatial shape
         arr = list(DAPFitsUtil.reconstruct_map(self.spatial_shape, bin_indx, arr, dtype=dtypes))
 
-        # Get the normalized radius
-        if obs is not None:
+        # Get the normalized radii
+        if obs is None:
+            # This should never be tripped at the survey level!
+            warnings.warn('Input obs parameters not given.  Normalized radii not provided.')
+            arr[3] = (0*arr[3]-1).astype(self.float_dtype)
+            arr[4] = (0*arr[4]-1).astype(self.float_dtype)
+        else:
+            # Calculate the radius normalized by the effective radius
             arr[3] = (arr[3]/obs['reff']).astype(self.float_dtype)
+            # Calculate the radius in units of h^-1 kpc
+            z = obs['vel']/astropy.constants.c.to('km/s').value
+            hkpc_per_arcsec = self.__class__._get_kpc_per_arcsec(z)
+            arr[4] = (arr[4]*hkpc_per_arcsec).astype(self.float_dtype) if hkpc_per_arcsec > 0 \
+                            else (0*arr[4]-1).astype(self.float_dtype)
 
         # Organize the extension data
-        data = [ numpy.array(arr[0:2]).transpose(1,2,0), numpy.array(arr[2:5]).transpose(1,2,0) ] \
-                    + arr[5:-1] + [ self.bin_mask.copy(), arr[-1] ]
+        data = [ numpy.array(arr[0:2]).transpose(1,2,0), numpy.array(arr[2:6]).transpose(1,2,0) ] \
+                    + arr[6:-1] + [ self.bin_mask.copy(), arr[-1] ]
 
         #---------------------------------------------------------------
         # Return the map hdus
@@ -1354,7 +1394,7 @@ class construct_maps_file:
         """
         #---------------------------------------------------------------
         ext = [ 'EMLINE_SFLUX', 'EMLINE_SFLUX_IVAR', 'EMLINE_SFLUX_MASK', 'EMLINE_SEW',
-                'EMLINE_SEW_IVAR', 'EMLINE_SEW_MASK' ]
+                'EMLINE_SEW_CNT', 'EMLINE_SEW_IVAR', 'EMLINE_SEW_MASK']
 
         if emission_line_moments is None:
             # Construct and return the empty hdus
@@ -1389,6 +1429,9 @@ class construct_maps_file:
                                                 multichannel=multichannel),
                 DAPFitsUtil.finalize_dap_header(base_hdr, 'EMLINE_SEW', err=True, qual=True,
                                                 bunit='ang', multichannel=multichannel),
+                DAPFitsUtil.finalize_dap_header(base_hdr, 'EMLINE_SEW_CNT',
+                                                bunit='1E-17 erg/s/cm^2/ang/spaxel',
+                                                multichannel=multichannel),
                 DAPFitsUtil.finalize_dap_header(base_hdr, 'EMLINE_SEW', hduclas2='ERROR', qual=True,
                                                 bunit='(ang)^{-2}', multichannel=multichannel),
                 DAPFitsUtil.finalize_dap_header(base_hdr, 'EMLINE_SEW', hduclas2='QUALITY',
@@ -1403,6 +1446,8 @@ class construct_maps_file:
         arr += [ numpy.ma.power(emission_line_moments['ELMMNTS'].data['FLUXERR'][:,m],
                                 -2).filled(0.0) for m in range(emission_line_moments.nmom) ]
         arr += [ emission_line_moments['ELMMNTS'].data['EW'][:,m]
+                    for m in range(emission_line_moments.nmom) ]
+        arr += [ emission_line_moments['ELMMNTS'].data['EWCONT'][:,m]
                     for m in range(emission_line_moments.nmom) ]
         arr += [ numpy.ma.power(emission_line_moments['ELMMNTS'].data['EWERR'][:,m],
                                 -2).filled(0.0) for m in range(emission_line_moments.nmom) ]
@@ -1420,7 +1465,7 @@ class construct_maps_file:
 
         data = [ numpy.array(arr[emission_line_moments.nmom*i:
                                  emission_line_moments.nmom*(i+1)]).transpose(1,2,0) 
-                        for i in range(5) ]
+                        for i in range(6) ]
         
         # Get the mask
         elm_mask = self._emission_line_moment_mask_to_map_mask(emission_line_moments,
@@ -1437,18 +1482,19 @@ class construct_maps_file:
     def emission_line_model_maps(self, prihdr, emission_line_model):
         """
         Construct the 'EMLINE_GFLUX', 'EMLINE_GFLUX_IVAR',
-        'EMLINE_GFLUX_MASK', 'EMLINE_GEW', 'EMLINE_GEW_IVAR',
-        'EMLINE_GEW_MASK', 'EMLINE_GVEL', 'EMLINE_GVEL_IVAR',
-        'EMLINE_GVEL_MASK', 'EMLINE_GSIGMA', 'EMLINE_GSIGMA_IVAR',
-        'EMLINE_GSIGMA_MASK', 'EMLINE_INSTSIGMA', 'EMLINE_TPLSIGMA',
-        'EMLINE_GA', 'EMLINE_GANR', 'EMLINE_FOM', 'EMLINE_LFOM' map extensions.
+        'EMLINE_GFLUX_MASK', 'EMLINE_GEW', 'EMLINE_GEW_CNT',
+        'EMLINE_GEW_IVAR', 'EMLINE_GEW_MASK', 'EMLINE_GVEL',
+        'EMLINE_GVEL_IVAR', 'EMLINE_GVEL_MASK', 'EMLINE_GSIGMA',
+        'EMLINE_GSIGMA_IVAR', 'EMLINE_GSIGMA_MASK',
+        'EMLINE_INSTSIGMA', 'EMLINE_TPLSIGMA', 'EMLINE_GA',
+        'EMLINE_GANR', 'EMLINE_FOM', 'EMLINE_LFOM' map extensions.
         """
         #---------------------------------------------------------------
         ext = [ 'EMLINE_GFLUX', 'EMLINE_GFLUX_IVAR', 'EMLINE_GFLUX_MASK', 'EMLINE_GEW',
-                'EMLINE_GEW_IVAR', 'EMLINE_GEW_MASK', 'EMLINE_GVEL', 'EMLINE_GVEL_IVAR',
-                'EMLINE_GVEL_MASK', 'EMLINE_GSIGMA', 'EMLINE_GSIGMA_IVAR', 'EMLINE_GSIGMA_MASK',
-                'EMLINE_INSTSIGMA', 'EMLINE_TPLSIGMA', 'EMLINE_GA', 'EMLINE_GANR', 'EMLINE_FOM',
-                'EMLINE_LFOM' ]
+                'EMLINE_GEW_CNT', 'EMLINE_GEW_IVAR', 'EMLINE_GEW_MASK', 'EMLINE_GVEL',
+                'EMLINE_GVEL_IVAR', 'EMLINE_GVEL_MASK', 'EMLINE_GSIGMA', 'EMLINE_GSIGMA_IVAR',
+                'EMLINE_GSIGMA_MASK', 'EMLINE_INSTSIGMA', 'EMLINE_TPLSIGMA', 'EMLINE_GA',
+                'EMLINE_GANR', 'EMLINE_FOM', 'EMLINE_LFOM' ]
 
         if emission_line_model is None:
             # Construct and return the empty hdus
@@ -1492,6 +1538,9 @@ class construct_maps_file:
                                                 multichannel=multichannel),
                 DAPFitsUtil.finalize_dap_header(base_hdr, 'EMLINE_GEW', err=True, qual=True,
                                                 bunit='ang', multichannel=multichannel),
+                DAPFitsUtil.finalize_dap_header(base_hdr, 'EMLINE_GEW_CNT',
+                                                bunit='1E-17 erg/s/cm^2/ang/spaxel',
+                                                multichannel=multichannel),
                 DAPFitsUtil.finalize_dap_header(base_hdr, 'EMLINE_GEW', hduclas2='ERROR', qual=True,
                                                 bunit='(ang)^{-2}', multichannel=multichannel),
                 DAPFitsUtil.finalize_dap_header(base_hdr, 'EMLINE_GEW', hduclas2='QUALITY',
@@ -1541,6 +1590,10 @@ class construct_maps_file:
         n_arr_with_eml_channels += 1
         # Equivalent width
         arr += [ emission_line_model['EMLDATA'].data['EW'][:,m]
+                    for m in range(emission_line_model.neml) ]
+        n_arr_with_eml_channels += 1
+        # Equivalent width continuum
+        arr += [ emission_line_model['EMLDATA'].data['EWCONT'][:,m]
                     for m in range(emission_line_model.neml) ]
         n_arr_with_eml_channels += 1
         # Equivalent width errors
@@ -1618,8 +1671,8 @@ class construct_maps_file:
                                                               for_dispersion=True)
 
         # Organize the extension data
-        data = data[:2] + [ base_mask ] + data[2:4] + [ base_mask ] + data[4:6] + [ base_mask ] \
-                + data[6:8] + [ sig_mask ] + data[8:-3] + [data[-2], data[-3]]
+        data = data[:2] + [ base_mask ] + data[2:5] + [ base_mask ] + data[5:7] + [ base_mask ] \
+                + data[7:9] + [ sig_mask ] + data[9:-3] + [data[-2], data[-3]]
 
         #---------------------------------------------------------------
         # Return the map hdus
@@ -1632,7 +1685,9 @@ class construct_maps_file:
         and 'SPECINDEX_CORR'.
         """
         #---------------------------------------------------------------
-        ext = [ 'SPECINDEX', 'SPECINDEX_IVAR', 'SPECINDEX_MASK', 'SPECINDEX_CORR' ]
+        ext = [ 'SPECINDEX', 'SPECINDEX_IVAR', 'SPECINDEX_MASK', 'SPECINDEX_CORR',
+                'SPECINDEX_BCEN', 'SPECINDEX_BCNT', 'SPECINDEX_RCEN', 'SPECINDEX_RCNT',
+                'SPECINDEX_MODEL' ]
 
         if spectral_indices is None:
             # Construct and return the empty hdus
@@ -1667,7 +1722,22 @@ class construct_maps_file:
                                               channel_names=spectral_indices['SIPAR'].data['NAME']),
                 DAPFitsUtil.finalize_dap_header(base_hdr, 'SPECINDEX_CORR',
                                                 multichannel=multichannel,
-                                               channel_names=spectral_indices['SIPAR'].data['NAME'])
+                                              channel_names=spectral_indices['SIPAR'].data['NAME']),
+                DAPFitsUtil.finalize_dap_header(base_hdr, 'SPECINDEX_BCEN',
+                                                multichannel=multichannel,
+                                              channel_names=spectral_indices['SIPAR'].data['NAME']),
+                DAPFitsUtil.finalize_dap_header(base_hdr, 'SPECINDEX_BCNT',
+                                                multichannel=multichannel,
+                                              channel_names=spectral_indices['SIPAR'].data['NAME']),
+                DAPFitsUtil.finalize_dap_header(base_hdr, 'SPECINDEX_RCEN',
+                                                multichannel=multichannel,
+                                              channel_names=spectral_indices['SIPAR'].data['NAME']),
+                DAPFitsUtil.finalize_dap_header(base_hdr, 'SPECINDEX_RCNT',
+                                                multichannel=multichannel,
+                                              channel_names=spectral_indices['SIPAR'].data['NAME']),
+                DAPFitsUtil.finalize_dap_header(base_hdr, 'SPECINDEX_MODEL',
+                                                multichannel=multichannel,
+                                              channel_names=spectral_indices['SIPAR'].data['NAME'])
               ]
 
         #---------------------------------------------------------------
@@ -1676,15 +1746,23 @@ class construct_maps_file:
                     for m in range(spectral_indices.nindx) ]
         arr += [ numpy.ma.power(spectral_indices['SINDX'].data['INDXERR'][:,m], -2.).filled(0.0)
                     for m in range(spectral_indices.nindx) ]
-        arr += [ spectral_indices['SINDX'].data['MASK'][:,m]
-                    for m in range(spectral_indices.nindx) ]
         arr += [ spectral_indices['SINDX'].data['INDX_DISPCORR'][:,m]
                     for m in range(spectral_indices.nindx) ]
+        arr += [ spectral_indices['SINDX'].data['BCEN'][:,m]
+                    for m in range(spectral_indices.nindx) ]
+        arr += [ spectral_indices['SINDX'].data['BCONT'][:,m]
+                    for m in range(spectral_indices.nindx) ]
+        arr += [ spectral_indices['SINDX'].data['RCEN'][:,m]
+                    for m in range(spectral_indices.nindx) ]
+        arr += [ spectral_indices['SINDX'].data['RCONT'][:,m]
+                    for m in range(spectral_indices.nindx) ]
+        arr += [ spectral_indices['SINDX'].data['MODEL_INDX'][:,m]
+                    for m in range(spectral_indices.nindx) ]
+        arr += [ spectral_indices['SINDX'].data['MASK'][:,m]
+                    for m in range(spectral_indices.nindx) ]
 
-        dtypes = [self.float_dtype]*(len(arr)-2*spectral_indices.nindx) \
-                        + [a.dtype.name 
-                            for a in arr[-2*spectral_indices.nindx:-spectral_indices.nindx]] \
-                        + [self.float_dtype]*spectral_indices.nindx
+        dtypes = [self.float_dtype]*(len(arr)-spectral_indices.nindx) \
+                        + [a.dtype.name for a in arr[-spectral_indices.nindx:]]
 
         # Bin index
         bin_indx = spectral_indices['BINID'].data.copy().ravel()
@@ -1694,10 +1772,13 @@ class construct_maps_file:
 
         data = [ numpy.array(arr[spectral_indices.nindx*i:
                                  spectral_indices.nindx*(i+1)]).transpose(1,2,0) \
-                        for i in range(4) ]
-        
+                        for i in range(9) ]
+
         # Get the mask
-        data[2] = self._spectral_index_mask_to_map_mask(spectral_indices, data[2].copy())
+        si_mask = self._spectral_index_mask_to_map_mask(spectral_indices, data[-1].copy())
+
+        # Organize the extension data
+        data = data[:2] + [si_mask] + data[2:-1]
 
         #---------------------------------------------------------------
         # Return the map hdus
@@ -2105,7 +2186,7 @@ class construct_cube_file:
         #---------------------------------------------------------------
         # Get the data arrays
         # Best-fitting composite model
-        model = stellar_continuum_3d_hdu['FLUX'].data
+        model = stellar_continuum_3d_hdu['FLUX'].data.copy()
         if emission_line_model is not None:
             model += (emission_line_model_3d_hdu['FLUX'].data
                             + emission_line_model_3d_hdu['BASE'].data)

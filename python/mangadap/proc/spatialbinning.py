@@ -424,9 +424,11 @@ class VoronoiBinning(SpatialBinning):
         """
         Calculate the S/N using a full covariance matrix.
         """
-        _index = numpy.arange(signal.size)[index]
-        i, j = map( lambda x: x.ravel(), numpy.meshgrid(_index, _index) )
-        return numpy.sum(signal[index])/numpy.sqrt(numpy.sum(self.covar[i,j]))
+#        _index = numpy.arange(signal.size)[index]
+#        i, j = map( lambda x: x.ravel(), numpy.meshgrid(_index, _index) )
+#        return numpy.sum(signal[index])/numpy.sqrt(numpy.sum(self.covar[i,j]))
+        _index = numpy.atleast_1d(index)
+        return numpy.sum(signal[index])/numpy.sqrt(numpy.sum(self.covar[_index,:][:,_index]))
 
 
     def sn_calculation_calibrate_noise(self, index, signal, noise):
@@ -516,10 +518,10 @@ class VoronoiBinning(SpatialBinning):
         try:
             binid, xNode, yNode, xBar, yBar, sn, area, scale = \
                 voronoi_2d_binning(x, y, self.par['signal'], _noise, self.par['target_snr'],
-                                   sn_func=sn_func, plot=False) #quiet=False)
+                                   sn_func=sn_func, plot=False) #True, quiet=False)
 #            pyplot.show()
 #            pyplot.scatter(numpy.sqrt(numpy.square(xBar)+numpy.square(yBar)), sn, marker='.',
-                       #color='k', s=40, lw=0)
+#                           color='k', s=40, lw=0)
 #            pyplot.show()
         except:
             warnings.warn('Binning algorithm has raised an exception.  Assume this is because '

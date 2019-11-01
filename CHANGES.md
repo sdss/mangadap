@@ -1,5 +1,41 @@
-2.4.0dev
---------
+TODO
+----
+
+ - Change default to fix bad pixels in spectral resolution?
+ - Add DAP versioning to reference files
+ - Fix minor issue in moment and index spaxels fit in hybrid case,
+   compared to emission-line modeling data.
+ - Make velocity dispersion correction for spectral indices use template
+   mix from fit to the bin instead of the individual spaxels?
+ - Add errors to DAPall
+ - Add fraction of spectra with `sigma < sigma_corr` to DAPall
+ - Reconstruct MILES HC library using same procedure used for MaStar
+   spectra
+ - Additional tests for MaStar HC library
+ - Define an emission-line FOM flag that identifies poorly fit lines
+ - Documentation of config examples are out of date!
+ - Get rid of the filter keyword from the output headers...
+ - Abstract input datacube reading
+ - Minimize the hurdles to running `manga_dap`; i.e., allow it to run
+   without the input and plan parameter files
+ - Stop transposing the datacube data!
+ - Get rid of optional `dapsrc` keyword; now defined by the package
+ - Fix ELMREBIN in 2nd round of moment calculations (not sure this is
+   still a problem...)
+ - Keep all the reference files to the common directory?
+ - Make the package pip installable
+ - Change format of emission-line module reference file?
+    - Make more independent of stellar-continnuum module reference file
+    - Change `BASE` extension to `CONTINUUM` extension.
+
+2.4.1 (01 Nov 2019)
+-------------------
+ - Bug fix in construction of `STELLAR` extension in model LOGCUBE file;
+   construction used a pointer instead of a copy that cause the
+   `STELLAR` and `MODEL` extensions to be identical.
+
+2.4.0 (31 Oct 2019)
+-------------------
 
  - Hotfix to accommodate change in padding computation in ppxf>=6.7.15
  - Fixed units bug in `flux_to_fnu`
@@ -7,21 +43,28 @@
    None, meaning that the DAP only fits the stellar kinematics but still
    produces the MAPS and LOGCUBE files.
  - Fixed bug in templates when using iteration_mode = 'global_template'
-
-TODO:
- - Add channel with R in kpc
- - Documentation of config examples are out of date!
- - Get rid of the filter keyword from the output headers...
- - Change default to fix bad pixels in spectral resolution?
- - Fix MASKNAME in reference files
- - Add DAP versioning to reference files
- - Fix ELMREBIN in 2nd round of moment calculations
- - Stop transposing the datacube data!
- - Get rid of optional dapsrc
- - Keep all the reference files to the common directory?
- - Fix minor issue in moment and index spaxels fit in hybrid case,
-   compared to emission-line modeling data.
-
+ - Change from `time.clock()` to `time.perf_counter()`
+ - Bug fix in record array dimensionality when writing to binary table
+ - Minor plotting changes for Overview paper plots
+ - Added a channel with R in h^-1 kpc to both the spaxel and bin
+   elliptical-coordinate extensions
+ - Remove MASKNAME header keyword inherited from DRP files
+ - Added continuum measurements for both emission-line moments and
+   spectral indices to MAPS files
+ - Add model spectral indices to the MAPS files
+ - Added new emission lines to parameter and bandpass database files
+ - Added beta version of hierarchically clustered MaStar templates
+ - Fixed masking of emission-line chi-square measurements
+ - Adjusted fixed flux ratio of doublets based on improved calculation:
+   `(M1_1+E2_1)/(M1_2+E2_2) * L_2/L_1`, where `M1` and `E2` are the
+   magnetic dipole and electric quadrapole Einstein A coefficients and
+   `L` is the line wavelength.  The Einstein A coefficients are all
+   taken from NIST, except for the OII 7320,7330 complext (two doublets)
+   which use the values from Zeippen (1987), A&A, 173, 410.  In all but
+   this OII 7320,7330 complex, the magnetic dipole term dominates such
+   that the electric quadrapole terms are effectively irrelevant.
+ - Added a script that computes the weights used during the `ppxffit_qa`
+   plot construction.
 
 2.3.0 (31 Jan 2019)
 -------------------
