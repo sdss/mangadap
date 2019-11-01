@@ -2186,7 +2186,7 @@ class construct_cube_file:
         #---------------------------------------------------------------
         # Get the data arrays
         # Best-fitting composite model
-        model = stellar_continuum_3d_hdu['FLUX'].data
+        model = stellar_continuum_3d_hdu['FLUX'].data.copy()
         if emission_line_model is not None:
             model += (emission_line_model_3d_hdu['FLUX'].data
                             + emission_line_model_3d_hdu['BASE'].data)
