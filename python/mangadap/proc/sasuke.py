@@ -2157,7 +2157,7 @@ class Sasuke(EmissionLineFit):
         #---------------------------------------------------------------
         # Call the emission line fitter contributed by Xihan Ji and
         # Michele Cappellari
-        t = time.clock()
+        t = time.perf_counter()
 #        warnings.warn('debugging!')
 #        self.obj_to_fit[ numpy.arange(self.nobj)[self.obj_to_fit][2:] ] = False
 
@@ -2266,7 +2266,7 @@ class Sasuke(EmissionLineFit):
 
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, 'Fits completed in {0:.4e} min.'.format(
-                       (time.clock() - t)/60))
+                       (time.perf_counter() - t)/60))
 
         # Flag pixels as rejected during fitting; _model_mask is True
         # where the pixels were fit

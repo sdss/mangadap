@@ -100,6 +100,7 @@ class DAPFitsUtil:
         hdr.remove('BSCALE', ignore_missing=True)
         hdr.remove('BZERO', ignore_missing=True)
         hdr.remove('BUNIT', ignore_missing=True)
+        hdr.remove('MASKNAME', ignore_missing=True)
         return hdr
 
 

@@ -469,7 +469,7 @@ class DRPComplete:
             # the position within that catalog (zero indexed). So if you
             # strip out CATIND from MANGAID you have the position within
             # nsa_v1_0_0.fits without any matching required."
-            catid[i], catindex[i] = map(lambda x: int(x), mangaid[i].split('-'))
+            catid[i], catindx[i] = map(lambda x: int(x), mangaid[i].split('-'))
             if catid[i] != self.catid[plttrg_j]:
                 warnings.warn('{0}-{1} (MaNGA ID={2}) found in {3} (CAT={4})!'.format(
                                 self.platelist[i], self.ifudesignlist[i], mangaid_i,

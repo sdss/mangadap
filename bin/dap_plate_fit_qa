@@ -248,7 +248,7 @@ def plate_fit_qa(dapver, analysis_path, daptype, plt):
 #-----------------------------------------------------------------------------
 
 if __name__ == '__main__':
-    t = time.clock()
+    t = time.perf_counter()
 
     parser = argparse.ArgumentParser()
 
@@ -298,5 +298,5 @@ if __name__ == '__main__':
     for daptype in daptypes:
         plate_fit_qa(arg.dapver, analysis_path, daptype, arg.plate)
 
-    print('Elapsed time: {0} seconds'.format(time.clock() - t))
+    print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
 

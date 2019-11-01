@@ -45,10 +45,10 @@ def fit_one_cube(plt, ifu, drpall_file=None, directory_path=None, analysis_path=
 #-----------------------------------------------------------------------------
 
 if __name__ == '__main__':
-    t = time.clock()
+    t = time.perf_counter()
 
     fit_one_cube(7815, 3702, drpall_file='./data/drpall-v2_4_3.fits', directory_path='./data',
                  analysis_path='./output')
 
-    print('Elapsed time: {0} seconds'.format(time.clock() - t))
+    print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
 
