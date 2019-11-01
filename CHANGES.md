@@ -28,6 +28,9 @@ TODO
     - Make more independent of stellar-continnuum module reference file
     - Change `BASE` extension to `CONTINUUM` extension.
 
+2.5.0dev
+--------
+
 2.4.1 (01 Nov 2019)
 -------------------
  - Bug fix in construction of `STELLAR` extension in model LOGCUBE file;
