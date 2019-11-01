@@ -24,6 +24,15 @@ TODO
    still a problem...)
  - Keep all the reference files to the common directory?
  - Make the package pip installable
+ - Change format of emission-line module reference file?
+    - Make more independent of stellar-continnuum module reference file
+    - Change `BASE` extension to `CONTINUUM` extension.
+
+2.4.1 (01 Nov 2019)
+-------------------
+ - Bug fix in construction of `STELLAR` extension in model LOGCUBE file;
+   construction used a pointer instead of a copy that cause the
+   `STELLAR` and `MODEL` extensions to be identical.
 
 2.4.0 (31 Oct 2019)
 -------------------
