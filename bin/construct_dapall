@@ -5,11 +5,12 @@ from __future__ import division
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-import numpy
 import os
-from time import clock
+import time
 
 from argparse import ArgumentParser
+
+import numpy
 
 from mangadap.util.log import init_DAP_logging, module_logging
 from mangadap.par.analysisplan import AnalysisPlanSet
@@ -20,7 +21,7 @@ from mangadap.survey.dapall import DAPall
 #-----------------------------------------------------------------------------
 
 if __name__ == '__main__':
-    t = clock()
+    t = time.perf_counter()
 
     parser = ArgumentParser()
 
@@ -58,7 +59,7 @@ if __name__ == '__main__':
            dapver=arg.dapver, dapsrc=arg.dap_src, analysis_path=arg.analysis_path,
            loggers=loggers, quiet=arg.quiet, single_precision=arg.single_precision)
 
-    print('Elapsed time: {0} seconds'.format(clock() - t))
+    print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
 
 
 

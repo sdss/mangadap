@@ -12,40 +12,6 @@ once per DRP data file.
 *Source location*:
     $MANGADAP_DIR/python/mangadap/proc/reductionassessments.py
 
-*Imports and python version compliance*:
-    ::
-
-        from __future__ import division
-        from __future__ import print_function
-        from __future__ import absolute_import
-        from __future__ import unicode_literals
-
-        import sys
-        import warnings
-        if sys.version > '3':
-            long = int
-
-        import glob
-        import os
-        import time
-        import logging
-        import numpy
-
-        from scipy import sparse
-        from pydl.goddard.astro import airtovac
-        from astropy.io import fits
-
-        from ..drpfits import DRPFits
-        from ..par.parset import ParSet
-        from ..config.defaults import dap_source_dir, default_dap_common_path
-        from ..config.defaults import default_dap_file_name
-        from ..util.covariance import Covariance
-        from ..util.geometry import SemiMajorAxisCoo
-        from ..util.fileio import init_record_array, rec_to_fits_type, write_hdu
-        from ..util.log import log_output
-        from ..util.parser import DefaultConfig
-        from .util import select_proc_method
-
 *Class usage examples*:
     Add examples!
 

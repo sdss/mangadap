@@ -17,8 +17,7 @@ from matplotlib import pyplot, rc, colors, colorbar, ticker
 from astropy.io import fits
 
 from mangadap.dapfits import DAPMapsBitMask
-from mangadap.config.defaults import default_dap_method, default_dap_method_path
-from mangadap.config.defaults import default_dap_plan_file
+from mangadap.config import defaults
 from mangadap.par.analysisplan import AnalysisPlanSet
 from mangadap.util.fileio import channel_dictionary
 from mangadap.proc.util import growth_lim
@@ -81,8 +80,9 @@ def spotcheck_images(analysis_path, daptype, plate, ifudesign, ofile=None, drpve
 
     bm = DAPMapsBitMask()
 
-    plan_dir = default_dap_method_path(daptype, plate=plate, ifudesign=ifudesign, drpver=drpver,
-                                       dapver=dapver, analysis_path=analysis_path)
+    plan_dir = defaults.default_dap_method_path(daptype, plate=plate, ifudesign=ifudesign,
+                                                drpver=drpver, dapver=dapver,
+                                                analysis_path=analysis_path)
     ifile = os.path.join(plan_dir, 'manga-{0}-{1}-MAPS-{2}.fits.gz'.format(plate, ifudesign,
                                                                            daptype))
     if not os.path.isfile(ifile):
@@ -549,7 +549,7 @@ def spotcheck_images(analysis_path, daptype, plate, ifudesign, ofile=None, drpve
 #-----------------------------------------------------------------------------
 
 if __name__ == '__main__':
-    t = time.clock()
+    t = time.perf_counter()
 
     parser = ArgumentParser()
 
@@ -574,13 +574,13 @@ if __name__ == '__main__':
         pyplot.switch_backend('agg')
 
     # Set the the analysis path and make sure it exists
-    analysis_path = default_analysis_path(drpver=arg.drpver, dapver=arg.dapver) \
+    analysis_path = defaults.default_analysis_path(drpver=arg.drpver, dapver=arg.dapver) \
                             if arg.analysis_path is None else arg.analysis_path
 
     daptypes = []
     if arg.daptype is None:
-        plan_file = default_dap_plan_file(drpver=arg.drpver, dapver=arg.dapver,
-                                          analysis_path=arg.analysis_path) \
+        plan_file = defaults.default_dap_plan_file(drpver=arg.drpver, dapver=arg.dapver,
+                                                   analysis_path=arg.analysis_path) \
                                             if arg.plan_file is None else arg.plan_file
         analysisplan = AnalysisPlanSet.from_par_file(plan_file)
 #        daptypes = [ default_dap_method(plan=p) for p in analysisplan ]
@@ -588,16 +588,17 @@ if __name__ == '__main__':
             bin_method = SpatiallyBinnedSpectra.define_method(p['bin_key'])
             sc_method = StellarContinuumModel.define_method(p['continuum_key'])
             el_method = EmissionLineModel.define_method(p['elfit_key'])
-            daptypes += [default_dap_method(bin_method['key'],
-                                            sc_method['fitpar']['template_library_key'],
-                                            el_method['continuum_tpl_key'])]
+            daptypes += [defaults.default_dap_method(bin_method['key'],
+                                                     sc_method['fitpar']['template_library_key'],
+                                                     el_method['continuum_tpl_key'])]
     else:
         daptypes = [arg.daptype]
 
     for daptype in daptypes:
-        plan_qa_dir = default_dap_method_path(daptype, plate=arg.plate, ifudesign=arg.ifudesign,
-                                              qa=True, drpver=arg.drpver, dapver=arg.dapver,
-                                              analysis_path=analysis_path)
+        plan_qa_dir = defaults.default_dap_method_path(daptype, plate=arg.plate,
+                                                       ifudesign=arg.ifudesign, qa=True,
+                                                       drpver=arg.drpver, dapver=arg.dapver,
+                                                       analysis_path=analysis_path)
         ofile = os.path.join(plan_qa_dir,
                              'manga-{0}-{1}-MAPS-{2}-spotcheck.png'.format(arg.plate,
                                                                            arg.ifudesign, daptype))
@@ -606,7 +607,7 @@ if __name__ == '__main__':
 
         spotcheck_images(analysis_path, daptype, arg.plate, arg.ifudesign, ofile=ofile)
 
-    print('Elapsed time: {0} seconds'.format(time.clock() - t))
+    print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
 
 
 

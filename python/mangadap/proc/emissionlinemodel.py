@@ -764,11 +764,20 @@ class EmissionLineModel:
         bin_indx = DAPFitsUtil.downselect_bins(self.binned_spectra['BINID'].data.ravel(),
                                             model_eml_par['BINID']).reshape(self.spatial_shape) \
                             if model_binid is None else model_binid
-        continuum = numpy.ma.MaskedArray(numpy.zeros(model_base.shape, dtype=float)) \
-                        if self.stellar_continuum is None else \
-                    self.stellar_continuum.fill_to_match(bin_indx, missing=self.missing_models)
-        indx = numpy.unique(bin_indx.ravel())[1:]
-        continuum = continuum[indx,:] + model_base
+#        continuum = numpy.ma.MaskedArray(numpy.zeros(model_base.shape, dtype=float)) \
+#                        if self.stellar_continuum is None else \
+#                    self.stellar_continuum.fill_to_match(bin_indx, missing=self.missing_models)
+
+        # If stellar continuum available, masked array returned by
+        # fill_to_match needs to be filled with zeros to correctly
+        # reconstruct the emission-line continuum.
+        if self.stellar_continuum is None:
+            continuum = model_base
+        else:
+            continuum = self.stellar_continuum.fill_to_match(bin_indx,
+                                                             missing=self.missing_models).filled(0.)
+            indx = numpy.unique(bin_indx.ravel())[1:]
+            continuum = continuum[indx,:] + model_base
 
         # Interpret the input mask as either a boolean or bitmask array
         if model_mask.dtype is numpy.dtype('bool'):

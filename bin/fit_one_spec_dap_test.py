@@ -226,7 +226,7 @@ if __name__ == '__main__':
 
     parser.add_argument('test', type=str, help='spectrum for testing', default='manga')
     
-    t = time.clock()
+    t = time.perf_counter()
     mangadap=os.environ['MANGADAP_DIR']
     
     arg = parser.parse_args()
@@ -326,4 +326,4 @@ if __name__ == '__main__':
         pdb.set_trace()
 
 #    pdb.set_trace()
-    print('Elapsed time: {0} seconds'.format(time.clock() - t))
+    print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))

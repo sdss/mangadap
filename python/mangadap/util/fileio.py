@@ -11,26 +11,6 @@ Provides a set of file I/O routines.
 *Source location*:
     $MANGADAP_DIR/python/mangadap/util/fileio.py
 
-*Imports and python version compliance*:
-    ::
-
-        from __future__ import division
-        from __future__ import print_function
-        from __future__ import absolute_import
-        from __future__ import unicode_literals
-
-        import sys
-        if sys.version > '3':
-            long = int
-
-        import os
-        import gzip
-        import shutil
-        import logging
-        import numpy
-
-        from astropy.io import fits
-
 *Revision history*:
     | **27 May 2015**: Original implementation by K. Westfall (KBW)
     | **29 Jan 2016**: (KBW) Added :func:`read_template_spectrum`
@@ -62,6 +42,7 @@ if sys.version > '3':
     long = int
 
 import os
+import warnings
 import gzip
 import shutil
 import logging
@@ -103,7 +84,7 @@ def readfits_1dspec(filename, log10=False):
     hdu = fits.open(filename, mode='readonly')
 
     if (len(hdu)) != 1:
-        raise Exception('{0} has more than one extension.'.format(filename))
+        warnings.warn('{0} has more than one extension.'.format(filename))
     
     if hdu[0].header['NAXIS'] != 1:
         raise Exception('{0} is not one dimensional!'.format(filename))

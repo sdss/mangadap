@@ -145,7 +145,7 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
     log_output(loggers, 1, logging.INFO, '   VERSION: {0}'.format(__version__))
     log_output(loggers, 1, logging.INFO, '     START: {0}'.format(
                                     time.strftime("%a %d %b %Y %H:%M:%S",time.localtime())))
-    t = time.clock()
+    t = time.perf_counter()
     log_output(loggers, 1, logging.INFO, '     PLATE: {0}'.format(obs['plate']))
     log_output(loggers, 1, logging.INFO, ' IFUDESIGN: {0}'.format(obs['ifudesign']))
     log_output(loggers, 1, logging.INFO, '   3D MODE: {0}'.format(obs['mode']))
@@ -199,11 +199,13 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
         #   - SpectralIndices
         bin_method = SpatiallyBinnedSpectra.define_method(plan['bin_key'][i])
         sc_method = StellarContinuumModel.define_method(plan['continuum_key'][i])
-        el_method = EmissionLineModel.define_method(plan['elfit_key'][i])
+        el_method = None if plan['elfit_key'][i] is None \
+                            else EmissionLineModel.define_method(plan['elfit_key'][i])
 
         method = defaults.default_dap_method(bin_method['key'],
                                              sc_method['fitpar']['template_library_key'],
-                                             el_method['continuum_tpl_key'])
+                                             'None' if el_method is None
+                                                else el_method['continuum_tpl_key'])
         method_dir = defaults.default_dap_method_path(method, plate=obs['plate'],
                                                       ifudesign=obs['ifudesign'], drpver=drpver,
                                                       dapver=dapver, analysis_path=_analysis_path)
@@ -427,12 +429,12 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
     log_output(loggers, 1, logging.INFO, '-'*50)
     log_output(loggers, 1, logging.INFO, '    FINISH: {0}'.format(
                                     time.strftime("%a %d %b %Y %H:%M:%S",time.localtime())))
-    if time.clock() - t < 60:
-        tstr = '  DURATION: {0:.5f} sec'.format((time.clock() - t))
-    elif time.clock() - t < 3600:
-        tstr = '  DURATION: {0:.5f} min'.format((time.clock() - t)/60.)
+    if time.perf_counter() - t < 60:
+        tstr = '  DURATION: {0:.5f} sec'.format((time.perf_counter() - t))
+    elif time.perf_counter() - t < 3600:
+        tstr = '  DURATION: {0:.5f} min'.format((time.perf_counter() - t)/60.)
     else:
-        tstr = '  DURATION: {0:.5f} hr'.format((time.clock() - t)/3600.)
+        tstr = '  DURATION: {0:.5f} hr'.format((time.perf_counter() - t)/3600.)
     log_output(loggers, 1, logging.INFO, tstr)
 
 
