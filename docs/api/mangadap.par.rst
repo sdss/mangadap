@@ -1,0 +1,25 @@
+mangadap.par package
+====================
+
+Submodules
+----------
+
+.. toctree::
+
+   mangadap.par.absorptionindexdb
+   mangadap.par.analysisplan
+   mangadap.par.artifactdb
+   mangadap.par.bandheadindexdb
+   mangadap.par.emissionlinedb
+   mangadap.par.emissionmomentsdb
+   mangadap.par.obsinput
+   mangadap.par.parset
+   mangadap.par.spectralfeaturedb
+
+Module contents
+---------------
+
+.. automodule:: mangadap.par
+   :members:
+   :undoc-members:
+   :show-inheritance:

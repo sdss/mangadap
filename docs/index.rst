@@ -1,10 +1,27 @@
-.. mangadap documentation master file, created by
-   sphinx-quickstart on Thu Aug 15 11:46:54 2019.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+Welcome to the MaNGA Data Analysis Pipeline
+===========================================
 
-Welcome to mangadap's documentation!
-====================================
+The MaNGA data-analysis pipeline (MaNGA DAP) is the survey-led software
+package that analyzes the data produced by the MaNGA data-reduction
+pipeline (MaNGA DRP) to produced physical properties derived from the
+MaNGA spectroscopy.
+
+These quantities currently include:
+
+ - Spatially stacked spectra
+ - Stellar kinematics (V and sigma)
+ - Nebular emission-line properties: fluxes, equivalent widths, and kinematics (V and sigma)
+ - Spectral Indices: absorption-line (e.g., H-delta) and bandhead (e.g., D4000) measurements
+
+All survey-led properties are derived from the datacubes, specifically
+the LOGCUBE files. However, the core functions are developed to consider
+each spectrum largely independently. The DAP currently focuses on
+"model-independent" properties. Higher-level, model-dependent
+properties, such as stellar-population parameters, will be included in
+future releases on a best-effort basis.
+
+Getting Started
+===============
 
 .. toctree::
    :maxdepth: 2
@@ -19,11 +36,14 @@ How Tos
 
    fit_one_spec
 
+API Reference
+=============
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-   mangadap
+   MaNGA DAP API <api/mangadap>
 
 
 Indices and tables
@@ -32,3 +52,4 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
