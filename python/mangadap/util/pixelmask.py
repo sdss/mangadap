@@ -37,6 +37,8 @@ A class heirarchy for pixel masks.
     | **18 Apr 2016**: Original implementation K. Westfall (KBW)
     | **30 Nov 2016**: (KBW) Generalization of :class:`PixelMask` and
         minor edits
+    | **16 Oct 2019**:  KHRR made nsigma a class attribute so that it
+    |   it can be set externally.  The default value is still 3.0 (same as before).
 
 """
 
@@ -153,7 +155,7 @@ class SpectralPixelMask(PixelMask):
         waverange (numpy.ndarray): Any pixels **outside**
             this wavelength range are masked.
     """
-    def __init__(self, artdb=None, emldb=None, waverange=None):
+    def __init__(self, artdb=None, emldb=None, waverange=None, nsig=None):
         if artdb is not None and not isinstance(artdb, ArtifactDB):
             raise TypeError('Must provide EmissionLineDB for emission-lines to mask.')
         self.artdb = artdb
@@ -165,6 +167,9 @@ class SpectralPixelMask(PixelMask):
         if waverange is not None and len(waverange) != 2:
             raise ValueError('Provided wavelength range must have two and only two elements.')
         self.waverange = waverange
+
+        ## KHRR added nsig here and above
+        self.nsig = 3. if nsig is None else nsig
 
 
     def _waverange_mask(self, wave, nspec=None):
@@ -231,7 +236,7 @@ class SpectralPixelMask(PixelMask):
             return numpy.atleast_1d(kin).astype(numpy.float)
        
 
-    def _get_emission_line_bands(self, velocity_offsets=0.0, sigma=250.0, nsigma=3.0):
+    def _get_emission_line_bands(self, velocity_offsets=0.0, sigma=250.0):   #, nsigma=3.0):
         r"""
         Set the emission-line masks, using the emission-line parameters
         defined by :attr:`emldb` (see
@@ -283,7 +288,7 @@ class SpectralPixelMask(PixelMask):
             return None
 
         # Get the number of standard deviations to cover with the mask
-        _nsigma = self._check_eml_kin_argument(nsigma)
+        _nsigma = self._check_eml_kin_argument(self.nsig)   # used to be (nsigma)
         if _nsigma is None:
             raise ValueError('Must provide the number of sigma to cover with the mask.')
         if numpy.any(numpy.invert(_nsigma > 0)):
@@ -306,7 +311,7 @@ class SpectralPixelMask(PixelMask):
                              center*(1.0+halfwidth/astropy.constants.c.to('km/s').value) ]).T
 
 
-    def _emission_line_mask(self, wave, nspec=None, velocity_offsets=0.0, sigma=250.0, nsigma=3.0):
+    def _emission_line_mask(self, wave, nspec=None, velocity_offsets=0.0, sigma=250.0):   #nsigma=3.0):
         """
         Mask the pixels in the wavelength range(s) defined by the
         emission-line database that has been adjusted by a set of
@@ -348,21 +353,20 @@ class SpectralPixelMask(PixelMask):
             mask = self._empty_mask(wave, ny=nspec)
             for i in range(len(_velocity_offsets)):
                 waverange = self._get_emission_line_bands(velocity_offsets=_velocity_offsets[i],
-                                                          sigma=sigma, nsigma=nsigma)
+                                                          sigma=sigma)  #nsigma=self.nsig)
                 mask[i,:] = self._mask_coordinate_ranges(wave, waverange)
             return mask
 
         _velocity_offsets = velocity_offsets[0] \
                 if isinstance(velocity_offsets, (list, numpy.ndarray)) \
                         and len(velocity_offsets) == 1 else velocity_offsets
-        
-        waverange = self._get_emission_line_bands(velocity_offsets=_velocity_offsets, sigma=sigma,
-                                                  nsigma=nsigma)
+
+        waverange = self._get_emission_line_bands(velocity_offsets=_velocity_offsets, sigma=sigma)
+                                                    # nsigma=self.nsig)
         return self._mask_coordinate_ranges(wave, waverange, ny=nspec)
         
 
-
-    def boolean(self, wave, nspec=None, velocity_offsets=0.0, sigma=250.0, nsigma=3.0):
+    def boolean(self, wave, nspec=None, velocity_offsets=0.0, sigma=250.0):   # nsigma=3.0):
         """
         Construct the full boolean mask that includes the desired
         wavelength range, omitting artifacts, and omitting emission
@@ -392,11 +396,12 @@ class SpectralPixelMask(PixelMask):
             raise ValueError('Number of spectra must be larger than 0!')
         return self._waverange_mask(wave, nspec=nspec) | self._artifact_mask(wave, nspec=nspec) \
                 | self._emission_line_mask(wave, nspec=nspec, velocity_offsets=velocity_offsets,
-                                           sigma=sigma, nsigma=nsigma)
+                                           sigma=sigma)   # nsigma=self.nsig)
         
 
     def bits(self, bitmask, wave, nspec=None, mask=None, velocity_offsets=0.0, sigma=250.0,
-             nsigma=3.0, waverange_flag='OUTSIDE_RANGE', art_flag='ARTIFACT',
+             # nsigma=3.0,
+             waverange_flag='OUTSIDE_RANGE', art_flag='ARTIFACT',
              eml_flag='EML_REGION'):
         """
         Construct a bit mask that signifies pixels as outside the
@@ -459,7 +464,7 @@ class SpectralPixelMask(PixelMask):
 
         # Get the emission-line mask
         emlmask = self._emission_line_mask(wave, nspec=nspec, velocity_offsets=velocity_offsets,
-                                           sigma=sigma, nsigma=nsigma)
+                                           sigma=sigma)   # nsigma=self.nsig)
 
         # Construct and return the mask
         _mask = numpy.zeros(wavemask.shape, dtype=bitmask.minimum_dtype()) \
