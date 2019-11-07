@@ -5,11 +5,11 @@ from __future__ import division
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-import numpy
-from os import remove
-import os.path
-from time import clock
+import os
+import time
 import sys
+
+import numpy
 
 from argparse import ArgumentParser
 
@@ -58,7 +58,7 @@ def calculate_covariance_cube(plate, ifudesign, ofile, nc=1, wave=None, director
 #-----------------------------------------------------------------------------
 
 if __name__ == '__main__':
-    t = clock()
+    t = time.perf_counter()
 
     parser = ArgumentParser()
 
@@ -89,7 +89,7 @@ if __name__ == '__main__':
     calculate_covariance_cube(arg.plate, arg.ifudesign, arg.output_file, nc=arg.numchannels,
                               wave=arg.wavelength, directory_path=arg.directory_path)
 
-    print('Elapsed time: {0} seconds'.format(clock() - t))
+    print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
 
 
 

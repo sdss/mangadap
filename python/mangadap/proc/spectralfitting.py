@@ -235,7 +235,7 @@ class EmissionLineFit(SpectralFitting):
         if not debug:
             return binned_spectra.check_fgoodpix()
 
-        warnings.warn('DEBUG!!')
+#        warnings.warn('DEBUG!!')
 
         uniq, indx = map(lambda x : x[1:], numpy.unique(binned_spectra['BINID'].data.ravel(),
                                                         return_index=True))
@@ -643,7 +643,7 @@ class EmissionLineFit(SpectralFitting):
     @staticmethod
     def line_metrics(emission_lines, wave, flux, ferr, model_flux, model_eml_par,
                      mask=None, model_mask=None, bitmask=None, window=15, fill_redshift=False):
-        """
+        r"""
         Calculate fit-quality metrics near each emission line.
 
         .. todo::
@@ -774,7 +774,6 @@ class EmissionLineFit(SpectralFitting):
             z_per_spec = numpy.ma.median(z, axis=1)
             for i in range(nspec):
                 z[i,z.mask[i,:]] = z_per_spec[i]
-
         _bluebands = emission_lines['blueside'][None,:,:]*(1.0+z.data[:,:,None])
         _redbands = emission_lines['redside'][None,:,:]*(1.0+z.data[:,:,None])
 

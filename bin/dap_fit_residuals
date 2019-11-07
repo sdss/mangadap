@@ -456,7 +456,7 @@ def fom_growth(plt, ifu, flux, error, model, snrg, rms, frms, rchi2, fit='sc', o
 
     for i in range(nspec):
         j = snr_srt[i]
-        if numpy.all(chi.mask[j,:]):
+        if numpy.all(chi.mask[:,j]):
             continue
 
         t = resid[:,j].compressed()
@@ -732,7 +732,7 @@ def fit_residuals(drpver, redux_path, dapver, analysis_path, daptype, plt, ifu):
 #-----------------------------------------------------------------------------
 
 if __name__ == '__main__':
-    t = time.clock()
+    t = time.perf_counter()
 
     parser = argparse.ArgumentParser()
 
@@ -784,5 +784,5 @@ if __name__ == '__main__':
         fit_residuals(arg.drpver, redux_path, arg.dapver, analysis_path, daptype, arg.plate,
                       arg.ifudesign)
 
-    print('Elapsed time: {0} seconds'.format(time.clock() - t))
+    print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
 

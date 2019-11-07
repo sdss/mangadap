@@ -592,7 +592,7 @@ class TemplateLibrary:
         self.library = None
         self.file_list = None
         self.ntpl = None
-        self._define_library(library_key, tpllib_list=tpllib_list, dapsrc=dapsrc)
+        self.library = self.define_library(library_key, tpllib_list=tpllib_list, dapsrc=dapsrc)
 
         # Define the processed file and flag, and the HDUList used to
         # keep the data
@@ -628,23 +628,11 @@ class TemplateLibrary:
                                       hardcopy=hardcopy, symlink_dir=symlink_dir, clobber=clobber,
                                       loggers=loggers, quiet=quiet)
 
-
-#    def __del__(self):
-#        """
-#        Deconstruct the template library object by ensuring that the
-#        fits file is properly closed.
-#        """
-#        if self.hdu is None:
-#            return
-#        self.hdu.close()
-#        self.hdu = None
-
-
     def __getitem__(self, key):
         return self.hdu[key]
 
-
-    def _define_library(self, library_key, tpllib_list=None, dapsrc=None):
+    @staticmethod
+    def define_library(library_key, tpllib_list=None, dapsrc=None):
         """
         Select the library from the provided list.  Used to set
         :attr:`library`; see
@@ -663,10 +651,8 @@ class TemplateLibrary:
                 :func:`mangadap.config.defaults.dap_source_dir`.
         """
         # Get the details of the selected template library
-        self.library = select_proc_method(library_key, TemplateLibraryDef, method_list=tpllib_list,
-                                          available_func=available_template_libraries,
-                                          dapsrc=dapsrc)
-
+        return select_proc_method(library_key, TemplateLibraryDef, method_list=tpllib_list,
+                                  available_func=available_template_libraries, dapsrc=dapsrc)
 
     def _can_set_paths(self, directory_path, drpf, processed_file, quiet=False):
         # Check that the directory_path can be set
@@ -1255,7 +1241,7 @@ class TemplateLibrary:
         """
         if library_key is not None:
             # Redefine the library
-            self._define_library(library_key, tpllib_list=tpllib_list, dapsrc=dapsrc)
+            self.library = self.define_library(library_key, tpllib_list=tpllib_list, dapsrc=dapsrc)
         self._read_raw()
 
 

@@ -11,36 +11,6 @@ the MaNGA Data Reduction Pipeline (DRP).
 *Source location*:
     $MANGADAP_DIR/python/mangadap/drpfits.py
 
-*Imports and python version compliance*:
-    ::
-
-        from __future__ import division
-        from __future__ import print_function
-        from __future__ import absolute_import
-
-        import sys
-        if sys.version > '3':
-            long = int
-
-        import time
-        import os.path
-        import numpy
-        import warnings
-
-        from scipy import sparse
-        from astropy.io import fits
-        from astropy.wcs import WCS
-
-        from .util.parser import arginp_to_list
-        from .util.covariance import Covariance
-        from .config.defaults import default_idlutils_dir, default_drp_version
-        from .config.defaults import default_redux_path, default_drp_directory_path
-        from .config.defaults import default_cube_pixelscale, default_cube_width_buffer
-        from .config.defaults import default_cube_recenter, default_regrid_rlim
-        from .config.defaults import default_regrid_sigma
-        from .config.defaults import default_manga_fits_root
-        from .util.bitmask import BitMask
-
 *Class usage examples*:
 
     This class provides a basic interface with DRP LOG* files.  It provides a number of 

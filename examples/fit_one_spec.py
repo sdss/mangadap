@@ -65,12 +65,12 @@ if __name__ == '__main__':
 
     # Template keywords
     sc_tpl_key = 'MILESHC'
-    el_tpl_key = 'MILESHC'
+    el_tpl_key = 'MASTARHC'
 #    el_tpl_key = 'BC03'
 
     # Emission-line database keywords
-    elmom_key = 'ELBMILES'
-    elfit_key = 'ELPMILES'
+    elmom_key = 'ELBMPL9'
+    elfit_key = 'ELPMPL9'
 #    elmom_key = 'ELBTT'
 #    elfit_key = 'ELPT4'
 

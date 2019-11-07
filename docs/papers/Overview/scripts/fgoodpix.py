@@ -8,6 +8,11 @@ import glob
 from astropy.io import fits
 from matplotlib import pyplot, rc, cm, colors, ticker
 
+os.environ['MANGADRP_VER'] = 'v2_4_3'
+os.environ['MANGA_SPECTRO_REDUX'] = '/Volumes/MaNGA/redux'
+os.environ['MANGADAP_VER'] = '2.2.1'
+os.environ['MANGA_SPECTRO_ANALYSIS'] = '/Volumes/MaNGA/analysis'
+
 from mangadap.drpfits import DRPFits
 
 #-----------------------------------------------------------------------------
@@ -15,7 +20,7 @@ from mangadap.drpfits import DRPFits
 #-----------------------------------------------------------------------------
 
 if __name__ == '__main__':
-    t = time.clock()
+    t = time.perf_counter()
 
     font = { 'size' : 16 }
     rc('font', **font)
@@ -41,7 +46,8 @@ if __name__ == '__main__':
 #    ax.tick_params(which='both', top=True, right=True)
     ax.grid(True, which='major', color='0.8', zorder=0, linestyle='-', lw=0.5)
 
-    ylim = [0.11, 0.59]
+#    ylim = [0.11, 0.59]
+    ylim = [0.5, 1.02]
     ax.set_xlim([-0.01, 1.01])
     ax.set_ylim(ylim)
 
@@ -58,9 +64,14 @@ if __name__ == '__main__':
 #        print(fgoodpix.shape)
         srt = numpy.argsort(fgoodpix)
         _fgoodpix = numpy.ma.MaskedArray(fgoodpix[srt], mask=numpy.invert(fgoodpix[srt] > 0))
+        omega = 1-(numpy.arange(len(srt), dtype=float)+1)/len(srt)
+
+        omega /= numpy.amax(omega[numpy.invert(_fgoodpix.mask)])
+
 #        print(fgoodpix[srt])
-        ax.step(_fgoodpix, 1-(numpy.arange(len(srt), dtype=float)+1)/len(srt),
-                    color=clr, lw=1.5, zorder=3)
+#        ax.step(_fgoodpix, 1-(numpy.arange(len(srt), dtype=float)+1)/len(srt),
+#                    color=clr, lw=1.5, zorder=3)
+        ax.step(_fgoodpix, omega, color=clr, lw=1.5, zorder=3)
 
     ax.text(0.50, -0.1, r'$\delta\Lambda$', horizontalalignment='center',
             verticalalignment='center', transform=ax.transAxes)
@@ -102,7 +113,7 @@ if __name__ == '__main__':
     ax.text(-0.06, 0.05, r'7495-12704', horizontalalignment='center', verticalalignment='bottom',
             transform=ax.transAxes, rotation='vertical')
     
-    ofile='../ms/figs/good_spaxel_growth_test.pdf'
+    ofile='../ms/rev1/good_spaxel_growth_v2.pdf'
 #    ofile=None
     if ofile is None:
         pyplot.show()
@@ -112,7 +123,7 @@ if __name__ == '__main__':
     pyplot.close(fig)
 
 
-    print('Elapsed time: {0} seconds'.format(time.clock() - t))
+    print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
 
 
 

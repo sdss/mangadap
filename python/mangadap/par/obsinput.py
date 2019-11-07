@@ -11,26 +11,6 @@ run the DAP for a specific MaNGA observation.
 *Source location*:
     $MANGADAP_DIR/python/mangadap/par/obsinput.py
 
-*Imports and python version compliance*:
-    ::
-
-        from __future__ import division
-        from __future__ import print_function
-        from __future__ import absolute_import
-        from __future__ import unicode_literals
-
-        import sys
-        if sys.version > '3':
-            long = int
-
-        import numpy
-        import os.path
-        import warnings
-        from pydl.pydlutils.yanny import yanny
-
-        from .parset import ParSet
-        from ..drpfits import DRPFits
-
 *Class usage examples*:
     To define a set of observation parameteters::
 
