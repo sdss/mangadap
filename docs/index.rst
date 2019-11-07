@@ -8,32 +8,34 @@ MaNGA spectroscopy.
 
 These quantities currently include:
 
- - Spatially stacked spectra
- - Stellar kinematics (V and sigma)
- - Nebular emission-line properties: fluxes, equivalent widths, and kinematics (V and sigma)
- - Spectral Indices: absorption-line (e.g., H-delta) and bandhead (e.g., D4000) measurements
+ * Spatially stacked spectra
+ * Stellar kinematics
+ * Nebular emission-line properties: fluxes, equivalent widths, and
+   kinematics
+ * Spectral indices: absorption-line (e.g., H-delta) and bandhead/color
+   (e.g., TiO, D4000) measurements
 
 All survey-led properties are derived from the datacubes, specifically
-the LOGCUBE files. However, the core functions are developed to consider
-each spectrum largely independently. The DAP currently focuses on
-"model-independent" properties. Higher-level, model-dependent
+the LOGCUBE files.  However, the core functions are developed to
+consider each spectrum largely independently.  The DAP currently focuses
+on "model-independent" properties.  Higher-level, model-dependent
 properties, such as stellar-population parameters, will be included in
 future releases on a best-effort basis.
-
-Getting Started
-===============
 
 .. toctree::
    :maxdepth: 2
 
-   intro
+   whatsnew
+   knownissues
 
 How Tos
 =======
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
+   installation
+   execution
    fit_one_spec
 
 API Reference
@@ -41,13 +43,11 @@ API Reference
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
 
    MaNGA DAP API <api/mangadap>
 
-
-Indices and tables
-==================
+Search
+======
 
 * :ref:`genindex`
 * :ref:`modindex`
