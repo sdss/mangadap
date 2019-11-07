@@ -222,23 +222,27 @@ class TemplateLibraryDef(ParSet):
     See :class:`mangadap.par.parset.ParSet` for attributes.
 
     Args:
-        key (str): Keyword to distinguish the template library.
-        file_search (str): Search string used by glob to find the 1D
-            fits spectra to include in the template library.
-        fwhm (int or float): FWHM of the resolution element in
-            angstroms.
-        sres_ext (str): Extension in the fits files with measurements of
-            the spectral resolution as a function of wavelength.
-        in_vacuum (bool): Flag that the wavelengths of the spectra are
-            in vacuum, not air.
-        wave_limit (numpy.ndarray): 2-element array with the starting
-            and ending wavelengths for the valid spectral range of the
-            templates.
-        lower_flux_limit (int or float): Minimum valid flux in the
-            template spectra.
-        log10 (bool): Flag that the template spectra have been binned
+        key (:obj:`str`):
+            Keyword to distinguish the template library.
+        file_search (:obj:`str`):
+            Search string used by glob to find the 1D fits spectra to
+            include in the template library.
+        fwhm (:obj:`int`, :obj:`float`):
+            FWHM of the resolution element in angstroms.
+        sres_ext (:obj:`str`):
+            Extension in the fits files with measurements of the
+            spectral resolution as a function of wavelength.
+        in_vacuum (:obj:`bool`):
+            Flag that the wavelengths of the spectra are in vacuum, not
+            air.
+        wave_limit (`numpy.ndarray`_):
+            Two-element array with the starting and ending wavelengths
+            for the valid spectral range of the templates.
+        lower_flux_limit (:obj:`int`, :obj:`float`):
+            Minimum valid flux in the template spectra.
+        log10 (:obj:`bool`):
+            Flag that the template spectra have been binned
             logarithmically in wavelength.
-
     """
     def __init__(self, key=None, file_search=None, fwhm=None, sres_ext=None, in_vacuum=False,
                  wave_limit=None, lower_flux_limit=None, log10=False): 
@@ -1067,8 +1071,15 @@ class TemplateLibrary:
                                                        regular=self.library['in_vacuum'])
                                         for w in self.hdu['WAVE'].data])
 
+        # TODO: I think this kludge was necessary because of a bug in
+        # angstroms_per_pixel.  If regular was True and log was False,
+        # it only returns a single integer, otherwise it returned a
+        # vector.  I've changed angstroms_per_pixel, but have left the
+        # kludge below for now for testing.
+
         #KHRR KLUDGE
-        if(len(ang_per_pix.shape)==1):
+        if len(ang_per_pix.shape) == 1:
+            warnings.warn('Executing KLUDGE!  Bug fix insufficient.')
             tmp_ang_per_pix = numpy.empty(self.hdu['SPECRES'].data.shape)
             for ind in range(len(ang_per_pix)):
                 tmp_ang_per_pix[ind,:] = ang_per_pix[ind]

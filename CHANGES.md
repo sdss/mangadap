@@ -31,6 +31,16 @@ TODO
 2.5.0dev
 --------
 
+ - Added BPASS theoretical spectral template library
+ - Added numerous config files / line lists to allow for masking of NaD
+   in both stellar continuum modeling and emission line modeling steps
+ - Adjusted nsigma parameter in `pixelmask.py` so that it can be set
+   externally. (This is needed to avoid masking HeI 5877 emission while
+   simultaneously masking NaD.)
+ - Fixed a bug in `angstroms_per_pixel` that caused it to return a
+   single number instead of a vector.
+
+
 2.4.1 (01 Nov 2019)
 -------------------
  - Bug fix in construction of `STELLAR` extension in model LOGCUBE file;
