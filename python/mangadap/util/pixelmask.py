@@ -169,10 +169,7 @@ class SpectralPixelMask(PixelMask):
         self.waverange = waverange
 
         ## KHRR added nsig here and above
-        if nsig is not None:
-            self.nsig = nsig
-        else:
-            self.nsig = 3.0
+        self.nsig = 3. if nsig is None else nsig
 
 
     def _waverange_mask(self, wave, nspec=None):
