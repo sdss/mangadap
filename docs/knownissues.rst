@@ -1,0 +1,121 @@
+
+****************
+DAP Known Issues
+****************
+
+Persistent
+==========
+
+LSF limitations
+---------------
+
+The DRP is now reporting both pre- and post-pixelized Gaussian
+measurements of the instrumental line-spread function.  Because it makes
+the most sense to use the pre-pixelized versions with pPXF (an error not
+reported in MPL-5), the DAP now uses these pre-pixelized measurements
+for the dispersion calculations in both the stellar and ionized-gas
+velocity dispersions.  A more in-depth analysis is needed to understand
+how these LSF changes affect the results.
+
+Artifact effects on emission-line fitting
+-----------------------------------------
+
+The DRP will inevitably miss some cosmic rays, and occasionally those
+cosmic rays will land on or near emission lines.  This will play havoc
+with the emission-line fitter.  Beyond possibly affecting the flux of
+the nearest line, it can also pull off *all* of the lines because the
+lines are forced to have the same velocity.  An example of this in
+MPL-7/DR15 is ``8134-9102`` where a cosmic ray lands on [S II]6718 for
+e.g., spaxel (x,y) = (25,35).  The cosmic-ray is slightly blueward of
+the [S II] center and leads to all the remaining lines being too far to
+the blue, as well as leading to incorrect fluxes and velocity
+dispersions.
+
+Spectral indices
+----------------
+
+Both the spectral indices and their velocity-dispersion corrections are
+measured using the input (NSA) redshift, *not* the fitted stellar
+velocity.  Specifically for the velocity-dispersion corrections, this
+means that there will be a *velocity* dependence of the correction that
+can be more significant that the correction for the velocity dispersion
+itself.  The approach to the velocity dispersion corrections may be
+improved in future releases.
+
+Flagging
+--------
+
+There are still severe deficiencies in the flagging, in general.
+Measurements can exhibit pixel-to-pixel variations that are inconsistent
+with random error (because of the strong covariance between neighboring
+spaxels) or fiber-level deviations that are inconsistent with physical
+intuition.  These issues tend to occur at low S/N, however, they might
+not all be caught by a simple S/N cut.  **Please consider the limited
+robustness of the flagging for your science goals.**  These limitations
+apply to essentially all derived products (kinematics, fluxes, indices,
+etc).
+
+Uncertainties
+-------------
+
+Errors are generally "formal" errors determined either by the covariance
+(inverse Hessian) matrix provided by the optimization algorithm (stellar
+and emission-line kinematics) or a direct propagation of the error based
+on the inverse variances provided by the DRP (as for the emission-line
+moments and spectral indices).  Idealized experiments and analysis of
+repeat observations have shown that the formal errors are within a
+factor of two of the statistical error.  See the detailed assessments of
+the DAP uncertainties in the two main DAP papers: `Westfall et al.
+(2019)
+<https://ui.adsabs.harvard.edu/abs/2019arXiv190100856W/abstract>`_ and
+`Belfiore et al. (2019)
+<https://ui.adsabs.harvard.edu/abs/2019AJ....158..160B/abstract>`_.
+
+
+MPL-9 (2.4.1)
+=============
+
+TBD
+
+MPL-8 (2.3.0)
+=============
+
+
+Faults
+------
+
+There were 32 observations that did not successfully finish all aspects
+of the MPL-8 run::
+
+    7443-3703, 7968-12703, 8133-6102, 8158-3703, 8309-3703, 8312-6101,
+    8320-3701, 8332-12704, 8462-6103, 8568-12704, 8616-3704, 8616-12705,
+    8626-9102, 8655-3702, 8935-12704, 8947-12704, 9025-12702, 9085-6104,
+    9183-12703, 9673-9102, 9673-12703, 9673-12704, 9674-12705,
+    9675-12705, 9677-12703, 9677-12704, 9862-12701, 9871-12704,
+    9874-9101, 9888-9102, 10498-12704, 10507-12705
+
+In the 32 failures, the error may have occurred such that e.g., the
+unbinned (``SPX``) processing finished but the Voronoi-binned results
+(``VOR10``) did not. Here are the number of ``MAPS`` files for each
+``DAPTYPE``:
+
++---------------------------+-----------------------+
+|               ``DAPTYPE`` | :math:`N_{\rm cubes}` |
++===========================+=======================+
+|  ``SPX-MILESHC-MILESHC``  |                  6520 |
++---------------------------+-----------------------+
+| ``VOR10-MILESHC-MILESHC`` |                  6515 |
++---------------------------+-----------------------+
+| ``HYB10-MILESHC-MILESHC`` |                  6500 |
++---------------------------+-----------------------+
+
+The 5 galaxies with SPX but no VOR10 output are::
+
+    7443-3703, 8158-3703, 8462-6103, 9025-12702, 9888-9102
+
+The 15 galaxies with SPX and VOR10 but no HYB10 are::
+
+    7968-12703, 8133-6102, 8320-3701, 8332-12704, 8568-12704,
+    8616-12705, 8616-3704, 8655-3702, 8935-12704, 8947-12704, 9085-6104,
+    9183-12703, 9862-12701, 9874-9101, 10507-12705
+
