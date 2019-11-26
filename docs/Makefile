@@ -6,19 +6,20 @@ SPHINXAPI     = sphinx-apidoc
 SPHINXAPIOPT  = members,private-members,undoc-members,show-inheritance
 SPHINXOPTS    = -aE -w ./sphinx_warnings.out
 SPHINXBUILD   = sphinx-build
-PAPER         =
 BUILDDIR      = _build
-LOCALFILES    = $(BUILDDIR)/* api/*.rst sphinx_warnings.out
+STATICDIR     = _static
+DOCTREE       = $(BUILDDIR)/doctrees
+LOCALFILES    = $(BUILDDIR)/* $(STATICDIR)/* api/*.rst sphinx_warnings.out
 
 # Internal variables.
-ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
+ALLSPHINXOPTS   = -d $(DOCTREE) $(SPHINXOPTS) .
 
 clean:
 	rm -rf $(LOCALFILES)
 
 apirst:
 	export SPHINX_APIDOC_OPTIONS=$(SPHINXAPIOPT)
-	$(SPHINXAPI) --separate -o ./api ../python/mangadap ../python/mangadap/tests/*
+	$(SPHINXAPI) --separate -o ./api ../python/mangadap ../python/mangadap/tests/* 
 
 html:
 	make apirst

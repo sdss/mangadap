@@ -11,28 +11,6 @@ Binning!
 *Source location*:
     $MANGADAP_DIR/python/mangadap/proc/spatialbins.py
 
-*Imports and python version compliance*:
-    ::
-
-        from __future__ import division
-        from __future__ import print_function
-        from __future__ import absolute_import
-        from __future__ import unicode_literals
-
-        import sys
-        if sys.version > '3':
-            long = int
-
-        import numpy
-        from scipy import sparse
-        from astropy.io import fits
-
-        from vorbin.voronoi_2d_binning import voronoi_2d_binning
-
-        from ..par.parset import ParSet
-        from ..util.geometry import SemiMajorAxisCoo
-        from ..util.covariance import Covariance
-
 *Class usage examples*:
         Add examples
 

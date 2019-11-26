@@ -1,3 +1,6 @@
+
+.. _execution:
+
 Execution
 =========
 
@@ -8,6 +11,8 @@ to more easily work with non-MaNGA data.
 
 Input files
 -----------
+
+.. _execution-analysis-plan:
 
 1. The DAP AnalysisPlan
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -78,6 +83,8 @@ indices are not measured) by setting their keyword to ``None``; the
 primary DAP output will still be produced but with empty arrays for the
 skipped analysis steps.
 
+.. _execution-obs-input:
+
 2. The DAP ObsInputPar
 ~~~~~~~~~~~~~~~~~~~~~~
 
@@ -130,6 +137,8 @@ An example file looks like this:
     } DAPPAR;
 
     DAPPAR 7443 12701 CUBE  6.1391504e+03  1.0000000e+02  3.4162802e-01  1.5024400e+02  5.7011299e+00
+
+.. _execution-mangadap:
 
 DAP command-line script
 -----------------------
@@ -186,8 +195,8 @@ An example execution of the DAP might look like this:
 where ``mangadap-7495-12704-LOGCUBE-input.par`` and ``plan.par`` are,
 respectively, `The DAP ObsInputPar`_ and `The DAP AnalysisPlan`_ files.
 
-Programmatic excution
----------------------
+Programmatic execution
+----------------------
 
 Alternatively, ``$MANGADAP_DIR/examples/fit_one_cube.py`` provides a
 programmatic approach to running the exact same script that is executed
@@ -198,8 +207,29 @@ file, instead of from a file, and it directly defines the
 script as an example, one could construct a script that programmatically
 analyzes a large set of datacubes.
 
+.. _execution-rundap:
+
 Batch execution using automatically generated scripts
 -----------------------------------------------------
+
+----
+**Fix this**
+
+In the automated run of the DAP, any entry in the :ref:`metadatamodel-drpcomplete`
+file with:
+ - ``MANGAID != NULL``
+ - ``MANGA_TARGET1 > 0 | MANGA_TARGET3 > 0``
+ - ``VEL > -500``
+will be analyzed.
+
+An important consequence of the selection above is that *any ancillary
+targets without a provided redshift will not be analyzed by the DAP*,
+unless it has replacement redshift in the
+:ref:`metadatamodel-redshift-fix`.  If an ancillary target(s) were not
+analyzed by the DAP, it may be that this can be changed simply by
+supplying redshift estimates in this redshift-fix file.
+
+----
 
 The survey-level execution of the DAP uses the
 ``$MANGADAP_DIR/bin/rundap`` script, which is a simple wrapper of

@@ -75,11 +75,59 @@ the DAP uncertainties in the two main DAP papers: `Westfall et al.
 MPL-9 (2.4.1)
 =============
 
-TBD
+Faults
+------
+
+The full report of the observations that faulted and the consolidated
+list of error messages can be found `here
+<https://data.sdss.org/sas/mangawork/manga/spectro/analysis/v2_7_1/2.4.1/log/error_report.txt>`_.
+
+Of the 8130 attempted analyses, 73 did not successfully finish all three
+analysis approaches.  In the 73 failures, the error may have occurred
+such that e.g., the unbinned (``SPX``) processing finished but the
+Voronoi-binned results (``VOR10``) did not. Here are the number of
+``MAPS`` files for each ``DAPTYPE``:
+
++---------------------------+-----------------------+
+|               ``DAPTYPE`` | :math:`N_{\rm cubes}` |
++===========================+=======================+
+|  ``SPX-MILESHC-MILESHC``  |                  8097 |
++---------------------------+-----------------------+
+| ``VOR10-MILESHC-MILESHC`` |                  8089 |
++---------------------------+-----------------------+
+| ``HYB10-MILESHC-MILESHC`` |                  8057 |
++---------------------------+-----------------------+
+
+The 33 observations that were unsuccessful for *any* analysis approach
+are::
+
+   8083-9101, 8148-3701, 8253-12705, 8309-3703, 8312-6101, 8332-12703,
+   8333-9101, 8438-12704, 8613-12702, 8626-9102, 8714-3703, 8715-12704,
+   8725-12705, 8941-12704, 8941-12705, 9024-6103, 9195-12704,
+   9485-12704, 9500-12702, 9508-12701, 9673-12703, 9673-9102,
+   9674-12703, 9674-12705, 9677-12703, 9677-12704, 9678-12704,
+   9678-9102, 10503-9101, 10505-6101, 10839-6103, 11014-12705,
+   11019-12703
+
+The 8 observations that have ``SPX-MILESHC-MILESHC`` results but none
+others are::
+
+   7443-3703, 8994-9102, 9024-12705, 9025-12702, 9888-9102, 11016-3704,
+   11823-3703, 11831-6104
+
+The 32 observations that have all but the ``HYB10-MILESHC-MILESHC``
+output are::
+
+   8133-6102, 8141-12705, 8143-9102, 8147-6101, 8149-12701, 8263-12701,
+   8338-12704, 8485-12701, 8548-1901, 8568-12704, 8603-6102, 8615-12705,
+   8623-6103, 8933-12701, 8996-9101, 9025-12701, 9042-12704, 9044-9102,
+   9048-9101, 9050-6103, 9094-12704, 9094-6103, 9192-6103, 9863-6101,
+   9887-12705, 11025-6103, 11751-12703, 11757-12704, 11863-3703,
+   11941-12701, 11979-3704, 11982-3701
+
 
 MPL-8 (2.3.0)
 =============
-
 
 Faults
 ------

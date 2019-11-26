@@ -1031,26 +1031,33 @@ class DRPFits:
         """
         Return the primary directory and file name with the DRP fits
         LOG-binned file.
-            plate (int): Plate number of the observation.
-            ifudesign (int): IFU design number of the observation.
-            mode (str): 3D mode of the DRP file; must be either 'RSS' or
-                'CUBE'
-            drpver (str): (**Optional**) DRP version.  Default set by
+
+        Args:
+            plate (:obj:`int`):
+                Plate number of the observation.
+            ifudesign (:obj:`int`):
+                IFU design number of the observation.
+            mode (:obj:`str`):
+                3D mode of the DRP file; must be either 'RSS' or 'CUBE'
+            drpver (:obj:`str`, optional):
+                DRP version.  Default set by
                 :func:`mangadap.config.defaults.default_drp_version`.
-            redux_path (str): (**Optional**) The path to the top level
-                directory containing the DRP output files for a given
-                DRP version.  Default is defined by
+            redux_path (:obj:`str`, optional):
+                The path to the top level directory containing the DRP
+                output files for a given DRP version.  Default is
+                defined by
                 :func:`mangadap.config.defaults.default_redux_path`.
-            directory_path (str): (**Optional**) The exact path to the
-                DAP reduction assessments file.  Default set by
+            directory_path (:obj:`str`, optional):
+                The exact path to the DAP reduction assessments file.
+                Default set by
                 :func:`mangadap.config.defaults.default_dap_common_path`.
-            output_file (str): (**Optional**) The name of the file with
-                the DRP data.  Default set by
+            output_file (:obj:`str`, optional):
+                The name of the file with the DRP data.  Default set by
                 :func:`mangadap.config.defaults.default_manga_fits_root`.
 
         Returns:
-            str: Two strings with the path to and name of the DRP data
-            file.
+            :obj:`str`: Two strings with the path to and name of the DRP
+            data file.
         """    
         _directory_path = default_drp_directory_path(plate, drpver=drpver, redux_path=redux_path) \
                             if directory_path is None else directory_path

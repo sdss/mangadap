@@ -21,7 +21,7 @@ Implements an emission-line fitting function using pPXF.
         rejected during fit
     | **22 May 2018**: (KBW) Change import to ppxf package.
     | **29 May 2018**: (KBW) Remove original function from Xihan and
-        rename *_edit function.
+        rename ``*_edit`` function.
 """
 
 from __future__ import division
@@ -874,7 +874,7 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
                             vsyst=0, tpl_to_use=None, binid=None, flux_binned=None,
                             noise_binned=None, mask_binned=None, x_binned=None, y_binned=None,
                             x=None, y=None, plot=False, quiet=False, debug=False, sigma_rej=3.):
-    """
+    r"""
     Main calling function for fitting stellar-continuum and nebular
     emission lines in many spectra using pPXF.
 
@@ -902,6 +902,7 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
 
     When the binned spectra are provided, the fitting procedure is as
     follows:
+
         - The binned spectra are fit with the stellar components fixed
           to the provided kinematics in the starting value array and
           with all the gas templates part of a single kinematic
@@ -938,6 +939,7 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
     `gas_template` argument.
 
     .. todo::
+
         - Allow mask(s) to be optional
         - Update the docs
 
@@ -978,10 +980,10 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
             be the same for all object spectra.
         vgrp (array-like, optional):
             The integer velocity group associated with each template.
-            Shape is (:math:`N_{\rm tpl},). 
+            Shape is :math:`(N_{\rm tpl},)`. 
         sgrp (array-like, optional):
             The integer sigma group associated with each template.
-            Shape is (:math:`N_{\rm tpl},). 
+            Shape is :math:`(N_{\rm tpl},)`. 
         degree (:obj:`int`, optional):
             Order of the additive polynomial to include in the fit.  Not
             included by default.

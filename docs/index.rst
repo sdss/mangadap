@@ -22,20 +22,59 @@ on "model-independent" properties.  Higher-level, model-dependent
 properties, such as stellar-population parameters, will be included in
 future releases on a best-effort basis.
 
+.. _citation:
+
+Citation
+========
+
+If you use the DAP software and/or its output products, please cite the following two papers:
+
+ - *Overview*: `Westfall et al. (2019)
+   <https://ui.adsabs.harvard.edu/abs/2019AJ....158..231W/abstract>`_
+ - *Emission-line Modeling*: `Belfiore et al. (2019)
+   <https://ui.adsabs.harvard.edu/abs/2019AJ....158..160B/abstract>`_
+
+----
+
 .. toctree::
    :maxdepth: 2
 
    whatsnew
    knownissues
 
-How Tos
-=======
+Usage
+=====
 
 .. toctree::
    :maxdepth: 1
 
    installation
    execution
+   development
+
+Output
+======
+
+.. toctree::
+   :maxdepth: 1
+
+   gettingstarted
+   metadatamodel
+   datamodel
+   corrections
+   qualityassessment
+
+Beyond MaNGA
+============
+
+The MaNGA DAP software was written to be more broadely useful.  What
+follows are some examples of how the code can be used more generally
+beyond its application to MaNGA (see also generality discussion included
+in our :ref:`development`).
+
+.. toctree::
+   :maxdepth: 1
+
    fit_one_spec
 
 API Reference
