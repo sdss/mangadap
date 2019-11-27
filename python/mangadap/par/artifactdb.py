@@ -16,28 +16,6 @@ spectra in an RSS or CUBE file.
 *Source location*:
     $MANGADAP_DIR/python/mangadap/par/artifactdb.py
 
-*Imports and python version compliance*:
-    ::
-
-        from __future__ import division
-        from __future__ import print_function
-        from __future__ import absolute_import
-        from __future__ import unicode_literals
-
-        import sys
-        import warnings
-        if sys.version > '3':
-            long = int
-
-        import os.path
-        import numpy
-
-        from pydl.goddard.astro import airtovac
-        from pydl.pydlutils.yanny import yanny
-        from .parset import ParSet, ParDatabase
-        from .spectralfeaturedb import available_spectral_feature_databases, SpectralFeatureDBDef
-        from ..proc.util import select_proc_method
-
 *Class usage examples*:
     Add example usage!
 
@@ -52,17 +30,7 @@ spectra in an RSS or CUBE file.
 
 """
 
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
-import sys
-import warnings
-if sys.version > '3':
-    long = int
-
-import os.path
+import os
 import numpy
 
 from pydl.goddard.astro import airtovac
@@ -73,7 +41,6 @@ from ..proc.util import select_proc_method
 
 # Add strict versioning
 # from distutils.version import StrictVersion
-
 
 class ArtifactPar(ParSet):
     """

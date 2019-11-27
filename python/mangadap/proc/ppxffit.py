@@ -869,9 +869,11 @@ class PPXFFit(StellarKinematicsFit):
         obj_flux and obj_ferr *must* be masked arrays.
 
         .. todo::
+
             - This function can alter obj_flux and obj_ferr !!  Return
-         them instead?
-         """
+              them instead?
+
+        """
         # Initialize the mask (does not include any mask in the obj_flux
         # object)
         nobj = obj_flux.shape[0]
@@ -2159,122 +2161,131 @@ class PPXFFit(StellarKinematicsFit):
             obj_sres=None, waverange=None, bias=None, degree=4, mdegree=0, filt_degree=4,
             filt_mdegree=0, moments=2, loggers=None, quiet=False, max_velocity_range=400.,
             alias_window=None, dvtol=1e-10, plot=False, plot_file_root=None):
-        """
+        r"""
         Wrapper for pPXF with some additional convenience functions.
         Limited implementation at the moment.
 
         Args:
-            tpl_wave (numpy.ndarray): 1D vector of template wavelengths
-                at rest in angstroms.
-            tpl_flux (numpy.ndarray): N-templates x N-wavelengths array
-                of template spectra to fit.
-            obj_wave (numpy.ndarray): 1D vector of object wavelengths in
-                angstroms.  Does NOT need to be same as the template
-                wavelengths.
-            obj_flux (numpy.ndarray): N-spec x N-wavelengths array of
-                object spectra to fit.  Can be a numpy.ma.MaskedArray.
-            obj_ferr (numpy.ndarray): N-spec x N-wavelengths array
-                with the errors in the object spectra.
-            guess_redshift (float or numpy.ndarray): Single or
-                spectrum-specific redshift used to set the initial guess
-                kinematics.
-            guess_dispersion (float or numpy.ndarray): Single or
-                spectrum-specific velocity dispersion used to set the
+            tpl_wave (numpy.ndarray):
+                1D vector of template wavelengths at rest in angstroms.
+            tpl_flux (numpy.ndarray):
+                N-templates x N-wavelengths array of template spectra to
+                fit.
+            obj_wave (numpy.ndarray):
+                1D vector of object wavelengths in angstroms.  Does NOT
+                need to be same as the template wavelengths.
+            obj_flux (numpy.ndarray):
+                N-spec x N-wavelengths array of object spectra to fit.
+                Can be a numpy.ma.MaskedArray.
+            obj_ferr (numpy.ndarray):
+                N-spec x N-wavelengths array with the errors in the
+                object spectra.
+            guess_redshift (:obj:`float`, numpy.ndarray):
+                Single or spectrum-specific redshift used to set the
                 initial guess kinematics.
-            iteration_mode (str): (**Optional**) Iteration sequence to
-                perform.  See :func:`iteration_modes`.
-            reject_boxcar (int): (**Optional**) Size of the boxcar to
-                use during the rejection iteration.  Default is 100.  If
-                None, rejection uses the entire residual spectrum.
-            filter_boxcar (int): (**Optional**) Size of the boxcar to
-                use when filtering the spectra.  Default is 100.  Cannot
-                be None.
-            filter_iterations (int): (**Optional**) Number of filtering
-                iterations for the 'fit_reject_filter' iteration mode.
-            ensemble (bool): (**Optional**) Treat the list of input
-                spectra as an ensemble.  Currently, this only affects
-                how the spectra are masked.  Default is to treat them as
-                an ensemble.  When not treated as an ensemble, each
-                spectrum is masked individually according to the input
-                wavelength range and velocity offsets.  *It does not
-                make sense to set the iteration_mode to something that
-                will include a fit to the global spectrum if you're not
-                treating the list of object spectra as an ensemble.*
-            velscale_ratio (int): (**Optional**) Ratio of velocity scale
-                per pixel in the object spectra to that for the template
-                spectra.  Default is that they should be identical.
-            mask (numpy.ndarray,
-                :class:`mangadap.util.pixelmask.SpectralPixelMask):
-                (**Optional**) A baseline pixel mask to use during the
-                fitting.  Other pixels may be masked via the convenience
-                functions, but these pixels will always be masked.
-            matched_resolution (bool): (**Optional**)  Flag that the
-                object and template spectra have identical spectral
-                resolution.  Default is True.
-            tpl_sres (numpy.ndarray): (**Optional**) One-dimensional
-                vector with the spectral resolution (:math:`R =
-                \lambda/\Delta\lambda`) at each wavelength of the
-                template spectra.  Default is the resolution is not
-                provided and assumed to be same as the object
+            guess_dispersion (:obj:`float`, numpy.ndarray):
+                Single or spectrum-specific velocity dispersion used to
+                set the initial guess kinematics.
+            iteration_mode (:obj:`str`, optional):
+                Iteration sequence to perform.  See
+                :func:`iteration_modes`.
+            reject_boxcar (:obj:`int`, optional):
+                Size of the boxcar to use during the rejection
+                iteration.  Default is 100.  If None, rejection uses the
+                entire residual spectrum.
+            filter_boxcar (:obj:`int`, optional):
+                Size of the boxcar to use when filtering the spectra.
+                Cannot be None.
+            filter_iterations (:obj:`int`, optional):
+                Number of filtering iterations for the
+                'fit_reject_filter' iteration mode.
+            ensemble (:obj:`bool`, optional):
+                Treat the list of input spectra as an ensemble.
+                Currently, this only affects how the spectra are masked.
+                Default is to treat them as an ensemble.  When not
+                treated as an ensemble, each spectrum is masked
+                individually according to the input wavelength range and
+                velocity offsets.  *It does not make sense to set the
+                iteration_mode to something that will include a fit to
+                the global spectrum if you're not treating the list of
+                object spectra as an ensemble.*
+            velscale_ratio (:obj:`int`, optional):
+                Ratio of velocity scale per pixel in the object spectra
+                to that for the template spectra.  Default is that they
+                should be identical.
+            mask (numpy.ndarray, :class:`mangadap.util.pixelmask.SpectralPixelMask`, optional):
+                A baseline pixel mask to use during the fitting.  Other
+                pixels may be masked via the convenience functions, but
+                these pixels will always be masked.
+            matched_resolution (:obj:`bool`, optional):
+                Flag that the object and template spectra have identical
+                spectral resolution.  Default is True.
+            tpl_sres (numpy.ndarray, optional):
+                One-dimensional vector with the spectral resolution
+                (:math:`R = \lambda/\Delta\lambda`) at each wavelength
+                of the template spectra.  Default is the resolution is
+                not provided and assumed to be same as the object
                 resolution.
-            obj_sres (numpy.ndarray): (**Optional**) One- or Two-dimensional
-                array with the spectral resolution (:math:`R =
-                \lambda/\Delta\lambda`) at each wavelength for (each of)
-                the object spectra.  Default is the resolution is not
-                provided and assumed to be same as the template
-                resolution.
-            waverange (array-like): (**Optional**) Lower and upper
-                wavelength limits to *include* in the fit.  This can be
-                a two-element vector to apply the same limits to all
-                spectra, or a N-spec x 2 array with wavelength ranges
-                for each spectrum to be fit.  Default is to use as much
-                of the spectrum as possible.
-            bias (float): (**Optional**) Defaults to 0.0. From the pPXF
-                documentation: This parameter biases the (h3, h4, ...)
-                measurements towards zero (Gaussian LOSVD) unless their
-                inclusion significantly decreases the error in the fit.
-                Set this to BIAS=0.0 not to bias the fit: the solution
-                (including [V, sigma]) will be noisier in that case. The
-                default BIAS should provide acceptable results in most
-                cases, but it would be safe to test it with Monte Carlo
-                simulations. This keyword precisely corresponds to the
-                parameter \lambda in the Cappellari & Emsellem (2004)
-                paper. Note that the penalty depends on the *relative*
-                change of the fit residuals, so it is insensitive to
-                proper scaling of the NOISE vector. A nonzero BIAS can
-                be safely used even without a reliable NOISE spectrum,
-                or with equal weighting for all pixels.
-            degree (int): (**Optional**) Default is 4.  From the pPXF
-                documentation: degree of the *additive* Legendre
-                polynomial used to correct the template continuum shape
-                during the fit (default: 4).  Set DEGREE = -1 not to
-                include any additive polynomial.
-            mdegree (int): (**Optional**) Default is 0.  From the pPXF
-                documentation: degree of the *multiplicative* Legendre
-                polynomial (with mean of 1) used to correct the
-                continuum shape during the fit (default: 0). The zero
-                degree multiplicative polynomial is always included in
-                the fit as it corresponds to the weights assigned to the
-                templates.  Note that the computation time is longer
-                with multiplicative polynomials than with the same
-                number of additive polynomials.
+            obj_sres (numpy.ndarray, optional):
+                One- or Two-dimensional array with the spectral
+                resolution (:math:`R = \lambda/\Delta\lambda`) at each
+                wavelength for (each of) the object spectra.  Default is
+                the resolution is not provided and assumed to be same as
+                the template resolution.
+            waverange (array-like, optional):
+                Lower and upper wavelength limits to *include* in the
+                fit.  This can be a two-element vector to apply the same
+                limits to all spectra, or a N-spec x 2 array with
+                wavelength ranges for each spectrum to be fit.  Default
+                is to use as much of the spectrum as possible.
+            bias (:obj:`float`, optional):
+                From the pPXF documentation: This parameter biases the
+                (h3, h4, ...) measurements towards zero (Gaussian LOSVD)
+                unless their inclusion significantly decreases the error
+                in the fit.  Set this to BIAS=0.0 not to bias the fit:
+                the solution (including [V, sigma]) will be noisier in
+                that case. The default BIAS should provide acceptable
+                results in most cases, but it would be safe to test it
+                with Monte Carlo simulations. This keyword precisely
+                corresponds to the parameter \lambda in the Cappellari &
+                Emsellem (2004) paper. Note that the penalty depends on
+                the *relative* change of the fit residuals, so it is
+                insensitive to proper scaling of the NOISE vector. A
+                nonzero BIAS can be safely used even without a reliable
+                NOISE spectrum, or with equal weighting for all pixels.
+            degree (:obj:`int`, optional):
+                From the pPXF documentation: degree of the *additive*
+                Legendre polynomial used to correct the template
+                continuum shape during the fit (default: 4).  Set DEGREE
+                = -1 not to include any additive polynomial.
+            mdegree (:obj:`int`, optional):
+                From the pPXF documentation: degree of the
+                *multiplicative* Legendre polynomial (with mean of 1)
+                used to correct the continuum shape during the fit
+                (default: 0). The zero degree multiplicative polynomial
+                is always included in the fit as it corresponds to the
+                weights assigned to the templates.  Note that the
+                computation time is longer with multiplicative
+                polynomials than with the same number of additive
+                polynomials.
 
                 .. note::
                 
                     **IMPORTANT**: Multiplicative polynomials cannot be
                     used when the REDDENING keyword is set.
 
-            filt_degree (int): (**Optional**) The order of the additive
-                polynomial to use when fitting the filtered spectra.
-            filt_mdegree (int): (**Optional**) The order of the
-                multiplicative polynomial to use when fitting the
-                filtered spectra.
-            moments (int): (**Optional**) Default is 2.  From the pPXF
-                documentation: Order of the Gauss-Hermite moments to
-                fit. Set this keyword to 4 to fit [h3, h4] and to 6 to
-                fit [h3, h4, h5, h6]. Note that in all cases the G-H
-                moments are fitted (non-linearly) *together* with [V,
-                sigma].
+            filt_degree (:obj:`int`, optional):
+                The order of the additive polynomial to use when fitting
+                the filtered spectra.
+            filt_mdegree (:obj:`int`, optional):
+                The order of the multiplicative polynomial to use when
+                fitting the filtered spectra.
+            moments (:obj:`int`, optional):
+                From the pPXF documentation: Order of the Gauss-Hermite
+                moments to fit. Set this keyword to 4 to fit [h3, h4]
+                and to 6 to fit [h3, h4, h5, h6]. Note that in all cases
+                the G-H moments are fitted (non-linearly) *together*
+                with [V, sigma].
 
                     - If MOMENTS=2 or MOMENTS is not set then only [V,
                       sigma] are fitted and the other parameters are
@@ -2295,43 +2306,48 @@ class PPXFFit(StellarKinematicsFit):
                       1] moments = [-4, 2] start = [[V, sigma, h3, h4],
                       [V, sigma]]
 
-            loggers (list): (**Optional**) List of `logging.Logger`_ objects
-                to log progress; ignored if quiet=True.  Logging is done
-                using :func:`mangadap.util.log.log_output`.  Default is
-                no logging.
-            quiet (bool): (**Optional**) Suppress all terminal and
-                logging output.  Default is False.
-            max_velocity_range (float): (**Optional**) Maximum range
-                (+/-) expected for the fitted velocities in km/s.
-                Default is 400 km/s.
-            alias_window (float) : (**Optional**) The window to mask to
-                avoid aliasing near the edges of the spectral range in
-                km/s.  Default is six times *max_velocity_range*.
-            dvtol (float): (**Optional**) The velocity scale of the
-                template spectra and object spectrum must be smaller
-                than this tolerance.  Default is 1e-10.
-            plot (bool): (**Optional**) Show the automatically generated
-                pPXF fit plots.
+            loggers (:obj:`list`, optional):
+                List of `logging.Logger`_ objects to log progress;
+                ignored if quiet=True.  Logging is done using
+                :func:`mangadap.util.log.log_output`.  Default is no
+                logging.
+            quiet (:obj:`bool`, optional):
+                Suppress all terminal and logging output.  Default is
+                False.
+            max_velocity_range (:obj:`float`, optional):
+                Maximum range (+/-) expected for the fitted velocities
+                in km/s.
+            alias_window (:obj:`float`, optional):
+                The window to mask to avoid aliasing near the edges of
+                the spectral range in km/s.  Default is six times
+                *max_velocity_range*.
+            dvtol (:obj:`float`, optional):
+                The velocity scale of the template spectra and object
+                spectrum must be smaller than this tolerance.
+            plot (:obj:`bool`, optional):
+                Show the automatically generated pPXF fit plots.
                 
         Returns:
-            numpy.ndarray: Returns 4 objects:
+            tuple: Returns 4 numpy.ndarray objects:
 
                 1. The wavelengths of the best fitting model spectra.
-                Nominally the same as the wavelengths of the input
-                object spectra (*obj_wave*).
+                   Nominally the same as the wavelengths of the input
+                   object spectra (*obj_wave*).
 
                 2. The fluxes of the best-fitting model spectra.
 
                 3. A mask for the best-fitting models spectra, following
-                from the internal bitmask.
+                   from the internal bitmask.
 
                 4. A record array with the fitted model parameters; see
-                :class:`spectralfitting.StellarKinematicsFit._per_stellar_kinematics_dtype`.
+                   :class:`spectralfitting.StellarKinematicsFit._per_stellar_kinematics_dtype`.
 
         Raises:
-            ValueError: Raised if the input arrays are not of the
-                correct shape or if the pixel scale of the template and
-                object spectra is greater than the specified tolerance.
+            ValueError:
+                Raised if the input arrays are not of the correct shape
+                or if the pixel scale of the template and object spectra
+                is greater than the specified tolerance.
+
         """
         #---------------------------------------------------------------
         # Initialize the reporting

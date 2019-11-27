@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 
-#queue.key()
-#
-#queue(key = )
-
-import time
 import os
-import time
+
 import astropy.constants
 from astropy.io import fits
+
 from mangadap.survey.manga_dap import manga_dap
 from mangadap.par.obsinput import ObsInputPar
 from mangadap.par.analysisplan import AnalysisPlan, AnalysisPlanSet
+
+# It's possible to change the environmental variables here, e.g.:
+# os.environ['MANGA_SPECTRO_REDUX'] = '/path/to/drp/root/directory'
+# os.environ['MANGADRP_VER'] = 'v2_5_3'
+# os.environ['MANGA_SPECTRO_ANALYSIS'] = '/path/to/dap/root/output/directory'
 
 #-----------------------------------------------------------------------------
 def get_obsinput(plt, ifu, drpall_file=None):
@@ -38,18 +39,11 @@ def fit_one_cube(plt, ifu, drpall_file=None, directory_path=None, analysis_path=
 
     # Define how you want to analyze the data
     plan = AnalysisPlanSet([ AnalysisPlan(drpqa_key='SNRG',
-                                          bin_key='SPX', #HYB10',
-                                          continuum_key='MILESHCMPL8',
-                                          elmom_key='EMOMMPL9',
-                                          elfit_key='EFITMPL9',
+                                          bin_key='HYB10',
+                                          continuum_key='GAU-MILESHC',
+                                          elmom_key='EMOMM',
+                                          elfit_key='EFITMDB',
                                           spindex_key='INDXEN') ])
-
-#    plan = AnalysisPlanSet([ AnalysisPlan(drpqa_key='SNRG',
-#                                          bin_key='VOR10',
-#                                          continuum_key='GAU-MILESHC',
-#                                          elmom_key='EMOMM',
-#                                          elfit_key='EFITM',
-#                                          spindex_key='INDXEN') ])
 
     # Run it!
     return manga_dap(obs, plan, verbose=2, directory_path=directory_path,
@@ -59,13 +53,9 @@ def fit_one_cube(plt, ifu, drpall_file=None, directory_path=None, analysis_path=
 #-----------------------------------------------------------------------------
 
 if __name__ == '__main__':
-    t = time.perf_counter()
-
+    # Define the output directories directly
 #    fit_one_cube(7815, 1902, drpall_file='./data/drpall-v2_5_3.fits', directory_path='./data',
 #                 analysis_path='./output')
-
-    fit_one_cube(7815, 3702, analysis_path='./output')
-#    fit_one_cube(8485, 1901, analysis_path='./output')
-
-    print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
+    # Or just use the defaults.
+    fit_one_cube(7815, 1902)
 

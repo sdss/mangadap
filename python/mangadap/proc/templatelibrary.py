@@ -171,31 +171,24 @@ bitmasks for the template library spectra.
     | **30 Aug 2018**: (KBW) Switch from using resample1d to
         :class:`mangadap.util.sampling.Resample`.
 
+.. _numpy.ndarray: https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
 .. _pydl.goddard.astro.airtovac: http://pydl.readthedocs.io/en/stable/api/pydl.goddard.astro.airtovac.html#pydl.goddard.astro.airtovac
+
 """
-
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
-import sys
-import warnings
-if sys.version > '3':
-    long = int
-
-import glob
 import os
+import glob
 import time
+import warnings
 import logging
 
 import numpy
 from scipy import sparse, interpolate
-#from scipy.interpolate import InterpolatedUnivariateSpline
+
 from astropy.io import fits
 import astropy.constants
+
 from pydl.goddard.astro import airtovac
 
 from ..par.parset import ParSet
@@ -222,23 +215,27 @@ class TemplateLibraryDef(ParSet):
     See :class:`mangadap.par.parset.ParSet` for attributes.
 
     Args:
-        key (str): Keyword to distinguish the template library.
-        file_search (str): Search string used by glob to find the 1D
-            fits spectra to include in the template library.
-        fwhm (int or float): FWHM of the resolution element in
-            angstroms.
-        sres_ext (str): Extension in the fits files with measurements of
-            the spectral resolution as a function of wavelength.
-        in_vacuum (bool): Flag that the wavelengths of the spectra are
-            in vacuum, not air.
-        wave_limit (numpy.ndarray): 2-element array with the starting
-            and ending wavelengths for the valid spectral range of the
-            templates.
-        lower_flux_limit (int or float): Minimum valid flux in the
-            template spectra.
-        log10 (bool): Flag that the template spectra have been binned
+        key (:obj:`str`):
+            Keyword to distinguish the template library.
+        file_search (:obj:`str`):
+            Search string used by glob to find the 1D fits spectra to
+            include in the template library.
+        fwhm (:obj:`int`, :obj:`float`):
+            FWHM of the resolution element in angstroms.
+        sres_ext (:obj:`str`):
+            Extension in the fits files with measurements of the
+            spectral resolution as a function of wavelength.
+        in_vacuum (:obj:`bool`):
+            Flag that the wavelengths of the spectra are in vacuum, not
+            air.
+        wave_limit (`numpy.ndarray`_):
+            Two-element array with the starting and ending wavelengths
+            for the valid spectral range of the templates.
+        lower_flux_limit (:obj:`int`, :obj:`float`):
+            Minimum valid flux in the template spectra.
+        log10 (:obj:`bool`):
+            Flag that the template spectra have been binned
             logarithmically in wavelength.
-
     """
     def __init__(self, key=None, file_search=None, fwhm=None, sres_ext=None, in_vacuum=False,
                  wave_limit=None, lower_flux_limit=None, log10=False): 
@@ -288,38 +285,10 @@ def available_template_libraries(dapsrc=None):
     The stellar template library files should be a list of 1D fits
     files, and be associated with one of the following library keys:
 
-    +-----------------+------------+---------+-------------+-------+
-    |                 |   Spectral |         |  Wavelength | Lower |
-    |             KEY |  res (ang) |  Vacuum | Range (ang) | Limit |
-    +=================+============+=========+=============+=======+
-    |        M11MARCS |       2.73 |      No |        full |  None |
-    +-----------------+------------+---------+-------------+-------+
-    |       M11STELIB |       3.40 |      No |        full |  None |
-    +-----------------+------------+---------+-------------+-------+
-    |   M11STELIBZSOL |       3.40 |      No |        full |  None |
-    +-----------------+------------+---------+-------------+-------+
-    |       M11ELODIE |       0.55 |      No |      < 6795 |  None |
-    +-----------------+------------+---------+-------------+-------+
-    |        M11MILES |       2.54 |      No | 3550 - 7400 |  None |
-    +-----------------+------------+---------+-------------+-------+
-    |           MILES |       2.50 |      No |      < 7400 |  None |
-    +-----------------+------------+---------+-------------+-------+
-    |        MILESAVG |       2.50 |      No |      < 7400 |  None |
-    +-----------------+------------+---------+-------------+-------+
-    |       MILESTHIN |       2.50 |      No |      < 7400 |  None |
-    +-----------------+------------+---------+-------------+-------+
-    |         MILESHC |       2.50 |      No |      < 7400 |  None |
-    +-----------------+------------+---------+-------------+-------+
-    |          STELIB |       3.40 |      No |        full |   0.0 |
-    +-----------------+------------+---------+-------------+-------+
-    |         MIUSCAT |       2.51 |      No | 3480 - 9430 |  None |
-    +-----------------+------------+---------+-------------+-------+
-    |     MIUSCATTHIN |       2.51 |      No | 3480 - 9430 |  None |
-    +-----------------+------------+---------+-------------+-------+
-
     Args:
-        dapsrc (str): (**Optional**) Root path to the DAP source
-            directory.  If not provided, the default is defined by
+        dapsrc (:obj:`str`, optional):
+            Root path to the DAP source directory.  If not provided, the
+            default is defined by
             :func:`mangadap.config.defaults.dap_source_dir`.
 
     Returns:
@@ -328,14 +297,16 @@ def available_template_libraries(dapsrc=None):
         objects, each defining a separate template library.
 
     Raises:
-        NotADirectoryError: Raised if the provided or default
-            *dapsrc* is not a directory.
-        OSError/IOError: Raised if no template configuration files could
-            be found.
-        KeyError: Raised if the template-library keywords are not all
-            unique.
+        NotADirectoryError:
+            Raised if the provided or default *dapsrc* is not a
+            directory.
+        OSError/IOError:
+            Raised if no template configuration files could be found.
+        KeyError:
+            Raised if the template-library keywords are not all unique.
 
     .. todo::
+
         - Add backup function for Python 2.
         - Somehow add a python call that reads the databases and
           constructs the table for presentation in sphinx so that the
@@ -415,10 +386,10 @@ class TemplateLibrary:
     defined in :func:`available_template_libraries`.  The user can
     provide their own library for use with this class provided they are
     contained in 1D fits spectra, sampled linearly in wavelength with
-    the wavelength coordinates available via the WCS keywords (CRPIX1,
-    CRVAL1, CDELT1), and they have an appropriately defined spectral
-    resolution (FWHM in angstroms that is constant as a function of
-    wavelength).  See :class:`TemplateLibraryDef` and
+    the wavelength coordinates available via the WCS keywords
+    (``CRPIX1``, ``CRVAL1``, ``CDELT1``), and they have an appropriately
+    defined spectral resolution (FWHM in angstroms that is constant as a
+    function of wavelength).  See :class:`TemplateLibraryDef` and
     :func:`_build_raw_hdu`.
 
     The class is optimized for use in analyzing MaNGA DRP files;
@@ -431,11 +402,12 @@ class TemplateLibrary:
     analyzed.
 
     .. todo::
+
         - below is out of date.
         - Only works with DRP files that have log-linear wavelength
           binning!
-        - Allow to process, where process is just to change the
-          sampling or the resolution (not necessarily both).
+        - Allow to process, where process is just to change the sampling
+          or the resolution (not necessarily both).
         - Need to make this more general, removing all dependence on
           DRPFits object.  This would simplify the functionality to
           change how the resolution and sampling matching is specified.
@@ -444,120 +416,134 @@ class TemplateLibrary:
     the default behavior is to read the raw template library if
     read=True.  If the DRP file is provided, the routine will check for
     the resolution matched fits file; if it doesn't exist and read is
-    True, it will prepare the template library for use in analyzing the
-    DRP file and write the prepared library file.  If clobber=True, the
-    preparation and writing of the template library will be done even if
-    the library already exists.
+    ``True``, it will prepare the template library for use in analyzing
+    the DRP file and write the prepared library file.  If clobber=True,
+    the preparation and writing of the template library will be done
+    even if the library already exists.
 
     Args:
-        library_key (str): Keyword selecting the library to use.
-        tpllib_list (list): (**Optional**) List of
-            :class:`TemplateLibraryDef` objects that define the
+        library_key (:obj:`str`):
+            Keyword selecting the library to use.
+        tpllib_list (:obj:`list`, optional):
+            List of :class:`TemplateLibraryDef` objects that define the
             parameters required to read and interpret a template
-            library.  The *library_key* must select one of the objects
+            library.  The ``library_key`` must select one of the objects
             in this list.
-        dapsrc (str): (**Optional**) Root path to the DAP source
-            directory.  If not provided, the default is defined by
+        dapsrc (:obj:`str`, optional):
+            Root path to the DAP source directory.  If not provided, the
+            default is defined by
             :func:`mangadap.config.defaults.dap_source_dir`.
-        drpf (:class:`mangadap.drpfits.DRPFits`): (**Optional**) DRP
-            file (object) with which the template library is associated
-            for analysis
-        match_to_drp_resolution (bool): (**Optional**) Match the
-            spectral resolution of the template library to the
+        drpf (:class:`mangadap.drpfits.DRPFits`, optional):
+            DRP file (object) with which the template library is
+            associated for analysis
+        match_to_drp_resolution (:obj:`bool`, optional):
+            Match the spectral resolution of the template library to the
             resolution provided by the :class:`mangadap.drpfits.DRPFits`
             object; the latter must be provided for this argument to
             have any use.
-        velscale_ratio (int): (**Optional**) Resample the template
-            spectra such that the ratio of the pixel scale in the
-            provided :class:`mangadap.drpfits.DRPFits` object is this
-            many times larger than the pixels in the resampled template
-            spectrum.
-        sres (:class:`mangadap.util.resolution.SpectralResolution`):
-            (**Optional**) The object is used simply to access the
-            spectral resolution and associated wavelength coordinate
-            vector needed when matching the spectral resolution of the
-            template library; this is used in place of the attributes in
-            any provided DRP file object.
-        velocity_offset (float): (**Optional**) Velocity offset to use
-            when matching the spectral resolution between the template
-            library and the galaxy spectra.
-        spectral_step (float) : (**Optional**) Target logarithmic
-            (*log*=True) or linear (*log*=False) step in wavelength for
-            the template library.
-        log (bool) : (**Optional**) Flag to force the library to be
-            logarithmically sampled in wavelength.
-        wavelength_range (array-like) : (**Optional**) Force
-            the template library to covert this spectral range.
+        velscale_ratio (:obj:`int`, optional):
+            Resample the template spectra such that the ratio of the
+            pixel scale in the provided
+            :class:`mangadap.drpfits.DRPFits` object is this many times
+            larger than the pixels in the resampled template spectrum.
+        sres (:class:`mangadap.util.resolution.SpectralResolution`, optional):
+            The object is used simply to access the spectral resolution
+            and associated wavelength coordinate vector needed when
+            matching the spectral resolution of the template library;
+            this is used in place of the attributes in any provided DRP
+            file object.
+        velocity_offset (:obj:`float`, optional):
+            Velocity offset to use when matching the spectral resolution
+            between the template library and the galaxy spectra.
+        spectral_step (:obj:`float`, optional):
+            Target logarithmic (``log=True``) or linear (``log=False``)
+            step in wavelength for the template library.
+        log (:obj:`bool`, optional):
+            Flag to force the library to be logarithmically sampled in
+            wavelength.
+        wavelength_range (array-like, optional):
+            Force the template library to covert this spectral range.
             Unobserved spectral regions will be flagged.
-        renormalize (bool) : (**Optional**) After processing,
-            renormalize the flux to unity.
-        dapver (str): (**Optional**) DAP version, which is used to
-            define the default DAP analysis path.  Default is defined by
+        renormalize (:obj:`bool`, optional):
+            After processing, renormalize the flux to unity.
+        dapver (:obj:`str`, optional):
+            DAP version, which is used to define the default DAP
+            analysis path.  Default is defined by
             :func:`mangadap.config.defaults.default_dap_version`
-        analysis_path (str): (**Optional**) The path to the top level
-            directory containing the DAP output files for a given DRP
-            and DAP version.  Default is defined by
+        analysis_path (:obj:`str`, optional):
+            The path to the top level directory containing the DAP
+            output files for a given DRP and DAP version.  Default is
+            defined by
             :func:`mangadap.config.defaults.default_analysis_path`.
-        directory_path (str): (**Optional**) The exact path to the
-            processed template library file.  Default is defined by
+        directory_path (:obj:`str`, optional):
+            The exact path to the processed template library file.
+            Default is defined by
             :func:`mangadap.config.defaults.default_dap_common_path`.
-        processed_file (str): (**Optional**) The name of the file
-            containing the prepared template library output file.  The
-            file should be found at
+        processed_file (:obj:`str`, optional):
+            The name of the file containing the prepared template
+            library output file.  The file should be found at
             :attr:`directory_path`/:attr:`processed_file`.  Default is
             defined by
             :func:`mangadap.config.defaults.default_dap_file_name`.
-        process (bool): (**Optional**) If :attr:`drpf` is defined and
-            the prepared template library does not exist, this will
-            process the template library in preparation for use in
-            fitting the provided DRP file.
-        hardcopy (bool): (**Optional**) Flag to keep a hardcopy of the
-            processed template library.  Default is True.
-        symlink_dir (str): (**Optional**) Create a symlink to the file
-            in this directory.  Default is for no symlink.
-        clobber (bool): (**Optional**) If :attr:`drpf` is define and
-            *process* is True, this will clobber any existing processed
-            template library.
+        process (:obj:`bool`, optional):
+            If :attr:`drpf` is defined and the prepared template library
+            does not exist, this will process the template library in
+            preparation for use in fitting the provided DRP file.
+        hardcopy (:obj:`bool`, optional):
+            Flag to keep a hardcopy of the processed template library.
+            Default is True.
+        symlink_dir (:obj:`str`, optional):
+            Create a symlink to the file in this directory.  Default is
+            for no symlink.
+        clobber (:obj:`bool`, optional):
+            If :attr:`drpf` is define and ``process=True``, this will
+            clobber any existing processed template library.
 
     Attributes:
-        bitmask (BitMask): A BitMask object used to toggle mask values;
-            see :func:`TemplateLibraryBitMask`.
-        library (:class:`TemplateLibraryDef`): Parameter set required to
-            read and prepare the library.
-        file_list (list): The list of files found using `glob.glob`_ and
+        bitmask (class:`mangadap.util.bitmask.BitMask`):
+            Object used to toggle mask values; see
+            :func:`TemplateLibraryBitMask`.
+        library (:class:`TemplateLibraryDef`):
+            Parameter set required to read and prepare the library.
+        file_list (:obj:`list`):
+            The list of files found using `glob.glob`_ and
             :attr:`file_search`.
-        ntpl (int): Number of template spectra in the library
-        drpf (:class:`mangadap.drpfits.DRPFits`): DRP file (object) with
-            which the template library is associated for analysis
+        ntpl (:obj:`int`):
+            Number of template spectra in the library
+        drpf (:class:`mangadap.drpfits.DRPFits`):
+            DRP file (object) with which the template library is
+            associated for analysis
         sres (:class:`mangadap.util.resolution.SpectralResolution`):
             The object is used simply to access the spectral resolution
             and associated wavelength coordinate vector needed when
             matching the spectral resolution of the template library;
             this is used in place of the attributes in any provided DRP
             file object.
-        velocity_offset (float): Velocity offset to use when matching
-            the spectral resolution between the template library and the
-            galaxy spectra.
-        spectral_step (float) : Target logarithmic
-            (:attr:`log10_sampling`=True) or linear
-            (:attr:`log10_sampling`=False) step in wavelength for the
+        velocity_offset (:obj:`float`):
+            Velocity offset to use when matching the spectral resolution
+            between the template library and the galaxy spectra.
+        spectral_step (:obj:`float`):
+            Target logarithmic (``log10_sampling=True``) or linear
+            (``log10_sampling=False``) step in wavelength for the
             template library.
-        log10_sampling (bool): Flag that the processed template library is
-            logarithmically sampled in wavelength.
-        directory_path (str): The exact path to the processed template
-            library file.  Default is defined by
-            :func:`mangadap.config.defaults.default_dap_common_path`.
-        processed_file (str): The name of the file containing (to
-            contain) the prepared template library output file.  The
-            file should be found at
+        log10_sampling (:obj:`bool`):
+            Flag that the processed template library is logarithmically
+            sampled in wavelength.
+        directory_path (:obj:`str`):
+            The exact path to the processed template library file.
+        processed_file (:obj:`str`):
+            The name of the file containing (to contain) the prepared
+            template library output file.  The file should be found at
             :attr:`directory_path`/:attr:`processed_file`.
-        processed (bool): Flag that the template library has been
-            prepared for use in the DAP.
-        hardcopy (bool): Flag to keep a hardcopy of the processed
-            template library.
-        symlink_dir (str): Symlink created to the file in this directory
-        hdu (`astropy.io.fits.hdu.hdulist.HDUList`_): HDUList read from
-            the DAP file
+        processed (:obj:`bool`):
+            Flag that the template library has been prepared for use in
+            the DAP.
+        hardcopy (:obj:`bool`):
+            Flag to keep a hardcopy of the processed template library.
+        symlink_dir (:obj:`str`):
+            Symlink created to the file in this directory
+        hdu (`astropy.io.fits.hdu.hdulist.HDUList`_):
+            HDUList read from the DAP file
 
     """
     def __init__(self, library_key, tpllib_list=None, dapsrc=None, drpf=None,
@@ -1067,6 +1053,20 @@ class TemplateLibrary:
                                                        regular=self.library['in_vacuum'])
                                         for w in self.hdu['WAVE'].data])
 
+        # TODO: I think this kludge was necessary because of a bug in
+        # angstroms_per_pixel.  If regular was True and log was False,
+        # it only returns a single integer, otherwise it returned a
+        # vector.  I've changed angstroms_per_pixel, but have left the
+        # kludge below for now for testing.
+
+        #KHRR KLUDGE
+        if len(ang_per_pix.shape) == 1:
+            warnings.warn('Executing KLUDGE!  Bug fix insufficient.')
+            tmp_ang_per_pix = numpy.empty(self.hdu['SPECRES'].data.shape)
+            for ind in range(len(ang_per_pix)):
+                tmp_ang_per_pix[ind,:] = ang_per_pix[ind]
+            ang_per_pix = tmp_ang_per_pix
+
         # Number of pixels per resolution element
         pix_per_fwhm = numpy.ma.divide(self.hdu['WAVE'].data,
                                        self.hdu['SPECRES'].data * ang_per_pix)
@@ -1281,81 +1281,86 @@ class TemplateLibrary:
             input.  If unsure, use clobber=True.
         
         Args:
-
-            library_key (str): (**Optional**) Keyword selecting the library
-                to use; default is to use existing :attr:`library`.
-            tpllib_list (list): (**Optional**) List of
-                :class:`TemplateLibraryDef`
-                objects that define the parameters required to read and
-                interpret a template library.  Input ignored if
-                *library_key* is None.
-            dapsrc (str): (**Optional**) Root path to the DAP source
-                directory.  If not provided, the default is defined by
+            library_key (:obj:`str`):
+                Keyword selecting the library to use.
+            tpllib_list (:obj:`list`, optional):
+                List of :class:`TemplateLibraryDef` objects that define
+                the parameters required to read and interpret a template
+                library.  The ``library_key`` must select one of the
+                objects in this list.
+            dapsrc (:obj:`str`, optional):
+                Root path to the DAP source directory.  If not provided,
+                the default is defined by
                 :func:`mangadap.config.defaults.dap_source_dir`.
-                Input ignored if *library_key* is None.
-            drpf (:class:`mangadap.drpfits.DRPFits`): (**Optional**) DRP
-                file (object) with which the template library is
-                associated for analysis.  **If not provided**, the user
-                must define *velscale* and *sres* such that the library
-                can be processed; and the user must provide
-                *directory_path* and *processed_file* such that the
-                output file can be written.
-            match_to_drp_resolution (bool): (**Optional**) Match the
-                spectral resolution of the template library to the
-                resolution provided by the
+            drpf (:class:`mangadap.drpfits.DRPFits`, optional):
+                DRP file (object) with which the template library is
+                associated for analysis
+            match_to_drp_resolution (:obj:`bool`, optional):
+                Match the spectral resolution of the template library to
+                the resolution provided by the
                 :class:`mangadap.drpfits.DRPFits` object; the latter
                 must be provided for this argument to have any use.
-            velscale_ratio (int): (**Optional**) Resample the template
-                spectra such that the ratio of the pixel scale in the
-                provided :class:`mangadap.drpfits.DRPFits` object is
-                this many times larger than the pixels in the resampled
-                template spectrum.
-            sres (:class:`mangadap.util.resolution.SpectralResolution`):
-                (**Optional**) The object is used simply to access the
-                spectral resolution and associated wavelength coordinate
-                vector needed when matching the spectral resolution of
-                the template library.  This takes prededence over the
-                values provided by the DRP file object.
-            velocity_offset (float): (**Optional**) Velocity offset to use
-                when matching the spectral resolution between the
-                template library and the galaxy spectra.
-            spectral_step (float) : (**Optional**) Target logarithmic
-                (*log*=True) or linear (*log*=False) step in wavelength for
-                the template library.
-            log (bool) : (**Optional**) Flag to force the library to be
-                logarithmically sampled in wavelength.
-            wavelength_range (array-like) : (**Optional**) Force the
-                template library to covert this spectral range.  Unobserved
-                spectral regions will be flagged.
-            renormalize (bool) : (**Optional**) After processing, renormalize
-                the flux to unity.
-            dapver (str): (**Optional**) DAP version, which is used to
-                define the default DAP analysis path.  Default is
-                defined by
+            velscale_ratio (:obj:`int`, optional):
+                Resample the template spectra such that the ratio of the
+                pixel scale in the provided
+                :class:`mangadap.drpfits.DRPFits` object is this many
+                times larger than the pixels in the resampled template
+                spectrum.
+            sres (:class:`mangadap.util.resolution.SpectralResolution`, optional):
+                The object is used simply to access the spectral
+                resolution and associated wavelength coordinate vector
+                needed when matching the spectral resolution of the
+                template library; this is used in place of the
+                attributes in any provided DRP file object.
+            velocity_offset (:obj:`float`, optional):
+                Velocity offset to use when matching the spectral
+                resolution between the template library and the galaxy
+                spectra.
+            spectral_step (:obj:`float`, optional):
+                Target logarithmic (``log=True``) or linear
+                (``log=False``) step in wavelength for the template
+                library.
+            log (:obj:`bool`, optional):
+                Flag to force the library to be logarithmically sampled
+                in wavelength.
+            wavelength_range (array-like, optional):
+                Force the template library to covert this spectral
+                range.  Unobserved spectral regions will be flagged.
+            renormalize (:obj:`bool`, optional):
+                After processing, renormalize the flux to unity.
+            dapver (:obj:`str`, optional):
+                DAP version, which is used to define the default DAP
+                analysis path.  Default is defined by
                 :func:`mangadap.config.defaults.default_dap_version`
-            analysis_path (str): (**Optional**) The path to the top level
-                directory containing the DAP output files for a given
-                DRP and DAP version.  Default is defined by
+            analysis_path (:obj:`str`, optional):
+                The path to the top level directory containing the DAP
+                output files for a given DRP and DAP version.  Default
+                is defined by
                 :func:`mangadap.config.defaults.default_analysis_path`.
-            directory_path (str): (**Optional**) The exact path for the
-                processed template library file.  Default is defined by
+            directory_path (:obj:`str`, optional):
+                The exact path to the processed template library file.
+                Default is defined by
                 :func:`mangadap.config.defaults.default_dap_common_path`.
-            processed_file (str): (**Optional**) The name of the file
-                containing (to contain) the prepared template library
-                output file.  The file should be found at
+            processed_file (:obj:`str`, optional):
+                The name of the file containing the prepared template
+                library output file.  The file should be found at
                 :attr:`directory_path`/:attr:`processed_file`.  Default
                 is defined by
                 :func:`mangadap.config.defaults.default_dap_file_name`.
-            hardcopy (bool): (**Optional**) Flag to keep a hardcopy of
-                the processed template library.  Default is True.
-            symlink_dir (str): (**Optional**) Create a symlink to the
-                file in this directory.  Default is for no symlink.
-            clobber (bool): (**Optional**) Clobber any existing processed
-                library.
+            hardcopy (:obj:`bool`, optional):
+                Flag to keep a hardcopy of the processed template
+                library.  Default is True.
+            symlink_dir (:obj:`str`, optional):
+                Create a symlink to the file in this directory.  Default
+                is for no symlink.
+            clobber (:obj:`bool`, optional):
+                If :attr:`drpf` is define and ``process=True``, this
+                will clobber any existing processed template library.
 
         Raises:
-            ValueError: If the velocity scale, spectral resolution, or
-                file name for the processed data are not define.
+            ValueError:
+                If the velocity scale, spectral resolution, or file name
+                for the processed data are not define.
 
         .. todo::
             - type checking

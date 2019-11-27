@@ -32,19 +32,9 @@ use with :class:`mangadap.proc.sasuke.Sasuke`.
         :mod:`mangadap.proc.sasuke` by K. Westfall (KBW)
 
 .. _scipy.interpolate.interp1d: https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.interp1d.html
+.. _logging.Logger: https://docs.python.org/3/library/logging.html
 
 """
-
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
-import sys
-import warnings
-if sys.version > '3':
-    long = int
-
 import os
 import time
 import logging
@@ -72,17 +62,17 @@ class EmissionLineTemplates:
     :class:`mangadap.par.emissionlinedb.EmissionLinePar` for the
     structure of each row in the database and an explanation for each of
     its columns.  The selected profile type for each line **must** have
-    a `parameters_from_moments` method that returns the parameters of
+    a ``parameters_from_moments`` method that returns the parameters of
     the line provided the first three moments (moments 0, 1, and 2).
 
-    Only lines with `action=f` are included in any template.  The array
+    Only lines with ``action=f`` are included in any template.  The array
     :attr:`tpli` provides the index of the template that contains each
     line in the emission-line database.  Lines that are not assigned to
-    any template --- either because they do not have `action=f` or their
+    any template --- either because they do not have ``action=f`` or their
     center lies outside the wavelength range in :attr:`wave` --- are
     given an index of -1.
 
-    Only lines with `mode=a` (i.e., flux, velocity, and velocity
+    Only lines with ``mode=a`` (i.e., flux, velocity, and velocity
     dispersion are all tied) are included in the same template.
 
     Lines with tied velocities are assigned the same velocity component
@@ -96,78 +86,89 @@ class EmissionLineTemplates:
         and/or velocity dispersions as independent.
 
     Args:
-        wave (array-like): A single wavelength vector with the
-            wavelengths for the template spectra.  The wavelengths are
-            expected to be sample either linearly or geometrically (see
-            :attr:`log`).
-        sigma_inst (float,array-like): The single value or value as a
-            function of wavelength for the instrumental dispersion
-            (km/s) to use for the template construction.
-        log (bool): (**Optional**) Flag that the wavelengths have been
-            sampled geometrically.
-        base (float): (**Optional**) Base for the geometric sampling.
-        emldb (:class:`mangadap.par.emissionlinedb.EmissionLineDB'):
-            (**Optional**) Emission-line database that is parsed to
-            setup which lines to include in the same template because
-            they are modeled as having the same velocity, velocity
-            dispersion and flux ratio.  If not provided, no templates
-            are constructed in instantiation; to build the templates
-            using an existing instantiation, use
-            :func:`build_templates`.
-        flux_density (bool): (**Optional**) Return spectrum in units of
-            flux density (flux per angstrom).  Default is to return the
-            spectrum in units of flux per pixel.
-        loggers (list): (**Optional**) List of `logging.Logger`_ objects
-            to log progress; ignored if quiet=True.  Logging is done
-            using :func:`mangadap.util.log.log_output`.  Default is no
+        wave (array-like):
+            A single wavelength vector with the wavelengths for the
+            template spectra.  The wavelengths are expected to be sample
+            either linearly or geometrically (see :attr:`log`).
+        sigma_inst (:obj:`float`, array-like):
+            The single value or value as a function of wavelength for
+            the instrumental dispersion (km/s) to use for the template
+            construction.
+        log (:obj:`bool`, optional):
+            Flag that the wavelengths have been sampled geometrically.
+        base (:obj:`float`, optional):
+            Base for the geometric sampling.
+        emldb (:class:`mangadap.par.emissionlinedb.EmissionLineDB`, optional):
+            Emission-line database that is parsed to setup which lines
+            to include in the same template because they are modeled as
+            having the same velocity, velocity dispersion and flux
+            ratio.  If not provided, no templates are constructed in
+            instantiation; to build the templates using an existing
+            instantiation, use :func:`build_templates`.
+        flux_density (:obj:`bool`, optional):
+            Return spectrum in units of flux density (flux per
+            angstrom).  Default is to return the spectrum in units of
+            flux per pixel.
+        loggers (:obj:`list`, optional):
+            List of `logging.Logger`_ objects to log progress; ignored
+            if quiet=True.  Logging is done using
+            :func:`mangadap.util.log.log_output`.  Default is no
             logging.  This can be reset in some methods.
-        quiet (bool): (**Optional**) Suppress all terminal and logging
-            output.  Default is False.
+        quiet (:obj:`bool`, optional):
+            Suppress all terminal and logging output.
 
     Attributes:
-        wave (numpy.ndarray): Array with the wavelength (angstroms) of
-            each pixel for all the constructed templates.  Shape is
-            :math:`N_{\rm pix}`.
-        sigma_inst (`scipy.interpolate.interp1d`_): The object used to
-            interpolate the instrumental dispersion (km/s) at the rest
-            wavelength of each spectral line.
-        log (bool): Flag that the spectrum is sampled geometrically.
-        base (float): Base for the geometric sampling.
+        wave (numpy.ndarray):
+            Array with the wavelength (angstroms) of each pixel for all
+            the constructed templates.  Shape is :math:`(N_{\rm pix},)`.
+        sigma_inst (`scipy.interpolate.interp1d`_):
+            The object used to interpolate the instrumental dispersion
+            (km/s) at the rest wavelength of each spectral line.
+        log (:obj:`bool`):
+            Flag that the spectrum is sampled geometrically.
+        base (:obj:`float`):
+            Base for the geometric sampling.
         emldb (:class:`mangadap.par.emissionlinedb.EmissionLineDB`):
             Database with the emission-line parameters.  Shape is
-            (:math:`N_{\rm pix}`,).
-        ntpl (int): Total number of templates.
-        flux (numpy.ndarray): The template spectra.  Shape is
-            :math:`(N_{\rm tpl},N_{\rm pix})`.
-        tpli (numpy.ndarray): The index of the template containing each
-            emission line.  Any emission-lines with `tpli==-1` means
-            that the emission line was not included in any template,
-            which should only occur for lines with ``action==i` in the
-            database.  Shape is (:math:`N_{\rm eml}`,).
-        comp (numpy.ndarray): The component number assigned to each
-            template.  Templates with the same component number are
-            forced to have the same velocity and velocity dispersion by
-            pPXF.  Shape is (:math:`N_{\rm tpl}`,).
-        vgrp (numpy.ndarray): The velocity group assigned to each
-            template.  Templates in the same velocity group have their
-            velocity parameters tied in pPXF, but the velocity
-            dispersion parameters are independent.  Shape is
-            (:math:`N_{\rm tpl}`,).
-        sgrp (numpy.ndarray): The velocity disperison (sigma) group
-            assigned to each template.  Templates in the same sigma
-            group have their velocity dispersion parameters tied in
-            pPXF, but the velocity parameters are independent.  Shape is
-            (:math:`N_{\rm tpl}`,).
-        eml_sigma_inst (numpy.ndarray): The instrumental dispersion
-            (km/s) at the rest wavelength of each emission line.  This
-            is mostly used to aid the velocity dispersion corrections
-            determined by :class:`Sasuke`.  Shape is (:math:`N_{\rm
-            eml}`,).
-        loggers (list): List of `logging.Logger`_ objects to log
-            progress; ignored if quiet=True.  Logging is done using
+            :math:`(N_{\rm pix},)`.
+        ntpl (:obj:`int`):
+            Total number of templates.
+        flux (numpy.ndarray):
+            The template spectra.  Shape is :math:`(N_{\rm tpl},N_{\rm
+            pix})`.
+        tpli (numpy.ndarray):
+            The index of the template containing each emission line.
+            Any emission-lines with ``tpli==-1`` means that the emission
+            line was not included in any template, which should only
+            occur for lines with ``action==i`` in the database.  Shape
+            is :math:`(N_{\rm eml},)`.
+        comp (numpy.ndarray):
+            The component number assigned to each template.  Templates
+            with the same component number are forced to have the same
+            velocity and velocity dispersion by pPXF.  Shape is
+            :math:`(N_{\rm tpl},)`.
+        vgrp (numpy.ndarray):
+            The velocity group assigned to each template.  Templates in
+            the same velocity group have their velocity parameters tied
+            in pPXF, but the velocity dispersion parameters are
+            independent.  Shape is :math:`(N_{\rm tpl},)`.
+        sgrp (numpy.ndarray):
+            The velocity disperison (sigma) group assigned to each
+            template.  Templates in the same sigma group have their
+            velocity dispersion parameters tied in pPXF, but the
+            velocity parameters are independent.  Shape is
+            :math:`(N_{\rm tpl},)`.
+        eml_sigma_inst (numpy.ndarray):
+            The instrumental dispersion (km/s) at the rest wavelength of
+            each emission line.  This is mostly used to aid the velocity
+            dispersion corrections determined by :class:`Sasuke`.  Shape
+            is :math:`(N_{\rm eml},)`.
+        loggers (:obj:`list`):
+            List of `logging.Logger`_ objects to log progress; ignored
+            if quiet=True.  Logging is done using
             :func:`mangadap.util.log.log_output`.
-        quiet (bool): Suppress all terminal and logging output.
-
+        quiet (:obj:`bool`):
+            Suppress all terminal and logging output.
     """
     def __init__(self, wave, sigma_inst, log=True, base=10, emldb=None, flux_density=True,
                  loggers=None, quiet=False):
@@ -208,7 +209,7 @@ class EmissionLineTemplates:
 
 
     def _tied_index(self, i, primary=False):
-        """
+        r"""
         Return the index of the line to which this one is tied.
         
         The result may be that this line is tied to one that is also
@@ -216,19 +217,23 @@ class EmissionLineTemplates:
         keyword can be use to trace the parameter tying back to the
         independent line.
 
-        Arg:
-            i (int): The index of the line in the database.
-            primary (bool): (**Optional**) Trace the line tying all the
-                way back to the independent (primary) line.
+        Args:
+            i (:obj:`int`):
+                The index of the line in the database.
+            primary (:obj:`bool`, optional):
+                Trace the line tying all the way back to the independent
+                (primary) line.
 
-        Return:
-            int: The index of the line to which this one is tied.
+        Returns:
+            :obj:`int`: The index of the line to which this one is tied.
 
         Raises:
-            ValueError: Raised if the primary option is selected and the
-                line does not trace back to a primary line.  This
-                represents a poorly constructed emission-line database
-                and should be avoided!
+            ValueError:
+                Raised if the primary option is selected and the line
+                does not trace back to a primary line.  This represents
+                a poorly constructed emission-line database and should
+                be avoided!
+
         """
         db_rows = numpy.arange(self.emldb.neml)
         indx = db_rows[self.emldb['index'] == int(self.emldb['mode'][i][1:])][0]
@@ -358,6 +363,7 @@ class EmissionLineTemplates:
 
     def check_database(self, emldb):
         r"""
+
         Check that the provided emission-line database can be used with
         the :class:`EmissionLineTemplates` class.  Most checks are
         performed by
@@ -365,6 +371,7 @@ class EmissionLineTemplates:
 
         Additional checks specific to :class:`EmissionLineTemplates`
         are:
+
             - Any lines with mode `w` is treated as `f` and a warning is
               provided.
             - The :class:`EmissionLineTemplates` object *cannot* be used
@@ -377,7 +384,7 @@ class EmissionLineTemplates:
         templates.
 
         Args:
-            emldb (:class:`mangadap.par.emissionlinedb.EmissionLineDB'):
+            emldb (:class:`mangadap.par.emissionlinedb.EmissionLineDB`):
                 Emission-line database.
 
         Raises:
@@ -418,22 +425,24 @@ class EmissionLineTemplates:
         .. todo::
 
             - Warn the user if any line is undersampled; i.e., the FWHM
-              of the line is less than 2.1 or sigma < 0.9.
+              of the line is less than 2.1 or :math:`\sigma < 0.9`.
 
             - Warn the user if any line grouped in the same template
               falls outside the spectral range.
 
         Args:
-            emldb (:class:`mangadap.par.emissionlinedb.EmissionLineDB'):
+            emldb (:class:`mangadap.par.emissionlinedb.EmissionLineDB`):
                 Emission-line database.
-            flux_density (bool): (**Optional**) Return spectrum in units
-                of flux density (flux per angstrom).  Default is to
-                return the spectrum in units of flux per pixel.
-            loggers (list): (**Optional**) List of `logging.Logger`_
-                objects to log progress; ignored if quiet=True.  Logging
-                is done using :func:`mangadap.util.log.log_output`.
-            quiet (bool): (**Optional**) Suppress all terminal and
-                logging output.
+            flux_density (:obj:`bool`, optional):
+                Return spectrum in units of flux density (flux per
+                angstrom).  Default is to return the spectrum in units
+                of flux per pixel.
+            loggers (:obj:`list`, optional):
+                List of `logging.Logger`_ objects to log progress;
+                ignored if quiet=True.  Logging is done using
+                :func:`mangadap.util.log.log_output`.
+            quiet (:obj:`bool`, optional):
+                Suppress all terminal and logging output.
 
         Returns:
             numpy.ndarray: Returns 4 arrays: (1) the set of templates
@@ -441,6 +450,7 @@ class EmissionLineTemplates:
             kinematic component assignement for each template, (3) the
             velocity group associated with each template, and (4) the
             sigma group assocated with each template.
+
         """
         #---------------------------------------------------------------
         # Initialize the reporting

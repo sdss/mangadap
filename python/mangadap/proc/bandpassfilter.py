@@ -10,22 +10,6 @@ Container class that defines a bandpass filter.
 *Source location*:
     $MANGADAP_DIR/python/mangadap/par/bandpassfilter.py
 
-*Imports and python version compliance*:
-    ::
-
-        from __future__ import division
-        from __future__ import print_function
-        from __future__ import absolute_import
-        from __future__ import unicode_literals
-    
-        import sys
-        if sys.version > '3':
-            long = int
-
-        import warnings
-        import numpy
-        from .parset import ParSet
-
 *Class usage examples*:
     To define an bandpass filter::
 
@@ -48,17 +32,9 @@ Container class that defines a bandpass filter.
         measurement to be specific to each bandpass.
 """
 
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
-import sys
-if sys.version > '3':
-    long = int
-
 import warnings
 import numpy
+
 from ..par.parset import ParSet
 from ..util.sampling import _pixel_borders
 

@@ -40,16 +40,6 @@ Stack some spectra!
 .. _numpy.ma.MaskedArray: http://docs.scipy.org/doc/numpy-1.10.1/reference/maskedarray.baseclass.html#numpy.ma.MaskedArray
 
 """
-
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
-import sys
-if sys.version > '3':
-    long = int
-
 import numpy
 from scipy import sparse
 from astropy.io import fits
@@ -150,7 +140,7 @@ class SpectralStackPar(ParSet):
         self['prepixel_sres'] = eval(hdr['STCKPRE'])
 
 
-class SpectralStack():
+class SpectralStack:
     r"""
     Class whose primary function is to stack a set of spectra while
     treating covariance between spectra.
@@ -623,7 +613,7 @@ class SpectralStack():
 
     @staticmethod
     def min_max_wave(wave, voff):
-        """
+        r"""
         Determine the minimum and maximum of all shifted wavelength
         ranges.
 
@@ -633,13 +623,14 @@ class SpectralStack():
             voff (float, array-like):
                 The velocity shift in km/s to apply to the wavelength
                 vector (i.e., the velocity shift should be :math:`v_{\rm
-                off} = -cz`.  de-redshift).  Each element is applied to
-                the wavelength vector to determine the maximum
-                wavelength range allowed for all spectra.  Should be 1D.
+                off} = -cz`).  Each element is applied to the wavelength
+                vector to determine the maximum wavelength range allowed
+                for all spectra.  Should be 1D.
 
         Returns:
             float: Two floats with the minimum and maximum redshifted
             wavelengths.
+
         """
         _wave = numpy.atleast_1d(wave)
         if _wave.ndim != 1:

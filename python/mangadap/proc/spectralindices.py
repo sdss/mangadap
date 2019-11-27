@@ -16,11 +16,13 @@ A class hierarchy that performs the spectral-index measurements.
 *Notes*:
     
     If neither stellar-continuum nor emission-line models are provided:
+
         - Indices are measure on the binned spectra
         - No velocity-dispersion corrections are calculated
 
     If a stellar-continuum model is provided without an emission-line
     model:
+
         - Indices are measured on the binned spectra
         - Velocity-dispersion corrections are computed for any binned
           spectrum with a stellar-continuum fit based on the optimal
@@ -28,6 +30,7 @@ A class hierarchy that performs the spectral-index measurements.
 
     If an emission-line model is provided without a stellar-continuum
     model:
+
         - Indices are measured on the relevant (binned or unbinned)
           spectra; spectra with emission-line fits have the model
           emission lines subtracted from them before these measurements.
@@ -40,6 +43,7 @@ A class hierarchy that performs the spectral-index measurements.
     If both stellar-continuum and emission-line models are provided, and
     if the stellar-continuum and emission-line fits are performed on the
     same spectra:
+
         - Indices are measured on the relevant (binned or unbinned)
           spectra; spectra with emission-line fits have the model
           emission lines subtracted from them before these measurements.
@@ -49,6 +53,7 @@ A class hierarchy that performs the spectral-index measurements.
     If both stellar-continuum and emission-line models are provided, and
     if the stellar-continuum and emission-line fits are performed on
     different spectra:
+
         - The behavior is exactly as if the stellar-continuum model was
           not provided.
 
@@ -72,19 +77,9 @@ A class hierarchy that performs the spectral-index measurements.
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
 .. _numpy.recarray: https://docs.scipy.org/doc/numpy/reference/generated/numpy.recarray.html
-
+.. _logging.Logger: https://docs.python.org/3/library/logging.html
 
 """
-
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
-import sys
-import warnings
-if sys.version > '3':
-    long = int
 
 import glob
 import os
@@ -92,6 +87,7 @@ import logging
 
 import numpy
 from astropy.io import fits
+import astropy.constants
 
 from ..par.parset import ParSet
 from ..par.artifactdb import ArtifactDB
@@ -113,7 +109,6 @@ from .emissionlinemodel import EmissionLineModel
 from .bandpassfilter import passband_integral, passband_integrated_width, pseudocontinuum
 from .util import select_proc_method, flux_to_fnu
 
-import astropy.constants
 from matplotlib import pyplot
 #from memory_profiler import profile
 
@@ -479,11 +474,13 @@ class SpectralIndices:
     measurements.
 
     If neither stellar-continuum nor emission-line models are provided:
+
         - Indices are measure on the binned spectra
         - No velocity-dispersion corrections are calculated
 
     If a stellar-continuum model is provided without an emission-line
     model:
+
         - Indices are measured on the binned spectra
         - Velocity-dispersion corrections are computed for any binned
           spectrum with a stellar-continuum fit based on the optimal
@@ -491,6 +488,7 @@ class SpectralIndices:
 
     If an emission-line model is provided without a stellar-continuum
     model:
+
         - Indices are measured on the relevant (binned or unbinned)
           spectra; spectra with emission-line fits have the model
           emission lines subtracted from them before these measurements.
@@ -503,6 +501,7 @@ class SpectralIndices:
     If both stellar-continuum and emission-line models are provided, and
     if the stellar-continuum and emission-line fits are performed on the
     same spectra:
+
         - Indices are measured on the relevant (binned or unbinned)
           spectra; spectra with emission-line fits have the model
           emission lines subtracted from them before these measurements.
@@ -512,10 +511,13 @@ class SpectralIndices:
     If both stellar-continuum and emission-line models are provided, and
     if the stellar-continuum and emission-line fits are performed on
     different spectra:
+
         - The behavior is exactly as if the stellar-continuum model was
           not provided.
 
-    **Detail what should be provided in terms of the redshift**
+    .. todo::
+
+        **Detail what should be provided in terms of the redshift.**
 
     Args:
         database_key (str): Keyword used to select the specfic list of
@@ -863,14 +865,14 @@ class SpectralIndices:
 
     def _assign_redshifts(self, redshift, measure_on_unbinned_spaxels, good_snr,
                           default_redshift=None):
-        """
+        r"""
         Set the redshift to use for each spectrum for the spectral index
         measurements.
         
         In terms of precedence, directly provided redshifts override
         those in any available StellarContinuumModel.
 
-        If self.stellar_continuum and redshift are None, the default
+        If :attr:`stellar_continuum` and redshift are None, the default
         redshift is used (or 0.0 if this is also None).
 
         To get the stellar kinematics, the function calls
@@ -888,16 +890,24 @@ class SpectralIndices:
 
         Args:
 
-            redshift (float, numpy.ndarray): Redshifts (:math:`z`) to
-                use for each spectrum.  If None, the default
+            redshift (:obj:`float`, numpy.ndarray):
+                Redshifts (:math:`z`) to use for each spectrum.  If
+                None, the default
+            measure_on_unbinned_spaxels (:obj:`bool`):
+                Flag that method expects to measure moments on unbinned
+                spaxels.
+            good_snr (numpy.ndarray):
+                Boolean array setting which spectra have sufficient S/N
+                for the measurements.
+            default_redshift (:obj:`float`, optional):
 
-            default_redshift (float): (**Optional**) Only used if there
-                are stellar kinematics available.  Provides the default
-                redshift to use for spectra without stellar
-                measurements; see :arg:`redshift` in
+                Only used if there are stellar kinematics available.
+                Provides the default redshift to use for spectra without
+                stellar measurements; see ``redshift`` in
                 :func:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel.matched_kinematics`.
                 If None (default), the median of the unmasked stellar
                 velocities will be used.
+
         """
 
         # Construct the binid matrix if measuring on unbinned spaxels
@@ -979,7 +989,7 @@ class SpectralIndices:
                 selecting which spectra to return.  The length must
                 match the number of binned spectra or the total number
                 of DRP spectra, depending on the provided
-                :arg:`measure_on_unbinned_spaxels`.  Default is to
+                ``measure_on_unbinned_spaxels``.  Default is to
                 return all spectra.
 
             resolution_fwhm (float): (**Optional**)
@@ -1480,19 +1490,32 @@ class SpectralIndices:
             columns, each with one element per spectrum:
 
                  0. ``BINID``: Bin identifier
+
                  1. ``BINID_INDEX``: Index of the bin identifier
+
                  2. ``REDSHIFT``: Redshift used for measurement
+
                  3. ``MASK``: Boolean or maskbit value for index
+
                  4. ``BCEN``: Blue passband center
+
                  5. ``BCONT``: Blue passband pseudo-continuum
+
                  6. ``BCONTERR``: Error in the above
+
                  7. ``RCEN``: Red passband center
+
                  8. ``RCONT``: Red passband pseudo-continuum
+
                  9. ``RCONTERR``: Error in the above
+
                 10. ``INDX``: Index value
+
                 11. ``INDXERR``: Error in the above
+
                 12. ``MODEL_INDX``: Index measured on the best-fitting
-                                    stellar-continuum model
+                    stellar-continuum model
+
                 13. ``INDX_DISPCORR``: Index dispersion correction
 
             This function does not add the ``BINID``, ``BINID_INDEX``,
@@ -1704,11 +1727,13 @@ class SpectralIndices:
 
         If neither stellar-continuum nor emission-line models are
         provided:
+
             - Indices are measure on the binned spectra
             - No velocity-dispersion corrections are calculated
 
         If a stellar-continuum model is provided without an
         emission-line model:
+
             - Indices are measured on the binned spectra
             - Velocity-dispersion corrections are computed for any
               binned spectrum with a stellar-continuum fit based on the
@@ -1716,6 +1741,7 @@ class SpectralIndices:
 
         If an emission-line model is provided without a
         stellar-continuum model:
+
             - Indices are measured on the relevant (binned or unbinned)
               spectra; spectra with emission-line fits have the model
               emission lines subtracted from them before these
@@ -1729,6 +1755,7 @@ class SpectralIndices:
         If both stellar-continuum and emission-line models are provided,
         and if the stellar-continuum and emission-line fits are
         performed on the same spectra:
+
             - Indices are measured on the relevant (binned or unbinned)
               spectra; spectra with emission-line fits have the model
               emission lines subtracted from them before these
@@ -1739,6 +1766,7 @@ class SpectralIndices:
         If both stellar-continuum and emission-line models are provided,
         and if the stellar-continuum and emission-line fits are
         performed on different spectra:
+
             - The behavior is exactly as if the stellar-continuum model
               was not provided.
 

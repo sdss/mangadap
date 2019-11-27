@@ -777,10 +777,15 @@ def Rotate_Corners(X1, X2, Y1, Y2, PA) :
 def XY_toSemiMajor(X, Y, Eps) :
      """
      Transform X, Y into Semi-Major axis radii using a given ellipticity
-     Input are:
-        X : array of X coordinate
-        Y : array of Y coordinate
-        Eps: float value for the ellipticity.
+
+     Args:
+        X (numpy.ndarray):
+            Array of X coordinate
+        Y (numpy.ndarray):
+            Array of Y coordinate
+        Eps (:obj:`float`):
+            Ellipticity (1-b/a).
+
      """
      return sqrt(X**2 + Y**2 / (1. - Eps)**2)
 # ===============================================================

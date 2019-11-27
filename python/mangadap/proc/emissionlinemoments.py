@@ -36,17 +36,6 @@ A class hierarchy that measures moments of the observed emission lines.
 
 
 """
-
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
-import sys
-import warnings
-if sys.version > '3':
-    long = int
-
 import glob
 import os
 import logging
@@ -452,10 +441,10 @@ class EmissionLineMoments:
         In terms of precedence, directly provided redshifts override
         those in any available EmissionLineModel.
 
-        If self.emission_line_model and redshift are None, the default
+        If :attr:`emission_line_model` and redshift are None, the default
         redshift is used (or 0.0 if this is also None).
 
-        To get the emission_line stellar kinematics, the function calls
+        To get the emission-line stellar kinematics, the function calls
         :func:`mangadap.proc.emissionlinemodel.EmissionLineModel.matched_kinematics`.
         The method must have a fit_vel_name define for this use!
 
@@ -464,20 +453,20 @@ class EmissionLineMoments:
         instead of the full vector.
 
         Args:
+            redshift (float, numpy.ndarray):
+                Redshifts (:math:`z`) to use for each spectrum.
+            measure_on_unbinned_spaxels (:obj:`bool`):
+                Flag that method expects to measure moments on unbinned
+                spaxels.
+            good_snr (numpy.ndarray):
+                Boolean array setting which spectra have sufficient S/N
+                for the measurements.
 
-            redshift (float, numpy.ndarray): Redshifts (:math:`z`) to
-                use for each spectrum.  If None, the default
+            default_redshift (:obj:`float`, optional):
 
-            measure_on_unbinned_spaxels (bool): Flag that method expects
-                to measure moments on unbinned spaxels.
-
-            good_snr (numpy.ndarray): Boolean array setting which
-                spectra have sufficient S/N for the measurements.
-
-            default_redshift (float): (**Optional**) Only used if there
-                are stellar kinematics available.  Provides the default
-                redshift to use for spectra without stellar
-                measurements; see :arg:`redshift` in
+                Only used if there are stellar kinematics available.
+                Provides the default redshift to use for spectra without
+                stellar measurements; see ``redshift`` in
                 :func:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel.matched_kinematics`.
                 If None (default), the median of the unmasked stellar
                 velocities will be used.
@@ -1062,17 +1051,21 @@ class EmissionLineMoments:
         """
         Measure the emission-line moments using the binned spectra.
 
-        If neither stellar-continuum nor emission-line models are provided:
+        If neither stellar-continuum nor emission-line models are
+        provided:
+
             - Moments are measure on the binned spectra
             - No continuum subtraction is performed
 
         If a stellar-continuum model is provided without an
         emission-line model:
+
             - Moments are measured on the binned spectra
             - The best-fitting stellar continuum is subtracted
 
         If an emission-line model is provided without a
         stellar-continuum model:
+
             - Moments are measured on the relevant (binned or unbinned)
               spectra
             - If the emission-line model includes data regarding the
@@ -1084,6 +1077,7 @@ class EmissionLineMoments:
         If both stellar-continuum and emission-line models are provided,
         and if the stellar-continuum and emission-line fits are
         performed on the same spectra:
+
             - Moments are measured on the relevant (binned or unbinned)
               spectra
             - If the emission-line model includes data regarding the
@@ -1095,8 +1089,10 @@ class EmissionLineMoments:
         If both stellar-continuum and emission-line models are provided,
         and if the stellar-continuum and emission-line fits are
         performed on different spectra:
+
             - The behavior is exactly as if the stellar-continuum model
               was not provided.
+
         """
         # Initialize the reporting
         if loggers is not None:

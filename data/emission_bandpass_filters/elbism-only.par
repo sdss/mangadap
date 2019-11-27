@@ -1,0 +1,29 @@
+#------------------------------------------------------------------------
+# Copied by Kate Rubin from elbmiles.par
+# Created by: Kyle Westfall (KBW)
+# Date: 17 Mar 2016
+#
+# Line wavelengths are "Ritz" wavelengths from NIST:
+#   http://physics.nist.gov/PhysRefData/ASD/Html/help.html
+#
+# Line wavelengths are in: VACUUM
+#
+# The columns are described in README.
+#
+# Revisions:
+#   10 May 2017: (KBW) add lines 21-25
+#------------------------------------------------------------------------
+
+typedef struct {
+    int index;
+    char name[6];
+    double lambda;
+    char waveref[3];
+    double primary[2];
+    double blueside[2];
+    double redside[2];
+} DAPELB;
+
+DAPELB  63  NaI     5891.583   vac  { 5880.0  5910.0 } { 5850.0  5870.0 } { 5910.0  5930.0 }
+DAPELB  64  NaI     5897.558   vac  { 5880.0  5910.0 } { 5850.0  5870.0 } { 5910.0  5930.0 }
+

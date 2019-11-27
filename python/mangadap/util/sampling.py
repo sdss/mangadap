@@ -13,17 +13,10 @@ Provides a set of functions to handle resampling.
 *Revision history*:
     | **30 Aug 2018**: Moved here from old instrument.py module by K.
         Westfall (KBW).
+
+.. _numpy.ndarray: https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html
+
 """
-
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
-import sys
-if sys.version > '3':
-    long = int
-
 import warnings
 import numpy
 from scipy import interpolate
@@ -87,10 +80,16 @@ def angstroms_per_pixel(wave, log=False, base=10.0, regular=True):
     coordinates.  The first and last pixels are assumed to have a width
     as determined by assuming the coordinate is at its center.
 
+    .. note::
+
+        If the regular is False and log is True, the code does *not*
+        assume the wavelength coordinates are at the geometric center of
+        the pixel.
+
     Args:
-        wave (`numpy.ndarray`):
+        wave (`numpy.ndarray`_):
             (Geometric) centers of the spectrum pixels in angstroms.
-        log (`numpy.ndarray`, optional):
+        log (`numpy.ndarray`_, optional):
             The vector is geometrically sampled.
         base (:obj:`float`, optional):
             Base of the logarithm used in the geometric sampling.
@@ -102,13 +101,10 @@ def angstroms_per_pixel(wave, log=False, base=10.0, regular=True):
     """
     if regular:
         ang_per_pix = spectral_coordinate_step(wave, log=log, base=base)
-        if log:
-            ang_per_pix *= wave*numpy.log(base)
-    else:
-        ang_per_pix = numpy.diff([(3*wave[0]-wave[1])/2] 
-                                    + ((wave[1:] + wave[:-1])/2).tolist()
-                                    + [(3*wave[-1]-wave[-2])/2])
-    return ang_per_pix
+        return ang_per_pix*wave*numpy.log(base) if log else numpy.repeat(ang_per_pix, len(wave))
+
+    return numpy.diff([(3*wave[0]-wave[1])/2] + ((wave[1:] + wave[:-1])/2).tolist()
+                      + [(3*wave[-1]-wave[-2])/2])
 
 
 def _pixel_centers(xlim, npix, log=False, base=10.0):

@@ -21,7 +21,7 @@ Implements an emission-line fitting function using pPXF.
         rejected during fit
     | **22 May 2018**: (KBW) Change import to ppxf package.
     | **29 May 2018**: (KBW) Remove original function from Xihan and
-        rename *_edit function.
+        rename ``*_edit`` function.
 """
 
 from __future__ import division
@@ -318,7 +318,7 @@ def _reset_components(c, valid):
 
 def _validate_templates_components(templates, gas_template, component, vgrp, sgrp, moments, mask,
                                    start, tpl_to_use, velscale, velscale_ratio=None, vsyst=0):
-    """
+    r"""
     Check that templates are valid in the sense that they have non-zero
     components in valid pixel regions.
     
@@ -342,10 +342,10 @@ def _validate_templates_components(templates, gas_template, component, vgrp, sgr
             template.  Shape is (NTPL,).
         vgrp (array-like):
             The integer velocity group associated with each template.
-            Shape is (:math:`N_{\rm tpl},), but can be None.
+            Shape is :math:`(N_{\rm tpl},)` , but can be None.
         sgrp (array-like):
             The integer sigma group associated with each template.
-            Shape is (:math:`N_{\rm tpl},), but can be None. 
+            Shape is :math:`(N_{\rm tpl},)` , but can be None. 
         moments (numpy.ndarray):
             Integer vector with the number of kinematic moments for each
             component.  Shape is (NCOMP,).
@@ -372,7 +372,7 @@ def _validate_templates_components(templates, gas_template, component, vgrp, sgr
             wavelength.
 
     Returns:
-        Ten arrays are returned: 
+        tuple: Ten arrays are returned: 
             - (1) Boolean vector with which templates were valid (length
               is NTPL), 
             - (2) the valid set of templates to pass to pPXF [shape is
@@ -391,8 +391,8 @@ def _validate_templates_components(templates, gas_template, component, vgrp, sgr
               templates (length is _NTPL), 
             - (8) the number of moments for the new components (length
               is _NCOMP), 
-            - (9) the starting kinematics for each new component
-              (length is _NCOMP), and 
+            - (9) the starting kinematics for each new component (length
+              is _NCOMP), and 
             - (10) the parameter tying object reordered as necessary for
               the new component list (**this needs to be checked**).
 
@@ -530,7 +530,7 @@ def _fit_iteration(templates, wave, flux, noise, velscale, start, moments, compo
                    tpl_to_use=None, reject_boxcar=101, velscale_ratio=None, degree=-1, mdegree=0,
                    reddening=None, vgrp=None, sgrp=None, mask=None, vsyst=0, plot=False, quiet=True,
                    sigma_rej=3.):
-    """
+    r"""
     Run a single fit+rejection iteration of the pPXF fit for all input
     spectra with the provided set of constraints/options.
 
@@ -578,10 +578,10 @@ def _fit_iteration(templates, wave, flux, noise, velscale, start, moments, compo
             Calzetti 2000 model).  No attentuation fit by default.
         vgrp (array-like, optional):
             The integer velocity group associated with each template.
-            Shape is (:math:`N_{\rm tpl},). 
+            Shape is :math:`(N_{\rm tpl},)`. 
         sgrp (array-like, optional):
             The integer sigma group associated with each template.
-            Shape is (:math:`N_{\rm tpl},). 
+            Shape is :math:`(N_{\rm tpl},)`. 
         mask (numpy.ndarray, optional):
             Boolean vector that selects the pixels in the object spectra
             to fit (i.e., mask=True for pixels to fit and mask=False for
@@ -600,7 +600,8 @@ def _fit_iteration(templates, wave, flux, noise, velscale, start, moments, compo
             Sigma values used for the rejection.  Default is 3.
             
     Returns:
-        Eleven arrays are returned::
+        tuple: Eleven arrays are returned:
+
             - (1) The best-fitting model for each spectrum [shape is
               (NSPEC,NPIX)];
             - (2) the best-fitting emission-line-only model for each
@@ -785,7 +786,7 @@ def _set_to_using_optimal_templates(nspec, ntpl, wgts, component, vgrp=None, sgr
 
 
 def _combine_stellar_templates(templates, gas_template, wgts, component, vgrp=None, sgrp=None):
-    """
+    r"""
     Reconstruct the set of templates used to fit each spectrum.
 
     Based on an initial fit to the spectra, construct a single optimal
@@ -803,9 +804,10 @@ def _combine_stellar_templates(templates, gas_template, wgts, component, vgrp=No
           details are handled by :func:`_ppxf_component_setup`.
   
     .. todo::
-        - Allow for different template construct modes?  E.g., use all,
-          use anything that was non-zero in the first fit, or use
-          single optimal template (as done now).
+
+        Allow for different template construct modes?  E.g., use all,
+        use anything that was non-zero in the first fit, or use single
+        optimal template (as done now).
 
     Args:
         templates (numpy.ndarray):
@@ -822,13 +824,14 @@ def _combine_stellar_templates(templates, gas_template, wgts, component, vgrp=No
             template.  Shape is (NTPL,).
         vgrp (array-like, optional):
             The integer velocity group associated with each template.
-            Shape is (:math:`N_{\rm tpl},), but can be None.
+            Shape is :math:`(N_{\rm tpl},)` , but can be None.
         sgrp (array-like, optional):
             The integer sigma group associated with each template.
-            Shape is (:math:`N_{\rm tpl},), but can be None. 
+            Shape is :math:`(N_{\rm tpl},)` , but can be None. 
 
     Returns:
-        Seven arrays are returned::
+        tuple: Seven arrays are returned:
+
             - (1) the weights of only the stellar templates used in
               constructing each optimal template [shape is
               (NSPEC,NTPL)]; 
@@ -874,7 +877,7 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
                             vsyst=0, tpl_to_use=None, binid=None, flux_binned=None,
                             noise_binned=None, mask_binned=None, x_binned=None, y_binned=None,
                             x=None, y=None, plot=False, quiet=False, debug=False, sigma_rej=3.):
-    """
+    r"""
     Main calling function for fitting stellar-continuum and nebular
     emission lines in many spectra using pPXF.
 
@@ -902,6 +905,7 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
 
     When the binned spectra are provided, the fitting procedure is as
     follows:
+
         - The binned spectra are fit with the stellar components fixed
           to the provided kinematics in the starting value array and
           with all the gas templates part of a single kinematic
@@ -938,6 +942,7 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
     `gas_template` argument.
 
     .. todo::
+
         - Allow mask(s) to be optional
         - Update the docs
 
@@ -978,10 +983,10 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
             be the same for all object spectra.
         vgrp (array-like, optional):
             The integer velocity group associated with each template.
-            Shape is (:math:`N_{\rm tpl},). 
+            Shape is :math:`(N_{\rm tpl},)`. 
         sgrp (array-like, optional):
             The integer sigma group associated with each template.
-            Shape is (:math:`N_{\rm tpl},). 
+            Shape is :math:`(N_{\rm tpl},)`. 
         degree (:obj:`int`, optional):
             Order of the additive polynomial to include in the fit.  Not
             included by default.
