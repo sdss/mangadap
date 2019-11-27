@@ -12,6 +12,8 @@
 # Revisions:
 #       28 Jan 2019: K. Westfall, copied from elpmiles.par.  Added He I
 #                    3889 and NI doublet.
+#       14 Oct 2019: K. Rubin, copied from elpmpl8.par.  Added NaI doublet
+#
 #------------------------------------------------------------------------
 
 typedef struct {
@@ -59,7 +61,6 @@ DAPEML  22  SII     6732.674   vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 
 DAPEML  23  HeI     3889.749   vac  f   1.000   k6  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 200. }  { 0 0 1 }  { 3806.5  3826.5 } { 3900.2  3920.2 }
 DAPEML  24  NI      5199.3490  vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 200. }  { 0 0 1 }  { 5169.4  5189.4 } { 5211.7  5231.7 }
 DAPEML  25  NI      5201.7055  vac  f   1.000  k24  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 200. }  { 0 0 1 }  { 5169.4  5189.4 } { 5211.7  5231.7 }
-DAPEML  59  SIII    8831.8     vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 8801.8  8821.8 } { 8841.8  8861.8 }
-DAPEML  60  SIII    9071.1     vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 9041.1  9061.1 } { 9081.1  9101.1 }
-DAPEML  61  SIII    9533.2     vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 9503.2  9523.2 } { 9543.2  9563.2 }
+DAPEML  27  NaI     5891.5833  vac  m   1.000    f  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 200. }  { 0 0 1 }  { 5847.2  5867.2 } { 5907.6  5927.6 }
+DAPEML  28  NaI     5897.5581  vac  m   1.000    f  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 200. }  { 0 0 1 }  { 5847.2  5867.2 } { 5907.6  5927.6 }
 
