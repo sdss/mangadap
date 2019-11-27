@@ -18,5 +18,6 @@ Module contents
 
 .. automodule:: mangadap.survey
    :members:
+   :private-members:
    :undoc-members:
    :show-inheritance:

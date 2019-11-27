@@ -209,7 +209,7 @@ class EmissionLineTemplates:
 
 
     def _tied_index(self, i, primary=False):
-        """
+        r"""
         Return the index of the line to which this one is tied.
         
         The result may be that this line is tied to one that is also
@@ -217,19 +217,23 @@ class EmissionLineTemplates:
         keyword can be use to trace the parameter tying back to the
         independent line.
 
-        Arg:
-            i (int): The index of the line in the database.
-            primary (bool): (**Optional**) Trace the line tying all the
-                way back to the independent (primary) line.
+        Args:
+            i (:obj:`int`):
+                The index of the line in the database.
+            primary (:obj:`bool`, optional):
+                Trace the line tying all the way back to the independent
+                (primary) line.
 
-        Return:
-            int: The index of the line to which this one is tied.
+        Returns:
+            :obj:`int`: The index of the line to which this one is tied.
 
         Raises:
-            ValueError: Raised if the primary option is selected and the
-                line does not trace back to a primary line.  This
-                represents a poorly constructed emission-line database
-                and should be avoided!
+            ValueError:
+                Raised if the primary option is selected and the line
+                does not trace back to a primary line.  This represents
+                a poorly constructed emission-line database and should
+                be avoided!
+
         """
         db_rows = numpy.arange(self.emldb.neml)
         indx = db_rows[self.emldb['index'] == int(self.emldb['mode'][i][1:])][0]

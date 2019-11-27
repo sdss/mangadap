@@ -171,6 +171,7 @@ bitmasks for the template library spectra.
     | **30 Aug 2018**: (KBW) Switch from using resample1d to
         :class:`mangadap.util.sampling.Resample`.
 
+.. _numpy.ndarray: https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
 .. _pydl.goddard.astro.airtovac: http://pydl.readthedocs.io/en/stable/api/pydl.goddard.astro.airtovac.html#pydl.goddard.astro.airtovac

@@ -18,8 +18,7 @@ clean:
 	rm -rf $(LOCALFILES)
 
 apirst:
-	export SPHINX_APIDOC_OPTIONS=$(SPHINXAPIOPT)
-	$(SPHINXAPI) --separate -o ./api ../python/mangadap ../python/mangadap/tests/* 
+	SPHINX_APIDOC_OPTIONS=$(SPHINXAPIOPT) $(SPHINXAPI) --separate -o ./api ../python/mangadap ../python/mangadap/tests/* 
 
 html:
 	make apirst

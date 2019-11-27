@@ -30,7 +30,8 @@ Implements an emission-line fitting class that largely wraps pPXF.
     | **22 May 2018**: (KBW) Change import to ppxf package.
     | **29 May 2018**: (KBW) Change xjmc function import and call
 
-.. _numpy.ma.MaskedArray: https://docs.scipy.org/doc/numpy-1.12.0/reference/maskedarray.baseclass.html
+.. _numpy.ndarray: https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html
+.. _numpy.ma.MaskedArray: https://docs.scipy.org/doc/numpy/reference/maskedarray.baseclass.html
 .. _numpy.recarray: https://docs.scipy.org/doc/numpy/reference/generated/numpy.recarray.html
 .. _logging.Logger: https://docs.python.org/3/library/logging.html
 
@@ -814,42 +815,41 @@ class Sasuke(EmissionLineFit):
         :class:`mangadap.proc.ppxffit.PPXFFit._save_results`.
 
         Args:
-            etpl
-                (:class:`mangadap.proc.emissionlinetemplates.EmissionLineTemplates`):
+            etpl (:class:`mangadap.proc.emissionlinetemplates.EmissionLineTemplates`):
                 The object used to construct and hold the emission-line
                 templates.
-            start (:obj:`numpy.ndarray`):
+            start (`numpy.ndarray`):
                 Starting pixel of the fit for each spectrum.
-            end (:obj:`numpy.ndarray`):
+            end (`numpy.ndarray`):
                 End pixel (exclusive) of the fit for each spectrum.
-            flux (:obj:`numpy.ndarray`):
+            flux (`numpy.ndarray`):
                 The fitted spectra.
-            ferr (:obj:`numpy.ndarray`):
+            ferr (`numpy.ndarray`):
                 Errors in the fitted spectra.
-            spec_to_fit (:obj:`numpy.ndarray`):
+            spec_to_fit (`numpy.ndarray`):
                 Boolean flags for spectra with attempted fits.
-            model_flux (:obj:`numpy.ndarray`):
+            model_flux (`numpy.ndarray`):
                 The best-fit model spectra.
-            model_eml_flux (:obj:`numpy.ndarray`):
+            model_eml_flux (`numpy.ndarray`):
                 The best-fit emission-line-only spectra.
-            model_wgts (:obj:`numpy.ndarray`):
+            model_wgts (`numpy.ndarray`):
                 The weights applied to each template.
-            model_wgts_err (:obj:`numpy.ndarray`):
+            model_wgts_err (`numpy.ndarray`):
                 The weight errors.
-            model_addcoeff (:obj:`numpy.ndarray`):
+            model_addcoeff (`numpy.ndarray`):
                 The coefficients of any fitted additive polynomials.
-            model_multcoeff (:obj:`numpy.ndarray`):
+            model_multcoeff (`numpy.ndarray`):
                 The coefficients of any fitted multiplicative polynomials.
-            model_reddening (:obj:`numpy.ndarray`):
+            model_reddening (`numpy.ndarray`):
                 The best-fitting :math:`E(B-V)` if reddening was
                 included in the fits.
-            model_kin_inp (:obj:`numpy.ndarray`):
+            model_kin_inp (`numpy.ndarray`):
                 The starting-guess input kinematics.
-            model_kin (:obj:`numpy.ndarray`):
+            model_kin (`numpy.ndarray`):
                 The best-fitting kinematics.
-            model_kin_err (:obj:`numpy.ndarray`):
+            model_kin_err (`numpy.ndarray`):
                 The errors in the kinematics.
-            model_mask (:obj:`numpy.ndarray`):
+            model_mask (`numpy.ndarray`):
                 The array of bitmask values associated with spectral
                 fitting flags.  Shape is :math:`(N_{\rm spec}, N_{\rm
                 pix})`.
@@ -863,7 +863,8 @@ class Sasuke(EmissionLineFit):
                 The value used to fill masked measurements.
 
         Returns:
-            Five numpy arrays are returned:
+            tuple: Five numpy arrays are returned:
+
                 - (1) the best-fitting model spectra, 
                 - (2) the best-fitting emission-line only spectra, 
                 - (3) the bitmask values, 

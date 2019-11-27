@@ -10,26 +10,6 @@ A class heirarchy for pixel masks.
 *Source location*:
     $MANGADAP_DIR/python/mangadap/proc/pixelmask.py
 
-*Imports and python version compliance*:
-    ::
-
-        from __future__ import division
-        from __future__ import print_function
-        from __future__ import absolute_import
-        from __future__ import unicode_literals
-
-        import sys
-        import warnings
-        if sys.version > '3':
-            long = int
-
-        import numpy
-        import astropy.constants
-
-        from .bitmask import BitMask
-        from ..par.artifactdb import ArtifactDB
-        from ..par.emissionlinedb import EmissionLineDB
-
 *Class usage examples*:
         Add examples
 
@@ -41,17 +21,6 @@ A class heirarchy for pixel masks.
     |   it can be set externally.  The default value is still 3.0 (same as before).
 
 """
-
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
-import sys
-import warnings
-if sys.version > '3':
-    long = int
-
 import numpy
 import astropy.constants
 
@@ -214,16 +183,18 @@ class SpectralPixelMask(PixelMask):
         each emission line.
 
         Args:
-            kin (float, list, numpy.ndarray): An input set of kinematics
-                to used by the mask.
+            kin (float, list, numpy.ndarray):
+                An input set of kinematics to used by the mask.
 
         Returns:
-            numpy.ndarray : A 1D float array of the correct shape with
+            numpy.ndarray: A 1D float array of the correct shape with
             the kinematics 
 
         Raises:
-            ValueError: Raised if the length of the `kin` array is not
-            the same as the number of emission lines in :attr:`emldb`.
+            ValueError:
+                Raised if the length of the `kin` array is not the same
+                as the number of emission lines in :attr:`emldb`.
+
         """
         if kin is None:
             return None

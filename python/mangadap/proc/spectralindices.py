@@ -865,14 +865,14 @@ class SpectralIndices:
 
     def _assign_redshifts(self, redshift, measure_on_unbinned_spaxels, good_snr,
                           default_redshift=None):
-        """
+        r"""
         Set the redshift to use for each spectrum for the spectral index
         measurements.
         
         In terms of precedence, directly provided redshifts override
         those in any available StellarContinuumModel.
 
-        If self.stellar_continuum and redshift are None, the default
+        If :attr:`stellar_continuum` and redshift are None, the default
         redshift is used (or 0.0 if this is also None).
 
         To get the stellar kinematics, the function calls
@@ -890,16 +890,24 @@ class SpectralIndices:
 
         Args:
 
-            redshift (float, numpy.ndarray): Redshifts (:math:`z`) to
-                use for each spectrum.  If None, the default
+            redshift (:obj:`float`, numpy.ndarray):
+                Redshifts (:math:`z`) to use for each spectrum.  If
+                None, the default
+            measure_on_unbinned_spaxels (:obj:`bool`):
+                Flag that method expects to measure moments on unbinned
+                spaxels.
+            good_snr (numpy.ndarray):
+                Boolean array setting which spectra have sufficient S/N
+                for the measurements.
+            default_redshift (:obj:`float`, optional):
 
-            default_redshift (float): (**Optional**) Only used if there
-                are stellar kinematics available.  Provides the default
-                redshift to use for spectra without stellar
-                measurements; see :arg:`redshift` in
+                Only used if there are stellar kinematics available.
+                Provides the default redshift to use for spectra without
+                stellar measurements; see ``redshift`` in
                 :func:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel.matched_kinematics`.
                 If None (default), the median of the unmasked stellar
                 velocities will be used.
+
         """
 
         # Construct the binid matrix if measuring on unbinned spaxels

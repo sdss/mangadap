@@ -32,5 +32,6 @@ Module contents
 
 .. automodule:: mangadap.util
    :members:
+   :private-members:
    :undoc-members:
    :show-inheritance:

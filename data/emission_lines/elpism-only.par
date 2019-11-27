@@ -39,3 +39,4 @@ typedef struct {
 
 DAPEML  63  NaI     5891.583   vac  m   1.000    f  GaussianLineProfile  1  0  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 5850.0  5870.0 } { 5910.0  5930.0 }
 DAPEML  64  NaI     5897.558   vac  m   1.000    f  GaussianLineProfile  1  0  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 5850.0  5870.0 } { 5910.0  5930.0 }
+

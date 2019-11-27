@@ -19,7 +19,7 @@ Binning!
     | **22 May 2018**: (KBW) Import vorbin package version of
         voronoi_2d_binning
 
-.. _numpy.ndarray: http://docs.scipy.org/doc/numpy-1.10.0/reference/generated/numpy.ndarray.html
+.. _numpy.ndarray: https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _astropy.io.fits.Header: http://docs.astropy.org/en/stable/io/fits/api/headers.html#header
 .. _scipy.sparse.spmatrix: http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.spmatrix.html

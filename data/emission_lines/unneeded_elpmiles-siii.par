@@ -61,3 +61,4 @@ DAPEML  22  SII     6732.674   vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 
 DAPEML  59  SIII    8831.8     vac  f   1.000  a61  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 8801.8  8821.8 } { 8841.8  8861.8 }
 DAPEML  60  SIII    9071.1     vac  f   1.000  a61  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 9041.1  9061.1 } { 9081.1  9101.1 }
 DAPEML  61  SIII    9533.2     vac  f   1.000  v19  FFTGaussianLSF  1  1  { 1.0 0.0 100.0 }  { 0 0 0 }  {  0.0 None 30.0 }  { None None 400. }  { 0 0 1 }  { 9503.2  9523.2 } { 9543.2  9563.2 }
+
