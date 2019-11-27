@@ -14,8 +14,8 @@ Input files
 
 .. _execution-analysis-plan:
 
-1. The DAP AnalysisPlan
-~~~~~~~~~~~~~~~~~~~~~~~
+The DAP AnalysisPlan
+~~~~~~~~~~~~~~~~~~~~
 
 The DAP uses an `SDSS parameter file
 <https://www.sdss.org/dr15/software/par/>`_ to define one or more
@@ -85,8 +85,8 @@ skipped analysis steps.
 
 .. _execution-obs-input:
 
-2. The DAP ObsInputPar
-~~~~~~~~~~~~~~~~~~~~~~
+The DAP ObsInputPar
+~~~~~~~~~~~~~~~~~~~
 
 The DAP uses another `SDSS parameter file
 <https://www.sdss.org/dr15/software/par/>`_ to set the observation it is
@@ -212,25 +212,6 @@ analyzes a large set of datacubes.
 Batch execution using automatically generated scripts
 -----------------------------------------------------
 
-----
-**Fix this**
-
-In the automated run of the DAP, any entry in the :ref:`metadatamodel-drpcomplete`
-file with:
- - ``MANGAID != NULL``
- - ``MANGA_TARGET1 > 0 | MANGA_TARGET3 > 0``
- - ``VEL > -500``
-will be analyzed.
-
-An important consequence of the selection above is that *any ancillary
-targets without a provided redshift will not be analyzed by the DAP*,
-unless it has replacement redshift in the
-:ref:`metadatamodel-redshift-fix`.  If an ancillary target(s) were not
-analyzed by the DAP, it may be that this can be changed simply by
-supplying redshift estimates in this redshift-fix file.
-
-----
-
 The survey-level execution of the DAP uses the
 ``$MANGADAP_DIR/bin/rundap`` script, which is a simple wrapper of
 :class:`mangadap.survey.rundap.rundap`.  This script
@@ -338,13 +319,14 @@ analyzed with the same ``AnalysisPlan``.  An example call of this script that wi
 
 In this call, I've specified that the DRP data is in
 ``/path/with/drp/output/`` and that the DAP output should be placed in
-``/path/for/dap/output/`` instead of using the default directory
-structure based on the `Local Environment Setup`_.  The script file this
-call produces is written to
+``/path/for/dap/output/`` instead of using the default
+:ref:`datamodel-directory-structure`.  The script file this call
+produces is written to
 ``/path/for/dap/output/log/[time]/7495/12704/mangadap-7495-12704``,
 where ``[time]`` is a time stamp of when ``rundap`` was executed.  (If
 you execute ``rundap`` multiple times, it will create new directories
-using new time stamps.)  The lines of the script file for each plate-ifu:
+using new time stamps.)  The lines of the script file for each
+plate-ifu:
 
  - touches the ``*.started`` file
  - executes manga_dap
@@ -397,12 +379,12 @@ To write the post-processing scripts, execute ``rundap`` with the
 ``--post`` and ``--post_plots`` options.  This produces two additional
 types of scripts:
 
-    1. Scripts to produce QA plots for all IFUs on a given plate.  This
-    file is written to, e.g.,
-    ``/path/for/dap/output/log/01Nov2019T16.58.40UTC/7443/7443_fitqa``
-    and looks like this:
+ - Scripts to produce QA plots for all IFUs on a given plate.  This file
+   is written to, e.g.,
+   ``/path/for/dap/output/log/01Nov2019T16.58.40UTC/7443/7443_fitqa``
+   and looks like this:
 
-    .. code-block:: bash
+   .. code-block:: bash
 
         # Auto-generated batch file
         # Fri 01 Nov 2019 10:58:52
@@ -413,12 +395,12 @@ types of scripts:
 
         touch /path/for/dap/output/v2_7_1/2.4.1/log/01Nov2019T16.58.40UTC/7443/7443_fitqa.done
 
-    2. A script that builds the DAPall file and writes its QA plots.
-    This file is written to, e.g.,
-    ``/path/for/dap/output/v2_7_1/2.4.1/log/01Nov2019T16.58.40UTC/build_dapall``
-    and looks like this:
+ - A script that builds the DAPall file and writes its QA plots.  This
+   file is written to, e.g.,
+   ``/path/for/dap/output/v2_7_1/2.4.1/log/01Nov2019T16.58.40UTC/build_dapall``
+   and looks like this:
 
-    .. code-block:: bash
+   .. code-block:: bash
 
         # Auto-generated batch file
         # Fri 01 Nov 2019 10:58:52
@@ -431,4 +413,20 @@ types of scripts:
 
         touch /path/for/dap/output/v2_7_1/2.4.1/log/01Nov2019T16.58.40UTC/build_dapall.done
 
+
+In the automated run of the DAP, any entry in the
+:ref:`metadatamodel-drpcomplete` file with:
+
+ - ``MANGAID != NULL``
+ - ``MANGA_TARGET1 > 0 | MANGA_TARGET3 > 0``
+ - ``VEL > -500``
+
+will be analyzed.
+
+An important consequence of the selection above is that *any ancillary
+targets without a provided redshift will not be analyzed by the DAP*,
+unless it has replacement redshift in the
+:ref:`metadatamodel-redshift-fix`.  If an ancillary target(s) were not
+analyzed by the DAP, it may be that this can be changed simply by
+supplying redshift estimates in this redshift-fix file.
 

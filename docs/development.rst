@@ -1,11 +1,25 @@
 
+.. _astropy.io.fits.HDUList: https://docs.astropy.org/en/stable/io/fits/api/hdulists.html#astropy.io.fits.HDUList
+
 .. _development:
 
 Development Guidelines
 ======================
 
-There are a few key design principles that I've tried to adhere to when
-developing the DAP:
+The development strategy for the DAP has been allow for high-level
+interaction with the software to make subtle changes to its execution
+parameters.  For help with the high-level interaction with the DAP
+parameters, see the description of its :ref:`execution`.
+
+However, we have also specifically constructed the low-level, core
+algorithms in a way that is largely agnostic to the data being analyzed.
+This should allow users to use DAP methods/classes new scripts tailored
+to their own needs.
+
+We are very interested in having the community building on the existing
+DAP algorithms.  The following is an introduction to some of the
+guidelines we tried to follow in the development of the code, as a means
+of introducing some of the nuances of its structure:
 
  * minimize code repetition by isolating repeated functionality into a
    flexible function or class

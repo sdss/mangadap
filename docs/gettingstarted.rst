@@ -444,7 +444,7 @@ particular, be aware of the ``DONOTUSE`` and the ``UNRELIABLE`` flags
 for the MAPS files.
 
 The 2d ``MAPS`` file pixel mask is :ref:`maskbits-dappixmask`.  The 3d
-``LOGCUBE`` file spaxel mask is :reft:`maskbits-dapspecmask`.
+``LOGCUBE`` file spaxel mask is :ref:`maskbits-dapspecmask`.
 
 In all cases, the DAP has a convenience class that allows a user to
 quickly determine if any mask value is flagged with a certain value.

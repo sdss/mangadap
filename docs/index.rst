@@ -52,6 +52,16 @@ Usage
    execution
    development
 
+Methods
+=======
+
+.. toctree::
+   :maxdepth: 2
+
+   workflow
+   Analysis Module Details <modules>
+   spatialcovariance
+
 Output
 ======
 
@@ -84,6 +94,7 @@ API Reference
    :maxdepth: 2
 
    MaNGA DAP API <api/mangadap>
+   MaNGA DAP Modules <api/modules>
 
 Search
 ======
