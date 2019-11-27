@@ -31,6 +31,9 @@ TODO
 2.5.0dev
 --------
 
+ - Significant doc improvements by migrating most of the information on
+   the internal wiki into the docs/ directory.
+
 2.4.1 (01 Nov 2019)
 -------------------
  - Bug fix in construction of `STELLAR` extension in model LOGCUBE file;
