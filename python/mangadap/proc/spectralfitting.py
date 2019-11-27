@@ -10,21 +10,6 @@ Implements a few base classes used during spectral fitting procedures.
 *Source location*:
     $MANGADAP_DIR/python/mangadap/proc/spectralfitting.py
 
-*Imports and python version compliance*:
-    ::
-
-        from __future__ import division
-        from __future__ import print_function
-        from __future__ import absolute_import
-        from __future__ import unicode_literals
-
-        import sys
-        import warnings
-        if sys.version > '3':
-            long = int
-
-        import numpy
-
 *Class usage examples*:
         Add examples
 
@@ -42,18 +27,9 @@ Implements a few base classes used during spectral fitting procedures.
 
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _glob.glob: https://docs.python.org/3.4/library/glob.html
+.. _numpy.ma.MaskedArray: https://docs.scipy.org/doc/numpy-1.12.0/reference/maskedarray.baseclass.html
 
 """
-
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
-import sys
-import warnings
-if sys.version > '3':
-    long = int
 
 import numpy
 from scipy.interpolate import interp1d
@@ -484,7 +460,7 @@ class EmissionLineFit(SpectralFitting):
               :class:`mangadap.par.emissionlinedb.EmissionLineDB`
             - The provided profile type of each line must be a defined
               class.
-            - At least one line must have mode=`f`
+            - At least one line must have ``mode='f'``
             - All tied lines must be tied to a line with a correctly
               specified index.
             - Warnings will be provided for any line with a centroid
@@ -492,17 +468,23 @@ class EmissionLineFit(SpectralFitting):
             - The database must provide at least one valid line.
 
         Args:
-            emldb (:class:`mangadap.par.emissionlinedb.EmissionLineDB'):
+            emldb (:class:`mangadap.par.emissionlinedb.EmissionLineDB`):
                 Emission-line database.
-            wave (array-like)
+            wave (array-like):
+                Wavelength vector.
+            check_par (:obj:`bool`, optional):
+                Validate the provided parameters.
 
         Raises:
-            TypeError: Raised if the provided object is not an instance
-                of :class:`mangadap.par.emissionlinedb.EmissionLineDB`.
-            ValueError: Raised if any line has a mode of `x` or if the
-                database does not provide a valid definition for any
-                templates.
-            NameError: Raised if a defined profile type is not known.
+            TypeError:
+                Raised if the provided object is not an instance of
+                :class:`mangadap.par.emissionlinedb.EmissionLineDB`.
+            ValueError:
+                Raised if any line has a mode of `x` or if the database
+                does not provide a valid definition for any templates.
+            NameError:
+                Raised if a defined profile type is not known.
+
         """
 
         # Check the object type
@@ -650,29 +632,28 @@ class EmissionLineFit(SpectralFitting):
             - Allow window to be defined in angstroms?
 
         Args:
-            emission_lines
-                (:class:`mangadap.par.emissionlinedb.EmissionLineDB`):
+            emission_lines (:class:`mangadap.par.emissionlinedb.EmissionLineDB`):
                 Emission-line database use during the fit.
             wave (`numpy.ndarray`):
                 Wavelength vector for object spectra.  Shape is
-                (:math:`N_{\rm pix}`,).
+                :math:`(N_{\rm pix},)`.
             flux (`numpy.ndarray`):
                 Object spectra that have been fit.  Can be provided as a
-                `numpy.ma.MaskedArray`_.  Shape is (:math:`N_{\rm
-                spec},N_{\rm pix}`).
+                `numpy.ma.MaskedArray`_.  Shape is :math:`(N_{\rm
+                spec},N_{\rm pix})`.
             ferr (`numpy.ndarray`)
                 :math:`1\sigma` errors in the object spectra.  Can be
                 provided as a `numpy.ma.MaskedArray`_.  Shape is
-                (:math:`N_{\rm spec},N_{\rm pix}`).
+                :math:`(N_{\rm spec},N_{\rm pix})`.
             model_flux (`numpy.ndarray`):
-                Best-fitting model spectra
-                Object spectra that have been fit.  Can be provided as a
+                Best-fitting model spectra. Can be provided as a
                 `numpy.ma.MaskedArray`_.  Shape is (:math:`N_{\rm
                 spec},N_{\rm pix}`).
             model_eml_par (`numpy.recarray`):
                 A numpy record array with data type given by
-                :func:`_per_emission_line_dtype`.  Uses 'FLUX', 'KIN', and
-                'MASK'; and then sets LINE_ columns.
+                :func:`_per_emission_line_dtype`.  Uses ``FLUX``,
+                ``KIN``, and ``MASK``; and assigns results to ``LINE_*``
+                columns.
             mask (`numpy.ndarray`, optional):
                 A mask for the object spectra that have been fit.  Added
                 to mask attribute of `flux` if it is a

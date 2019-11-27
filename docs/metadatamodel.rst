@@ -18,10 +18,7 @@ relevant file from the public SDSS SVN repository using the python
 If you're unfamiliar with maskbits, see the `SDSS Primer
 <http://www.sdss.org/dr15/algorithms/bitmasks/>`_
 
-Examples of how to use the mask bits are provided **here** and **here**
-
-.. MANGA/TRM/TRM_MPL-8/metadata#Bitmasks
-.. MANGA/TRM/TRM_MPL-8/dap/GettingStarted#Usingthepixelspaxelmasks
+See :ref:`bitmasks` for examples of how to use the mask bits.
 
 .. note::
 
@@ -64,6 +61,8 @@ quality of the data:
 
 Anything with the CRITICAL bit set in MANGA_DAPQUAL should generally not
 be used for scientific purposes.
+
+.. _metadatamodel-dappixmask:
 
 MANGA_DAPPIXMASK
 ~~~~~~~~~~~~~~~~
@@ -128,6 +127,8 @@ triggered by the same criterion but geometrically; i.e., if the velocity
 dispersion is :math:`0.69 < \sigma < 0.74` or :math:`929.8 < \sigma <
 1000`.
 
+.. _metadatamodel-unreliable:
+
 The UNRELIABLE flag
 +++++++++++++++++++
 
@@ -170,6 +171,8 @@ the ``MAPS`` file.
 |                   | passbands (blue, main, red) used to construct the |
 |                   | measurement.                                      |
 +-------------------+---------------------------------------------------+
+
+.. _metadatamodel-dapspecmask:
 
 MANGA_DAPSPECMASK
 ~~~~~~~~~~~~~~~~~
@@ -319,6 +322,9 @@ the table extension has the following columns:
       -9999.0.  Importantly, *these placeholder values are replaced by
       ``ELL=0; PA=0; REFF=1`` when processed by the DAP.*
 
+
+.. _metadatamodel-redshift-fix:
+
 Redshift Fix File
 ~~~~~~~~~~~~~~~~~
 
@@ -376,6 +382,8 @@ is the IFU number, ``[MODE]`` is the data format (always ``CUBE`` for
 now), and ``[DAPTYPE]`` is the keyword for the analysis approach.  These
 files provide input observational parameters to the DAP, and are almost
 entirely from the NASA-Sloan Atlas.
+
+.. _metadatamodel-dapall:
 
 DAPall database
 ---------------

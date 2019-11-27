@@ -85,7 +85,25 @@ High-level changes
    line wavelength.  The Einstein :math:`A` coefficients are all taken
    from NIST.  In all but the [O II] 7320,7330 complex, the magnetic
    dipole term dominates such that the electric quadrapole terms are
-   effectively irrelevant.
+   effectively irrelevant.  The fixed flux ratios are:
+
+   * NeIII-3968/NeIII-3968 = 0.3
+   * OIII-4960/OIII-5008 = 0.35
+   * OI-6365/OI-6302 = 0.32
+   * NII-6549/NII-6585 = 0.34
+   * SIII-9071/SIII-9533 = 0.41
+
+ * Lines with tied velocity dispersions (some because their fluxes are
+   also tied) are:
+
+   * OII-3727 + OII-3729
+   * HeI-3889 + Hzet-3890
+   * NeIII-3968 + NeIII-3968
+   * OIII-4960 + OIII-5008
+   * NI-5199 + NI-5201
+   * OI-6302 + OI-6365
+   * NII-6549 + NII-6585
+   * SIII-9071 + SIII-9533
 
 User-level changes/bug fixes
 ----------------------------

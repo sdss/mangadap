@@ -77,7 +77,7 @@ The six main DAP modules and their purpose are:
    have been corrected for Galactic extinction.
  - :ref:`stellar-kinematics`: Once the spectra are binned, the DAP
    produces a model fit to the stellar continuum, primarily as a
-   determination of the stellar kinamatics using :ref:`ppxf` (written by
+   determination of the stellar kinamatics using `ppxf`_ (written by
    Michele Cappellari).  Currently, the DAP uses the ``MILESHC`` library
    (see Section 5 of the `DAP Overview paper`_) during this fit and only
    measures the first two moments (:math:`V` and :math:`\sigma`).  The
@@ -94,6 +94,7 @@ The six main DAP modules and their purpose are:
    DAP performs two sets of emission-line measurements, one based on
    simple moments of the line profile and a second based on a Gaussian
    fit:
+
     - :ref:`emission-line-moments`: We provide total flux and
       equivalent-width measurements based on direct summation of the
       flux over predescribed rest wavelength bands, accounting for any
@@ -111,6 +112,7 @@ The six main DAP modules and their purpose are:
       instrumental resolution at the observed wavelength of the line;
       the :ref:`corrections` and their application to the data are
       similar to the corrections for the stellar velocity dispersions.
+
  - :ref:`spectral-index-measurements`: Finally, spectral indices are
    measured after subtracting the best-fitting emission-line model from
    each spectrum.  Measurements include both absorption-line (equivalent
@@ -119,6 +121,16 @@ The six main DAP modules and their purpose are:
    performed at the native MaNGA spectral resolution and
    :ref:`corrections` are provided that should effectively set the
    measurement to a :math:`\sigma=0` spectrum. 
+
+.. toctree::
+   :maxdepth: 1
+
+   modules/rdx.rst
+   modules/bin.rst
+   modules/stellarkin.rst
+   modules/emissionmom.rst
+   modules/emissionfit.rst
+   modules/indices.rst
 
 Output Files
 ------------
@@ -131,6 +143,7 @@ salient properties, as described by the :ref:`datamodel` and
 The two primary output files, the :ref:`datamodel-maps` and the
 :ref:`datamodel-cube` are constructed using the reference files that are
 produced by each many analysis module.
+
  - :ref:`maps-construction`: The ``MAPS`` file provides 2D "maps" (i.e.,
    images) of DAP measured properties. The shape and WCS of these images
    identically matches that of a single wavelength channel in the
@@ -148,4 +161,11 @@ However, some quantities are produced uniquely for this file.  The
 :ref:`dapall-construction` is performed once all the
 ``PLATEIFU``-``DAPTYPE``-specific files have been produced for a given
 run.
+
+.. toctree::
+   :maxdepth: 1
+
+   modules/makemaps.rst
+   modules/makecube.rst     
+   modules/makedapall.rst   
 

@@ -67,8 +67,10 @@ Emission-line Modeling
 
 *Algorithm*:
  - Setup the fitting method:
+
     - Instantiate the :class:`mangadap.util.pixelmask.SpectralPixelMask`
       using the ``artifact_mask`` and ``waverange`` from config.
+
         - The ``BADSKY`` artifact mask is read and used to build an
           :class:`mangadap.par.artifactdb.ArtifactDB` instance that
           masks the typical residuals around the strong sky line at 5577
@@ -76,11 +78,13 @@ Emission-line Modeling
         - The ``waverange`` config parameter can be used to limit the
           fitted spectral range; will fit as much as possible if no
           range is provided.
+
     - If ``fit_method = elric``, ``baseline_order`` sets the Legendre
       function used to set the baseline in each fitting window and
       ``window_buffer`` sets the +/- window in angstroms around each
       line to use during the fit.
     - If ``fit_method = sasuke``:
+
         - ``etpl_line_sigma_mode`` and ``etpl_line_sigma_min``
           determines the method used to set the emission-line template
           instrumental dispersion; the available options are set by
@@ -106,6 +110,7 @@ Emission-line Modeling
         - ``internal_reddening = True`` forces use of the Calzetti
           (2000) attenuation law; will override any non-zero
           ``mdegree``.
+
     - If ``deconstruct_bins = True``, method will fit the emission lines
       on an individual spaxel basis instead of the binned spectra;
       currently this can only be used if ``fit_method = sasuke``.
@@ -115,7 +120,9 @@ Emission-line Modeling
       object to set the initial guess for the velocity (default is the
       NSA redshift) and/or velocity dispersion (default is 100 km/s) for
       the fit.
+
  - If requested, call the "Elric" fitter:
+
     - **WARNING**: The Elric fitter has not been used in the DAP for
       some time.  It should generally not be selected; if it is, one may
       need to spend some time debugging...  For this reason, the method
@@ -124,10 +131,13 @@ Emission-line Modeling
       :func:`mangadap.proc.elric.Elric.fit_SpatiallyBinnedSpectra` and
       its generalized fitting function is
       :func:`mangadap.proc.elric.Elric.fit`.
+
  - Or, call "Sasuke" fitter:
+
     - The main DAP wrapper function is
       :func:`mangadap.proc.sasuke.Sasuke.fit_SpatiallyBinnedSpectra` and
       does the following:
+
         - Get the binned spectra from the
           :class:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra`
           object
@@ -147,6 +157,7 @@ Emission-line Modeling
           config, and have a good continuum model (cannot be flagged as
           NOVALUE or FITFAILED).
         - If deconstructing bins:
+
             - Get the individual spaxel spectra from the
               :class:`mangadap.drpfits.DRPFits` object
             - Apply the reddening defined in the
@@ -165,20 +176,25 @@ Emission-line Modeling
             - Measure the equivalent widths for the individual spaxels
               using
               :func:`mangadap.proc.spectralfitting.EmissionLineFit.measure_equivalent_width`.
+
         - Otherwise:
+
             - Run the generalized fitting function (see description
               below), only providing the binned spectra.
             - Measure the equivalent widths for the binned spectra using
               using
               :func:`mangadap.proc.spectralfitting.EmissionLineFit.measure_equivalent_width`.
+
         - Construct the "emission-line baseline" as the difference
           between continuum+emission-line optimized fit from Sasuke and
           the stellar continuum fit for the stellar kinematics (from the
           :class:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel`
           object)
+
     - The generalized fitter is :func:`mangadap.proc.sasuke.Sasuke.fit`
       and initially proceeds very similarly to
       :func:`mangadap.proc.ppxffit.PPXFFit.fit`:
+
         - Check the input spectra to fit, guess kinematics, and
           remapping coordinates if provided
         - Check and set stellar templates and stellar kinematics if
@@ -188,6 +204,7 @@ Emission-line Modeling
           :func:`mangadap.proc.sasuke.Sasuke.etpl_line_sigma_options`.
         - Construct and add emission-line templates using
           :class:`mangadap.proc.emissionlinetemplates.EmissionLineTemplates`.
+
             - Parse the
               :class:`mangadap.par.emissionlinedb.EmissionLineDB`
               object:  Determine which lines to fit and how to group
@@ -205,6 +222,7 @@ Emission-line Modeling
               flux ratio are placed in the same template (this means
               they'll also have tied velocities and velocity
               dispersions).
+
         - Parse the velocity and sigma groups into tied parameters to
           provide to pPXF.
         - Given the template and object spectral range, determine the
@@ -212,8 +230,10 @@ Emission-line Modeling
           :func:`mangadap.proc.ppxffit.PPXFFit.fitting_mask`.
         - Run fit iterations using
           :func:`mangadap.contrib.xjmc.emline_fitter_with_ppxf`.
+
             - If deconstructing the bins (for the
               :ref:`datamodel-hybrid-binning`):
+
                 - (a.) First fit the binned spectra (with a 3-sigma
                   rejection iteration) forcing all the gas components
                   into a single kinematic component (all velocities and
@@ -230,10 +250,13 @@ Emission-line Modeling
                   (*without* a rejection iteration) with the gas
                   components in the appropriate velocity and sigma
                   groups.
+
             - Otherwise:
+
                 - Perform steps a, c, and e above, but just using the
                   provided spectra (whether or not they're bins or
                   individual spaxels).
+
         - Parse the results of the fit iterations into the output using
           :func:`mangadap.proc.sasuke.Sasuke._save_results`.
 

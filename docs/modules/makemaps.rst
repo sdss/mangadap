@@ -12,12 +12,14 @@ DAP MAPS File Construction
 
 *Important class dependencies:*
  - All of the main DAP classes:
+
     - :class:`mangadap.proc.reductionassessments.ReductionAssessment`
     - :class:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra`
     - :class:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel`
     - :class:`mangadap.proc.emissionlinemoments.EmissionLineMoments`
     - :class:`mangadap.proc.emissionlinemodel.EmissionLineModel`
     - :class:`mangadap.proc.spectralindices.SpectralIndices`
+
  - :class:`mangadap.util.fitsutil.DAPFitsUtil`: Contains many convience
    methods that, e.g., reconstruct a set of maps or datacubes based on
    input data sorted by bin ID and a map with the location of each bin

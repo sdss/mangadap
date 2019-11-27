@@ -67,7 +67,7 @@ repeat observations have shown that the formal errors are within a
 factor of two of the statistical error.  See the detailed assessments of
 the DAP uncertainties in the two main DAP papers: `Westfall et al.
 (2019)
-<https://ui.adsabs.harvard.edu/abs/2019arXiv190100856W/abstract>`_ and
+<https://ui.adsabs.harvard.edu/abs/2019AJ....158..231W/abstract>`_ and
 `Belfiore et al. (2019)
 <https://ui.adsabs.harvard.edu/abs/2019AJ....158..160B/abstract>`_.
 
@@ -109,13 +109,13 @@ are::
    9678-9102, 10503-9101, 10505-6101, 10839-6103, 11014-12705,
    11019-12703
 
-The 8 observations that have ``SPX-MILESHC-MILESHC`` results but none
+The 8 observations that have ``SPX-MILESHC-MASTARHC`` results but none
 others are::
 
    7443-3703, 8994-9102, 9024-12705, 9025-12702, 9888-9102, 11016-3704,
    11823-3703, 11831-6104
 
-The 32 observations that have all but the ``HYB10-MILESHC-MILESHC``
+The 32 observations that have all but the ``HYB10-MILESHC-MASTARHC``
 output are::
 
    8133-6102, 8141-12705, 8143-9102, 8147-6101, 8149-12701, 8263-12701,

@@ -65,7 +65,7 @@ class ObsInputPar(ParSet):
         mode (:obj:`str`):
             DRP 3D mode; see
             :func:`mangadap.drpfits.DRPFits.mode_options`.
-        vel (:obj:`float):
+        vel (:obj:`float`):
             Systemic velocity (km/s).
         vdisp (:obj:`float`):
             Guess velocity dispersion (km/s).

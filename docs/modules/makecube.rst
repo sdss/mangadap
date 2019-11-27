@@ -12,9 +12,11 @@ DAP LOGCUBE File Construction
 
 *Important class dependencies:*
  - Main full-spectrum modeling classes:
+
     - :class:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra`
     - :class:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel`
     - :class:`mangadap.proc.emissionlinemodel.EmissionLineModel`
+
  - :class:`mangadap.util.fitsutil.DAPFitsUtil`: Contains many convience
    methods that, e.g., reconstruct a set of maps or datacubes based on
    input data sorted by bin ID and a map with the location of each bin

@@ -56,6 +56,7 @@ Emission-line Moments
    continuum subtraction.
  - Measure the moments using
    :func:`mangadap.proc.emissionlinemoments.EmissionLineMoments.measure_moments`.
+
     - Redshift the emission-line passbands based on the NSA redshift.
     - Determine the pseudo-continuum in the red and blue bands using
       :func:`mangadap.proc.bandpassfilter.pseudocontinuum`.
@@ -78,6 +79,7 @@ Emission-line Moments
     - Mask any "dummy" bands.  Dummy bands are used to ensure that the
       emission-line moment channels match the emission-line Gaussian-fit
       channels in the output ``MAPS`` file.
+
  - Using the 0th moment (integrated flux) and the binned spectra
    (''without'' continuum subtraction), measure the emission-line
    equivalent widths using

@@ -56,10 +56,9 @@ Methods
 =======
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    workflow
-   Analysis Module Details <modules>
    spatialcovariance
 
 Output

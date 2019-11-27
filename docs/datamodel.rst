@@ -122,7 +122,7 @@ DAP MAPS file
 -------------
 
 *File template*:
-``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/[PLATE]/[IFUDESIGN]/manga-[PLATE]-[IFUDESIGN]-MAPS-[DAPTYPE].fits.gz``
+``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/[DAPTYPE]/[PLATE]/[IFUDESIGN]/manga-[PLATE]-[IFUDESIGN]-MAPS-[DAPTYPE].fits.gz``
 
 The ``MAPS`` files are the primary output file from the DAP and provide
 2D "maps" (i.e., images) of DAP measured properties.  The shape and WCS
@@ -173,13 +173,13 @@ The ``MAPS`` files contain the following extensions:
 |   1 | SPX_SKYCOO         |        2 |                                             arcsec | Sky-right offsets -- +x toward +RA and +y toward +DEC -- of each   |
 |     |                    |          |                                                    | spaxel from the galaxy center                                      |
 +-----+--------------------+----------+----------------------------------------------------+--------------------------------------------------------------------+
-|   2 | SPX_ELLCOO         |        4 |       arcsec,unitless,:math:`h^{-1} {\rm kpc}`,deg | Elliptical polar coordinates of each spaxel from the galaxy        |
+|   2 | SPX_ELLCOO         |        4 |      rcsec,unitless, :math:`h^{-1} {\rm kpc}`, deg | Elliptical polar coordinates of each spaxel from the galaxy        |
 |     |                    |          |                                                    | center; :math:`R` in arcsec, :math:`R/R_e`, :math:`R` in           |
 |     |                    |          |                                                    | :math:`h^{-1} {\rm kpc}`, and azimuthal angle :math:`\theta`.  In  |
 |     |                    |          |                                                    | the limit of tilted thin disk, these are the in-plane disk radius  |
 |     |                    |          |                                                    | and azimuth.                                                       |
 +-----+--------------------+----------+----------------------------------------------------+--------------------------------------------------------------------+
-|   3 | SPX_MFLUX          |        1 | :math:`10^{-17} {\rm erg/s/cm}^2{\rm /\AA/spaxel}` | g-band-weighted mean flux, *not* corrected for Galactic extinction |
+|   3 | SPX_MFLUX          |        1 |  :math:`10^{-17} {\rm erg/s/cm}^2{\rm /\A/spaxel}` | g-band-weighted mean flux, *not* corrected for Galactic extinction |
 |     |                    |          |                                                    | or internal attenuation.                                           |
 +-----+--------------------+----------+----------------------------------------------------+--------------------------------------------------------------------+
 |   4 | SPX_MFLUX_IVAR     |        1 |                                                    | Inverse variance of g-band-weighted mean flux.                     |
@@ -265,7 +265,8 @@ The ``MAPS`` files contain the following extensions:
 |  26 | EMLINE_SEW         |       35 |                                           angstrom | Non-parametric equivalent widths measurements (based on            |
 |     |                    |          |                                                    | the non-parametric fluxes in ``EMLINE_SFLUX``).                    |
 +-----+--------------------+----------+----------------------------------------------------+--------------------------------------------------------------------+
-|  27 | EMLINE_SEW_CNT     |       35 | :math:`10^{-17} {\rm erg/s/cm}^2{\rm /\AA/spaxel}` | Continuum value used to compute the emission-line equivalent width |
+|  27 | EMLINE_SEW_CNT     |       35 | :math:`10^{-17} {\rm erg/s/cm}^2{\rm /\AA/spaxel}` | **New in MPL-9**: Continuum value used to compute the              |
+|     |                    |          |                                                    | emission-line equivalent width                                     |
 +-----+--------------------+----------+----------------------------------------------------+--------------------------------------------------------------------+
 |  28 | EMLINE_SEW_IVAR    |       35 |                                                    | Inverse variance for non-parametric equivalent width measurements. |
 +-----+--------------------+----------+----------------------------------------------------+--------------------------------------------------------------------+
@@ -288,7 +289,8 @@ The ``MAPS`` files contain the following extensions:
 |  33 | EMLINE_GEW         |       35 |                                           angstrom | Gaussian-fitted equivalent widths measurements (based on the       |
 |     |                    |          |                                                    | parametric fluxes in ``EMLINE_GFLUX``).                            |
 +-----+--------------------+----------+----------------------------------------------------+--------------------------------------------------------------------+
-|  34 | EMLINE_GEW_CNT     |       35 | :math:`10^{-17} {\rm erg/s/cm}^2{\rm /\AA/spaxel}` | Continuum value used to compute the emission-line equivalent width |
+|  34 | EMLINE_GEW_CNT     |       35 | :math:`10^{-17} {\rm erg/s/cm}^2{\rm /\AA/spaxel}` | **New in MPL-9**: Continuum value used to compute the              |
+|     |                    |          |                                                    | emission-line equivalent width                                     |
 +-----+--------------------+----------+----------------------------------------------------+--------------------------------------------------------------------+
 |  35 | EMLINE_GEW_IVAR    |       35 |                                                    | Inverse variance of the above.                                     |
 +-----+--------------------+----------+----------------------------------------------------+--------------------------------------------------------------------+
@@ -353,23 +355,22 @@ The ``MAPS`` files contain the following extensions:
 |     |                    |          |                                                    | effectively determine the index without Doppler broadening;        |
 |     |                    |          |                                                    | see :ref:`corrections`.                                            | 
 +-----+--------------------+----------+----------------------------------------------------+--------------------------------------------------------------------+
-|  53 | SPECINDEX_BCEN     |       46 |                                           angstrom | Luminosity-weighted center of the blue sideband used during the    |
-|     |                    |          |                                                    | absorption-line index measurment.                                  |
+|  53 | SPECINDEX_BCEN     |       46 |                                           angstrom | **New in MPL-9**: Luminosity-weighted center of the blue sideband  |
+|     |                    |          |                                                    | used during the absorption-line index measurment.                  |
 +-----+--------------------+----------+----------------------------------------------------+--------------------------------------------------------------------+
-|  54 | SPECINDEX_BCNT     |       46 | :math:`10^{-17} {\rm erg/s/cm}^2{\rm /\AA/spaxel}` | Continuum in the blue sideband used to compute linear continuum in |
-|     |                    |          |                                                    | the absorption-line index measurment.                              |
+|  54 | SPECINDEX_BCNT     |       46 | :math:`10^{-17} {\rm erg/s/cm}^2{\rm /\AA/spaxel}` | **New in MPL-9**: Continuum in the blue sideband used to compute   |
+|     |                    |          |                                                    | linear continuum in the absorption-line index measurment.          |
 +-----+--------------------+----------+----------------------------------------------------+--------------------------------------------------------------------+
-|  55 | SPECINDEX_RCEN     |       46 |                                           angstrom | Luminosity-weighted center of the red sideband used during the     |
-|     |                    |          |                                                    | absorption-line index measurment.                                  |
+|  55 | SPECINDEX_RCEN     |       46 |                                           angstrom | **New in MPL-9**: Luminosity-weighted center of the red sideband   |
+|     |                    |          |                                                    | used during the absorption-line index measurment.                  |
 +-----+--------------------+----------+----------------------------------------------------+--------------------------------------------------------------------+
-|  56 | SPECINDEX_RCNT     |       46 | :math:`10^{-17} {\rm erg/s/cm}^2{\rm /\AA/spaxel}` | Continuum in the red sideband used to compute linear continuum in  |
-|     |                    |          |                                                    | the absorption-line index measurment.                              |
+|  56 | SPECINDEX_RCNT     |       46 | :math:`10^{-17} {\rm erg/s/cm}^2{\rm /\AA/spaxel}` | **New in MPL-9**: Continuum in the red sideband used to compute    |
+|     |                    |          |                                                    | linear continuum in the absorption-line index measurment.          |
 +-----+--------------------+----------+----------------------------------------------------+--------------------------------------------------------------------+
-|  57 | SPECINDEX_MODEL    |       46 |                                            ang,mag | Spectral-index measurements for the best-fitting model spectrum.   |
+|  57 | SPECINDEX_MODEL    |       46 |                                            ang,mag | **New in MPL-9**: Spectral-index measurements for the best-fitting |
+|     |                    |          |                                                    | model spectrum.                                                    |
 +-----+--------------------+----------+----------------------------------------------------+--------------------------------------------------------------------+
-
-----
-
+    
 The emission-line measurements for MPL-9 are:
 
 .. code-block:: fortran
@@ -533,13 +534,15 @@ unit in each channel is:
     C46     = 'TiOCvD  '           / Data in channel 46
     U46     = '' / Units of data in channel 46
 
+----
+
 .. _datamodel-cube:
 
 DAP Model LOGCUBE file
 ----------------------
 
 *File template*:
-``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/[PLATE]/[IFUDESIGN]/manga-[PLATE]-[IFUDESIGN]-LOGCUBE-[DAPTYPE].fits.gz``
+``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/[DAPTYPE]/[PLATE]/[IFUDESIGN]/manga-[PLATE]-[IFUDESIGN]-LOGCUBE-[DAPTYPE].fits.gz``
 
 The ``LOGCUBE`` files provide the binned spectra and the best-fitting
 model spectrum for each spectrum that was successfully fit.  These files
@@ -759,7 +762,7 @@ handling the velocity dispersion data:
 .. _datamodel-eml-tpl-resolution:
 
 Emission-line template resolution
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++++++++++++++++++++++++++++++++++
 
 When using the new emission line module
 (:class:`mangadap.proc.sasuke.Sasuke`), the emission lines are fit in a

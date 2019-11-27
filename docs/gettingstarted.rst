@@ -47,7 +47,7 @@ papers.
 Directory structure
 -------------------
 
-See the full description of the :ref:`datamodel-directories`.
+See the full description of the :ref:`datamodel-directory-structure`.
 
 .. _gettingstarted-daptype:
 
@@ -177,10 +177,10 @@ The primary output files are located at:
 There are two main output files for each observation (plate-ifudesign combination):
 
     - ``manga-[PLATE]-[IFUDESIGN]-MAPS-[DAPTYPE].fits.gz``, see
-      :ref:`datamodel-mapsfile`: 2D "maps" (i.e., images) of DAP
+      :ref:`datamodel-maps`: 2D "maps" (i.e., images) of DAP
       measured properties
     - ``manga-[PLATE]-[IFUDESIGN]-LOGCUBE-[type].fits.gz``, see
-      :ref:`datamodel-cubefile`: 3D data cubes with the binned and
+      :ref:`datamodel-cube`: 3D data cubes with the binned and
       best-fitting-model spectra
 
 The datacubes produced by the DAP have the same shape as the DRP
@@ -194,15 +194,10 @@ files using python.  However, you are '''strongly encouraged''' to
 <http://sdss-marvin.readthedocs.io/en/stable/installation.html>`_ and
 use it to interact with the data.
 
-HDUCLASS
-~~~~~~~~
-
-See :ref:`hduclass`.
-
 Output MAPS files
 ~~~~~~~~~~~~~~~~~
 
-:ref:`datamodel-mapsfile`: The ``MAPS`` files are the primary output file from the DAP.
+:ref:`datamodel-maps`: The ``MAPS`` files are the primary output file from the DAP.
 
 In brief, the file contains 2D "maps" (i.e., images) of DAP measured
 properties.  Most properties are provided in groups of three fits
@@ -253,7 +248,9 @@ python is provided **below**.  The ordering of, e.g., the emission lines
 in the relevant extensions has changed between different DRs/MPLs and
 may change again.
 
-**Note the necessary :ref:`corrections`.**
+.. warning::
+
+    Note the necessary :ref:`corrections` .
 
 .. _gettingstarted-maps-example:
 
@@ -339,7 +336,7 @@ and the corrected H-beta index map for
 Output model LOGCUBE files
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-:ref:`datamodel-cubefile`: The ``LOGCUBE`` files provide the binned
+:ref:`datamodel-cube`: The ``LOGCUBE`` files provide the binned
 spectra and the best-fitting model spectrum for each spectrum that was
 successfully fit.
 
@@ -436,15 +433,17 @@ and the model emission-line spectrum using
     pyplot.step(wave, resid, where='mid', color='0.5', lw=0.5)
     pyplot.show()
 
+.. _bitmasks:
+
 Using the pixel/spaxel masks
 ----------------------------
 
-The maskbits for the DAP data are described :ref:`maskbits`.  In
+The maskbits for the DAP data are described :ref:`metadatamodel-maskbits`.  In
 particular, be aware of the ``DONOTUSE`` and the ``UNRELIABLE`` flags
 for the MAPS files.
 
-The 2d ``MAPS`` file pixel mask is :ref:`maskbits-dappixmask`.  The 3d
-``LOGCUBE`` file spaxel mask is :ref:`maskbits-dapspecmask`.
+The 2d ``MAPS`` file pixel mask is :ref:`metadatamodel-dappixmask`.  The 3d
+``LOGCUBE`` file spaxel mask is :ref:`metadatamodel-dapspecmask`.
 
 In all cases, the DAP has a convenience class that allows a user to
 quickly determine if any mask value is flagged with a certain value.

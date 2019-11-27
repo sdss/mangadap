@@ -1062,17 +1062,21 @@ class EmissionLineMoments:
         """
         Measure the emission-line moments using the binned spectra.
 
-        If neither stellar-continuum nor emission-line models are provided:
+        If neither stellar-continuum nor emission-line models are
+        provided:
+
             - Moments are measure on the binned spectra
             - No continuum subtraction is performed
 
         If a stellar-continuum model is provided without an
         emission-line model:
+
             - Moments are measured on the binned spectra
             - The best-fitting stellar continuum is subtracted
 
         If an emission-line model is provided without a
         stellar-continuum model:
+
             - Moments are measured on the relevant (binned or unbinned)
               spectra
             - If the emission-line model includes data regarding the
@@ -1084,6 +1088,7 @@ class EmissionLineMoments:
         If both stellar-continuum and emission-line models are provided,
         and if the stellar-continuum and emission-line fits are
         performed on the same spectra:
+
             - Moments are measured on the relevant (binned or unbinned)
               spectra
             - If the emission-line model includes data regarding the
@@ -1095,8 +1100,10 @@ class EmissionLineMoments:
         If both stellar-continuum and emission-line models are provided,
         and if the stellar-continuum and emission-line fits are
         performed on different spectra:
+
             - The behavior is exactly as if the stellar-continuum model
               was not provided.
+
         """
         # Initialize the reporting
         if loggers is not None:

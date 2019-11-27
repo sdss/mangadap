@@ -31,6 +31,7 @@ DAPall File Construction
    emission-line models, and spectral indices.
  - Create list of possibly complete observations and analysis products.
  - For each ``MAPS`` file that *should* exist:
+
    - Find the associated row in the DRPall file, and copy some of those
      data.
    - Calculate the luminosity and angular diameter distance based on

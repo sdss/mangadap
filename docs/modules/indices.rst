@@ -53,6 +53,7 @@ Spectral-Index Measurements
    emission-line model is and is not defined.
  - Measure the indices using
    :func:`mangadap.proc.spectralindices.SpectralIndices.measure_indices`:
+
     - Compute flux per frequency, needed for some indices; i.e., convert
       spectra from :math:`F_\lambda` to :math:`F_\nu`.
     - Isolate which indices use each definition (:math:`F_\lambda` vs.
@@ -65,12 +66,15 @@ Spectral-Index Measurements
       :class:`mangadap.proc.spectralindices.BandheadIndices`, and save
       the results using
       :func:`mangadap.proc.spectralindices.SpectralIndices.save_results`.
+
         - Part of saving the results is to determine which indices were
           successfully measured.  Only bands that are completely masked
           (or empty) are flagged as NOVALUE in the output maps.  I also
           keep track of which bands are incomplete (only partially
           masked).
+
  - Compute the velocity-dispersion corrections:
+
     - Get the best-fitting continuum model from the
       :class:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel`,
       both with (``continuum``) and without (``continuum_dcnvlv``) the
@@ -81,11 +85,14 @@ Spectral-Index Measurements
       ``dcnvlv_indx``, respectively) and the correction based on the
       result using
       :func:`mangadap.proc.spectralindices.SpectralIndices.calculate_dispersion_corrections`
+
         - For ``mag`` unit indices, the correction is
           ``dcnvlv_indx-indx``
         - For ``ang`` unit indices, the correction is
           ``dcnvlv_indx/indx``
+
     - Any index with a bad correction is flagged as NOCORRECTION
+
  - Construct spectral-index BINID map.  Bin IDs are the same as for the
    binned spectra except that any bin that does not meet the S/N limit
    are given a spectral-index bin ID of -1.

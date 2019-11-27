@@ -53,6 +53,7 @@ Spatial Binning
    satisfying both criteria are included in any bin.
  - Determine which spaxels to put in each bin following the ``method``
    specified in the config file:
+
     - ``none`` (``SPX`` binning type): No binning performed.  Every
       selected spaxels given a unique bin ID.
     - ``global`` (``ALL`` binning type): Bin all valid spaxels into a
@@ -69,13 +70,15 @@ Spatial Binning
       ``reff``, respectively, from the :ref:`execution-obs-input`.
     - ``voronoi`` (e.g., ``VOR10`` binning type): Use the Voronoi
       tessellation binning algorithm (written by M. Cappellari; see
-      `here https://pypi.org/project/vorbin/`__) to continually accrete
+      `here <https://pypi.org/project/vorbin/>`__) to continually accrete
       adjacent spaxels to reach a minimum S/N (set by ``target_snr`` in
       config), accounting for covariance if available, using the signal
       and noise measurements from the
       :class:`mangadap.proc.reductionassessments.ReductionAssessments`
       object.
+
  - Stack all spectra assigned to a single bin:
+
     - Spectra are combined following the specified ``operation`` in
       config.  Available options are set by
       :func:`mangadap.proc.spectralstack.SpectralStack.operation_options`.
@@ -91,6 +94,7 @@ Spatial Binning
     - Mask any wavelength channels in each spaxel with no unmasked
       pixels from the stack (maskbit set to FLUXINVALID in DAP LOGCUBE
       file).
+
  - Construct the map with the bin ID of each spaxel (BINID in MAPS file)
  - Calculate the mean signal (BIN_MFLUX in MAPS file), variance (inverse
    of BIN_MFLUX_IVAR in MAPS file) and S/N (BIN_SNR in MAPS file) of the
@@ -114,12 +118,14 @@ Spatial Binning
    DRP header keyword EBVGAL; see
    :class:`mangadap.util.extinction.GalacticExtinction`.  The valid
    reddening laws are:
-   - ``ODonnell``: see
-     :func:`mangadap.util.extinction.reddening_vector_ccm`.
-   - ``CCM``: see :func:`mangadap.util.extinction.reddening_vector_ccm`.
-   - ``FM``: see :func:`mangadap.util.extinction.reddening_vector_fm`.
-   - ``Calzetti``: see
-     :func:`mangadap.util.extinction.reddening_vector_calzetti`.
+
+    - ``ODonnell``: see
+      :func:`mangadap.util.extinction.reddening_vector_ccm`.
+    - ``CCM``: see
+      :func:`mangadap.util.extinction.reddening_vector_ccm`.
+    - ``FM``: see :func:`mangadap.util.extinction.reddening_vector_fm`.
+    - ``Calzetti``: see
+      :func:`mangadap.util.extinction.reddening_vector_calzetti`.
 
 .. note::
 

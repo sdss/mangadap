@@ -32,18 +32,9 @@ Implements an emission-line fitting class that largely wraps pPXF.
 
 .. _numpy.ma.MaskedArray: https://docs.scipy.org/doc/numpy-1.12.0/reference/maskedarray.baseclass.html
 .. _numpy.recarray: https://docs.scipy.org/doc/numpy/reference/generated/numpy.recarray.html
+.. _logging.Logger: https://docs.python.org/3/library/logging.html
 
 """
-
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
-import sys
-import warnings
-if sys.version > '3':
-    long = int
 
 import time
 import logging
@@ -78,7 +69,7 @@ from ..contrib.xjmc import emline_fitter_with_ppxf, ppxf_tied_parameters
 from matplotlib import pyplot
 
 class SasukePar(ParSet):
-    """
+    r"""
     A class specific to the DAP's use of Sasuke.
 
     This is the object that gets passed to
@@ -90,8 +81,8 @@ class SasukePar(ParSet):
 
     The continuum templates can either be the string keyword used to
     construct the template library, or the template library itself.  If
-    the former, the fit_SpatiallyBinnedSpectra object will construct the
-    template library for later callback.
+    the former, the :func:`Sasuke.fit_SpatiallyBinnedSpectra` method
+    will construct the template library for later callback.
 
     When instantiated, the :class:`mangadap.par.parset.ParSet` objects
     test that the input objects match the provided dtypes.  See
@@ -99,18 +90,15 @@ class SasukePar(ParSet):
     of attributes and exceptions raised.
 
     Args:
-        stellar_continuum
-            (:class:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel`):
+        stellar_continuum (:class:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel`):
             The result of the previous fit to the stellar continuum.
-        emission_lines
-            (:class:`mangadap.par.emissionlinedb.EmissionLineDB`):
+        emission_lines (:class:`mangadap.par.emissionlinedb.EmissionLineDB`):
             Emission-line database with the details of the lines to be
             fit.
         continuum_templates
-            (:obj:`str`,
-            :class:`mangadap.proc.templatelibrary.TemplateLibrary`,
-            optional): The new continuum template library to use during
-            the emission-line fit.
+            (:obj:`str`, :class:`mangadap.proc.templatelibrary.TemplateLibrary`, optional):
+            The new continuum template library to use during the
+            emission-line fit.
         etpl_line_sigma_mode (:obj:`str`, optional): 
             Mode used to set the instrumental dispersion of the
             emission-line templates.  Mode options are explated by
@@ -126,14 +114,14 @@ class SasukePar(ParSet):
         guess_dispersion (array-like, optional):
             Single or per-spectrum velocity dispersion to use as the
             initial guess.
-        minimum_snr (scalar-like, optional)
+        minimum_snr (scalar-like, optional):
             Minimum S/N of spectrum to fit.
         deconstruct_bins (:obj:`str`, optional):
             Method to use for deconstructing binned spectra into
             individual spaxels for emission-line fitting.  See
             :func:`Sasuke.deconstruct_bin_options`.
-        pixelmask (:class:`mangadap.util.pixelmask.SpectralPixelMask`,
-            optional): Mask to apply to all spectra being fit.
+        pixelmask (:class:`mangadap.util.pixelmask.SpectralPixelMask`, optional):
+            Mask to apply to all spectra being fit.
         reject_boxcar (:obj:`int`, optional):
             Size of the boxcar to use when rejecting fit outliers.
         bias (:obj:`float`, optional):
@@ -151,6 +139,7 @@ class SasukePar(ParSet):
         reddening (:obj:`float`, optional):
             pPXF reddening parameter setting the initial :math:`E(B-V)`
             to fit, based on a Calzetti law.
+
     """
     def __init__(self, stellar_continuum, emission_lines, continuum_templates=None,
                  etpl_line_sigma_mode=None, etpl_line_sigma_min=None, velscale_ratio=None,
@@ -220,137 +209,174 @@ class Sasuke(EmissionLineFit):
     collation of the class attributes for reference.
 
     Args:
-        bitmask (:class:`BitMask`): BitMask object use to flag fit
+        bitmask (:class:`BitMask`):
+            BitMask object use to flag fit
             results.  This *must* be provided and should typically be an
             instantiation of :class:`EmissionLineModelBitMask`; however,
             it can be any object with :class:`BitMask` as its base
             class.  The flags set within the main fitting function
-            (:func:`Sasuke.fit`) are: DIDNOTUSE, INSUFFICIENT_DATA,
-            FIT_FAILED, NEAR_BOUND, NO_FIT,
-            :attr:`mangadap.proc.ppxffit.PPXFFit.rej_flag`
-            (PPXF_REJECT), MIN_SIGMA, BAD_SIGMA, and MAXITER.  Also the
-            DAP-specific calling function
+            (:func:`Sasuke.fit`) are:
+                
+                - DIDNOTUSE, INSUFFICIENT_DATA, FIT_FAILED, NEAR_BOUND,
+                  NO_FIT, :attr:`mangadap.proc.ppxffit.PPXFFit.rej_flag`
+                  (PPXF_REJECT), MIN_SIGMA, BAD_SIGMA, and MAXITER.
+
+            Also the DAP-specific calling function
             (:func:`Sasuke.fit_SpatiallyBinnedSpectra`) will also assign
             bits NON_POSITIVE_CONTINUUM during the equivalent width
             measurements (see
             :func:`mangadap.spectralfitting.EmissionLineFit.measure_equivalent_width`).
-        loggers (list): (**Optional**) List of `logging.Logger`_ objects
-            to log progress; ignored if quiet=True.  Logging is done
-            using :func:`mangadap.util.log.log_output`.  Default is no
+
+        loggers (:obj:`list`, optional):
+            List of `logging.Logger`_ objects to log progress; ignored
+            if quiet=True.  Logging is done using
+            :func:`mangadap.util.log.log_output`.  Default is no
             logging.  This can be reset in some methods.
-        quiet (bool): (**Optional**) Suppress all terminal and logging
-            output.  Default is False.
+        quiet (:obj:`bool`, optional):
+            Suppress all terminal and logging output.  Default is False.
 
     Attributes:
-        loggers (list): List of `logging.Logger`_ objects to log
-            progress; ignored if quiet=True.  Logging is done using
-            :func:`mangadap.util.log.log_output`.
-        quiet (bool): Suppress all terminal and logging output.
-        obj_wave (numpy.ndarray): Wavelength vector for object spectra.
-            Shape is (:math:`N_{\rm pix}`,).
-        obj_flux (`numpy.ma.MaskedArray`_): Object spectra to fit.
-            Shape is (:math:`N_{\rm spec},N_{\rm pix}`).
-        obj_ferr (`numpy.ma.MaskedArray`_): :math:`1\sigma` errors in
-            object spectra.  Shape is (:math:`N_{\rm spec},N_{\rm
-            pix}`).
-        obj_sres (numpy.ndarray): Spectral resolution array for object
-            spectra.  Shape is (:math:`N_{\rm spec},N_{\rm pix}`).
-        nobj (int): Number of object spectra (i.e., :math:`N_{\rm
-            spec}`).
-        npix_obj (int): Number of pixels in each object spectrum (i.e.,
+        loggers (:obj:`list`):
+            See initialization argument.
+        quiet (:obj:`bool`):
+            Suppress all terminal and logging output.
+        obj_wave (numpy.ndarray):
+            Wavelength vector for object spectra.  Shape is
+            :math:`(N_{\rm pix},)`.
+        obj_flux (`numpy.ma.MaskedArray`_):
+            Object spectra to fit.  Shape is :math:`(N_{\rm spec},N_{\rm
+            pix})`.
+        obj_ferr (`numpy.ma.MaskedArray`_):
+            :math:`1\sigma` errors in object spectra.  Shape is
+            :math:`(N_{\rm spec},N_{\rm pix})`.
+        obj_sres (numpy.ndarray):
+            Spectral resolution array for object spectra.  Shape is
+            :math:`(N_{\rm spec},N_{\rm pix})`.
+        nobj (int):
+            Number of object spectra (i.e., :math:`N_{\rm spec}`).
+        npix_obj (int):
+            Number of pixels in each object spectrum (i.e.,
             :math:`N_{\rm pix}`).
-        input_obj_mask (numpy.ndarray): A copy of the input mask array
-            of the object spectra (boolean array).  Shape is
-            (:math:`N_{\rm spec},N_{\rm pix}`).
-        obj_to_fit (numpy.ndarray): Flag to fit each object spectrum.
-            Instantiating by fully masked spectra in
-            :attr:`input_obj_mask`.  Shape is (:math:`N_{\rm spec}`,).
-        input_cz (numpy.ndarray): Input redshifts (in km/s) for each
-            spectrum.  Shape is (:math:`N_{\rm spec}`,).
-        velscale (float): Velocity scale (km/s) of the object spectra.
-        tpl_wave (numpy.ndarray): Wavelength vector for template spectra.
-            Shape is (:math:`N_{\rm pix,t}`,).
-        tpl_flux (numpy.ndarray): Template spectra to use in fit.
-            Shape is (:math:`N_{\rm tpl},N_{\rm pix,t}`).
-        tpl_to_use (numpy.ndarray): Set of flags used to select the
-            templates used to fit each spectrum.  Shape is
-            (:math:`N_{\rm spec},N_{\rm tpl}`).
-        nstpl (int): Number of stellar templates.
-        ntpl (int): Total number of templates (gas + stars).
-        npix_tpl (int): Number of pixels in template spectra (i.e.,
-            :math:`N_{\rm pix,t}`).
-        tpl_npad (int): Nearest length for FFT, :math:`N_{\rm pad}`
-        tpl_rfft (numpy.ndarray): The complex array with the real FFT of
-            the template spectra.  Shape is (:math:`N_{\rm tpl}, N_{\rm
-            pad}/2 + 1`).
-        matched_resolution (bool): The spectral resolution of the
-            templates is matched to that of the galaxy data.  WARNING:
-            This functionality needs to be checked in relation to the
-            gas templates!
-        velscale_ratio (int): The **integer** ratio between the velocity
-            scale of the pixel in the galaxy data to that of the
-            template data.
-        emldb (:class:`mangadap.par.emissionlinedb.EmissionLineDB'):
+        input_obj_mask (numpy.ndarray):
+            A copy of the input mask array of the object spectra
+            (boolean array).  Shape is :math:`(N_{\rm spec},N_{\rm
+            pix})`.
+        obj_to_fit (numpy.ndarray):
+            Flag to fit each object spectrum.  Instantiating by fully
+            masked spectra in :attr:`input_obj_mask`.  Shape is
+            :math:`(N_{\rm spec},)`.
+        input_cz (numpy.ndarray):
+            Input redshifts (in km/s) for each spectrum.  Shape is
+            :math:`(N_{\rm spec},)`.
+        velscale (float):
+            Velocity scale (km/s) of the object spectra.
+        tpl_wave (numpy.ndarray):
+            Wavelength vector for template spectra.  Shape is
+            :math:`(N_{\rm pix,t},)`.
+        tpl_flux (numpy.ndarray):
+            Template spectra to use in fit.  Shape is :math:`(N_{\rm
+            tpl},N_{\rm pix,t})`.
+        tpl_to_use (numpy.ndarray):
+            Set of flags used to select the templates used to fit each
+            spectrum.  Shape is :math:`(N_{\rm spec},N_{\rm tpl})`.
+        nstpl (int):
+            Number of stellar templates.
+        ntpl (int):
+            Total number of templates (gas + stars).
+        npix_tpl (int):
+            Number of pixels in template spectra (i.e., :math:`N_{\rm
+            pix,t}`).
+        tpl_npad (int):
+            Nearest length for FFT, :math:`N_{\rm pad}`.
+        tpl_rfft (numpy.ndarray):
+            The complex array with the real FFT of the template spectra.
+            Shape is :math:`(N_{\rm tpl}, N_{\rm pad}/2 + 1)`.
+        matched_resolution (bool):
+            The spectral resolution of the templates is matched to that
+            of the galaxy data.  WARNING: This functionality needs to be
+            checked in relation to the gas templates!
+        velscale_ratio (int):
+            The **integer** ratio between the velocity scale of the
+            pixel in the galaxy data to that of the template data.
+        emldb (:class:`mangadap.par.emissionlinedb.EmissionLineDB`):
             Emission-line database that is parsed to construct the
             emission-line templates (see
             :class:`EmissionLineTemplates`).
-        neml (int): Number of emission lines in the database.
-        fit_eml (numpy.ndarray): Boolean array setting which emission
-            lines are fit.  Shape is (:math:`N_{\rm eml`,).
-        eml_tpli (numpy.ndarray): Integer array with the template that
-            includes each emission line.  Shape is (:math:`N_{\rm eml`,).
-        eml_compi (numpy.ndarray): Integer array with the kinematic
-            component that includes each emission line.  Shape is
-            (:math:`N_{\rm eml`,).
-        ncomp (int): Total number of kinematic components to fit.
-        tpl_comp (numpy.ndarray): The integer kinematic component
-            associated with each template.  Shape is (:math:`N_{\rm
-            tpl},). 
-        tpl_vgrp (numpy.ndarray): The integer velocity group associated
-            with each template.  Shape is (:math:`N_{\rm tpl},). 
-        tpl_sgrp (numpy.ndarray): The integer sigma group associated
-            with each template.  Shape is (:math:`N_{\rm tpl},). 
-        comp_moments (numpy.ndarray): Number of moments for each
-            component.  Moments with negative numbers have fixed
-            kinematics.  Shape is (:math:`N_{\rm comp},).
-        comp_start_kin (numpy.ndarray): Array of lists where each list
-            provdes the starting parameters for the kinematics of each
-            component.  Shape is (:math:`N_{\rm comp},).
-        npar_kin (int): The total number of kinematic parameters, which
-            is just the sum of the absolute value of
-            :attr:`comp_moments`, :math:`N_{\rm kin}`.
-        nfree_kin (int): The total number of *free* kinematic
-            parameters.
-        velocity_limits (numpy.ndarray): The upper and lower velocity
-            limits imposed by pPXF.  See
+        neml (int):
+            Number of emission lines in the database.
+        fit_eml (numpy.ndarray):
+            Boolean array setting which emission lines are fit.  Shape
+            is :math:`(N_{\rm eml,)`.
+        eml_tpli (numpy.ndarray):
+            Integer array with the template that includes each emission
+            line.  Shape is :math:`(N_{\rm eml,)`.
+        eml_compi (numpy.ndarray):
+            Integer array with the kinematic component that includes
+            each emission line.  Shape is :math:`(N_{\rm eml,)`.
+        ncomp (int):
+            Total number of kinematic components to fit.
+        tpl_comp (numpy.ndarray):
+            The integer kinematic component associated with each
+            template.  Shape is :math:`(N_{\rm tpl},)`. 
+        tpl_vgrp (numpy.ndarray):
+            The integer velocity group associated with each template.
+            Shape is :math:`(N_{\rm tpl},)`. 
+        tpl_sgrp (numpy.ndarray):
+            The integer sigma group associated with each template.
+            Shape is :math:`(N_{\rm tpl},)`. 
+        comp_moments (numpy.ndarray):
+            Number of moments for each component.  Moments with negative
+            numbers have fixed kinematics.  Shape is :math:`(N_{\rm
+            comp},)`.
+        comp_start_kin (numpy.ndarray):
+            Array of lists where each list provdes the starting
+            parameters for the kinematics of each component.  Shape is
+            :math:`(N_{\rm comp},)`.
+        npar_kin (int):
+            The total number of kinematic parameters, which is just the
+            sum of the absolute value of :attr:`comp_moments`,
+            :math:`N_{\rm kin}`.
+        nfree_kin (int):
+            The total number of *free* kinematic parameters.
+        velocity_limits (numpy.ndarray):
+            The upper and lower velocity limits imposed by pPXF.  See
             :func:`mangadap.proc.ppxffit.PPXFFit.losvd_limits`.
-        sigma_limits (numpy.ndarray): The upper and lower velocity
-            dispersion limits imposed by pPXF.  See
+        sigma_limits (numpy.ndarray):
+            The upper and lower velocity dispersion limits imposed by
+            pPXF.  See
             :func:`mangadap.proc.ppxffit.PPXFFit.losvd_limits`.
-        gh_limits (numpy.ndarray): The upper and lower limits on *all*
-            higher order Gauss-Hermite moments imposed by pPXF.  See
+        gh_limits (numpy.ndarray):
+            The upper and lower limits on *all* higher order
+            Gauss-Hermite moments imposed by pPXF.  See
             :func:`mangadap.proc.ppxffit.PPXFFit.losvd_limits`.
-        bias (float): pPXF bias parameter.  (Currently irrelevant
-            because gas is currently always fit with moments=2.)
-        degree (int): pPXF degree parameter setting the degree of the
-            additive polynomials to use, :math:`o_{\rm add}`.
-        mdegree (int): pPXF mdegree parameter setting the degree of the
+        bias (float):
+            pPXF bias parameter.  (Currently irrelevant because gas is
+            currently always fit with moments=2.)
+        degree (int):
+            pPXF degree parameter setting the degree of the additive
+            polynomials to use, :math:`o_{\rm add}`.
+        mdegree (int):
+            pPXF mdegree parameter setting the degree of the
             multiplicative polynomials to use, :math:`o_{\rm mult}`.
-        reddening (float): pPXF reddening parameter setting the initial
-            :math:`E(B-V)` to fit, based on a Calzetti law.
-        reject_boxcar (int): Size of the boxcar to use when rejecting
-            fit outliers.
-        spectrum_start (numpy.ndarray): Array with the starting index of
-            the pixel in the object spectra to fit (inclusive).  Shape
-            is (:math:`N_{\rm spec}`,).
-        spectrum_end (numpy.ndarray): Array with the ending index of the
-            pixel in the object spectra to fit (exclusive).  Shape is
-            (:math:`N_{\rm spec}`,)
-        dof (int): Degrees of freedom in the fit.
-        base_velocity (numpy.ndarray): The base velocity shift between
-            the template and object spectra because of the difference in
-            their starting wavelength.  Shape is (:math:`N_{\rm
-            spec}`,).
+        reddening (float):
+            pPXF reddening parameter setting the initial :math:`E(B-V)`
+            to fit, based on a Calzetti law.
+        reject_boxcar (int):
+            Size of the boxcar to use when rejecting fit outliers.
+        spectrum_start (numpy.ndarray):
+            Array with the starting index of the pixel in the object
+            spectra to fit (inclusive).  Shape is :math:`(N_{\rm
+            spec},)`.
+        spectrum_end (numpy.ndarray):
+            Array with the ending index of the pixel in the object
+            spectra to fit (exclusive).  Shape is :math:`(N_{\rm
+            spec},)`.
+        dof (int):
+            Degrees of freedom in the fit.
+        base_velocity (numpy.ndarray):
+            The base velocity shift between the template and object
+            spectra because of the difference in their starting
+            wavelength.  Shape is :math:`(N_{\rm spec},)`.
 
     .. todo::
 
@@ -359,6 +385,7 @@ class Sasuke(EmissionLineFit):
           They are expected to match what's in the pPXF code.  Should
           change the code so that they **are** passed using pPXF's BOUND
           keyword.
+
     """
     def __init__(self, bitmask, loggers=None, quiet=False):
 
@@ -1229,7 +1256,7 @@ class Sasuke(EmissionLineFit):
 
     def fit_SpatiallyBinnedSpectra(self, binned_spectra, par=None, loggers=None, quiet=False,
                                    debug=False):
-        """
+        r"""
         This DAP-specific function interprets the DAP-specific classes
         and constructs call(s) to the general :func:`fit` function to
         fit the spectra.
@@ -1258,35 +1285,46 @@ class Sasuke(EmissionLineFit):
         respectively.
 
         Args:
-            binned_spectra
-                (:class:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra`):
+            binned_spectra (:class:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra`):
                 Spectra to fit.
-            par (:class:`SasukePar`): Parameters provided from the DAP
-                to the general Sasuke fitting algorithm (:func:`fit`).
-                Althought technically optional given that it is a
-                keyword parameter, the :class:`SasukePar` parameter must
-                be provided for proper execution of the function.
-            loggers (list): (**Optional**) List of `logging.Logger`_ objects
-                to log progress; ignored if quiet=True.  Logging is done
-                using :func:`mangadap.util.log.log_output`.  Default is
-                no logging.
-            quiet (bool): (**Optional**) Suppress all terminal and
-                logging output.  Default is False.
+            par (:class:`SasukePar`):
+                Parameters provided from the DAP to the general Sasuke
+                fitting algorithm (:func:`fit`).  Althought technically
+                optional given that it is a keyword parameter, the
+                :class:`SasukePar` parameter must be provided for proper
+                execution of the function.
+            loggers (:obj:`list`, optional):
+                List of `logging.Logger`_ objects to log progress;
+                ignored if ``quiet=True``.  Logging is done using
+                :func:`mangadap.util.log.log_output`.  Default is no
+                logging.
+            quiet (:obj:`bool`, optional):
+                Suppress all terminal and logging output.
 
         Returns:
-            numpy.ndarray, numpy.recarray: The function returns: (1)
-            wavelength vector of the fitted models, which should match
-            the binned spectra wavelength vector
-            (binned_spectra['WAVE'].data), (2) the best-fitting
-            emission-line model model spectra, (3) the best-fitting
-            emission-line baseline (see the description above), (4) the
-            bitmask values, (5) the per spectrum ppxf result, and (6)
-            the per spectrum emission-line parameters.   The first
-            object is a numpy.ndarray instance with shape :math:`(N_{\rm
-            pix},)` , the next 3 objects are numpy.ndarray instances
-            with shape :math:`(N_{\rm spec}, N_{\rm pix})`, and the last
-            two are numpy.recarray instances with shape :math:`(N_{\rm
-            spec},)`.
+            tuple: The function returns: 
+
+                1. wavelength vector of the fitted models, which should
+                   match the binned spectra wavelength vector
+                   (binned_spectra['WAVE'].data), 
+
+                2. the best-fitting emission-line model model spectra,
+
+                3. the best-fitting emission-line baseline (see the
+                   description above), 
+
+                4. the bitmask values,
+
+                5. the per spectrum ppxf result, and
+
+                6. the per spectrum emission-line parameters.
+
+            The first object is a numpy.ndarray instance with shape
+            :math:`(N_{\rm pix},)` , the next 3 objects are
+            numpy.ndarray instances with shape :math:`(N_{\rm spec},
+            N_{\rm pix})`, and the last two are numpy.recarray instances
+            with shape :math:`(N_{\rm spec},)`.
+
         """
         # Assign the parameters if provided
         if par is None:

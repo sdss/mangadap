@@ -9,7 +9,7 @@ SPHINXBUILD   = sphinx-build
 BUILDDIR      = _build
 STATICDIR     = _static
 DOCTREE       = $(BUILDDIR)/doctrees
-LOCALFILES    = $(BUILDDIR)/* $(STATICDIR)/* api/*.rst sphinx_warnings.out
+LOCALFILES    = $(BUILDDIR)/* api/*.rst sphinx_warnings.out
 
 # Internal variables.
 ALLSPHINXOPTS   = -d $(DOCTREE) $(SPHINXOPTS) .

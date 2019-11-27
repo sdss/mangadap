@@ -48,9 +48,11 @@ DRP assessments
    spaxel
  - If config specifies covariance calculation, compute the covariance
    using the ``LOGRSS`` file at:
+
    - the center of the wavelength range if wavelength limits specified
      or,
    - the broad-band weighted center of the response function
+
  - Compute the (band-weighted) mean signal in each spaxel (SPX_MFLUX in
    MAPS file), (band-weighted) mean variance in each spaxel
    (SPX_MFLUX_IVAR in MAPS file), and the (band-weighted) mean S/N in
