@@ -177,16 +177,18 @@ bitmasks for the template library spectra.
 .. _pydl.goddard.astro.airtovac: http://pydl.readthedocs.io/en/stable/api/pydl.goddard.astro.airtovac.html#pydl.goddard.astro.airtovac
 
 """
-import glob
 import os
+import glob
 import time
+import warnings
 import logging
 
 import numpy
 from scipy import sparse, interpolate
-#from scipy.interpolate import InterpolatedUnivariateSpline
+
 from astropy.io import fits
 import astropy.constants
+
 from pydl.goddard.astro import airtovac
 
 from ..par.parset import ParSet
