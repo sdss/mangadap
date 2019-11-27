@@ -11,28 +11,6 @@ Binning!
 *Source location*:
     $MANGADAP_DIR/python/mangadap/proc/spatialbins.py
 
-*Imports and python version compliance*:
-    ::
-
-        from __future__ import division
-        from __future__ import print_function
-        from __future__ import absolute_import
-        from __future__ import unicode_literals
-
-        import sys
-        if sys.version > '3':
-            long = int
-
-        import numpy
-        from scipy import sparse
-        from astropy.io import fits
-
-        from vorbin.voronoi_2d_binning import voronoi_2d_binning
-
-        from ..par.parset import ParSet
-        from ..util.geometry import SemiMajorAxisCoo
-        from ..util.covariance import Covariance
-
 *Class usage examples*:
         Add examples
 
@@ -41,7 +19,7 @@ Binning!
     | **22 May 2018**: (KBW) Import vorbin package version of
         voronoi_2d_binning
 
-.. _numpy.ndarray: http://docs.scipy.org/doc/numpy-1.10.0/reference/generated/numpy.ndarray.html
+.. _numpy.ndarray: https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html
 .. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
 .. _astropy.io.fits.Header: http://docs.astropy.org/en/stable/io/fits/api/headers.html#header
 .. _scipy.sparse.spmatrix: http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.spmatrix.html

@@ -43,17 +43,11 @@ resolution.
     | **30 Aug 2018**: (KBW) Removed sampling code and moved it to
         sampling.py.  Renamed this file from instrument.py to
         resolution.py.
+
+.. _scipy.interpolate.interp1d: https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.interp1d.html
+.. _astropy.constants: http://docs.astropy.org/en/stable/constants/index.html
+
 """
-
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
-import sys
-if sys.version > '3':
-    long = int
-
 import warnings
 import numpy
 
@@ -251,61 +245,68 @@ class SpectralResolution:
     interpolate the spectral resolution at a given wavelenth.
 
     Args:
-        wave (numpy.ndarray): A 1D vector with the wavelength in
-            angstroms.  The sampling may be either in linear steps of
-            wavelength or :math:`\log_{10}` steps.
-        sres (numpy.ndarray): A 1D vector with the spectral resolution,
-            :math:`R`, sampled at the positions of the provided
-            wavelength vector.
-        log10 (bool): (**Optional**) Flag that the spectrum has been
-            binned logarithmically (base 10) in wavelength
-        interp_ext (int or str): (**Optional**) The value to pass as
-            *ext* to the interpolator, which defines its behavior when
-            attempting to sample the spectral resolution beyond where it
-            is defined.  See
-            `scipy.interpolate.InterpolatedUnivariateSpline`_.  Default
-            is to extrapolate.
+        wave (numpy.ndarray):
+            A 1D vector with the wavelength in angstroms.  The sampling
+            may be either in linear steps of wavelength or
+            :math:`\log_{10}` steps.
+        sres (numpy.ndarray):
+            A 1D vector with the spectral resolution, :math:`R`, sampled
+            at the positions of the provided wavelength vector.
+        log10 (:obj:`bool`, optional):
+            Flag that the spectrum has been binned logarithmically (base
+            10) in wavelength
+        interp_ext (:obj:`int`, :obj:`str`, optional):
+            The value to pass as *ext* to the interpolator, which
+            defines its behavior when attempting to sample the spectral
+            resolution beyond where it is defined.  See
+            `scipy.interpolate.interp1d`_. Default is to extrapolate.
 
     Raises:
         ValueError: Raised if *wave* is not a 1D vector or if *wave* and
             *sres* do not have the same shape.
 
     Attributes:
-        interpolator
-            (`scipy.interpolate.InterpolatedUnivariateSpline`_): An
-            object used to interpolate the spectral resolution at any
+        interpolator (`scipy.interpolate.interp1d`_):
+            An object used to interpolate the spectral resolution at any
             given wavelength.  The interpolation is hard-wired to be
-            **linear** and its extrapolation behavior is defined by
-            *interp_ext*.  The wavelength and resolution vectors are
+            *linear* and its extrapolation behavior is defined by
+            ``interp_ext``.  The wavelength and resolution vectors are
             held by this object for later reference if needed.
-        log10 (bool): Flag that the spectrum has been binned
-            logarithmically (base 10) in wavelength
-        c (float): The speed of light; provided by `astropy.constants`_.
-        dv (float): The velocity step per pixel in km/s.  Defined using
+        log10 (:obj:`bool`):
+            Flag that the spectrum has been binned logarithmically (base
+            10) in wavelength
+        c (:obj:`float`):
+            The speed of light; provided by `astropy.constants`_.
+        dv (:obj:`float`):
+            The velocity step per pixel in km/s.  Defined using
             :func:`spectrum_velocity_scale` if :attr:`log10` is True;
             otherwise set to None.
-        dw (float): The wavelength step per pixel in angstroms.  Defined
-            as the wavelength step between the first two pixels if
+        dw (:obj:`float`):
+            The wavelength step per pixel in angstroms.  Defined as the
+            wavelength step between the first two pixels if
             :attr:`log10` is False; otherwise set to None.
-        min_sig (float): Minimum standard deviation allowed for the
-            kernel used to match two spectral resolutions.  See
+        min_sig (:obj:`float`):
+            Minimum standard deviation allowed for the kernel used to
+            match two spectral resolutions.  See
             :func:`GaussianKernelDifference`.
-        sig_pd (numpy.ndarray): The standard deviation in pixels
-            required to match the spectral resolution of this object to
-            the resolution defined by a different
-            :class:`SpectralResolution` object.  See
+        sig_pd (`numpy.ndarray`):
+            The standard deviation in pixels required to match the
+            spectral resolution of this object to the resolution defined
+            by a different :class:`SpectralResolution` object.  See
             :func:`GaussianKernelDifference`.
-        sig_mask (numpy.ndarray): A *uint* vector used to identify
-            measurements of :attr:`sig_pd` that should **not** be used
-            to match the spectral resolution of this object to the
-            resolution defined by a different
-            :class:`SpectralResolution` object.  See
+        sig_mask (`numpy.ndarray`):
+            A *uint* vector used to identify measurements of
+            :attr:`sig_pd` that should **not** be used to match the
+            spectral resolution of this object to the resolution defined
+            by a different :class:`SpectralResolution` object.  See
             :func:`GaussianKernelDifference`.
-        sig_vo (float): A constant offset of the kernal standard
-            deviation **in km/s** that has been applied to
-            :attr:`sig_pd`.  See :func:`GaussianKernelDifference`.
+        sig_vo (:obj:`float`):
+            A constant offset of the kernal standard deviation **in
+            km/s** that has been applied to :attr:`sig_pd`.  See
+            :func:`GaussianKernelDifference`.
         
     .. todo::
+
         - Allow it to determine if the binning is linear or geometric,
           then use the *log10* keyword to distinguish between natural
           log and :math:`log_{10}` binning.
@@ -315,10 +316,8 @@ class SpectralResolution:
 
         The default behavior of the interpolator is to extrapolate the
         input spectral resolution vector when trying to sample from
-        regions beyond where it is sampled.  Use *interp_ext* change
-        this; see `scipy.interpolate.InterpolatedUnivariateSpline`_.
-
-    .. _astropy.constants: http://docs.astropy.org/en/stable/constants/index.html
+        regions beyond where it is sampled.  Use ``interp_ext`` change
+        this; see `scipy.interpolate.interp1d`_.
 
     """
     def __init__(self, wave, sres, log10=False, interp_ext='extrapolate'):
@@ -560,15 +559,17 @@ class SpectralResolution:
         for the offset.  Otherwise, the offset is set to 0.
 
         Args:
-            new_sres (:class:`SpectralResolution`): Spectral resolution
-                to match to.
-            no_offset (bool): (**Optional**) Force :math:`\sigma^2_{v,o}
-                = 0` by masking regions with :math:`\sigma_{p,d} <
-                \epsilon_\sigma`; i.e., the value of this arguments
-                selects Option 1 (True) or Option 2 (False).
-            min_sig_pix (float): (**Optional**) Minimum value of the
-                standard deviation allowed before assuming the kernel is
-                a Delta function.
+            new_sres (:class:`SpectralResolution`):
+                Spectral resolution to match to.
+            no_offset (:obj:`bool`, optional):
+                Force :math:`\sigma^2_{v,o} = 0` by masking regions with
+                :math:`\sigma_{p,d} < \epsilon_\sigma`; i.e., the value
+                of this arguments selects Option 1 (True) or Option 2
+                (False).
+            min_sig_pix (:obj:`float`, optional):
+                Minimum value of the standard deviation allowed before
+                assuming the kernel is a Delta function.
+
         """
 #        print('kernel difference')
         # Save the minimum pixel sigma to allow

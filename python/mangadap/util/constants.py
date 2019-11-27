@@ -13,20 +13,6 @@ values that are **not** available elsewhere, such as
 *Source location*:
     $MANGADAP_DIR/python/mangadap/util/constants.py
 
-*Imports and python version compliance*:
-    ::
-
-        from __future__ import division
-        from __future__ import print_function
-        from __future__ import absolute_import
-        from __future__ import unicode_literals
-
-        import sys
-        if sys.version > '3':
-            long = int
-
-        import numpy
-
 *Revision history*:
     | **28 May 2015**: Original implementation by K. Westfall (KBW)
     | **01 Jun 2017**: (KBW) Changed attributes to class globals
@@ -34,16 +20,6 @@ values that are **not** available elsewhere, such as
 .. _astropy.constants: http://docs.astropy.org/en/stable/constants/index.html
 
 """
-
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
-import sys
-if sys.version > '3':
-    long = int
-
 import numpy
 
 class DAPConstants:
@@ -53,7 +29,7 @@ class DAPConstants:
     +-----------------------------+-------------------------------+
     | Attribute                   | Value                         |
     +=============================+===============================+
-    | :attr:`sig2fwhm`            | :math:`\sqrt{8\ln(2)}`       |
+    | :attr:`sig2fwhm`            | :math:`\sqrt{8\ln(2)}`        |
     +-----------------------------+-------------------------------+
     | :attr:`rad2arcs`            | :math:`3600\frac{180}{\pi}`   |
     +-----------------------------+-------------------------------+

@@ -13,17 +13,10 @@ Provides a set of functions to handle resampling.
 *Revision history*:
     | **30 Aug 2018**: Moved here from old instrument.py module by K.
         Westfall (KBW).
+
+.. _numpy.ndarray: https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html
+
 """
-
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
-import sys
-if sys.version > '3':
-    long = int
-
 import warnings
 import numpy
 from scipy import interpolate

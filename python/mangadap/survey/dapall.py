@@ -27,16 +27,6 @@ file is created.
 .. _logging.Logger: https://docs.python.org/3/library/logging.html
 
 """
-
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
-import sys
-if sys.version > '3':
-    long = int
-
 import logging
 import time
 import os

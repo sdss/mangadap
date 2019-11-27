@@ -75,15 +75,6 @@ file`_ is available in the SDSS-IV/MaNGA `Technical Reference Manual`_.
 
 """
 
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
-import sys
-if sys.version > '3':
-    long = int
-
 import os
 import warnings
 import glob
@@ -102,7 +93,7 @@ from ..util.parser import arginp_to_list, list_to_csl_string, parse_drp_file_nam
 from ..util.exception_tools import print_frame
 
 class DRPComplete:
-    """
+    r"""
     Database with information needed by the DAP to analyze the completed
     DRP files.
 
@@ -134,29 +125,33 @@ class DRPComplete:
             :func:`mangadap.config.defaults.default_plate_target_files`.
         drpver (:obj:`str`, optional):
             DRP version, which is:
+
                 - used to define the default DRP redux path
                 - used when declaring a drpfits instance
                 - used in the name of the drpcomplete fits file
                 - included as a header keyword in the output file
+
             Default is defined by
             :func:`mangadap.config.defaults.default_drp_version`.
         redux_path (:obj:`str`, optional): 
             The path to the top level directory containing the DRP
-            output files; this is the same as the `redux_path` in the
+            output files; this is the same as the ``redux_path`` in the
             :class:`mangadap.drpfits.DRPFits` class.  Default is defined
             by :func:`mangadap.config.defaults.default_redux_path`.
         dapver (:obj:`str`, optional):
             DAP version, which is:
+
                 - used to define the default DAP analysis path
                 - included as a header keyword in the output drpcomplete
                   fits file
+
             Default is defined by
-            :func:`mangadap.config.defaults.default_dap_version`
-        analysis_path (:obj:`str`, optional):A
+            :func:`mangadap.config.defaults.default_dap_version`.
+        analysis_path (:obj:`str`, optional):
             The path to the top level directory for the DAP output
             files; this is **different** from the directory_path in the
             :class:`mangadap.dapfile` class.  Default is defined by
-            :func:`mangadap.config.defaults.default_analysis_path`A
+            :func:`mangadap.config.defaults.default_analysis_path`
         directory_path (:obj:`str`, optional):
             Direct path to the output file produced using
             :func:`mangadap.config.defaults.default_dap_common_path`

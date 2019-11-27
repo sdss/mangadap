@@ -38,15 +38,6 @@ run the DAP for a specific MaNGA observation.
 
 """
 
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
-import sys
-if sys.version > '3':
-    long = int
-
 import numpy
 import os.path
 import warnings
@@ -67,25 +58,34 @@ class ObsInputPar(ParSet):
     exceptions.
 
     Args:
-        plate (int) : Plate number; default is None.
-        ifudesign (int) : IFU designation; default is None.
-        mode (str) : DRP 3D mode; see
-            :func:`mangadap.drpfits.DRPFits.mode_options`; default is
-            CUBE.
-        vel (float) : Systemic velocity (km/s); default is None.
-        vdisp (float) : Guess velocity dispersion (km/s); default is
-            100.
-        ell (float) : Isophotal ellipticity (:math:`\varepsilon =
-            1-b/a`); default is 0 (circular).
-        pa (float) : Position angle (degrees) of the isophotal major
-            axis; default is 0.
-        reff (float) : Effective radius (arcsec); default is 1.0.
+        plate (:obj:`int`):
+            Plate number.
+        ifudesign (:obj:`int`):
+            IFU designation.
+        mode (:obj:`str`):
+            DRP 3D mode; see
+            :func:`mangadap.drpfits.DRPFits.mode_options`.
+        vel (:obj:`float`):
+            Systemic velocity (km/s).
+        vdisp (:obj:`float`):
+            Guess velocity dispersion (km/s).
+        ell (:obj:`float`):
+            Isophotal ellipticity (:math:`\varepsilon = 1-b/a`).
+        pa (:obj:`float`):
+            Position angle (degrees) of the isophotal major axis from N
+            through E.
+        reff (:obj:`float`):
+            Effective radius (arcsec).
 
     Attributes:
-        valid_vdisp (bool): Input velocity dispersion was >0.
-        valid_ell (bool): Input ellipticiticy was within [0,1].
-        valid_pa (bool): Input position angle was within [0,360).
-        valid_reff (bool): Input effective radius was >0.
+        valid_vdisp (:obj:`bool`):
+            Input velocity dispersion was >0.
+        valid_ell (:obj:`bool`):
+            Input ellipticiticy was within [0,1].
+        valid_pa (:obj:`bool`):
+            Input position angle was within [0,360).
+        valid_reff (:obj:`bool`):
+            Input effective radius was >0.
     """
     def __init__(self, plate, ifudesign, mode=None, vel=None, vdisp=None, ell=None, pa=None,
                  reff=None):

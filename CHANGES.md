@@ -30,7 +30,6 @@ TODO
 
 2.5.0dev
 --------
-
  - Added BPASS theoretical spectral template library
  - Added numerous config files / line lists to allow for masking of NaD
    in both stellar continuum modeling and emission line modeling steps
@@ -39,7 +38,8 @@ TODO
    simultaneously masking NaD.)
  - Fixed a bug in `angstroms_per_pixel` that caused it to return a
    single number instead of a vector.
-
+ - Significant doc improvements by migrating most of the information on
+   the internal wiki into the docs/ directory.
 
 2.4.1 (01 Nov 2019)
 -------------------
