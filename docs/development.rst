@@ -6,7 +6,7 @@
 Development Guidelines
 ======================
 
-The development strategy for the DAP has been allow for high-level
+The development strategy for the DAP has been to allow for high-level
 interaction with the software to make subtle changes to its execution
 parameters.  For help with the high-level interaction with the DAP
 parameters, see the description of its :ref:`execution`.

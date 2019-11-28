@@ -207,7 +207,7 @@ The code provides a way to generate the `The DAP ObsInputPar`_ object
 directly from the DRPall file, instead of from a file, and it directly
 defines the ``AnalysisPlan`` object with a hard-coded set of keywords.
 Using this script as an example, one could construct a script that
-programmatically analyzes a large set of datacubes.
+programmatically analyzes a large set of MaNGA datacubes.
 
 .. _execution-rundap:
 
@@ -322,16 +322,17 @@ analyzed with the same ``AnalysisPlan``.  An example call of this script that wi
 In this call, I've specified that the DRP data is in
 ``/path/with/drp/output/`` and that the DAP output should be placed in
 ``/path/for/dap/output/`` instead of using the default
-:ref:`datamodel-directory-structure`.  The script file this call
-produces is written to
+:ref:`datamodel-directory-structure`.
+
+The **script file** this call produces is written to
 ``/path/for/dap/output/log/[time]/7495/12704/mangadap-7495-12704``,
 where ``[time]`` is a time stamp of when ``rundap`` was executed.  (If
 you execute ``rundap`` multiple times, it will create new directories
-using new time stamps.)  The lines of the script file for each
+using new time stamps each time.)  The lines of the script file for each
 plate-ifu:
 
  - touches the ``*.started`` file
- - executes manga_dap
+ - executes ``manga_dap``
  - executes a series of QA plotting scripts
  - touches the ``*.done`` file 
 
@@ -358,7 +359,7 @@ To execute the script, you would then run:
 
 .. code-block:: bash
 
-    source /path/for/dap/output/log/01Nov2019T16.58.40UTC/7443/12701/mangadap-7443-12701
+    source /path/for/dap/output/v2_7_1/2.4.1/log/01Nov2019T16.58.40UTC/7443/12701/mangadap-7443-12701
 
 The ``rundap`` script allows you to construct scripts for all datacubes
 it can find on disk, all IFUs on a given plate, all combinations of a
@@ -369,13 +370,14 @@ IDs.
     
     The ``rundap`` script constructs the
     :class:`mangadap.survey.drpcomplete.DRPComplete` object and writes
-    its associated fits file.  The data compiled into this database can
-    either be drawn from the DRPall file or from the plateTargets data
-    in ``mangacore``; the latter is the only reason the DAP has
-    ``mangacore`` as a dependency.  For general use, you should have
-    ``rundap`` use the DRPall file.  The use of the plateTargets data is
-    only necessary in the rare case when the DAP is executed before the
-    relevant DRPall file has been constructed.
+    its associated fits file (see :ref:`metadatamodel-drpcomplete`).
+    The data compiled into this database can either be drawn from the
+    DRPall file or from the plateTargets data in ``mangacore``; the
+    latter is the only reason the DAP has ``mangacore`` as a dependency.
+    For general use, you should have ``rundap`` use the DRPall file.
+    The use of the plateTargets data is only necessary in the rare case
+    when the DAP is executed before the relevant DRPall file has been
+    constructed.
 
 To write the post-processing scripts, execute ``rundap`` with the
 ``--post`` and ``--post_plots`` options.  This produces two additional
@@ -397,7 +399,7 @@ types of scripts:
 
         touch /path/for/dap/output/v2_7_1/2.4.1/log/01Nov2019T16.58.40UTC/7443/7443_fitqa.done
 
- - A script that builds the DAPall file and writes its QA plots.  This
+ - A script that builds the :ref:`metadatamodel-dapall` and writes its QA plots.  This
    file is written to, e.g.,
    ``/path/for/dap/output/v2_7_1/2.4.1/log/01Nov2019T16.58.40UTC/build_dapall``
    and looks like this:
