@@ -45,8 +45,8 @@ future releases on a best-effort basis.
 .. warning::
     
     This documentation is for the most recent tag of the DAP.  If you're
-    looking for DR15 documentation, see the `DR15 MaNGA Overview
-    <https://www.sdss.org/dr15/manga/>`_.
+    looking for DR15 (DAP version 2.2.1) documentation, see the `DR15
+    MaNGA Overview <https://www.sdss.org/dr15/manga/>`_.
 
 .. _citation:
 
@@ -98,7 +98,8 @@ If you use the DAP software and/or its output products, please cite the followin
    :caption: Beyond MaNGA
    :maxdepth: 1
 
-   fit_one_spec
+   fitonespec
+   fitonecube
 
 The MaNGA DAP software was written to be more broadely useful.  The
 pages above provide some examples of how the code can be used more

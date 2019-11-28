@@ -21,10 +21,10 @@ The DAP uses an `SDSS parameter file
 <https://www.sdss.org/dr15/software/par/>`_ to define one or more
 methods to use when analyzing any given MaNGA datacube.  Each method, or
 "analysis plan", is defined by a set of six keywords that identify the
-configuration to use for each of the DAP's six main analysis modules.
-To execute the DAP, you must construct this parameter file with at least
-one analysis plan.  For example, the MPL-9 analysis-plan parameter file
-is:
+configuration to use for each of the DAP's six main
+:ref:`workflow-analysis-modules`.  To execute the DAP, you must
+construct this parameter file with at least one analysis plan.  For
+example, the MPL-9 analysis-plan parameter file is:
 
 .. code-block:: c
 
@@ -74,13 +74,14 @@ configurations are as follows:
 |   spindex |                       ``spectral_indices`` |               :class:`mangadap.proc.spectralindices.SpectralIndicesDef` |
 +-----------+--------------------------------------------+-------------------------------------------------------------------------+
 
-When setting the keyword values in the plan file, they must be
+When setting the keyword values in the analysis-plan file, they must be
 recognized as a method defined in the relevant configuration directory.
 The DAP will only execute properly if at least the first three steps
 have valid keywords.  The remaining three modules can be skipped (i.e.,
 the emission-line moments, emission-line-model parameters, and spectral
 indices are not measured) by setting their keyword to ``None``; the
-primary DAP output will still be produced but with empty arrays for the
+primary DAP output will still be produced but with empty arrays for
+those extensions/channels that would normally be populated by the
 skipped analysis steps.
 
 .. _execution-obs-input:
@@ -182,9 +183,10 @@ DAP installed, you can call the script directly from the command line:
 .. warning::
 
     When running the DAP, you should have both the DRP ``LOGRSS`` and
-    ``LOGCUBE`` files if you want to account for covariance!  If the
-    ``LOGRSS`` files are not present, the DAP will throw a warning and
-    continue, and the warnings can get buried in all the other messages.
+    ``LOGCUBE`` files if you want to account for the
+    :ref:`spatialcovariance`!  If the ``LOGRSS`` files are not present,
+    the DAP will throw a warning and continue, which means that the
+    warning can get buried among all the other messages and missed.
 
 An example execution of the DAP might look like this:
 
@@ -198,14 +200,14 @@ respectively, `The DAP ObsInputPar`_ and `The DAP AnalysisPlan`_ files.
 Programmatic execution
 ----------------------
 
-Alternatively, ``$MANGADAP_DIR/examples/fit_one_cube.py`` provides a
-programmatic approach to running the exact same script that is executed
-by the ``manga_dap`` command-line script.  The code provides a way to
-generate the `The DAP ObsInputPar`_ object directly from the DRPall
-file, instead of from a file, and it directly defines the
-``AnalysisPlan`` object with a hard-coded set of keywords.  Using this
-script as an example, one could construct a script that programmatically
-analyzes a large set of datacubes.
+Alternatively, ``$MANGADAP_DIR/examples/fit_one_cube.py`` (see
+:ref:`fitonecube`) provides a programmatic approach to running the exact
+same script that is executed by the ``manga_dap`` command-line script.
+The code provides a way to generate the `The DAP ObsInputPar`_ object
+directly from the DRPall file, instead of from a file, and it directly
+defines the ``AnalysisPlan`` object with a hard-coded set of keywords.
+Using this script as an example, one could construct a script that
+programmatically analyzes a large set of datacubes.
 
 .. _execution-rundap:
 

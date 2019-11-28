@@ -1,3 +1,6 @@
+
+.. _fitonespec:
+
 How to Fit One Spectrum
 =======================
 

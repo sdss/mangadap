@@ -100,7 +100,7 @@ def default_paths():
 def check_environment():
     ev = default_paths()
     for k in ev.keys():
-        if k not in os.environ:
+        if k not in os.environ and 'MANGACORE' not in k:
             warnings.warn('{0} environmental variable undefined.  Default is: {1}'.format(k,ev[k]))
 
 

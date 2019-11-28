@@ -41,7 +41,7 @@ To install, run:
 
 `python3 setup.py install`
 
-On MacOSX, you may need to add `CC=clang`, i.e.::
+On MacOSX, you may need to add `CC=clang`, i.e.:
    
 `CC=clang python3 setup.py install`
 
