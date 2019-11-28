@@ -44,7 +44,9 @@ future releases on a best-effort basis.
 
 .. warning::
     
-    While the DAP code is public, its continued use 
+    This documentation is for the most recent tag of the DAP.  If you're
+    looking for DR15 documentation, see the `DR15 MaNGA Overview
+    <https://www.sdss.org/dr15/manga/>`_.
 
 .. _citation:
 
@@ -53,9 +55,9 @@ Citation
 
 If you use the DAP software and/or its output products, please cite the following two papers:
 
- - *Overview*: `Westfall et al. (2019)
+ - *Overview*: `Westfall et al. (2019, AJ, 158, 231)
    <https://ui.adsabs.harvard.edu/abs/2019AJ....158..231W/abstract>`_
- - *Emission-line Modeling*: `Belfiore et al. (2019)
+ - *Emission-line Modeling*: `Belfiore et al. (2019, AJ, 158, 160)
    <https://ui.adsabs.harvard.edu/abs/2019AJ....158..160B/abstract>`_
 
 ----

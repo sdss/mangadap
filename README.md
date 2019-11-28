@@ -13,12 +13,14 @@ MaNGA spectroscopy.
 
 For full documentation, see: https://sdss-mangadap.readthedocs.io/en/latest/
 
+**Note that the version of the DAP used for DR15 is [2.2.1](https://github.com/sdss/mangadap/releases/tag/2.2.1).**
+
 ## Citation
 
 If you use the DAP software and/or its output products, please cite the following two papers:
 
- - *Overview*: [Westfall et al. (2019)](https://ui.adsabs.harvard.edu/abs/2019AJ....158..231W/abstract)
- - *Emission-line Modeling*: [Belfiore et al.  (2019)](https://ui.adsabs.harvard.edu/abs/2019AJ....158..160B/abstract)
+ - *Overview*: [Westfall et al. (2019, AJ, 158, 231)](https://ui.adsabs.harvard.edu/abs/2019AJ....158..231W/abstract)
+ - *Emission-line Modeling*: [Belfiore et al. (2019, AJ, 158, 160)](https://ui.adsabs.harvard.edu/abs/2019AJ....158..160B/abstract)
 
 ## Installation
 
