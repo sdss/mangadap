@@ -4,93 +4,44 @@
 [![Coverage Status](https://coveralls.io/repos/github/sdss/mangadap/badge.svg?branch=master)](https://coveralls.io/github/sdss/mangadap?branch=master)
 [![Doc Status](https://readthedocs.org/projects/sdss-mangadap/badge/?version=latest)](https://sdss-mangadap.readthedocs.io/en/latest/)
 [![astropy](http://img.shields.io/badge/powered%20by-AstroPy-orange.svg?style=flat)](http://www.astropy.org/)
+[![License](https://img.shields.io/github/license/sdss/mangadap)](https://github.com/sdss/mangadap/blob/master/LICENSE.md)
 
 The MaNGA data-analysis pipeline (MaNGA DAP) is the survey-led software
 package that analyzes the data produced by the MaNGA data-reduction
 pipeline (MaNGA DRP) to produced physical properties derived from the
 MaNGA spectroscopy.
 
-For DR15 (version 2.2.1), these quantities are:
+For full documentation, see: https://sdss-mangadap.readthedocs.io/en/latest/
 
- - Spatially stacked spectra
- - Stellar kinematics (V and sigma)
- - Nebular emission-line properties: fluxes, equivalent widths, and
-   kinematics (V and sigma)
- - Spectral Indices: absorption-line (e.g., H-delta) and bandhead (e.g.,
-   D4000) measurements 
+## Citation
 
-All survey-led properties are derived from the datacubes, specifically
-the LOGCUBE files. However, the core functions are developed to consider
-each spectrum largely independently. The DAP currently focuses on
-"model-independent" properties. Higher-level, model-dependent
-properties, such as stellar-population parameters, will be included in
-future releases on a best-effort basis. 
+If you use the DAP software and/or its output products, please cite the following two papers:
+
+ - *Overview*: [Westfall et al. (2019)](https://ui.adsabs.harvard.edu/abs/2019AJ....158..231W/abstract)
+ - *Emission-line Modeling*: [Belfiore et al.  (2019)](https://ui.adsabs.harvard.edu/abs/2019AJ....158..160B/abstract)
 
 ## Installation
 
-To install, first export the code from git:
+To install, first clone the repository:
 
 `git clone https://github.com/sdss/mangadap.git`
 
-This **will not include the documentation submodules**; see [Cloning the
-full repo](#cloning-the-full-repo) below)
+We recommend using the most recent tag:
 
----
-
-**The current `master` branch is in-development and should not be used.**
-The DR15 version of the can be accessed by switching the to 2.2.1 tag:
-
-`git checkout 2.2.1`
-
-This version of the code does not have a setup script, so you manually
-need to add `./mangadap/python` to your python path.  The following
-directions are for installing the code from the `master` branch.
-
-After the next tag (2.3, before the end of 2018), we will keep the
-`master` branch tied to the most recent tag.
+```
+cd mangadap
+./checkout_current_tag
+```
 
 ----
 
-There are a few ways to install (always from within the top-level
-directory of the repo):
+To install, run:
 
- - To install the DAP, run::
-    
-    `python3 setup.py install`
+`python3 setup.py install`
 
-   On MacOSX, you may need to add `CC=clang`, i.e.::
+On MacOSX, you may need to add `CC=clang`, i.e.::
    
-    `CC=clang python3 setup.py install`
-
- - To install the DAP in a way that makes it easier to develop, run:
-   `python3 setup.py develop`
- - To install the DAP and update its dependencies as necessary, run:
-   `pip3 install -e .`
-
-----
-
-The tests are rather lacking still, but you can test the installation
-using
-
-`python3 setup.py test`
-
-The tests may fail because of the specific versions of packages being
-used.  We continue to develop the tests to make them more robust to
-system-specific behavior.  For reference, the tests currently pass on
-the following system:
-
-```
-MacOSX 10.10
-Python 3.6.2
-GCC 4.2.1
-astropy==3.0.4
-numpy==1.15.1
-ppxf==6.7.12
-pydl==0.6.0
-pytest==3.4.0
-scipy==1.1.0
-vorbin==3.1.3
-```
+`CC=clang python3 setup.py install`
 
 ----
 
@@ -132,10 +83,9 @@ export MANGA_SPECTRO_ANALYSIS=/Volumes/MaNGA/analysis
 export MANGADRP_VER=v2_4_3
 
 export MANGADAP_VER=2.2.1
-export MANGADAP_DIR=$HOME/Work/MaNGA/dap/repo/mangadap
 
-export MANGACORE_VER=trunk
-export MANGACORE_DIR=$HOME/Work/MaNGA/core/$MANGACORE_VER
+export MANGACORE_VER=v1_6_2
+export MANGACORE_DIR=$HOME/MaNGA/core/$MANGACORE_VER
 ```
 
 **Note**: Some of these variables are also defined by Marvin; see
@@ -144,20 +94,6 @@ It's possible to have both Marvin and the DAP point to the same
 directory, but beware that this may mean that some of the files get
 overwritten.
 
-## Citation
-
-The DAP papers are currently under internal review and will be posted to
-arXiv before the Seattle AAS meeting.  The page will be updated with the
-appropriate citations at that point.
-
-## Cloning the full repo
-
-This repo has submodules linked to Overleaf; see docs/README.md.  Of
-course, this documentation is not needed to run the code.  However, to
-pull across all the submodule files as well as the main repo files, use
-the `--recursive` option:
-
-`git clone --recursive https://github.com/sdss/mangadap.git`
 
 
 

@@ -1,26 +1,10 @@
 
 # docs
 
-## Papers
+This directory primarily contains the
+[sphinx](http://www.sphinx-doc.org/en/master/) source files for the
+documentation hosted on [ReadTheDocs](https://readthedocs.org/).
 
-Current Overleaf submodules linked to:
-
-| Directory             | Overleaf |
-| --------------------- | ------------- |
-| papers/Overview/ms    | https://www.overleaf.com/16412681zkjtcrcyzrwc |
-
-## Sphinx
-
-We use [Sphinx](http://www.sphinx-doc.org/) and
-[https://readthedocs.org/](Read the Docs) to maintain the documentation
-for the DAP.  The documentation is rather bare-bones at the moment.
-
-The API documentation is built using
-[sphinx-apidoc](https://www.sphinx-doc.org/en/master/man/sphinx-apidoc.html)
-as follows:
-
-```
-export SPHINX_APIDOC_OPTIONS='members,private-members,undoc-members,show-inheritance'
-sphinx-apidoc -o ./docs/sphinx/src python/mangadap --separate -H mangadap -A "SDSS-IV/MaNGA Pipeline Group"
-```
+We have also included some of the source scripts and files for the
+published DAP papers.
 
