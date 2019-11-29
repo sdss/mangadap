@@ -64,8 +64,9 @@ Revision history
 .. include common links, assuming primary doc root is up one directory
 .. include:: ../rstlinks.txt
 """
-
 import os
+import warnings
+
 import numpy
 
 from pydl.goddard.astro import airtovac
