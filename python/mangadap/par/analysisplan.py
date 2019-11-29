@@ -3,29 +3,25 @@
 r"""
 Classes to handle MaNGA DAP analysis plans.
 
-*License*:
-    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+Revision history
+----------------
 
-*Class usage examples*:
-        Add usage comments!
-
-*Revision history*:
     | **11 May 2016**: Original implementation by K. Westfall (KBW)
     | **03 Jun 2016**: (KBW) Any key with value 'None' is converted to
         NoneType
+
+----
+
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../rstlinks.txt
 """
 
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
 import os
-import sys
-if sys.version > '3':
-    long = int
-
 import numpy
 from pydl.pydlutils.yanny import yanny
 

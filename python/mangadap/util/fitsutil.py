@@ -1,42 +1,29 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 # -*- coding: utf-8 -*-
 r"""
-
 Defines a class with common functions for MaNGA fits files.  This class
 needs to be as core as possible (little to no dependencies are
 higher-level classes).
 
-*License*:
-    Copyright (c) 2016, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+Revision history
+----------------
 
-*Class usage examples*:
-    Add some usage comments here!
-
-*Revision history*:
     | **17 May 2016**: Original implementation by K. Westfall (KBW)
     | **02 Dec 2016**: (KBW) Added
         :func:`mangadap.util.fitsutil.DAPFitsUtil.reconstruct_cube`
     | **23 Feb 2016**: (KBW) Added functionality that deals with the
         transpose of the data arrays provided by astropy.io.fits.
 
-.. _astropy.io.fits: http://docs.astropy.org/en/stable/io/fits/index.html
-.. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
-.. _astropy.wcs.wcs.WCS: http://docs.astropy.org/en/v1.0.2/api/astropy.wcs.WCS.html
-.. _numpy.meshgrid: http://docs.scipy.org/doc/numpy/reference/generated/numpy.meshgrid.html
-.. _scipy.sparse.csr_matrix: http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html
-.. _numpy.ma.MaskedArray: http://docs.scipy.org/doc/numpy-1.10.1/reference/maskedarray.baseclass.html#numpy.ma.MaskedArray
+----
 
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../rstlinks.txt
 """
-
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-
-import sys
-if sys.version > '3':
-    long = int
-
 import os
 import numpy
 import logging

@@ -3,14 +3,9 @@
 """
 A class hierarchy that fits the emission lines.
 
-*License*:
-    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+Revision history
+----------------
 
-*Class usage examples*:
-    Add examples!
-
-*Revision history*:
     | **26 Apr 2016**: Implementation begun by K. Westfall (KBW)
     | **28 Jul 2016**: (KBW) Fixed error in initialization of guess
         redshift when stellar continuum is provided.
@@ -28,26 +23,19 @@ A class hierarchy that fits the emission lines.
         that can be used instead of the same templates used during the
         stellar-continuum fit.
     
-.. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
-.. _glob.glob: https://docs.python.org/3.4/library/glob.html
-.. _logging.Logger: https://docs.python.org/3/library/logging.html
-.. _numpy.ma.MaskedArray: http://docs.scipy.org/doc/numpy-1.10.1/reference/maskedarray.baseclass.html#numpy.ma.MaskedArray
+----
 
+.. include license and copyright
+.. include:: ../copy.rst
 
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../rstlinks.txt
 """
 
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
-import sys
-import warnings
-if sys.version > '3':
-    long = int
-
-import glob
 import os
+import glob
 import logging
 
 import numpy

@@ -8,94 +8,64 @@ moments.
 .. todo::
     Combine this with the main emissionlinemoments.py file.
 
-*License*:
-    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+Class usage examples
+--------------------
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/par/emissionmomentsdb.py
-
-*Imports and python version compliance*:
-    ::
-
-        from __future__ import division
-        from __future__ import print_function
-        from __future__ import absolute_import
-        from __future__ import unicode_literals
-        
-        import sys
-        import warnings
-        if sys.version > '3':
-            long = int
-        
-        import os.path
-        import numpy
-
-        from pydl.goddard.astro import airtovac
-        from pydl.pydlutils.yanny import yanny
-        from .parset import ParDatabase
-        from .spectralfeaturedb import available_spectral_feature_databases, SpectralFeatureDBDef
-        from ..proc.bandpassfilter import BandPassFilterPar
-        from ..proc.util import select_proc_method
-
-*Class usage examples*:
-    Emission-line moment databases are defined using SDSS parameter
-    files.  To define a database, you can use one of the default set of
-    available emission-line moment databases (see
-    :func:`available_emission_bandpass_filter_databases`)::
+Emission-line moment databases are defined using SDSS parameter
+files.  To define a database, you can use one of the default set of
+available emission-line moment databases (see
+:func:`available_emission_bandpass_filter_databases`)::
     
-        from mangadap.par.emissionmomentsdb import EmissionMomentsDB
-        p = EmissionMomentsDB('STRONG')
+    from mangadap.par.emissionmomentsdb import EmissionMomentsDB
+    p = EmissionMomentsDB('STRONG')
 
-    The above call requires that the ``$MANGADAP_DIR`` environmental
-    variable is set.  If it is not, you can define it's location, as
-    in::
+The above call requires that the ``$MANGADAP_DIR`` environmental
+variable is set.  If it is not, you can define it's location, as
+in::
 
-        from mangadap.par.emissionmomentsdb import EmissionMomentsDB
-        p = EmissionMomentsDB('STRONG', dapsrc='/path/to/dap/source')
+    from mangadap.par.emissionmomentsdb import EmissionMomentsDB
+    p = EmissionMomentsDB('STRONG', dapsrc='/path/to/dap/source')
 
-    Finally, you can create your own `SDSS-style parameter file`_ with
-    your own emission line passbands to use.  Example files are provided
-    in ``$MANGADAP_DIR/data/emission_bandpass_filters`` with a
-    companion ``README`` file.  With your own file, you have to point to
-    the file using :class:`SpectralFeatureDBDef`, which you can then
-    pass to :class:`EmissionMomentsDB`::
+Finally, you can create your own `SDSS-style parameter file`_ with
+your own emission line passbands to use.  Example files are provided
+in ``$MANGADAP_DIR/data/emission_bandpass_filters`` with a
+companion ``README`` file.  With your own file, you have to point to
+the file using :class:`SpectralFeatureDBDef`, which you can then
+pass to :class:`EmissionMomentsDB`::
 
-        from mangadap.par.spectralfeaturedb import SpectralFeatureDBDef
-        from mangadap.par.emissionmomentsdb import EmissionMomentsDB
-        d = SpectralFeatureDBDef(key='USER',
-                                 file_path='/path/to/parameter/file')
-        p = EmissionMomentsDB('USER', emldb_list=d)
+    from mangadap.par.spectralfeaturedb import SpectralFeatureDBDef
+    from mangadap.par.emissionmomentsdb import EmissionMomentsDB
+    d = SpectralFeatureDBDef(key='USER',
+                             file_path='/path/to/parameter/file')
+    p = EmissionMomentsDB('USER', emldb_list=d)
 
-    The reference frame of the emission-line passband wavelengths must
-    be defined as either vacuum or air, using 'in_vacuum'.  It is
-    expected that the object spectra to be analyzed are calibrated to
-    vacuum wavelengths.  If 'in_vacuum' is false, this class will use
-    :func:`mangadap.util.idlutils.airtovac` to convert the emission-line
-    bandpass-filter wavelengths to vacuum.
+The reference frame of the emission-line passband wavelengths must
+be defined as either vacuum or air, using 'in_vacuum'.  It is
+expected that the object spectra to be analyzed are calibrated to
+vacuum wavelengths.  If 'in_vacuum' is false, this class will use
+:func:`mangadap.util.idlutils.airtovac` to convert the emission-line
+bandpass-filter wavelengths to vacuum.
 
-*Revision history*:
+Revision history
+----------------
+
     | **17 Mar 2016**: Original implementation by K. Westfall (KBW)
     | **11 May 2016**: (KBW) Switch to using `pydl.pydlutils.yanny`_ and
         `pydl.goddard.astro.airtovac`_ instead of internal functions
     | **06 Oct 2017**: (KBW) Add function to return channel names.
 
-.. _pydl.pydlutils.yanny: http://pydl.readthedocs.io/en/stable/api/pydl.pydlutils.yanny.yanny.html
-.. _pydl.goddard.astro.airtovac: http://pydl.readthedocs.io/en/stable/api/pydl.goddard.astro.airtovac.html#pydl.goddard.astro.airtovac
-.. _SDSS-style parameter file: http://www.sdss.org/dr12/software/par/
+----
+
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../rstlinks.txt
 """
 
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
-import sys
-import warnings
-if sys.version > '3':
-    long = int
-
-import os.path
+import os
 import numpy
 
 from pydl.goddard.astro import airtovac

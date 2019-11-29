@@ -4,11 +4,7 @@ r"""
 Provides a set of functions that define and return defaults used by the
 MaNGA DAP, such as paths and file names.
 
-*License*:
-    Copyright (c) 2019, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
-
-*Revision history*:
+Revision history
     | **23 Apr 2015**: Original implementation by K. Westfall (KBW)
     | **19 May 2015**: (KBW) Documentation and Sphinx tests
     | **20 May 2015**: (KBW) TODO: Change the default names of the par
@@ -48,16 +44,16 @@ MaNGA DAP, such as paths and file names.
         defined.
     | **01 Mar 2018**: (KBW) Added :func:`default_redshift_fix_file`.
 
+----        
+
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../rstlinks.txt
 """
-
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
-import sys
-if sys.version > '3':
-    long = int
 
 import os
 import glob

@@ -3,14 +3,9 @@
 """
 Implements an emission-line fitting class that largely wraps pPXF.
 
-*License*:
-    Copyright (c) 2017, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+Revision history
+----------------
 
-*Class usage examples*:
-        Add examples
-
-*Revision history*:
     | **24 May 2017**: Original implementation started by K. Westfall (KBW)
     | **23 Jun 2017**: (KBW) Documentation; fix error in
         :func:`Sasuke._save_results`
@@ -30,11 +25,15 @@ Implements an emission-line fitting class that largely wraps pPXF.
     | **22 May 2018**: (KBW) Change import to ppxf package.
     | **29 May 2018**: (KBW) Change xjmc function import and call
 
-.. _numpy.ndarray: https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html
-.. _numpy.ma.MaskedArray: https://docs.scipy.org/doc/numpy/reference/maskedarray.baseclass.html
-.. _numpy.recarray: https://docs.scipy.org/doc/numpy/reference/generated/numpy.recarray.html
-.. _logging.Logger: https://docs.python.org/3/library/logging.html
+----
 
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../rstlinks.txt
 """
 
 import time

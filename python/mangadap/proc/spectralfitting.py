@@ -3,17 +3,9 @@
 """
 Implements a few base classes used during spectral fitting procedures.
 
-*License*:
-    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+Revision history
+----------------
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/proc/spectralfitting.py
-
-*Class usage examples*:
-        Add examples
-
-*Revision history*:
     | **14 Apr 2016**: Implementation begun by K. Westfall (KBW)
     | **19 Apr 2016**: (KBW) First version
     | **26 Apr 2016**: (KBW) Moved PPXFFit to a separate file (ppxffit.py)
@@ -25,10 +17,15 @@ Implements a few base classes used during spectral fitting procedures.
         velocity of each line if a redshift is not provided.  See
         :func:`measure_equivalent_width`.
 
-.. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
-.. _glob.glob: https://docs.python.org/3.4/library/glob.html
-.. _numpy.ma.MaskedArray: https://docs.scipy.org/doc/numpy-1.12.0/reference/maskedarray.baseclass.html
+----
 
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../rstlinks.txt
 """
 
 import numpy

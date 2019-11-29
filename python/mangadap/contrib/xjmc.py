@@ -3,17 +3,9 @@
 """
 Implements an emission-line fitting function using pPXF.
 
-*License*:
-    Copyright (c) 2018, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+Revision history
+----------------
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/contrib/xjmc.py
-
-*Class usage examples*:
-        Add examples
-
-*Revision history*:
     | **31 Aug 2017**: First commit by Xihan Ji (XJ)
     | **06 Feb 2018**: K. Westfall (KBW) added documentation
     | **09 Feb 2018**: (KBW) Return the bin matching vector
@@ -22,16 +14,17 @@ Implements an emission-line fitting function using pPXF.
     | **22 May 2018**: (KBW) Change import to ppxf package.
     | **29 May 2018**: (KBW) Remove original function from Xihan and
         rename ``*_edit`` function.
+
+----
+
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../rstlinks.txt
 """
-
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
-import sys
-if sys.version > '3':
-    long = int
 
 import warnings
 import numpy as np

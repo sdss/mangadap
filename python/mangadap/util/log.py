@@ -3,28 +3,22 @@
 """
 Logging routines.
 
-*License*:
-    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+Revision history
+----------------
 
-*Revision history*:
     | **21 Mar 2016**: Original implementation by K. Westfall (KBW)
     | **05 May 2017**: (KBW) Clean up the documentation
 
-.. _logging.Logger: https://docs.python.org/3/library/logging.html
-.. _logging.level: https://docs.python.org/3/library/logging.html#logging-levels
+----
 
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../rstlinks.txt
 """
-
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
-import sys
-if sys.version > '3':
-    long = int
-
 import logging
 import warnings
 

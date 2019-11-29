@@ -3,14 +3,9 @@
 """
 A class hierarchy that measures moments of the observed emission lines.
 
-*License*:
-    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+Revision history
+----------------
 
-*Class usage examples*:
-    Add examples!
-
-*Revision history*:
     | **25 Apr 2016**: Implementation begun by K. Westfall (KBW)
     | **20 May 2016**: (KBW) Added loggers and quiet keyword arguments
         to :class:`EmissionLineMoments`, removed verbose 
@@ -30,15 +25,21 @@ A class hierarchy that measures moments of the observed emission lines.
         modeling.  Allow to pass an emission-line model for setting up
         the continuum and the velocities to measure.
 
-.. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
-.. _glob.glob: https://docs.python.org/3.4/library/glob.html
-.. _logging.Logger: https://docs.python.org/3/library/logging.html
+----
 
+.. include license and copyright
+.. include:: ../copy.rst
 
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../rstlinks.txt
 """
-import glob
+
 import os
+import glob
 import logging
+
 import numpy
 
 from astropy.io import fits

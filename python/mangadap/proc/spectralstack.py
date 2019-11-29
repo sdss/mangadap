@@ -4,16 +4,9 @@
 
 Stack some spectra!
 
-*License*:
-    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+Revision history
+----------------
 
-*Class usage examples*:
-
-    .. todo::
-        Add examples
-
-*Revision history*:
     | **01 Apr 2016**: Implementation begun by K. Westfall (KBW)
     | **10 Nov 2016**: (KBW) Include dispersion cube in DRP file to
         construct spectral resolution of binned spectra.
@@ -35,11 +28,17 @@ Stack some spectra!
     | **30 Aug 2018**: (KBW) Switch from resample1d to
         :func:`mangadap.util.sampling.Resample`
 
-.. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
-.. _astropy.io.fits.Header: http://docs.astropy.org/en/stable/io/fits/api/headers.html#header
-.. _numpy.ma.MaskedArray: http://docs.scipy.org/doc/numpy-1.10.1/reference/maskedarray.baseclass.html#numpy.ma.MaskedArray
+----
 
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../rstlinks.txt
 """
+
 import numpy
 from scipy import sparse
 from astropy.io import fits

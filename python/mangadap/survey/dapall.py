@@ -6,14 +6,9 @@ Defines the class that constructs the DAPall summary table.
 This is a post processing script that **must** be run after the DRPall
 file is created.
 
-*License*:
-    Copyright (c) 2017, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+Revision history
+----------------
 
-*Class usage examples*:
-    Add some usage comments here!
-
-*Revision history*:
     | **19 Aug 2016**: Original Implementation by K. Westfall (KBW)
     | **29 Sep 2017**: (KBW) Force the number of emission-line
         passbands, emission-lines to fit, and spectral indices to be the
@@ -21,12 +16,17 @@ file is created.
     | **30 Jan 2019**: (KBW) Add effective chi-square for emission-line
         fits.
 
-.. _astropy.io.fits.open: http://docs.astropy.org/en/stable/io/fits/api/files.html#astropy.io.fits.open
-.. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
-.. _astropy.cosmology.FlatLambdaCDM: http://docs.astropy.org/en/stable/api/astropy.cosmology.FlatLambdaCDM.html#flatlambdacdm
-.. _logging.Logger: https://docs.python.org/3/library/logging.html
+----
 
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../rstlinks.txt
 """
+
 import logging
 import time
 import os

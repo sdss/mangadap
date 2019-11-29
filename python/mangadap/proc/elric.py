@@ -3,50 +3,9 @@
 """
 Implements an emission-line profile fitting class.
 
-*License*:
-    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+Revision history
+----------------
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/proc/elric.py
-
-*Imports and python version compliance*:
-    ::
-
-        from __future__ import division
-        from __future__ import print_function
-        from __future__ import absolute_import
-        from __future__ import unicode_literals
-
-        import sys
-        import warnings
-        if sys.version > '3':
-            long = int
-
-        import time
-        import os
-        import logging
-
-        import numpy
-        from scipy import interpolate, integrate, optimize
-        from scipy.special import erf
-        import astropy.constants
-        from astropy.modeling import FittableModel, Parameter
-
-        from ..par.parset import ParSet
-        from ..par.emissionlinedb import EmissionLineDB
-        from ..util.fileio import init_record_array
-        from ..util.log import log_output
-        from ..util.pixelmask import SpectralPixelMask
-        from .spatiallybinnedspectra import SpatiallyBinnedSpectra
-        from .stellarcontinuummodel import StellarContinuumModel
-        from .spectralfitting import EmissionLineFit
-        from .util import sample_growth
-
-*Class usage examples*:
-        Add examples
-
-*Revision history*:
     | **26 Apr 2016**: Original implementation by K. Westfall (KBW)
     | **13 Jul 2016**: (KBW) Include log_bounds determining whether or
         not a returned parameters is near its boundary.
@@ -75,33 +34,25 @@ Implements an emission-line profile fitting class.
     | **02 Feb 2018**: (KBW) Adjust for change to
         :func:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel.fill_to_match`.
 
-.. _glob.glob: https://docs.python.org/3.4/library/glob.html
-.. _scipy.optimize.least_squares: http://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.least_squares.html
-.. _scipy.optimize.OptimizeResult: http://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.OptimizeResult.html
+----
 
-.. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
-.. _astropy.modeling.polynomial.Legendre1D: http://docs.astropy.org/en/stable/api/astropy.modeling.polynomial.Legendre1D.html
-.. _astropy.modeling.models.CompoundModel: http://docs.astropy.org/en/stable/modeling/compound-models.html
+.. include license and copyright
+.. include:: ../copy.rst
 
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../rstlinks.txt
 """
 
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
-import sys
-import warnings
-if sys.version > '3':
-    long = int
-
-import time
 import os
+import time
 import logging
 
 import numpy
 from scipy import interpolate, integrate, optimize
 from scipy.special import erf
+
 import astropy.constants
 from astropy.modeling.polynomial import Legendre1D
 

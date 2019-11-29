@@ -4,28 +4,9 @@
 
 A catch-all module with miscellaneous utility functions.
 
-*License*:
-    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+Revision history
+----------------
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/util/misc.py
-
-*Imports and python version compliance*:
-    ::
-
-        from __future__ import division
-        from __future__ import print_function
-        from __future__ import absolute_import
-        from __future__ import unicode_literals
-
-        import sys
-        if sys.version > '3':
-            long = int
-
-        import numpy
-
-*Revision history*:
     | **2015**: Original implementation by K. Westfall (KBW)
     | **20 May 2015**: (KBW) Documentation and Sphinx tests
     | **04 Jun 2015**: (KBW) Added where_not
@@ -35,19 +16,16 @@ A catch-all module with miscellaneous utility functions.
         removed the filtering and smoothing functions from this file.
     | **07 Jul 2017**: (KBW) Removed where_not function.
 
-.. _numpy.where: http://docs.scipy.org/doc/numpy/reference/generated/numpy.where.html
+----
 
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../rstlinks.txt
 """
-
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
-import sys
-if sys.version > '3':
-    long = int
-
 import numpy
 #import time
 #from scipy import sparse

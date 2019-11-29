@@ -3,61 +3,53 @@
 """
 A class hierarchy that performs the spectral-index measurements.
 
-*License*:
-    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+Notes
+-----
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/proc/spectralindices.py
+If neither stellar-continuum nor emission-line models are provided:
 
-*Class usage examples*:
-    Add examples!
+    - Indices are measure on the binned spectra
+    - No velocity-dispersion corrections are calculated
 
-*Notes*:
-    
-    If neither stellar-continuum nor emission-line models are provided:
+If a stellar-continuum model is provided without an emission-line
+model:
 
-        - Indices are measure on the binned spectra
-        - No velocity-dispersion corrections are calculated
+    - Indices are measured on the binned spectra
+    - Velocity-dispersion corrections are computed for any binned
+      spectrum with a stellar-continuum fit based on the optimal
+      template
 
-    If a stellar-continuum model is provided without an emission-line
-    model:
+If an emission-line model is provided without a stellar-continuum model:
 
-        - Indices are measured on the binned spectra
-        - Velocity-dispersion corrections are computed for any binned
-          spectrum with a stellar-continuum fit based on the optimal
-          template
+    - Indices are measured on the relevant (binned or unbinned) spectra;
+      spectra with emission-line fits have the model emission lines
+      subtracted from them before these measurements.
+    - If the emission-line model includes data regarding the
+      stellar-continuum fit (template spectra and template weights),
+      corrections are calculated for spectra with emission-line models
+      based on the continuum fits; otherwise, no corrections are
+      calculated.
 
-    If an emission-line model is provided without a stellar-continuum
-    model:
+If both stellar-continuum and emission-line models are provided, and if
+the stellar-continuum and emission-line fits are performed on the same
+spectra:
 
-        - Indices are measured on the relevant (binned or unbinned)
-          spectra; spectra with emission-line fits have the model
-          emission lines subtracted from them before these measurements.
-        - If the emission-line model includes data regarding the
-          stellar-continuum fit (template spectra and template weights),
-          corrections are calculated for spectra with emission-line
-          models based on the continuum fits; otherwise, no corrections
-          are calculated.
+    - Indices are measured on the relevant (binned or unbinned) spectra;
+      spectra with emission-line fits have the model emission lines
+      subtracted from them before these measurements.
+    - Velocity-dispersion corrections are based on the stellar-continuum
+      templates and weights
 
-    If both stellar-continuum and emission-line models are provided, and
-    if the stellar-continuum and emission-line fits are performed on the
-    same spectra:
+If both stellar-continuum and emission-line models are provided, and if
+the stellar-continuum and emission-line fits are performed on different
+spectra:
 
-        - Indices are measured on the relevant (binned or unbinned)
-          spectra; spectra with emission-line fits have the model
-          emission lines subtracted from them before these measurements.
-        - Velocity-dispersion corrections are based on the
-          stellar-continuum templates and weights
+    - The behavior is exactly as if the stellar-continuum model was not
+      provided.
 
-    If both stellar-continuum and emission-line models are provided, and
-    if the stellar-continuum and emission-line fits are performed on
-    different spectra:
+Revision history
+----------------
 
-        - The behavior is exactly as if the stellar-continuum model was
-          not provided.
-
-*Revision history*:
     | **20 Apr 2016**: Implementation begun by K. Westfall (KBW)
     | **09 May 2016**: (KBW) Add subtraction of emission-line models
     | **11 Jul 2016**: (KBW) Allow to not apply dispersion corrections
@@ -74,11 +66,15 @@ A class hierarchy that performs the spectral-index measurements.
         for redshift.  Keep the indices as measured by the best-fitting
         model.
 
-.. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
-.. _glob.glob: https://docs.python.org/3.4/library/glob.html
-.. _numpy.recarray: https://docs.scipy.org/doc/numpy/reference/generated/numpy.recarray.html
-.. _logging.Logger: https://docs.python.org/3/library/logging.html
+----
 
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../rstlinks.txt
 """
 
 import glob

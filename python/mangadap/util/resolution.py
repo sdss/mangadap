@@ -4,11 +4,9 @@
 Provides a set of functions to handle and alter the instrumental
 resolution.
 
-*License*:
-    Copyright (c) 2018, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+Revision history
+----------------
 
-*Revision history*:
     | **27 May 2015**: Original implementation by K. Westfall (KBW)
         based on downgrader_MANGA.f provided by D.  Thomas, O. Steele,
         D.  Wilkinson, D. Goddard.
@@ -44,9 +42,15 @@ resolution.
         sampling.py.  Renamed this file from instrument.py to
         resolution.py.
 
-.. _scipy.interpolate.interp1d: https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.interp1d.html
-.. _astropy.constants: http://docs.astropy.org/en/stable/constants/index.html
+----
 
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../rstlinks.txt
 """
 import warnings
 import numpy

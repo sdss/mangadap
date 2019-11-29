@@ -5,36 +5,42 @@ r"""
 Class that constructs a set of emission-line templates, primarily for
 use with :class:`mangadap.proc.sasuke.Sasuke`.
 
-*License*:
-    Copyright (c) 2017, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+Class usage examples
+--------------------
 
-*Class usage examples*:
-
-    To construct emission-line templates, you need a wavelength vector,
-    the instrumental resolution at which to construct the templates, and
-    an emission line database (see
-    :class:`mangadap.par.emissionlinedb.EmissionLineDB`).  A simple
-    construction would be::
+To construct emission-line templates, you need a wavelength vector,
+the instrumental resolution at which to construct the templates, and
+an emission line database (see
+:class:`mangadap.par.emissionlinedb.EmissionLineDB`). A simple
+construction would be::
         
-        # Imports
-        import numpy
-        from mangadap.par.emissionlinedb import EmissionLineDB
-        from mangadap.proc.emissionlinetemplates import EmissionLineTemplates
+    # Imports
+    import numpy
+    from mangadap.par.emissionlinedb import EmissionLineDB
+    from mangadap.proc.emissionlinetemplates import EmissionLineTemplates
 
-        wave = numpy.logspace(*(numpy.log10([3600,10300]), 4563)
-        sigma_inst = 30                     # Instrumental resolution in km/s
+    wave = numpy.logspace(*(numpy.log10([3600,10300]), 4563)
+    sigma_inst = 30                     # Instrumental resolution in km/s
 
-        tpl = EmissionLineTemplates(wave, sigma_inst, emldb=EmissionLineDB('ELPMILES'))
+    tpl = EmissionLineTemplates(wave, sigma_inst, emldb=EmissionLineDB('ELPMILES'))
 
-*Revision history*:
+Revision history
+----------------
+
     | **08 Sep 2017**: Originally pulled from
         :mod:`mangadap.proc.sasuke` by K. Westfall (KBW)
 
-.. _scipy.interpolate.interp1d: https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.interp1d.html
-.. _logging.Logger: https://docs.python.org/3/library/logging.html
+----
 
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../rstlinks.txt
 """
+
 import os
 import time
 import logging

@@ -3,13 +3,6 @@
 """
 Define a utility base class used to hold parameters.
 
-*License*:
-    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
-
-*Class usage examples*:
-    to be added
-
 .. todo::
     - Add range and length parameters allowing one to define the range
       allowed for the parameter values and number of elements required
@@ -20,7 +13,9 @@ Define a utility base class used to hold parameters.
     - Write an __add__ function that will all you to add multiple
       parameter sets.
 
-*Revision history*:
+Revision history
+----------------
+
     | **16 Jun 2015**: Original implementation by K. Westfall (KBW)
     | **18 Mar 2016**: (KBW) Change dtype checking
     | **23 Mar 2016**: (KBW) Changed initialization type checking of
@@ -34,22 +29,20 @@ Define a utility base class used to hold parameters.
         info function.  Add to_config function to write to a
         configuration file.
 
-.. _isinstance: https://docs.python.org/2/library/functions.html#isinstance
+----
 
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../rstlinks.txt
 """
-
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
 
 import os
 import warnings
 import textwrap
-import sys
-if sys.version > '3':
-    long = int
-
 import numpy
 
 class ParSet(object):

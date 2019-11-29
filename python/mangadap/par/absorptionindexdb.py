@@ -3,101 +3,69 @@
 """
 Container class for the database of absorption-line indices to measure.
 
-*License*:
-    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+Class usage examples
+--------------------
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/par/absorptionindexdb.py
+Absorption-line index databases are defined using SDSS parameter
+files. To define a database, you can use one of the default set of
+available absorption-line index databases (see
+:func:`available_absorption_index_databases`)::
 
-*Imports and python version compliance*:
-    ::
+    from mangadap.par.absorptionindexdb import AbsorptionIndexDB
+    p = AbsorptionIndexDB('LICK')
 
-        from __future__ import division
-        from __future__ import print_function
-        from __future__ import absolute_import
-        from __future__ import unicode_literals
+The above call requires that the ``$MANGADAP_DIR`` environmental
+variable is set. If it is not, you can define it's location, as in::
 
-        import sys
-        import warnings
-        if sys.version > '3':
-            long = int
+    from mangadap.par.absorptionindexdb import AbsorptionIndexDB
+    p = AbsorptionIndexDB('LICK', dapsrc='/path/to/dap/source')
 
-        import os.path
-        import numpy
+Finally, you can create your own `SDSS-style parameter file`_ with
+your own absorption-line indices to use. Example files are provided
+in ``$MANGADAP_DIR/data/absorption_indices`` with a companion
+``README`` file. With your own file, you have to point to the file
+using :class:`SpectralFeatureDBDef`, which you can then pass to
+:class:`AbsorptionIndexDB`::
 
-        from pydl.goddard.astro import airtovac
-        from pydl.pydlutils.yanny import yanny
-        from .parset import ParDatabase
-        from .spectralfeaturedb import available_spectral_feature_databases, SpectralFeatureDBDef
-        from ..proc.bandpassfilter import BandPassFilterPar
-        from ..proc.util import select_proc_method
+    from mangadap.par.spectralfeaturedb import SpectralFeatureDBDef
+    from mangadap.par.absorptionindexdb import AbsorptionIndexDB
+    d = SpectralFeatureDBDef(key='USER',
+                             file_path='/path/to/parameter/file')
+    p = AbsorptionIndexDB('USER', indxdb_list=d)
 
-
-*Class usage examples*:
-    Absorption-line index databases are defined using SDSS parameter
-    files.  To define a database, you can use one of the default set of
-    available absorption-line index databases (see
-    :func:`available_absorption_index_databases`)::
+The reference frame of the absorption-line index can be different
+*for each index*; a column in the SDSS parameter file is used to
+specify either air or vacuum wavelengths. When reading the input
+parameter file, :class:`AbsorptionIndexDB` will convert the input
+index definition to vacuum on a case-by-case basis based on the SDSS
+parameter file entries, meaning :class:`AbsorptionIndexDB` only
+provides vacuum wavelengths.
     
-        from mangadap.par.absorptionindexdb import AbsorptionIndexDB
-        p = AbsorptionIndexDB('LICK')
+Revision history
+----------------
 
-    The above call requires that the ``$MANGADAP_DIR`` environmental
-    variable is set.  If it is not, you can define it's location, as
-    in::
-
-        from mangadap.par.absorptionindexdb import AbsorptionIndexDB
-        p = AbsorptionIndexDB('LICK', dapsrc='/path/to/dap/source')
-
-    Finally, you can create your own `SDSS-style parameter file`_ with
-    your own absorption-line indices to use.  Example files are provided
-    in ``$MANGADAP_DIR/data/absorption_indices`` with a companion
-    ``README`` file.  With your own file, you have to point to the file
-    using :class:`SpectralFeatureDBDef`, which you can then pass to
-    :class:`AbsorptionIndexDB`::
-
-        from mangadap.par.spectralfeaturedb import SpectralFeatureDBDef
-        from mangadap.par.absorptionindexdb import AbsorptionIndexDB
-        d = SpectralFeatureDBDef(key='USER',
-                                 file_path='/path/to/parameter/file')
-        p = AbsorptionIndexDB('USER', indxdb_list=d)
-
-    The reference frame of the absorption-line index can be different
-    *for each index*; a column in the SDSS parameter file is used to
-    specify either air or vacuum wavelengths.  When reading the input
-    parameter file, :class:`AbsorptionIndexDB` will convert the input
-    index definition to vacuum on a case-by-case basis based on the SDSS
-    parameter file entries, meaning :class:`AbsorptionIndexDB` only
-    provides vacuum wavelengths.
-    
-*Revision history*:
     | **18 Mar 2016**: Original implementation by K. Westfall (KBW)
     | **11 May 2016**: (KBW) Switch to using `pydl.pydlutils.yanny`_ and
         `pydl.goddard.astro.airtovac`_ instead of internal functions
     | **01 Dec 2016**: (KBW) Relocated from proc to par.
     | **06 Oct 2017**: (KBW) Add function to return channel names
 
-.. _pydl.pydlutils.yanny: http://pydl.readthedocs.io/en/stable/api/pydl.pydlutils.yanny.yanny.html
-.. _pydl.goddard.astro.airtovac: http://pydl.readthedocs.io/en/stable/api/pydl.goddard.astro.airtovac.html#pydl.goddard.astro.airtovac
-.. _SDSS-style parameter file: http://www.sdss.org/dr12/software/par/
+----
+
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../rstlinks.txt
 """
-
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
-import sys
-import warnings
-if sys.version > '3':
-    long = int
-
-import os.path
+import os
 import numpy
 
 from pydl.goddard.astro import airtovac
 from pydl.pydlutils.yanny import yanny
+
 from .parset import ParDatabase
 from .spectralfeaturedb import available_spectral_feature_databases, SpectralFeatureDBDef
 from ..proc.bandpassfilter import BandPassFilterPar
@@ -106,23 +74,12 @@ from ..proc.util import select_proc_method
 # Add strict versioning
 # from distutils.version import StrictVersion
 
-
 def available_absorption_index_databases(dapsrc=None):
     """
     Return the list of database keys and file names for the available
     absorption-line index databases.  The currently available databases
     are:
     
-    +-------------+-----+----------------------------------+
-    |         KEY |   N | Description                      |
-    +=============+=====+==================================+
-    |        LICK |  21 | The standard Lick indices from   |
-    |             |     | Trager et al. (1998).            |
-    +-------------+-----+----------------------------------+
-    |    STANDARD |  38 | Includes additional Balmer and   |
-    |             |     | IMF-sensitive indices            |
-    +-------------+-----+----------------------------------+
-
     This is a simple wrapper for
     :func:`mangadap.par.spectralfeaturedb.available_spectral_feature_databases`.
 

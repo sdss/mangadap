@@ -4,82 +4,53 @@
 Container class for a database of emission-line parameters, as well as
 support classes and functions.
 
-*License*:
-    Copyright (c) 2016, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+Class usage examples
+--------------------
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/par/emissionlinedb.py
+To define an emission line::
 
-*Imports and python version compliance*:
-    ::
+    from mangadap.par.emissionlinedb import EmissionLinePar
+    p = EmissionLinePar(44, 'Ha', 6564.632, action='f', line='l',
+                        flux=1.0, vel=0.0, sig=10., mode='f')
 
-        from __future__ import division
-        from __future__ import print_function
-        from __future__ import absolute_import
-        from __future__ import unicode_literals
+More often, however, you will want to define an emission-line
+database using an SDSS parameter file. To do so, you can use one of
+the default set of available emission-line databases (see
+:func:`available_emission_line_databases`)::
 
-        import sys
-        import warnings
-        if sys.version > '3':
-            long = int
-        
-        import os.path
-        from os import environ
-        import glob
-        import numpy
+    from mangadap.par.emissionlinedb import EmissionLineDB
+    p = EmissionLineDB('STRONG')
 
-        from pydl.goddard.astro import airtovac
-        from pydl.pydlutils.yanny import yanny
-        from .parset import ParSet, ParDatabase
-        from .spectralfeaturedb import available_spectral_feature_databases, SpectralFeatureDBDef
-        from ..proc.util import select_proc_method
-        from ..config.defaults import dap_source_dir
+The above call requires that the ``$MANGADAP_DIR`` environmental
+variable is set. If it is not, you can define it's location, as in::
 
-*Class usage examples*:
-    To define an emission line::
+    from mangadap.par.emissionlinedb import EmissionLineDB
+    p = EmissionLineDB('STRONG', dapsrc='/path/to/dap/source')
 
-        from mangadap.par.emissionlinedb import EmissionLinePar
-        p = EmissionLinePar(44, 'Ha', 6564.632, action='f', line='l',
-                            flux=1.0, vel=0.0, sig=10., mode='f')
+Finally, you can create your own `SDSS-style parameter file`_ with
+your own emission lines to fit. Example files are provided in
+``$MANGADAP_DIR/data/emission_lines`` with a companion ``README``
+file. With your own file, you have to point to the file using
+:class:`EmissionLineDBDef`, which you can then pass to
+:class:`EmissionLineDB`::
 
-    More often, however, you will want to define an emission-line
-    database using an SDSS parameter file.  To do so, you can use one of
-    the default set of available emission-line databases (see
-    :func:`available_emission_line_databases`)::
-    
-        from mangadap.par.emissionlinedb import EmissionLineDB
-        p = EmissionLineDB('STRONG')
+    from mangadap.par.emissionlinedb import EmissionLineDBDef
+    from mangadap.par.emissionlinedb import EmissionLineDB
+    d = EmissionLineDBDef(key='USER',
+                          file_path='/path/to/parameter/file',
+                          in_vacuum=True)
+    p = EmissionLineDB('USER', emldb_list=d)
 
-    The above call requires that the ``$MANGADAP_DIR`` environmental
-    variable is set.  If it is not, you can define it's location, as
-    in::
+The reference frame of the emission-line wavelengths must be defined
+as either vacuum or air, using 'in_vacuum'. It is expected that the
+object spectra to be fit are calibrated to vacuum wavelengths. If
+'in_vacuum' is false, this class will use
+:func:`mangadap.util.idlutils.airtovac` to convert the emission-line
+wavelengths to vacuum.
 
-        from mangadap.par.emissionlinedb import EmissionLineDB
-        p = EmissionLineDB('STRONG', dapsrc='/path/to/dap/source')
+Revision history
+----------------
 
-    Finally, you can create your own `SDSS-style parameter file`_ with
-    your own emission lines to fit.  Example files are provided in
-    ``$MANGADAP_DIR/data/emission_lines`` with a companion
-    ``README`` file.  With your own file, you have to point to the file
-    using :class:`EmissionLineDBDef`, which you can then pass to
-    :class:`EmissionLineDB`::
-
-        from mangadap.par.emissionlinedb import EmissionLineDBDef
-        from mangadap.par.emissionlinedb import EmissionLineDB
-        d = EmissionLineDBDef(key='USER',
-                              file_path='/path/to/parameter/file',
-                              in_vacuum=True)
-        p = EmissionLineDB('USER', emldb_list=d)
-
-    The reference frame of the emission-line wavelengths must be defined
-    as either vacuum or air, using 'in_vacuum'.  It is expected that the
-    object spectra to be fit are calibrated to vacuum wavelengths.  If
-    'in_vacuum' is false, this class will use
-    :func:`mangadap.util.idlutils.airtovac` to convert the emission-line
-    wavelengths to vacuum.
-
-*Revision history*:
     | **17 Mar 2016**: Original implementation by K. Westfall (KBW)
     | **11 May 2016**: (KBW) Switch to using `pydl.pydlutils.yanny`_ and
         `pydl.goddard.astro.airtovac`_ instead of internal functions
@@ -87,29 +58,24 @@ support classes and functions.
         in database.
     | **06 Oct 2017**: (KBW) Add function to return channel names
 
-.. _pydl.pydlutils.yanny: http://pydl.readthedocs.io/en/stable/api/pydl.pydlutils.yanny.yanny.html
-.. _pydl.goddard.astro.airtovac: http://pydl.readthedocs.io/en/stable/api/pydl.goddard.astro.airtovac.html#pydl.goddard.astro.airtovac
-.. _SDSS-style parameter file: http://www.sdss.org/dr12/software/par/
+----
 
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../rstlinks.txt
 """
 
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
-import sys
-import warnings
-if sys.version > '3':
-    long = int
-
-import os.path
-from os import environ
+import os
 import glob
 import numpy
 
 from pydl.goddard.astro import airtovac
 from pydl.pydlutils.yanny import yanny
+
 from .parset import ParSet, ParDatabase
 from .spectralfeaturedb import available_spectral_feature_databases, SpectralFeatureDBDef
 from ..proc.util import select_proc_method

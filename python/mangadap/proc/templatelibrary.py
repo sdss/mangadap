@@ -1,7 +1,6 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 # -*- coding: utf-8 -*-
 r"""
-
 Class that reads and prepares template libraries for use in fitting the
 stellar-continuum of a spectrum.  See
 :func:`available_template_libraries` for the list of default template
@@ -31,107 +30,106 @@ parameters of a DAP template library.  The second is a derived
 :class:`mangadap.util.bitmask.BitMask` instance that defines the
 bitmasks for the template library spectra.
 
-*License*:
-    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+.. _templatelibrary-usage:
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/proc/templatelibrary.py
+Class usage examples
+--------------------
 
-*Class usage examples*:
-    Assuming you have the default directory structure setup, you can do::
+Assuming you have the default directory structure setup, you can do::
 
-        # Imports
-        from mangadap.drpfits import DRPFits
-        from mangadap.proc.templatelibrary import TemplateLibrary
-        from matplotlib import pyplot
+    # Imports
+    from mangadap.drpfits import DRPFits
+    from mangadap.proc.templatelibrary import TemplateLibrary
+    from matplotlib import pyplot
 
-        # Define the DRP file
-        drpf = DRPFits(7495, 12703, 'CUBE')
+    # Define the DRP file
+    drpf = DRPFits(7495, 12703, 'CUBE')
 
-        # Build the template library
-        tpl_lib = TemplateLibrary('M11MILES', drpf=drpf, directory_path='.')
-        # Writes: ./manga-7495-12703-LOGCUBE_M11-MILES.fits
+    # Build the template library
+    tpl_lib = TemplateLibrary('M11MILES', drpf=drpf, directory_path='.')
+    # Writes: ./manga-7495-12703-LOGCUBE_M11-MILES.fits
 
-        # Plot one of the spectra
-        pyplot.plot(tpl_lib.hdu['WAVE'].data, tpl_lib.hdu['FLUX'].data[0,:])
-        pyplot.show()
+    # Plot one of the spectra
+    pyplot.plot(tpl_lib.hdu['WAVE'].data, tpl_lib.hdu['FLUX'].data[0,:])
+    pyplot.show()
 
-    As part of the instantiation of the :class:`TemplateLibrary` object
-    in the above call, the template library is prepared for use in
-    fitting the specified DRP file.  If the required processing has
-    already been done, the instantiation of the :class:`TemplateLibrary`
-    object simply reads the existing file.  If you do not have the
-    default directory structure setup, you'll need to define the paths
-    to, e.g., the DRP file; see :class:`mangadap.dapfile.dapfile`.
+As part of the instantiation of the :class:`TemplateLibrary` object
+in the above call, the template library is prepared for use in
+fitting the specified DRP file.  If the required processing has
+already been done, the instantiation of the :class:`TemplateLibrary`
+object simply reads the existing file.  If you do not have the
+default directory structure setup, you'll need to define the paths
+to, e.g., the DRP file; see :class:`mangadap.drpfits.DRPFits`.
 
-    If you do not want to process the template (match the spectral
-    resolution and sampling to that of the DRP data), you can force the
-    :class:`TemplateLibrary` object to only provide the "raw" spectra::
+If you do not want to process the template (match the spectral
+resolution and sampling to that of the DRP data), you can force the
+:class:`TemplateLibrary` object to only provide the "raw" spectra::
 
-        # Imports
-        from mangadap.proc.templatelibrary import TemplateLibrary
-        from matplotlib import pyplot
+    # Imports
+    from mangadap.proc.templatelibrary import TemplateLibrary
+    from matplotlib import pyplot
 
-        # Read the raw template library
-        tpl_lib = TemplateLibrary('M11MILES', process=False)
-        # Nothing should be written to disk
+    # Read the raw template library
+    tpl_lib = TemplateLibrary('M11MILES', process=False)
+    # Nothing should be written to disk
 
-        # Plot one of the spectra
-        pyplot.plot(tpl_lib.hdu['WAVE'].data[0,:], tpl_lib.hdu['FLUX'].data[0,:])
-        pyplot.show()
+    # Plot one of the spectra
+    pyplot.plot(tpl_lib.hdu['WAVE'].data[0,:], tpl_lib.hdu['FLUX'].data[0,:])
+    pyplot.show()
 
-    Note that in the previous example, the wavelength data was already
-    one-dimensional, whereas for the raw library, the wavelength vector
-    can be spectrum-dependent.
+Note that in the previous example, the wavelength data was already
+one-dimensional, whereas for the raw library, the wavelength vector
+can be spectrum-dependent.
 
-    In the above examples, the user has not provided a list of template
-    libraries, meaning that the default set available to the DAP is
-    used.  The default set is defined in
-    :func:`available_template_libraries`.  If you want to use your own
-    template library, you have to define its parameters using
-    :class:`TemplateLibraryDef`.  Currently, the template library
-    spectra are expected to be 1D fits files with WCS header keywords
-    defining the wavelength solution; see above.  Using an existing DAP
-    library as an example::
+In the above examples, the user has not provided a list of template
+libraries, meaning that the default set available to the DAP is
+used.  The default set is defined in
+:func:`available_template_libraries`.  If you want to use your own
+template library, you have to define its parameters using
+:class:`TemplateLibraryDef`.  Currently, the template library
+spectra are expected to be 1D fits files with WCS header keywords
+defining the wavelength solution; see above.  Using an existing DAP
+library as an example::
 
-        # Imports
-        from mangadap.proc.templatelibrary import TemplateLibraryDef
-        from mangadap.proc.templatelibrary import TemplateLibrary
-        from mangadap.config.defaults import dap_source_dir
-        from matplotlib import pyplot
+    # Imports
+    from mangadap.proc.templatelibrary import TemplateLibraryDef
+    from mangadap.proc.templatelibrary import TemplateLibrary
+    from mangadap.config.defaults import dap_source_dir
+    from matplotlib import pyplot
 
-        # Define the search string for the library
-        search_str = dap_source_dir()+'/data/stellar_templates/miles/*.fits'
+    # Define the search string for the library
+    search_str = dap_source_dir()+'/data/stellar_templates/miles/*.fits'
 
-        # Define the template library parameters
-        tpl_par = TemplateLibraryDef(key='MILES',    # Unique keyword for the library
-                                file_search=search_str, # Search string
-                                fwhm=2.50,              # FWHM of resolution element (assumed const)
-                                in_vacuum=False,        # Wavelength in vacuum?
-                                wave_limit=numpy.array([ 3575., 7400. ]),   # Range of valid lambda
-                                lower_flux_limit=0.0)   # Lower limit for valid flux
+    # Define the template library parameters
+    tpl_par = TemplateLibraryDef(key='MILES',    # Unique keyword for the library
+                            file_search=search_str, # Search string
+                            fwhm=2.50,              # FWHM of resolution element (assumed const)
+                            in_vacuum=False,        # Wavelength in vacuum?
+                            wave_limit=numpy.array([ 3575., 7400. ]),   # Range of valid lambda
+                            lower_flux_limit=0.0)   # Lower limit for valid flux
 
-        # Read the raw template library
-        tpl_lib = TemplateLibrary('MILES', tpllib_list=tpl_par, process=False)
-        # Nothing should be written to disk
+    # Read the raw template library
+    tpl_lib = TemplateLibrary('MILES', tpllib_list=tpl_par, process=False)
+    # Nothing should be written to disk
 
-        # Plot one of the spectra
-        pyplot.plot(tpl_lib.hdu['WAVE'].data[0,:], tpl_lib.hdu['FLUX'].data[0,:])
-        pyplot.show()
+    # Plot one of the spectra
+    pyplot.plot(tpl_lib.hdu['WAVE'].data[0,:], tpl_lib.hdu['FLUX'].data[0,:])
+    pyplot.show()
 
-    Note that the keyword you use must be provided both to the parameter
-    set and when instantiating the :class:`TemplateLibrary` object.  In
-    the example above, I have not processed the library, but you can by
-    following a similar approach to the first example.
+Note that the keyword you use must be provided both to the parameter
+set and when instantiating the :class:`TemplateLibrary` object.  In
+the example above, I have not processed the library, but you can by
+following a similar approach to the first example.
 
-    You can also process the spectra to a user-provided resolution and
-    pixel sampling, toggle on/off the renormalization of the library to
-    a mean flux of unity and define various paths if you're not working
-    within the nominal DAP directory structure.  See the optional
-    instantiation arguments for :class:`TemplateLibrary`.
+You can also process the spectra to a user-provided resolution and
+pixel sampling, toggle on/off the renormalization of the library to
+a mean flux of unity and define various paths if you're not working
+within the nominal DAP directory structure.  See the optional
+instantiation arguments for :class:`TemplateLibrary`.
 
-*Revision history*:
+Revision history
+----------------
+
     | **23 Apr 2015**: Implementation begun by K. Westfall (KBW)
     | **26 May 2015**: (KBW) Added some Sphinx documentation.
     | **17 Jun 2015**: (KBW) Added flexibility in definition of template
@@ -171,12 +169,17 @@ bitmasks for the template library spectra.
     | **30 Aug 2018**: (KBW) Switch from using resample1d to
         :class:`mangadap.util.sampling.Resample`.
 
-.. _numpy.ndarray: https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html
-.. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
-.. _glob.glob: https://docs.python.org/3.4/library/glob.html
-.. _pydl.goddard.astro.airtovac: http://pydl.readthedocs.io/en/stable/api/pydl.goddard.astro.airtovac.html#pydl.goddard.astro.airtovac
+----
 
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../rstlinks.txt
 """
+
 import os
 import glob
 import time
@@ -625,15 +628,16 @@ class TemplateLibrary:
         :func:`mangadap.proc.util.select_proc_method`.
 
         Args:
-            library_key (str): Keyword of the selected library.
-                Available libraries are proved by
-                :func:`available__template_libraries`
-            tpllib_list (list): (**Optional**) List of 
-                :class:`TemplateLibraryDef`
-                objects that define the parameters required to read and
-                interpret a template library.
-            dapsrc (str): (**Optional**) Root path to the DAP source
-                directory.  If not provided, the default is defined by
+            library_key (:obj:`str`):
+                Keyword of the selected library.  Available libraries
+                are proved by :func:`available__template_libraries`
+            tpllib_list (:obj:`list`, optional):
+                List of :class:`TemplateLibraryDef` objects that define
+                the parameters required to read and interpret a template
+                library.
+            dapsrc (:obj:`str`, optional):
+                Root path to the DAP source directory.  If not provided,
+                the default is defined by
                 :func:`mangadap.config.defaults.dap_source_dir`.
         """
         # Get the details of the selected template library

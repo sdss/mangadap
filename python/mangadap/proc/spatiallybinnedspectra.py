@@ -7,16 +7,12 @@ two-dimensional data.
 The base class allows for user-defined definitions of binning
 procedures.
 
-*License*:
-    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+.. todo::
+    - Check binning an RSS file
 
-*Class usage examples*:
+Revision history
+----------------
 
-    .. todo::
-        Add examples
-
-*Revision history*:
     | **01 Apr 2016**: Implementation begun by K. Westfall (KBW)
     | **19 May 2016**: (KBW) Include SPECRES and SPECRESD extensions
         from DRP file in output. Added loggers and quiet keyword
@@ -36,29 +32,21 @@ procedures.
     | **23 Feb 2017**: (KBW) Use DAPFitsUtil read and write functions.
     | **21 Aug 2017**: (KBW) Use the new PRE-pixelized assessments of
         the LSF.
-        
-.. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
-.. _glob.glob: https://docs.python.org/3.4/library/glob.html
-.. _logging.Logger: https://docs.python.org/3/library/logging.html
-.. _numpy.ma.MaskedArray: http://docs.scipy.org/doc/numpy-1.10.1/reference/maskedarray.baseclass.html#numpy.ma.MaskedArray
 
-.. todo::
-    - Check binning an RSS file
+----
 
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../rstlinks.txt
 """
 
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
-import sys
-import warnings
-if sys.version > '3':
-    long = int
-
-import glob
 import os
+import glob
+import warnings
 import time
 import logging
 import numpy

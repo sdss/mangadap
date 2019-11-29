@@ -3,72 +3,42 @@
 """
 Base class for handling bit masks by the DAP.
 
-*License*:
-    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+Class usage examples
+--------------------
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/util/bitmask.py
+Here is an example of reading/creating a TemplateLibrary, then
+creating a plot that shows the full spectrum (blue) and the unmasked
+spectrum (green)::
 
-*Imports and python version compliance*:
-    ::
+    # Imports
+    import numpy
+    from mangadap.drpfits import DRPFits
+    from mangadap.proc.TemplateLibrary import TemplateLibrary, TemplateLibraryBitMask
+    from matplotlib import pyplot
 
-        from __future__ import division
-        from __future__ import print_function
-        from __future__ import absolute_import
-        from __future__ import unicode_literals
+    # Define the DRP file
+    drpf = DRPFits(7495, 12703, 'CUBE')
 
-        import sys
-        if sys.version > '3':
-            long = int
-            try:
-                from configparser import ConfigParser
-            except ImportError:
-                print('WARNING: Unable to import configparser!  Beware!')
-        else:
-            try:
-                from ConfigParser import ConfigParser
-            except ImportError:
-                print('WARNING: Unable to import ConfigParser!  Beware!')
+    # Build the template library
+    tpl_lib = TemplateLibrary('M11-MILES', drpf=drpf, directory_path='.')
+    # Writes: ./manga-7495-12703-LOGCUBE_M11-MILES.fits
 
-        import numpy
-        import os
-        import textwrap
-        from pydl.pydlutils.yanny import yanny
+    # Initialize the mask object
+    tplbm = TemplateLibraryBitMask()
 
-*Class usage examples*:
-    Here is an example of reading/creating a TemplateLibrary, then
-    creating a plot that shows the full spectrum (blue) and the unmasked
-    spectrum (green)::
+    # Refactor the mask for the first template spectrum using the bitmask
+    unmasked = numpy.invert(tplbm.flagged(tpl_lib.hdu['MASK'].data[0,:]))
 
-        # Imports
-        import numpy
-        from mangadap.drpfits import DRPFits
-        from mangadap.proc.TemplateLibrary import TemplateLibrary, TemplateLibraryBitMask
-        from matplotlib import pyplot
+    # Plot the full spectrum (blue)
+    pyplot.plot(tpl_lib.hdu['WAVE'].data, tpl_lib.hdu['FLUX'].data[0,:])
+    # Plot the unmasked pixels (green; points are connected even if there are gaps
+    pyplot.plot(tpl_lib.hdu['WAVE'].data[unmasked], tpl_lib.hdu['FLUX'].data[0,unmasked])
+    # Show the plot
+    pyplot.show()
 
-        # Define the DRP file
-        drpf = DRPFits(7495, 12703, 'CUBE')
+Revision history
+----------------
 
-        # Build the template library
-        tpl_lib = TemplateLibrary('M11-MILES', drpf=drpf, directory_path='.')
-        # Writes: ./manga-7495-12703-LOGCUBE_M11-MILES.fits
-
-        # Initialize the mask object
-        tplbm = TemplateLibraryBitMask()
-
-        # Refactor the mask for the first template spectrum using the bitmask
-        unmasked = numpy.invert(tplbm.flagged(tpl_lib.hdu['MASK'].data[0,:]))
-
-        # Plot the full spectrum (blue)
-        pyplot.plot(tpl_lib.hdu['WAVE'].data, tpl_lib.hdu['FLUX'].data[0,:])
-        # Plot the unmasked pixels (green; points are connected even if there are gaps
-        pyplot.plot(tpl_lib.hdu['WAVE'].data[unmasked], tpl_lib.hdu['FLUX'].data[0,unmasked])
-        # Show the plot
-        pyplot.show()
-
-
-*Revision history*:
     | **01 Jun 2015**: Original implementation by K. Westfall (KBW)
     | **07 Oct 2015**: (KBW) Added a usage case
     | **29 Jan 2016**: (KBW) Changed attributes of :class:`BitMask` and
@@ -92,32 +62,22 @@ Base class for handling bit masks by the DAP.
         instead of internal yanny reader
     | **29 Jul 2016**: (KBW) Change asarray to atleast_1d
 
-.. _pydl.pydlutils.yanny: http://pydl.readthedocs.io/en/stable/api/pydl.pydlutils.yanny.yanny.html
-.. _SDSS-style parameter file: http://www.sdss.org/dr12/software/par/
+----
 
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../rstlinks.txt
 """
-
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
-import sys
-if sys.version > '3':
-    long = int
-    try:
-        from configparser import ConfigParser
-    except ImportError:
-        print('WARNING: Unable to import configparser!  Beware!')
-else:
-    try:
-        from ConfigParser import ConfigParser
-    except ImportError:
-        print('WARNING: Unable to import ConfigParser!  Beware!')
-
-import numpy
 import os
 import textwrap
+from configparser import ConfigParser
+
+import numpy
+
 from pydl.pydlutils.yanny import yanny
 
 class BitMask:

@@ -5,17 +5,9 @@ Class that performs a number of assessments of a DRP file needed for
 handling of the data by the DAP.  These assessments need only be done
 once per DRP data file.
 
-*License*:
-    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+Revision history
+----------------
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/proc/reductionassessments.py
-
-*Class usage examples*:
-    Add examples!
-
-*Revision history*:
     | **24 Mar 2016**: Implementation begun by K. Westfall (KBW)
     | **11 May 2016**: (KBW) Switch to using
         `pydl.goddard.astro.airtovac`_ instead of internal function
@@ -26,27 +18,22 @@ once per DRP data file.
     | **17 May 2017**: (KBW) Added ability to use a response function
         for the flux statistics.
 
-.. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
-.. _glob.glob: https://docs.python.org/3.4/library/glob.html
-.. _pydl.goddard.astro.airtovac: http://pydl.readthedocs.io/en/stable/api/pydl.goddard.astro.airtovac.html#pydl.goddard.astro.airtovac
-.. _logging.Logger: https://docs.python.org/3/library/logging.html
+----
 
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../rstlinks.txt
 """
-
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
-import sys
-import warnings
-if sys.version > '3':
-    long = int
-
-import glob
 import os
 import time
+import glob
+import warnings
 import logging
+
 import numpy
 
 from scipy import sparse

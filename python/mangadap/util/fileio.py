@@ -1,17 +1,11 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 # -*- coding: utf-8 -*-
 """
-
 Provides a set of file I/O routines.
 
-*License*:
-    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+Revision history
+----------------
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/util/fileio.py
-
-*Revision history*:
     | **27 May 2015**: Original implementation by K. Westfall (KBW)
     | **29 Jan 2016**: (KBW) Added :func:`read_template_spectrum`
     | **01 Feb 2016**: (KBW) Moved wavelength calculation to a common
@@ -27,9 +21,15 @@ Provides a set of file I/O routines.
     | **23 Mar 2017**: (KBW) Force type of header keywords in
         :func:`wavelength_vector`.
 
-.. _numpy.recarray: http://docs.scipy.org/doc/numpy-1.10.1/reference/generated/numpy.recarray.html
-.. _logging.Logger: https://docs.python.org/3/library/logging.html
+----
 
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../rstlinks.txt
 """
 
 import os

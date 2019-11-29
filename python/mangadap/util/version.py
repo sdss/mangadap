@@ -1,6 +1,6 @@
 
 __author__ = 'Kyle B. Westfall'
-__copyright__ = '(c) 2017, SDSS-IV/MaNGA Pipeline Group'
+__copyright__ = '(c) 2019, SDSS-IV/MaNGA Pipeline Group'
 __credits__ = [ 'Kyle B. Westfall', 'Michele Cappellari', 'Xihan Ji' ]
 # 'Matthew Bershady', 'Francesco Belfiore', 'Kevin Bundy', 'David Law', 'Renbin Yan',
 # 'Brett H. Andrews', 'Daniel Goddard', 'Cheng Li', 'Taniya Parikh', 'Oliver Steele',

@@ -3,33 +3,40 @@
 """
 Container class that defines a bandpass filter.
 
-*License*:
-    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+Class usage examples
+--------------------
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/par/bandpassfilter.py
+To define an bandpass filter::
 
-*Class usage examples*:
-    To define an bandpass filter::
+    from mangadap.par.bandpassfilter import BandPassFilterPar
+    p = BandPassFilterPar(44, 'Ha', [6483.0,6513.0],
+                         [6623.0,6653.0], restwave=6564.632,
+                         primary=[6557.6,6571.6]) 
 
-        from mangadap.par.bandpassfilter import BandPassFilterPar
-        p = BandPassFilterPar(44, 'Ha', [6483.0,6513.0],
-                             [6623.0,6653.0], restwave=6564.632,
-                             primary=[6557.6,6571.6]) 
+However, this class is mostly to provide a base class used by
+:class:`mangadap.par.emissionmomentsdb.EmissionMomentsDB`,
+:class:`mangadap.par.absorptionindexdb.AbsorptionIndexDB`, and
+:class:`mangadap.par.bandheadindexdb.BandheadIndexDB`; it is not
+really meant to be used as given above.
 
-    However, this class is mostly to provide a base class used by
-    :class:`mangadap.par.emissionmomentsdb.EmissionMomentsDB`,
-    :class:`mangadap.par.absorptionindexdb.AbsorptionIndexDB`, and
-    :class:`mangadap.par.bandheadindexdb.BandheadIndexDB`; it is not
-    really meant to be used as given above.
+Revision history
+----------------
 
-*Revision history*:
     | **18 Mar 2016**: Original implementation by K. Westfall (KBW)
     | **20 Apr 2016**: (KBW) Include measurements
     | **29 Jul 2016**: (KBW) Convert some calls to asarray to atleast_1d
     | **15 Mar 2018**: (KBW) Allow the redshift in the equivalent width
         measurement to be specific to each bandpass.
+
+----
+
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../rstlinks.txt
 """
 
 import warnings

@@ -3,138 +3,122 @@
 r"""
 Defines a class used to store and interface with covariance matrices.
 
-*License*:
-    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+.. todo::
+    - Allow for calculation of the inverse of the covariance matrix.
+    - Instead of 3D covariance cubes being an array of sparse objects,
+      make the whole thing a sparse array.
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/util/covariance.py
+Usage examples
+--------------
 
-*Imports and python version compliance*:
-    ::
+You can calculate the covariance matrix for a given wavelength
+channel in a :class:`mangadap.drpfits.DRPFits` object::
 
-        from __future__ import division
-        from __future__ import print_function
-        from __future__ import absolute_import
-        from __future__ import unicode_literals
-    
-        import sys
-        if sys.version > '3':
-            long = int
-    
-        import numpy
-        from scipy import sparse
-        from astropy.io import fits
-        from matplotlib import pyplot
+    # Access the DRP RSS file
+    from mangadap.drpfits import DRPFits
+    drpf = DRPFits(7495, 12703, 'RSS', read=True)
 
-*Usage examples*:
-    You can calculate the covariance matrix for a given wavelength
-    channel in a :class:`mangadap.drpfits.DRPFits` object::
+    # Calculate a single covariance matrix
+    C = drpf.covariance_matrix(2281)
 
-        # Access the DRP RSS file
-        from mangadap.drpfits import DRPFits
-        drpf = DRPFits(7495, 12703, 'RSS', read=True)
+    # Show the result in an image
+    C.show()
 
-        # Calculate a single covariance matrix
-        C = drpf.covariance_matrix(2281)
+    # Access specific elements
+    print(C[0,0])
 
-        # Show the result in an image
-        C.show()
+    # Convert to a 'dense' array
+    dense_C = C.toarray()
 
-        # Access specific elements
-        print(C[0,0])
+    # Get the triplets of the non-zero elements
+    i, j, v = C.find()
 
-        # Convert to a 'dense' array
-        dense_C = C.toarray()
+    # Write it to disk (clobber existing file)
+    C.write('test_covariance.fits', clobber=True)
 
-        # Get the triplets of the non-zero elements
-        i, j, v = C.find()
+The covariance matrix is stored in "coordinate" format in a fits
+binary table. Since the covariance matrix is symmetric by definition,
+only those non-zero elements in the upper triangle (:math:`C_{ij}`
+where :math:`i\leq j`) are saved (in memory or on disk). You can read
+an existing covariance matrix fits file::
 
-        # Write it to disk (clobber existing file)
-        C.write('test_covariance.fits', clobber=True)
+    from mangadap.util.covariance import Covariance
+    C = Covariance(ifile='test_covariance.fits')
 
-    The covariance matrix is stored in "coordinate" format in a fits
-    binary table.  Since the covariance matrix is symmetric by
-    definition, only those non-zero elements in the upper triangle
-    (:math:`C_{ij}` where :math:`i\leq j`) are saved (in memory or on
-    disk).  You can read an existing covariance matrix fits file::
+You can calculate a set of covariance matrices or the full covariance
+cube::
 
-        from mangadap.util.covariance import Covariance
-        C = Covariance(ifile='test_covariance.fits')
+    # Access the DRP RSS file
+    from mangadap.drpfits import DRPFits
+    drpf = DRPFits(7495, 12703, 'RSS', read=True)
 
-    You can calculate a set of covariance matrices or the full
-    covariance cube::
+    # Calculate the full cube
+    CC = drpf.covariance_cube()             # BEWARE: This may require a LOT of memory
 
-        # Access the DRP RSS file
-        from mangadap.drpfits import DRPFits
-        drpf = DRPFits(7495, 12703, 'RSS', read=True)
+    # Calculate fewer but many covariance matrices
+    channels = [ 0, 1000, 2000, 3000, 4000 ]
+    C = drpf.covariance_cube(channels=channels)
 
-        # Calculate the full cube
-        CC = drpf.covariance_cube()             # BEWARE: This may require a LOT of memory
+    # Access individual elements
+    print(C[0,0,0])
+    print(C[0,0,1000])
 
-        # Calculate fewer but many covariance matrices
-        channels = [ 0, 1000, 2000, 3000, 4000 ]
-        C = drpf.covariance_cube(channels=channels)
+    # Write the full cube, or set of channels
+    CC.write('full_covariance_cube.fits')   # BEWARE: This will be a BIG file
+    C.write('covariance_channel_set.fits')
 
-        # Access individual elements
-        print(C[0,0,0])
-        print(C[0,0,1000])
+Although you can access the data in the covariance matrix as
+explained above, this is generally inefficient because the
+:func:`Covariance.__getitem__` function currently cannot handle
+slices. If you need to perform operations with the covariance matrix,
+you're better off working with the :attr:`Covariance.cov` attribute
+directly. To do this, you won't be able to use the aliasing of the
+channel indices for 3D covariance matrices.
 
-        # Write the full cube, or set of channels
-        CC.write('full_covariance_cube.fits')   # BEWARE: This will be a BIG file
-        C.write('covariance_channel_set.fits')
+The :class:`Covariance` class also allows you to toggle between
+accessing the matrix as a true covariance matrix, or by splitting the
+matrix into its variance and correlation components. For example,::
 
-    Although you can access the data in the covariance matrix as
-    explained above, this is generally inefficient because the
-    :func:`Covariance.__getitem__` function currently cannot handle
-    slices.  If you need to perform operations with the covariance
-    matrix, you're better off working with the :attr:`Covariance.cov`
-    attribute directly.  To do this, you won't be able to use the
-    aliasing of the channel indices for 3D covariance matrices.
+    # Get the covariance matrix for a single wavelength channel
+    from mangadap.drpfits import DRPFits
+    drpf = DRPFits(7495, 12703, 'RSS', read=True)
+    C = drpf.covariance_matrix(2281)
 
-    The :class:`Covariance` class also allows you to toggle between
-    accessing the matrix as a true covariance matrix, or by splitting
-    the matrix into its variance and correlation components.  For
-    example,::
+    # Show the covariance matrix before and after changing it to a
+    # correlation matrix
+    C.show()
+    C.to_correlation()
+    C.show()
+    print(C.is_correlation)
+    C.revert_correlation()
 
-        # Get the covariance matrix for a single wavelength channel
-        from mangadap.drpfits import DRPFits
-        drpf = DRPFits(7495, 12703, 'RSS', read=True)
-        C = drpf.covariance_matrix(2281)
+Covariance matrices that have been converted to correlation matrices
+can be written and read in without issue. See
+:func:`Covariance.write` and :func:`Covariance.read`. For example::
 
-        # Show the covariance matrix before and after changing it to a
-        # correlation matrix
-        C.show()
-        C.to_correlation()
-        C.show()
-        print(C.is_correlation)
-        C.revert_correlation()
+    # Get the covariance matrix for a single wavelength channel
+    import numpy
+    from mangadap.util.covariance import Covariance
+    from mangadap.drpfits import DRPFits
 
-    Covariance matrices that have been converted to correlation matrices
-    can be written and read in without issue.  See
-    :func:`Covariance.write` and :func:`Covariance.read`.  For example::
+    drpf = DRPFits(7495, 12703, 'RSS', read=True)
+    channels = [ 0, 1000, 2000, 3000, 4000 ]
+    Cov = drpf.covariance_cube(channels=channels)
 
-        # Get the covariance matrix for a single wavelength channel
-        import numpy
-        from mangadap.util.covariance import Covariance
-        from mangadap.drpfits import DRPFits
+    Cov.to_correlation()
+    Cov.show(channel=2000)
+    Cov.write('correlation_matrix.fits', clobber=True)
+    Cov.revert_correlation()
 
-        drpf = DRPFits(7495, 12703, 'RSS', read=True)
-        channels = [ 0, 1000, 2000, 3000, 4000 ]
-        Cov = drpf.covariance_cube(channels=channels)
+    Corr = Covariance(ifile='correlation_matrix.fits')
+    Corr.revert_correlation()
 
-        Cov.to_correlation()
-        Cov.show(channel=2000)
-        Cov.write('correlation_matrix.fits', clobber=True)
-        Cov.revert_correlation()
+    assert not (numpy.abs(numpy.sum(Cov.toarray(channel=2000) 
+                        - Corr.toarray(channel=2000))) > 0.0)
 
-        Corr = Covariance(ifile='correlation_matrix.fits')
-        Corr.revert_correlation()
+Revision history
+----------------
 
-        assert not (numpy.abs(numpy.sum(Cov.toarray(channel=2000) 
-                            - Corr.toarray(channel=2000))) > 0.0)
-
-*Revision history*:
     | **23 Feb 2015**: Original Implementation by K. Westfall (KBW)
     | **04 Aug 2015**: (KBW) Sphinx documentation and minor edits.
     | **29 Mar 2016**: (KBW) Allow the object to flip between a true
@@ -155,21 +139,15 @@ Defines a class used to store and interface with covariance matrices.
         is done by the DRP.  Change read method to :func:`from_fits`
         class method.  Include :func:`from_samples` class method.
 
-.. todo::
-    - Allow for calculation of the inverse of the covariance matrix.
-    - Instead of 3D covariance cubes being an array of sparse objects,
-      make the whole thing a sparse array.
+----
 
-.. _scipy.sparse.csr_matrix: http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html
-.. _scipy.sparse.coo_matrix: http://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.sparse.coo_matrix.html
-.. _scipy.sparse.triu: http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.triu.html
-.. _matplotlib.pyplot.imshow: http://matplotlib.org/api/pyplot_api.html#matplotlib.pyplot.imshow
-.. _astropy.io.fits.Header: http://docs.astropy.org/en/stable/io/fits/api/headers.html#header
-.. _astropy.io.fits.BinTableHDU: http://docs.astropy.org/en/stable/io/fits/api/tables.html#astropy.io.fits.BinTableHDU
-.. _astropy.io.fits.Column: http://docs.astropy.org/en/stable/io/fits/api/tables.html#astropy.io.fits.Column
-.. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
+.. include license and copyright
+.. include:: ../copy.rst
 
+----
 
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../rstlinks.txt
 """
 
 from __future__ import division

@@ -3,17 +3,15 @@
 """
 Implements a wrapper class for pPXF.
 
-*License*:
-    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+.. todo::
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/proc/ppxffit.py
+    Allow new iteration mode that iteratively fits until the velocity is
+    not up against one of the +/- 2000 km/s limits?  Could be useful for
+    poor redshift guesses.
 
-*Class usage examples*:
-        Add examples
+Revision history
+----------------
 
-*Revision history*:
     | **26 Apr 2016**: Moved from spectralfitting.py to its own file by
         K. Westfall (KBW)
     | **05 Jul 2016**: (KBW) V6.0.0 of pPXF does not use the oversample
@@ -44,31 +42,19 @@ Implements a wrapper class for pPXF.
     | **30 Aug 2018**: (KBW) Changed from resample1d to
         :class:`mangadap.util.sampling.Resample`.
 
-.. todo::
+----
 
-    Allow new iteration mode that iteratively fits until the velocity is
-    not up against one of the +/- 2000 km/s limits?  Could be useful for
-    poor redshift guesses.
+.. include license and copyright
+.. include:: ../copy.rst
 
-.. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
-.. _glob.glob: https://docs.python.org/3.4/library/glob.html
-.. _logging.Logger: https://docs.python.org/3/library/logging.html
+----
 
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../rstlinks.txt
 """
-
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
-import sys
-import warnings
-if sys.version > '3':
-    long = int
-
-import logging
-
 import time
+import warnings
+import logging
 
 import numpy
 from scipy import interpolate, fftpack

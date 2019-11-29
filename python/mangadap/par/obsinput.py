@@ -4,27 +4,24 @@ r"""
 Define a parameter instance that holds the input information needed to
 run the DAP for a specific MaNGA observation.
 
-*License*:
-    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+Class usage examples
+--------------------
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/par/obsinput.py
+To define a set of observation parameteters::
 
-*Class usage examples*:
-    To define a set of observation parameteters::
+    from mangadap.par.obsinput import ObsInputPar
+    p = ObsInputPar(plate=7443, ifudesign=12701, mode='CUBE', vel=6139,
+                    vdisp=100, ell=0.3416, pa=150.24, reff=5.70)
 
-        from mangadap.par.obsinput import ObsInputPar
-        p = ObsInputPar(plate=7443, ifudesign=12701, mode='CUBE', vel=6139,
-                        vdisp=100, ell=0.3416, pa=150.24, reff=5.70)
+Or declare the parameter object by reading an `SDSS-style parameter
+file`_:
 
-    Or declare the parameter object by reading an `SDSS-style parameter
-    file`_:
+    from mangadap.par.obsinput import ObsInputPar
+    p = ObsInputPar.from_par_file('mangadap-7443-12701-LOGCUBE.par')
 
-        from mangadap.par.obsinput import ObsInputPar
-        p = ObsInputPar.from_par_file('mangadap-7443-12701-LOGCUBE.par')
+Revision history
+----------------
 
-*Revision history*:
     | **15 Mar 2016**: Original implementation by K. Westfall (KBW)
     | **11 May 2016**: (KBW) Switch to using `pydl.pydlutils.yanny`_
         instead of internal yanny reader.
@@ -33,14 +30,21 @@ run the DAP for a specific MaNGA observation.
     | **11 Nov 2017**: (KBW) Change velocity minimum to -500 km/s to
         match :class:`mangadap.survey.drpcomplete.DRPComplete`
 
-.. _pydl.pydlutils.yanny: http://pydl.readthedocs.io/en/stable/api/pydl.pydlutils.yanny.yanny.html
-.. _SDSS-style parameter file: http://www.sdss.org/dr12/software/par/
+----
 
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../rstlinks.txt
 """
 
-import numpy
-import os.path
+import os
 import warnings
+
+import numpy
 from pydl.pydlutils.yanny import yanny
 
 from .parset import ParSet

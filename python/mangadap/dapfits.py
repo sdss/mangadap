@@ -4,14 +4,13 @@
 Defines a class used to interface with the final maps files produced by
 the MaNGA Data Analysis Pipeline (DAP).
 
-*License*:
-    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+.. todo::
+    - Allow DAPFits to read/access both the MAPS and the LOGCUBE files,
+      not just the former.
 
-*Class usage examples*:
-    Add some usage comments here!
+Revision history
+----------------
 
-*Revision history*:
     | **08 Jun 2016**: Original Implementation by K. Westfall (KBW)
     | **25 Aug 2016**: (KBW) Added :func:`DAPFits.unique_indices`,
         :func:`DAPFits.unique_mask`, and :func:`DAPFits.channel_map`
@@ -28,25 +27,16 @@ the MaNGA Data Analysis Pipeline (DAP).
     | **19 Mar 2018**: (KBW) Mask spectral indices with incomplete band
         coverage as unreliable.
 
-.. todo::
-    - Allow DAPFits to read/access both the MAPS and the LOGCUBE files,
-      not just the former.
+----
 
-.. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
-.. _astropy.io.fits.open: http://docs.astropy.org/en/stable/io/fits/api/files.html#astropy.io.fits.open
-.. _astropy.io.fits.Header: http://docs.astropy.org/en/stable/io/fits/api/headers.html
+.. include license and copyright
+.. include:: ../copy.rst
 
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../rstlinks.txt
 """
-
-from __future__ import print_function
-from __future__ import division
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
-import sys
-if sys.version > '3':
-    long = int
-
 import logging
 import time
 import os

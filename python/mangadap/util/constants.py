@@ -6,19 +6,21 @@ Defines a catch-all class for useful constants.  These are meant to be
 values that are **not** available elsewhere, such as
 `astropy.constants`_.
 
-*License*:
-    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+Revision history
+----------------
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/util/constants.py
-
-*Revision history*:
     | **28 May 2015**: Original implementation by K. Westfall (KBW)
     | **01 Jun 2017**: (KBW) Changed attributes to class globals
 
-.. _astropy.constants: http://docs.astropy.org/en/stable/constants/index.html
+----
 
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../rstlinks.txt
 """
 import numpy
 
