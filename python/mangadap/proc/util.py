@@ -8,6 +8,15 @@ Revision history
 
     | **01 Feb 2016**: Original implementation by K. Westfall (KBW)
 
+----
+
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../rstlinks.txt
 """
 import warnings
 import numpy

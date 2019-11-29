@@ -25,7 +25,6 @@ Submodules
    mangadap.util.resolution
    mangadap.util.sampling
    mangadap.util.trace
-   mangadap.util.version
 
 Module contents
 ---------------

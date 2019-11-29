@@ -66,8 +66,8 @@ def masked_pixelized_image(x, y, z, pixelscale=1.0, zmin=None, zmax=None, imshow
                 pyplot.imshow(img, interpolation='nearest', extent=ext, origin='lower')
 
             Note that origin **must** be "lower" when calling
-            `pyplot.imshow`_ on the array produced by this routine for
-            the :math:`x,y` ordering to be as expected!
+            `matplotlib.pyplot.imshow`_ on the array produced by this
+            routine for the :math:`x,y` ordering to be as expected!
         fill_value (float): (Optional) The default value to use for
             pixels without any data.
 

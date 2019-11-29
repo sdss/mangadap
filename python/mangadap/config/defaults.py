@@ -5,6 +5,8 @@ Provides a set of functions that define and return defaults used by the
 MaNGA DAP, such as paths and file names.
 
 Revision history
+----------------
+
     | **23 Apr 2015**: Original implementation by K. Westfall (KBW)
     | **19 May 2015**: (KBW) Documentation and Sphinx tests
     | **20 May 2015**: (KBW) TODO: Change the default names of the par
