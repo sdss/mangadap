@@ -82,6 +82,7 @@ If you use the DAP software and/or its output products, please cite the followin
    :maxdepth: 1
 
    workflow
+   templatelibraries
    spatialcovariance
 
 .. toctree::

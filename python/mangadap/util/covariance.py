@@ -147,7 +147,7 @@ Revision history
 ----
 
 .. include common links, assuming primary doc root is up one directory
-.. include:: ../rstlinks.txt
+.. include:: ../links.rst
 """
 
 from __future__ import division

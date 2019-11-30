@@ -177,7 +177,7 @@ Revision history
 ----
 
 .. include common links, assuming primary doc root is up one directory
-.. include:: ../rstlinks.txt
+.. include:: ../links.rst
 """
 
 import os
@@ -549,6 +549,11 @@ class TemplateLibrary:
             HDUList read from the DAP file
 
     """
+    # Class attribute
+    supported_libraries = ['BC03', 'BPASS', 'M11ELODIE', 'M11MARCS', 'M11MILES', 'M11STELIB',   
+                           'M11STELIBZSOL', 'MASTARHC', 'MILES', 'MILESAVG', 'MILESHC',
+                           'MILESTHIN', 'MIUSCAT', 'MIUSCATTHIN', 'STELIB']
+
     def __init__(self, library_key, tpllib_list=None, dapsrc=None, drpf=None,
                  match_to_drp_resolution=True, velscale_ratio=None, sres=None, velocity_offset=0.0,
                  min_sig_pix=0.0, no_offset=True, spectral_step=None, log=True,
@@ -700,7 +705,10 @@ class TemplateLibrary:
 
     
     def _get_file_list(self):
-        return numpy.sort(glob.glob(self.library['file_search']))
+        files = glob.glob(self.library['file_search'])
+        if len(files) == 0:
+            raise ValueError('Library search string did not find any files!')
+        return numpy.sort(files)
 
 
     def _read_raw(self):
@@ -775,8 +783,8 @@ class TemplateLibrary:
             the template libraries.
 
         Args:
-            npix (int): Number of spectral channels for the output
-                arrays
+            npix (:obj:`int`):
+                Number of spectral channels for the output arrays
 
         """
         if self.hdu is not None:
@@ -800,18 +808,19 @@ class TemplateLibrary:
         # wavelengths
         for i in range(0,self.ntpl):
             if self.library['sres_ext'] is None:
-                wave_, flux_ = readfits_1dspec(self.file_list[i], log10=self.library['log10'])
-                wave[i,0:wave_.size] = numpy.copy(wave_)
-                flux[i,0:wave_.size] = numpy.copy(flux_)
+                wave_, flux_ = read_template_spectrum(self.file_list[i],
+                                                      log10=self.library['log10'])
+                wave[i,:wave_.size] = numpy.copy(wave_)
+                flux[i,:wave_.size] = numpy.copy(flux_)
                 # Set the spectral resolution
                 sres = wave/self.library['fwhm']
             else:
                 wave_, flux_, sres_ = read_template_spectrum(self.file_list[i],
                                                              sres_ext=self.library['sres_ext'],
                                                              log10=self.library['log10'])
-                wave[i,0:wave_.size] = numpy.copy(wave_)
-                flux[i,0:wave_.size] = numpy.copy(flux_)
-                sres[i,0:wave_.size] = numpy.copy(sres_)
+                wave[i,:wave_.size] = numpy.copy(wave_)
+                flux[i,:wave_.size] = numpy.copy(flux_)
+                sres[i,:wave_.size] = numpy.copy(sres_)
 
             if wave_.size != npix:
                 mask[i,wave_.size:] = self.bitmask.turn_on(mask[i,wave_.size:],'NO_DATA')
@@ -825,7 +834,6 @@ class TemplateLibrary:
                 indx = wave[i,:].ravel() > self.library['wave_limit'][1]
                 mask[i,indx] = self.bitmask.turn_on(mask[i,indx], 'WAVE_INVALID')
 
-
         # (Re)Set the HDUList object
         self._reset_hdu(wave, flux, mask, sres, soff)
 
@@ -834,7 +842,6 @@ class TemplateLibrary:
         self.processed = False
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '... done')
-
 
     def _reset_hdu(self, wave, flux, mask, sres, soff):
         r"""
@@ -1178,7 +1185,8 @@ class TemplateLibrary:
         # Normalize the templates to the mean flux value after excluding
         # any flagged pixels.
         if renormalize:
-            indx = numpy.invert(self.bitmask.flagged(mask))
+            indx = numpy.invert(self.bitmask.flagged(mask, flag=['NO_DATA', 'WAVE_INVALID', 
+                                                                 'FLUX_INVALID']))
             if numpy.sum(indx) == 0:
                 if not self.quiet:
                     warnings.warn('All pixels masked.  Unable to renormalize TemplateLibrary.')

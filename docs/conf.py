@@ -37,7 +37,9 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.napoleon',
     'sphinx.ext.mathjax',
-    'sphinx.ext.todo']
+    'sphinx.ext.todo',
+    'sphinx_rtd_theme'
+    ]
 #    ,
 #    'matplotlib.sphinxext.only_directives',
 #    'matplotlib.sphinxext.plot_directive',

@@ -7,12 +7,21 @@ from scipy import interpolate
 from astropy.io import fits
 import astropy.constants
 
-from mangadap.proc.templatelibrary import TemplateLibrary
+from mangadap.proc.templatelibrary import TemplateLibrary, available_template_libraries
 from mangadap.util.sampling import spectrum_velocity_scale, spectral_coordinate_step
 
 import warnings
 warnings.simplefilter("ignore", UserWarning)
 warnings.simplefilter("ignore", RuntimeWarning)
+
+def test_read():
+
+    tpl_list = available_template_libraries()
+
+    for key in TemplateLibrary.supported_libraries:
+        tpl = TemplateLibrary(key, tpllib_list=tpl_list, match_to_drp_resolution=False,
+                              velscale_ratio=1, spectral_step=1e-4, log=True, hardcopy=False)
+    
 
 def test_mileshc():
     tpl = TemplateLibrary('MILESHC', match_to_drp_resolution=False, velscale_ratio=4,

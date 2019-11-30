@@ -43,7 +43,9 @@ follow in the development of the code:
    the high-level classes to generalize interaction and allow them to be
    directly written to their reference fits files with a well formed
    datamodel.
-    
+
+.. _templatelibrary-dev-example:
+
 TemplateLibrary example
 -----------------------
 
@@ -122,11 +124,12 @@ execute the full DAP using a new template library is a matter of setting
 up these configuration files.
 
 However, you can also write scripts that incorporate the DAP
-functionality without the need to add configuration files.  If you had a
-script that used a :class:`mangadap.proc.templatelibary.TemplateLibrary`
-object, you can define a new template library in the code itself using
-the :class:`mangadap.proc.templatelibrary.TemplateLibraryDef`` object.
-The :class:`mangadap.proc.templatelibrary.TemplateLibraryDef`` object is
+functionality without the need to add configuration files.  Assume you
+have a script that uses a
+:class:`mangadap.proc.templatelibary.TemplateLibrary` object, you can
+define a new template library in the code itself using the
+:class:`mangadap.proc.templatelibrary.TemplateLibraryDef`` object.  The
+:class:`mangadap.proc.templatelibrary.TemplateLibraryDef`` object is
 actually the product of the parsed configuration file within the main
 DAP code.  For example:
 
