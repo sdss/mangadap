@@ -146,8 +146,7 @@ class ArtifactDB(ParDatabase):
         # Get the details of the selected database
         self.database = select_proc_method(database_key, SpectralFeatureDBDef,
                                            method_list=artdb_list,
-                                           available_func=available_artifact_databases,
-                                           dapsrc=dapsrc)
+                                           available_func=available_artifact_databases)
         
         # Check that the database exists
         if not os.path.isfile(self.database['file_path']):

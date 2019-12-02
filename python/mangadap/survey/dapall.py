@@ -238,8 +238,7 @@ class DAPall:
         if key == 'None':
             return 'None', None
         db = select_proc_method(key, EmissionLineMomentsDef,
-                                available_func=available_emission_line_moment_databases,
-                                dapsrc=dapsrc)
+                                available_func=available_emission_line_moment_databases)
         return db['passbands'], EmissionMomentsDB(db['passbands'], dapsrc=dapsrc).channel_names()
 
     @staticmethod
@@ -247,8 +246,7 @@ class DAPall:
         if key == 'None':
             return 'None', None
         db = select_proc_method(key, EmissionLineModelDef,
-                                available_func=available_emission_line_modeling_methods,
-                                dapsrc=dapsrc)
+                                available_func=available_emission_line_modeling_methods)
         return db['emission_lines'], \
                     EmissionLineDB(db['emission_lines'], dapsrc=dapsrc).channel_names()
 
@@ -257,7 +255,7 @@ class DAPall:
         if key == 'None':
             return 0, 'None', 'None', None
         db = select_proc_method(key, SpectralIndicesDef,
-                                available_func=available_spectral_index_databases, dapsrc=dapsrc)
+                                available_func=available_spectral_index_databases)
         absdb = AbsorptionIndexDB(db['absindex'], dapsrc=dapsrc)
         bhddb = BandheadIndexDB(db['bandhead'], dapsrc=dapsrc)
         nindx = absdb.nindx + bhddb.nindx

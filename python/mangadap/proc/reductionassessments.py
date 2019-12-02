@@ -387,9 +387,7 @@ class ReductionAssessment:
         """
         self.method = select_proc_method(method_key, ReductionAssessmentDef,
                                          method_list=method_list,
-                                         available_func=available_reduction_assessments,
-                                         dapsrc=dapsrc)
-
+                                         available_func=available_reduction_assessments)
 
     def _set_paths(self, directory_path, dapver, analysis_path, output_file):
         """

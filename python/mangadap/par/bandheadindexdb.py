@@ -150,8 +150,7 @@ class BandheadIndexDB(ParDatabase):
         # Get the details of the selected database
         self.database = select_proc_method(database_key, SpectralFeatureDBDef,
                                            method_list=indxdb_list,
-                                           available_func=available_bandhead_index_databases,
-                                           dapsrc=dapsrc)
+                                           available_func=available_bandhead_index_databases)
         
         # Check that the database exists
         if not os.path.isfile(self.database['file_path']):

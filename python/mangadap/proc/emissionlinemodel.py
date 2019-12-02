@@ -376,8 +376,7 @@ class EmissionLineModel:
         """
         # Grab the specific method
         return select_proc_method(method_key, EmissionLineModelDef, method_list=method_list,
-                                  available_func=available_emission_line_modeling_methods,
-                                  dapsrc=dapsrc)
+                                  available_func=available_emission_line_modeling_methods)
 
 
     def _set_paths(self, directory_path, dapver, analysis_path, output_file):

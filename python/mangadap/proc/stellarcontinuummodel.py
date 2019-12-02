@@ -411,8 +411,7 @@ class StellarContinuumModel:
         """
         # Grab the specific method
         return select_proc_method(method_key, StellarContinuumModelDef, method_list=method_list,
-                                  available_func=available_stellar_continuum_modeling_methods,
-                                  dapsrc=dapsrc)
+                                  available_func=available_stellar_continuum_modeling_methods)
 
 
     def _fill_method_par(self, dapsrc=None, dapver=None, analysis_path=None, tpl_symlink_dir=None):

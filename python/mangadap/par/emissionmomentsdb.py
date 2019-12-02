@@ -144,8 +144,7 @@ class EmissionMomentsDB(ParDatabase):
         # Get the details of the selected database
         self.database = select_proc_method(database_key, SpectralFeatureDBDef,
                                            method_list=emldb_list,
-                                       available_func=available_emission_bandpass_filter_databases,
-                                           dapsrc=dapsrc)
+                                       available_func=available_emission_bandpass_filter_databases)
 #        print(self.database['key'])
 #        print(self.database['file_path'])
         

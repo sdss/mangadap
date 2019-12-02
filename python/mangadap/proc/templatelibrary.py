@@ -647,7 +647,7 @@ class TemplateLibrary:
         """
         # Get the details of the selected template library
         return select_proc_method(library_key, TemplateLibraryDef, method_list=tpllib_list,
-                                  available_func=available_template_libraries, dapsrc=dapsrc)
+                                  available_func=available_template_libraries)
 
     def _can_set_paths(self, directory_path, drpf, processed_file, quiet=False):
         # Check that the directory_path can be set

@@ -65,7 +65,7 @@ def HDUList_mask_wavelengths(hdu, bitmask, bitmask_flag, wave_limits, wave_ext='
     return hdu
 
 
-def select_proc_method(method_key, method_type, method_list=None, available_func=None, dapsrc=None):
+def select_proc_method(method_key, method_type, method_list=None, available_func=None):
     r"""
     Select a method from a list.  One of method_list or available_func
     must be provided.
@@ -81,9 +81,6 @@ def select_proc_method(method_key, method_type, method_list=None, available_func
             returns a list of default methods in place of *method_list*.
             For example, see
             :func:`mangadap.proc.templatelibrary.available_template_libraries`.
-        dapsrc (str): (**Optional**) Root path to the DAP source
-            directory.  If not provided, the default is defined by
-            :func:`mangadap.config.defaults.dap_source_dir`.
 
     Returns:
         object: An object with base class :class:`mangadap.par.ParSet`,
@@ -103,7 +100,7 @@ def select_proc_method(method_key, method_type, method_list=None, available_func
         if not callable(available_func):
             raise TypeError('If not providing a list, must provide a callable function to ' \
                             'produce the default list of methods/databases/libraries.')
-        method_list = available_func(dapsrc=dapsrc)
+        method_list = available_func()
 
 #    for m in method_list:
 #        print(m['key'])

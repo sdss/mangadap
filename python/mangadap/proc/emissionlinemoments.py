@@ -292,8 +292,7 @@ class EmissionLineMoments:
         # Grab the specific database
         self.database = select_proc_method(database_key, EmissionLineMomentsDef,
                                            method_list=database_list,
-                                           available_func=available_emission_line_moment_databases,
-                                           dapsrc=dapsrc)
+                                           available_func=available_emission_line_moment_databases)
 
         # Instantiate the artifact and bandpass filter database
         self.artdb = None if self.database['artifacts'] is None else \

@@ -483,7 +483,7 @@ class SpatiallyBinnedSpectra:
         """
         # Grab the specific method
         return select_proc_method(method_key, SpatiallyBinnedSpectraDef, method_list=method_list,
-                                  available_func=available_spatial_binning_methods, dapsrc=dapsrc)
+                                  available_func=available_spatial_binning_methods)
 
 
     def _fill_method_par(self, good_spec):

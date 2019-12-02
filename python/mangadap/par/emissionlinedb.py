@@ -261,22 +261,39 @@ class EmissionLinePar(ParSet):
             raise ValueError('Bandpasses must be two-element vectors!')
 
 
+#def available_emission_line_databases(dapsrc=None):
+#    """
+#    Return the list of database keys and file names for the available
+#    emission-line databases.  The currently available libraries are:
+#    
+#    This is a simple wrapper for
+#    :func:`mangadap.par.spectralfeaturedb.available_spectral_feature_databases`.
+#
+#    Args:
+#        dapsrc (str): (**Optional**) Root path to the DAP source
+#            directory.  If not provided, the default is defined by
+#            :func:`mangadap.config.defaults.dap_source_dir`.
+#
+#    Returns:
+#        list: An list of :func:`SpectralFeatureDBDef` objects, each of
+#        which defines a unique emission-line database.
+#
+#    .. todo::
+#        - Add backup function for Python 2.
+#        - Somehow add a python call that reads the databases and
+#          constructs the table for presentation in sphinx so that the
+#          text above doesn't have to be edited with changes in the
+#          available databases.
+#        
+#    """
+#    return available_spectral_feature_databases('emission_lines', dapsrc=dapsrc)
+
+
 def available_emission_line_databases(dapsrc=None):
     """
     Return the list of database keys and file names for the available
     emission-line databases.  The currently available libraries are:
     
-    +-------------+-----+----------------------------------+
-    |         KEY |   N | Description                      |
-    +=============+=====+==================================+
-    |    STANDARD |  62 |  Original line list with nearly  |
-    |             |     |  all strong and weak lines       |
-    +-------------+-----+----------------------------------+
-    |      STRONG |  13 | A subset of mostly strong lines. |
-    +-------------+-----+----------------------------------+
-    |    EXTENDED |  21 |  Include HeI/II, SIII, Hgam-Heps |
-    +-------------+-----+----------------------------------+
-
     This is a simple wrapper for
     :func:`mangadap.par.spectralfeaturedb.available_spectral_feature_databases`.
 
@@ -329,8 +346,7 @@ class EmissionLineDB(ParDatabase):
         # Get the details of the selected database
         self.database = select_proc_method(database_key, SpectralFeatureDBDef,
                                            method_list=emldb_list,
-                                           available_func=available_emission_line_databases,
-                                           dapsrc=dapsrc)
+                                           available_func=available_emission_line_databases)
         
         # Check that the database exists
         if not os.path.isfile(self.database['file_path']):

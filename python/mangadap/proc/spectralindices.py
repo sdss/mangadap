@@ -660,8 +660,7 @@ class SpectralIndices:
         # Grab the specific database
         self.database = select_proc_method(database_key, SpectralIndicesDef,
                                            method_list=database_list,
-                                           available_func=available_spectral_index_databases,
-                                           dapsrc=dapsrc)
+                                           available_func=available_spectral_index_databases)
 
         # Instantiate the artifact, absorption-index, and bandhead-index
         # databases
