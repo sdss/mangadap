@@ -1,8 +1,8 @@
 
 .. _spatialcovariance:
 
-Spatial Covariance in MaNGA Datacubes
-=====================================
+Spatial Covariance
+==================
 
 In progress...
 

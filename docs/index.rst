@@ -83,6 +83,8 @@ If you use the DAP software and/or its output products, please cite the followin
 
    workflow
    templatelibraries
+   emissionlines
+   spectralindices
    spatialcovariance
 
 .. toctree::
@@ -105,6 +107,17 @@ If you use the DAP software and/or its output products, please cite the followin
 The MaNGA DAP software was written to be more broadely useful.  The
 pages above provide some examples of how the code can be used more
 generally, beyond its application to MaNGA.
+
+.. toctree::
+   :caption: Utilities
+   :maxdepth: 1
+
+   parameters
+   bitmasks
+   covariance
+   resampling
+   resolution
+   smoothing
 
 .. toctree::
    :caption: API

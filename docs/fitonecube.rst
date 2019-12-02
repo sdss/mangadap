@@ -1,8 +1,8 @@
 
 .. _fitonecube:
 
-How to Fit One MaNGA Datacube
-=============================
+How to Fit One Datacube
+=======================
 
 TBW
 

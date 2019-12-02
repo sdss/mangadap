@@ -1,8 +1,8 @@
 
 .. _metadatamodel:
 
-DAP Metadata Model
-==================
+Metadata Model
+==============
 
 .. _metadatamodel-maskbits:
 
@@ -18,7 +18,7 @@ relevant file from the public SDSS SVN repository using the python
 If you're unfamiliar with maskbits, see the `SDSS Primer
 <http://www.sdss.org/dr15/algorithms/bitmasks/>`_
 
-See :ref:`bitmasks` for examples of how to use the mask bits.
+See :ref:`gettingstarted-bitmasks` for examples of how to use the mask bits.
 
 .. note::
 

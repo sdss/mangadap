@@ -433,7 +433,7 @@ and the model emission-line spectrum using
     pyplot.step(wave, resid, where='mid', color='0.5', lw=0.5)
     pyplot.show()
 
-.. _bitmasks:
+.. _gettingstarted-bitmasks:
 
 Using the pixel/spaxel masks
 ----------------------------
