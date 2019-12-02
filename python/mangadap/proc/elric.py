@@ -3,6 +3,12 @@
 """
 Implements an emission-line profile fitting class.
 
+.. warning::
+
+    Although it may still be possible to use :class:`Elric`, it is
+    currently not actively used by the survey-level operation of the
+    MaNGA DAP. See instead :class:`mangadap.proc.sasuke.Sasuke`.
+
 Revision history
 ----------------
 
@@ -95,7 +101,7 @@ class LineProfileFit:
             polynomial to include in the model for the baseline trend in
             y below the fitted line profile(s).
         error (1D array): (**Optional**) Error in the dependent
-            variables.  If not provided, no error weighting is peformed
+            variables.  If not provided, no error weighting is performed
             during the fitting process, and the covariance *will not* be
             constructed.
         mask (1D array): (**Optional**) Boolean array used to ignore

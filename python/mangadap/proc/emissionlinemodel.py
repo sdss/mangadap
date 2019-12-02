@@ -277,11 +277,10 @@ class EmissionLineModel:
         quiet (bool): Suppress all terminal and logging output.
 
     """
-#    @profile
     def __init__(self, method_key, binned_spectra, stellar_continuum=None,
                  emission_line_moments=None, redshift=None, dispersion=None, minimum_error=None,
-                 method_list=None, artifact_list=None, ism_line_list=None,
-                 emission_line_db_list=None, dapsrc=None, dapver=None, analysis_path=None,
+                 method_list=None, artifact_list=None, ism_line_path=None,
+                 emission_line_db_path=None, dapsrc=None, dapver=None, analysis_path=None,
                  directory_path=None, output_file=None, hardcopy=True, clobber=False,
                  checksum=False, loggers=None, quiet=False):
 
@@ -300,14 +299,15 @@ class EmissionLineModel:
         else:
             # Mask ISM lines if a list is provided -- KHRR
             # use nsigma=2.0 to avoid masking HeI
-            self.pixelmask = SpectralPixelMask(artdb=self.artdb, \
-                                               emldb=EmissionLineDB(self.method['ism_mask'],
-                                                                    emldb_list=ism_line_list),
-                                               nsig=2.0)
+            self.pixelmask = SpectralPixelMask(artdb=self.artdb,
+                                               emldb=EmissionLineDB.from_key(
+                                                        self.method['ism_mask'],
+                                                        directory_path=ism_line_path),
+                                               nsig=2.0)A
         # ... and the emission-line database
         self.emldb = None if self.method['emission_lines'] is None else \
-                        EmissionLineDB(self.method['emission_lines'],
-                                       emldb_list=emission_line_db_list, dapsrc=dapsrc)
+                        EmissionLineDB.from_key(self.method['emission_lines'],
+                                                directory_path=emission_line_db_path)
 
         self.neml = None if self.emldb is None else self.emldb.neml
 

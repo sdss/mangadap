@@ -205,7 +205,7 @@ def available_stellar_continuum_modeling_methods(dapsrc=None):
         artifacts = None if cnfg['artifact_mask'] is None else \
                         ArtifactDB(cnfg['artifact_mask'], dapsrc=dapsrc)
         emission_lines = None if cnfg['emission_line_mask'] is None else \
-                            EmissionLineDB(cnfg['emission_line_mask'], dapsrc=dapsrc)
+                            EmissionLineDB.from_key(cnfg['emission_line_mask'])
         waverange = cnfg.getlist('waverange', evaluate=True)
         minimum_snr = cnfg.getfloat('minimum_snr', default=0.0)
 

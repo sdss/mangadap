@@ -127,7 +127,7 @@ class SpectralPixelMask(PixelMask):
     """
     def __init__(self, artdb=None, emldb=None, waverange=None, nsig=None):
         if artdb is not None and not isinstance(artdb, ArtifactDB):
-            raise TypeError('Must provide EmissionLineDB for emission-lines to mask.')
+            raise TypeError('Must provide an ArtifactDB for artifacts to mask.')
         self.artdb = artdb
 
         if emldb is not None and not isinstance(emldb, EmissionLineDB):

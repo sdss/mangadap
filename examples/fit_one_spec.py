@@ -99,7 +99,8 @@ if __name__ == '__main__':
     # Fit the stellar continuum
 
     # Mask the 5577 sky line and the emission lines
-    sc_pixel_mask = SpectralPixelMask(artdb=ArtifactDB('BADSKY'), emldb=EmissionLineDB('ELPFULL'))
+    sc_pixel_mask = SpectralPixelMask(artdb=ArtifactDB('BADSKY'),
+                                      emldb=EmissionLineDB.from_key('ELPFULL'))
 
     # Construct the template library
     sc_tpl = TemplateLibrary(sc_tpl_key, match_to_drp_resolution=False,
@@ -179,7 +180,7 @@ if __name__ == '__main__':
     el_pixel_mask = SpectralPixelMask(artdb=ArtifactDB('BADSKY'))
 
     # Read the emission line fitting database
-    emldb = EmissionLineDB(elfit_key)
+    emldb = EmissionLineDB.from_key(elfit_key)
 
     # Instantiate the fitting class
     emlfit = Sasuke(EmissionLineModelBitMask())

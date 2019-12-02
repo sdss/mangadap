@@ -247,8 +247,7 @@ class DAPall:
             return 'None', None
         db = select_proc_method(key, EmissionLineModelDef,
                                 available_func=available_emission_line_modeling_methods)
-        return db['emission_lines'], \
-                    EmissionLineDB(db['emission_lines'], dapsrc=dapsrc).channel_names()
+        return db['emission_lines'], EmissionLineDB.from_key(db['emission_lines']).channel_names()
 
     @staticmethod
     def _spectral_index_db_info(key, dapsrc=None):
