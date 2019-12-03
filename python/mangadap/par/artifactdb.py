@@ -17,6 +17,7 @@ Revision history
     | **01 Dec 2016**: (KBW) Relocated from proc to par.
     | **02 Dec 2019**: (KBW) Completely revamped to use the new base
         class.
+
 ----
 
 .. include license and copyright

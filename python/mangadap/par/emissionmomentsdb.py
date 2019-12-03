@@ -40,6 +40,7 @@ Revision history
     | **06 Oct 2017**: (KBW) Add function to return channel names.
     | **02 Dec 2019**: (KBW) Significantly reworked to use the new
         base class.
+
 ----
 
 .. include license and copyright
