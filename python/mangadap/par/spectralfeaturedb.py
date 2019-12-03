@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 """
 
-Container class for databases of spectral features.  This is the base
-class used by :class:`mangadap.par.artifactdb.ArtifactDB`,
+Container class for databases of spectral features. This implements
+the base class used by :class:`mangadap.par.artifactdb.ArtifactDB`,
 :class:`mangadap.par.emissionlinedb.EmissionLineDB`,
 :class:`mangadap.par.emissionmomentsdb.EmissionMomentsDB`,
 :class:`mangadap.par.absorptionindexdb.AbsorptionIndexDB`, and
@@ -15,6 +15,8 @@ Revision history
     | **18 Mar 2016**: Original implementation by K. Westfall (KBW)
     | **25 Feb 2017**: (KBW) Change to using
         :class:`mangadap.util.parser.DefaultConfig`
+    | **02 Dec 2019**: (KBW) Significantly reworked to provide a more
+        useful and user-friendly base class.
 
 ----
 
@@ -31,102 +33,134 @@ import os
 import glob
 import numpy
 
-from .parset import ParSet
-from ..config.defaults import dap_source_dir
+from pydl.pydlutils.yanny import yanny
+
+from .parset import ParDatabase
 from ..util.parser import DefaultConfig
+from ..proc import util
 
-# Add strict versioning
-# from distutils.version import StrictVersion
-
-class SpectralFeatureDBDef(ParSet):
+class SpectralFeatureDB(ParDatabase):
     """
-    Class with parameters used to define an absorption-line index
-    database.  Options and defaults in ParSet base class are set to
-    None.
-    """
-    def __init__(self, key, file_path):
+    Basic container class for the parameters databases of spectral
+    features.  This is the base class for all of the following:
 
-        pars =     [ 'key', 'file_path' ]
-        values =   [   key,   file_path ]
-        defaults = [  None,        None ]
-        dtypes =   [   str,         str ]
+        - class used by :class:`mangadap.par.artifactdb.ArtifactDB`
+        - :class:`mangadap.par.emissionlinedb.EmissionLineDB`
+        - :class:`mangadap.par.emissionmomentsdb.EmissionMomentsDB`
+        - :class:`mangadap.par.absorptionindexdb.AbsorptionIndexDB`
+        - :class:`mangadap.par.bandheadindexdb.BandheadIndexDB`
+    
+    See :class:`mangadap.parset.ParDatabase` for additional attributes.
 
-        ParSet.__init__(self, pars, values=values, defaults=defaults, dtypes=dtypes)
+    Each derived class must define its own default directory that
+    contains the relevant databases, the class that defines the base
+    :class:`mangadap.par.parset.ParSet` for each
+    :class:`mangadap.par.parset.ParDatabase` entry, and the method
+    that parses the parameter file into the parameter list.
 
-
-def validate_spectral_feature_config(cnfg):
-    """ 
-    Validate the :class:`mangadap.util.parser.DefaultConfig` object with
-    the spectral-feature database parameters.
+    The primary instantiation requires the SDSS parameter file. To
+    instantiate using a keyword (and optionally a directory that
+    holds the parameter files), use :func:`from_key`.
 
     Args:
-        cnfg (:class:`mangadap.util.parser.DefaultConfig`): Object with
-            spectral-feature database parameters.
+        parfile (:obj:`str`):
+            The SDSS parameter file with the emission-line database.
 
-    Raises:
-        KeyError: Raised if required keyword does not exist.
-
+    Attributes:
+        key (:obj:`str`):
+            Database signifying keyword
+        file (:obj:`str`):
+            File with the emission-line data
+        size (:obj:`int`):
+            Number of elements in the database. 
     """
-    # Check for required keywords
-    for k in [ 'key', 'file_path']:
-        if k not in cnfg:
-            raise KeyError('No keyword \'{0}\' in spectral feature config!'.format(k))
+    default_data_dir = None
+    def __init__(self, parfile):
+        # TODO: The approach here (read using yanny, set to par
+        # individually, then covert back to record array using
+        # ParDatabase) is stupid...
 
+        if not os.path.isfile(parfile):
+            raise FileNotFoundError('{0} does not exist!'.format(parfile))
 
-def available_spectral_feature_databases(sub_directory, dapsrc=None):
-    """
-    Generic routine for finding available spectral-feature database
-    definitions in the config directory path.
+        self.key = util.get_database_key(parfile)
+        self.file = parfile
+        self.size = None
 
-    .. warning::
-        Function is currently only valid for Python 3.2 or greater!
+        ParDatabase.__init__(self, self._parse_yanny())
 
-    Args:
-        dapsrc (str): (Optional) Root path to the DAP source
-            directory.  If not provided, the default is defined by
-            :func:`mangadap.config.defaults.dap_source_dir`.
+        # Ensure that all indices are unique
+        if len(numpy.unique(self.data['index'])) != self.size:
+            raise ValueError('Database indices for {0} are not all unique!'.format(self.key))
 
-    Returns:
-        list: An list of :class:`SpectralFeatureDBDef` objects.
+    def _parse_yanny(self):
+        raise NotImplementedError('_parse_yanny not defined for {0}.'.format(
+                                    self.__class__.__name__))
 
-    Raises:
-        NotADirectoryError: Raised if the provided or default
-            *dapsrc* is not a directory.
-        FileNotFoundError: Raised if the database parameter file is not
-            found.
-        KeyError: Raised if the keywords are not all unique.
-        NameError: Raised if either ConfigParser or
-            ExtendedInterpolation are not correctly imported.  The
-            latter is a *Python 3 only module*!
+    @classmethod
+    def default_path(cls):
+        """
+        Return the default path with the emission-line databases.
+        """
+        if cls.default_data_dir is None:
+            raise ValueError('Default data directory is not defined for {0} objects.'.format(
+                                cls.__class__.__name__))
+        return os.path.join(os.environ['MANGADAP_DIR'], 'data', cls.default_data_dir)
 
-    .. todo::
-        - Add backup function for Python 2.
-    """
-    # Check the source directory exists
-    dapsrc = dap_source_dir() if dapsrc is None else str(dapsrc)
-    if not os.path.isdir(dapsrc):
-        raise NotADirectoryError('{0} does not exist!'.format(dapsrc))
+    @classmethod
+    def available_databases(cls, directory_path=None):
+        """
+        Return the list of available database files.
 
-    # Check the configuration files exist
-    ini_path = os.path.join(dapsrc, 'python/mangadap/config', sub_directory, '*.ini')
-    ini_files = glob.glob(ini_path)
-    if len(ini_files) == 0:
-        raise IOError('Could not find any configuration files in {0} !'.format(ini_path))
+        Args:
+            directory_path (:obj:`str`, optional):
+                 Root path with the database files. If None, uses the
+                 default directory defined by :func:`default_path`.
 
-    # Build the list of library definitions
-    databases = []
-    for f in ini_files:
-        # Read and validate the config file
-        cnfg = DefaultConfig(f=f, interpolate=True)
-        validate_spectral_feature_config(cnfg)
-        # Append the definition of the absorption-line index database
-        databases += [ SpectralFeatureDBDef(key=cnfg['key'], file_path=cnfg['file_path']) ]
+        Returns:
+            :obj:`dict`: A dictionary with the database files and
+            associated keyword.
 
-    # Check the keywords of the libraries are all unique
-    if len(numpy.unique( numpy.array([db['key'] for db in databases]) )) != len(databases):
-        raise KeyError('Spectral-feature database keywords are not all unique!')
+        Raises:
+            NotADirectoryError:
+                Raised if the provided or default directory does not
+                exist.
+            ValueError:
+                Raised if the keywords found for all the ``*.par``
+                files are not unique.
+        """
+        if directory_path is None:
+            directory_path = cls.default_path()
+        if not os.path.isdir(directory_path):
+            raise NotADirectoryError('{0} not found!'.format(directory_path))
+        files = glob.glob(os.path.join(directory_path, '*.par'))
+        keys = [util.get_database_key(f) for f in files]
+        if len(keys) != len(numpy.unique(keys)):
+            raise ValueError('Keys read for par files in {0} are not unique!  Names of par files '
+                             'must be case-insensitive and unique.')
+        return {k: f for k,f in zip(keys, files)}
 
-    # Return the default list of databases
-    return databases
+    @classmethod
+    def from_key(cls, key, directory_path=None):
+        r"""
+        Instantiate the object using a keyword.
+
+        Args:
+            key (:obj:`str`):
+                Keyword selecting the database to use.
+            directory_path (:obj:`str`, optional):
+                Root path with the database parameter files. If None,
+                uses the default set by
+                :func:`default_emission_line_database_path`. Note
+                that the file search includes *any* file with a
+                ``.par`` extension. The root of the file should be
+                case-insensitive.
+        """
+        databases = cls.available_databases(directory_path=directory_path)
+        available_keys = list(databases.keys())
+        if key not in available_keys:
+            raise KeyError('No database found to associate with {0}.'.format(key)
+                            + '  Keywords found are: {0}'.format(available_keys))
+        return cls(databases[key])
 
 

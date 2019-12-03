@@ -45,7 +45,7 @@ import warnings
 import textwrap
 import numpy
 
-class ParSet(object):
+class ParSet:
     """
     Generic base class to handle and manipulate a list of operational
     parameters.  A glorified dictionary that constrains and types its
@@ -482,7 +482,7 @@ class ParSet(object):
             f.write('\n'.join(config_output))
 
 
-class ParDatabase(object):
+class ParDatabase:
     """
     Class used as a list of ParSets in a glorified structured numpy
     array.

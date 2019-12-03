@@ -15,38 +15,23 @@ To define an emission line::
 
 More often, however, you will want to define an emission-line
 database using an SDSS parameter file. To do so, you can use one of
-the default set of available emission-line databases (see
-:func:`available_emission_line_databases`)::
+the default set of available emission-line databases::
 
     from mangadap.par.emissionlinedb import EmissionLineDB
-    p = EmissionLineDB('STRONG')
+    print(EmissionLineDB.available_databases())
+    emldb = EmissionLineDB.from_key('ELPMPL9')
 
-The above call requires that the ``$MANGADAP_DIR`` environmental
-variable is set. If it is not, you can define it's location, as in::
+The above call uses the :func:`EmissionLineDB.from_key` method to
+define the database using its keyword and the database provided with
+the MaNGA DAP source distribution. You can also define the database
+directly for an SDSS-style parameter file::
 
     from mangadap.par.emissionlinedb import EmissionLineDB
-    p = EmissionLineDB('STRONG', dapsrc='/path/to/dap/source')
+    emldb = EmissionLineDB('/path/to/emission/line/database/myeml.par')
 
-Finally, you can create your own `SDSS-style parameter file`_ with
-your own emission lines to fit. Example files are provided in
-``$MANGADAP_DIR/data/emission_lines`` with a companion ``README``
-file. With your own file, you have to point to the file using
-:class:`EmissionLineDBDef`, which you can then pass to
-:class:`EmissionLineDB`::
-
-    from mangadap.par.emissionlinedb import EmissionLineDBDef
-    from mangadap.par.emissionlinedb import EmissionLineDB
-    d = EmissionLineDBDef(key='USER',
-                          file_path='/path/to/parameter/file',
-                          in_vacuum=True)
-    p = EmissionLineDB('USER', emldb_list=d)
-
-The reference frame of the emission-line wavelengths must be defined
-as either vacuum or air, using 'in_vacuum'. It is expected that the
-object spectra to be fit are calibrated to vacuum wavelengths. If
-'in_vacuum' is false, this class will use
-:func:`mangadap.util.idlutils.airtovac` to convert the emission-line
-wavelengths to vacuum.
+The above will read the file and set the database keyword to
+'MYEML' (i.e., the capitalized root name of the ``*.par`` file).
+See :ref:`emissionlines` for the format of the parameter file.
 
 Revision history
 ----------------
@@ -57,6 +42,8 @@ Revision history
     | **13 Jul 2016**: (KBW) Include log_bounded, blueside, and redside
         in database.
     | **06 Oct 2017**: (KBW) Add function to return channel names
+    | **02 Dec 2019**: (KBW) Significantly reworked to use the new
+        base class.
 
 ----
 
@@ -76,17 +63,12 @@ import numpy
 from pydl.goddard.astro import airtovac
 from pydl.pydlutils.yanny import yanny
 
-from .parset import ParSet, ParDatabase
-from .spectralfeaturedb import available_spectral_feature_databases, SpectralFeatureDBDef
+from .parset import ParSet
+from .spectralfeaturedb import SpectralFeatureDB
 from ..proc import util
-from ..config.defaults import dap_source_dir
-
-# Add strict versioning
-# from distutils.version import StrictVersion
-
 
 class EmissionLinePar(ParSet):
-    """
+    r"""
     Parameter object that defines a set of emission-line parameters used
     by various algorithms in the DAP.
 
@@ -261,115 +243,49 @@ class EmissionLinePar(ParSet):
             raise ValueError('Bandpasses must be two-element vectors!')
 
 
-#def available_emission_line_databases(dapsrc=None):
-#    """
-#    Return the list of database keys and file names for the available
-#    emission-line databases.  The currently available libraries are:
-#    
-#    This is a simple wrapper for
-#    :func:`mangadap.par.spectralfeaturedb.available_spectral_feature_databases`.
-#
-#    Args:
-#        dapsrc (str): (**Optional**) Root path to the DAP source
-#            directory.  If not provided, the default is defined by
-#            :func:`mangadap.config.defaults.dap_source_dir`.
-#
-#    Returns:
-#        list: An list of :func:`SpectralFeatureDBDef` objects, each of
-#        which defines a unique emission-line database.
-#
-#    .. todo::
-#        - Add backup function for Python 2.
-#        - Somehow add a python call that reads the databases and
-#          constructs the table for presentation in sphinx so that the
-#          text above doesn't have to be edited with changes in the
-#          available databases.
-#        
-#    """
-#    return available_spectral_feature_databases('emission_lines', dapsrc=dapsrc)
-
-def default_emission_line_database_path():
-    return os.path.join(os.environ['MANGADAP_DIR'], 'data', 'emission_lines')
-
-def available_emission_line_databases(directory_path=None):
-    """
-    Return the list of emission-line database files.
-    
-    This is a simple wrapper for
-    :func:`mangadap.par.spectralfeaturedb.available_spectral_feature_databases`.
-
-    Args:
-        directory_path (:obj:`str`, optional):
-            Root path with the database files. If None, uses the
-            default directory defined by
-            :func:`default_emission_line_database_path`.
-
-    Returns:
-        :obj:`dict`: A dictionary with the database files and
-        associated keyword.
-
-    Raises:
-        NotADirectoryError:
-            Raised if the provided or default directory does not
-            exist.
-        ValueError:
-            Raised if the keywords found for all the ``*.par`` files
-            are not unique.
-    """
-    if directory_path is None:
-        directory_path = default_emission_line_database_path()
-    if not os.path.isdir(directory_path):
-        raise NotADirectoryError('{0} not found!'.format(directory_path))
-    files = glob.glob(os.path.join(directory_path, '*.par'))
-    keys = [util.get_database_key(f) for f in files]
-    if len(keys) != len(numpy.unique(keys)):
-        raise ValueError('Keys read for par files in {0} are not unique!  Names of par files '
-                         'must be case-insensitive and unique.')
-    return {k: f for k,f in zip(keys, files)}
-
-
-class EmissionLineDB(ParDatabase):
-    """
+class EmissionLineDB(SpectralFeatureDB):
+    r"""
     Basic container class for the database of emission-line parameters.
-    See :class:`mangadap.parset.ParDatabase` for additional attributes.
+
+    See the base class for additional attributes.
 
     The primary instantiation requires the SDSS parameter file with
     the emission-line data. To instantiate using a keyword (and
-    optionally a directory that holds the parameter files), use
-    :func:`from_key`.
+    optionally a directory that holds the parameter files), use the
+    :func:`mangadap.par.spectralfeaturedb.SpectralFeatureDB.from_key`
+    class method.
 
     Args:
         parfile (:obj:`str`):
-            The SDSS parameter file with the emission line database.
+            The SDSS parameter file with the emission-line database.
 
     Attributes:
         key (:obj:`str`):
             Database signifying keyword
         file (:obj:`str`):
             File with the emission-line data
-        neml (:obj:`int`):
+        size (:obj:`int`):
             Number of emission lines in the database. 
     """
-    def __init__(self, parfile):
-        # TODO: The approach here (read using yanny, set to par
-        # individually, then covert back to record array using
-        # ParDatabase) is stupid...
+    default_data_dir = 'emission_lines'
+    def _parse_yanny(self):
+        """
+        Parse the yanny file (provided by :attr:`file`) for the emission-line database.
 
-        if not os.path.isfile(parfile):
-            raise FileNotFoundError('{0} does not exist!'.format(parfile))
-
-        self.key = util.get_database_key(parfile)
-        self.file = parfile
-
+        Returns:
+            :obj:`list`: The list of
+            :class:`mangadap.par.parset.ParSet` instances for each
+            line of the database.
+        """
         # Read the yanny file
         par = yanny(filename=self.file, raw=True)
         if len(par['DAPEML']['index']) == 0:
             raise ValueError('Could not find DAPEML entries in {0}!'.format(self.file))
 
         # Setup the array of emission line database parameters
-        self.neml = len(par['DAPEML']['index'])
+        self.size = len(par['DAPEML']['index'])
         parlist = []
-        for i in range(self.neml):
+        for i in range(self.size):
             invac = par['DAPEML']['waveref'][i] == 'vac'
             # Convert None's to +/- inf
             lobnd = [ -numpy.inf if p == 'None' else float(p) \
@@ -392,38 +308,15 @@ class EmissionLineDB(ParDatabase):
                                         else airtovac(numpy.array(par['DAPEML']['blueside'][i])),
                                 redside=par['DAPEML']['redside'][i] if invac \
                                         else airtovac(numpy.array(par['DAPEML']['redside'][i])) ) ]
+        return parlist
 
-        ParDatabase.__init__(self, parlist)
-
-        # Ensure that all indices are unique
-        if len(numpy.unique(self.data['index'])) != self.neml:
-            raise ValueError('Line indices in {0} database are not all unique!'.format(self.key))
-
-    @classmethod
-    def from_key(cls, key, directory_path=None):
-        r"""
-        Instantiate the object using a keyword.
-
-        Args:
-            key (:obj:`str`):
-                Keyword selecting the database to use.
-            directory_path (:obj:`str`, optional):
-                Root path with the database parameter files. If None,
-                uses the default set by
-                :func:`default_emission_line_database_path`. Note
-                that the file search includes *any* file with a
-                ``.par`` extension. The root of the file should be
-                case-insensitive.
-        """
-        databases = available_emission_line_databases(directory_path=directory_path)
-        available_keys = list(databases.keys())
-        if key not in available_keys:
-            raise KeyError('No database found to associate with {0}.'.format(key)
-                            + '  Keywords found are: {0}'.format(available_keys))
-        return cls(databases[key])
-        
     def channel_names(self, dicttype=True):
+        """
+        Return a dictionary with the channel names as the dictionary
+        key and the channel number as the dictionary value. If
+        ``dicttype`` is False, a list is returned with just the
+        string keys.
+        """
         channels = [ '{0}-{1}'.format(self.data['name'][i], int(self.data['restwave'][i])) 
-                            for i in range(self.neml) ]
+                            for i in range(self.size) ]
         return { n:i for i,n in enumerate(channels) } if dicttype else channels
-

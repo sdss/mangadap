@@ -6,40 +6,25 @@ Container class for the database of absorption-line indices to measure.
 Class usage examples
 --------------------
 
-Absorption-line index databases are defined using SDSS parameter
-files. To define a database, you can use one of the default set of
-available absorption-line index databases (see
-:func:`available_absorption_index_databases`)::
+Absorption-line index databases are defined using SDSS parameter files. To
+define a database, you can use one of the default set of available
+absorption-line index databases::
 
     from mangadap.par.absorptionindexdb import AbsorptionIndexDB
-    p = AbsorptionIndexDB('LICK')
+    print(AbsorptionIndexDB.available_databases())
+    absdb = AbsorptionIndexDB.from_key('LICKINDX')
 
-The above call requires that the ``$MANGADAP_DIR`` environmental
-variable is set. If it is not, you can define it's location, as in::
+The above call uses the :func:`AbsorptionIndexDB.from_key` method to
+define the database using its keyword and the database provided with
+the MaNGA DAP source distribution. You can also define the database
+directly for an SDSS-style parameter file::
 
     from mangadap.par.absorptionindexdb import AbsorptionIndexDB
-    p = AbsorptionIndexDB('LICK', dapsrc='/path/to/dap/source')
+    absdb = AbsorptionIndexDB('/path/to/absorption/index/database/myabs.par')
 
-Finally, you can create your own `SDSS-style parameter file`_ with
-your own absorption-line indices to use. Example files are provided
-in ``$MANGADAP_DIR/data/absorption_indices`` with a companion
-``README`` file. With your own file, you have to point to the file
-using :class:`SpectralFeatureDBDef`, which you can then pass to
-:class:`AbsorptionIndexDB`::
-
-    from mangadap.par.spectralfeaturedb import SpectralFeatureDBDef
-    from mangadap.par.absorptionindexdb import AbsorptionIndexDB
-    d = SpectralFeatureDBDef(key='USER',
-                             file_path='/path/to/parameter/file')
-    p = AbsorptionIndexDB('USER', indxdb_list=d)
-
-The reference frame of the absorption-line index can be different
-*for each index*; a column in the SDSS parameter file is used to
-specify either air or vacuum wavelengths. When reading the input
-parameter file, :class:`AbsorptionIndexDB` will convert the input
-index definition to vacuum on a case-by-case basis based on the SDSS
-parameter file entries, meaning :class:`AbsorptionIndexDB` only
-provides vacuum wavelengths.
+The above will read the file and set the database keyword to
+'MYABS' (i.e., the capitalized root name of the ``*.par`` file).
+See :ref:`spectralindices` for the format of the parameter file.
     
 Revision history
 ----------------
@@ -66,88 +51,51 @@ import numpy
 from pydl.goddard.astro import airtovac
 from pydl.pydlutils.yanny import yanny
 
-from .parset import ParDatabase
-from .spectralfeaturedb import available_spectral_feature_databases, SpectralFeatureDBDef
+from .spectralfeaturedb import SpectralFeatureDB
 from ..proc.bandpassfilter import BandPassFilterPar
-from ..proc.util import select_proc_method
 
-# Add strict versioning
-# from distutils.version import StrictVersion
+class AbsorptionIndexDB(SpectralFeatureDB):
+    r"""
+    Basic container class for the database of absorption-line
+    indices.
 
-def available_absorption_index_databases(dapsrc=None):
-    """
-    Return the list of database keys and file names for the available
-    absorption-line index databases.  The currently available databases
-    are:
-    
-    This is a simple wrapper for
-    :func:`mangadap.par.spectralfeaturedb.available_spectral_feature_databases`.
+    See the base class for additional attributes.
 
-    Args:
-        dapsrc (str): (**Optional**) Root path to the DAP source
-            directory.  If not provided, the default is defined by
-            :func:`mangadap.config.defaults.dap_source_dir`.
-
-    Returns:
-        list: An list of :class:`SpectralFeatureDBDef` objects, each of
-        which defines a unique set of absorption-line indices (see
-        :class:`mangadap.proc.bandpassfilter.BandPassFilterPar`).
-
-    .. todo::
-        - Add backup function for Python 2.
-        - Somehow add a python call that reads the databases and
-          constructs the table for presentation in sphinx so that the
-          text above doesn't have to be edited with changes in the
-          available databases.
-
-    """
-    return available_spectral_feature_databases('absorption_indices', dapsrc=dapsrc)
-    
-
-class AbsorptionIndexDB(ParDatabase):
-    """
-    Basic container class for the database of absorption-line index
-    parameters.  See :class:`mangadap.parset.ParDatabase` for additional
-    attributes.
+    The primary instantiation requires the SDSS parameter file with
+    the bandpass data. To instantiate using a keyword (and optionally
+    a directory that holds the parameter files), use the
+    :func:`mangadap.par.spectralfeaturedb.SpectralFeatureDB.from_key`
+    class method.
 
     Args:
-        database_key (str): Keyword selecting the database to use.
-        indxdb_list (list): (**Optional**) List of
-            :class:`SpectralFeatureDBDef` objects that define the
-            parameters required to setup the absorption-line index
-            database.  The *database_key* must select one of the objects
-            in this list.
-        dapsrc (str): (**Optional**) Root path to the DAP source
-            directory.  If not provided, the default is defined by
-            :func:`mangadap.config.defaults.dap_source_dir`.
+        parfile (:obj:`str`):
+            The SDSS parameter file with the database.
 
     Attributes:
-        database (:class:`mangadap.par.ParSet`): Database parameters.
-        nindx (int): Number of artifacts in the database
-
+        key (:obj:`str`):
+            Database signifying keyword
+        file (:obj:`str`):
+            File with the data
+        size (:obj:`int`):
+            Number of features in the database. 
+        dummy (`numpy.ndarray`_):
+            Boolean array flagging bandpasses as dummy placeholders.
     """
-    def __init__(self, database_key, indxdb_list=None, dapsrc=None):
+    default_data_dir = 'absorption_indices'
+    def _parse_yanny(self):
+        """
+        Parse the yanny file (provided by :attr:`file`) for the
+        bandhead database.
 
-        # TODO: The approach here (read using yanny, set to par
-        # individually, then covert back to record array using
-        # ParDatabase) is stupid...
-
-        # Get the details of the selected database
-        self.database = select_proc_method(database_key, SpectralFeatureDBDef,
-                                           method_list=indxdb_list,
-                                           available_func=available_absorption_index_databases)
-        
-        # Check that the database exists
-        if not os.path.isfile(self.database['file_path']):
-            raise FileNotFoundError('Database file {0} does not exist!'.format(
-                                                                    self.database['file_path']))
-
+        Returns:
+            :obj:`list`: The list of
+            :class:`mangadap.par.parset.ParSet` instances for each
+            line of the database.
+        """
         # Read the yanny file
-#        par = yanny(self.database['file_path'])
-        par = yanny(filename=self.database['file_path'], raw=True)
+        par = yanny(filename=self.file, raw=True)
         if len(par['DAPABI']['index']) == 0:
-            raise ValueError('Could not find DAPABI entries in {0}!'.format(
-                                                                    self.database['file_path']))
+            raise ValueError('Could not find DAPABI entries in {0}!'.format(self.file))
 
         # Check if any of the bands are dummy bands and warn the user
         self.dummy = numpy.any(numpy.array(par['DAPABI']['blueside']) < 0, axis=1)
@@ -159,9 +107,9 @@ class AbsorptionIndexDB(ParDatabase):
                                                 numpy.array(par['DAPABI']['index'])[self.dummy]))
 
         # Setup the array of absorption-line index database parameters
-        self.nindx = len(par['DAPABI']['index'])
+        self.size = len(par['DAPABI']['index'])
         parlist = []
-        for i in range(self.nindx):
+        for i in range(self.size):
             invac = par['DAPABI']['waveref'][i] == 'vac'
             comp = par['DAPABI']['component'][i] != 0
             parlist += [ BandPassFilterPar(par['DAPABI']['index'][i],
@@ -175,21 +123,14 @@ class AbsorptionIndexDB(ParDatabase):
                                            units=par['DAPABI']['units'][i],
                                            integrand='flambda',
                                            component=comp) ]
-
-        ParDatabase.__init__(self, parlist)
-
-        # Ensure that all indices are unique
-        if len(numpy.unique(self.data['index'])) != self.nindx:
-            raise ValueError('Indices in {0} database are not all unique!'.format(
-                                                                            self.database['key']))
-
+        return parlist
 
     def channel_names(self, offset=0):
-        channels = {}
-        for i in range(self.nindx):
-#            channels['{0}-{1}'.format(self.data['name'][i], int(self.data['index'][i]))] \
-#                        = i + offset
-            channels[self.data['name'][i]] = i + offset
-        return channels
-
-
+        """
+        Return a dictionary with the channel names as the dictionary
+        key and the channel number as the dictionary value. An
+        ``offset`` can be added to the channel number; i.e., if the
+        offset is 2, the channel numbers will be a running number
+        starting with 2.
+        """
+        return {self.data['name'][i] : i + offset for i in range(self.size)}
