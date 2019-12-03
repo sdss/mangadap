@@ -246,7 +246,7 @@ class EmissionLineMoments:
         self._define_databases(database_key, database_list=database_list,
                                artifact_list=artifact_list, bandpass_list=bandpass_list)
 
-        self.nmom = self.momdb.nsets
+        self.nmom = self.momdb.size
 
         self.binned_spectra = None
         self.stellar_continuum = None
@@ -284,8 +284,8 @@ class EmissionLineMoments:
         return self.hdu[key]
 
 
-    def _define_databases(self, database_key, database_list=None, artifact_list=None,
-                          bandpass_list=None, dapsrc=None):
+    def _define_databases(self, database_key, database_list=None, artifact_path=None,
+                          bandpass_path=None, dapsrc=None):
         r"""
         Select the database of bandpass filters.
         """
@@ -296,12 +296,12 @@ class EmissionLineMoments:
 
         # Instantiate the artifact and bandpass filter database
         self.artdb = None if self.database['artifacts'] is None else \
-                    ArtifactDB(self.database['artifacts'], artdb_list=artifact_list, dapsrc=dapsrc)
+                    ArtifactDB.from_key(self.database['artifacts'], directory_path=artifact_path)
         self.pixelmask = SpectralPixelMask(artdb=self.artdb)
 
         self.momdb = None if self.database['passbands'] is None else \
-                EmissionMomentsDB(self.database['passbands'], emldb_list=bandpass_list,
-                                  dapsrc=dapsrc)
+                EmissionMomentsDB.from_key(self.database['passbands'],
+                                           directory_path=bandpass_path)
 
 
     def _set_paths(self, directory_path, dapver, analysis_path, output_file):
@@ -852,7 +852,7 @@ class EmissionLineMoments:
 
         # Initialize the output data
         nspec = _flux.shape[0]
-        nmom = momdb.nsets
+        nmom = momdb.size
         measurements = init_record_array(nspec, EmissionLineMoments.output_dtype(nmom,
                                                                                  bitmask=bitmask))
 

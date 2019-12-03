@@ -76,11 +76,6 @@ from .spectralstack import SpectralStackPar, SpectralStack
 from .util import select_proc_method, replace_with_data_from_nearest_coo
 
 from matplotlib import pyplot
-#from memory_profiler import profile
-
-# Add strict versioning
-# from distutils.version import StrictVersion
-
 
 class SpatiallyBinnedSpectraDef(ParSet):
     """

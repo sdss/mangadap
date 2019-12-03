@@ -46,7 +46,8 @@ def test_sasuke():
     tpl_sres = numpy.mean(tpl['SPECRES'].data, axis=0)
 
     # Get the pixel mask
-    pixelmask = SpectralPixelMask(artdb=ArtifactDB('BADSKY'), emldb=EmissionLineDB('ELPFULL'))
+    pixelmask = SpectralPixelMask(artdb=ArtifactDB.from_key('BADSKY'),
+                                  emldb=EmissionLineDB.from_key('ELPFULL'))
 
     # Instantiate the fitting class
     ppxf = PPXFFit(StellarContinuumModelBitMask())
@@ -60,10 +61,10 @@ def test_sasuke():
                    obj_sres=hdu['SRES'].data, degree=8, moments=2)
 
     # Mask the 5577 sky line
-    pixelmask = SpectralPixelMask(artdb=ArtifactDB('BADSKY'))
+    pixelmask = SpectralPixelMask(artdb=ArtifactDB.from_key('BADSKY'))
 
     # Read the emission line fitting database
-    emldb = EmissionLineDB('ELPMILES')
+    emldb = EmissionLineDB.from_key('ELPMILES')
     assert emldb['name'][18] == 'Ha', 'Emission-line database names or ordering changed'
 
     # Instantiate the fitting class

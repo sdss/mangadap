@@ -239,7 +239,7 @@ class DAPall:
             return 'None', None
         db = select_proc_method(key, EmissionLineMomentsDef,
                                 available_func=available_emission_line_moment_databases)
-        return db['passbands'], EmissionMomentsDB(db['passbands'], dapsrc=dapsrc).channel_names()
+        return db['passbands'], EmissionMomentsDB.from_key(db['passbands']).channel_names()
 
     @staticmethod
     def _emission_line_db_info(key, dapsrc=None):
@@ -255,12 +255,12 @@ class DAPall:
             return 0, 'None', 'None', None
         db = select_proc_method(key, SpectralIndicesDef,
                                 available_func=available_spectral_index_databases)
-        absdb = AbsorptionIndexDB(db['absindex'], dapsrc=dapsrc)
-        bhddb = BandheadIndexDB(db['bandhead'], dapsrc=dapsrc)
-        nindx = absdb.nindx + bhddb.nindx
-        units = numpy.array(absdb['units'].tolist() + ['']*bhddb.nindx)
+        absdb = AbsorptionIndexDB.from_key(db['absindex'])
+        bhddb = BandheadIndexDB.from_key(db['bandhead'])
+        nindx = absdb.size + bhddb.size
+        units = numpy.array(absdb['units'].tolist() + ['']*bhddb.size)
         channels = absdb.channel_names()
-        channels.update(bhddb.channel_names(offset=absdb.nindx))
+        channels.update(bhddb.channel_names(offset=absdb.size))
         if len(channels) != nindx:
             raise ValueError('Spectral index channel names not unique!')
         return db['absindex'], db['bandhead'], channels, units

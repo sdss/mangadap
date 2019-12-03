@@ -22,7 +22,7 @@ construction would be::
     wave = numpy.logspace(*(numpy.log10([3600,10300]), 4563)
     sigma_inst = 30                     # Instrumental resolution in km/s
 
-    tpl = EmissionLineTemplates(wave, sigma_inst, emldb=EmissionLineDB('ELPMILES'))
+    tpl = EmissionLineTemplates(wave, sigma_inst, emldb=EmissionLineDB.from_key('ELPMILES'))
 
 Revision history
 ----------------
@@ -241,7 +241,7 @@ class EmissionLineTemplates:
                 be avoided!
 
         """
-        db_rows = numpy.arange(self.emldb.neml)
+        db_rows = numpy.arange(self.emldb.size)
         indx = db_rows[self.emldb['index'] == int(self.emldb['mode'][i][1:])][0]
         if not primary:
             return indx
@@ -299,7 +299,7 @@ class EmissionLineTemplates:
         # The total number of templates to construct is the number of
         # lines in the database minus the number of lines with mode=aN
         tied_all = numpy.array([m[0] == 'a' for m in self.emldb['mode']])
-        self.ntpl = self.emldb.neml - numpy.sum(ignore_line) - numpy.sum(tied_all)
+        self.ntpl = self.emldb.size - numpy.sum(ignore_line) - numpy.sum(tied_all)
 
         # Initialize the components
         self.comp = numpy.zeros(self.ntpl, dtype=int)-1
@@ -308,7 +308,7 @@ class EmissionLineTemplates:
 
         # All the primary lines go into individual templates, kinematic
         # components, velocity groups, and sigma groups
-        self.tpli = numpy.zeros(self.emldb.neml, dtype=int)-1
+        self.tpli = numpy.zeros(self.emldb.size, dtype=int)-1
         primary_line = (self.emldb['mode'] == 'f') & numpy.invert(ignore_line)
         nprimary = numpy.sum(primary_line)
         self.tpli[primary_line] = numpy.arange(nprimary)
@@ -317,10 +317,10 @@ class EmissionLineTemplates:
         self.sgrp[:nprimary] = numpy.arange(nprimary)
 
         finished = primary_line | ignore_line
-        while numpy.sum(finished) != self.emldb.neml:
+        while numpy.sum(finished) != self.emldb.size:
             # Find the indices of lines that are tied to finished lines
             start_sum = numpy.sum(finished)
-            for i in range(self.emldb.neml):
+            for i in range(self.emldb.size):
                 if finished[i]:
                     continue
                 indx = self._tied_index(i)
@@ -518,7 +518,7 @@ class EmissionLineTemplates:
         self.flux = numpy.zeros((self.ntpl,self.wave.size), dtype=float)
         for i in range(self.ntpl):
             # Find all the lines associated with this template:
-            index = numpy.arange(self.emldb.neml)[self.tpli == i]
+            index = numpy.arange(self.emldb.size)[self.tpli == i]
             # Add each line to the template
             for j in index:
                 # Declare an instance of the desired profile

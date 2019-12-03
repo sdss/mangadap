@@ -650,8 +650,8 @@ class SpectralIndices:
         return self.hdu[key]
 
 
-    def _define_databases(self, database_key, database_list=None, artifact_list=None,
-                          absorption_index_list=None, bandhead_index_list=None, dapsrc=None):
+    def _define_databases(self, database_key, database_list=None, artifact_path=None,
+                          absorption_index_path=None, bandhead_index_path=None, dapsrc=None):
         r"""
 
         Select the database of indices
@@ -665,18 +665,17 @@ class SpectralIndices:
         # Instantiate the artifact, absorption-index, and bandhead-index
         # databases
         self.artdb = None if self.database['artifacts'] is None else \
-                ArtifactDB(self.database['artifacts'], artdb_list=artifact_list, dapsrc=dapsrc)
+                ArtifactDB.from_key(self.database['artifacts'], directory_path=artifact_path)
         # TODO: Generalize the name of this object
         self.pixelmask = SpectralPixelMask(artdb=self.artdb)
 
         self.absdb = None if self.database['absindex'] is None else \
-                AbsorptionIndexDB(self.database['absindex'], indxdb_list=absorption_index_list,
-                                  dapsrc=dapsrc)
+                AbsorptionIndexDB.from_key(self.database['absindex'],
+                                           directory_path=absorption_index_path)
 
         self.bhddb = None if self.database['bandhead'] is None else \
-                BandheadIndexDB(self.database['bandhead'], indxdb_list=bandhead_index_list,
-                                dapsrc=dapsrc)
-
+                BandheadIndexDB.from_key(self.database['bandhead'],
+                                         directory_path=bandhead_index_path)
 
     def _set_paths(self, directory_path, dapver, analysis_path, output_file):
         """
@@ -826,7 +825,7 @@ class SpectralIndices:
         # of indices measured
         passband_database = init_record_array(self.nindx, self._index_database_dtype(name_len))
 
-        t = 0 if self.absdb is None else self.absdb.nsets
+        t = 0 if self.absdb is None else self.absdb.size
         if self.absdb is not None:
             passband_database['TYPE'][:t] = 'absorption'
             hk = [ 'ID', 'NAME', 'PASSBAND', 'BLUEBAND', 'REDBAND', 'UNIT', 'COMPONENT' ]
@@ -1296,7 +1295,7 @@ class SpectralIndices:
         r"""
         Count the total number (absorption-line and bandhead) indices.
         """
-        return 0 if absdb is None else absdb.nsets, 0 if bhddb is None else bhddb.nsets
+        return 0 if absdb is None else absdb.size, 0 if bhddb is None else bhddb.size
 
 
     @staticmethod
@@ -1682,22 +1681,8 @@ class SpectralIndices:
         _, angu, _ = SpectralIndices.unit_selection(absdb, bhddb)
         measurements['INDX'][:,angu] /= (1+measurements['REDSHIFT'][:,None])
 
-#        x = numpy.append(center, numpy.array([[-100]*self.absdb.nsets]).T,axis=1).ravel()
-#        _x = numpy.ma.MaskedArray(x, mask=x==-100)
-#        print(_x)
-#        y = numpy.append(pseudocontinuum, numpy.array([[-100]*self.absdb.nsets]).T,axis=1).ravel()
-#        _y = numpy.ma.MaskedArray(y, mask=y==-100)
-#        print(type(_y))
-#        print(numpy.sum(_y.mask))
-#        pyplot.plot(_x, _y, color='g', lw=2, linestyle='-')
-#        pyplot.show()
-
-#        print('Total masked: {0}/{1}'.format(numpy.sum(measurements['MASK'] > 0),
-#                                             measurements['MASK'].size))
-
         # Return the data
         return measurements
-
 
     def file_name(self):
         """Return the name of the output file."""

@@ -43,7 +43,8 @@ def test_ppxffit():
     tpl_sres = numpy.mean(tpl['SPECRES'].data, axis=0)
 
     # Get the pixel mask
-    pixelmask = SpectralPixelMask(artdb=ArtifactDB('BADSKY'), emldb=EmissionLineDB('ELPFULL'))
+    pixelmask = SpectralPixelMask(artdb=ArtifactDB.from_key('BADSKY'),
+                                  emldb=EmissionLineDB.from_key('ELPFULL'))
 
     # Instantiate the fitting class
     ppxf = PPXFFit(StellarContinuumModelBitMask())

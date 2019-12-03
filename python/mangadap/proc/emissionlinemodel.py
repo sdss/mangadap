@@ -303,7 +303,7 @@ class EmissionLineModel:
                                                emldb=EmissionLineDB.from_key(
                                                         self.method['ism_mask'],
                                                         directory_path=ism_line_path),
-                                               nsig=2.0)A
+                                               nsig=2.0)
         # ... and the emission-line database
         self.emldb = None if self.method['emission_lines'] is None else \
                         EmissionLineDB.from_key(self.method['emission_lines'],

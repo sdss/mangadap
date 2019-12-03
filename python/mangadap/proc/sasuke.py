@@ -192,7 +192,7 @@ class Sasuke(EmissionLineFit):
     emission lines would be::
 
         # Read the emission-line database
-        emldb = EmissionLineDB('ELPMILES')
+        emldb = EmissionLineDB.from_key('ELPMILES')
         # Instantiate the emission-line fitter
         el_fitter = Sasuke(EmissionLineModelBitMask())
         # Fit the spectra
@@ -1999,7 +1999,7 @@ class Sasuke(EmissionLineFit):
         # Build the emission-line templates; the EmissionLineTemplates
         # object will check the database
         self.emldb = emission_lines
-        self.neml = self.emldb.neml
+        self.neml = self.emldb.size
         etpl = EmissionLineTemplates(self.tpl_wave, etpl_sinst, emldb=self.emldb,
                                      loggers=self.loggers, quiet=self.quiet)
     

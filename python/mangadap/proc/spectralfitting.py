@@ -527,7 +527,7 @@ class EmissionLineFit(SpectralFitting):
             return
 
         # Check the provided parameters, fix flags, and bounds
-        for i in range(emldb.neml):
+        for i in range(emldb.size):
             profile = eval('lineprofiles.'+emldb['profile'][i])
             npar = len(profile.param_names)
             if emldb['par'][i].size != npar*emldb['ncomp'][i]:

@@ -145,7 +145,7 @@ if __name__ == '__main__':
     # Get the emission-line moments using the fitted stellar continuum
 
     # Read the database that define the emission lines and passbands
-    momdb = EmissionMomentsDB(elmom_key)
+    momdb = EmissionMomentsDB.from_key(elmom_key)
 
     # Measure the moments
     elmom = EmissionLineMoments.measure_moments(momdb, wave, flux, continuum=sc_continuum,

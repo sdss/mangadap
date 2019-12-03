@@ -17,7 +17,6 @@ from mangadap.util.fileio import read_template_spectrum
 from mangadap.util.pixelmask import SpectralPixelMask
 
 from mangadap.par.artifactdb import ArtifactDB
-from mangadap.par.emissionmomentsdb import EmissionMomentsDB
 from mangadap.par.emissionlinedb import EmissionLineDB
 
 from mangadap.proc.templatelibrary import available_template_libraries

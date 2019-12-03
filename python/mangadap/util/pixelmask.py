@@ -201,9 +201,9 @@ class SpectralPixelMask(PixelMask):
             return None
 
         if isinstance(kin, (int,float)):
-            return numpy.full(self.emldb.neml, kin, dtype=numpy.float)
+            return numpy.full(self.emldb.size, kin, dtype=numpy.float)
         if isinstance(kin, (list, numpy.ndarray)):
-            if len(kin) != self.emldb.neml:
+            if len(kin) != self.emldb.size:
                 raise ValueError('Provided vector does not have a matching length.')
             return numpy.atleast_1d(kin).astype(numpy.float)
        

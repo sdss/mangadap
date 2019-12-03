@@ -16,8 +16,8 @@ def test_model_indices():
 
     # Setup
     bm = SpectralIndicesBitMask()
-    absdb = AbsorptionIndexDB('EXTINDX')
-    bhddb = BandheadIndexDB('BHBASIC')
+    absdb = AbsorptionIndexDB.from_key('EXTINDX')
+    bhddb = BandheadIndexDB.from_key('BHBASIC')
 
     # Grab the model spectra
     tpl = TemplateLibrary('M11MILES', spectral_step=1e-4, log=True, hardcopy=False)
