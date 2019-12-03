@@ -1,13 +1,26 @@
 
 .. |ang|   unicode:: U+212B
 
+.. include:: links.rst
+
 .. _spectralindices:
 
 Spectral-Index Parameters
 =========================
 
+The spectral indices to be measured by the DAP are divided into two
+groups: (1) absorption-line indices that measure the equivalent width of
+an absorption feature and (2) bandhead or color indices that measure the
+ratio of fluxes is in two passbands.  Both sets of indices are measured
+using :class:`mangadap.proc.spectralindices.SpectralIndices`; see
+:ref:`spectral-index-measurements`.
+
 Absorption-line Index Parameters
 --------------------------------
+
+The table below provides a compilation of absorption-line indices.
+Recent survey-level runs of the DAP have included all of these
+measurements.
 
 +-----------+-----------------------+-----------------------+----------------------+-------+-------+------+
 | Name      | Main Passband (|ang|) | Blue Sideband (|ang|) | Red Sideband (|ang|) | Frame | Units |  Ref |
@@ -99,9 +112,100 @@ Absorption-line Index Parameters
 | TiO2SDSS  |  6189.625 -- 6272.125 |  6066.625 -- 6141.625 | 6422.0   -- 6455.0   |   air |   mag | [8]_ |
 +-----------+-----------------------+-----------------------+----------------------+-------+-------+------+
 
+Input Data Format
+~~~~~~~~~~~~~~~~~
+
+The parameters that define the absorption-line index calculations are
+provided via the
+:class:`mangadap.par.absorptionindexdb.AbsorptionIndexDB` object, which
+is built using an `SDSS-style parameter file`_.  The core level class
+that calculates the raw absorption-line indices is
+:class:`mangadap.proc.spectralindices.AbsorptionLineIndices`.
+
+The columns of the parameter file are:
+
++---------------+-----------+-----------------------------------------------------------------------+
+| Parameter     | Format    | Description                                                           |
++===============+===========+=======================================================================+
+| ``index``     | int       | Unique integer identifier of the absorption-line index. **Must** be   |
+|               |           | unique.                                                               |
++---------------+-----------+-----------------------------------------------------------------------+
+| ``name``      | str       | Name of the index.  **Must** be unique.                               |
++---------------+-----------+-----------------------------------------------------------------------+
+| ``primary``   | float[2]  | A two-element vector with the starting and ending wavelength for the  |
+|               |           | primary passband surrounding the absorption feature(s).               |
++---------------+-----------+-----------------------------------------------------------------------+
+| ``blueside``  | float[2]  | A two-element vector with the starting and ending wavelength for a    |
+|               |           | passband to the blue of the primary band.                             |
++---------------+-----------+-----------------------------------------------------------------------+
+| ``redside``   | float[2]  | A two-element vector with the starting and ending wavelength for a    |
+|               |           | passband to the red of the primary band.                              |
++---------------+-----------+-----------------------------------------------------------------------+
+| ``waveref``   | str       | The reference frame of the wavelengths; must be either 'air' for air  |
+|               |           | or 'vac' for vacuum.                                                  |
++---------------+-----------+-----------------------------------------------------------------------+
+| ``units``     | str       | Units for the absorption index, which must be either 'ang' or 'mag'.  |
++---------------+-----------+-----------------------------------------------------------------------+
+| ``component`` | int       | **Never used**: Binary flag (0-false,1-true) that the index is a      |
+|               |           | component of a composite index.  If true (1), all components with the |
+|               |           | same NAME are added together to form the composite index.             |
++---------------+-----------+-----------------------------------------------------------------------+
+
+and an example file might look like this:
+
+.. code-block:: c
+
+    typedef struct {
+        int index;
+        char name[9];
+        double primary[2];
+        double blueside[2];
+        double redside[2];
+        char waveref[3];
+        char units[3];
+        int component;
+    } DAPABI;
+
+    DAPABI  1  CN1        { 4142.125  4177.125 }  { 4080.125  4117.625 }  { 4244.125  4284.125 }  air  mag  0
+    DAPABI  2  CN2        { 4142.125  4177.125 }  { 4083.875  4096.375 }  { 4244.125  4284.125 }  air  mag  0
+
+Note that the functionality implied by the ``component`` parameter has
+been a notional future development for the module, but has never been
+implemented.  However, unfortunately, it's still a required element of
+the database file.
+
+Changing the absorption-line index parameters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The absorption-line indices are measured by
+:class:`mangadap.proc.spectralindices.SpectralIndices`; see
+:ref:`spectral-index-measurements`.  A set of parameter files that
+define a list of absorption-line index sets are provided with the DAP
+source distribution and located at
+``$MANGADAP_DIR/data/absorption_indices``.  There are a few
+methods that you can use to change the set of absorption-line index parameters
+used by :class:`mangadap.proc.spectralindices.SpectralIndices`:
+
+    #. To use one of the existing parameter databases, you can change
+       the ``absorption_indices`` keyword in the
+       :class:`mangadap.proc.spectralindices.SpectralIndices`
+       configuration file.  The keyword should be the capitalized root
+       of the parameter filename.  E.g., to use
+       ``$MANGADAP_DIR/data/absorption_indices/lickindx.par``, set
+       the keyword to ``LICKINDX``.
+
+    #. To use a *new* parameter database, write the file and save it in
+       the ``$MANGADAP_DIR/data/absorption_indices/`` directory,
+       and then change the relevant configuration file in the same way
+       as described above.
+
 
 Bandhead or Color Index Parameters
 ----------------------------------
+
+The table below provides a compilation of bandhead and color indices.
+Recent survey-level runs of the DAP have included all of these
+measurements.
 
 +--------+-----------------------+----------------------+-------+-------------------+-------+-------+
 | Name   | Blue Sideband (|ang|) | Red Sideband (|ang|) | Frame |         Integrand | Order |   Ref |
@@ -113,6 +217,86 @@ Bandhead or Color Index Parameters
 | TiOCvD |          8835 -- 8855 |         8870 -- 8890 |   vac | :math:`F_\lambda` |   B/R |  [5]_ |
 +--------+-----------------------+----------------------+-------+-------------------+-------+-------+
 
+Input Data Format
+~~~~~~~~~~~~~~~~~
+
+The parameters that define the bandhead index calculations are provided
+via the :class:`mangadap.par.bandheadindexdb.BandheadIndexDB` object,
+which is built using an `SDSS-style parameter file`_.  The core level
+class that calculates the raw bandhead indices is
+:class:`mangadap.proc.spectralindices.BandheadIndices`.
+
+The columns of the parameter file are:
+
++---------------+-----------+-----------------------------------------------------------------------+
+| Parameter     | Format    | Description                                                           |
++===============+===========+=======================================================================+
+| ``index``     | int       | Unique integer identifier of the absorption-line index. **Must** be   |
+|               |           | unique.                                                               |
++---------------+-----------+-----------------------------------------------------------------------+
+| ``name``      | str       | Name of the index.  **Must** be unique.                               |
++---------------+-----------+-----------------------------------------------------------------------+
+| ``blueside``  | float[2]  | A two-element vector with the starting and ending wavelength for a    |
+|               |           | passband to the blue of the primary band.                             |
++---------------+-----------+-----------------------------------------------------------------------+
+| ``redside``   | float[2]  | A two-element vector with the starting and ending wavelength for a    |
+|               |           | passband to the red of the primary band.                              |
++---------------+-----------+-----------------------------------------------------------------------+
+| ``waveref``   | str       | The reference frame of the wavelengths; must be either 'air' for air  |
+|               |           | or 'vac' for vacuum.                                                  |
++---------------+-----------+-----------------------------------------------------------------------+
+| ``integrand`` | str       | Integrand within the passband for the construction of the index,      |
+|               |           | which must be either 'fnu' or 'flambda'.                              |
++---------------+-----------+-----------------------------------------------------------------------+
+| ``order``     | str       | Define the order to use when constructing the index.  The options are |
+|               |           | either a ratio of red-to-blue or blue-to-red, which are respectively  |
+|               |           | selected using 'r_b' or 'b_r'.                                        |
++---------------+-----------+-----------------------------------------------------------------------+
+
+and an example file might look like this:
+
+.. code-block:: c
+
+    typedef struct {
+        int index;
+        char name[9];
+        double blueside[2];
+        double redside[2];
+        char waveref[3];
+        char integrand[7];
+        char order[3];
+    } DAPBHI;
+
+    DAPBHI  1  D4000      { 3750.000  3950.000 }  { 4050.000  4250.000 }  air      fnu  r_b
+    DAPBHI  2  Dn4000     { 3850.000  3950.000 }  { 4000.000  4100.000 }  air      fnu  r_b
+    DAPBHI  3  TiOCvD     { 8835.000  8855.000 }  { 8870.000  8890.000 }  vac  flambda  b_r
+
+Changing the bandhead index parameters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The bandhead and color indices are measured by
+:class:`mangadap.proc.spectralindices.SpectralIndices`; see
+:ref:`spectral-index-measurements`.  A set of parameter files that
+define a list of bandhead index sets are provided with the DAP
+source distribution and located at
+``$MANGADAP_DIR/data/bandhead_indices``.  There are a few
+methods that you can use to change the set of bandhead-index parameters
+used by :class:`mangadap.proc.spectralindices.SpectralIndices`:
+
+    #. To use one of the existing parameter databases, you can change
+       the ``bandhead_indices`` keyword in the
+       :class:`mangadap.proc.spectralindices.SpectralIndices`
+       configuration file.  The keyword should be the capitalized root
+       of the parameter filename.  E.g., to use
+       ``$MANGADAP_DIR/data/bandhead_indices/bhbasic.par``, set the
+       keyword to ``BHBASIC``.
+
+    #. To use a *new* parameter database, write the file and save it in
+       the ``$MANGADAP_DIR/data/bandhead_indices/`` directory, and then
+       change the relevant configuration file in the same way as
+       described above.
+
+----
 
 .. [1] `Trager et al. (1998, ApJS, 116, 1) <https://ui.adsabs.harvard.edu/abs/1998ApJS..116....1T/abstract>`_
 .. [2] `Worthey & Ottaviani (1997, ApJS, 111, 377) <https://ui.adsabs.harvard.edu/abs/1997ApJS..111..377W/abstract>`_

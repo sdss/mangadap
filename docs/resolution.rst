@@ -1,7 +1,7 @@
 
 .. _resolution:
 
-Matching Spectral Resolution
+Spectral Resolution Matching
 ============================
 
 The DAP provides a useful utility for matching the spectral resolution
