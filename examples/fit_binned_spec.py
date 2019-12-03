@@ -124,7 +124,7 @@ if __name__ == '__main__':
     # Fit the stellar continuum
 
     # Mask the 5577 sky line and the emission lines
-    sc_pixel_mask = SpectralPixelMask(artdb=ArtifactDB('BADSKY'),
+    sc_pixel_mask = SpectralPixelMask(artdb=ArtifactDB.from_key('BADSKY'),
                                       emldb=EmissionLineDB.from_key('ELPFULL'))
 
     # Construct the template library
@@ -196,7 +196,7 @@ if __name__ == '__main__':
                                                     numpy.square(cont_par['SIGMACORR_EMP']))
     
     # Mask the 5577 sky line
-    el_pixel_mask = SpectralPixelMask(artdb=ArtifactDB('BADSKY'))
+    el_pixel_mask = SpectralPixelMask(artdb=ArtifactDB.from_key('BADSKY'))
 
     # Read the emission line fitting database
     emldb = EmissionLineDB.from_key(elfit_key)
