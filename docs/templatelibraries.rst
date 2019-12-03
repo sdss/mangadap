@@ -140,7 +140,7 @@ Adding new template libraries
 
 Adding new template libraries is relatively straight-forward.  First,
 make sure the templates adhere to the :ref:`templatelibraries-input`.
-Then, you can either use the library be defining it programmatically, or
+Then, you can either use the library by defining it programmatically, or
 by adding a new configuration file to the
 ``$MANGADAP_DIR/python/mangadap/config/spectral_templates`` directory.
 See the TemplateLibrary :ref:`templatelibrary-usage` and the

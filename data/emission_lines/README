@@ -1,4 +1,6 @@
-# Columns in the emission-line database parameter files are:
+# Par files define the parameters to be used to set a number of
+# mangadap.par.emissionlinedb.EmissionLinePar objects.  Columns in the
+# emission-line database parameter files are:
 #
 #   INDEX:
 #       Unique integer identifier of the emission line.  Used when tying
@@ -28,7 +30,7 @@
 #           's': defines a sky line that should be masked.  When masked,
 #                the wavelength of the line is NOT adjusted for the
 #                redshift of the object spectrum.
-#   FLUX:
+#   RELATIVE_FLUX:
 #       RELATIVE flux of the emission (positive) or absorption
 #       (negative) lines.  This should most often be unity when the flux
 #       is not tied to another line; see 'MODE'.
@@ -55,6 +57,21 @@
 #
 #           'aN': Fit the line with the flux, velocity, and velocity
 #           dispersion tied to the line with index N.
+#
+#   PROFILE:
+#       The name of the class used to construct the line profile.  The
+#       available options are any of the classes in
+#       mangadap.util.lineprofiles.  This functionality should likely be
+#       deprecated, and the lineprofile should essentially always be
+#       "FFTGaussianLSF".
+#
+#   NCOMP:
+#       The number of components to fit.  THIS IS NEVER USED!
+#
+#   OUTPUT_MODEL:
+#       Flag to include the best-fitting model of the line in the
+#       emission-line model spectrum.  THIS IS NEVER USED!
+#
 #   PAR:
 #       A list of the initial guess for the line profile parameters.
 #       The number of parameters must match the struct declaration at
