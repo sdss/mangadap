@@ -39,5 +39,6 @@ class DAPBitMask(BitMask):
         dapsrc = defaults.dap_source_dir()
         tmp = BitMask.from_ini_file(os.path.join(dapsrc, 'python', 'mangadap', 'config',
                                                  'bitmasks', '{0}.ini'.format(self.cfg_root)))
-        super(DAPBitMask, self).__init__(tmp.keys(), descr=tmp.descr)
+        keys, descr = tmp._init_objs()
+        super(DAPBitMask, self).__init__(keys, descr=descr)
 
