@@ -37,6 +37,7 @@ Revision history
 """
 
 import time
+import warnings
 import logging
 
 import numpy

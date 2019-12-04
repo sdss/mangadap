@@ -28,9 +28,11 @@ from ..config import defaults
 
 class DAPBitMask(BitMask):
     r"""
-    As simple derived class that simplifies the derived classes used by
-    the DAP that all define their bits using the files in the
-    configuration directory.
+    Class that simplifies the derived classes used by the DAP by always
+    sourcing an ini file in the configuration directory.
+
+    This class is an *abstract class* that has no direct use beyond
+    being a base class.
     """
     cfg_root = None
     def __init__(self):
