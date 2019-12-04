@@ -297,7 +297,7 @@ class EmissionLineModel:
                         EmissionLineDB.from_key(self.method['emission_lines'],
                                                 directory_path=emission_line_db_path)
 
-        self.neml = None if self.emldb is None else self.emldb.neml
+        self.neml = None if self.emldb is None else self.emldb.size
 
         self.binned_spectra = None
         self.redshift = None
@@ -471,7 +471,7 @@ class EmissionLineModel:
 
         # Instatiate the table data that will be saved defining the set
         # of emission-line moments measured
-        line_database = init_record_array(self.emldb.neml,
+        line_database = init_record_array(self.emldb.size,
                                 self._emission_line_database_dtype(name_len, mode_len, prof_len))
 
         hk = [ 'ID', 'NAME', 'RESTWAVE', 'ACTION', 'FLUXRATIO', 'MODE', 'PROFILE', 'NCOMP' ]
