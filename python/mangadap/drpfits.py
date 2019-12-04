@@ -243,7 +243,8 @@ class DRPFitsBitMask(BitMask):
         _sdss_maskbits = sdss_maskbits_file() if sdss_maskbits is None else sdss_maskbits
         tmp = BitMask.from_par_file(_sdss_maskbits, 'MANGA_DRP3PIXMASK' if mode == 'CUBE' else 
                                                     'MANGA_DRP2PIXMASK')
-        super(DRPFitsBitMask, self).__init__(tmp.keys(), descr=tmp.descr)
+        keys, descr = tmp._init_objs()
+        super(DRPFitsBitMask, self).__init__(keys, descr=descr)
 
 
 class DRPQuality3DBitMask(BitMask):
@@ -254,7 +255,8 @@ class DRPQuality3DBitMask(BitMask):
         sdss_maskbits = sdss_maskbits_file()
         _sdss_maskbits = sdss_maskbits_file() if sdss_maskbits is None else sdss_maskbits
         tmp = BitMask.from_par_file(_sdss_maskbits, 'MANGA_DRP3QUAL')
-        super(DRPFitsBitMask, self).__init__(tmp.keys(), descr=tmp.descr)
+        keys, descr = tmp._init_objs()
+        super(DRPFitsBitMask, self).__init__(keys, descr=descr)
 
 
 class DRPFits:

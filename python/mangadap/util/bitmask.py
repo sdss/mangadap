@@ -105,6 +105,9 @@ class BitMask:
         _keys = numpy.atleast_1d(_keys).ravel()
         _descr = None if descr is None else numpy.atleast_1d(descr).ravel()
 
+#        from IPython import embed
+#        embed()
+
         if _descr is not None:
             if not all([isinstance(d, str) for d in _descr]):
                 raise TypeError('Input descriptions must have string type.')
@@ -221,7 +224,7 @@ class BitMask:
         # Slot in NULLs where necessary and return the object instance
         keys, vals, descr = cls._fill_sequence(keys, vals, descr)
         srt = numpy.argsort(vals)
-        return cls(keys[srt], descr=descr[srt])
+        return cls(keys[srt], descr=None if descr is None else descr[srt])
 
     def _prep_flags(self, flag):
         """Prep the flags for use."""
@@ -234,6 +237,18 @@ class BitMask:
         if numpy.any([f not in self.keys() for f in _flag]):
             raise ValueError('Some bit names not recognized.')
         return _flag
+
+    def _init_objs(self):
+        """
+        Return the objects needed to instantate another BitMask object
+        that's identical to self.
+        """
+        keys = self.keys()
+        vals = [self.bits[k] for k in keys]
+        descr = None if self.descr is None else [self.descr[self.bits[k]] for k in keys]
+        keys, vals, descr = BitMask._fill_sequence(keys, vals, descr)
+        srt = numpy.argsort(vals)
+        return keys[srt], None if descr is None else descr[srt]
 
     @staticmethod
     def _fill_sequence(keys, vals, descr):
