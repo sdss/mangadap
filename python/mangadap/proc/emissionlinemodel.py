@@ -280,7 +280,7 @@ class EmissionLineModel:
 
         # Instantiate the artifact...
         self.artdb = None if self.method['artifacts'] is None else \
-                    ArtifactDB(self.method['artifacts'], directory_path=artifact_path)
+                    ArtifactDB.from_key(self.method['artifacts'], directory_path=artifact_path)
         # ... the pixel mask...
         if self.method['ism_mask'] is None:
             self.pixelmask = SpectralPixelMask(artdb=self.artdb)
