@@ -435,11 +435,12 @@ class MaNGATargetBitMask(BitMask):
     """
     def __init__(self, sdss_maskbits=None, trgt='MANGA_TARGET1'):
         _sdss_maskbits = sdss_maskbits_file() if sdss_maskbits is None else sdss_maskbits
-        BitMask.__init__(self, par_file=_sdss_maskbits, par_grp=trgt)
+        tmp = BitMask.from_par_file(_sdss_maskbits, trgt)
+        super(MaNGATargetBitMask, self).__init__(tmp.keys(), descr=tmp.descr)
 
 
 def channel_bitmask():
-    return BitMask(keys=[ 'ERRORS', 'MASKED' ])
+    return BitMask(['ERRORS', 'MASKED'])
 
 
 def pull_maps(hdu, ext, toerr=False):

@@ -198,6 +198,7 @@ from ..par.parset import ParSet
 from ..config.defaults import dap_source_dir, default_dap_common_path
 from ..config.defaults import default_dap_file_name
 from ..util.bitmask import BitMask
+from ..util.dapbitmask import DAPBitMask
 from ..util.log import log_output
 from ..util.fileio import readfits_1dspec, read_template_spectrum, writefits_1dspec, create_symlink
 from ..util.fitsutil import DAPFitsUtil
@@ -361,23 +362,12 @@ def available_template_libraries(dapsrc=None):
     return template_libraries
 
 
-class TemplateLibraryBitMask(BitMask):
+class TemplateLibraryBitMask(DAPBitMask):
     """
     Derived class that specifies the mask bits for the template library
     data.  See :class:`mangadap.util.bitmask.BitMask` for attributes.
-
-    A list of the bits and meanings are provided by the base class
-    function :func:`mangadap.util.bitmask.BitMask.info`; i.e.,::
-
-        from mangadap.proc.templatelibrary import TemplateLibraryBitMask
-        t = TemplateLibraryBitMask()
-        t.info()
-
     """
-    def __init__(self, dapsrc=None):
-        dapsrc = dap_source_dir() if dapsrc is None else str(dapsrc)
-        BitMask.__init__(self, ini_file=os.path.join(dapsrc, 'python', 'mangadap', 'config',
-                                                     'bitmasks', 'spectral_template_bits.ini'))
+    cfg_root = 'spectral_template_bits'
 
 
 class TemplateLibrary:
@@ -565,7 +555,7 @@ class TemplateLibrary:
         self.quiet = quiet
 
         # Define the TemplateLibraryBitMask object
-        self.bitmask = TemplateLibraryBitMask(dapsrc=dapsrc)
+        self.bitmask = TemplateLibraryBitMask()
 
         # Define the properties needed to modify the spectral resolution
         self.sres = None

@@ -51,7 +51,7 @@ from astropy.cosmology import FlatLambdaCDM
 
 from .drpfits import DRPFits, DRPQuality3DBitMask
 from .util.fitsutil import DAPFitsUtil
-from .util.bitmask import BitMask
+from .util.dapbitmask import DAPBitMask
 from .util.log import log_output
 from .util.fileio import channel_dictionary
 from .util.exception_tools import print_frame
@@ -69,37 +69,28 @@ from .proc.spectralindices import SpectralIndices
 from matplotlib import pyplot
 
 #-----------------------------------------------------------------------
-class DAPQualityBitMask(BitMask):
+class DAPQualityBitMask(DAPBitMask):
     """
     .. todo::
         - Force read IDLUTILS version as opposed to internal one?
     """
-    def __init__(self, dapsrc=None):
-        _dapsrc = defaults.dap_source_dir() if dapsrc is None else str(dapsrc)
-        BitMask.__init__(self, ini_file=os.path.join(_dapsrc, 'python', 'mangadap', 'config',
-                                                     'bitmasks', 'dap_quality_bits.ini'))
+    cfg_root = 'dap_quality_bits'
 
 
-class DAPMapsBitMask(BitMask):
+class DAPMapsBitMask(DAPBitMask):
     """
     .. todo::
         - Force read IDLUTILS version as opposed to internal one?
     """
-    def __init__(self, dapsrc=None):
-        _dapsrc = defaults.dap_source_dir() if dapsrc is None else str(dapsrc)
-        BitMask.__init__(self, ini_file=os.path.join(_dapsrc, 'python', 'mangadap', 'config',
-                                                     'bitmasks', 'dap_maps_bits.ini'))
+    cfg_root = 'dap_maps_bits'
 
 
-class DAPCubeBitMask(BitMask):
+class DAPCubeBitMask(DAPBitMask):
     """
     .. todo::
         - Force read IDLUTILS version as opposed to internal one?
     """
-    def __init__(self, dapsrc=None):
-        _dapsrc = defaults.dap_source_dir() if dapsrc is None else str(dapsrc)
-        BitMask.__init__(self, ini_file=os.path.join(_dapsrc, 'python', 'mangadap', 'config',
-                                                     'bitmasks', 'dap_cube_bits.ini'))
+    cfg_root = 'dap_cube_bits'
 
 
 #-----------------------------------------------------------------------
@@ -665,7 +656,7 @@ class construct_maps_file:
 
         #---------------------------------------------------------------
         # Initialize the pixel mask
-        self.bitmask = DAPMapsBitMask(dapsrc=dapsrc)
+        self.bitmask = DAPMapsBitMask()
 
         # Get the mask for the binned spectra
         self.bin_mask = self._build_binning_mask(binned_spectra)
@@ -1871,7 +1862,7 @@ class construct_cube_file:
 
         #---------------------------------------------------------------
         # Initialize the pixel mask
-        self.bitmask = DAPCubeBitMask(dapsrc=dapsrc)
+        self.bitmask = DAPCubeBitMask()
 
         #---------------------------------------------------------------
         # Construct the hdu list for each input object.
@@ -2285,7 +2276,7 @@ def finalize_dap_primary_header(prihdr, drpf, obs, binned_spectra, stellar_conti
                                 loggers=None, quiet=False):
 
     # Initialize the DAP quality flag
-    dapqualbm = DAPQualityBitMask(dapsrc=dapsrc)
+    dapqualbm = DAPQualityBitMask()
     drp3qualbm = DRPQuality3DBitMask()
     dapqual = dapqualbm.minimum_dtype()(0)          # Type casting original flag to 0
     if drp3qualbm.flagged(drpf['PRIMARY'].header['DRP3QUAL'], flag='CRITICAL'):

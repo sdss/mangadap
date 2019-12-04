@@ -53,7 +53,7 @@ from ..config.defaults import dap_source_dir, default_dap_file_name
 from ..config.defaults import default_dap_method, default_dap_method_path
 from ..util.fitsutil import DAPFitsUtil
 from ..util.fileio import init_record_array, rec_to_fits_type, rec_to_fits_col_dim
-from ..util.bitmask import BitMask
+from ..util.dapbitmask import DAPBitMask
 from ..util.pixelmask import SpectralPixelMask
 from ..util.log import log_output
 from ..util.parser import DefaultConfig
@@ -200,7 +200,7 @@ def available_emission_line_modeling_methods(dapsrc=None):
 
             fitpar = ElricPar(None, cnfg.getint('baseline_order'), cnfg.getfloat('window_buffer'),
                               None, None, minimum_snr=minimum_snr)
-            fitclass = Elric(EmissionLineModelBitMask(dapsrc=dapsrc))
+            fitclass = Elric(EmissionLineModelBitMask())
             fitfunc = fitclass.fit_SpatiallyBinnedSpectra
 
         elif cnfg['fit_method'] == 'sasuke':
@@ -218,7 +218,7 @@ def available_emission_line_modeling_methods(dapsrc=None):
                                bias=cnfg.getfloat('bias'), moments=cnfg.getint('moments'),
                                degree=cnfg.getint('degree'), mdegree=cnfg.getint('mdegree'),
                                reddening=cnfg.getfloat('internal_reddening'))
-            fitclass = Sasuke(EmissionLineModelBitMask(dapsrc=dapsrc))
+            fitclass = Sasuke(EmissionLineModelBitMask())
             fitfunc = fitclass.fit_SpatiallyBinnedSpectra
 
 
@@ -237,25 +237,13 @@ def available_emission_line_modeling_methods(dapsrc=None):
     return method_list
 
 
-class EmissionLineModelBitMask(BitMask):
+class EmissionLineModelBitMask(DAPBitMask):
     r"""
-
     Derived class that specifies the mask bits for the emission-line
     modeling.  See :class:`mangadap.util.bitmask.BitMask` for
     attributes.
-
-    A list of the bits and meanings are provided by the base class
-    function :func:`mangadap.util.bitmask.BitMask.info`; i.e.,::
-
-        from mangadap.proc.emissionlinemodel import EmissionLineModelBitMask
-        bm = EmissionLineModelBitMask()
-        bm.info()
-
     """
-    def __init__(self, dapsrc=None):
-        dapsrc = dap_source_dir() if dapsrc is None else str(dapsrc)
-        BitMask.__init__(self, ini_file=os.path.join(dapsrc, 'python', 'mangadap', 'config',
-                                                     'bitmasks', 'emission_line_model_bits.ini'))
+    cfg_root = 'emission_line_model_bits'
 
 
 class EmissionLineModel:
@@ -322,7 +310,7 @@ class EmissionLineModel:
         self.hardcopy = None
 
         # Initialize the objects used in the assessments
-        self.bitmask = EmissionLineModelBitMask(dapsrc=dapsrc)
+        self.bitmask = EmissionLineModelBitMask()
 
         self.hdu = None
         self.checksum = checksum

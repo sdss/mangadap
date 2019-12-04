@@ -50,6 +50,7 @@ from ..config.defaults import default_dap_method, default_dap_method_path
 from ..util.fitsutil import DAPFitsUtil
 from ..util.fileio import init_record_array, rec_to_fits_type
 from ..util.bitmask import BitMask
+from ..util.dapbitmask import DAPBitMask
 from ..util.pixelmask import SpectralPixelMask
 from ..util.log import log_output
 from ..util.parser import DefaultConfig
@@ -188,24 +189,13 @@ def available_emission_line_moment_databases(dapsrc=None):
     return moment_set_list
 
 
-class EmissionLineMomentsBitMask(BitMask):
+class EmissionLineMomentsBitMask(DAPBitMask):
     r"""
     Derived class that specifies the mask bits for the emission-line
     moment measurements.  See :class:`mangadap.util.bitmask.BitMask` for
     attributes.
-
-    A list of the bits and meanings are provided by the base class
-    function :func:`mangadap.util.bitmask.BitMask.info`; i.e.,::
-
-        from mangadap.proc.emissionlinemoments import EmissionLineMomentsBitMask
-        bm = EmissionLineMomentsBitMask()
-        bm.info()
-
     """
-    def __init__(self, dapsrc=None):
-        dapsrc = dap_source_dir() if dapsrc is None else str(dapsrc)
-        BitMask.__init__(self, ini_file=os.path.join(dapsrc, 'python', 'mangadap', 'config',
-                                                     'bitmasks', 'emission_line_moments_bits.ini'))
+    cfg_root = 'emission_line_moments_bits'
 
 
 class EmissionLineMoments:
@@ -259,7 +249,7 @@ class EmissionLineMoments:
         self.hardcopy = None
 
         # Initialize the objects used in the assessments
-        self.bitmask = EmissionLineMomentsBitMask(dapsrc=dapsrc)
+        self.bitmask = EmissionLineMomentsBitMask()
 
         self.hdu = None
         self.checksum = checksum

@@ -240,9 +240,10 @@ class DRPFitsBitMask(BitMask):
     """
     def __init__(self, sdss_maskbits=None, mode='CUBE'):
         DRPFits.check_mode(mode)
-        sdss_maskbits = sdss_maskbits_file()
-        BitMask.__init__(self, par_file=sdss_maskbits, par_grp='MANGA_DRP3PIXMASK' \
-                                                        if mode == 'CUBE' else 'MANGA_DRP2PIXMASK')
+        _sdss_maskbits = sdss_maskbits_file() if sdss_maskbits is None else sdss_maskbits
+        tmp = BitMask.from_par_file(_sdss_maskbits, 'MANGA_DRP3PIXMASK' if mode == 'CUBE' else 
+                                                    'MANGA_DRP2PIXMASK')
+        super(DRPFitsBitMask, self).__init__(tmp.keys(), descr=tmp.descr)
 
 
 class DRPQuality3DBitMask(BitMask):
@@ -251,7 +252,9 @@ class DRPQuality3DBitMask(BitMask):
     """
     def __init__(self, sdss_maskbits=None):
         sdss_maskbits = sdss_maskbits_file()
-        BitMask.__init__(self, par_file=sdss_maskbits, par_grp='MANGA_DRP3QUAL')
+        _sdss_maskbits = sdss_maskbits_file() if sdss_maskbits is None else sdss_maskbits
+        tmp = BitMask.from_par_file(_sdss_maskbits, 'MANGA_DRP3QUAL')
+        super(DRPFitsBitMask, self).__init__(tmp.keys(), descr=tmp.descr)
 
 
 class DRPFits:
