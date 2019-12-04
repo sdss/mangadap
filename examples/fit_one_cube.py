@@ -40,9 +40,9 @@ def fit_one_cube(plt, ifu, drpall_file=None, directory_path=None, analysis_path=
     # Define how you want to analyze the data
     plan = AnalysisPlanSet([ AnalysisPlan(drpqa_key='SNRG',
                                           bin_key='HYB10',
-                                          continuum_key='GAU-MILESHC',
-                                          elmom_key='EMOMM',
-                                          elfit_key='EFITMDB',
+                                          continuum_key='MILESHCMPL9',
+                                          elmom_key='EMOMMPL9',
+                                          elfit_key='EFITMPL9DB',
                                           spindex_key='INDXEN') ])
 
     # Run it!
@@ -57,5 +57,5 @@ if __name__ == '__main__':
 #    fit_one_cube(7815, 1902, drpall_file='./data/drpall-v2_5_3.fits', directory_path='./data',
 #                 analysis_path='./output')
     # Or just use the defaults.
-    fit_one_cube(7815, 1902)
+    fit_one_cube(7815, 1902, analysis_path='./output')
 

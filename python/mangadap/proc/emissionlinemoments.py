@@ -230,8 +230,8 @@ class EmissionLineMoments:
     """
 #    @profile
     def __init__(self, database_key, binned_spectra, stellar_continuum=None,
-                 emission_line_model=None, redshift=None, database_list=None, artifact_list=None,
-                 bandpass_list=None, dapsrc=None, dapver=None, analysis_path=None,
+                 emission_line_model=None, redshift=None, database_list=None, artifact_path=None,
+                 bandpass_path=None, dapsrc=None, dapver=None, analysis_path=None,
                  directory_path=None, output_file=None, hardcopy=True, clobber=False,
                  checksum=False, loggers=None, quiet=False):
 
@@ -244,7 +244,7 @@ class EmissionLineMoments:
         self.artdb = None
         self.momdb = None
         self._define_databases(database_key, database_list=database_list,
-                               artifact_list=artifact_list, bandpass_list=bandpass_list)
+                               artifact_path=artifact_path, bandpass_path=bandpass_path)
 
         self.nmom = self.momdb.size
 

@@ -414,8 +414,8 @@ class DRPFits:
                  read=False, checksum=False):
 
         # Set the attributes, forcing a known type
-        self.plate = long(plate)
-        self.ifudesign = long(ifudesign)
+        self.plate = int(plate)
+        self.ifudesign = int(ifudesign)
         self.check_mode(mode)
         self.mode = mode
 

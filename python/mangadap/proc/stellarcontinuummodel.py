@@ -203,7 +203,7 @@ def available_stellar_continuum_modeling_methods(dapsrc=None):
 
         # TODO: Pull this out; shouldn't be instantiating these already
         artifacts = None if cnfg['artifact_mask'] is None else \
-                        ArtifactDB(cnfg['artifact_mask'], dapsrc=dapsrc)
+                        ArtifactDB.from_key(cnfg['artifact_mask'])
         emission_lines = None if cnfg['emission_line_mask'] is None else \
                             EmissionLineDB.from_key(cnfg['emission_line_mask'])
         waverange = cnfg.getlist('waverange', evaluate=True)
