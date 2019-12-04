@@ -267,7 +267,7 @@ class EmissionLineModel:
     """
     def __init__(self, method_key, binned_spectra, stellar_continuum=None,
                  emission_line_moments=None, redshift=None, dispersion=None, minimum_error=None,
-                 method_list=None, artifact_list=None, ism_line_path=None,
+                 method_list=None, artifact_path=None, ism_line_path=None,
                  emission_line_db_path=None, dapsrc=None, dapver=None, analysis_path=None,
                  directory_path=None, output_file=None, hardcopy=True, clobber=False,
                  checksum=False, loggers=None, quiet=False):
@@ -280,7 +280,7 @@ class EmissionLineModel:
 
         # Instantiate the artifact...
         self.artdb = None if self.method['artifacts'] is None else \
-                    ArtifactDB(self.method['artifacts'], artdb_list=artifact_list, dapsrc=dapsrc)
+                    ArtifactDB(self.method['artifacts'], directory_path=artifact_path)
         # ... the pixel mask...
         if self.method['ism_mask'] is None:
             self.pixelmask = SpectralPixelMask(artdb=self.artdb)
