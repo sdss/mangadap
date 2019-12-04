@@ -63,7 +63,6 @@ import astropy.constants
 from ppxf import ppxf, capfit
 
 from ..par.parset import ParSet
-from ..util.bitmask import BitMask
 from ..util.pixelmask import PixelMask, SpectralPixelMask
 from ..util.fileio import init_record_array
 from ..util.filter import BoxcarFilter

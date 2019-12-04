@@ -96,6 +96,7 @@ from ..util.fitsutil import DAPFitsUtil
 from ..util.fileio import init_record_array, rec_to_fits_type
 from ..util.log import log_output
 from ..util.bitmask import BitMask
+from ..util.dapbitmask import DAPBitMask
 from ..util.pixelmask import SpectralPixelMask
 from ..util.parser import DefaultConfig
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
@@ -235,25 +236,13 @@ def available_spectral_index_databases(dapsrc=None):
     return index_set_list
 
 
-class SpectralIndicesBitMask(BitMask):
+class SpectralIndicesBitMask(DAPBitMask):
     r"""
-
     Derived class that specifies the mask bits for the spectral-index
     measurements.  See :class:`mangadap.util.bitmask.BitMask` for
     attributes.
-
-    A list of the bits and meanings are provided by the base class
-    function :func:`mangadap.util.bitmask.BitMask.info`; i.e.,::
-
-        from mangadap.proc.spectralindices import SpectralIndicesBitMask
-        bm = SpectralIndicesBitMask()
-        bm.info()
-
     """
-    def __init__(self, dapsrc=None):
-        dapsrc = defaults.dap_source_dir() if dapsrc is None else str(dapsrc)
-        BitMask.__init__(self, ini_file=os.path.join(dapsrc, 'python', 'mangadap', 'config',
-                                                     'bitmasks', 'spectral_indices_bits.ini'))
+    cfg_root = 'spectral_indices_bits'
 
 
 # TODO: These two should have the same base class
@@ -625,7 +614,7 @@ class SpectralIndices:
         self.hardcopy = None
 
         # Initialize the objects used in the assessments
-        self.bitmask = SpectralIndicesBitMask(dapsrc=dapsrc)
+        self.bitmask = SpectralIndicesBitMask()
 
         self.hdu = None
         self.checksum = checksum

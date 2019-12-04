@@ -61,7 +61,7 @@ from ..par.parset import ParSet
 from ..util.fitsutil import DAPFitsUtil
 from ..util.fileio import init_record_array, rec_to_fits_type, create_symlink
 from ..util.parser import DefaultConfig
-from ..util.bitmask import BitMask
+from ..util.dapbitmask import DAPBitMask
 from ..util.pixelmask import SpectralPixelMask
 from ..util.sampling import spectral_coordinate_step
 from ..util.covariance import Covariance
@@ -319,24 +319,12 @@ def available_spatial_binning_methods(dapsrc=None):
     return binning_methods
 
 
-class SpatiallyBinnedSpectraBitMask(BitMask):
+class SpatiallyBinnedSpectraBitMask(DAPBitMask):
     r"""
     Derived class that specifies the mask bits for the spatially binned
     spectra.  See :class:`mangadap.util.bitmask.BitMask` for attributes.
-
-    A list of the bits and meanings are provided by the base class
-    function :func:`mangadap.util.bitmask.BitMask.info`; i.e.,::
-
-        from mangadap.proc.spatiallybinnedspectra import SpatiallyBinnedSpectraBitMask
-        bm = SpatiallyBinnedSpectraBitMask()
-        bm.info()
-
     """
-    def __init__(self, dapsrc=None):
-        dapsrc = dap_source_dir() if dapsrc is None else str(dapsrc)
-        BitMask.__init__(self, ini_file=os.path.join(dapsrc, 'python', 'mangadap', 'config',
-                                                     'bitmasks',
-                                                     'spatially_binned_spectra_bits.ini'))
+    cfg_root = 'spatially_binned_spectra_bits'
 
 
 class SpatiallyBinnedSpectra:
@@ -429,7 +417,7 @@ class SpatiallyBinnedSpectra:
         self.symlink_dir = None
 
         # Define the bitmask
-        self.bitmask = SpatiallyBinnedSpectraBitMask(dapsrc=dapsrc)
+        self.bitmask = SpatiallyBinnedSpectraBitMask()
 
         # Initialize the main class attributes
         self.hdu = None

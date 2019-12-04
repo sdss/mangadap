@@ -53,6 +53,7 @@ from ..util.fileio import rec_to_fits_type, create_symlink
 from ..util.sampling import spectral_coordinate_step, spectrum_velocity_scale
 from ..util.resolution import SpectralResolution
 from ..util.bitmask import BitMask
+from ..util.dapbitmask import DAPBitMask
 from ..util.pixelmask import SpectralPixelMask
 from ..util.parser import DefaultConfig
 from ..config import defaults
@@ -227,7 +228,7 @@ def available_stellar_continuum_modeling_methods(dapsrc=None):
                                 filt_degree=cnfg.getint('filter_degree'),
                                 filt_mdegree=cnfg.getint('filter_mdegree'),
                                 moments=cnfg.getint('moments') )
-            fitclass = PPXFFit(StellarContinuumModelBitMask(dapsrc=dapsrc))
+            fitclass = PPXFFit(StellarContinuumModelBitMask())
             fitfunc = fitclass.fit_SpatiallyBinnedSpectra
         else:
             raise ValueError('Unknown fitting method: {0}'.format(cnfg['default']['fit_method']))
@@ -246,25 +247,13 @@ def available_stellar_continuum_modeling_methods(dapsrc=None):
     return modeling_methods
 
 
-class StellarContinuumModelBitMask(BitMask):
+class StellarContinuumModelBitMask(DAPBitMask):
     r"""
     Derived class that specifies the mask bits for the stellar-continuum
     modeling.  See :class:`mangadap.util.bitmask.BitMask` for
     attributes.
-
-    A list of the bits and meanings are provided by the base class
-    function :func:`mangadap.util.bitmask.BitMask.info`; i.e.,::
-
-        from mangadap.proc.stellarcontinuummodel import StellarContinuumModelBitMask
-        bm = StellarContinuumModelBitMask()
-        bm.info()
-
     """
-    def __init__(self, dapsrc=None):
-        dapsrc = defaults.dap_source_dir() if dapsrc is None else str(dapsrc)
-        BitMask.__init__(self, ini_file=os.path.join(dapsrc, 'python', 'mangadap', 'config',
-                                                     'bitmasks',
-                                                     'stellar_continuum_model_bits.ini'))
+    cfg_root = 'stellar_continuum_model_bits'
 
 
 class StellarContinuumModel:
@@ -361,7 +350,7 @@ class StellarContinuumModel:
         self.symlink_dir = None
 
         # Define the bitmask
-        self.bitmask = StellarContinuumModelBitMask(dapsrc=dapsrc)
+        self.bitmask = StellarContinuumModelBitMask()
 
         # Initialize the main class attributes
         self.hdu = None

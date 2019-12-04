@@ -1,40 +1,12 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 # -*- coding: utf-8 -*-
 """
-Base class for handling bit masks by the DAP.
+Base class for handling bit masks.
 
 Class usage examples
 --------------------
 
-Here is an example of reading/creating a TemplateLibrary, then
-creating a plot that shows the full spectrum (blue) and the unmasked
-spectrum (green)::
-
-    # Imports
-    import numpy
-    from mangadap.drpfits import DRPFits
-    from mangadap.proc.TemplateLibrary import TemplateLibrary, TemplateLibraryBitMask
-    from matplotlib import pyplot
-
-    # Define the DRP file
-    drpf = DRPFits(7495, 12703, 'CUBE')
-
-    # Build the template library
-    tpl_lib = TemplateLibrary('M11-MILES', drpf=drpf, directory_path='.')
-    # Writes: ./manga-7495-12703-LOGCUBE_M11-MILES.fits
-
-    # Initialize the mask object
-    tplbm = TemplateLibraryBitMask()
-
-    # Refactor the mask for the first template spectrum using the bitmask
-    unmasked = numpy.invert(tplbm.flagged(tpl_lib.hdu['MASK'].data[0,:]))
-
-    # Plot the full spectrum (blue)
-    pyplot.plot(tpl_lib.hdu['WAVE'].data, tpl_lib.hdu['FLUX'].data[0,:])
-    # Plot the unmasked pixels (green; points are connected even if there are gaps
-    pyplot.plot(tpl_lib.hdu['WAVE'].data[unmasked], tpl_lib.hdu['FLUX'].data[0,unmasked])
-    # Show the plot
-    pyplot.show()
+.. include:: ../bitmask_usage.rst
 
 Revision history
 ----------------
@@ -61,6 +33,7 @@ Revision history
     | **11 May 2016**: (KBW) Switch to using `pydl.pydlutils.yanny`_
         instead of internal yanny reader
     | **29 Jul 2016**: (KBW) Change asarray to atleast_1d
+    | **03 Dec 2019**: (KBW) Added improvements from pypeit version.
 
 ----
 
@@ -97,93 +70,64 @@ class BitMask:
 
                  Bit: key3 = 4
 
+    .. todo::
+        - Have the class keep the mask values internally instead of
+          having it only operate on the mask array...
+
     Args:
-        keys (str, list, numpy.ndarray): (**Optional**) List of keys (or
-            single key) to use as the bit name.  Each key is given a bit
-            number ranging from 0..N-1.  If **not** provided, one of
-            either *ini_file* or *par_file* must be provided.
-        descr (str, list, numpy.ndarray): (**Optional**) List of
-            descriptions (or single discription) provided by
-            :func:`info` for each bit.
+        keys (:obj:`str`, :obj:`list`):
+            List of keys (or single key) to use as the bit name.  Each
+            key is given a bit number ranging from 0..N-1.
+        descr (:obj:`str`, :obj:`list`, optional):
+            List of descriptions (or single discription) provided by
+            :func:`info` for each bit.  No descriptions by default.
 
     Raises:
-        ValueError: Raised if more than 64 bits are provided.
-        TypeError: Raised if the provided `keys` do not have the correct
-            type.
+        ValueError:
+            Raised if more than 64 bits are provided.
+        TypeError:
+            Raised if the provided `keys` do not have the correct type.
 
     Attributes:
-        nbits (int): Number of bits
-        bits (dict): A dictionary with the bit name and value
-        descr (numpy.ndarray) : List of bit descriptions
-        max_value (int): The maximum valid bitmask value given the
-            number of bits.
-
+        nbits (int):
+            Number of bits
+        bits (dict):
+            A dictionary with the bit name and value
+        descr (numpy.ndarray):
+            List of bit descriptions
+        max_value (int):
+            The maximum valid bitmask value given the number of bits.
     """
-    def __init__(self, keys=None, descr=None, ini_file=None, par_file=None, par_grp=None):
+    prefix = 'BIT'
+    def __init__(self, keys, descr=None):
 
-        if keys is None and ini_file is None and par_file is None:
-            raise ValueError('BitMask undefined!')
+        _keys = keys if hasattr(keys, '__iter__') else [keys]
+        _keys = numpy.atleast_1d(_keys).ravel()
+        _descr = None if descr is None else numpy.atleast_1d(descr).ravel()
 
-        if par_file is not None and par_grp is None:
-            raise ValueError('If reading from par file, must provide bit group flag.')
-
-        # Allow for file-based initialization
-        _self = None
-        if ini_file is not None:
-            _self = BitMask.from_ini_file(ini_file)
-        if par_file is not None :
-            _self = BitMask.from_par_file(par_file, par_grp)
-        if _self is not None:
-            self.nbits = _self.nbits
-            self.bits = _self.bits
-            self.descr = _self.descr
-            self.max_value = _self.max_value
-            return
-
-        if not isinstance(keys, (str, list, numpy.ndarray)):
-            raise TypeError('Input argument \'keys\' incorrect type.')
-        if not all([isinstance(k, str) for k in keys]):
-            raise TypeError('Input keys must have string type.')
-
-        if isinstance(keys, list):
-            keys = numpy.array(keys)
-        if isinstance(keys, str):
-            keys = numpy.array([keys])
+        if _descr is not None:
+            if not all([isinstance(d, str) for d in _descr]):
+                raise TypeError('Input descriptions must have string type.')
+            if len(_descr) != len(_keys):
+                raise ValueError('Number of listed descriptions not the same as number of keys.')
 
         # Do not allow for more that 64 bits
-        if len(keys) > 64:
+        if len(_keys) > 64:
             raise ValueError('Can only define up to 64 bits!')
 
         # Allow for multiple NULL keys; but check the rest for
         # uniqueness
-        diff = set(keys) - set(['NULL'])
-        if len(diff) != numpy.unique(keys[ keys != 'NULL' ]).size:
+        diff = set(_keys) - set(['NULL'])
+        if len(diff) != numpy.unique(_keys[[k != 'NULL' for k in _keys]]).size:
             raise ValueError('All input keys must be unique.')
 
-        self.nbits = len(keys)
-        self.bits = dict([ (k,i) for i,k in enumerate(keys) ])
+        # Initialize the attributes
+        self.nbits = len(_keys)
+        self.bits = { k:i for i,k in enumerate(_keys) }
         self.max_value = (1 << self.nbits)-1
+        self.descr = _descr
 
-        self.descr = None
-        if descr is None:
-            return
-
-        if not isinstance(descr, (str, list, numpy.ndarray)):
-            raise TypeError('Input argument \'descr\' incorrect type.')
-        if not all([isinstance(d, str) for d in descr]):
-            raise TypeError('Input keys must have string type.')
-
-        if isinstance(descr, list):
-            descr = numpy.array(descr)
-        if isinstance(descr, str):
-            descr = numpy.array([descr])
-
-        if len(descr) != self.nbits:
-            raise ValueError('Number of listed descriptions not the same as number of keys.')
-
-        self.descr = descr.copy()
-
-
+    # TODO: Add a to_ini_file method
     @classmethod
     def from_ini_file(cls, f):
         r"""
@@ -225,8 +169,8 @@ class BitMask:
 
         # Read the keys, values, and descriptions
         keys = numpy.array(cnfg.sections())
-        vals = numpy.zeros( keys.size, dtype=numpy.int )
-        descr = numpy.zeros( keys.size, dtype=object )
+        vals = numpy.zeros(keys.size, dtype=numpy.int)
+        descr = numpy.zeros(keys.size, dtype=object)
         for i,k in enumerate(keys):
             vals[i] = cnfg[k]['value']
             descr[i] = cnfg[k]['descr']
@@ -236,13 +180,13 @@ class BitMask:
         srt = numpy.argsort(vals)
         return cls(keys[srt], descr=descr[srt])
 
-
+    # TODO: Add a to_par_file method
     @classmethod
     def from_par_file(cls, f, name):
         r"""
         Define the object using an `SDSS-style parameter file`_.  This
         has been tailored to work with the sdssMaskbits.par file in
-        IDLUTILS; however, it can work with other like files.
+        IDLUTILS; however, it can work with similar files.
         
         See :class:`mangadap.drpfits.DRPFitsBitMask` for an example that
         uses this function.
@@ -266,7 +210,6 @@ class BitMask:
             raise FileNotFoundError('Could not find ini file: {0}'.format(f))
 
         # Read the full yanny file and only select the maskbits typedef
-#        bits = yanny(f)['MASKBITS']
         bits = yanny(filename=f, raw=True)['MASKBITS']
 
         # Find the bits with the correct designation
@@ -280,80 +223,78 @@ class BitMask:
         srt = numpy.argsort(vals)
         return cls(keys[srt], descr=descr[srt])
 
+    def _prep_flags(self, flag):
+        """Prep the flags for use."""
+        # Flags must be a numpy array
+        _flag = numpy.array(self.keys()) if flag is None else numpy.atleast_1d(flag).ravel()
+        # NULL flags not allowed
+        if numpy.any([f == 'NULL' for f in _flag]):
+            raise ValueError('Flag name NULL is not allowed.')
+        # Flags should be among the bitmask keys
+        if numpy.any([f not in self.keys() for f in _flag]):
+            raise ValueError('Some bit names not recognized.')
+        return _flag
 
     @staticmethod
     def _fill_sequence(keys, vals, descr):
         r"""
+        Fill bit sequence with NULL keys if bit values are not
+        sequential.
+        
         The instantiation of :class:`BitMask` does not include the value
         of the bit, it just assumes that the bits should be in sequence
         such that the first key has a value of 0, and the last key has a
-        value of N-1.  Unfortunately, not all the bits the DAP follow a
-        sequence.  This function finds the range of the bits and then
-        slots in NULL keywords and empty descriptions where necessary to
-        fill in the full complement of bits.  NULL keywords are ignored
-        by the :class:`BitMask` object.
-
-        This is a static method because it doesn't depend on any of the
-        attributes of :class:`BitMask`.
+        value of N-1.  This is a convenience function that finds the
+        range of the bits and then slots in NULL keywords and empty
+        descriptions where necessary to fill in the full complement of
+        bits.  NULL keywords are ignored by the :class:`BitMask` object.
 
         Args:
-            keys (list or str): Bit names
-            vals (list or int): Bit values
-            descr (list or str): Description of each bit
+            keys (:obj:`list`, :obj:`str`):
+                Bit names
+            vals (:obj:`list`, :obj:`int`):
+                Bit values
+            descr (:obj:`list`, :obj:`str`, optional):
+                The description of each bit. If None, no bit
+                descriptions are defined.
 
         Returns:
-            numpy.ndarray: Three arrays with the filled keys, values,
+            `numpy.ndarray`_: Three arrays with the filled keys, values,
             and descriptions.
 
         Raises:
             ValueError: Raised if a bit value is less than 0.
         """
-        # Make sure the input is treated as an array
-#        keys = numpy.asarray(keys)
-#        vals = numpy.asarray(vals)
-#        descr = numpy.asarray(descr)
-        keys = numpy.atleast_1d(keys)
-        vals = numpy.atleast_1d(vals)
-        descr = numpy.atleast_1d(descr)
-
-        if numpy.amin(vals) < 0:
-            raise ValueError('No bit cannot be less than 0!')
-        minv = numpy.amin(vals)
-        maxv = numpy.amax(vals)
-
-        if minv != 0 or maxv != len(vals)-1:
-            diff = list(set(numpy.arange(maxv)) - set(vals))
-            vals = numpy.append(vals, diff)
-            keys = numpy.append(keys, numpy.array(['NULL']*len(diff)))
-            descr = numpy.append(descr, numpy.array(['']*len(diff)))
-
-        return keys, vals, descr
-
-#        if numpy.amin(vals) != 0:
-#            raise ValueError('Bit values must start from 0.')
-#        if numpy.amax(vals) != keys.size-1:
-#            raise ValueError('Bit values must be sequential starting from 0.')
-
+        _keys = numpy.atleast_1d(keys).ravel()
+        _vals = numpy.atleast_1d(vals).ravel()
+        _descr = None if descr is None else numpy.atleast_1d(descr).ravel()
         
+        if numpy.amin(_vals) < 0:
+            raise ValueError('No bit cannot be less than 0!')
+        minv = numpy.amin(_vals)
+        maxv = numpy.amax(_vals)
+
+        if minv != 0 or maxv != len(_vals)-1:
+            diff = list(set(numpy.arange(maxv)) - set(_vals))
+            _vals = numpy.append(_vals, diff)
+            _keys = numpy.append(_keys, numpy.array(['NULL']*len(diff)))
+            if _descr is not None:
+                _descr = numpy.append(_descr, numpy.array(['']*len(diff)))
+
+        return _keys, _vals, _descr
+
     def keys(self):
         """
-        Return a list of the bits; 'NULL' keywords are ignored.
+        Return a list of the bit keywords.
+
+        Keywords are sorted by their bit value and 'NULL' keywords are
+        ignored.
         
         Returns:
             list: List of bit keywords.
         """
-        return list(set(self.bits.keys())-set(['NULL']))
-
-
-#    def nbits(self):
-#        """
-#        Return the number of bits.
-#
-#        Returns:
-#            int : Number of bits
-#        """
-#        return len(self.bits)
-
+        k = numpy.array(list(self.bits.keys()))
+        return (k[numpy.invert(k == 'NULL')]).tolist()
 
     def info(self):
         """
@@ -377,17 +318,20 @@ class BitMask:
                     print(' Description: {0}'.format(self.descr[v]))
             print(' ')
 
-
     def minimum_dtype(self, asuint=False):
         """
         Return the smallest int datatype that is needed to contain all
         the bits in the mask.  Output as an unsigned int if requested.
 
+        Args:
+            asuint (:obj:`bool`, optional):
+                Return an unsigned integer type.  Signed types are
+                returned by default.
+
         .. warning::
             uses int16 if the number of bits is less than 8 and
             asuint=False because of issue astropy.io.fits has writing
             int8 values.
-
         """
         if self.nbits < 8:
             return numpy.uint8 if asuint else numpy.int16
@@ -397,7 +341,6 @@ class BitMask:
             return numpy.uint32 if asuint else numpy.int32
         return numpy.uint64 if asuint else numpy.int64
 
-
     def flagged(self, value, flag=None):
         """
         Determine if a bit is on in the provided bitmask value.  The
@@ -405,15 +348,17 @@ class BitMask:
         any one of many bits is on.
 
         Args:
-            value (uint, int, array): Bitmask value.  It should be less
-                than or equal to :attr:`max_value`; however, that is not
-                checked.
-            flag (string, array): (**Optional**) Bit names to check.  If
-                None, then it checks if any bit is on.
+            value (int, array-like):
+                Bitmask value.  It should be less than or equal to
+                :attr:`max_value`; however, that is not checked.
+            flag (str, array-like, optional):
+                One or more bit names to check.  If None, then it checks
+                if *any* bit is on.
         
         Returns:
-            bool: Boolean flags that the provided flags (or any flag)
-            is on for the provided bitmask value.
+            bool: Boolean flags that the provided flags (or any flag) is
+            on for the provided bitmask value.  Shape is the same as
+            `value`.
 
         Raises:
             KeyError: Raised by the dict data type if the input *flag*
@@ -421,155 +366,141 @@ class BitMask:
             TypeError: Raised if the provided *flag* does not contain
                 one or more strings.
         """
-        if numpy.any(numpy.array(flag) == 'NULL'):
-            raise ValueError('Flag name NULL is not allowed.')
+        _flag = self._prep_flags(flag)
 
-        if flag is None:
-            flag = self.keys()
-
-        if isinstance(flag, str):
-            return value & (1 << self.bits[flag]) != 0
-
-        if hasattr(flag, "__iter__"):
-            if not all([ isinstance(f, str) for f in flag ]):
-                raise TypeError('Provided bit names must be strings!')
-            out = value & (1 << self.bits[flag[0]]) != 0
-            nn = len(flag)
-            for i in range(1,nn):
-                out |= (value & (1 << self.bits[flag[i]]) != 0)
+        out = value & (1 << self.bits[_flag[0]]) != 0
+        if len(_flag) == 1:
             return out
 
-        raise Exception('Provided bit name must be a string or an iterable of strings!')
-
+        nn = len(_flag)
+        for i in range(1,nn):
+            out |= (value & (1 << self.bits[_flag[i]]) != 0)
+        return out
 
     def flagged_bits(self, value):
         """
         Return the list of flagged bit names for a single bit value.
 
         Args:
-            value (int, uint): Bitmask value.  It should be less than or
-                equal to :attr:`max_value`; however, that is not
-                checked.
+            value (int):
+                Bitmask value.  It should be less than or equal to
+                :attr:`max_value`; however, that is not checked.
         
         Returns:
             list: List of flagged bit value keywords.
 
         Raises:
-            KeyError: Raised by the dict data type if the input *flag*
-                is not one of the valid :attr:`flags`.
-            TypeError: Raised if the provided *flag* does not contain
-                one or more strings.
+            KeyError:
+                Raised by the dict data type if the input *flag* is not
+                one of the valid :attr:`flags`.
+            TypeError:
+                Raised if the provided *flag* does not contain one or
+                more strings.
         """
-        if not isinstance(value, (int, numpy.integer)):
+        if not numpy.issubdtype(type(value), numpy.integer):
             raise TypeError('Input must be a single integer.')
         if value <= 0:
             return []
         keys = numpy.array(self.keys())
-        indx = numpy.array([ 1<<self.bits[k] & value != 0 for k in keys])
+        indx = numpy.array([1<<self.bits[k] & value != 0 for k in keys])
         return list(keys[indx])
-
 
     def toggle(self, value, flag):
         """
         Toggle a bit in the provided bitmask value.
 
         Args:
-            value (uint, int, array): Bitmask value.  It should be less
-                than or equal to :attr:`max_value`; however, that is not
-                checked.
-            flag (list, numpy.ndarray, or str): Bit name(s) to toggle.
-        
+            value (int, array-like):
+                Bitmask value.  It should be less than or equal to
+                :attr:`max_value`; however, that is not checked.
+            flag (str, array-like):
+                Bit name(s) to toggle.
+
         Returns:
-            uint: New bitmask value after toggling the selected bit.
+            array-like: New bitmask value after toggling the selected
+            bit.
 
         Raises:
-            KeyError: Raised by the dict data type if the input *flag*
-                is not one of the valid :attr:`flags`.
-            Exception: Raised if the provided *flag* is not a string.
+            ValueError:
+                Raised if the provided flag is None.
         """
-        if flag == 'NULL':
-            raise ValueError('Flag name NULL is invalid!')
-        if isinstance(flag, (list, numpy.ndarray)):
-            _value = value
-            for f in flag:
-                if not isinstance(f, str):
-                    raise TypeError('Provided bit name must be a string!')
-                _value ^= (1 << self.bits[f])
-            return _value
-        if not isinstance(flag, str):
-            raise TypeError('Provided bit name must be a list or string!')
-        return value ^ (1 << self.bits[flag])
+        if flag is None:
+            raise ValueError('Provided bit name cannot be None.')
 
+        _flag = self._prep_flags(flag)
+
+        out = value ^ (1 << self.bits[_flag[0]])
+        if len(_flag) == 1:
+            return out
+
+        nn = len(_flag)
+        for i in range(1,nn):
+            out ^= (1 << self.bits[_flag[i]])
+        return out
 
     def turn_on(self, value, flag):
         """
         Ensure that a bit is turned on in the provided bitmask value.
 
         Args:
-            value (uint or array): Bitmask value.  It should be less
-                than or equal to :attr:`max_value`; however, that is not
-                checked.
-            flag (list, numpy.ndarray, or str): Bit name(s) to turn on.
+            value (int, array-like):
+                Bitmask value.  It should be less than or equal to
+                :attr:`max_value`; however, that is not checked.
+            flag (str, array-like):
+                Bit name(s) to turn on.
         
         Returns:
             uint: New bitmask value after turning on the selected bit.
 
         Raises:
-            KeyError: Raised by the dict data type if the input *flag*
-                is not one of the valid :attr:`flags`.
-            Exception: Raised if the provided *flag* is not a string.
+            ValueError:
+                Raised if the provided flag is None.
         """
-        if flag == 'NULL':
-            raise ValueError('Flag name NULL is invalid!')
-        if isinstance(flag, (list, numpy.ndarray)):
-            _value = value
-            for f in flag:
-                if not isinstance(f, str):
-                    raise TypeError('Provided bit name must be a string!')
-                _value |= (1 << self.bits[f])
-            return _value
-        if not isinstance(flag, str):
-            raise TypeError('Provided bit name must be a string!')
-        return value | (1 << self.bits[flag])
+        if flag is None:
+            raise ValueError('Provided bit name cannot be None.')
 
-#        if flag == 'NULL':
-#            raise ValueError('Flag name NULL is invalid!')
-#        if not isinstance(flag, str):
-#            raise Exception('Provided bit name must be a string!')
-#        return value | (1 << self.bits[flag])
+        _flag = self._prep_flags(flag)
 
+        out = value | (1 << self.bits[_flag[0]])
+        if len(_flag) == 1:
+            return out
+
+        nn = len(_flag)
+        for i in range(1,nn):
+            out |= (1 << self.bits[_flag[i]])
+        return out
 
     def turn_off(self, value, flag):
         """
         Ensure that a bit is turned off in the provided bitmask value.
 
         Args:
-            value (uint or array): Bitmask value.  It should be less
-                than or equal to :attr:`max_value`; however, that is not
-                checked.
-            flag (list, numpy.ndarray, or str): Bit name(s) to turn off.
+            value (int, array-like):
+                Bitmask value.  It should be less than or equal to
+                :attr:`max_value`; however, that is not checked.
+            flag (str, array-like):
+                Bit name(s) to turn off.
         
         Returns:
             uint: New bitmask value after turning off the selected bit.
 
         Raises:
-            KeyError: Raised by the dict data type if the input *flag*
-                is not one of the valid :attr:`flags`.
-            Exception: Raised if the provided *flag* is not a string.
+            ValueError:
+                Raised if the provided flag is None.
         """
-        if flag == 'NULL':
-            raise ValueError('Flag name NULL is invalid!')
-        if isinstance(flag, (list, numpy.ndarray)):
-            _value = value
-            for f in flag:
-                if not isinstance(f, str):
-                    raise TypeError('Provided bit name must be a string!')
-                _value &= ~(1 << self.bits[f])
-            return _value
-        if not isinstance(flag, str):
-            raise TypeError('Provided bit name must be a string!')
-        return value & ~(1 << self.bits[flag])
+        if flag is None:
+            raise ValueError('Provided bit name cannot be None.')
 
+        _flag = self._prep_flags(flag)
+
+        out = value & ~(1 << self.bits[_flag[0]])
+        if len(_flag) == 1:
+            return out
+
+        nn = len(_flag)
+        for i in range(1,nn):
+            out &= ~(1 << self.bits[_flag[i]])
+        return out
 
     def consolidate(self, value, flag_set, consolidated_flag):
         """
@@ -579,6 +510,122 @@ class BitMask:
         value[indx] = self.turn_on(value[indx], consolidated_flag)
         return value
 
+    def unpack(self, value, flag=None):
+        """
+        Construct boolean arrays with the selected bits flagged.
 
+        Args:
+            value (`numpy.ndarray`_):
+                The bitmask values to unpack.
+            flag (:obj:`str`, :obj:`list`, optional):
+                The specific bits to unpack.  If None, all values are
+                unpacked.
+        Returns:
+            tuple: A tuple of boolean numpy.ndarrays flagged according
+            to each bit.
+        """
+        _flag = self._prep_flags(flag)
+        print(_flag)
+        return tuple([self.flagged(value, flag=f) for f in _flag])
 
+    def to_header(self, hdr, prefix=None, quiet=False):
+        """
+        Write the bits to a fits header.
+
+        .. todo::
+            - This is very similar to the function in ParSet.  Abstract
+              to a general routine?
+            - The comment might have a limited length and be truncated.
+
+        Args:
+            hdr (`astropy.io.fits.Header`):
+                Header object for the parameters. Modified in-place.
+            prefix (:obj:`str`, optional):
+                Prefix to use for the header keywords, which
+                overwrites the string defined for the class. If None,
+                uses the default for the class.
+            quiet (:obj:`bool`, optional):
+                Suppress print statements.
+        """
+        if prefix is None:
+            prefix = self.prefix
+        maxbit = max(list(self.bits.values()))
+        ndig = int(numpy.log10(maxbit))+1 
+        for key, value in sorted(self.bits.items(), key=lambda x:(x[1],x[0])):
+            if key == 'NULL':
+                continue
+            hdr['{0}{1}'.format(prefix, str(value).zfill(ndig))] = (key, self.descr[value])
+
+    @classmethod
+    def from_header(cls, hdr, prefix=None):
+        """
+        Instantiate the BitMask using data parsed from a fits header.
+
+        .. todo::
+            - This is very similar to the function in ParSet.  Abstract
+              to a general routine?
+            - If comments are truncated by the comment line length,
+              they'll be different than a direct instantiation.
+
+        Args:
+            hdr (`astropy.io.fits.Header`):
+                Header object with the bits.
+            prefix (:obj:`str`, optional):
+                Prefix of the relevant header keywords, which
+                overwrites the string defined for the class. If None,
+                uses the default for the class.
+        """
+        if prefix is None:
+            prefix = cls.prefix
+        # Parse the bits from the header
+        keys, values, descr = cls.parse_bits_from_hdr(hdr, prefix)
+        # Fill in any missing bits
+        keys, values, descr = cls._fill_sequence(keys, values, descr=descr)
+        # Make sure the bits are sorted
+        srt = numpy.argsort(values)
+        # Instantiate the BitMask
+        return cls(keys[srt], descr=descr[srt])
+
+    @staticmethod
+    def parse_bits_from_hdr(hdr, prefix):
+        """
+        Parse bit names, values, and descriptions from a fits header.
+
+        .. todo::
+            - This is very similar to the function in ParSet.  Abstract
+              to a general routine?
+
+        Args:
+            hdr (`astropy.io.fits.Header`):
+                Header object with the bits.
+            prefix (:obj:`str`):
+                The prefix used for the header keywords.
+        
+        Returns:
+            Three lists are returned providing the bit names, values,
+            and descriptions.
+        """
+        keys = []
+        values = []
+        descr = []
+        for k, v in hdr.items():
+            # Check if this header keyword starts with the required
+            # prefix
+            if k[:len(prefix)] == prefix:
+                try:
+                    # Try to convert the keyword without the prefix
+                    # into an integer. Bits are 0 indexed and written
+                    # to the header that way.
+                    i = int(k[len(prefix):])
+                except ValueError:
+                    # Assume the value is some other random keyword that
+                    # starts with the prefix but isn't a parameter
+                    continue
+
+                # Assume we've found a bit entry. Parse the bit name
+                # and description and add to the compiled list
+                keys += [v]
+                values += [i]
+                descr += [hdr.comments[k]]
+        return keys, values, descr
 
