@@ -481,6 +481,44 @@ class ParSet:
         with open(cfg_file, 'a' if append else 'w') as f:
             f.write('\n'.join(config_output))
 
+    @staticmethod
+    def _rst_class_name(p):
+        return ':class:`' +  type(p).__module__ + '.' + type(p).__name__ + '`'
+
+    @staticmethod
+    def _data_table_string(data_table, delimeter='print'):
+        """
+        Provided the array of data, format it with equally spaced
+        columns and add a header (first row) and contents delimeter.
+
+        Args:
+            data_table (:obj:`numpy.ndarray`):
+                Array of string representations of the data to print.
+
+        Returns:
+            str: Single long string with the data table.
+        """
+        nrows, ncols = data_table.shape
+        col_width = [ numpy.amax([ len(dij) for dij in dj]) for dj in data_table.T ]
+        row_string = ['']*(nrows+1) if delimeter == 'print' else ['']*(nrows+3)
+        start = 2 if delimeter == 'print' else 3
+        for i in range(start,nrows+start-1):
+            row_string[i] = '  '.join([ data_table[1+i-start,j].ljust(col_width[j]) 
+                                                                        for j in range(ncols)])
+        if delimeter == 'print':
+            # Heading row
+            row_string[0] = '  '.join([ data_table[0,j].ljust(col_width[j]) for j in range(ncols)])
+            # Delimiter
+            row_string[1] = '-'*len(row_string[0])
+            return '\n'.join(row_string)+'\n'
+
+        # For an rst table
+        row_string[0] = '  '.join([ '='*col_width[j] for j in range(ncols)])
+        row_string[1] = '  '.join([ data_table[0,j].ljust(col_width[j]) for j in range(ncols)])
+        row_string[2] = row_string[0]
+        row_string[-1] = row_string[0]
+        return '\n'.join(row_string)+'\n'
+
 
 class ParDatabase:
     """

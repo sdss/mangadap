@@ -53,6 +53,8 @@ import numpy
 
 from pydl.pydlutils.yanny import yanny
 
+from mangadap.par.parset import ParSet
+
 class BitMask:
     """
     Generic class to handle and manipulate bitmasks.  The input list of
@@ -643,4 +645,32 @@ class BitMask:
                 values += [i]
                 descr += [hdr.comments[k]]
         return keys, values, descr
+
+    def to_rst_table(self, header=True, class_link=True):
+        """
+        Construct a reStructuredText table describing the bitmask.
+
+        Returns:
+            list: Returns a list of lines that can be written to an
+            ``*.rst`` file.
+        """
+        keys = self.keys()
+        data_table = numpy.empty((len(keys)+1, 3), dtype=object)
+        data_table[0,:] = ['Key', 'Bit', 'Description']
+        for i,k in enumerate(keys):
+            data_table[i+1,0] = k
+            data_table[i+1,1] = str(self.bits[k])
+            data_table[i+1,2] = '..' if self.descr is None else self.descr[self.bits[k]]
+
+        output = []
+        if header:
+            output += [ '{0} Bits'.format(type(self).__name__) ]
+            output += [ '-'*len(output[0]) ]
+            output += [ '' ]
+        if class_link:
+            output += ['Class Instantiation: ' + ParSet._rst_class_name(self)]
+            output += ['']
+        output += [ParSet._data_table_string(data_table, delimeter='rst')]
+        output += ['']
+        return output
 

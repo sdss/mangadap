@@ -110,4 +110,9 @@ def test_ini_io():
     assert list(bm.bits.keys()) == ['BPM', 'COSMIC', 'SATURATED']
     assert list(bm.bits.values()) == [0, 1, 2]
 
+def test_rst():
+
+    bm = ImageBitMask()
+    lines = bm.to_rst_table()
+    assert lines[0] == 'ImageBitMask Bits'
 

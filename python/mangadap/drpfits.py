@@ -256,7 +256,7 @@ class DRPQuality3DBitMask(BitMask):
         _sdss_maskbits = sdss_maskbits_file() if sdss_maskbits is None else sdss_maskbits
         tmp = BitMask.from_par_file(_sdss_maskbits, 'MANGA_DRP3QUAL')
         keys, descr = tmp._init_objs()
-        super(DRPFitsBitMask, self).__init__(keys, descr=descr)
+        super(DRPQuality3DBitMask, self).__init__(keys, descr=descr)
 
 
 class DRPFits:

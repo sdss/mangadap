@@ -37,27 +37,10 @@ MANGA_DAPQUAL
 
 There is a single summary maskbit ``MANGA_DAPQUAL`` included in the
 headers of both the MAPS and LOGCUBE files describing the overall
-quality of the data:
+quality of the data.  The DAP class used to handle these bits and the
+bit values are:
 
-+-----+-----------+--------------------------------------------------------------+
-| Bit | Name      | Description                                                  |
-+=====+===========+==============================================================+
-|   0 | FORESTAR  | There is a foreground star within the data cube              |
-+-----+-----------+--------------------------------------------------------------+
-|   1 | BADZ      | NSA redshift does not match derived redshift (*placeholder*) |
-+-----+-----------+--------------------------------------------------------------+
-|   2 | LINELESS  | No emission lines in data cube (*placeholder*)               |
-+-----+-----------+--------------------------------------------------------------+
-|   3 | PPXFFAIL  | PPXF fails to fit this object (*placeholder*)                |
-+-----+-----------+--------------------------------------------------------------+
-|   4 | SINGLEBIN | Voronoi binning resulted in all spectra in a single bin      |
-+-----+-----------+--------------------------------------------------------------+
-|  28 | DRPCRIT   | Critical failure in DRP                                      |
-+-----+-----------+--------------------------------------------------------------+
-|  29 | DAPCRIT   | Critical failure in DAP                                      |
-+-----+-----------+--------------------------------------------------------------+
-|  30 | CRITICAL  | Critical failure in DRP or DAP                               |
-+-----+-----------+--------------------------------------------------------------+
+.. include:: tables/dapqualitybitmask.rst
 
 Anything with the CRITICAL bit set in MANGA_DAPQUAL should generally not
 be used for scientific purposes.

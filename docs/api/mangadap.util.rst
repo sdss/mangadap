@@ -9,6 +9,7 @@ Submodules
    mangadap.util.bitmask
    mangadap.util.constants
    mangadap.util.covariance
+   mangadap.util.dapbitmask
    mangadap.util.exception_tools
    mangadap.util.extinction
    mangadap.util.fileio
