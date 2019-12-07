@@ -39,6 +39,7 @@ Implements an emission-line fitting class that largely wraps pPXF.
 
 import time
 import logging
+import warnings
 
 import numpy
 from scipy import interpolate, fftpack
