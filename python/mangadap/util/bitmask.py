@@ -106,6 +106,9 @@ class BitMask:
         _keys = keys if hasattr(keys, '__iter__') else [keys]
         _keys = numpy.atleast_1d(_keys).ravel()
         _descr = None if descr is None else numpy.atleast_1d(descr).ravel()
+        if _descr is not None:
+            for i in range(len(_descr)):
+                _descr[i] = _descr[i].strip()
 
 #        from IPython import embed
 #        embed()

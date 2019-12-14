@@ -250,8 +250,9 @@ def available_stellar_continuum_modeling_methods(dapsrc=None):
 class StellarContinuumModelBitMask(DAPBitMask):
     r"""
     Derived class that specifies the mask bits for the stellar-continuum
-    modeling.  See :class:`mangadap.util.bitmask.BitMask` for
-    attributes.
+    modeling. The maskbits defined are:
+
+    .. include:: ../tables/stellarcontinuummodelbitmask.rst
     """
     cfg_root = 'stellar_continuum_model_bits'
 

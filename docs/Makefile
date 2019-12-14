@@ -19,6 +19,7 @@ clean:
 
 apirst:
 	SPHINX_APIDOC_OPTIONS=$(SPHINXAPIOPT) $(SPHINXAPI) --separate -o ./api ../python/mangadap ../python/mangadap/tests/* 
+	python3 ./scripts/write_bitmask_tables.py
 
 html:
 	make apirst

@@ -240,8 +240,9 @@ def available_emission_line_modeling_methods(dapsrc=None):
 class EmissionLineModelBitMask(DAPBitMask):
     r"""
     Derived class that specifies the mask bits for the emission-line
-    modeling.  See :class:`mangadap.util.bitmask.BitMask` for
-    attributes.
+    modeling. The maskbits defined are:
+
+    .. include:: ../tables/emissionlinemodelbitmask.rst
     """
     cfg_root = 'emission_line_model_bits'
 

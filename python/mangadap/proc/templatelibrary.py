@@ -365,7 +365,9 @@ def available_template_libraries(dapsrc=None):
 class TemplateLibraryBitMask(DAPBitMask):
     """
     Derived class that specifies the mask bits for the template library
-    data.  See :class:`mangadap.util.bitmask.BitMask` for attributes.
+    data.  The maskbits defined are:
+
+    .. include:: ../tables/templatelibrarybitmask.rst
     """
     cfg_root = 'spectral_template_bits'
 

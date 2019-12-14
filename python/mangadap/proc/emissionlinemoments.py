@@ -192,8 +192,9 @@ def available_emission_line_moment_databases(dapsrc=None):
 class EmissionLineMomentsBitMask(DAPBitMask):
     r"""
     Derived class that specifies the mask bits for the emission-line
-    moment measurements.  See :class:`mangadap.util.bitmask.BitMask` for
-    attributes.
+    moment measurements.  The maskbits defined are:
+    
+    .. include:: ../tables/emissionlinemomentsbitmask.rst
     """
     cfg_root = 'emission_line_moments_bits'
 

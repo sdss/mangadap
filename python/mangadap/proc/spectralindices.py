@@ -239,8 +239,9 @@ def available_spectral_index_databases(dapsrc=None):
 class SpectralIndicesBitMask(DAPBitMask):
     r"""
     Derived class that specifies the mask bits for the spectral-index
-    measurements.  See :class:`mangadap.util.bitmask.BitMask` for
-    attributes.
+    measurements. The maskbits defined are:
+
+    .. include:: ../tables/spectralindicesbitmask.rst
     """
     cfg_root = 'spectral_indices_bits'
 

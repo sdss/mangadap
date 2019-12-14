@@ -236,7 +236,9 @@ def drpfits_list(platelist, ifudesignlist, modelist, combinatorics=False, drpver
 
 class DRPFitsBitMask(BitMask):
     r"""
-    Structure with the DRP mask bits.
+    Structure with the DRP mask bits.A
+
+    The defined bits are listed at :ref:`metadatamodel-drp3pixmask`.
     """
     def __init__(self, sdss_maskbits=None, mode='CUBE'):
         DRPFits.check_mode(mode)
@@ -250,6 +252,8 @@ class DRPFitsBitMask(BitMask):
 class DRPQuality3DBitMask(BitMask):
     r"""
     Structure with the definition of the DRP3QUAL mask bits.
+
+    The defined bits are listed at :ref:`metadatamodel-drp3qual`.
     """
     def __init__(self, sdss_maskbits=None):
         sdss_maskbits = sdss_maskbits_file()

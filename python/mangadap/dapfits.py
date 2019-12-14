@@ -71,6 +71,10 @@ from matplotlib import pyplot
 #-----------------------------------------------------------------------
 class DAPQualityBitMask(DAPBitMask):
     """
+    Class used to flag/interpret global quality bit.
+
+    The defined bits are listed at :ref:`metadatamodel-dapqual`.
+
     .. todo::
         - Force read IDLUTILS version as opposed to internal one?
     """
@@ -79,6 +83,10 @@ class DAPQualityBitMask(DAPBitMask):
 
 class DAPMapsBitMask(DAPBitMask):
     """
+    Class used to flag/interpret bits in DAP MAPS files.
+
+    The defined bits are listed at :ref:`metadatamodel-dappixmask`.
+
     .. todo::
         - Force read IDLUTILS version as opposed to internal one?
     """
@@ -87,6 +95,10 @@ class DAPMapsBitMask(DAPBitMask):
 
 class DAPCubeBitMask(DAPBitMask):
     """
+    Class used to flag/interpret bits in DAP model LOGCUBE files.
+
+    The defined bits are listed at :ref:`metadatamodel-dapspecmask`.
+
     .. todo::
         - Force read IDLUTILS version as opposed to internal one?
     """

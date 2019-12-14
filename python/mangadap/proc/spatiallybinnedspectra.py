@@ -322,7 +322,9 @@ def available_spatial_binning_methods(dapsrc=None):
 class SpatiallyBinnedSpectraBitMask(DAPBitMask):
     r"""
     Derived class that specifies the mask bits for the spatially binned
-    spectra.  See :class:`mangadap.util.bitmask.BitMask` for attributes.
+    spectra.  The maskbits defined are:
+    
+    .. include:: ../tables/spatiallybinnedspectrabitmask.rst
     """
     cfg_root = 'spatially_binned_spectra_bits'
 
