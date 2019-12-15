@@ -553,11 +553,11 @@ class ParSet:
                 Key for new parameter
             value (object):
                 Parameter value, must have a type in the list provided
-                by :arg:`dtype`, if the list is provided
+                by ``dtype``, if the list is provided
             default (object, optional):
                 Define a default value for the parameter, must have a
-                type in the list provided by :arg:`dtype`, if the list
-                is provided.  No default if not provided.
+                type in the list provided by ``dtype``, if the list is
+                provided.  No default if not provided.
             options (:obj:`list`, optional):
                 List of discrete values that the parameter is allowed to
                 have.  Allowed to be anything if not provided.
@@ -679,8 +679,9 @@ class ParSet:
         return ':class:`' +  type(p).__module__ + '.' + type(p).__name__ + '`'
 
     def to_rst_table(self, parsets_listed=[]):
-        """
-        Construct a reStructuredText table with the ParSet data.
+        r"""
+        Construct a reStructuredText table with the :class:`ParSet`
+        data.
 
         This method is mostly meant for documentation purposes, as way
         of showing the format and default parameters of a given single

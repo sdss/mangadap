@@ -320,8 +320,7 @@ class VoronoiBinningPar(ParSet):
             The array of noise measurements for each on-sky position to
             bin.  If not provided, ``covar`` must be provided and be a
             full covariance matrix.
-        covar (:obj:`float`, `numpy.ndarray`_,
-                :class:`mangadap.util.covariance.Covariance`, `scipy.sparse.spmatrix`_):
+        covar (:obj:`float`, `numpy.ndarray`_, :class:`mangadap.util.covariance.Covariance`, `scipy.sparse.spmatrix`_):
 
             Covariance matrix or calibration normalization.  For the
             latter, the value is used to renormalize the noise according

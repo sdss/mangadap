@@ -308,6 +308,8 @@ used by :class:`mangadap.proc.emissionlinemoments.EmissionLineMoments`:
        and then change the relevant configuration file in the same way
        as described above.
 
+.. _emissionlines-modeling:
+
 Gaussian Emission-Line Modeling
 -------------------------------
 

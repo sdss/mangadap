@@ -1,5 +1,8 @@
 
-.. include:: links.rst
+.. just to avoid the warnings
+.. _numpy.ndarray: https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html
+.. _SDSS-style parameter file: http://www.sdss.org/dr15/software/par/
+.. _astropy.io.fits.Header: http://docs.astropy.org/en/stable/io/fits/api/headers.html#header
 
 Bitmasks allow you to define a set of bit values signified by strings,
 and then toggle and interpret bits held by a `numpy.ndarray`_.  For
@@ -47,10 +50,10 @@ running::
     ['BPM', 'COSMIC', 'SATURATED']
 
 Now you can define a `numpy.ndarray`_ to hold the mask value for each
-image pixel; the :func:`BitMask.minimum_dtype` returns the the smallest
-data type required to represent the list of defined bits.  The maximum
-number of bits that can be defined is 64.  Assuming you have an image
-``img``::
+image pixel; the :func:`mangadap.util.bitmask.BitMask.minimum_dtype`
+returns the the smallest data type required to represent the list of
+defined bits.  The maximum number of bits that can be defined is 64.
+Assuming you have an image ``img``::
 
     import numpy
     mask = numpy.zeros(img.shape, dtype=image_bm.minimum_dtype())
@@ -91,14 +94,16 @@ Some other sort usage examples:
 
         masked_img = numpy.ma.MaskedArray(img, mask=image_bm.flagged(mask))
 
-:class:`BitMask` objects can be defined programmatically, as shown above
-for the ``ImageBitMask`` derived class, but they can also be defined by
-reading formatted files.  The current options are:
+:class:`mangadap.util.bitmask.BitMask` objects can be defined
+programmatically, as shown above for the ``ImageBitMask`` derived class,
+but they can also be defined by reading formatted files.  The current
+options are:
 
     #. `SDSS-style parameter file`_: This is largely used to make
-       :class:`BitMask` compatible with the SDSS maskbits file (see
-       ``$MANGADAP_DIR/data/sdss/sdssMaskbits.par``).  For the
-       ``ImageBitMask`` example, the par file would look like this::
+       :class:`mangadap.util.bitmask.BitMask` compatible with the SDSS
+       maskbits file (see ``$MANGADAP_DIR/data/sdss/sdssMaskbits.par``).
+       For the ``ImageBitMask`` example, the par file would look like
+       this::
 
             typedef struct {
                 char flag[20]; # Flag name
@@ -119,7 +124,7 @@ reading formatted files.  The current options are:
             maskbits IMAGEMASK  2 SATURATED "Pixel is saturated"
 
        Assuming this is written to ``imagebitmask.par``, you can
-       instantiate the :class:`BitMask` like so::
+       instantiate the :class:`mangadap.util.bitmask.BitMask` like so::
 
             from mangadap.util.bitmask import BitMask
             bm = BitMask.from_par_file('imagebitmask.par', 'IMAGEMASK')
@@ -143,7 +148,7 @@ reading formatted files.  The current options are:
              descr = Pixel is saturated
 
        Assuming this is written to ``imagebitmask.ini``, you can
-       instantiate the :class:`BitMask` like so::
+       instantiate the :class:`mangadap.util.bitmask.BitMask` like so::
 
             from mangadap.util.bitmask import BitMask
             bm = BitMask.from_ini_file('imagebitmask.ini')
