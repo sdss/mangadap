@@ -52,7 +52,6 @@ from matplotlib import pyplot
 
 class BandPassFilterPar(ParSet):
     r"""
-
     Parameter object that defines a set of band-pass filters.  This is a
     base class for similar objects used calculating fluxes and flux
     moments of emission lines
@@ -159,18 +158,18 @@ class BandPassFilterPar(ParSet):
                     'magnitudes (``mag``).  Currently only used by ' \
                     ':class:`mangadap.par.absorptionindexdb.AbsorptionIndexDB`.',
                  'Flag that the bandpass definition is a component of a larger set of bandpass ' \
-                    'filters.  This is currently only used by '
+                    'filters.  This is currently only used by ' \
                     ':class:`mangadap.par.absorptionindexdb.AbsorptionIndexDB` to combine index ' \
                     'measurements into a single index.  If True, all components with the same ' \
                     '*name* are summed to form the composite index.',
                  r'Currently only used by :class:`mangadap.par.bandheadindexdb.BandheadIndexDB`.' \
                     r'  Define the integrand over the passband used to construct and index as ' \
                     r'either flux per unit frequency (``fnu``), :math:`F_\nu`, or flux per unit ' \
-                    r'wavelength (``flambda``), :math:`F_\lambda`.'
+                    r'wavelength (``flambda``), :math:`F_\lambda`.',
                  'Currently only used by :class:`mangadap.par.bandheadindexdb.BandheadIndexDB`.' \
                     '  Define the order to use when constructing the index.  The options are ' \
                     'either a ratio of red-to-blue or blue-to-red, which are respectively ' \
-                    'selected using ``r_b`` or ``b_r``.',
+                    'selected using ``r_b`` or ``b_r``.']
 
         super(BandPassFilterPar, self).__init__(pars, values=values, options=options,
                                                 dtypes=dtypes, descr=descr)
