@@ -916,7 +916,6 @@ class ParDatabase:
         self.dtype = inp[0].dtype.copy()
         self.can_call = inp[0].can_call.copy()
    
-
     def __getitem__(self, key):
         """
         Return the value of the designated key.

@@ -102,9 +102,15 @@ class ObsInputPar(ParSet):
         defaults = [    None,        None,    'CUBE',  None,   100.0,   0.0,   0.0,    1.0 ]
         options =  [    None,        None, mode_keys,  None,    None,  None,  None,   None ]
         dtypes =   [     int,         int,       str, in_fl,   in_fl, in_fl, in_fl,  in_fl ]
+        descr = [ 'Plate number', 'IFU designation',
+                  'DRP 3D mode; see :func:`mangadap.drpfits.DRPFits.mode_options`.',
+                  'Systemic velocity (km/s)', 'Guess velocity dispersion (km/s)',
+                  r'Isophotal ellipticity (:math:`\varepsilon = 1-b/a`)',
+                  'Position angle (degrees) of the isophotal major axis from N through E',
+                  'Effective radius (arcsec)']
 
-        ParSet.__init__(self, pars, values=values, defaults=defaults, options=options,
-                        dtypes=dtypes)
+        super(ObsInputPar, self).__init__(pars, values=values, defaults=defaults, options=options,
+                                          dtypes=dtypes, descr=descr)
 
         self.valid_vdisp = True
         self.valid_ell = True
@@ -112,7 +118,6 @@ class ObsInputPar(ParSet):
         self.valid_reff = True
 
         self._check()
-
 
     def _check(self):
         r"""
@@ -175,7 +180,6 @@ class ObsInputPar(ParSet):
             raise FileNotFoundError('Could not open {0}!'.format(f))
    
         # Read the file
-#        par = yanny(f)
         par = yanny(filename=f, raw=True)
 
         # Check the number of entries
@@ -183,15 +187,12 @@ class ObsInputPar(ParSet):
             raise ValueError('File must contain only instance of DAPPAR!')
 
         # Return the ObsInputPar instance
-        return cls( par['DAPPAR']['plate'][0],
-                    par['DAPPAR']['ifudesign'][0],
-                    mode=par['DAPPAR']['mode'][0],
-                    vel=par['DAPPAR']['vel'][0],
-                    vdisp=par['DAPPAR']['vdisp'][0],
-                    ell=par['DAPPAR']['ell'][0],
-                    pa=par['DAPPAR']['pa'][0],
-                    reff=par['DAPPAR']['reff'][0]
-                  )
-    
-
+        return cls(par['DAPPAR']['plate'][0],
+                   par['DAPPAR']['ifudesign'][0],
+                   mode=par['DAPPAR']['mode'][0],
+                   vel=par['DAPPAR']['vel'][0],
+                   vdisp=par['DAPPAR']['vdisp'][0],
+                   ell=par['DAPPAR']['ell'][0],
+                   pa=par['DAPPAR']['pa'][0],
+                   reff=par['DAPPAR']['reff'][0])
 

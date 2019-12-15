@@ -88,24 +88,29 @@ class StellarContinuumModelDef(ParSet):
     :func:`mangadap.proc.ppxffit.PPXFFit.fit_SpatiallyBinnedSpectra`.
 
     Args:
-        key (str): Keyword used to distinguish between different spatial
+        key (:obj:`str`):
+            Keyword used to distinguish between different spatial
             binning schemes.
-        minimum_snr (bool): Minimum S/N of spectrum to fit
-        fit_type (str): Currently can be anything.  In the DAP, this is
-            used to identify the primary purpose of the fit as either
-            producing stellar kinematics, composition measurements, or
-            emission line fits; see
-            :mod:`mangadap.proc.spectralfitting'.  The purpose for this
-            type is to isolate the expected format of the binary table
-            data; see, e.g.,
+        minimum_snr (:obj:`bool`):
+            Minimum S/N of spectrum to fit
+        fit_type (:obj:`str`):
+            Currently can be anything.  In the DAP, this is used to
+            identify the primary purpose of the fit as either producing
+            stellar kinematics, composition measurements, or emission
+            line fits; see :mod:`mangadap.proc.spectralfitting`.  The
+            purpose for this type is to isolate the expected format of
+            the binary table data; see, e.g.,
             :func:`mangadap.proc.spectralfitting._per_stellar_kinematics_dtype`.
-        fitpar (:class:`mangadap.par.parset.ParSet` or dict): Any
-            additional parameters, aside from the spectra themselves,
-            required by the fitting function.
-        fitclass (object): Instance of class object to use for the
-            model fitting.  Needed in case fitfunc is a non-static member
-            function of a class.
-        fitfunc (callable): The function that models the spectra
+        fitpar (:class:`mangadap.par.parset.ParSet`, :obj:`dict`):
+            Any additional parameters, aside from the spectra
+            themselves, required by the fitting function.
+        fitclass (object):
+            Instance of class object to use for the model fitting.
+            Needed in case fitfunc is a non-static member function of a
+            class.
+        fitfunc (callable):
+            The function that models the spectra
+
     """
     def __init__(self, key, minimum_snr, fit_type, fitpar, fitclass, fitfunc):
         in_fl = [ int, float ]
@@ -115,8 +120,22 @@ class StellarContinuumModelDef(ParSet):
         values =   [   key,   minimum_snr,   fit_type,   fitpar,   fitclass,   fitfunc ]
         dtypes =   [   str,         in_fl,        str,  par_opt,       None,      None ]
         can_call = [ False,         False,      False,    False,      False,      True ]
+        descr = ['Keyword used to distinguish between different spatial binning schemes.',
+                 'Minimum S/N of spectrum to fit',
+                 'Currently can be anything.  In the DAP, this is used to identify the primary ' \
+                    'purpose of the fit as either producing stellar kinematics, composition ' \
+                    'measurements, or emission line fits; see ' \
+                    ':mod:`mangadap.proc.spectralfitting`.  The purpose for this type is to ' \
+                    'isolate the expected format of the binary table data; see, e.g., ' \
+                    ':func:`mangadap.proc.spectralfitting._per_stellar_kinematics_dtype`.',
+                 'Any additional parameters, aside from the spectra themselves, required by ' \
+                    'the fitting function.',
+                 'Instance of class object to use for the model fitting.  Needed in case ' \
+                    'fitfunc is a non-static member function of a class.',
+                 'The function that models the spectra']
 
-        ParSet.__init__(self, pars, values=values, dtypes=dtypes, can_call=can_call)
+        super(StellarContinuumModelDef, self).__init__(pars, values=values, dtypes=dtypes,
+                                                       can_call=can_call, descr=descr)
 
 
 def validate_stellar_continuum_modeling_method_config(cnfg):

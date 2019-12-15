@@ -73,39 +73,47 @@ class EmissionLinePar(ParSet):
     by various algorithms in the DAP.
 
     .. todo::
+
         - Specify these algorithms
         - provide some basic printing functions for user-level
           interaction
+        - match the variable names to those in the parameter file
+          typedef
 
     See :class:`mangadap.par.parset.ParSet` for attributes and raised
     exceptions.
 
     Args:
-        index (int) : An index used to refer to the line in the *line*
-            and *mode* attributes.
-        name (str) : A name for the line.
-        restwave (float) : The rest wavelength of the line in angstroms
-            *in vacuum*.
-        action (str) : (**Optional**) Describes how the line should be
-            treated; default is ``'f'``.  Possible values are:
+        index (:obj:`int`):
+            An index used to refer to the line in the *line* and *mode*
+            attributes.
+        name (:obj:`str`):
+            A name for the line.
+        restwave (:obj:`float`):
+            The rest wavelength of the line in angstroms *in vacuum*.
+        action (:obj:`str`, optional):
+            Describes how the line should be treated; default is
+            ``'f'``.  Possible values are:
 
-            - ``'i'``: ignore the line, as if the line were commented
-              out.
-            - ``'f'``': fit the line and/or mask the line when fitting
-              the stellar continuum.
-            - ``'m'``': mask the line when fitting the stellar continuum
-              but do NOT fit the line itself
-            - ``'s'``: defines a sky line that should be masked.  When
-              masked, the wavelength of the line is NOT adjusted for the
-              redshift of the object spectrum.
+                - ``'i'``: ignore the line, as if the line were
+                  commented out.
+                - ``'f'``': fit the line and/or mask the line when
+                  fitting the stellar continuum.
+                - ``'m'``': mask the line when fitting the stellar
+                  continuum but do NOT fit the line itself
+                - ``'s'``: defines a sky line that should be masked.
+                  When masked, the wavelength of the line is NOT
+                  adjusted for the redshift of the object spectrum.
 
-        flux (float) : (**Optional**) **Relative** flux of the emission
-            (positive) or absorption (negative) lines.  This should most
-            often be unity if ``line='l'`` and indicates the ratio of
-            line flux if ``line='dN'``.  Default is 1.0.
+        flux (:obj:`float`, optional):
+            **Relative** flux of the emission (positive) or absorption
+            (negative) lines.  This should most often be unity if
+            ``line='l'`` and indicates the ratio of line flux if
+            ``line='dN'``.  Default is 1.0.
 
-        mode (float) : (**Optional**) Fitting mode for the line; default
-            is ``'f'``.  Possible values are:
+        mode (:obj:`float`, optional):
+            Fitting mode for the line; default is ``'f'``.  Possible
+            values are:
 
                 - ``'f'``: Fit the line independently of all others in
                   its own window.
@@ -123,59 +131,62 @@ class EmissionLinePar(ParSet):
                 - ``'aN'``: Fit the line with the flux, velocity, and
                   velocity dispersion tied to the line with index N.
 
-        profile (str): (**Optional**)  The class definition of the
-            profile shape.  This is kept as a string until it is used.
-            Once it is used, it is converted to the class name using::
+        profile (:obj:`str`, optional):
+            The class definition of the profile shape.  This is kept as
+            a string until it is used.  Once it is used, it is converted
+            to the class name using::
         
                 eval(profile)
             
             This line will fail if the profile type has not been
             defined.  Default is ``'GaussianLineProfile'``.
-        ncomp (int): (**Optional**) The number of components (number of
-            separate line profiles) to use when fitting the line.
-            Default is 1.
-        output_model (bool): (**Optional**) Flag to include the
-            best-fitting model of the line in the emission-line model
-            spectrum. Default is True.
-        par (numpy.ndarray) : (**Optional**) A list of the initial guess
-            for the line profile parameters.  The number of parameters
-            must match the struct declaration at the top of the file.
-            The initial parameters are automatically adjusted to provide
-            any designated flux ratios, and the center is automatically
-            adjusted to the provided redshift for the spectrum.  For
-            example, for a GaussianLineProfile, this is typically set to
-            ``[1.0, 0.0, 100.0]``.
-        fix (numpy.ndarray): (**Optional**) A list of flags for fixing
-            the input guess parameters during the fit.  Use 0 for a free
-            parameter, 1 for a fixed parameter.  The parameter value is
-            only fixed **after** adjusted in the flux and or center
-            based on the redshift and the implied tied parameters.  For
-            a free set of parameters using a GaussianLineProfile, this
-            is set to ``[ 0, 0, 0 ]``.
-        lobnd (numpy.ndarray): (**Optional**) A list of lower bounds for
-            the parameters.  For each parameter, use None to indicate no
-            lower bound.  For a GaussianLineProfile with positive flux
-            and standard deviation, this is set to ``[ 0.0, None, 0.0
-            ]``.
-        hibnd (numpy.ndarray): (**Optional**) A list of upper bounds for
-            the parameters.  For each parameter, use None to indicate no
-            upper bound.  For a GaussianLineProfile with maximum
-            standard deviation of 500 km/s, this is set to ``[ None,
-            None, 500.0 ]``.
-        log_bnd (numpy.ndarray): (**Optional**) A list of flags used
-            when determining if a fit parameter is near the imposed
-            boundary.  If true, the fraction of the boundary range used
-            is done in logarithmic, not linear, separation.
-        blueside (numpy.ndarray): (**Optional**) A two-element vector
-            with the starting and ending wavelength for a bandpass
-            blueward of the emission line, which is used to set the
-            continuum level near the emission line when calculating the
-            equivalent width.
-        redside (numpy.ndarray): (**Optional**) A two-element vector
-            with the starting and ending wavelength for a bandpass
-            redward of the emission line, which is used to set the
-            continuum level near the emission line when calculating the
-            equivalent width.
+        ncomp (:obj:`int`, optional):
+            The number of components (number of separate line profiles)
+            to use when fitting the line.  Default is 1.
+        output_model (:obj:`bool`, optional):
+            Flag to include the best-fitting model of the line in the
+            emission-line model spectrum. Default is True.
+        par (`numpy.ndarray`_, optional):
+            A list of the initial guess for the line profile parameters.
+            The number of parameters must match the struct declaration
+            at the top of the file.  The initial parameters are
+            automatically adjusted to provide any designated flux
+            ratios, and the center is automatically adjusted to the
+            provided redshift for the spectrum.  For example, for a
+            GaussianLineProfile, this is typically set to ``[1.0, 0.0,
+            100.0]``.
+        fix (`numpy.ndarray`_, optional):
+            A list of flags for fixing the input guess parameters during
+            the fit.  Use 0 for a free parameter, 1 for a fixed
+            parameter.  The parameter value is only fixed **after**
+            adjusted in the flux and or center based on the redshift and
+            the implied tied parameters.  For a free set of parameters
+            using a GaussianLineProfile, this is set to ``[0, 0, 0]``.
+        lobnd (`numpy.ndarray`_, optional):
+            A list of lower bounds for the parameters.  For each
+            parameter, use None to indicate no lower bound.  For a
+            GaussianLineProfile with positive flux and standard
+            deviation, this is set to ``[0.0, None, 0.0]``.
+        hibnd (`numpy.ndarray`_, optional):
+            A list of upper bounds for the parameters.  For each
+            parameter, use None to indicate no upper bound.  For a
+            GaussianLineProfile with maximum standard deviation of 500
+            km/s, this is set to ``[None, None, 500.0]``.
+        log_bnd (`numpy.ndarray`_, optional):
+            A list of flags used when determining if a fit parameter is
+            near the imposed boundary.  If true, the fraction of the
+            boundary range used is done in logarithmic, not linear,
+            separation.
+        blueside (`numpy.ndarray`_, optional):
+            A two-element vector with the starting and ending wavelength
+            for a bandpass blueward of the emission line, which is used
+            to set the continuum level near the emission line when
+            calculating the equivalent width.
+        redside (`numpy.ndarray`_, optional):
+            A two-element vector with the starting and ending wavelength
+            for a bandpass redward of the emission line, which is used
+            to set the continuum level near the emission line when
+            calculating the equivalent width.
     """
     def __init__(self, index, name, restwave, action=None, flux=None, mode=None, profile=None,
                  ncomp=None, output_model=None, par=None, fix=None, lobnd=None, hibnd=None,
@@ -203,10 +214,52 @@ class EmissionLinePar(ParSet):
         dtypes =   [ int, str, in_fl, str, in_fl, str, str, int, bool, arr_like, arr_like,
                      arr_like, arr_like, arr_like, arr_like, arr_like ]
 
-        ParSet.__init__(self, pars, values=values, defaults=defaults, options=options,
-                        dtypes=dtypes)
-        self._check()
+        descr = ['An index used to refer to the line in the *line* and *mode* attributes.',
+                 'A name for the line.',
+                 'The rest wavelength of the line in angstroms *in vacuum*.',
+                 'Describes how the line should be treated.  See ' \
+                    ':ref:`emission-line-modeling-action`. Default is ``f``.',
+                 '**Relative** flux of the emission (positive) or absorption (negative) lines.  ' \
+                    'This should most often be unity if ``line=l`` and indicates the ratio of ' \
+                    'line flux if ``line=dN``.  Default is 1.0.',
+                 'Fitting mode for the line.  See :ref:`emission-line-modeling-action`.  ' \
+                    'Default is ``f``.',
+                 'The class definition of the profile shape.  Must be a class in ' \
+                    ':mod:`mangadap.util.lineprofiles`.',
+                 'The number of components (number of separate line profiles) to use when ' \
+                 'fitting the line.  Default is 1.',
+                 'Flag to include the best-fitting model of the line in the emission-line model ' \
+                    'spectrum.  Default is True.',
+                 'A list of the initial guess for the line profile parameters.  The number of ' \
+                    'parameters must match the struct declaration at the top of the file.  The ' \
+                    'initial parameters are automatically adjusted to provide any designated ' \
+                    'flux ratios, and the center is automatically adjusted to the provided ' \
+                    'redshift for the spectrum.  For example, for a GaussianLineProfile, this ' \
+                    'is typically set to ``[1.0, 0.0, 100.0]``.',
+                 'A list of flags for fixing the input guess parameters during the fit.  Use 0 ' \
+                    'for a free parameter, 1 for a fixed parameter.  The parameter value is ' \
+                    'only fixed **after** adjusted in the flux and or center based on the ' \
+                    'redshift and the implied tied parameters.  For a free set of parameters ' \
+                    'using a GaussianLineProfile, this is set to ``[0, 0, 0]``.',
+                 'A list of lower bounds for the parameters.  For each parameter, use None to ' \
+                    'indicate no lower bound.  For a GaussianLineProfile with positive flux and ' \
+                    'standard deviation, this is set to ``[0.0, None, 0.0]``.',
+                 'A list of upper bounds for the parameters.  For each parameter, use None to ' \
+                    'indicate no upper bound.  For a GaussianLineProfile with maximum standard ' \
+                    'deviation of 500 km/s, this is set to ``[None, None, 500.0]``.',
+                 'A list of flags used when determining if a fit parameter is near the imposed ' \
+                    'boundary.  If true, the fraction of the boundary range used is done in ' \
+                    'logarithmic, not linear, separation.',
+                 'A two-element vector with the starting and ending wavelength for a bandpass ' \
+                    'blueward of the emission line, which is used to set the continuum level ' \
+                    'near the emission line when calculating the equivalent width.',
+                 'A two-element vector with the starting and ending wavelength for a bandpass ' \
+                    'redward of the emission line, which is used to set the continuum level ' \
+                    'near the emission line when calculating the equivalent width.']
 
+        super(EmissionLinePar, self).__init__(pars, values=values, defaults=defaults,
+                                              options=options, dtypes=dtypes, descr=descr)
+        self._check()
 
     def _check(self):
         """
@@ -221,8 +274,8 @@ class EmissionLinePar(ParSet):
             - Add check of profile type
 
         Raises:
-            ValueError: Raised if one of the conditions above are not
-                met.
+            ValueError:
+                Raised if one of the conditions above are not met.
         """
         if self.data['action'] != 'i' and not self.data['flux'] > 0:
             warnings.warn('Emission-line fluxes must be larger than 0.  Ignoring line with ' \
@@ -247,13 +300,15 @@ class EmissionLineDB(SpectralFeatureDB):
     r"""
     Basic container class for the database of emission-line parameters.
 
-    See the base class for additional attributes.
+    Each row of the database is parsed using
+    :class:`mangadap.proc.emissionlinedb.EmissionLinePar`.  For the
+    format of the input file, see :ref:`emissionlines-modeling`.
 
     The primary instantiation requires the SDSS parameter file with
     the emission-line data. To instantiate using a keyword (and
     optionally a directory that holds the parameter files), use the
     :func:`mangadap.par.spectralfeaturedb.SpectralFeatureDB.from_key`
-    class method.
+    class method.  See the base class for additional attributes.
 
     Args:
         parfile (:obj:`str`):
@@ -320,3 +375,4 @@ class EmissionLineDB(SpectralFeatureDB):
         channels = [ '{0}-{1}'.format(self.data['name'][i], int(self.data['restwave'][i])) 
                             for i in range(self.size) ]
         return { n:i for i,n in enumerate(channels) } if dicttype else channels
+

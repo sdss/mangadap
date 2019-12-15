@@ -115,18 +115,24 @@ class SpectralIndicesDef(ParSet):
     spectral-index measurements.
 
     Args:
-        key (str): Keyword used to distinguish between different
-            spectral-index databases.
-        minimum_snr (bool): Minimum S/N of spectrum to fit
-        fwhm (int, float): Resolution FWHM in angstroms at which to make
-            the measurements.
-        compute_corrections (bool): Flag to compute dispersion corrections
-            to indices.  Dispersion corrections are always calculated!
-        artifacts (str): String identifying the artifact database to use
-        absindex (str): String identifying the absorption-index database
-            to use
-        bandhead (str): String identifying the bandhead-index database
-            to use
+        key (:obj:`str`):
+            Keyword used to distinguish between different spectral-index
+            databases.
+        minimum_snr (:obj:`bool`):
+            Minimum S/N of spectrum to fit
+        fwhm (:obj:`int`, :obj:`float`):
+            Resolution FWHM in angstroms at which to make the
+            measurements.
+        compute_corrections (:obj:`bool`):
+            Flag to compute dispersion corrections to indices.
+            Dispersion corrections are always calculated!
+        artifacts (:obj:`str`):
+            String identifying the artifact database to use
+        absindex (:obj:`str`):
+            String identifying the absorption-index database to use
+        bandhead (:obj:`str`):
+            String identifying the bandhead-index database to use
+
     """
     def __init__(self, key, minimum_snr, fwhm, compute_corrections, artifacts, absindex, bandhead):
         in_fl = [ int, float ]
@@ -137,8 +143,16 @@ class SpectralIndicesDef(ParSet):
                           bandhead ]
         dtypes =   [   str,         in_fl,  in_fl,                  bool,         str,        str,
                                str ]
+        descr = ['Keyword used to distinguish between different spectral-index databases.',
+                 'Minimum S/N of spectrum to fit',
+                 'Resolution FWHM in angstroms at which to make the measurements.',
+                 'Flag to compute dispersion corrections to indices.  Dispersion corrections ' \
+                    'are always calculated!',
+                 'String identifying the artifact database to use',
+                 'String identifying the absorption-index database to use',
+                 'String identifying the bandhead-index database to use']
 
-        ParSet.__init__(self, pars, values=values, dtypes=dtypes)
+        super(SpectralIndicesDef, self).__init__(pars, values=values, dtypes=dtypes, descr=descr)
 
 
 def validate_spectral_indices_config(cnfg):

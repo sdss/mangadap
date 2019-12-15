@@ -77,28 +77,34 @@ class RadialBinningPar(ParSet):
     :class:`mangadap.par.parset.ParSet` for attributes.
 
     Args:
-        center (`numpy.ndarray`_ or list): A two-element array defining
-            the center to use in the definition of the elliptical bins.
-            This is defined as a sky-right offset in arcseconds from the
-            nominal center of the object (OBJRA,OBJDEC).  
-        pa (float): Sets the position angle, defined from N through E of
-            the major axis of the isophotal ellipse used to define the
+        center (`numpy.ndarray`_, :obj:`list`):
+            A two-element array defining the center to use in the
+            definition of the elliptical bins.  This is defined as a
+            sky-right offset in arcseconds from the nominal center of
+            the object.  
+        pa (:obj:`float`):
+            Sets the position angle, defined from N through E of the
+            major axis of the isophotal ellipse used to define the
             elliptical bins.
-        ell (float): Sets the ellipticity (1-b/a) of the isophotal
-            ellipse use to define the elliptical bins.
-        radius_scale (float): Defines a scale factor to use when
-            defining the radial bins.  For example, you might want to
-            scale to the a certain number of effective radii or physical
-            scale in kpc.  For no scale, use 1.0.
-        radii (`numpy.ndarray`_ or list): A three-element array defining
-            the starting and ending radius for the bin edges and the
-            number of bins to create.  If the starting radius is -1, the
-            inner-most radius is set to 0 when not using log bins or 0.1
-            arcsec when using logarithmically spaced bins.  If the
-            ending radius is -1, the outer-most radius is set by the
-            spaxel at the largest radius.
-        log_step (bool): A flag that the radial bins should be a
-            geometric series.
+        ell (:obj:`float`):
+            Sets the ellipticity (1-b/a) of the isophotal ellipse use to
+            define the elliptical bins.
+        radius_scale (:obj:`float`):
+            Defines a scale factor to use when defining the radial bins.
+            For example, you might want to scale to the a certain number
+            of effective radii or physical scale in kpc.  For no scale,
+            use 1.0.
+        radii (`numpy.ndarray`_, :obj:`list`):
+            A three-element array defining the starting and ending
+            radius for the bin edges and the number of bins to create.
+            If the starting radius is -1, the inner-most radius is set
+            to 0 when not using log bins or 0.1 arcsec when using
+            logarithmically spaced bins.  If the ending radius is -1,
+            the outer-most radius is set by the spaxel at the largest
+            radius.
+        log_step (:obj:`bool`):
+            A flag that the radial bins should be a geometric series.
+
     """
     def __init__(self, center, pa, ell, radius_scale, radii, log_step):
         in_fl = [ int, float ]
@@ -108,8 +114,24 @@ class RadialBinningPar(ParSet):
         values = [   center,    pa,   ell,   radius_scale,   radii,   log_step ]
         dtypes = [  ar_like, in_fl, in_fl,          in_fl, ar_like,       bool ]
 
-        ParSet.__init__(self, pars, values=values, dtypes=dtypes)
+        descr = ['A two-element array defining the center to use in the definition of the ' \
+                    'elliptical bins.  This is defined as a sky-right offset in arcseconds from ' \
+                    'the nominal center of the object.',
+                 'Sets the position angle, defined from N through E of the major axis of the ' \
+                    'isophotal ellipse used to define the elliptical bins.',
+                 'Sets the ellipticity (1-b/a) of the isophotal ellipse use to define the ' \
+                    'elliptical bins.',
+                 'Defines a scale factor to use when defining the radial bins.  For example, ' \
+                    'you might want to scale to the a certain number of effective radii or ' \
+                    'physical scale in kpc.  For no scale, use 1.0.',
+                 'A three-element array defining the starting and ending radius for the bin ' \
+                    'edges and the number of bins to create.  If the starting radius is -1, ' \
+                    'the inner-most radius is set to 0 when not using log bins or 0.1 arcsec ' \
+                    'when using logarithmically spaced bins.  If the ending radius is -1, the ' \
+                    'outer-most radius is set by the spaxel at the largest radius.',
+                 'A flag that the radial bins should be a geometric series.']
 
+        super(RadialBinningPar, self).__init__(pars, values=values, dtypes=dtypes, descr=descr)
     
     def toheader(self, hdr):
         """
@@ -283,22 +305,27 @@ class RadialBinning(SpatialBinning):
 
 class VoronoiBinningPar(ParSet):
     r"""
-    Class with parameters used by the Voronoi binning algorithm.  See
-    :class:`mangadap.par.parset.ParSet` for attributes.
+    Class with parameters used by the Voronoi binning algorithm.
+
+    See :class:`mangadap.par.parset.ParSet` for attributes.  See
+    `vorbin`_ for the main algorithm.
 
     Args:
-        key (str): Keyword to distinguish the assessment method.
-        target_snr (float) : The target S/N for each bin.
-        signal (array-like) : The array of signal measurements for each
-            on-sky position to bin.
-        noise (array-like) : The array of noise measurements for each
-            on-sky position to bin.  If not provided, *covar* must be
-            provided and be a full covariance matrix.
-        covar (float, `numpy.ndarray`_,
-            :class:`mangadap.util.Covariance`,
-            `scipy.sparse.spmatrix`_): Covariance matrix or calibration
-            normalization.  For the latter, the value is used to
-            renormalize the noise according to the following equation:
+        target_snr (:obj:`float`):
+            The target S/N for each bin.
+        signal (array-like):
+            The array of signal measurements for each on-sky position to
+            bin.
+        noise (array-like):
+            The array of noise measurements for each on-sky position to
+            bin.  If not provided, ``covar`` must be provided and be a
+            full covariance matrix.
+        covar (:obj:`float`, `numpy.ndarray`_,
+                :class:`mangadap.util.covariance.Covariance`, `scipy.sparse.spmatrix`_):
+
+            Covariance matrix or calibration normalization.  For the
+            latter, the value is used to renormalize the noise according
+            to the following equation:
 
             .. math: 
 
@@ -306,8 +333,7 @@ class VoronoiBinningPar(ParSet):
                 N_{\rm bin})
 
             where :math:`N_{\rm bin}` is the number of binned spaxels
-            and :math:`\alpha` is the value provided.  See
-            :func:`mangadap.contrib.voronoi_2d_binning._sn_func`.
+            and :math:`\alpha` is the value provided.
 
     """
     def __init__(self, target_snr, signal, noise, covar):
@@ -319,8 +345,16 @@ class VoronoiBinningPar(ParSet):
         values = [   target_snr,   signal,   noise,      covar ]
         dtypes = [        in_fl,  ar_like, ar_like, covar_type ]
 
-        ParSet.__init__(self, pars, values=values, dtypes=dtypes)
+        descr = ['The target S/N for each bin.',
+                 'The array of signal measurements for each on-sky position to bin.',
+                 'The array of noise measurements for each on-sky position to bin.  If not ' \
+                    'provided, ``covar`` must be provided and be a full covariance matrix.',
+                 r'Covariance matrix or calibration normalization.  For the latter, the value ' \
+                    r'is used to renormalize using :math:`n_{\rm calib} = n_{\rm nominal} ' \
+                    r'(1 + \alpha\ \log\ N_{\rm bin})`, where :math:`N_{\rm bin}` is the number ' \
+                    r'of binned spaxels and :math:`\alpha` is the value provided.']
 
+        super(VoronoiBinningPar, self).__init__(pars, values=values, dtypes=dtypes, descr=descr)
 
     def toheader(self, hdr):
         """
@@ -348,7 +382,6 @@ class VoronoiBinningPar(ParSet):
         else:
             hdr['BINCOV'] = ('none', 'Voronoi binning S/N covariance type')
         return hdr
-
 
     def fromheader(self, hdr):
         """
@@ -508,7 +541,8 @@ class SquareBinningPar(ParSet):
     :class:`mangadap.par.parset.ParSet` for attributes.
 
     Args:
-        binsz (float): Sets desired bin size in arcsec
+        binsz (:obj:`float`):
+            Sets desired bin size in arcsec
     """
 
     def __init__(self, binsz):
@@ -517,8 +551,9 @@ class SquareBinningPar(ParSet):
         pars = ['binsz']
         values = [binsz]
         dtypes = [float]
+        descr = ['Desired bin size in arcsec']
 
-        ParSet.__init__(self, pars, values=values, dtypes=dtypes)
+        super(SquareBinningPar, self).__init__(pars, values=values, dtypes=dtypes, descr=descr)
 
     def toheader(self, hdr):
         """
@@ -562,7 +597,6 @@ class SquareBinning(SpatialBinning):
     def __init__(self, par=None):
         SpatialBinning.__init__(self, 'square', par=par)
         self.binsz = None
-
 
     def bin_index(self, x, y, par=None):
         """
@@ -665,3 +699,5 @@ class SquareBinning(SpatialBinning):
 
 
         return binid
+
+

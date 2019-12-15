@@ -22,7 +22,6 @@ Revision history
 """
 
 import os
-import numpy
 from pydl.pydlutils.yanny import yanny
 
 from .parset import ParSet, ParDatabase
@@ -31,7 +30,6 @@ class AnalysisPlan(ParSet):
     """
     Generic class to handle MaNGA DAP analysis plans.
     """
-
     def __init__(self, drpqa_key=None, drpqa_clobber=False, bin_key=None, bin_clobber=False,
                  continuum_key=None, continuum_clobber=False, elmom_key=None, elmom_clobber=False,
                  elfit_key=None, elfit_clobber=False, spindex_key=None, spindex_clobber=False):
@@ -52,9 +50,19 @@ class AnalysisPlan(ParSet):
                    _spindex_key, spindex_clobber ]
         dtypes = [ str, bool, str, bool, str, bool, str, bool, str, bool, str, bool ]
 
-        ParSet.__init__(self, pars, values=values, dtypes=dtypes)
-        self._check()
+        descr = ['Data reduction quality assessment method keyword',
+                 'Overwrite any existing data-quality assessment reference files',
+                 'Spatial binning method keyword',
+                 'Overwrite any existing spatial binning reference files',
+                 'Stellar-continuum fitting method keyword',
+                 'Overwrite any existing stellar-continuum fitting reference files',
+                 'Emission-line moments measurement method keyword',
+                 'Overwrite any existing emission-line moments reference files',
+                 'Spectral-index measurement method keyword',
+                 'Overwrite any existing spectral-index reference files']
 
+        super(AnalysisPlan, self).__init__(pars, values=values, dtypes=dtypes, descr=descr)
+        self._check()
 
     def _check(self):
         """
@@ -94,7 +102,7 @@ class AnalysisPlanSet(ParDatabase):
             if not isinstance(_planlist[i], AnalysisPlan):
                 raise TypeError('Input must be a single or list of AnalysisPlan objects.')
 
-        ParDatabase.__init__(self, _planlist)
+        super(AnalysisPlanSet, self).__init__(_planlist)
 
     @classmethod
     def from_par_file(cls, f):

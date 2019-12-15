@@ -68,8 +68,12 @@ class ArtifactPar(ParSet):
         values =   [   index,  _name,   waverange ]
         dtypes =   [     int,    str,    arr_like ]
 
-        ParSet.__init__(self, pars, values=values, dtypes=dtypes)
+        descr = ['An index used to refer to the artifact',
+                 'A name for the artifact',
+                 'A two-element vector with the starting and ending wavelength (angstroms ' \
+                 'in **vacuum**) where the artifact affects the data.']
 
+        super(ArtifactPar, self).__init__(pars, values=values, dtypes=dtypes, descr=descr)
 
     def _check(self):
         """
@@ -90,13 +94,14 @@ class ArtifactDB(SpectralFeatureDB):
     """
     Basic container class for the database of artifacts.
 
-    See the base class for additional attributes.
+    Each row of the database is parsed using
+    :class:`mangadap.proc.bandpassfilter.ArtifactPar`.
 
     The primary instantiation requires the SDSS parameter file with
     the artifact data. To instantiate using a keyword (and
     optionally a directory that holds the parameter files), use the
     :func:`mangadap.par.spectralfeaturedb.SpectralFeatureDB.from_key`
-    class method.
+    class method.  See the base class for additional attributes.
 
     Args:
         parfile (:obj:`str`):

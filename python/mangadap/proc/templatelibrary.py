@@ -252,8 +252,19 @@ class TemplateLibraryDef(ParSet):
                           lower_flux_limit,   log10 ]
         dtypes = [   str,           str,  in_fl,        str,        bool, numpy.ndarray,
                                      in_fl,    bool ]
+        descr = ['Keyword to distinguish the template library.',
+                 'Search string used by glob to find the 1D fits spectra to include in the ' \
+                    'template library.',
+                 'FWHM of the resolution element in angstroms.',
+                 'Extension in the fits files with measurements of the spectral resolution as ' \
+                    'a function of wavelength.',
+                 'Flag that the wavelengths of the spectra are in vacuum, not air.',
+                 'Two-element array with the starting and ending wavelengths for the valid ' \
+                    'spectral range of the templates.',
+                 'Minimum valid flux in the template spectra.',
+                 'Flag that the template spectra have been binned logarithmically in wavelength.']
 
-        ParSet.__init__(self, pars, values=values, dtypes=dtypes)
+        super(TemplateLibraryDef, self).__init__(pars, values=values, dtypes=dtypes, descr=descr)
 
 
 def validate_spectral_template_config(cnfg):

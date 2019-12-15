@@ -59,13 +59,15 @@ class AbsorptionIndexDB(SpectralFeatureDB):
     Basic container class for the database of absorption-line
     indices.
 
-    See the base class for additional attributes.
+    Each row of the database is parsed using
+    :class:`mangadap.proc.bandpassfilter.BandPassFilterPar`.  For the
+    format of the input file, see :ref:`spectralindices-absorption`.
 
-    The primary instantiation requires the SDSS parameter file with
-    the bandpass data. To instantiate using a keyword (and optionally
-    a directory that holds the parameter files), use the
+    The primary instantiation requires the SDSS parameter file with the
+    bandpass data. To instantiate using a keyword (and optionally a
+    directory that holds the parameter files), use the
     :func:`mangadap.par.spectralfeaturedb.SpectralFeatureDB.from_key`
-    class method.
+    class method.  See the base class for additional attributes.
 
     Args:
         parfile (:obj:`str`):

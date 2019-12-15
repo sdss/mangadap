@@ -84,12 +84,27 @@ class EmissionLineModelDef(ParSet):
             Method to use for deconstructing binned spectra into
             individual spaxels for emission-line fitting.  See
             :func:`mangadap.proc.sasuke.Sasuke.deconstruct_bin_options`.
+        mom_vel_name (:obj:`str`):
+            Name of the emission-line moments band used to set the
+            initial velocity guess for each spaxel.
+        mom_disp_name (:obj:`str`):
+            Name of the emission-line moments band used to set the
+            initial velocity dispersion guess for each spaxel.
         artifacts (:obj:`str`):
             String identifying the artifact database to use
+        ism_mask (:obj:`str`):
+            String identifying an emission-line database used only for
+            **masking** lines during the fit.
         emission_lines (:obj:`str`):
             String identifying the emission-line database to use
         continuum_tpl_key (:obj:`str`):
             String identifying the continuum templates to use
+        fitpar (:class:`mangadap.par.parset.ParSet`, :obj:`dict`):
+            Fitting function parameters
+        fitclass (object):
+            Class used to perform the fit.
+        fitfunc (object):
+            Function or method that performs the fit.
     """
     def __init__(self, key, minimum_snr, deconstruct_bins, mom_vel_name, mom_disp_name,
                  artifacts, ism_mask, emission_lines, continuum_tpl_key, fitpar, fitclass,
@@ -106,7 +121,26 @@ class EmissionLineModelDef(ParSet):
         can_call = [ False, False, False, False, False, False, False, False, False, False, False,
                      True ]
 
-        ParSet.__init__(self, pars, values=values, dtypes=dtypes)
+        descr = ['Keyword used to distinguish between different emission-line moment databases.',
+                 'Minimum S/N of spectrum to fit',
+                 'Method to use for deconstructing binned spectra into individual spaxels for ' \
+                    'emission-line fitting.  See ' \
+                    ':func:`mangadap.proc.sasuke.Sasuke.deconstruct_bin_options`.',
+                 'Name of the emission-line moments band used to set the initial velocity guess ' \
+                    'for each spaxel.',
+                 'Name of the emission-line moments band used to set the initial velocity ' \
+                    'dispersion guess for each spaxel.',
+                 'String identifying the artifact database to use',
+                 'String identifying an emission-line database used only for **masking** lines ' \
+                    'during the fit.',
+                 'String identifying the emission-line database to use',
+                 'String identifying the continuum templates to use',
+                 'Fitting function parameters',
+                 'Class used to perform the fit.',
+                 'Function or method that performs the fit; **must** be callable.']
+
+        super(EmissionLineModelDef, self).__init__(pars, values=values, dtypes=dtypes,
+                                                   can_call=can_call, descr=descr)
 
 
 def validate_emission_line_modeling_method_config(cnfg):
@@ -220,7 +254,6 @@ def available_emission_line_modeling_methods(dapsrc=None):
                                reddening=cnfg.getfloat('internal_reddening'))
             fitclass = Sasuke(EmissionLineModelBitMask())
             fitfunc = fitclass.fit_SpatiallyBinnedSpectra
-
 
         method_list += [ EmissionLineModelDef(cnfg['key'], minimum_snr, deconstruct_bins,
                                             cnfg.get('mom_vel_name'), cnfg.get('mom_disp_name'),

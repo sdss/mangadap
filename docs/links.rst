@@ -55,6 +55,10 @@
 .. shapely
 .. _shapely: https://pypi.python.org/pypi/Shapely
 
+.. misc
+.. _ppxf: https://pypi.org/project/ppxf/
+.. _vorbin: https://pypi.org/project/vorbin/
+
 .. SDSS
 .. _SDSS-style parameter file: http://www.sdss.org/dr15/software/par/
 

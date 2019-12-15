@@ -91,43 +91,69 @@ class PPXFFitPar(ParSet):
         is not well designed.
 
     Args:
-        template_library_key (str): Keyword of the library to fit.  See
+        template_library_key (:obj:`str`):
+            Keyword of the library to fit.  See
             :func:`mangadap.proc.templatelibrary.available_template_libraries`.
-
-        template_library
-            (:class:`mangadap.proc.templatelibrary.TemplateLibrary`):
+        template_library (:class:`mangadap.proc.templatelibrary.TemplateLibrary`):
             Object with the spectra in the template library that have
             been prepared for analysis of the data.
-
-        guess_redshift (array-like): Initial guess for the redshift
-            (:math:`cz`) of each binned spectrum.
-
-        guess_dispersion (array-like): Initial guess for the velocity
-            dispersion for each binned spectrum.
-
-        iteration_mode (str): (**Optional**) Iteration mode to use; see
-            :func:`PPXFFit.iteration_modes`.
-
-        match_resolution (bool): (**Optional**) Match the spectral
-            resolution of the template to that of the galaxy data.  This
+        guess_redshift (array-like):
+            Initial guess for the redshift (:math:`cz`) of each binned
+            spectrum.
+        guess_dispersion (array-like):
+            Initial guess for the velocity dispersion for each binned
+            spectrum.
+        iteration_mode (:obj:`str`, optional):
+            Iteration mode to use; see :func:`PPXFFit.iteration_modes`.
+        reject_boxcar (:obj:`int`, optional):
+            Number of pixels in the boxcar used to determine the local
+            sigma for rejecting outliers.
+        filter_boxcar (:obj:`int`, optional):
+            Size of the boxcar in pixels used in a high-pass filter
+            applied before fitting the spectra. (**To be deprecated**)
+        filter_operation (:obj:`str`, optional):
+            Operation to use when constructing the filtered spectra.
+            The boxcar smoothed version of the spectrum is either
+            subtracted or divided into the original spectrum if
+            ``filter_operation`` is ``subtract`` or ``divide``
+            respectively. (**To be deprecated**)
+        filter_iterations (:obj:`int`, optional):
+            Number of fit-reject-filter iterations. (**To be
+            deprecated**)
+        match_resolution (:obj:`bool`, optional):
+            Match the spectral resolution of the template to that of the
+            galaxy data.  This is used only when constructing the
+            template library.  Default is True.
+        velscale_ratio (:obj:`int`, optional):
+            The **integer** ratio between the velocity scale of the
+            pixel in the galaxy data to that of the template data.  This
             is used only when constructing the template library.
-            Default is True.
-        
-        velscale_ratio (int): (**Optional**) The **integer** ratio
-            between the velocity scale of the pixel in the galaxy data
-            to that of the template data.  This is used only when
-            constructing the template library.  Default is None, which
-            is the same as assuming that the velocity scales are
-            identical.
-        
-        minimum_snr (float): (**Optional**) Minimum S/N ratio to include
-            in the fitting.
-
-        pixelmask (:class:`mangadap.proc.pixelmask.PixelMask`):
-            (**Optional**) Pixel mask to include during the fitting.
-        
-        bias, degree, mdegree, moments: (**Optional**) See
-            :class:`mangadap.contrib.ppxf.ppxf` documentation.
+            Default is None, which is the same as assuming that the
+            velocity scales are identical.
+        minimum_snr (:obj:`float`, optional):
+            Minimum S/N ratio to include in the fitting.
+        pixelmask (:class:`mangadap.proc.pixelmask.PixelMask`, optional):
+            Pixel mask to include during the fitting.
+        bias (:obj:`float`, optional):
+            `ppxf`_ ``bias`` parameter used to penalize low S/N spectra
+            toward a Gaussian LOSVD.
+        degree (:obj:`int`, optional):
+            `ppxf`_ ``degree`` parameter used to set the order of the
+            additive polynomial to include in the fit.
+        mdegree (:obj:`int`, optional):
+            `ppxf`_ ``mdegree`` parameter used to set the order of the
+            multiplicative polynomial to include in the fit.
+        filt_degree (:obj:`int`, optional):
+            Order of the additive polynomial to include when fitting
+            high-pass filtered spectra.  (**To be deprecated**)
+        filt_mdegree (:obj:`int`, optional):
+            Order of the multiplicative polynomial to include when
+            fitting high-pass filtered spectra.  (**To be deprecated**)
+        moments (:obj:`int`, optional):
+            `ppxf`_ ``moments`` parameter used to set the number of
+            moments of the LOSVD to fit.  The DAP has not been well
+            tested for fits that include any more than :math:`V` and
+            :math:`\sigma`.
 
     """
     def __init__(self, template_library_key, template_library, guess_redshift, guess_dispersion,
@@ -162,8 +188,47 @@ class PPXFFitPar(ParSet):
         dtypes =   [ str, TemplateLibrary, arr_in_fl, arr_in_fl, str, int, int, str, int, bool,
                      int, in_fl, PixelMask, in_fl, int, int, int, int, int ]
 
-        ParSet.__init__(self, pars, values=values, defaults=defaults, options=options,
-                        dtypes=dtypes)
+
+        descr = ['Keyword of the library to fit.  See ' \
+                    ':func:`mangadap.proc.templatelibrary.available_template_libraries`.',
+                 'Object with the spectra in the template library that have been prepared ' \
+                    'for analysis of the data.',
+                 'Initial guess for the redshift (:math:`cz`) of each binned spectrum.',
+                 'Initial guess for the velocity dispersion for each binned spectrum.',
+                 'Iteration mode to use; see :func:`PPXFFit.iteration_modes`.',
+                 'Number of pixels in the boxcar used to determine the local sigma for ' \
+                    'rejecting outliers.',
+                 'Size of the boxcar in pixels used in a high-pass filter applied before ' \
+                    'fitting the spectra. (**To be deprecated**)',
+                 'Operation to use when constructing the filtered spectra.  The boxcar smoothed ' \
+                    'version of the spectrum is either subtracted or divided into the original ' \
+                    'spectrum if ``filter_operation`` is ``subtract`` or ``divide``, '
+                    'respectively. (**To be deprecated**)',
+                 'Number of fit-reject-filter iterations. (**To be deprecated**)',
+                 'Match the spectral resolution of the template to that of the galaxy data.  ' \
+                    'This is used only when constructing the template library.  Default is True.',
+                 'The **integer** ratio between the velocity scale of the pixel in the galaxy ' \
+                    'data to that of the template data.  This is used only when constructing ' \
+                    'the template library.  Default is None, which is the same as assuming ' \
+                    'that the velocity scales are identical.',
+                 'Minimum S/N ratio to include in the fitting.',
+                 'Pixel mask to include during the fitting.',
+                 '`ppxf`_ ``bias`` parameter used to penalize low S/N spectra toward a ' \
+                    'Gaussian LOSVD.',
+                 '`ppxf`_ ``degree`` parameter used to set the order of the additive polynomial ' \
+                    'to include in the fit.',
+                 '`ppxf`_ ``mdegree`` parameter used to set the order of the multiplicative ' \
+                    'polynomial to include in the fit.',
+                 'Order of the additive polynomial to include when fitting high-pass filtered ' \
+                    'spectra.  (**To be deprecated**)',
+                 'Order of the multiplicative polynomial to include when fitting high-pass ' \
+                    'filtered spectra.  (**To be deprecated**)',
+                 r'`ppxf`_ ``moments`` parameter used to set the number of moments of the ' \
+                    r'LOSVD to fit.  The DAP has not been well tested for fits that include ' \
+                    r'any more than :math:`V` and :math:`\sigma`.']
+
+        super(PPXFFitPar, self).__init__(pars, values=values, defaults=defaults, options=options,
+                                         dtypes=dtypes, descr=descr)
         self._check()
 
 

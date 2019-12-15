@@ -15,6 +15,8 @@ ratio of fluxes is in two passbands.  Both sets of indices are measured
 using :class:`mangadap.proc.spectralindices.SpectralIndices`; see
 :ref:`spectral-index-measurements`.
 
+.. _spectralindices-absorption:
+
 Absorption-line Index Parameters
 --------------------------------
 
@@ -199,6 +201,7 @@ used by :class:`mangadap.proc.spectralindices.SpectralIndices`:
        and then change the relevant configuration file in the same way
        as described above.
 
+.. _spectralindices-bandhead:
 
 Bandhead or Color Index Parameters
 ----------------------------------

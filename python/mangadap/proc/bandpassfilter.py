@@ -62,52 +62,58 @@ class BandPassFilterPar(ParSet):
     spectral continuum bandheads
     (:class:`mangadap.par.bandheadindexdb.BandheadIndexDB`) in the DAP.
 
-    All wavelengths are expected to be IN VACUUM, to match the expected
-    application of this filter to SDSS MaNGA spectra.
+    All wavelengths are expected to be **in vacuum**, to match the
+    expected application of this filter to SDSS MaNGA spectra.
 
     See :class:`mangadap.par.parset.ParSet` for attributes and raised
     exceptions.
 
     Args:
-        index (int) : An index used to refer to the bandpass filter.
-        name (str) : A name for the bandpass filter.
-        blueside (numpy.ndarray, list) : A two-element vector with the
-            starting and ending wavelength (angstroms in VACUUM) for a
-            passband to the blue of the primary spectral feature.
-        redside (numpy.ndarray, list): A two-element vector with the
-            starting and ending wavelength (angstroms in VACUUM) for a
-            passband to the red of the primary spectral feature.
-        restwave (float) : (Optional) The rest wavelength of the line in
-            the primary passband in angstroms *in vacuum*.  This is used
-            to convert the first and second moments to velocity (km/s)
-            for emission lines.
-        primary (numpy.ndarray, list) : (Optional) A two-element vector
-            with the starting and ending wavelength (angstroms in
-            VACUUM) for the primary passband surrounding the spectral
-            feature of interest.  This is used by
-            :class:`mangadap.par.emissionmomentsdb.EmissionMomentsDB`
+        index (:obj:`int`):
+            An index used to refer to the bandpass filter.
+        name (:obj:`str`):
+            A name for the bandpass filter.
+        blueside (`numpy.ndarray`_, :obj:`list`):
+            A two-element vector with the starting and ending wavelength
+            (angstroms in **vacuum**) for a passband to the blue of the
+            primary spectral feature.
+        redside (`numpy.ndarray`_, :obj:`list`):
+            A two-element vector with the starting and ending wavelength
+            (angstroms in **vacuum**) for a passband to the red of the
+            primary spectral feature.
+        restwave (:obj:`float`, optional):
+            The rest wavelength of the line in the primary passband in
+            angstroms *in vacuum*.  This is used to convert the first
+            and second moments to velocity (km/s) for emission lines.
+        primary (`numpy.ndarray`_, :obj:`list`, optional):
+            A two-element vector with the starting and ending wavelength
+            (angstroms in **vacuum**) for the primary passband
+            surrounding the spectral feature of interest.  This is used
+            by :class:`mangadap.par.emissionmomentsdb.EmissionMomentsDB`
             and
             :class:`mangadap.par.absorptionindexdb.AbsorptionIndexDB`,
             but it is irrelevant for
             :class:`mangadap.par.bandheadindexdb.BandheadIndexDB`.
-        units (str) : (Optional) Define the unit for the spectral index
-            as either angstroms ('ang') or magnitudes ('mag').
-            Currently only used by
+        units (:obj:`str`, optional):
+            Define the unit for the spectral index as either angstroms
+            ('ang') or magnitudes ('mag').  Currently only used by
             :class:`mangadap.par.absorptionindexdb.AbsorptionIndexDB`.
-        component (bool) : (Optional) Flag that the bandpass definition
-            is a component of a larger set of bandpass filters.  This is
-            currently only used by
-            :class:`mangadap.par.absorptionindexdb.AbsorptionIndexDB`
-            to combine index measurements into a single index.  If True,
+        component (:obj:`bool`, optional):
+            Flag that the bandpass definition is a component of a larger
+            set of bandpass filters.  This is currently only used by
+            :class:`mangadap.par.absorptionindexdb.AbsorptionIndexDB` to
+            combine index measurements into a single index.  If True,
             all components with the same *name* are summed to form the
             composite index.
-        integrand (str) : (Optional) Currently only used by
+        integrand (:obj:`str`, optional):
+            Currently only used by
             :class:`mangadap.par.bandheadindexdb.BandheadIndexDB`.
             Define the integrand over the passband used to construct and
             index as either flux per unit frequency (``'fnu'``),
             :math:`F_\nu`, or flux per unit wavelength (``'flambda'``),
             :math:`F_\lambda`.
-        order (str): (Optional) Currently only used by
+        order (:obj:`str`, optional):
+            Currently only used by
             :class:`mangadap.par.bandheadindexdb.BandheadIndexDB`.
             Define the order to use when constructing the index.  The
             options are either a ratio of red-to-blue or blue-to-red,
@@ -134,9 +140,41 @@ class BandPassFilterPar(ParSet):
         dtypes  =  [     int,    str,      in_fl,   ar_like,    ar_like,   ar_like,       str,
                             bool,         str,        str ]
 
-        ParSet.__init__(self, pars, values=values, options=options, dtypes=dtypes)
-        self._check()
+        descr = ['An index used to refer to the bandpass filter',
+                 'A name for the bandpass filter',
+                 'A two-element vector with the starting and ending wavelength (angstroms in ' \
+                    '**vacuum**) for a passband to the blue of the primary spectral feature.',
+                 'A two-element vector with the starting and ending wavelength (angstroms in ' \
+                    '**vacuum**) for a passband to the red of the primary spectral feature.',
+                 'The rest wavelength of the line in the primary passband in angstroms **in ' \
+                    'vacuum**.  This is used to convert the first and second moments to ' \
+                    'velocity (km/s) for emission lines.',
+                 'A two-element vector with the starting and ending wavelength (angstroms in ' \
+                    '**vacuum**) for the primary passband surrounding the spectral feature of ' \
+                    'interest.  This is used by ' \
+                    ':class:`mangadap.par.emissionmomentsdb.EmissionMomentsDB` and ' \
+                    ':class:`mangadap.par.absorptionindexdb.AbsorptionIndexDB`, but it is ' \
+                    'irrelevant for :class:`mangadap.par.bandheadindexdb.BandheadIndexDB`.',
+                 'Define the unit for the spectral index as either angstroms (``ang``) or ' \
+                    'magnitudes (``mag``).  Currently only used by ' \
+                    ':class:`mangadap.par.absorptionindexdb.AbsorptionIndexDB`.',
+                 'Flag that the bandpass definition is a component of a larger set of bandpass ' \
+                    'filters.  This is currently only used by '
+                    ':class:`mangadap.par.absorptionindexdb.AbsorptionIndexDB` to combine index ' \
+                    'measurements into a single index.  If True, all components with the same ' \
+                    '*name* are summed to form the composite index.',
+                 r'Currently only used by :class:`mangadap.par.bandheadindexdb.BandheadIndexDB`.' \
+                    r'  Define the integrand over the passband used to construct and index as ' \
+                    r'either flux per unit frequency (``fnu``), :math:`F_\nu`, or flux per unit ' \
+                    r'wavelength (``flambda``), :math:`F_\lambda`.'
+                 'Currently only used by :class:`mangadap.par.bandheadindexdb.BandheadIndexDB`.' \
+                    '  Define the order to use when constructing the index.  The options are ' \
+                    'either a ratio of red-to-blue or blue-to-red, which are respectively ' \
+                    'selected using ``r_b`` or ``b_r``.',
 
+        super(BandPassFilterPar, self).__init__(pars, values=values, options=options,
+                                                dtypes=dtypes, descr=descr)
+        self._check()
 
     def __repr__(self):
         """Return a string representation of the bandpass filter."""
@@ -157,7 +195,6 @@ class BandPassFilterPar(ParSet):
         if self['order'] is not None:
             summary += '\norder     : {0}'.format(self['order'])
         return summary
-
 
     def _check(self):
         """

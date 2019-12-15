@@ -63,27 +63,31 @@ class SpectralStackPar(ParSet):
         Allow for sigma rejection.
 
     Args:
-        operation (str): Operation to perform for the stacked spectrum.
-            See :func:`SpectralStack.operation_options` for the
-            available operation options.
-        vel_register (bool): Flag to velocity register the spectra
-            before adding them based on a provided prior measurement of
-            the velocities.
-        vel_offsets (list, numpy.ndarray): List of velocity offsets to
-            apply to the spectra to stack.
-        covar_mode (str): Describes how to incorporate covariance into
-            the spectral stacking.  See
+        operation (:obj:`str`):
+            Operation to perform for the stacked spectrum.  See
+            :func:`SpectralStack.operation_options` for the available
+            operation options.
+        vel_register (:obj:`bool`):
+            Flag to velocity register the spectra before adding them
+            based on a provided prior measurement of the velocities.
+        vel_offsets (:obj:`list`, `numpy.ndarray`_):
+            List of velocity offsets to apply to the spectra to stack.
+        covar_mode (:obj:`str`):
+            Describes how to incorporate covariance into the spectral
+            stacking.  See :func:`SpectralStack.covariance_mode_options`
+            for the available options.
+        covar_par (:obj:`int`, :obj:`float`, `numpy.ndarray`_, :obj:`list`):
+            The parameter(s) needed to perform a given method of
+            handling the covariance.  See
             :func:`SpectralStack.covariance_mode_options` for the
             available options.
-        covar_par (int, float, numpy.ndarray, list): The parameter(s)
-            needed to perform a given method of handling the covariance.
-            See :func:`SpectralStack.covariance_mode_options` for the
-            available options.
-        stack_sres (bool): Stack the spectral resolution as well as the
-            flux data.
-        prepixel_sres (bool): Use the pre-pixelized spectral resolution.
-            If true and the prepixelized versions are not available, an
-            error will be raised!
+        stack_sres (:obj:`bool`):
+            Stack the spectral resolution as well as the flux data.
+        prepixel_sres (:obj:`bool`):
+            Use the pre-pixelized spectral resolution.  If true and the
+            prepixelized versions are not available, an error will be
+            raised!
+
     """
     def __init__(self, operation, vel_register, vel_offsets, covar_mode, covar_par, stack_sres,
                  prepixel_sres):
@@ -103,9 +107,22 @@ class SpectralStackPar(ParSet):
         dtypes =   [         str,           bool,       ar_like,           str, in_fl+ar_like,
                                 bool,            bool ]
 
-        ParSet.__init__(self, pars, values=values, defaults=defaults, options=options,
-                        dtypes=dtypes)
+        descr = ['Operation to perform for the stacked spectrum.  See ' \
+                    ':func:`SpectralStack.operation_options` for the available operation options.',
+                 'Flag to velocity register the spectra before adding them based on a provided ' \
+                    'prior measurement of the velocities.',
+                 'List of velocity offsets to apply to the spectra to stack.',
+                 'Describes how to incorporate covariance into the spectral stacking.  ' \
+                    'See :func:`SpectralStack.covariance_mode_options` for the available options.',
+                 'The parameter(s) needed to perform a given method of handling the ' \
+                    'covariance.  See :func:`SpectralStack.covariance_mode_options` for the ' \
+                    'available options.',
+                 'Stack the spectral resolution as well as the flux data.',
+                 'Use the pre-pixelized spectral resolution.  If true and the prepixelized ' \
+                    'versions are not available, an error will be raised!']
 
+        super(SpectralStackPar, self).__init__(pars, values=values, defaults=defaults,
+                                               options=options, dtypes=dtypes, descr=descr)
 
     def toheader(self, hdr):
         """
@@ -123,7 +140,6 @@ class SpectralStackPar(ParSet):
         hdr['STCKRES'] = (str(self['stack_sres']), 'Spectral resolution stacked')
         hdr['STCKPRE'] = (str(self['prepixel_sres']), 'Use prepixelized spectral resolution')
         return hdr
-
 
     def fromheader(self, hdr):
         """

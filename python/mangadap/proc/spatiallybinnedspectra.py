@@ -116,28 +116,42 @@ class SpatiallyBinnedSpectraDef(ParSet):
           reddening.
 
     Args:
-        key (str): Keyword used to distinguish between different spatial
+        key (:obj:`str`):
+            Keyword used to distinguish between different spatial
             binning schemes.
-        binpar (:class:`mangadap.par.parset.ParSet` or dict): The
-            parameter set defining how to place each spectrum in a bin.
-        binclass (object): Instance of class object to use for the
-            binning.  Needed in case binfunc is a non-static member
-            function of the class.
-        binfunc (callable): The function that determines which spectra
-            go into each bin.
-        stackpar (:class:`mangadap.par.parset.ParSet` or dict): The parameter
-            set defining how to stack the spectra in each bin.
-        stackclass (object): Instance of class object to used to stack
-            the spectra.  Needed in case stackfunc is a non-static
-            member function of the class.
-        stackfunc (callable): The function that stacks the spectra in a
-            given bin.
-        spec_res (str): Keyword defining the treatment of the spectral
-            resolution.  See
+        galactic_reddening (:obj:`str`):
+            The string identifier for the Galactic extinction curve to
+            use.  See
+            :func:`mangadap.util.extinction.GalacticExtinction.valid_forms`
+            for the available curves.  Default is ``ODonnell``.
+        galactic_rv (:obj:`float`):
+            Ratio of V-band extinction to the B-V reddening.  Default is 3.1.
+        minimum_snr (:obj:`float`):
+            Minimum S/N of spectra to include in any bin.
+        binpar (:class:`mangadap.par.parset.ParSet`, :obj:`dict`):
+            The parameter set defining how to place each spectrum in a
+            bin.
+        binclass (object):
+            Instance of class object to use for the binning.  Needed in
+            case binfunc is a non-static member function of the class.
+        binfunc (callable):
+            The function that determines which spectra go into each bin.
+        stackpar (:class:`mangadap.par.parset.ParSet`, :obj:`dict`):
+            The parameter set defining how to stack the spectra in each
+            bin.
+        stackclass (object):
+            Instance of class object to used to stack the spectra.
+            Needed in case stackfunc is a non-static member function of
+            the class.
+        stackfunc (callable):
+            The function that stacks the spectra in a given bin.
+        spec_res (:obj:`str`):
+            Keyword defining the treatment of the spectral resolution.
+            See
             :func:`SpatiallyBinnedSpectra.spectral_resolution_options`
             for a list of the options.
-        prepixel_sres (bool): Use the prepixelized version of the LSF
-            measurements.
+        prepixel_sres (:obj:`bool`):
+            Use the prepixelized version of the LSF measurements.
     """
     def __init__(self, key, galactic_reddening, galactic_rv, minimum_snr, binpar, binclass,
                  binfunc, stackpar, stackclass, stackfunc, spec_res, prepixel_sres):
@@ -157,8 +171,28 @@ class SpatiallyBinnedSpectraDef(ParSet):
         can_call = [ False, False, False, False, False, False, True, False, False, True, False,
                      False ]
 
-        ParSet.__init__(self, pars, values=values, options=options, dtypes=dtypes,
-                        can_call=can_call)
+        descr = ['Keyword used to distinguish between different spatial binning schemes.',
+                 'The string identifier for the Galactic extinction curve to use.  See ' \
+                    ':func:`mangadap.util.extinction.GalacticExtinction.valid_forms` for the ' \
+                    'available curves.  Default is ``ODonnell``.',
+                 'Ratio of V-band extinction to the B-V reddening.  Default is 3.1.',
+                 'Minimum S/N of spectra to include in any bin.',
+                 'The parameter set defining how to place each spectrum in a bin.',
+                 'Instance of class object to use for the binning.  Needed in case binfunc ' \
+                    'is a non-static member function of the class.',
+                 'The function that determines which spectra go into each bin.',
+                 'The parameter set defining how to stack the spectra in each bin.',
+                 'Instance of class object to used to stack the spectra.  Needed in case ' \
+                    'stackfunc is a non-static member function of the class.',
+                 'The function that stacks the spectra in a given bin.',
+                 'Keyword defining the treatment of the spectral resolution.  See ' \
+                    ':func:`SpatiallyBinnedSpectra.spectral_resolution_options` for a list of ' \
+                    'the options.'
+                 'Use the prepixelized version of the LSF measurements.']
+
+        super(SpatiallyBinnedSpectraDef, self).__init__(pars, values=values, options=options,
+                                                        dtypes=dtypes, can_call=can_call,
+                                                        descr=descr)
 
 
 def validate_spatial_binning_scheme_config(cnfg):

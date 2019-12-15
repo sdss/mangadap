@@ -109,6 +109,10 @@ class SasukePar(ParSet):
             Impose a minimum emission-line sigma by offsetting the
             nominal trend, in quadrature, to have this minimum value.
             Default is 0.
+        velscale_ratio (:obj:`int`, optional):
+            Integer ratio between the width of the spectral pixels in
+            the galaxy and template spectra.  If ``velscale_ratio = 2``,
+            the template pixels are half as wide as the galaxy pixels.
         guess_redshift (array-like, optinal):
             Single or per-spectrum redshift to use as the initial
             velocity guess.
@@ -171,11 +175,37 @@ class SasukePar(ParSet):
                      int, arr_in_fl, arr_in_fl, in_fl, str, SpectralPixelMask, int, in_fl, int,
                      int, int, in_fl ]
 
-        ParSet.__init__(self, pars, values=values, defaults=defaults, options=options,
-                        dtypes=dtypes)
+        descr = ['The result of the previous fit to the stellar continuum.',
+                 'Emission-line database with the details of the lines to be fit.',
+                 'The new continuum template library to use during the emission-line fit.',
+                 'Mode used to set the instrumental dispersion of the emission-line templates.  ' \
+                    'Mode options are explated by :func:`Sasuke.etpl_line_sigma_options`.  ' \
+                    'Default is ``default``.',
+                 'Impose a minimum emission-line sigma by offsetting the nominal trend, in ' \
+                    'quadrature, to have this minimum value.  Default is 0.',
+                 'Integer ratio between the width of the spectral pixels in the galaxy and ' \
+                    'template spectra.  If ``velscale_ratio = 2``, the template pixels are ' \
+                    'half as wide as the galaxy pixels.',
+                 'Single or per-spectrum redshift to use as the initial velocity guess.',
+                 'Single or per-spectrum velocity dispersion to use as the initial guess.',
+                 'Minimum S/N of spectrum to fit.',
+                 'Method to use for deconstructing binned spectra into individual spaxels ' \
+                    'for emission-line fitting.  See :func:`Sasuke.deconstruct_bin_options`.',
+                 'Mask to apply to all spectra being fit.',
+                 'Size of the boxcar to use when rejecting fit outliers.',
+                 'pPXF bias parameter.  (Irrelevant because gas is currently always fit with ' \
+                    'moments=2.)',
+                 'pPXF moments parameter.  (Irrelevant because gas is currently always fit with ' \
+                    'moments=2.)',
+                 'pPXF degree parameter setting the degree of the additive polynomials to use.',
+                 'pPXF mdegree parameter setting the degree of the multiplicative polynomials ' \
+                    'to use.',
+                 r'pPXF reddening parameter setting the initial :math:`E(B-V)` to fit, based ' \
+                    r'on a Calzetti law.']
 
+        super(SasukePar, self).__init__(pars, values=values, defaults=defaults, options=options,
+                                        dtypes=dtypes, descr=descr)
         self._check()
-
 
     def _check(self):
         if self['mdegree'] > 0 and self['reddening'] is not None:

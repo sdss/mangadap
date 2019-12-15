@@ -78,12 +78,23 @@ class EmissionLineMomentsDef(ParSet):
     emission-line moment measurements.
 
     Args:
-        key (str): Keyword used to distinguish between different
-            emission-line moment databases.
-        minimum_snr (bool): Minimum S/N of spectrum to fit
-        artifacts (str): String identifying the artifact database to use
-        passbands (str): String identifying the emission-line bandpass
-            filter database to use
+        key (:obj:`str`):
+            Keyword used to distinguish between different emission-line
+            moment databases.
+        minimum_snr (:obj:`bool`):
+            Minimum S/N of spectrum to fit
+        artifacts (:obj:`str`):
+            String identifying the artifact database to use
+        passbands (:obj:`str`):
+            String identifying the emission-line bandpass filter
+            database to use
+        redo_postmodeling (:obj:`bool`):
+            Redo the moment measurements after the emission-line
+            modeling has been performed
+        fit_vel_name (:obj:`str`):
+            The name of the emission line used to set the redshift of
+            each spaxel used to set the observed wavelength of the
+            bandpasses.
         
     """
     def __init__(self, key, minimum_snr, artifacts, passbands, redo_postmodeling, fit_vel_name):
@@ -94,7 +105,17 @@ class EmissionLineMomentsDef(ParSet):
         values =   [ key, minimum_snr, artifacts, passbands, redo_postmodeling, fit_vel_name ]
         dtypes =   [ str, in_fl, str, str, bool, str ]
 
-        ParSet.__init__(self, pars, values=values, dtypes=dtypes)
+        descr = ['Keyword used to distinguish between different emission-line moment databases.',
+                 'Minimum S/N of spectrum to fit',
+                 'String identifying the artifact database to use',
+                 'String identifying the emission-line bandpass filter database to use',
+                 'Redo the moment measurements after the emission-line modeling has been ' \
+                    'performed',
+                 'The name of the emission line used to set the redshift of each spaxel used ' \
+                    'to set the observed wavelength of the bandpasses.']
+
+        super(EmissionLineMomentsDef, self).__init__(pars, values=values, dtypes=dtypes,
+                                                     descr=descr)
 
 
 def validate_emission_line_moments_config(cnfg):

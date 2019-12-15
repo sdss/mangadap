@@ -72,15 +72,19 @@ class ReductionAssessmentDef(ParSet):
         - Allow for different ways of calculating covariance?
 
     Args:
-        key (str): Keyword to distinguish the assessment method.
-        waverange (numpy.ndarray, list) : A two-element vector with the
-            starting and ending wavelength (angstroms in VACUUM) within
-            which to calculate the signal-to-noise
-        response_func (array-like): A two-column array with a response
-            function to use for the S/N calculation.  The columns must
-            br the wavelength and amplitude of the response function,
-            respectively.
-        covariance (str) : Type of covariance measurement to produce
+        key (:obj:`str`):
+            Keyword to distinguish the assessment method.
+        waverange (`numpy.ndarray`_, :obj:`list`):
+            A two-element vector with the starting and ending wavelength
+            (angstroms in **vacuum**) within which to calculate the
+            signal-to-noise
+        response_func (array-like, optional):
+            A two-column array with a response function to use for the
+            S/N calculation.  The columns must br the wavelength and
+            amplitude of the response function, respectively.
+        covariance (:obj:`str`, optional):
+            Type of covariance measurement to produce.
+
     """
     def __init__(self, key, waverange=None, response_func=None, covariance=False):
         # Perform some checks of the input
@@ -91,9 +95,16 @@ class ReductionAssessmentDef(ParSet):
         values = [   key,   waverange,   response_func,   covariance ]
         #options = [ None,        None,    covar_opt ]
         dtypes = [   str,     ar_like,         ar_like,         bool ]
+        descr = ['Keyword to distinguish the assessment method.',
+                 'A two-element vector with the starting and ending wavelength (angstroms ' \
+                    'in **vacuum**) within which to calculate the signal-to-noise',
+                 'A two-column array with a response function to use for the S/N calculation.  ' \
+                    'The columns must br the wavelength and amplitude of the response function, ' \
+                    'respectively.',
+                 'Type of covariance measurement to produce.']
 
-        #ParSet.__init__(self, pars, values=values, options=options, dtypes=dtypes)
-        ParSet.__init__(self, pars, values=values, dtypes=dtypes)
+        super(ReductionAssessmentDef, self).__init__(pars, values=values, dtypes=dtypes,
+                                                     descr=descr)
 
 
 def validate_reduction_assessment_config(cnfg):

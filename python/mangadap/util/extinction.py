@@ -360,7 +360,7 @@ class GalacticExtinction:
 
     """
     def __init__(self, form='ODonnell', wave=None, ebv=None, rv=None, coeffs=None):
-        if form not in GalacticExtinction._valid_forms():
+        if form not in GalacticExtinction.valid_forms():
             raise ValueError('Unrecognized form of the extinction law: {0}'.format(form))
         self.form = form
 
@@ -374,7 +374,7 @@ class GalacticExtinction:
 
 
     @staticmethod
-    def _valid_forms():
+    def valid_forms():
         """
         Returns a list keyword for the allowed reddening curves forms
         implemented within the :class:`GalacticExtinction` class.
