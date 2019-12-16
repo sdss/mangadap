@@ -46,7 +46,7 @@ from astropy.io import fits
 import astropy.constants
 
 from ..drpfits import DRPFits
-from ..par.parset import ParSet
+from ..par.parset import KeywordParSet, ParSet
 from ..par.artifactdb import ArtifactDB
 from ..par.emissionlinedb import EmissionLineDB
 from ..config.defaults import dap_source_dir, default_dap_file_name
@@ -66,7 +66,7 @@ from .spectralfitting import EmissionLineFit
 
 from matplotlib import pyplot
 
-class EmissionLineModelDef(ParSet):
+class EmissionLineModelDef(KeywordParSet):
     """
     A class that holds the parameters necessary to perform the
     emission-line profile fits.

@@ -28,7 +28,7 @@ from astropy.io import fits
 
 from vorbin.voronoi_2d_binning import voronoi_2d_binning
 
-from ..par.parset import ParSet
+from ..par.parset import KeywordParSet
 from ..util.geometry import SemiMajorAxisCoo
 from ..util.covariance import Covariance
 
@@ -71,7 +71,7 @@ class GlobalBinning(SpatialBinning):
 
 # RADIAL BINNING -------------------------------------------------------
 
-class RadialBinningPar(ParSet):
+class RadialBinningPar(KeywordParSet):
     """
     Class with parameters used by the radial binning algorithm.  See
     :class:`mangadap.par.parset.ParSet` for attributes.
@@ -303,7 +303,7 @@ class RadialBinning(SpatialBinning):
 
 # VORONOI BINNING ------------------------------------------------------
 
-class VoronoiBinningPar(ParSet):
+class VoronoiBinningPar(KeywordParSet):
     r"""
     Class with parameters used by the Voronoi binning algorithm.
 
@@ -534,7 +534,7 @@ class VoronoiBinning(SpatialBinning):
 #Written by Kate Rubin 9/27/18
 #Based on KBW's test_new_binning_scheme.py and the RadialBinning class
 
-class SquareBinningPar(ParSet):
+class SquareBinningPar(KeywordParSet):
     """
     Class with parameters used by the square binning algorithm.  See
     :class:`mangadap.par.parset.ParSet` for attributes.

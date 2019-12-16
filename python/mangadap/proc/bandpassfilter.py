@@ -42,7 +42,7 @@ Revision history
 import warnings
 import numpy
 
-from ..par.parset import ParSet
+from ..par.parset import KeywordParSet
 from ..util.sampling import _pixel_borders
 
 from matplotlib import pyplot
@@ -50,7 +50,7 @@ from matplotlib import pyplot
 # Add strict versioning
 # from distutils.version import StrictVersion
 
-class BandPassFilterPar(ParSet):
+class BandPassFilterPar(KeywordParSet):
     r"""
     Parameter object that defines a set of band-pass filters.  This is a
     base class for similar objects used calculating fluxes and flux

@@ -54,7 +54,7 @@ from ..util.dapbitmask import DAPBitMask
 from ..util.pixelmask import SpectralPixelMask
 from ..util.log import log_output
 from ..util.parser import DefaultConfig
-from ..par.parset import ParSet
+from ..par.parset import KeywordParSet
 from ..par.artifactdb import ArtifactDB
 from ..par.emissionmomentsdb import EmissionMomentsDB
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
@@ -72,7 +72,7 @@ from matplotlib import pyplot
 # from distutils.version import StrictVersion
 
 
-class EmissionLineMomentsDef(ParSet):
+class EmissionLineMomentsDef(KeywordParSet):
     """
     A class that holds the parameters necessary to perform the
     emission-line moment measurements.

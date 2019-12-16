@@ -62,7 +62,7 @@ import astropy.constants
 
 from ppxf import ppxf, capfit
 
-from ..par.parset import ParSet
+from ..par.parset import KeywordParSet
 from ..util.pixelmask import PixelMask, SpectralPixelMask
 from ..util.fileio import init_record_array
 from ..util.filter import BoxcarFilter
@@ -80,7 +80,7 @@ from .util import sample_growth, optimal_scale
 from matplotlib import pyplot
 #from ..contrib import ppxf_util
 
-class PPXFFitPar(ParSet):
+class PPXFFitPar(KeywordParSet):
     r"""
 
     Define a parameter set used by the pPXF fitting method.

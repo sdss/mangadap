@@ -44,7 +44,7 @@ from scipy import sparse
 from astropy.io import fits
 import astropy.constants
 
-from ..par.parset import ParSet
+from ..par.parset import KeywordParSet
 from ..util.covariance import Covariance
 from ..util.filter import interpolate_masked_vector
 from ..util.sampling import Resample, spectral_coordinate_step
@@ -54,7 +54,7 @@ from matplotlib import pyplot, rc
 # Add strict versioning
 # from distutils.version import StrictVersion
 
-class SpectralStackPar(ParSet):
+class SpectralStackPar(KeywordParSet):
     r"""
     Class with parameters used to set how to stack a set of spectra.
     See :class:`mangadap.par.parset.ParSet` for attributes.

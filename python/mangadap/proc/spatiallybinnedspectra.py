@@ -57,7 +57,7 @@ from astropy.wcs import WCS
 from astropy.io import fits
 
 from ..drpfits import DRPFits
-from ..par.parset import ParSet
+from ..par.parset import KeywordParSet, ParSet
 from ..util.fitsutil import DAPFitsUtil
 from ..util.fileio import init_record_array, rec_to_fits_type, create_symlink
 from ..util.parser import DefaultConfig
@@ -77,7 +77,7 @@ from .util import select_proc_method, replace_with_data_from_nearest_coo
 
 from matplotlib import pyplot
 
-class SpatiallyBinnedSpectraDef(ParSet):
+class SpatiallyBinnedSpectraDef(KeywordParSet):
     """
     A class that holds the two parameter sets and the key designator for
     the binning scheme.

@@ -62,7 +62,7 @@ from scipy.special import erf
 import astropy.constants
 from astropy.modeling.polynomial import Legendre1D
 
-from ..par.parset import ParSet
+from ..par.parset import KeywordParSet
 from ..par.emissionlinedb import EmissionLineDB
 from ..util.fileio import init_record_array
 from ..util.log import log_output
@@ -391,7 +391,7 @@ class LineProfileFit:
                 print('    ', self.cov)
 
 
-class ElricPar(ParSet):
+class ElricPar(KeywordParSet):
     def __init__(self, emission_lines, base_order, window_buffer, guess_redshift, guess_dispersion,
                  minimum_snr=None, pixelmask=None, stellar_continuum=None):
 
@@ -406,7 +406,7 @@ class ElricPar(ParSet):
         dtypes =   [ EmissionLineDB, int, in_fl, arr_in_fl, arr_in_fl, in_fl, SpectralPixelMask,
                      StellarContinuumModel ]
 
-        ParSet.__init__(self, pars, values=values, defaults=defaults, dtypes=dtypes)
+        super(ElricPar, self).__init__(pars, values=values, defaults=defaults, dtypes=dtypes)
 
 
     def toheader(self, hdr):

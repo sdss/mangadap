@@ -24,9 +24,9 @@ Revision history
 import os
 from pydl.pydlutils.yanny import yanny
 
-from .parset import ParSet, ParDatabase
+from .parset import KeywordParSet, ParDatabase
 
-class AnalysisPlan(ParSet):
+class AnalysisPlan(KeywordParSet):
     """
     Generic class to handle MaNGA DAP analysis plans.
     """

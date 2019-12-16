@@ -46,7 +46,7 @@ from scipy import interpolate, fftpack
 import astropy.constants
 from ppxf import ppxf
 
-from ..par.parset import ParSet
+from ..par.parset import KeywordParSet
 from ..par.emissionlinedb import EmissionLineDB
 from ..util.fitsutil import DAPFitsUtil
 from ..util.fileio import init_record_array
@@ -69,7 +69,7 @@ from ..contrib.xjmc import emline_fitter_with_ppxf, ppxf_tied_parameters
 # For debugging
 from matplotlib import pyplot
 
-class SasukePar(ParSet):
+class SasukePar(KeywordParSet):
     r"""
     A class specific to the DAP's use of Sasuke.
 
@@ -85,10 +85,10 @@ class SasukePar(ParSet):
     the former, the :func:`Sasuke.fit_SpatiallyBinnedSpectra` method
     will construct the template library for later callback.
 
-    When instantiated, the :class:`mangadap.par.parset.ParSet` objects
-    test that the input objects match the provided dtypes.  See
-    documentation for :class:`mangadap.par.parset.ParSet` for the list
-    of attributes and exceptions raised.
+    When instantiated, the :class:`mangadap.par.parset.KeywordParSet`
+    objects test that the input objects match the provided dtypes.
+    See documentation for :class:`mangadap.par.parset.ParSet` for the
+    list of attributes and exceptions raised.
 
     Args:
         stellar_continuum (:class:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel`):

@@ -24,11 +24,11 @@ consists of a number of steps as described in the documentation of
 A template library that has been prepared for analysis is automatically
 written to disk for later recovery.
 
-Two support classes are also provided.  One is a derived
-:class:`mangadap.par.parset.ParSet` instance that provides the defining
-parameters of a DAP template library.  The second is a derived
-:class:`mangadap.util.bitmask.BitMask` instance that defines the
-bitmasks for the template library spectra.
+Two support classes are also provided. One is a derived
+:class:`mangadap.par.parset.KeywordParSet` instance that provides the
+defining parameters of a DAP template library. The second is a
+derived :class:`mangadap.util.bitmask.BitMask` instance that defines
+the bitmasks for the template library spectra.
 
 .. _templatelibrary-usage:
 
@@ -194,7 +194,7 @@ import astropy.constants
 
 from pydl.goddard.astro import airtovac
 
-from ..par.parset import ParSet
+from ..par.parset import KeywordParSet
 from ..config.defaults import dap_source_dir, default_dap_common_path
 from ..config.defaults import default_dap_file_name
 from ..util.bitmask import BitMask
@@ -213,7 +213,7 @@ from matplotlib import pyplot
 # Add strict versioning
 # from distutils.version import StrictVersion
 
-class TemplateLibraryDef(ParSet):
+class TemplateLibraryDef(KeywordParSet):
     """
     Class with parameters used to define the template library.
     See :class:`mangadap.par.parset.ParSet` for attributes.

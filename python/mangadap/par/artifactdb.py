@@ -34,13 +34,13 @@ import numpy
 
 from pydl.goddard.astro import airtovac
 from pydl.pydlutils.yanny import yanny
-from .parset import ParSet, ParDatabase
+from .parset import KeywordParSet, ParDatabase
 from .spectralfeaturedb import SpectralFeatureDB
 
 # Add strict versioning
 # from distutils.version import StrictVersion
 
-class ArtifactPar(ParSet):
+class ArtifactPar(KeywordParSet):
     """
     Parameter object that defines a set of artifacts to be ignored
     during analysis.

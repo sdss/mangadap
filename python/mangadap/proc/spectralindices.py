@@ -85,7 +85,7 @@ import numpy
 from astropy.io import fits
 import astropy.constants
 
-from ..par.parset import ParSet
+from ..par.parset import KeywordParSet
 from ..par.artifactdb import ArtifactDB
 from ..par.absorptionindexdb import AbsorptionIndexDB
 from ..par.bandheadindexdb import BandheadIndexDB
@@ -109,7 +109,7 @@ from .util import select_proc_method, flux_to_fnu
 from matplotlib import pyplot
 #from memory_profiler import profile
 
-class SpectralIndicesDef(ParSet):
+class SpectralIndicesDef(KeywordParSet):
     """
     A class that holds the parameters necessary to perform the
     spectral-index measurements.

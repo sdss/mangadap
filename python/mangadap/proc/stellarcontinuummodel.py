@@ -44,7 +44,7 @@ from astropy.io import fits
 import astropy.constants
 
 from ..drpfits import DRPFits
-from ..par.parset import ParSet
+from ..par.parset import KeywordParSet, ParSet
 from ..par.artifactdb import ArtifactDB
 from ..par.emissionlinedb import EmissionLineDB
 from ..util.log import log_output
@@ -69,7 +69,7 @@ from matplotlib import pyplot
 # from distutils.version import StrictVersion
 
 
-class StellarContinuumModelDef(ParSet):
+class StellarContinuumModelDef(KeywordParSet):
     """
     A class that holds the parameters necessary to perform the
     stellar-continuum fitting.

@@ -47,10 +47,10 @@ import warnings
 import numpy
 from pydl.pydlutils.yanny import yanny
 
-from .parset import ParSet
+from .parset import KeywordParSet
 from ..drpfits import DRPFits
 
-class ObsInputPar(ParSet):
+class ObsInputPar(KeywordParSet):
     r"""
     Parameter object that defines the input observation and guess
     parameters to be used by the DAP.

@@ -41,7 +41,7 @@ from pydl.goddard.astro import airtovac
 from astropy.io import fits
 
 from ..drpfits import DRPFits
-from ..par.parset import ParSet
+from ..par.parset import KeywordParSet
 from ..config.defaults import dap_source_dir, default_dap_common_path
 from ..config.defaults import default_dap_file_name
 from ..util.fitsutil import DAPFitsUtil
@@ -59,7 +59,7 @@ from matplotlib import pyplot
 # Add strict versioning
 # from distutils.version import StrictVersion
 
-class ReductionAssessmentDef(ParSet):
+class ReductionAssessmentDef(KeywordParSet):
     """
     Class with parameters used to define how the reduction assessments
     are performed.  At the moment this is just a set of parameters that

@@ -63,11 +63,11 @@ import numpy
 from pydl.goddard.astro import airtovac
 from pydl.pydlutils.yanny import yanny
 
-from .parset import ParSet
+from .parset import KeywordParSet
 from .spectralfeaturedb import SpectralFeatureDB
 from ..proc import util
 
-class EmissionLinePar(ParSet):
+class EmissionLinePar(KeywordParSet):
     r"""
     Parameter object that defines a set of emission-line parameters used
     by various algorithms in the DAP.
