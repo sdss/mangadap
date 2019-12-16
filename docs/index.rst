@@ -69,6 +69,8 @@ If you use the DAP software and/or its output products, please cite the followin
    whatsnew
    knownissues
 
+----
+
 .. toctree::
    :caption: Usage
    :maxdepth: 1
@@ -76,6 +78,8 @@ If you use the DAP software and/or its output products, please cite the followin
    installation
    execution
    development
+
+----
 
 .. toctree::
    :caption: Methods
@@ -87,6 +91,8 @@ If you use the DAP software and/or its output products, please cite the followin
    spectralindices
    spatialcovariance
 
+----
+
 .. toctree::
    :caption: Output
    :maxdepth: 1
@@ -96,6 +102,8 @@ If you use the DAP software and/or its output products, please cite the followin
    datamodel
    corrections
    qualityassessment
+
+----
 
 .. toctree::
    :caption: Beyond MaNGA
@@ -108,6 +116,8 @@ The MaNGA DAP software was written to be more broadely useful.  The
 pages above provide some examples of how the code can be used more
 generally, beyond its application to MaNGA.
 
+----
+
 .. toctree::
    :caption: Utilities
    :maxdepth: 1
@@ -119,12 +129,16 @@ generally, beyond its application to MaNGA.
    resolution
    smoothing
 
+----
+
 .. toctree::
    :caption: API
    :maxdepth: 2
 
    MaNGA DAP API <api/mangadap>
    MaNGA DAP Modules <api/modules>
+
+----
 
 Search
 ======

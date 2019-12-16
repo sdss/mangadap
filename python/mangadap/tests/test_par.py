@@ -4,6 +4,8 @@ import warnings
 warnings.simplefilter("ignore", UserWarning)
 warnings.simplefilter("ignore", RuntimeWarning)
 
+from astropy.io import fits
+
 from mangadap.par.parset import ParSet
 from mangadap.par.artifactdb import ArtifactDB
 from mangadap.par.emissionlinedb import EmissionLineDB
@@ -20,17 +22,41 @@ def test_parset():
     defaults = [ 'this', 0, 0.0, None ]
     options = [ 'this', None, None, None ]
     dtypes = [ str, int, [int, float], None ]
-    par = ParSet(keys, defaults=defaults, options=options, dtypes=dtypes)
+    descr = [ 'test parameter description',
+              'par parameter description',
+              None,
+              'this is a rather long description of the junk parameter.  You can include ' \
+                'rst-style references like pointing back to the ' \
+                ':class:`mangadap.par.parset.ParSet` class, for when this description is ' \
+                'written to an rst table using :func:`mangadap.par.parset.ParSet.to_rst_table` ' \
+                'and included in an rst doc synthesized into html using sphinx.']
+    par = ParSet(keys, defaults=defaults, options=options, dtypes=dtypes, descr=descr)
 
-    # Test it
+    # Print it
+    par.info()
+    print(par)
+
+    # Test values
     assert all([ k in par.keys() for k in keys]), 'Not all keys assigned'
     assert par['junk'] is None, 'Default should be None'
     assert par['test'] == 'this', 'Bad instantiation'
 
+    # Test constraints
+    with pytest.raises(KeyError):
+        par['that'] = 'new', 'This key does not exist; need to use add method.'
     with pytest.raises(ValueError):
         par['test'] = 'that', 'Options not correctly checked.'
     with pytest.raises(TypeError):
         par['par'] = 'test', 'Type not correctly checked'
+
+    # Test IO
+    ParSet.from_dict(par.to_dict())
+
+    hdr = fits.Header()
+    par.to_header(hdr)
+    ParSet.from_header(hdr)
+
+    ParSet.from_config(par.to_config())
 
     # Try adding a new parameter
     par.add('echo', 10, dtype=int)

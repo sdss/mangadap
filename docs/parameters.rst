@@ -4,7 +4,6 @@
 Parameter Sets
 ==============
 
-The DAP uses a glorified dictionary to handle the parameters of its main
-algorithms.
-
+.. include:: links.rst
+.. include:: parset_usage.rst
 

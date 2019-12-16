@@ -1,7 +1,8 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 # -*- coding: utf-8 -*-
 """
-Define a utility base class used to hold parameters.
+
+.. include:: ../parset_usage.rst
 
 .. todo::
     - Add range and length parameters allowing one to define the range
@@ -41,9 +42,12 @@ Revision history
 """
 
 import os
+import inspect
 import warnings
 import textwrap
 import numpy
+
+from configobj import ConfigObj
 
 from .util import recursive_dict_evaluate
 
@@ -93,24 +97,24 @@ class ParSet:
             length as the input list of parameter keys.
 
     Attributes:
-        npar (int):
+        npar (:obj:`int`):
             Number of parameters
-        data (dict):
+        data (:obj:`dict`):
             Dictionary with the parameter values
-        default (dict):
+        default (:obj:`dict`):
             Dictionary with the default values
-        options (dict):
+        options (:obj:`dict`):
             Dictionary with the allowed options for the parameter values
-        dtype (dict):
+        dtype (:obj:`dict`):
             Dictionary with the allowed data types for the parameters
-        can_call (dict):
+        can_call (:obj:`dict`):
             Dictionary with the callable flags
-        descr (dict):
+        descr (:obj:`dict`):
             Dictionary with the description of each parameter.
-        cfg_section (str): 
+        cfg_section (:obj:`str`): 
             The top-level designation for a configuration section
             written based on the contents of this parameter set.
-        cfg_comment (str): 
+        cfg_comment (:obj:`str`): 
             Comment to be placed at the top-level of the configuration
             section written based on the contents of this parameter set.
         prefix (:obj:`str`):
@@ -175,7 +179,7 @@ class ParSet:
 
         # Set the data dictionary using the overloaded
         # __setitem__function so that value checking is performed
-        self.data = {}
+        self.data = dict.fromkeys(pars)
         for p, d, v, t in zip(pars, _defaults, _values, _dtypes):
             # Check if 'None' is an allowed option
             none_allowed = False
@@ -214,16 +218,20 @@ class ParSet:
                 provided.
 
         Raises:
+            KeyError:
+                Raised if the keyword is not valid for this class.
             ValueError:
                 Raised if the parameter value is not among the allowed
                 options (:attr:`options`).
-
             TypeError:
                 Raised if the parameter value does not have an allowed
                 data type (:attr:`dtype`) or if the provided value is
                 not a callable object, but is expected to be by
                 :attr:`can_call`.
         """
+        if key not in self.keys():
+            raise KeyError('{0} is not a valid key for {1}.'.format(key, self.__class__.__name__))
+
         if value is None:
             self.data[key] = value
             return
@@ -237,8 +245,9 @@ class ParSet:
         if self.options[key] is not None and value not in self.options[key]:
             raise ValueError('Input value for {0} invalid: {1}.\nOptions are: {2}'.format(
                                                                     key, value, self.options[key]))
+
         if self.dtype[key] is not None \
-                and not any([ isinstance(value, d) for d in self.dtype[key]]):
+                and not any([ d is None or isinstance(value, d) for d in self.dtype[key]]):
             raise TypeError('Input value for {0} has incorrect type: {1}.'.format(key, value) +
                             '\nValid types are: {0}'.format(self.dtype[key]))
 
@@ -299,8 +308,7 @@ class ParSet:
                     data_table[i+1,2] = ParSet._data_string(self.default[k])
             if value_only:
                 continue
-            data_table[i+1,3] = ', '.join(['Undefined' if t is None else t.__name__ 
-                                            for t in self.dtype[k]])
+            data_table[i+1,3] = ', '.join(self._types_list(k))
             data_table[i+1,4] = self.can_call[k].__repr__()
 
         output = [ParSet._data_table_string(data_table)]
@@ -394,7 +402,7 @@ class ParSet:
 
     def _types_list(self, key):
         """Return the string names for the specified data types."""
-        return [t.__name__ for t in self.dtype[key]]
+        return ['Undefined' if t is None else t.__name__ for t in self.dtype[key]]
 
     @staticmethod
     def config_lines(par, section_name=None, section_comment=None, section_level=0,
@@ -567,6 +575,9 @@ class ParSet:
             can_call (:obj:`bool`, optional):
                 Flag that the parameters are callable operations.
                 Default is False.
+            descr (:obj:`str`, optional):
+                Parameter description.  Default is that no description
+                is added.
 
         Raises:
             ValueError:
@@ -581,6 +592,7 @@ class ParSet:
         self.dtype[key] = [dtype] if dtype is not None and not isinstance(dtype, list) else dtype
         self.can_call[key] = False if can_call is None else can_call
         self.descr[key] = None if descr is None else descr
+        self.data[key] = None
         try:
             self.__setitem__(key, value)
         except:
@@ -654,7 +666,8 @@ class ParSet:
             # Cannot write the parameters as a configuration file
             # without a top-level configuration section
             if section_name is None and self.cfg_section is None:
-                raise ValueError('No top-level section name available for configuration!')
+                warnings.warn('No top-level section name available; using [default].')
+                section_name = 'default'
 
             _section_name = self.cfg_section if section_name is None else section_name
             _section_comment = self.cfg_comment if section_comment is None else section_comment
@@ -673,6 +686,55 @@ class ParSet:
         # Write the file
         with open(cfg_file, 'a' if append else 'w') as f:
             f.write('\n'.join(config_output))
+
+    @classmethod
+    def from_config(cls, cfg, section_name='default', evaluate=True):
+        """
+        Construct the parameter set using a configuration file.
+
+        Args:
+            cfg (:obj:`str`, :obj:`list`):
+                Either a single string with a file name to read, or a
+                list of configuration-file-style strings with the
+                parameters.
+            section_name (:obj:`str`, optional):
+                The configuration file section with the parameters.
+            evaluate (:obj:`bool`, optional):
+                Evaluate the values in the config object before
+                assigning them in the subsequent parameter sets.  The
+                parameters in the config file are *always* read as
+                strings, so this should almost always be true; however,
+                see the warning below.
+
+                .. warning::
+
+                    When ``evaluate`` is true, the function runs
+                    ``eval()`` on all the entries in the `ConfigObj`
+                    dictionary, done using
+                    :func:`mangadap.par.util.recursive_dict_evaluate`.
+                    This has the potential to go haywire if the name of
+                    a parameter unintentionally happens to be identical
+                    to an imported or system-level function.  Of course,
+                    this can be useful by allowing one to define the
+                    function to use as a parameter, but it also means
+                    one has to be careful with the values that the
+                    parameters should be allowed to have.  The current
+                    way around this is to provide a list of strings that
+                    should be ignored during the evaluation, done using
+                    :func:`mangadap.par.util._eval_ignore`.
+                
+        Returns:
+            :class:`ParSet`: The instance of the parameter set.
+        """
+        # Instantiate the ConfigObj instance
+        _cfg = ConfigObj(cfg)[section_name]
+
+        # Evaluate the strings, if requested
+        if evaluate:
+            _cfg = recursive_dict_evaluate(_cfg)
+        
+        # Instantiate the object based on the configuration dictionary
+        return cls.from_dict(_cfg)
 
     @staticmethod
     def _rst_class_name(p):
@@ -714,7 +776,7 @@ class ParSet:
                 data_table[i+1,1] = ParSet._rst_class_name(self.data[k])
                 data_table[i+1,3] = '`{0} Keywords`_'.format(type(self.data[k]).__name__)
             else: 
-                data_table[i+1,1] = ', '.join([t.__name__ for t in self.dtype[k]])
+                data_table[i+1,1] = ', '.join(self._types_list(k))
                 data_table[i+1,3] = '..' if self.default[k] is None \
                                     else ParSet._data_string(self.default[k], use_repr=False,
                                                              verbatum=True)
@@ -773,6 +835,29 @@ class ParSet:
                 raise ValueError('These keys should not be None: {0}'.format(
                                     numpy.asarray(self.keys())[should_not_be_None].tolist()))
 
+    def to_dict(self):
+        """
+        Return a dictionary with the parameters.
+
+        .. warning::
+
+            This simply returns a pointer to the internal object
+            dictionary, :attr:`data`.
+
+        """
+        # TODO: Return a copy?
+        return self.data
+
+    @classmethod
+    def from_dict(cls, data):
+        """
+        Create a :class:`ParSet` from a dictionary.
+        
+        Objects built in this way are nearly identical to a normal
+        dictionary, except that one cannot add keys in the same way.
+        """
+        return cls([*data.keys()], values=[*data.values()])
+
     def to_header(self, hdr, prefix=None, quiet=False):
         """
         Write the parameters to a fits header.
@@ -794,15 +879,15 @@ class ParSet:
             prefix = self.prefix
         ndig = int(numpy.log10(self.npar))+1 
         for i, (key, value) in enumerate(self.data.items()):
-            if value is None:
-                # Don't write Nones
-                continue
+#            if value is None:
+#                # Don't write Nones
+#                continue
             if isinstance(value, ParSet):
                 if verbose:
                     warnings.warn('ParSets within ParSets are not written to headers!  '
                                   'Skipping {0}.'.format(key))
                 continue
-            _value = str(value) if isinstance(value, (list, tuple)) else value
+            _value = str(value) if value is None or isinstance(value, (list, tuple)) else value
             hdr['{0}{1}'.format(prefix, str(i+1).zfill(ndig))] \
                     = (_value, '{0}: {1}'.format(self.__class__.__name__, key))
 
@@ -822,7 +907,7 @@ class ParSet:
         """
         if prefix is None:
             prefix = cls.prefix
-        return cls.from_dict(util.recursive_dict_evaluate(ParSet.parse_par_from_hdr(hdr, prefix)))
+        return cls.from_dict(recursive_dict_evaluate(ParSet.parse_par_from_hdr(hdr, prefix)))
 
     @staticmethod
     def parse_par_from_hdr(hdr, prefix):
@@ -858,6 +943,40 @@ class ParSet:
                 par_key = hdr.comments[k].split(':')[-1].strip()
                 par[par_key] = v
         return par
+
+
+class KeywordParSet(ParSet):
+    """
+    An abstract class that uses :class:`ParSet` as its base.
+
+    The main purpose of this class is to redefine the
+    :func:`ParSet.from_dict` method and disallow adding new parameters.
+    """
+    @classmethod
+    def from_dict(cls, data, ignore_extra=True):
+        """
+        Construct the object using a dictionary.
+        """
+        k = numpy.array([*data.keys()])
+        parkeys = [*inspect.signature(cls).parameters.keys()]
+
+        if not ignore_extra:
+            badkeys = numpy.array([pk not in parkeys for pk in k])
+            if numpy.any(badkeys):
+                raise ValueError('{0} not recognized key(s) for {1}.'.format(k[badkeys],
+                                 cls.__class__.__name__))
+
+        kwargs = {}
+        for pk in parkeys:
+            kwargs[pk] = data[pk] if pk in k else None
+        return cls(**kwargs)
+
+    def add(self, *args, **kwargs):
+        """
+        Disallow functionality of base class that adds new parameters.
+        """
+        raise NotImplementedError('Cannot add parameters to a {0} instance.'.format(
+                                  self.__class__.__name__))
 
 
 class ParDatabase:
@@ -960,12 +1079,12 @@ class ParDatabase:
         return dtypes
 
 
-    def append(self, pdb):
-        if not isinstance(pdb, ParDatabase):
+    def append(self, db):
+        if not isinstance(db, ParDatabase):
             raise TypeError('Can only append ParDatabase object.')
 
         try:
-            self.data = numpy.append(self.data, pdb.data)
+            self.data = numpy.append(self.data, db.data)
         except TypeError as e:
             raise TypeError('Could not append data:: {0}'.format(e))
             
