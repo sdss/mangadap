@@ -561,8 +561,9 @@ class EmissionLineFit(SpectralFitting):
         measurement; only the provided error in the flux.
 
         Raises:
-            ValueError: Raised if the length of the spectra, errors, or
-                mask does not match the length of the wavelength array;
+            ValueError:
+                Raised if the length of the spectra, errors, or mask
+                does not match the length of the wavelength array;
                 raised if the wavelength, redshift, or dispersion arrays
                 are not 1D vectors; and raised if the number of
                 redshifts or dispersions is not a single value or the
@@ -678,8 +679,9 @@ class EmissionLineFit(SpectralFitting):
             LINE_RMS, and LINE_FRMS columns.
 
         Raises:
-            ValueError: Raised if various checks of the input array
-            sizes are incorrect.
+            ValueError:
+                Raised if various checks of the input array sizes are
+                incorrect.
         """
         # Check shapes and set masks for all arrays
         _wave = numpy.atleast_1d(wave)

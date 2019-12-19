@@ -82,7 +82,6 @@ from matplotlib import pyplot
 
 class PPXFFitPar(KeywordParSet):
     r"""
-
     Define a parameter set used by the pPXF fitting method.
 
     .. todo::
@@ -90,77 +89,17 @@ class PPXFFitPar(KeywordParSet):
         :class:`mangadap.proc.stellarcontinuummodel.StellarContinuumModelDef`
         is not well designed.
 
-    Args:
-        template_library_key (:obj:`str`):
-            Keyword of the library to fit.  See
-            :func:`mangadap.proc.templatelibrary.available_template_libraries`.
-        template_library (:class:`mangadap.proc.templatelibrary.TemplateLibrary`):
-            Object with the spectra in the template library that have
-            been prepared for analysis of the data.
-        guess_redshift (array-like):
-            Initial guess for the redshift (:math:`cz`) of each binned
-            spectrum.
-        guess_dispersion (array-like):
-            Initial guess for the velocity dispersion for each binned
-            spectrum.
-        iteration_mode (:obj:`str`, optional):
-            Iteration mode to use; see :func:`PPXFFit.iteration_modes`.
-        reject_boxcar (:obj:`int`, optional):
-            Number of pixels in the boxcar used to determine the local
-            sigma for rejecting outliers.
-        filter_boxcar (:obj:`int`, optional):
-            Size of the boxcar in pixels used in a high-pass filter
-            applied before fitting the spectra. (**To be deprecated**)
-        filter_operation (:obj:`str`, optional):
-            Operation to use when constructing the filtered spectra.
-            The boxcar smoothed version of the spectrum is either
-            subtracted or divided into the original spectrum if
-            ``filter_operation`` is ``subtract`` or ``divide``
-            respectively. (**To be deprecated**)
-        filter_iterations (:obj:`int`, optional):
-            Number of fit-reject-filter iterations. (**To be
-            deprecated**)
-        match_resolution (:obj:`bool`, optional):
-            Match the spectral resolution of the template to that of the
-            galaxy data.  This is used only when constructing the
-            template library.  Default is True.
-        velscale_ratio (:obj:`int`, optional):
-            The **integer** ratio between the velocity scale of the
-            pixel in the galaxy data to that of the template data.  This
-            is used only when constructing the template library.
-            Default is None, which is the same as assuming that the
-            velocity scales are identical.
-        minimum_snr (:obj:`float`, optional):
-            Minimum S/N ratio to include in the fitting.
-        pixelmask (:class:`mangadap.proc.pixelmask.PixelMask`, optional):
-            Pixel mask to include during the fitting.
-        bias (:obj:`float`, optional):
-            `ppxf`_ ``bias`` parameter used to penalize low S/N spectra
-            toward a Gaussian LOSVD.
-        degree (:obj:`int`, optional):
-            `ppxf`_ ``degree`` parameter used to set the order of the
-            additive polynomial to include in the fit.
-        mdegree (:obj:`int`, optional):
-            `ppxf`_ ``mdegree`` parameter used to set the order of the
-            multiplicative polynomial to include in the fit.
-        filt_degree (:obj:`int`, optional):
-            Order of the additive polynomial to include when fitting
-            high-pass filtered spectra.  (**To be deprecated**)
-        filt_mdegree (:obj:`int`, optional):
-            Order of the multiplicative polynomial to include when
-            fitting high-pass filtered spectra.  (**To be deprecated**)
-        moments (:obj:`int`, optional):
-            `ppxf`_ ``moments`` parameter used to set the number of
-            moments of the LOSVD to fit.  The DAP has not been well
-            tested for fits that include any more than :math:`V` and
-            :math:`\sigma`.
+    The defined parameters are:
+
+    .. include:: ../tables/ppxffitpar.rst
 
     """
-    def __init__(self, template_library_key, template_library, guess_redshift, guess_dispersion,
-                 iteration_mode='global_template', reject_boxcar=None, filter_boxcar=None,
-                 filter_operation=None, filter_iterations=None, match_resolution=True,
-                 velscale_ratio=None, minimum_snr=None, pixelmask=None, bias=None, degree=None,
-                 mdegree=None, filt_degree=None, filt_mdegree=None, moments=None):
+    def __init__(self, template_library_key=None, template_library=None, guess_redshift=None,
+                 guess_dispersion=None, iteration_mode=None, reject_boxcar=None,
+                 filter_boxcar=None, filter_operation=None, filter_iterations=None,
+                 match_resolution=None, velscale_ratio=None, minimum_snr=None, pixelmask=None,
+                 bias=None, degree=None, mdegree=None, filt_degree=None, filt_mdegree=None,
+                 moments=None):
     
         arr_in_fl = [ numpy.ndarray, list, int, float ] # guess kinematics
         in_fl = [ int, float ]                          # bias, minimum S/N

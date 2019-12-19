@@ -114,13 +114,13 @@ class AbsorptionIndexDB(SpectralFeatureDB):
         for i in range(self.size):
             invac = par['DAPABI']['waveref'][i] == 'vac'
             comp = par['DAPABI']['component'][i] != 0
-            parlist += [ BandPassFilterPar(par['DAPABI']['index'][i],
-                                           par['DAPABI']['name'][i],
-                                par['DAPABI']['blueside'][i] if invac \
+            parlist += [ BandPassFilterPar(index=par['DAPABI']['index'][i],
+                                           name=par['DAPABI']['name'][i],
+                                blueside=par['DAPABI']['blueside'][i] if invac \
                                         else airtovac(numpy.array(par['DAPABI']['blueside'][i])),
-                                par['DAPABI']['redside'][i] if invac \
+                                redside=par['DAPABI']['redside'][i] if invac \
                                         else airtovac(numpy.array(par['DAPABI']['redside'][i])),
-                        primary=par['DAPABI']['primary'][i] if invac \
+                                primary=par['DAPABI']['primary'][i] if invac \
                                         else airtovac(numpy.array(par['DAPABI']['primary'][i])),
                                            units=par['DAPABI']['units'][i],
                                            integrand='flambda',

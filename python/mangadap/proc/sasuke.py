@@ -71,10 +71,10 @@ from matplotlib import pyplot
 
 class SasukePar(KeywordParSet):
     r"""
-    A class specific to the DAP's use of Sasuke.
+    Hold the parameers necessary to run the Sasuke emission-line fitter.
 
     This is the object that gets passed to
-    :func:`Sasuke.fit_SpatiallyBinnedSpectra`.  In the DAP, it is
+    :func:`Sasuke.fit_SpatiallyBinnedSpectra`. In the DAP, it is
     instantiated by
     :func:`mangadap.proc.emissionlinemodel.available_emission_line_modeling_methods`
     and some of its components are filled by
@@ -90,63 +90,11 @@ class SasukePar(KeywordParSet):
     See documentation for :class:`mangadap.par.parset.ParSet` for the
     list of attributes and exceptions raised.
 
-    Args:
-        stellar_continuum (:class:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel`):
-            The result of the previous fit to the stellar continuum.
-        emission_lines (:class:`mangadap.par.emissionlinedb.EmissionLineDB`):
-            Emission-line database with the details of the lines to be
-            fit.
-        continuum_templates
-            (:obj:`str`, :class:`mangadap.proc.templatelibrary.TemplateLibrary`, optional):
-            The new continuum template library to use during the
-            emission-line fit.
-        etpl_line_sigma_mode (:obj:`str`, optional): 
-            Mode used to set the instrumental dispersion of the
-            emission-line templates.  Mode options are explated by
-            :func:`Sasuke.etpl_line_sigma_options`.  Default is
-            'default'.
-        etpl_line_sigma_min (scalar-like, optional):
-            Impose a minimum emission-line sigma by offsetting the
-            nominal trend, in quadrature, to have this minimum value.
-            Default is 0.
-        velscale_ratio (:obj:`int`, optional):
-            Integer ratio between the width of the spectral pixels in
-            the galaxy and template spectra.  If ``velscale_ratio = 2``,
-            the template pixels are half as wide as the galaxy pixels.
-        guess_redshift (array-like, optinal):
-            Single or per-spectrum redshift to use as the initial
-            velocity guess.
-        guess_dispersion (array-like, optional):
-            Single or per-spectrum velocity dispersion to use as the
-            initial guess.
-        minimum_snr (scalar-like, optional):
-            Minimum S/N of spectrum to fit.
-        deconstruct_bins (:obj:`str`, optional):
-            Method to use for deconstructing binned spectra into
-            individual spaxels for emission-line fitting.  See
-            :func:`Sasuke.deconstruct_bin_options`.
-        pixelmask (:class:`mangadap.util.pixelmask.SpectralPixelMask`, optional):
-            Mask to apply to all spectra being fit.
-        reject_boxcar (:obj:`int`, optional):
-            Size of the boxcar to use when rejecting fit outliers.
-        bias (:obj:`float`, optional):
-            pPXF bias parameter.  (Irrelevant because gas is currently
-            always fit with moments=2.)
-        moments (:obj:`int`, optional):
-            pPXF moments parameter.  (Irrelevant because gas is
-            currently always fit with moments=2.)
-        degree (:obj:`int`, optional):
-            pPXF degree parameter setting the degree of the additive
-            polynomials to use.
-        mdegree (:obj:`int`, optional):
-            pPXF mdegree parameter setting the degree of the
-            multiplicative polynomials to use.
-        reddening (:obj:`float`, optional):
-            pPXF reddening parameter setting the initial :math:`E(B-V)`
-            to fit, based on a Calzetti law.
+    The defined parameters are:
 
+    .. include:: ../tables/sasukepar.rst
     """
-    def __init__(self, stellar_continuum, emission_lines, continuum_templates=None,
+    def __init__(self, stellar_continuum=None, emission_lines=None, continuum_templates=None,
                  etpl_line_sigma_mode=None, etpl_line_sigma_min=None, velscale_ratio=None,
                  guess_redshift=None, guess_dispersion=None, minimum_snr=None,
                  deconstruct_bins=None, pixelmask=None, reject_boxcar=None, bias=None,

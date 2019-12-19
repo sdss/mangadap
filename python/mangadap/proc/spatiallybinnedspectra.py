@@ -82,79 +82,43 @@ class SpatiallyBinnedSpectraDef(KeywordParSet):
     A class that holds the two parameter sets and the key designator for
     the binning scheme.
 
-    binfunc must be able to function properly with the following call:
+    The provided ``binfunc`` method must have a call with the
+    following form::
         
         id = bin(x, y, par=par)
 
-    where ``x`` and ``y`` are the on-sky Cartesian coordiantes provided
-    by::
+    where ``id`` is the index of the bin to place each spectrum and
+    ``x`` and ``y`` are the on-sky Cartesian coordinates;
+    e.g.::
         
         x = ReductionAssessment.hdu['SPECTRUM'].data['SKY_COO'][:,0]
         y = ReductionAssessment.hdu['SPECTRUM'].data['SKY_COO'][:,1]
 
-    id is the index of the bin to place each spectrum.
-
-    stackfunc must be able to function properly with the following
-    call::
+    The provided ``stackfunc`` method must have a call with the
+    following form::
         
         stack_wave, stack_flux, stack_sdev, stack_npix, stack_ivar, \
                 stack_sres, stack_covar = stack(drpf, id, par=par)
 
-    where `drpf` is a :class:`mangadap.drpfits.DRPFits` object.  Note
-    that the input and output wavelength ranges are expected to be the
-    same!  This is why the wavelengths are not returned!
+    where ``drpf`` is a :class:`mangadap.drpfits.DRPFits` object.
+    Note that the wavelengths are not returned because the input and
+    output wavelength ranges are expected to be the same!
 
-    As long as they are mutable, the values in par can change, meaning
-    that some products of the bin algorithm can be passed to the stack
-    algorithm.  For example, if you want to weight the inclusion of the
-    spectrum in the bin, you'd have to provide both the binning and
-    stacking routines.  Actually, if that's the case, you're better off
-    providing a class object that will both bin and stack the spectra!
+    As long as they are mutable, the values in ``par`` can change,
+    meaning that some products of the bin algorithm can be passed to
+    the stack algorithm. For example, if you want to weight the
+    inclusion of the spectrum in the bin, you'd have to provide both
+    the binning and stacking routines. Actually, if that's the case,
+    you're better off providing a class object that will both bin and
+    stack the spectra!
 
-    .. todo::
-        - Impose a set of options of the form for the Galactic
-          reddening.
+    The defined parameters are:
 
-    Args:
-        key (:obj:`str`):
-            Keyword used to distinguish between different spatial
-            binning schemes.
-        galactic_reddening (:obj:`str`):
-            The string identifier for the Galactic extinction curve to
-            use.  See
-            :func:`mangadap.util.extinction.GalacticExtinction.valid_forms`
-            for the available curves.  Default is ``ODonnell``.
-        galactic_rv (:obj:`float`):
-            Ratio of V-band extinction to the B-V reddening.  Default is 3.1.
-        minimum_snr (:obj:`float`):
-            Minimum S/N of spectra to include in any bin.
-        binpar (:class:`mangadap.par.parset.ParSet`, :obj:`dict`):
-            The parameter set defining how to place each spectrum in a
-            bin.
-        binclass (object):
-            Instance of class object to use for the binning.  Needed in
-            case binfunc is a non-static member function of the class.
-        binfunc (callable):
-            The function that determines which spectra go into each bin.
-        stackpar (:class:`mangadap.par.parset.ParSet`, :obj:`dict`):
-            The parameter set defining how to stack the spectra in each
-            bin.
-        stackclass (object):
-            Instance of class object to used to stack the spectra.
-            Needed in case stackfunc is a non-static member function of
-            the class.
-        stackfunc (callable):
-            The function that stacks the spectra in a given bin.
-        spec_res (:obj:`str`):
-            Keyword defining the treatment of the spectral resolution.
-            See
-            :func:`SpatiallyBinnedSpectra.spectral_resolution_options`
-            for a list of the options.
-        prepixel_sres (:obj:`bool`):
-            Use the prepixelized version of the LSF measurements.
+    .. include:: ../tables/spatiallybinnedspectradef.rst
     """
-    def __init__(self, key, galactic_reddening, galactic_rv, minimum_snr, binpar, binclass,
-                 binfunc, stackpar, stackclass, stackfunc, spec_res, prepixel_sres):
+    def __init__(self, key=None, galactic_reddening=None, galactic_rv=None, minimum_snr=None,
+                 binpar=None, binclass=None, binfunc=None, stackpar=None, stackclass=None,
+                 stackfunc=None, spec_res=None, prepixel_sres=None):
         in_fl = [ int, float ]
         res_opt = SpatiallyBinnedSpectra.spectral_resolution_options()
 #        bincls_opt = [ spatialbinning.SpatialBinning ]
@@ -187,7 +151,7 @@ class SpatiallyBinnedSpectraDef(KeywordParSet):
                  'The function that stacks the spectra in a given bin.',
                  'Keyword defining the treatment of the spectral resolution.  See ' \
                     ':func:`SpatiallyBinnedSpectra.spectral_resolution_options` for a list of ' \
-                    'the options.'
+                    'the options.',
                  'Use the prepixelized version of the LSF measurements.']
 
         super(SpatiallyBinnedSpectraDef, self).__init__(pars, values=values, options=options,
@@ -304,19 +268,21 @@ def available_spatial_binning_methods(dapsrc=None):
             center = cnfg.getlist('center', evaluate=True)
             radii = cnfg.getlist('radii', evaluate=True)
             radii[2] = int(radii[2])
-            binpar = spatialbinning.RadialBinningPar(center, cnfg.getfloat('pa', default=0.),
-                                                     cnfg.getfloat('ell', default=0.),
-                                                     cnfg.getfloat('radius_scale', default=1.),
-                                                     radii, cnfg.getbool('log_step', default=False))
+            binpar = spatialbinning.RadialBinningPar(center=center,
+                                            pa=cnfg.getfloat('pa', default=0.),
+                                            ell=cnfg.getfloat('ell', default=0.),
+                                            radius_scale=cnfg.getfloat('radius_scale', default=1.),
+                                            radii=radii,
+                                            log_step=cnfg.getbool('log_step', default=False))
             binclass = spatialbinning.RadialBinning()
             binfunc = binclass.bin_index
         elif cnfg['method'] == 'voronoi':
-            binpar = spatialbinning.VoronoiBinningPar(cnfg.getfloat('target_snr'), None, None,
-                                                      cnfg.getfloat('noise_calib'))
+            binpar = spatialbinning.VoronoiBinningPar(target_snr=cnfg.getfloat('target_snr'),
+                                                      covar=cnfg.getfloat('noise_calib'))
             binclass = spatialbinning.VoronoiBinning()
             binfunc = binclass.bin_index
         elif cnfg['method'] == 'square':
-            binpar = spatialbinning.SquareBinningPar(cnfg.getfloat('binsz', default=2.0))
+            binpar = spatialbinning.SquareBinningPar(binsz=cnfg.getfloat('binsz', default=2.0))
             binclass = spatialbinning.SquareBinning()
             binfunc = binclass.bin_index
         else:   # Do not bin!
@@ -326,23 +292,24 @@ def available_spatial_binning_methods(dapsrc=None):
 
         stack_spec_res = cnfg.get('spec_res') == 'spaxel'
         prepixel_sres = cnfg.getbool('prepixel_sres', default=True)
-
-        stackpar = SpectralStackPar(cnfg.get('operation', default='mean'),
-                                    cnfg.getbool('velocity_register', default=False), None,
-                                    cnfg.get('stack_covariance_mode', default='none'),
-                                    SpectralStack.parse_covariance_parameters(
+        stackpar = SpectralStackPar(operation=cnfg.get('operation', default='mean'),
+                                    vel_register=cnfg.getbool('velocity_register', default=False),
+                                    covar_mode=cnfg.get('stack_covariance_mode', default='none'),
+                                    covar_par=SpectralStack.parse_covariance_parameters(
                                             cnfg.get('stack_covariance_mode', default='none'),
                                             cnfg['stack_covariance_par']),
-                                    stack_spec_res, prepixel_sres)
+                                    stack_sres=stack_spec_res, prepixel_sres=prepixel_sres)
         stackclass = SpectralStack()
         stackfunc = stackclass.stack_DRPFits
 
-        binning_methods += [ SpatiallyBinnedSpectraDef(cnfg['key'], cnfg['galactic_reddening'],
-                                                       cnfg.getfloat('galactic_rv', default=3.1),
-                                                       cnfg.getfloat('minimum_snr', default=0.),
-                                                       binpar, binclass, binfunc, stackpar,
-                                                       stackclass, stackfunc, cnfg['spec_res'],
-                                                       prepixel_sres) ]
+        binning_methods += [ SpatiallyBinnedSpectraDef(key=cnfg['key'],
+                                        galactic_reddening=cnfg['galactic_reddening'],
+                                        galactic_rv=cnfg.getfloat('galactic_rv', default=3.1),
+                                        minimum_snr=cnfg.getfloat('minimum_snr', default=0.),
+                                        binpar=binpar, binclass=binclass, binfunc=binfunc,
+                                        stackpar=stackpar, stackclass=stackclass,
+                                        stackfunc=stackfunc, spec_res=cnfg['spec_res'],
+                                        prepixel_sres=prepixel_sres) ]
 
     # Check the keywords of the libraries are all unique
     if len(numpy.unique( numpy.array([ method['key'] for method in binning_methods ]) )) \

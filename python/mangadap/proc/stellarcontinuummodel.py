@@ -74,45 +74,24 @@ class StellarContinuumModelDef(KeywordParSet):
     A class that holds the parameters necessary to perform the
     stellar-continuum fitting.
 
-    The function use to fit the stellar continuum model must have the
-    form::
+    The provided ``fitfunc`` must have the form::
 
         model_wave, model_flux, model_mask, model_par \
                 = fitfunc(self, binned_spectra, par=None)
 
-    where `binned_spectra` has type
+    where ``binned_spectra`` has type
     :class:`mangadap.proc.spatiallybinnedspetra.SpatiallyBinnedSpectra`,
-    and the returned objects are the wavelength vector, the fitted model
-    flux, a bitmask for the model, and the set of model parameters.  For
-    example, see
+    and the returned objects are the wavelength vector, the fitted
+    model flux, a bitmask for the model, and the set of model
+    parameters. For example, see
     :func:`mangadap.proc.ppxffit.PPXFFit.fit_SpatiallyBinnedSpectra`.
 
-    Args:
-        key (:obj:`str`):
-            Keyword used to distinguish between different spatial
-            binning schemes.
-        minimum_snr (:obj:`bool`):
-            Minimum S/N of spectrum to fit
-        fit_type (:obj:`str`):
-            Currently can be anything.  In the DAP, this is used to
-            identify the primary purpose of the fit as either producing
-            stellar kinematics, composition measurements, or emission
-            line fits; see :mod:`mangadap.proc.spectralfitting`.  The
-            purpose for this type is to isolate the expected format of
-            the binary table data; see, e.g.,
-            :func:`mangadap.proc.spectralfitting._per_stellar_kinematics_dtype`.
-        fitpar (:class:`mangadap.par.parset.ParSet`, :obj:`dict`):
-            Any additional parameters, aside from the spectra
-            themselves, required by the fitting function.
-        fitclass (object):
-            Instance of class object to use for the model fitting.
-            Needed in case fitfunc is a non-static member function of a
-            class.
-        fitfunc (callable):
-            The function that models the spectra
+    The defined parameters are:
 
+    .. include:: ../tables/stellarcontinuummodeldef.rst
     """
-    def __init__(self, key, minimum_snr, fit_type, fitpar, fitclass, fitfunc):
+    def __init__(self, key=None, minimum_snr=None, fit_type=None, fitpar=None, fitclass=None,
+                 fitfunc=None):
         in_fl = [ int, float ]
         par_opt = [ ParSet, dict ]
 
@@ -231,7 +210,7 @@ def available_stellar_continuum_modeling_methods(dapsrc=None):
 
         if cnfg['fit_method'] == 'ppxf':
             # sky is always none for now
-            fitpar = PPXFFitPar(cnfg['template_library'], None, None, None,
+            fitpar = PPXFFitPar(template_library_key=cnfg['template_library'],
                                 iteration_mode=cnfg.get('fit_iter', default='global_template'),
                                 reject_boxcar=cnfg.getint('reject_boxcar'),
                                 filter_boxcar=cnfg.getint('filter_boxcar'),
@@ -246,16 +225,16 @@ def available_stellar_continuum_modeling_methods(dapsrc=None):
                                 mdegree=cnfg.getint('mdegree'),
                                 filt_degree=cnfg.getint('filter_degree'),
                                 filt_mdegree=cnfg.getint('filter_mdegree'),
-                                moments=cnfg.getint('moments') )
+                                moments=cnfg.getint('moments'))
             fitclass = PPXFFit(StellarContinuumModelBitMask())
             fitfunc = fitclass.fit_SpatiallyBinnedSpectra
         else:
             raise ValueError('Unknown fitting method: {0}'.format(cnfg['default']['fit_method']))
 
-        modeling_methods += [ StellarContinuumModelDef(cnfg['key'], 
-                                                       cnfg.getfloat('minimum_snr', default=0.0),
-                                                       cnfg['fit_type'],
-                                                       fitpar, fitclass, fitfunc) ]
+        modeling_methods += [ StellarContinuumModelDef(key=cnfg['key'], 
+                                            minimum_snr=cnfg.getfloat('minimum_snr', default=0.0),
+                                            fit_type=cnfg['fit_type'], fitpar=fitpar,
+                                            fitclass=fitclass, fitfunc=fitfunc) ]
 
     # Check the keywords of the libraries are all unique
     if len(numpy.unique( numpy.array([ method['key'] for method in modeling_methods ]) )) \

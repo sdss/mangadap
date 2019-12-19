@@ -89,8 +89,8 @@ class SpectralStackPar(KeywordParSet):
             raised!
 
     """
-    def __init__(self, operation, vel_register, vel_offsets, covar_mode, covar_par, stack_sres,
-                 prepixel_sres):
+    def __init__(self, operation=None, vel_register=None, vel_offsets=None, covar_mode=None,
+                 covar_par=None, stack_sres=None, prepixel_sres=None):
         in_fl = [ int, float ]
         ar_like = [ numpy.ndarray, list ]
         op_options = SpectralStack.operation_options()

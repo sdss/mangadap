@@ -124,11 +124,11 @@ class BandheadIndexDB(SpectralFeatureDB):
         parlist = []
         for i in range(self.size):
             invac = par['DAPBHI']['waveref'][i] == 'vac'
-            parlist += [ BandPassFilterPar(par['DAPBHI']['index'][i],
-                                           par['DAPBHI']['name'][i],
-                                par['DAPBHI']['blueside'][i] if invac \
+            parlist += [ BandPassFilterPar(index=par['DAPBHI']['index'][i],
+                                           name=par['DAPBHI']['name'][i],
+                                blueside=par['DAPBHI']['blueside'][i] if invac \
                                         else airtovac(numpy.array(par['DAPBHI']['blueside'][i])),
-                                par['DAPBHI']['redside'][i] if invac \
+                                redside=par['DAPBHI']['redside'][i] if invac \
                                         else airtovac(numpy.array(par['DAPBHI']['redside'][i])),
                                            integrand=par['DAPBHI']['integrand'][i],
                                            order=par['DAPBHI']['order'][i]) ]

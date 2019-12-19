@@ -121,11 +121,11 @@ class EmissionMomentsDB(SpectralFeatureDB):
         parlist = []
         for i in range(self.size):
             invac = par['DAPELB']['waveref'][i] == 'vac'
-            parlist += [ BandPassFilterPar(par['DAPELB']['index'][i],
-                                           par['DAPELB']['name'][i],
-                                par['DAPELB']['blueside'][i] if invac \
+            parlist += [ BandPassFilterPar(index=par['DAPELB']['index'][i],
+                                           name=par['DAPELB']['name'][i],
+                                blueside=par['DAPELB']['blueside'][i] if invac \
                                         else airtovac(numpy.array(par['DAPELB']['blueside'][i])),
-                                par['DAPELB']['redside'][i] if invac \
+                                redside=par['DAPELB']['redside'][i] if invac \
                                         else airtovac(numpy.array(par['DAPELB']['redside'][i])),
                                 restwave=par['DAPELB']['lambda'][i] if invac \
                                         else airtovac(numpy.array(par['DAPELB']['lambda'][i])),

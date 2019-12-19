@@ -114,27 +114,12 @@ class SpectralIndicesDef(KeywordParSet):
     A class that holds the parameters necessary to perform the
     spectral-index measurements.
 
-    Args:
-        key (:obj:`str`):
-            Keyword used to distinguish between different spectral-index
-            databases.
-        minimum_snr (:obj:`bool`):
-            Minimum S/N of spectrum to fit
-        fwhm (:obj:`int`, :obj:`float`):
-            Resolution FWHM in angstroms at which to make the
-            measurements.
-        compute_corrections (:obj:`bool`):
-            Flag to compute dispersion corrections to indices.
-            Dispersion corrections are always calculated!
-        artifacts (:obj:`str`):
-            String identifying the artifact database to use
-        absindex (:obj:`str`):
-            String identifying the absorption-index database to use
-        bandhead (:obj:`str`):
-            String identifying the bandhead-index database to use
+    The defined parameters are:
 
+    .. include:: ../tables/spectralindicesdef.rst
     """
-    def __init__(self, key, minimum_snr, fwhm, compute_corrections, artifacts, absindex, bandhead):
+    def __init__(self, key=None, minimum_snr=None, fwhm=None, compute_corrections=None,
+                 artifacts=None, absindex=None, bandhead=None):
         in_fl = [ int, float ]
 
         pars =     [ 'key', 'minimum_snr', 'fwhm', 'compute_corrections', 'artifacts', 'absindex',
@@ -233,13 +218,16 @@ def available_spectral_index_databases(dapsrc=None):
         # library
         validate_spectral_indices_config(cnfg)
 
-        index_set_list += [ SpectralIndicesDef(cnfg['key'],
-                                               cnfg.getfloat('minimum_snr', default=0.), 
-                                               cnfg.getfloat('resolution_fwhm', default=-1),
-                                               cnfg.getbool('compute_sigma_correction',
-                                                            default=False),
-                                               cnfg['artifact_mask'], cnfg['absorption_indices'],
-                                               cnfg['bandhead_indices']) ]
+    def __init__(self, key=None, minimum_snr=None, fwhm=None, compute_corrections=None,
+                 artifacts=None, absindex=None, bandhead=None):
+        index_set_list += [ SpectralIndicesDef(key=cnfg['key'],
+                                               minimum_snr=cnfg.getfloat('minimum_snr', default=0.), 
+                                               fwhm=cnfg.getfloat('resolution_fwhm', default=-1),
+                                    compute_corrections=cnfg.getbool('compute_sigma_correction',
+                                                                     default=False),
+                                               artifacts=cnfg['artifact_mask'],
+                                               absindex=cnfg['absorption_indices'],
+                                               bandhead=cnfg['bandhead_indices']) ]
 
     # Check the keywords of the libraries are all unique
     if len(numpy.unique(numpy.array([index['key'] for index in index_set_list]))) \

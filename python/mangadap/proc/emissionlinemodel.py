@@ -74,41 +74,13 @@ class EmissionLineModelDef(KeywordParSet):
     .. todo::
         Include waverange?
 
-    Args:
-        key (:obj:`str`):
-            Keyword used to distinguish between different emission-line
-            moment databases.
-        minimum_snr (:obj:`bool`):
-            Minimum S/N of spectrum to fit
-        deconstruct_bins (:obj:`str`):
-            Method to use for deconstructing binned spectra into
-            individual spaxels for emission-line fitting.  See
-            :func:`mangadap.proc.sasuke.Sasuke.deconstruct_bin_options`.
-        mom_vel_name (:obj:`str`):
-            Name of the emission-line moments band used to set the
-            initial velocity guess for each spaxel.
-        mom_disp_name (:obj:`str`):
-            Name of the emission-line moments band used to set the
-            initial velocity dispersion guess for each spaxel.
-        artifacts (:obj:`str`):
-            String identifying the artifact database to use
-        ism_mask (:obj:`str`):
-            String identifying an emission-line database used only for
-            **masking** lines during the fit.
-        emission_lines (:obj:`str`):
-            String identifying the emission-line database to use
-        continuum_tpl_key (:obj:`str`):
-            String identifying the continuum templates to use
-        fitpar (:class:`mangadap.par.parset.ParSet`, :obj:`dict`):
-            Fitting function parameters
-        fitclass (object):
-            Class used to perform the fit.
-        fitfunc (object):
-            Function or method that performs the fit.
+    The defined parameters are:
+
+    .. include:: ../tables/emissionlinemodeldef.rst
     """
-    def __init__(self, key, minimum_snr, deconstruct_bins, mom_vel_name, mom_disp_name,
-                 artifacts, ism_mask, emission_lines, continuum_tpl_key, fitpar, fitclass,
-                 fitfunc):
+    def __init__(self, key=None, minimum_snr=None, deconstruct_bins=None, mom_vel_name=None,
+                 mom_disp_name=None, artifacts=None, ism_mask=None, emission_lines=None,
+                 continuum_tpl_key=None, fitpar=None, fitclass=None, fitfunc=None):
         in_fl = [ int, float ]
         par_opt = [ ParSet, dict ]
 
@@ -232,8 +204,9 @@ def available_emission_line_modeling_methods(dapsrc=None):
             if continuum_tpl_key is not None:
                 raise NotImplementedError('When using Elric, cannot change continuum templates.')
 
-            fitpar = ElricPar(None, cnfg.getint('baseline_order'), cnfg.getfloat('window_buffer'),
-                              None, None, minimum_snr=minimum_snr)
+            fitpar = ElricPar(base_order=cnfg.getint('baseline_order'),
+                              window_buffer=cnfg.getfloat('window_buffer'),
+                              minimum_snr=minimum_snr)
             fitclass = Elric(EmissionLineModelBitMask())
             fitfunc = fitclass.fit_SpatiallyBinnedSpectra
 
@@ -242,7 +215,7 @@ def available_emission_line_modeling_methods(dapsrc=None):
             # missing or None values for reject_boxcar, bias, moments,
             # degree, mdegree; if provided new continuum templates are
             # constructed during the _fill_method_par call.
-            fitpar = SasukePar(None, None, continuum_templates=continuum_tpl_key,
+            fitpar = SasukePar(continuum_templates=continuum_tpl_key,
                                etpl_line_sigma_mode=cnfg.get('etpl_line_sigma_mode'),
                                etpl_line_sigma_min=cnfg.getfloat('etpl_line_sigma_min'),
                                velscale_ratio=cnfg.getint('velscale_ratio'),
@@ -255,11 +228,15 @@ def available_emission_line_modeling_methods(dapsrc=None):
             fitclass = Sasuke(EmissionLineModelBitMask())
             fitfunc = fitclass.fit_SpatiallyBinnedSpectra
 
-        method_list += [ EmissionLineModelDef(cnfg['key'], minimum_snr, deconstruct_bins,
-                                            cnfg.get('mom_vel_name'), cnfg.get('mom_disp_name'),
-                                            cnfg.get('artifact_mask'), ism_mask,
-                                            cnfg['emission_lines'], continuum_tpl_key, fitpar,
-                                            fitclass, fitfunc) ]
+        method_list += [ EmissionLineModelDef(key=cnfg['key'], minimum_snr=minimum_snr,
+                                              deconstruct_bins=deconstruct_bins,
+                                              mom_vel_name=cnfg.get('mom_vel_name'),
+                                              mom_disp_name=cnfg.get('mom_disp_name'),
+                                              artifacts=cnfg.get('artifact_mask'),
+                                              ism_mask=ism_mask,
+                                              emission_lines=cnfg['emission_lines'],
+                                              continuum_tpl_key=continuum_tpl_key, fitpar=fitpar,
+                                              fitclass=fitclass, fitfunc=fitfunc) ]
 
     # Check the keywords of the libraries are all unique
     if len(numpy.unique(numpy.array([method['key'] for method in method_list]))) \

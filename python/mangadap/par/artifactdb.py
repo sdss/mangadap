@@ -44,25 +44,19 @@ class ArtifactPar(KeywordParSet):
     """
     Parameter object that defines a set of artifacts to be ignored
     during analysis.
+
+    The defined parameters are:
+
+    .. include:: ../tables/artifactpar.rst
     
     See :class:`mangadap.par.parset.ParSet` for attributes and raised
     exceptions.
-
-    Args:
-        index (:obj:`int`):
-            An index used to refer to the artifact.
-        name (:obj:`str`):
-            A name for the artifact.
-        waverange (`numpy.ndarray`_, :obj:`list`):
-            A two-element vector with the starting and ending
-            wavelength (angstroms in **vacuum**) where the artifact
-            affects the data.
     """
-    def __init__(self, index, name, waverange):
+    def __init__(self, index=None, name=None, waverange=None):
         
         arr_like = [ numpy.ndarray, list ]
 
-        _name = name.strip()
+        _name = None if name is None else name.strip()
 
         pars =     [ 'index', 'name', 'waverange' ]
         values =   [   index,  _name,   waverange ]
@@ -136,7 +130,7 @@ class ArtifactDB(SpectralFeatureDB):
         parlist = []
         for i in range(self.size):
             invac = par['DAPART']['waveref'][i] == 'vac'
-            parlist += [ ArtifactPar(par['DAPART']['index'][i], par['DAPART']['name'][i],
-                                     numpy.asarray(par['DAPART']['waverange'][i]) \
+            parlist += [ ArtifactPar(index=par['DAPART']['index'][i], name=par['DAPART']['name'][i],
+                                     waverange=numpy.asarray(par['DAPART']['waverange'][i]) \
                                       if invac else airtovac(par['DAPEML']['waverange'][i]) )]
         return parlist

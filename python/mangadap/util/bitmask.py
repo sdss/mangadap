@@ -653,9 +653,16 @@ class BitMask:
         """
         Construct a reStructuredText table describing the bitmask.
 
+        Args:
+            header (:obj:`bool`, optional):
+                Include a section header
+            class_link (:obj:`bool`, optional):
+                Include an rst-style link to the class instantiation
+                documentation.
+
         Returns:
-            list: Returns a list of lines that can be written to an
-            ``*.rst`` file.
+            :obj:`list`: Returns a list of lines that can be written
+            to an ``*.rst`` file.
         """
         keys = self.keys()
         data_table = numpy.empty((len(keys)+1, 3), dtype=object)

@@ -71,22 +71,12 @@ class ReductionAssessmentDef(KeywordParSet):
 
         - Allow for different ways of calculating covariance?
 
-    Args:
-        key (:obj:`str`):
-            Keyword to distinguish the assessment method.
-        waverange (`numpy.ndarray`_, :obj:`list`):
-            A two-element vector with the starting and ending wavelength
-            (angstroms in **vacuum**) within which to calculate the
-            signal-to-noise
-        response_func (array-like, optional):
-            A two-column array with a response function to use for the
-            S/N calculation.  The columns must br the wavelength and
-            amplitude of the response function, respectively.
-        covariance (:obj:`str`, optional):
-            Type of covariance measurement to produce.
+    The defined parameters are:
+
+    .. include:: ../tables/reductionassessmentdef.rst
 
     """
-    def __init__(self, key, waverange=None, response_func=None, covariance=False):
+    def __init__(self, key=None, waverange=None, response_func=None, covariance=False):
         # Perform some checks of the input
         ar_like = [ numpy.ndarray, list ]
         #covar_opt = covariance_options()
@@ -212,14 +202,14 @@ def available_reduction_assessments(dapsrc=None):
             waverange = cnfg.getlist('wave_limits', evaluate=True)
             if not in_vacuum:
                 waverange = airtovac(waverange)
-            assessment_methods += [ ReductionAssessmentDef(cnfg['key'], waverange=waverange,
+            assessment_methods += [ ReductionAssessmentDef(key=cnfg['key'], waverange=waverange,
                                                            covariance=cnfg.getbool('covariance',
                                                                             default=False)) ]
         elif def_response:
             response = numpy.genfromtxt(cnfg['response_function_file'])[:,:2]
             if not in_vacuum:
                 response[:,0] = airtovac(response[:,0])
-            assessment_methods += [ ReductionAssessmentDef(cnfg['key'], response_func=response,
+            assessment_methods += [ ReductionAssessmentDef(key=cnfg['key'], response_func=response,
                                                            covariance=cnfg.getbool('covariance',
                                                                                    default=False)) ]
         else:

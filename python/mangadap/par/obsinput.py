@@ -55,31 +55,15 @@ class ObsInputPar(KeywordParSet):
     Parameter object that defines the input observation and guess
     parameters to be used by the DAP.
 
-    Although technically optional in this version, use of the class by
-    the DAP requires that *vel* must be defined.
+    The defined parameters are:
+
+    .. include:: ../tables/obsinputpar.rst
 
     See :class:`mangadap.par.parset.ParSet` for attributes and raised
     exceptions.
 
-    Args:
-        plate (:obj:`int`):
-            Plate number.
-        ifudesign (:obj:`int`):
-            IFU designation.
-        mode (:obj:`str`):
-            DRP 3D mode; see
-            :func:`mangadap.drpfits.DRPFits.mode_options`.
-        vel (:obj:`float`):
-            Systemic velocity (km/s).
-        vdisp (:obj:`float`):
-            Guess velocity dispersion (km/s).
-        ell (:obj:`float`):
-            Isophotal ellipticity (:math:`\varepsilon = 1-b/a`).
-        pa (:obj:`float`):
-            Position angle (degrees) of the isophotal major axis from N
-            through E.
-        reff (:obj:`float`):
-            Effective radius (arcsec).
+    .. todo::
+        Set default velocity to 0?
 
     Attributes:
         valid_vdisp (:obj:`bool`):
@@ -91,8 +75,8 @@ class ObsInputPar(KeywordParSet):
         valid_reff (:obj:`bool`):
             Input effective radius was >0.
     """
-    def __init__(self, plate, ifudesign, mode=None, vel=None, vdisp=None, ell=None, pa=None,
-                 reff=None):
+    def __init__(self, plate=None, ifudesign=None, mode=None, vel=None, vdisp=None, ell=None,
+                 pa=None, reff=None):
 
         in_fl = [ int, float ]
         mode_keys = DRPFits.mode_options()
@@ -134,7 +118,7 @@ class ObsInputPar(KeywordParSet):
             ValueError: Raised if velocity (:math:`cz`) is less than
                 zero.
         """
-        if not self.data['vel'] > -500:
+        if self.data['vel'] is not None and not self.data['vel'] > -500:
             raise ValueError('Velocity must be > -500!')
         if self.data['vdisp'] < 0:
             warnings.warn('Velocity dispersion less than 0; using default of 100 km/s.')
@@ -156,9 +140,12 @@ class ObsInputPar(KeywordParSet):
             self.data['reff'] = 1.0
             self.valid_reff = False
 
+    # Add a "to_par_file" method?
+
     @classmethod
     def from_par_file(cls, f):
-        """ Read the observation parameters from the provided yanny file.
+        """
+        Read the observation parameters from the provided yanny file.
 
         Args:
             f (str) : Name of the file to read

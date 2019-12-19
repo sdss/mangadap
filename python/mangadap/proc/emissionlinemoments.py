@@ -77,27 +77,12 @@ class EmissionLineMomentsDef(KeywordParSet):
     A class that holds the parameters necessary to perform the
     emission-line moment measurements.
 
-    Args:
-        key (:obj:`str`):
-            Keyword used to distinguish between different emission-line
-            moment databases.
-        minimum_snr (:obj:`bool`):
-            Minimum S/N of spectrum to fit
-        artifacts (:obj:`str`):
-            String identifying the artifact database to use
-        passbands (:obj:`str`):
-            String identifying the emission-line bandpass filter
-            database to use
-        redo_postmodeling (:obj:`bool`):
-            Redo the moment measurements after the emission-line
-            modeling has been performed
-        fit_vel_name (:obj:`str`):
-            The name of the emission line used to set the redshift of
-            each spaxel used to set the observed wavelength of the
-            bandpasses.
-        
+    The defined parameters are:
+
+    .. include:: ../tables/emissionlinemomentsdef.rst
     """
-    def __init__(self, key, minimum_snr, artifacts, passbands, redo_postmodeling, fit_vel_name):
+    def __init__(self, key=None, minimum_snr=None, artifacts=None, passbands=None,
+                 redo_postmodeling=None, fit_vel_name=None):
         in_fl = [ int, float ]
 
         pars =     [ 'key', 'minimum_snr', 'artifacts', 'passbands', 'redo_postmodeling',
@@ -193,13 +178,15 @@ def available_emission_line_moment_databases(dapsrc=None):
         # library
         validate_emission_line_moments_config(cnfg)
 
-        moment_set_list += [ EmissionLineMomentsDef(cnfg['key'],
-                                                    cnfg.getfloat('minimum_snr', default=0.),
-                                                    cnfg.get('artifact_mask'),
-                                                    cnfg['emission_passbands'],
-                                                    cnfg.getbool('redo_postmodeling',
-                                                                 default=False),
-                                                    cnfg.get('fit_vel_name')) ]
+    def __init__(self, key=None, minimum_snr=None, artifacts=None, passbands=None,
+                 redo_postmodeling=None, fit_vel_name=None):
+        moment_set_list += [ EmissionLineMomentsDef(key=cnfg['key'],
+                                            minimum_snr=cnfg.getfloat('minimum_snr', default=0.),
+                                            artifacts=cnfg.get('artifact_mask'),
+                                            passbands=cnfg['emission_passbands'],
+                                            redo_postmodeling=cnfg.getbool('redo_postmodeling',
+                                                                           default=False),
+                                            fit_vel_name=cnfg.get('fit_vel_name')) ]
 
     # Check the keywords of the libraries are all unique
     if len(numpy.unique(numpy.array([moment['key'] for moment in moment_set_list]))) \

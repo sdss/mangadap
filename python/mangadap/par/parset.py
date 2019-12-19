@@ -740,7 +740,7 @@ class ParSet:
     def _rst_class_name(p):
         return ':class:`' +  type(p).__module__ + '.' + type(p).__name__ + '`'
 
-    def to_rst_table(self, parsets_listed=[]):
+    def to_rst_table(self, parsets_listed=[], header=True, class_link=True):
         r"""
         Construct a reStructuredText table with the :class:`ParSet`
         data.
@@ -755,6 +755,11 @@ class ParSet:
                 a log of :class:`ParSet` objects that have already been
                 included in the rst table, forcing the table to only
                 appear once.  
+            header (:obj:`bool`, optional):
+                Include a section header
+            class_link (:obj:`bool`, optional):
+                Include an rst-style link to the class instantiation
+                documentation.
 
         Returns:
             :obj:`list`: A list of strings containing each line of the
@@ -787,11 +792,14 @@ class ParSet:
             data_table[i+1,4] = '..' if self.descr[k] is None \
                                     else ParSet._data_string(self.descr[k])
 
-        output = [ '{0} Keywords'.format(type(self).__name__) ]
-        output += [ '-'*len(output[0]) ]
-        output += [ '' ]
-        output += ['Class Instantiation: ' + ParSet._rst_class_name(self)]
-        output += ['']
+        output = ['']
+        if header:
+            output += ['{0} Keywords'.format(type(self).__name__)]
+            output += ['-'*len(output[0])]
+            output += ['']
+        if class_link:
+            output += ['Class Instantiation: ' + ParSet._rst_class_name(self)]
+            output += ['']
         output += [ParSet._data_table_string(data_table, delimeter='rst')]
         output += ['']
         for k in new_parsets:

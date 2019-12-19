@@ -392,8 +392,16 @@ class LineProfileFit:
 
 
 class ElricPar(KeywordParSet):
-    def __init__(self, emission_lines, base_order, window_buffer, guess_redshift, guess_dispersion,
-                 minimum_snr=None, pixelmask=None, stellar_continuum=None):
+    """
+    Elric emission-line fitting parameters.
+
+    The defined parameters are:
+
+    .. include:: ../tables/elricpar.rst
+    """
+    def __init__(self, emission_lines=None, base_order=None, window_buffer=None,
+                 guess_redshift=None, guess_dispersion=None, minimum_snr=None, pixelmask=None,
+                 stellar_continuum=None):
 
         arr_in_fl = [ numpy.ndarray, list, int, float ]
         in_fl = [ int, float ]

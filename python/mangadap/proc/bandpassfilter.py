@@ -9,9 +9,9 @@ Class usage examples
 To define an bandpass filter::
 
     from mangadap.par.bandpassfilter import BandPassFilterPar
-    p = BandPassFilterPar(44, 'Ha', [6483.0,6513.0],
-                         [6623.0,6653.0], restwave=6564.632,
-                         primary=[6557.6,6571.6]) 
+    p = BandPassFilterPar(index=44, name='Ha', blueside=[6483.0,6513.0],
+                          redside=[6623.0,6653.0], restwave=6564.632,
+                          primary=[6557.6,6571.6]) 
 
 However, this class is mostly to provide a base class used by
 :class:`mangadap.par.emissionmomentsdb.EmissionMomentsDB`,
@@ -67,65 +67,16 @@ class BandPassFilterPar(KeywordParSet):
     See :class:`mangadap.par.parset.ParSet` for attributes and raised
     exceptions.
 
-    Args:
-        index (:obj:`int`):
-            An index used to refer to the bandpass filter.
-        name (:obj:`str`):
-            A name for the bandpass filter.
-        blueside (`numpy.ndarray`_, :obj:`list`):
-            A two-element vector with the starting and ending wavelength
-            (angstroms in **vacuum**) for a passband to the blue of the
-            primary spectral feature.
-        redside (`numpy.ndarray`_, :obj:`list`):
-            A two-element vector with the starting and ending wavelength
-            (angstroms in **vacuum**) for a passband to the red of the
-            primary spectral feature.
-        restwave (:obj:`float`, optional):
-            The rest wavelength of the line in the primary passband in
-            angstroms *in vacuum*.  This is used to convert the first
-            and second moments to velocity (km/s) for emission lines.
-        primary (`numpy.ndarray`_, :obj:`list`, optional):
-            A two-element vector with the starting and ending wavelength
-            (angstroms in **vacuum**) for the primary passband
-            surrounding the spectral feature of interest.  This is used
-            by :class:`mangadap.par.emissionmomentsdb.EmissionMomentsDB`
-            and
-            :class:`mangadap.par.absorptionindexdb.AbsorptionIndexDB`,
-            but it is irrelevant for
-            :class:`mangadap.par.bandheadindexdb.BandheadIndexDB`.
-        units (:obj:`str`, optional):
-            Define the unit for the spectral index as either angstroms
-            ('ang') or magnitudes ('mag').  Currently only used by
-            :class:`mangadap.par.absorptionindexdb.AbsorptionIndexDB`.
-        component (:obj:`bool`, optional):
-            Flag that the bandpass definition is a component of a larger
-            set of bandpass filters.  This is currently only used by
-            :class:`mangadap.par.absorptionindexdb.AbsorptionIndexDB` to
-            combine index measurements into a single index.  If True,
-            all components with the same *name* are summed to form the
-            composite index.
-        integrand (:obj:`str`, optional):
-            Currently only used by
-            :class:`mangadap.par.bandheadindexdb.BandheadIndexDB`.
-            Define the integrand over the passband used to construct and
-            index as either flux per unit frequency (``'fnu'``),
-            :math:`F_\nu`, or flux per unit wavelength (``'flambda'``),
-            :math:`F_\lambda`.
-        order (:obj:`str`, optional):
-            Currently only used by
-            :class:`mangadap.par.bandheadindexdb.BandheadIndexDB`.
-            Define the order to use when constructing the index.  The
-            options are either a ratio of red-to-blue or blue-to-red,
-            which are respectively selected using ``'r_b'`` or
-            ``'b_r'``.
+    The defined parameters are:
 
+    .. include:: ../tables/bandpassfilterpar.rst
     """
-    def __init__(self, index, name, blueside, redside, restwave=None, primary=None, units=None,
-                 component=None, integrand=None, order=None):
+    def __init__(self, index=None, name=None, blueside=None, redside=None, restwave=None,
+                 primary=None, units=None, component=None, integrand=None, order=None):
         
         in_fl = [ int, float ]
         ar_like = [ numpy.ndarray, list ]
-        n = name.strip()
+        n = None if name is None else name.strip()
         unit_opts = [ 'ang', 'mag' ]
         integ_opts = [ 'flambda', 'fnu' ]
         order_opts = [ 'b_r', 'r_b' ]
@@ -210,9 +161,9 @@ class BandPassFilterPar(KeywordParSet):
         """
         if self.data['primary'] is not None and len(self.data['primary']) != 2:
             raise ValueError('Primary passband must have two and only two elements.')
-        if len(self.data['blueside']) != 2:
+        if self.data['blueside'] is not None and len(self.data['blueside']) != 2:
             raise ValueError('Blue sideband must have two and only two elements.')
-        if len(self.data['redside']) != 2:
+        if self.data['redside'] is not None and len(self.data['redside']) != 2:
             raise ValueError('Red sideband must have two and only two elements.')
 
 

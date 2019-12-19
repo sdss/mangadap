@@ -76,37 +76,12 @@ class RadialBinningPar(KeywordParSet):
     Class with parameters used by the radial binning algorithm.  See
     :class:`mangadap.par.parset.ParSet` for attributes.
 
-    Args:
-        center (`numpy.ndarray`_, :obj:`list`):
-            A two-element array defining the center to use in the
-            definition of the elliptical bins.  This is defined as a
-            sky-right offset in arcseconds from the nominal center of
-            the object.  
-        pa (:obj:`float`):
-            Sets the position angle, defined from N through E of the
-            major axis of the isophotal ellipse used to define the
-            elliptical bins.
-        ell (:obj:`float`):
-            Sets the ellipticity (1-b/a) of the isophotal ellipse use to
-            define the elliptical bins.
-        radius_scale (:obj:`float`):
-            Defines a scale factor to use when defining the radial bins.
-            For example, you might want to scale to the a certain number
-            of effective radii or physical scale in kpc.  For no scale,
-            use 1.0.
-        radii (`numpy.ndarray`_, :obj:`list`):
-            A three-element array defining the starting and ending
-            radius for the bin edges and the number of bins to create.
-            If the starting radius is -1, the inner-most radius is set
-            to 0 when not using log bins or 0.1 arcsec when using
-            logarithmically spaced bins.  If the ending radius is -1,
-            the outer-most radius is set by the spaxel at the largest
-            radius.
-        log_step (:obj:`bool`):
-            A flag that the radial bins should be a geometric series.
+    The defined parameters are:
 
+    .. include:: ../tables/radialbinningpar.rst
     """
-    def __init__(self, center, pa, ell, radius_scale, radii, log_step):
+    def __init__(self, center=None, pa=None, ell=None, radius_scale=None, radii=None,
+                 log_step=None):
         in_fl = [ int, float ]
         ar_like = [ numpy.ndarray, list ]
         
@@ -310,32 +285,11 @@ class VoronoiBinningPar(KeywordParSet):
     See :class:`mangadap.par.parset.ParSet` for attributes.  See
     `vorbin`_ for the main algorithm.
 
-    Args:
-        target_snr (:obj:`float`):
-            The target S/N for each bin.
-        signal (array-like):
-            The array of signal measurements for each on-sky position to
-            bin.
-        noise (array-like):
-            The array of noise measurements for each on-sky position to
-            bin.  If not provided, ``covar`` must be provided and be a
-            full covariance matrix.
-        covar (:obj:`float`, `numpy.ndarray`_, :class:`mangadap.util.covariance.Covariance`, `scipy.sparse.spmatrix`_):
+    The defined parameters are:
 
-            Covariance matrix or calibration normalization.  For the
-            latter, the value is used to renormalize the noise according
-            to the following equation:
-
-            .. math: 
-
-                n_{\rm calib} = n_{\rm nominal} (1 + \alpha\ \log\
-                N_{\rm bin})
-
-            where :math:`N_{\rm bin}` is the number of binned spaxels
-            and :math:`\alpha` is the value provided.
-
+    .. include:: ../tables/voronoibinningpar.rst
     """
-    def __init__(self, target_snr, signal, noise, covar):
+    def __init__(self, target_snr=None, signal=None, noise=None, covar=None):
         in_fl = [ int, float ]
         covar_type = [ float, numpy.ndarray, Covariance, sparse.spmatrix ]
         ar_like = [ numpy.ndarray, list ]
@@ -539,12 +493,13 @@ class SquareBinningPar(KeywordParSet):
     Class with parameters used by the square binning algorithm.  See
     :class:`mangadap.par.parset.ParSet` for attributes.
 
-    Args:
-        binsz (:obj:`float`):
-            Sets desired bin size in arcsec
+    The defined parameters are:
+
+    .. include:: ../tables/squarebinningpar.rst
+
     """
 
-    def __init__(self, binsz):
+    def __init__(self, binsz=None):
         in_fl = [int, float]
 
         pars = ['binsz']
