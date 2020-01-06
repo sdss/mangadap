@@ -62,32 +62,9 @@ class SpectralStackPar(KeywordParSet):
     .. todo::
         Allow for sigma rejection.
 
-    Args:
-        operation (:obj:`str`):
-            Operation to perform for the stacked spectrum.  See
-            :func:`SpectralStack.operation_options` for the available
-            operation options.
-        vel_register (:obj:`bool`):
-            Flag to velocity register the spectra before adding them
-            based on a provided prior measurement of the velocities.
-        vel_offsets (:obj:`list`, `numpy.ndarray`_):
-            List of velocity offsets to apply to the spectra to stack.
-        covar_mode (:obj:`str`):
-            Describes how to incorporate covariance into the spectral
-            stacking.  See :func:`SpectralStack.covariance_mode_options`
-            for the available options.
-        covar_par (:obj:`int`, :obj:`float`, `numpy.ndarray`_, :obj:`list`):
-            The parameter(s) needed to perform a given method of
-            handling the covariance.  See
-            :func:`SpectralStack.covariance_mode_options` for the
-            available options.
-        stack_sres (:obj:`bool`):
-            Stack the spectral resolution as well as the flux data.
-        prepixel_sres (:obj:`bool`):
-            Use the pre-pixelized spectral resolution.  If true and the
-            prepixelized versions are not available, an error will be
-            raised!
+    The defined parameters are:
 
+    .. include:: ../tables/spectralstackpar.rst
     """
     def __init__(self, operation=None, vel_register=None, vel_offsets=None, covar_mode=None,
                  covar_par=None, stack_sres=None, prepixel_sres=None):

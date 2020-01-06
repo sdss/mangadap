@@ -15,7 +15,6 @@ from pkg_resources import resource_filename
 
 def write_parset(parset_class, opath, class_link=True):
     ofile = os.path.join(opath, '{0}.rst'.format(parset_class.__name__.lower()))
-    print(ofile)
     lines = parset_class().to_rst_table(header=False, class_link=class_link)
     with open(ofile, 'w') as f:
         f.write('\n'.join(lines))
