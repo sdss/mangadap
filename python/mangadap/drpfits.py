@@ -950,10 +950,10 @@ class DRPFits:
         Set the list of extensions with spectral data
         """
         self.spectral_arrays = [ 'FLUX', 'IVAR', 'MASK' ]
-        if self.mode == 'RSS' or (self.mode == 'CUBE' and 'DISP' in self.ext):
-            self.spectral_arrays += [ 'DISP' ]
-        if self.mode == 'RSS' or (self.mode == 'CUBE' and 'PREDISP' in self.ext):
-            self.spectral_arrays += [ 'PREDISP' ]
+        if self.mode == 'RSS' or (self.mode == 'CUBE' and 'LSFPOST' in self.ext):
+            self.spectral_arrays += [ 'LSFPOST' ]
+        if self.mode == 'RSS' or (self.mode == 'CUBE' and 'LSFPRE' in self.ext):
+            self.spectral_arrays += [ 'LSFPRE' ]
         if self.mode == 'RSS':
             self.spectral_arrays += [ 'XPOS', 'YPOS' ]
 
@@ -981,9 +981,12 @@ class DRPFits:
         """
         _ext = ext
         if ext is None:
-            _ext = 'PREDISP' if pre else 'DISP'
+#            _ext = 'PREDISP' if pre else 'DISP'
+            _ext = 'LSFPRE' if pre else 'LSFPOST'
             if _ext not in self.sres_ext:
                 _ext = 'PRESPECRES' if pre else 'SPECRES'
+        elif ext == 'SPECRES':
+            _ext = 'PRESPECRES' if pre else 'SPECRES'
         return None if _ext not in self.sres_ext else _ext
 
 
@@ -1102,7 +1105,6 @@ class DRPFits:
 
         Raises:
             FileNotFoundError: Raised if the DRP file does not exist.
-
         """
         if self.hdu is not None:
             return
@@ -1118,7 +1120,7 @@ class DRPFits:
         self.hdu = DAPFitsUtil.read(inp, permissions='readonly', checksum=checksum)
         self.ext = [ h.name for h in self.hdu ]
         self.sres_ext = [ h.name for h in self.hdu
-                            if h.name in [ 'PREDISP', 'DISP', 'PRESPECRES', 'SPECRES' ] ]
+                            if h.name in [ 'LSFPRE', 'LSFPOST', 'PRESPECRES', 'SPECRES' ] ]
         self._set_spectral_arrays()
 
 #        # Reformat and initialize properties of the data
@@ -1373,9 +1375,11 @@ class DRPFits:
 #                raise ValueError('No {0} extension in DRP file.'.format('PRE'+_ext))
 #            _ext = 'PRE'+_ext
 
+        print('Using extension {0} to define the spectral resolution.'.format(_ext))
+
         # Build the spectral resolution vectors
         sres = None
-        if 'DISP' in _ext:
+        if 'LSF' in _ext:
             disp = numpy.ma.MaskedArray(self.copy_to_array(ext=_ext))
             # Mask any non-positive value
             disp[numpy.invert(disp > 0)] = numpy.ma.masked
@@ -1427,16 +1431,20 @@ class DRPFits:
                 version.  This prepends 'PRE' to the extension name.
         """
         self.open_hdu(checksum=self.checksum)
-        if ext in ['DISP','SPECRES'] and ext not in self.ext:
+        if ext in ['LSFPOST','SPECRES'] and ext not in self.ext:
             raise ValueError('No extension: {0}'.format(ext))
 
         # Set the extension
-        _ext = ('DISP' if 'DISP' in self.ext else 'SPECRES') if ext is None else ext
+        _ext = ('LSFPOST' if 'LSFPOST' in self.ext else 'SPECRES') if ext is None else ext
 
         if pre:
-            if 'PRE'+_ext not in self.ext:
-                raise ValueError('No {0} extension in DRP file.'.format('PRE'+_ext))
-            _ext = 'PRE'+_ext
+            if _ext == 'LSFPOST':
+                _ext = 'LSFPRE'
+            if _ext == 'SPECRES':
+                _ext = 'PRE'+_ext
+            if _ext not in self.ext:
+                raise ValueError('No {0} extension in DRP file.'.format(_ext))
+
         return self.hdu[_ext].header.copy()
         
 #        if ext in ['DISP','SPECRES'] and ext not in self.ext:
@@ -2670,7 +2678,8 @@ class DRPFits:
         # Return the regridded data with the proper shape (nx by ny)
         Tc = self.regrid_T.sum(axis=1).flatten()
         Tc[numpy.invert(Tc>0)] = 1.0                # Control for zeros
-        ext = 'PREDISP' if pre else 'DISP'
+#        ext = 'PREDISP' if pre else 'DISP'
+        ext = 'LSFPRE' if pre else 'LSFPOST'
         return numpy.sqrt( self.regrid_T.dot(numpy.square(_df*self.hdu[ext].data[:,channel]))
                                                 / Tc ).reshape(self.nx, self.ny)
 
