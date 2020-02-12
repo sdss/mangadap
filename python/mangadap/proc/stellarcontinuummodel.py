@@ -377,6 +377,7 @@ class StellarContinuumModel:
                  tpl_symlink_dir=tpl_symlink_dir, clobber=clobber, loggers=loggers, quiet=quiet)
 
 
+
 #    def __del__(self):
 #        """
 #        Deconstruct the data object by ensuring that the fits file is
