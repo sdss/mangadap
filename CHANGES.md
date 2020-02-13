@@ -28,8 +28,8 @@ TODO
     - Make more independent of stellar-continnuum module reference file
     - Change `BASE` extension to `CONTINUUM` extension.
 
-2.5.0dev
---------
+2.5.0 (13 Feb 2020)
+-------------------
 
  - Added BPASS theoretical spectral template library
  - Added numerous config files / line lists to allow for masking of NaD
