@@ -4,32 +4,9 @@
 
 Provides a set of utility functions dealing with computational geometry.
 
-*License*:
-    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+Revision history
+----------------
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/util/geometry.py
-
-*Imports and python version compliance*:
-    ::
-
-        from __future__ import division
-        from __future__ import print_function
-        from __future__ import absolute_import
-        from __future__ import unicode_literals
-
-        import sys
-        if sys.version > '3':
-            long = int
-
-        import numpy
-        from scipy import linalg
-
-*Class usage examples*:
-    Add examples
-
-*Revision history*:
     | **2015**: Original implementation by K. Westfall (KBW)
     | **20 May 2015**: (KBW) Documentation and Sphinx tests
     | **28 Mar 2016**: (KBW) Copied old projected_disk_plane to
@@ -39,19 +16,16 @@ Provides a set of utility functions dealing with computational geometry.
     | **08 Sep 2016**: (KBW) Allow :func:`point_inside_polygon` to
         accept multiple coordinates.
 
-.. _scipy.linalg.lu_factor: http://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.lu_factor.html
-.. _scipy.linalg.lu_solve: https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.lu_solve.html
+----
 
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../links.rst
 """
-
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
-import sys
-if sys.version > '3':
-    long = int
 
 import numpy
 from scipy import linalg

@@ -19,7 +19,7 @@ def get_obsinput(plt, ifu, drpall_file=None):
                 if drpall_file is None else fits.open(drpall_file)
     indx = hdu[1].data['PLATEIFU'] == '{0}-{1}'.format(plt, ifu)
 
-    return ObsInputPar(plt, ifu, mode='CUBE',
+    return ObsInputPar(plate=plt, ifudesign=ifu, mode='CUBE',
                        vel=astropy.constants.c.to('km/s').value*hdu[1].data['NSA_Z'][indx][0],
                        vdisp=100.,
                        ell=1-hdu[1].data['NSA_ELPETRO_BA'][indx][0],

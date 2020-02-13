@@ -8,9 +8,9 @@ MPL-9 (2.4.1)
 High-level changes
 ------------------
 
- * Extensions ``SPX_ELLCOO`` and ``BIN_LWELLCOO`` have an additional
+ * Extensions ``SPX_ELLCOO`` and ``BIN_LWELLCOO`` have a new
    channel.  The 4 channels are now radius in arcsec, radius in
-   :math:`R_{\rm eff}`, radius in :math:`h^{-1} kpc`, and azimuth; the
+   :math:`R_{\rm eff}`, radius in :math:`h^{-1}{\rm kpc}`, and azimuth; the
    third channel is the new one.  So the channels are::
 
         C1      = 'Elliptical radius'  / Data in channel 1
@@ -24,9 +24,9 @@ High-level changes
 
  * The following extensions were added to the `MAPS` files:
 
-   * ``EMLINE_SEW_CNT``: Continuum used for summed-flux equivalent width
+   * ``EMLINE_SEW_CNT``: Continuum used for summed-flux equivalent-width
      measurement
-   * ``EMLINE_GEW_CNT``: Continuum used for Gaussian-fit equivalent width
+   * ``EMLINE_GEW_CNT``: Continuum used for Gaussian-fit equivalent-width
      measurement
    * ``SPECINDEX_BCEN``: Flux-weighted center of the blue sideband in the
      spectral-index measurement
@@ -39,8 +39,9 @@ High-level changes
    * ``SPECINDEX_MODEL``: Index measurement made using the best-fitting
      stellar continuum model.
 
- * All emission-line extensions now contain 35 lines, and the ordering
-   of the line list has changed.  Current ordering is::
+ * All emission-line extensions now contain 35 lines, and channel
+   ordering of the line list has changed compared to MPL-8.  Current
+   ordering is::
 
         C01     = 'OII-3727'           / Data in channel 1
         C02     = 'OII-3729'           / Data in channel 2
@@ -78,14 +79,15 @@ High-level changes
         C34     = 'SIII-9533'          / Data in channel 34
         C35     = 'Peps-9548'          / Data in channel 35
 
- * Fixed flux ratios of doublets were adjusted based on improved
-   calculation: :math:`\lambda_2/\lambda_1\ \cdot\ (M1_1+E2_1)/(M1_2+E2_2)`,
-   where :math:`M1` and :math:`E2` are the magnetic dipole and electric
-   quadrapole Einstein :math:`A` coefficients and :math:`\lambda` is the
-   line wavelength.  The Einstein :math:`A` coefficients are all taken
-   from NIST.  In all but the [O II] 7320,7330 complex, the magnetic
-   dipole term dominates such that the electric quadrapole terms are
-   effectively irrelevant.  The fixed flux ratios are:
+ * Fixed flux ratios of doublets were improved using the following
+   calculation: :math:`\lambda_2/\lambda_1\ \cdot\
+   (M1_1+E2_1)/(M1_2+E2_2)`, where :math:`M1` and :math:`E2` are the
+   magnetic dipole and electric quadrapole Einstein :math:`A`
+   coefficients and :math:`\lambda` is the line wavelength.  The
+   Einstein :math:`A` coefficients are all taken from NIST.  In all but
+   the [O II] 7320,7330 complex (not included in MPL-9 fit), the
+   magnetic dipole term dominates such that the electric quadrapole
+   terms are effectively irrelevant.  The fixed flux ratios are:
 
    * NeIII-3968/NeIII-3968 = 0.3
    * OIII-4960/OIII-5008 = 0.35

@@ -99,7 +99,7 @@ below.
 +----------------------------+-------------------------------------+------------------------------------------------+
 |                   Variable |                             Default |                                       Comments |
 +============================+=====================================+================================================+
-| ``MANGADRP_VER``           | ``v2_4_3``                          | Version of the DRP, used for path construction |
+| ``MANGADRP_VER``           | ``v2_4_3`` (i.e., DR15)             | Version of the DRP, used for path construction |
 +----------------------------+-------------------------------------+------------------------------------------------+
 | ``MANGA_SPECTRO_REDUX``    | ``$HOME/MaNGA/redux``               | Root path for the reduced data                 |
 +----------------------------+-------------------------------------+------------------------------------------------+
@@ -112,49 +112,53 @@ below.
 | ``MANGACORE_DIR``          | ``$HOME/MaNGA/core/$MANGACORE_VER`` | Root path with the MaNGA core repository       |
 +----------------------------+-------------------------------------+------------------------------------------------+
 
-**Notes**
+These environmental variables can be added to, e.g., your
+``.bash_profile`` file in your home directory or be included in a script
+that is sourced when you want to run the DAP.  The lines added to your
+`.bash_profile` file could look something like this:
 
+.. code-block:: bash
+
+    export MANGA_SPECTRO_REDUX=/Volumes/MaNGA/redux
+    export MANGA_SPECTRO_ANALYSIS=/Volumes/MaNGA/analysis
+
+    export MANGADRP_VER=v2_4_3
+
+    export MANGADAP_VER=2.2.1
+
+    export MANGACORE_VER=v1_6_2
+    export MANGACORE_DIR=$HOME/MaNGA/core/$MANGACORE_VER
+
+
+**Notes:**
+ * Everytime the DAP is imported, the code checks that the
+   ``$MANGADRP_VER``, ``$MANGA_SPECTRO_REDUX``, ``$MANGADAP_VER``, and
+   ``$MANGA_SPECTRO_ANALYSIS`` variables are defined.  If they are not,
+   warnings are raised and the defaults are used.
+ * Some of these same variables are defined by `Marvin
+   <https://sdss-marvin.readthedocs.io/en/stable/installation.html>`_.
+   It is possible to have both Marvin and the DAP point to the same
+   directory, but beware that this may mean that some of the files get
+   overwritten!
  * It is likely that you will never need to define ``$MANGACORE_VER``
    and ``$MANGACORE_DIR``.  These are only used in a specific mode of
-   survey-level execution of the DAP.  See the ``rundap`` script.
+   survey-level execution of the DAP.  See :ref:`execution-rundap`.
  * The DAP expects to find the DRP ``LOGCUBE`` and ``LOGRSS`` files in
-   the directory ``$MANGA_SPECTRO_REDUX/$MANGADRP_VER/[plate]/stack``,
-   where ``[plate]`` is the desired plate number.  The ``LOGRSS`` files
-   are required if you want to properly account for spatial covariance.
+   the directory ``$MANGA_SPECTRO_REDUX/$MANGADRP_VER/[PLATE]/stack``,
+   where ``[PLATE]`` is the desired plate number.  The ``LOGRSS`` files
+   are required if you want to properly account for
+   :ref:`spatialcovariance`.
  * The DAP expects to find/write data to
    ``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER``.
  * ``$MANGADAP_VER`` is only used to set the path names, not to select
-   the specific version of the DAP that should be used.
-
-
-These environmental variables can be added to, e.g., your
-``.bash_profile`` file in your home directory or be included in a script
-that is sourced when you want to run the DAP.  The added lines to your
-`.bash_profile` file could look something like this:
-
-    .. code-block:: bash
-
-        export MANGA_SPECTRO_REDUX=/Volumes/MaNGA/redux
-        export MANGA_SPECTRO_ANALYSIS=/Volumes/MaNGA/analysis
-
-        export MANGADRP_VER=v2_4_3
-
-        export MANGADAP_VER=2.2.1
-
-        export MANGACORE_VER=v1_6_2
-        export MANGACORE_DIR=$HOME/MaNGA/core/$MANGACORE_VER
-
-**Note**: Some of these variables are also defined by `Marvin
-<https://sdss-marvin.readthedocs.io/en/stable/installation.html>`_.  It
-is possible to have both Marvin and the DAP point to the same directory,
-but beware that this may mean that some of the files get overwritten!
-
+   the specific version of the DAP that should be used.  The version of
+   the DAP used is always the one installed by your python environment.
 
 Problems?
 ---------
 
 We have limited support to offer installation help.  However, if you
 have problems, particularly those that you think may be a more general
-issue, please `submit an issue
+problem, please `submit an issue
 <https://github.com/sdss/mangadap/issues>`_.
 

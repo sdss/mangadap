@@ -3,17 +3,9 @@
 """
 Implements a few base classes used during spectral fitting procedures.
 
-*License*:
-    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+Revision history
+----------------
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/proc/spectralfitting.py
-
-*Class usage examples*:
-        Add examples
-
-*Revision history*:
     | **14 Apr 2016**: Implementation begun by K. Westfall (KBW)
     | **19 Apr 2016**: (KBW) First version
     | **26 Apr 2016**: (KBW) Moved PPXFFit to a separate file (ppxffit.py)
@@ -25,10 +17,15 @@ Implements a few base classes used during spectral fitting procedures.
         velocity of each line if a redshift is not provided.  See
         :func:`measure_equivalent_width`.
 
-.. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
-.. _glob.glob: https://docs.python.org/3.4/library/glob.html
-.. _numpy.ma.MaskedArray: https://docs.scipy.org/doc/numpy-1.12.0/reference/maskedarray.baseclass.html
+----
 
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../links.rst
 """
 
 import numpy
@@ -530,7 +527,7 @@ class EmissionLineFit(SpectralFitting):
             return
 
         # Check the provided parameters, fix flags, and bounds
-        for i in range(emldb.neml):
+        for i in range(emldb.size):
             profile = eval('lineprofiles.'+emldb['profile'][i])
             npar = len(profile.param_names)
             if emldb['par'][i].size != npar*emldb['ncomp'][i]:
@@ -564,8 +561,9 @@ class EmissionLineFit(SpectralFitting):
         measurement; only the provided error in the flux.
 
         Raises:
-            ValueError: Raised if the length of the spectra, errors, or
-                mask does not match the length of the wavelength array;
+            ValueError:
+                Raised if the length of the spectra, errors, or mask
+                does not match the length of the wavelength array;
                 raised if the wavelength, redshift, or dispersion arrays
                 are not 1D vectors; and raised if the number of
                 redshifts or dispersions is not a single value or the
@@ -681,8 +679,9 @@ class EmissionLineFit(SpectralFitting):
             LINE_RMS, and LINE_FRMS columns.
 
         Raises:
-            ValueError: Raised if various checks of the input array
-            sizes are incorrect.
+            ValueError:
+                Raised if various checks of the input array sizes are
+                incorrect.
         """
         # Check shapes and set masks for all arrays
         _wave = numpy.atleast_1d(wave)

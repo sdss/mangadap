@@ -4,19 +4,30 @@ r"""
 Defines a class used to interface with files produced in the 3D phase of
 the MaNGA Data Reduction Pipeline (DRP).
 
-*License*:
-    Copyright (c) 2016, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+.. todo::
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/drpfits.py
+    - Calculation in :func:`DRPFits._cube_dimensions` will only be
+      correct if the WCS coordinates have no rotation.
+    - Further optimize calculation of transfer matrix
+    - Make DRP file class flexible to linear or log-linear wavelength
+      sampling?  Incorporate into MODE?
+    - Reconstructed broad-band images and PSFs are *not* restructured in
+      the CUBE files!  This is why the are transposed in
+      :func:`mangadap.drpfits.DRPFits.gri_composite`.
+    - Image reconstruction has transpose sense wrt DRP output!
+    - Add logging
 
-*Class usage examples*:
+    - Need to be clear about which functions use the RSS spectra to
+      create CUBE related data, like the covariance matrix and
+      instrumental dispersion calculations.
 
-    This class provides a basic interface with DRP LOG* files.  It provides a number of 
+    - Computing the approximate covariance cube is currently not
+      possible with only the CUBE on disk.  There's a logic problem that
+      needs to be fixed.
 
+Revision history
+----------------
 
-*Revision history*:
     | **20 Nov 2014**: Original implementation by K. Westfall (KBW)
     | **12 Feb 2014**: (KBW) Added :func:`DRPFits.directory_path`
     | **20 Feb 2015**: (KBW) Add covariance calculation to :class:`DRPFits`
@@ -71,45 +82,16 @@ the MaNGA Data Reduction Pipeline (DRP).
     | **21 Aug 2017**: (KBW) In spectral resolution function, select
         pre- vs. post-pixelized Gaussian respresentation.
 
-.. todo::
+----
 
-    - Calculation in :func:`DRPFits._cube_dimensions` will only be
-      correct if the WCS coordinates have no rotation.
-    - Further optimize calculation of transfer matrix
-    - Make DRP file class flexible to linear or log-linear wavelength
-      sampling?  Incorporate into MODE?
-    - Reconstructed broad-band images and PSFs are *not* restructured in
-      the CUBE files!  This is why the are transposed in
-      :func:`mangadap.drpfits.DRPFits.gri_composite`.
-    - Image reconstruction has transpose sense wrt DRP output!
-    - Add logging
+.. include license and copyright
+.. include:: ../copy.rst
 
-    - Need to be clear about which functions use the RSS spectra to
-      create CUBE related data, like the covariance matrix and
-      instrumental dispersion calculations.
+----
 
-    - Computing the approximate covariance cube is currently not
-      possible with only the CUBE on disk.  There's a logic problem that
-      needs to be fixed.
-
-.. _astropy.io.fits: http://docs.astropy.org/en/stable/io/fits/index.html
-.. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
-.. _astropy.wcs.wcs.WCS: http://docs.astropy.org/en/v1.0.2/api/astropy.wcs.WCS.html
-.. _numpy.meshgrid: http://docs.scipy.org/doc/numpy/reference/generated/numpy.meshgrid.html
-.. _scipy.sparse.csr_matrix: http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html
-.. _numpy.ma.MaskedArray: http://docs.scipy.org/doc/numpy-1.10.1/reference/maskedarray.baseclass.html#numpy.ma.MaskedArray
-.. _shapely: https://pypi.python.org/pypi/Shapely
-
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../links.rst
 """
-
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-
-import sys
-if sys.version > '3':
-    long = int
-
 import time
 import os.path
 import numpy
@@ -254,22 +236,31 @@ def drpfits_list(platelist, ifudesignlist, modelist, combinatorics=False, drpver
 
 class DRPFitsBitMask(BitMask):
     r"""
-    Structure with the DRP mask bits.
+    Structure with the DRP mask bits.A
+
+    The defined bits are listed at :ref:`metadatamodel-drp3pixmask`.
     """
     def __init__(self, sdss_maskbits=None, mode='CUBE'):
         DRPFits.check_mode(mode)
-        sdss_maskbits = sdss_maskbits_file()
-        BitMask.__init__(self, par_file=sdss_maskbits, par_grp='MANGA_DRP3PIXMASK' \
-                                                        if mode == 'CUBE' else 'MANGA_DRP2PIXMASK')
+        _sdss_maskbits = sdss_maskbits_file() if sdss_maskbits is None else sdss_maskbits
+        tmp = BitMask.from_par_file(_sdss_maskbits, 'MANGA_DRP3PIXMASK' if mode == 'CUBE' else 
+                                                    'MANGA_DRP2PIXMASK')
+        keys, descr = tmp._init_objs()
+        super(DRPFitsBitMask, self).__init__(keys, descr=descr)
 
 
 class DRPQuality3DBitMask(BitMask):
     r"""
     Structure with the definition of the DRP3QUAL mask bits.
+
+    The defined bits are listed at :ref:`metadatamodel-drp3qual`.
     """
     def __init__(self, sdss_maskbits=None):
         sdss_maskbits = sdss_maskbits_file()
-        BitMask.__init__(self, par_file=sdss_maskbits, par_grp='MANGA_DRP3QUAL')
+        _sdss_maskbits = sdss_maskbits_file() if sdss_maskbits is None else sdss_maskbits
+        tmp = BitMask.from_par_file(_sdss_maskbits, 'MANGA_DRP3QUAL')
+        keys, descr = tmp._init_objs()
+        super(DRPQuality3DBitMask, self).__init__(keys, descr=descr)
 
 
 class DRPFits:
@@ -432,8 +423,8 @@ class DRPFits:
                  read=False, checksum=False):
 
         # Set the attributes, forcing a known type
-        self.plate = long(plate)
-        self.ifudesign = long(ifudesign)
+        self.plate = int(plate)
+        self.ifudesign = int(ifudesign)
         self.check_mode(mode)
         self.mode = mode
 

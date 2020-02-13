@@ -9,13 +9,12 @@ Persistent
 LSF limitations
 ---------------
 
-The DRP is now reporting both pre- and post-pixelized Gaussian
-measurements of the instrumental line-spread function.  Because it makes
-the most sense to use the pre-pixelized versions with pPXF (an error not
-reported in MPL-5), the DAP now uses these pre-pixelized measurements
-for the dispersion calculations in both the stellar and ionized-gas
-velocity dispersions.  A more in-depth analysis is needed to understand
-how these LSF changes affect the results.
+The DRP provides both pre- and post-pixelized Gaussian measurements of
+the instrumental line-spread function.  Because it makes the most sense
+to use the pre-pixelized versions with pPXF, the DAP uses these
+pre-pixelized measurements for the dispersion calculations in both the
+stellar and ionized-gas velocity dispersions.  A more in-depth analysis
+is needed to understand how these LSF changes affect the results.
 
 Artifact effects on emission-line fitting
 -----------------------------------------
@@ -66,9 +65,9 @@ moments and spectral indices).  Idealized experiments and analysis of
 repeat observations have shown that the formal errors are within a
 factor of two of the statistical error.  See the detailed assessments of
 the DAP uncertainties in the two main DAP papers: `Westfall et al.
-(2019)
+(2019, AJ, 158, 231)
 <https://ui.adsabs.harvard.edu/abs/2019AJ....158..231W/abstract>`_ and
-`Belfiore et al. (2019)
+`Belfiore et al. (2019, AJ, 158, 160)
 <https://ui.adsabs.harvard.edu/abs/2019AJ....158..160B/abstract>`_.
 
 
@@ -80,13 +79,14 @@ Faults
 
 The full report of the observations that faulted and the consolidated
 list of error messages can be found `here
-<https://data.sdss.org/sas/mangawork/manga/spectro/analysis/v2_7_1/2.4.1/log/error_report.txt>`_.
+<https://data.sdss.org/sas/mangawork/manga/spectro/analysis/v2_7_1/2.4.1/log/error_report.txt>`_
+(internal).
 
 Of the 8130 attempted analyses, 73 did not successfully finish all three
-analysis approaches.  In the 73 failures, the error may have occurred
-such that e.g., the unbinned (``SPX``) processing finished but the
-Voronoi-binned results (``VOR10``) did not. Here are the number of
-``MAPS`` files for each ``DAPTYPE``:
+analysis approaches.  In the 73 failures, the error can occur such that,
+e.g., the unbinned (``SPX``) processing finished but the Voronoi-binned
+results (``VOR10``) did not. Here are the number of ``MAPS`` files for
+each ``DAPTYPE``:
 
 +---------------------------+-----------------------+
 |               ``DAPTYPE`` | :math:`N_{\rm cubes}` |

@@ -3,61 +3,53 @@
 """
 A class hierarchy that performs the spectral-index measurements.
 
-*License*:
-    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+Notes
+-----
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/proc/spectralindices.py
+If neither stellar-continuum nor emission-line models are provided:
 
-*Class usage examples*:
-    Add examples!
+    - Indices are measure on the binned spectra
+    - No velocity-dispersion corrections are calculated
 
-*Notes*:
-    
-    If neither stellar-continuum nor emission-line models are provided:
+If a stellar-continuum model is provided without an emission-line
+model:
 
-        - Indices are measure on the binned spectra
-        - No velocity-dispersion corrections are calculated
+    - Indices are measured on the binned spectra
+    - Velocity-dispersion corrections are computed for any binned
+      spectrum with a stellar-continuum fit based on the optimal
+      template
 
-    If a stellar-continuum model is provided without an emission-line
-    model:
+If an emission-line model is provided without a stellar-continuum model:
 
-        - Indices are measured on the binned spectra
-        - Velocity-dispersion corrections are computed for any binned
-          spectrum with a stellar-continuum fit based on the optimal
-          template
+    - Indices are measured on the relevant (binned or unbinned) spectra;
+      spectra with emission-line fits have the model emission lines
+      subtracted from them before these measurements.
+    - If the emission-line model includes data regarding the
+      stellar-continuum fit (template spectra and template weights),
+      corrections are calculated for spectra with emission-line models
+      based on the continuum fits; otherwise, no corrections are
+      calculated.
 
-    If an emission-line model is provided without a stellar-continuum
-    model:
+If both stellar-continuum and emission-line models are provided, and if
+the stellar-continuum and emission-line fits are performed on the same
+spectra:
 
-        - Indices are measured on the relevant (binned or unbinned)
-          spectra; spectra with emission-line fits have the model
-          emission lines subtracted from them before these measurements.
-        - If the emission-line model includes data regarding the
-          stellar-continuum fit (template spectra and template weights),
-          corrections are calculated for spectra with emission-line
-          models based on the continuum fits; otherwise, no corrections
-          are calculated.
+    - Indices are measured on the relevant (binned or unbinned) spectra;
+      spectra with emission-line fits have the model emission lines
+      subtracted from them before these measurements.
+    - Velocity-dispersion corrections are based on the stellar-continuum
+      templates and weights
 
-    If both stellar-continuum and emission-line models are provided, and
-    if the stellar-continuum and emission-line fits are performed on the
-    same spectra:
+If both stellar-continuum and emission-line models are provided, and if
+the stellar-continuum and emission-line fits are performed on different
+spectra:
 
-        - Indices are measured on the relevant (binned or unbinned)
-          spectra; spectra with emission-line fits have the model
-          emission lines subtracted from them before these measurements.
-        - Velocity-dispersion corrections are based on the
-          stellar-continuum templates and weights
+    - The behavior is exactly as if the stellar-continuum model was not
+      provided.
 
-    If both stellar-continuum and emission-line models are provided, and
-    if the stellar-continuum and emission-line fits are performed on
-    different spectra:
+Revision history
+----------------
 
-        - The behavior is exactly as if the stellar-continuum model was
-          not provided.
-
-*Revision history*:
     | **20 Apr 2016**: Implementation begun by K. Westfall (KBW)
     | **09 May 2016**: (KBW) Add subtraction of emission-line models
     | **11 Jul 2016**: (KBW) Allow to not apply dispersion corrections
@@ -74,11 +66,15 @@ A class hierarchy that performs the spectral-index measurements.
         for redshift.  Keep the indices as measured by the best-fitting
         model.
 
-.. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
-.. _glob.glob: https://docs.python.org/3.4/library/glob.html
-.. _numpy.recarray: https://docs.scipy.org/doc/numpy/reference/generated/numpy.recarray.html
-.. _logging.Logger: https://docs.python.org/3/library/logging.html
+----
 
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../links.rst
 """
 
 import glob
@@ -89,7 +85,7 @@ import numpy
 from astropy.io import fits
 import astropy.constants
 
-from ..par.parset import ParSet
+from ..par.parset import KeywordParSet
 from ..par.artifactdb import ArtifactDB
 from ..par.absorptionindexdb import AbsorptionIndexDB
 from ..par.bandheadindexdb import BandheadIndexDB
@@ -100,6 +96,7 @@ from ..util.fitsutil import DAPFitsUtil
 from ..util.fileio import init_record_array, rec_to_fits_type
 from ..util.log import log_output
 from ..util.bitmask import BitMask
+from ..util.dapbitmask import DAPBitMask
 from ..util.pixelmask import SpectralPixelMask
 from ..util.parser import DefaultConfig
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
@@ -112,26 +109,17 @@ from .util import select_proc_method, flux_to_fnu
 from matplotlib import pyplot
 #from memory_profiler import profile
 
-class SpectralIndicesDef(ParSet):
+class SpectralIndicesDef(KeywordParSet):
     """
     A class that holds the parameters necessary to perform the
     spectral-index measurements.
 
-    Args:
-        key (str): Keyword used to distinguish between different
-            spectral-index databases.
-        minimum_snr (bool): Minimum S/N of spectrum to fit
-        fwhm (int, float): Resolution FWHM in angstroms at which to make
-            the measurements.
-        compute_corrections (bool): Flag to compute dispersion corrections
-            to indices.  Dispersion corrections are always calculated!
-        artifacts (str): String identifying the artifact database to use
-        absindex (str): String identifying the absorption-index database
-            to use
-        bandhead (str): String identifying the bandhead-index database
-            to use
+    The defined parameters are:
+
+    .. include:: ../tables/spectralindicesdef.rst
     """
-    def __init__(self, key, minimum_snr, fwhm, compute_corrections, artifacts, absindex, bandhead):
+    def __init__(self, key=None, minimum_snr=None, fwhm=None, compute_corrections=None,
+                 artifacts=None, absindex=None, bandhead=None):
         in_fl = [ int, float ]
 
         pars =     [ 'key', 'minimum_snr', 'fwhm', 'compute_corrections', 'artifacts', 'absindex',
@@ -140,8 +128,16 @@ class SpectralIndicesDef(ParSet):
                           bandhead ]
         dtypes =   [   str,         in_fl,  in_fl,                  bool,         str,        str,
                                str ]
+        descr = ['Keyword used to distinguish between different spectral-index databases.',
+                 'Minimum S/N of spectrum to fit',
+                 'Resolution FWHM in angstroms at which to make the measurements.',
+                 'Flag to compute dispersion corrections to indices.  Dispersion corrections ' \
+                    'are always calculated!',
+                 'String identifying the artifact database to use',
+                 'String identifying the absorption-index database to use',
+                 'String identifying the bandhead-index database to use']
 
-        ParSet.__init__(self, pars, values=values, dtypes=dtypes)
+        super(SpectralIndicesDef, self).__init__(pars, values=values, dtypes=dtypes, descr=descr)
 
 
 def validate_spectral_indices_config(cnfg):
@@ -222,13 +218,14 @@ def available_spectral_index_databases(dapsrc=None):
         # library
         validate_spectral_indices_config(cnfg)
 
-        index_set_list += [ SpectralIndicesDef(cnfg['key'],
-                                               cnfg.getfloat('minimum_snr', default=0.), 
-                                               cnfg.getfloat('resolution_fwhm', default=-1),
-                                               cnfg.getbool('compute_sigma_correction',
-                                                            default=False),
-                                               cnfg['artifact_mask'], cnfg['absorption_indices'],
-                                               cnfg['bandhead_indices']) ]
+        index_set_list += [ SpectralIndicesDef(key=cnfg['key'],
+                                               minimum_snr=cnfg.getfloat('minimum_snr', default=0.), 
+                                               fwhm=cnfg.getfloat('resolution_fwhm', default=-1),
+                                    compute_corrections=cnfg.getbool('compute_sigma_correction',
+                                                                     default=False),
+                                               artifacts=cnfg['artifact_mask'],
+                                               absindex=cnfg['absorption_indices'],
+                                               bandhead=cnfg['bandhead_indices']) ]
 
     # Check the keywords of the libraries are all unique
     if len(numpy.unique(numpy.array([index['key'] for index in index_set_list]))) \
@@ -239,25 +236,14 @@ def available_spectral_index_databases(dapsrc=None):
     return index_set_list
 
 
-class SpectralIndicesBitMask(BitMask):
+class SpectralIndicesBitMask(DAPBitMask):
     r"""
-
     Derived class that specifies the mask bits for the spectral-index
-    measurements.  See :class:`mangadap.util.bitmask.BitMask` for
-    attributes.
+    measurements. The maskbits defined are:
 
-    A list of the bits and meanings are provided by the base class
-    function :func:`mangadap.util.bitmask.BitMask.info`; i.e.,::
-
-        from mangadap.proc.spectralindices import SpectralIndicesBitMask
-        bm = SpectralIndicesBitMask()
-        bm.info()
-
+    .. include:: ../tables/spectralindicesbitmask.rst
     """
-    def __init__(self, dapsrc=None):
-        dapsrc = defaults.dap_source_dir() if dapsrc is None else str(dapsrc)
-        BitMask.__init__(self, ini_file=os.path.join(dapsrc, 'python', 'mangadap', 'config',
-                                                     'bitmasks', 'spectral_indices_bits.ini'))
+    cfg_root = 'spectral_indices_bits'
 
 
 # TODO: These two should have the same base class
@@ -629,7 +615,7 @@ class SpectralIndices:
         self.hardcopy = None
 
         # Initialize the objects used in the assessments
-        self.bitmask = SpectralIndicesBitMask(dapsrc=dapsrc)
+        self.bitmask = SpectralIndicesBitMask()
 
         self.hdu = None
         self.checksum = checksum
@@ -654,8 +640,8 @@ class SpectralIndices:
         return self.hdu[key]
 
 
-    def _define_databases(self, database_key, database_list=None, artifact_list=None,
-                          absorption_index_list=None, bandhead_index_list=None, dapsrc=None):
+    def _define_databases(self, database_key, database_list=None, artifact_path=None,
+                          absorption_index_path=None, bandhead_index_path=None, dapsrc=None):
         r"""
 
         Select the database of indices
@@ -664,24 +650,22 @@ class SpectralIndices:
         # Grab the specific database
         self.database = select_proc_method(database_key, SpectralIndicesDef,
                                            method_list=database_list,
-                                           available_func=available_spectral_index_databases,
-                                           dapsrc=dapsrc)
+                                           available_func=available_spectral_index_databases)
 
         # Instantiate the artifact, absorption-index, and bandhead-index
         # databases
         self.artdb = None if self.database['artifacts'] is None else \
-                ArtifactDB(self.database['artifacts'], artdb_list=artifact_list, dapsrc=dapsrc)
+                ArtifactDB.from_key(self.database['artifacts'], directory_path=artifact_path)
         # TODO: Generalize the name of this object
         self.pixelmask = SpectralPixelMask(artdb=self.artdb)
 
         self.absdb = None if self.database['absindex'] is None else \
-                AbsorptionIndexDB(self.database['absindex'], indxdb_list=absorption_index_list,
-                                  dapsrc=dapsrc)
+                AbsorptionIndexDB.from_key(self.database['absindex'],
+                                           directory_path=absorption_index_path)
 
         self.bhddb = None if self.database['bandhead'] is None else \
-                BandheadIndexDB(self.database['bandhead'], indxdb_list=bandhead_index_list,
-                                dapsrc=dapsrc)
-
+                BandheadIndexDB.from_key(self.database['bandhead'],
+                                         directory_path=bandhead_index_path)
 
     def _set_paths(self, directory_path, dapver, analysis_path, output_file):
         """
@@ -831,7 +815,7 @@ class SpectralIndices:
         # of indices measured
         passband_database = init_record_array(self.nindx, self._index_database_dtype(name_len))
 
-        t = 0 if self.absdb is None else self.absdb.nsets
+        t = 0 if self.absdb is None else self.absdb.size
         if self.absdb is not None:
             passband_database['TYPE'][:t] = 'absorption'
             hk = [ 'ID', 'NAME', 'PASSBAND', 'BLUEBAND', 'REDBAND', 'UNIT', 'COMPONENT' ]
@@ -1301,7 +1285,7 @@ class SpectralIndices:
         r"""
         Count the total number (absorption-line and bandhead) indices.
         """
-        return 0 if absdb is None else absdb.nsets, 0 if bhddb is None else bhddb.nsets
+        return 0 if absdb is None else absdb.size, 0 if bhddb is None else bhddb.size
 
 
     @staticmethod
@@ -1687,22 +1671,8 @@ class SpectralIndices:
         _, angu, _ = SpectralIndices.unit_selection(absdb, bhddb)
         measurements['INDX'][:,angu] /= (1+measurements['REDSHIFT'][:,None])
 
-#        x = numpy.append(center, numpy.array([[-100]*self.absdb.nsets]).T,axis=1).ravel()
-#        _x = numpy.ma.MaskedArray(x, mask=x==-100)
-#        print(_x)
-#        y = numpy.append(pseudocontinuum, numpy.array([[-100]*self.absdb.nsets]).T,axis=1).ravel()
-#        _y = numpy.ma.MaskedArray(y, mask=y==-100)
-#        print(type(_y))
-#        print(numpy.sum(_y.mask))
-#        pyplot.plot(_x, _y, color='g', lw=2, linestyle='-')
-#        pyplot.show()
-
-#        print('Total masked: {0}/{1}'.format(numpy.sum(measurements['MASK'] > 0),
-#                                             measurements['MASK'].size))
-
         # Return the data
         return measurements
-
 
     def file_name(self):
         """Return the name of the output file."""

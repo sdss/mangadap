@@ -3,44 +3,25 @@
 """
 A set of functions used to filter arrays.
 
-*License*:
-    Copyright (c) 2017, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+Revision history
+----------------
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/util/filter.py
-
-*Imports and python version compliance*:
-    ::
-
-        from __future__ import division
-        from __future__ import print_function
-        from __future__ import absolute_import
-        from __future__ import unicode_literals
-
-        import sys
-        if sys.version > '3':
-            long = int
-
-        import numpy
-
-*Revision history*:
     | **26 Jan 2017**: Original implementation by K. Westfall (KBW)
     | **06 Apr 2017**: Interpolate sigma vectors as well as the smoothed
         vectors in :class:`BoxcarFilter`.
     | **21 Dec 2017**: Add weighting functionality to
         :class:`BoxcarFilter`.
+
+----
+
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../links.rst
 """
-
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
-import sys
-if sys.version > '3':
-    long = int
-
 import warnings
 import numpy
 from scipy import interpolate, sparse

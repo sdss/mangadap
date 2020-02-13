@@ -8,17 +8,13 @@ Defines a class to keep track of MaNGA MPL dependencies and versioning.
     The dependencies will necessarily grow, and will be handled using
     module files.  So, even as it is, this class has little utility.
 
-*License*:
-    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+.. todo::
+    Deprecate this. I'm not sure it's actually used (or useful)
+    anymore.
 
-*Class usage examples*:
+Revision history
+----------------
 
-    .. todo::
-
-        Add some usage comments here!
-
-*Revision history*:
     | **2015**: Original Implementation by K. Westfall (KBW)
     | **Apr 2015**: (KBW) Added MPL-3
     | **20 May 2015**: (KBW) Documentation and Sphinx tests. Change
@@ -35,17 +31,16 @@ Defines a class to keep track of MaNGA MPL dependencies and versioning.
     | **11 May 2017**: (KBW) Update MPL-6 dependencies; remove
         module_file function
 
+----
+
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../links.rst
 """
-
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
-import sys
-if sys.version > '3':
-    long = int
-
 import os
 import warnings
 from distutils.version import StrictVersion

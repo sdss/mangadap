@@ -1,0 +1,20 @@
+========================  ===  ===================================================================================================================================================================================
+Key                       Bit  Description                                                                                                                                                                        
+========================  ===  ===================================================================================================================================================================================
+DIDNOTUSE                 0    Pixel was ignored because it was flagged as DONOTUSE or FORESTAR by the DRP, or as LOW_SPECCOV, LOW_SNR, or NONE_IN_STACK in the binning step.                                     
+FORESTAR                  1    Pixel was ignored because it was flagged as FORESTAR by the DRP.                                                                                                                   
+LOW_SNR                   2    Pixel was ignored because the S/N estimate of the spectrum was below the set threshold; see header keyword SIMINSN.                                                                
+ARTIFACT                  3    Pixel was ignored during the spectral-index measurements because it was designated as containing an artifact.                                                                      
+SPECRES_LOW               4    The spectral resolution was *not* matched to the target value because the target value was *higher* than the existing spectral resolution.                                         
+NO_MEASUREMENT            5    Nothing measured because of low S/N, missing spectrum, or incomplete bandpass definition.                                                                                          
+MAIN_EMPTY                6    Index not measured because the main passband had no observed fluxes.                                                                                                               
+BLUE_EMPTY                7    Index not measured because the blue passband had no observed fluxes.                                                                                                               
+RED_EMPTY                 8    Index not measured because the red passband had no observed fluxes.                                                                                                                
+MAIN_INCOMP               9    There were masked fluxes in the main passband.                                                                                                                                     
+BLUE_INCOMP               10   There were masked fluxes in the blue passband.                                                                                                                                     
+RED_INCOMP                11   There were masked fluxes in the red passband.                                                                                                                                      
+DIVBYZERO                 12   Could not compute index or its error because of a zero devision.  Either the pseudocontinuum in a bandhead computation or the continuum in an absorption-line computation was zero.
+NO_DISPERSION_CORRECTION  13   No dispersion correction was applied to the index because either the template library did not cover this wavelength range or not zero-dispersion model fit was available.          
+UNDEFINED_BANDS           14   No index calculated because the bandpasses were not, or improperly, defined.                                                                                                       
+========================  ===  ===================================================================================================================================================================================
+

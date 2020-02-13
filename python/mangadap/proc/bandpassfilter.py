@@ -3,39 +3,46 @@
 """
 Container class that defines a bandpass filter.
 
-*License*:
-    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+Class usage examples
+--------------------
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/par/bandpassfilter.py
+To define an bandpass filter::
 
-*Class usage examples*:
-    To define an bandpass filter::
+    from mangadap.par.bandpassfilter import BandPassFilterPar
+    p = BandPassFilterPar(index=44, name='Ha', blueside=[6483.0,6513.0],
+                          redside=[6623.0,6653.0], restwave=6564.632,
+                          primary=[6557.6,6571.6]) 
 
-        from mangadap.par.bandpassfilter import BandPassFilterPar
-        p = BandPassFilterPar(44, 'Ha', [6483.0,6513.0],
-                             [6623.0,6653.0], restwave=6564.632,
-                             primary=[6557.6,6571.6]) 
+However, this class is mostly to provide a base class used by
+:class:`mangadap.par.emissionmomentsdb.EmissionMomentsDB`,
+:class:`mangadap.par.absorptionindexdb.AbsorptionIndexDB`, and
+:class:`mangadap.par.bandheadindexdb.BandheadIndexDB`; it is not
+really meant to be used as given above.
 
-    However, this class is mostly to provide a base class used by
-    :class:`mangadap.par.emissionmomentsdb.EmissionMomentsDB`,
-    :class:`mangadap.par.absorptionindexdb.AbsorptionIndexDB`, and
-    :class:`mangadap.par.bandheadindexdb.BandheadIndexDB`; it is not
-    really meant to be used as given above.
+Revision history
+----------------
 
-*Revision history*:
     | **18 Mar 2016**: Original implementation by K. Westfall (KBW)
     | **20 Apr 2016**: (KBW) Include measurements
     | **29 Jul 2016**: (KBW) Convert some calls to asarray to atleast_1d
     | **15 Mar 2018**: (KBW) Allow the redshift in the equivalent width
         measurement to be specific to each bandpass.
+
+----
+
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../links.rst
 """
 
 import warnings
 import numpy
 
-from ..par.parset import ParSet
+from ..par.parset import KeywordParSet
 from ..util.sampling import _pixel_borders
 
 from matplotlib import pyplot
@@ -43,9 +50,8 @@ from matplotlib import pyplot
 # Add strict versioning
 # from distutils.version import StrictVersion
 
-class BandPassFilterPar(ParSet):
+class BandPassFilterPar(KeywordParSet):
     r"""
-
     Parameter object that defines a set of band-pass filters.  This is a
     base class for similar objects used calculating fluxes and flux
     moments of emission lines
@@ -55,65 +61,22 @@ class BandPassFilterPar(ParSet):
     spectral continuum bandheads
     (:class:`mangadap.par.bandheadindexdb.BandheadIndexDB`) in the DAP.
 
-    All wavelengths are expected to be IN VACUUM, to match the expected
-    application of this filter to SDSS MaNGA spectra.
+    All wavelengths are expected to be **in vacuum**, to match the
+    expected application of this filter to SDSS MaNGA spectra.
 
     See :class:`mangadap.par.parset.ParSet` for attributes and raised
     exceptions.
 
-    Args:
-        index (int) : An index used to refer to the bandpass filter.
-        name (str) : A name for the bandpass filter.
-        blueside (numpy.ndarray, list) : A two-element vector with the
-            starting and ending wavelength (angstroms in VACUUM) for a
-            passband to the blue of the primary spectral feature.
-        redside (numpy.ndarray, list): A two-element vector with the
-            starting and ending wavelength (angstroms in VACUUM) for a
-            passband to the red of the primary spectral feature.
-        restwave (float) : (Optional) The rest wavelength of the line in
-            the primary passband in angstroms *in vacuum*.  This is used
-            to convert the first and second moments to velocity (km/s)
-            for emission lines.
-        primary (numpy.ndarray, list) : (Optional) A two-element vector
-            with the starting and ending wavelength (angstroms in
-            VACUUM) for the primary passband surrounding the spectral
-            feature of interest.  This is used by
-            :class:`mangadap.par.emissionmomentsdb.EmissionMomentsDB`
-            and
-            :class:`mangadap.par.absorptionindexdb.AbsorptionIndexDB`,
-            but it is irrelevant for
-            :class:`mangadap.par.bandheadindexdb.BandheadIndexDB`.
-        units (str) : (Optional) Define the unit for the spectral index
-            as either angstroms ('ang') or magnitudes ('mag').
-            Currently only used by
-            :class:`mangadap.par.absorptionindexdb.AbsorptionIndexDB`.
-        component (bool) : (Optional) Flag that the bandpass definition
-            is a component of a larger set of bandpass filters.  This is
-            currently only used by
-            :class:`mangadap.par.absorptionindexdb.AbsorptionIndexDB`
-            to combine index measurements into a single index.  If True,
-            all components with the same *name* are summed to form the
-            composite index.
-        integrand (str) : (Optional) Currently only used by
-            :class:`mangadap.par.bandheadindexdb.BandheadIndexDB`.
-            Define the integrand over the passband used to construct and
-            index as either flux per unit frequency (``'fnu'``),
-            :math:`F_\nu`, or flux per unit wavelength (``'flambda'``),
-            :math:`F_\lambda`.
-        order (str): (Optional) Currently only used by
-            :class:`mangadap.par.bandheadindexdb.BandheadIndexDB`.
-            Define the order to use when constructing the index.  The
-            options are either a ratio of red-to-blue or blue-to-red,
-            which are respectively selected using ``'r_b'`` or
-            ``'b_r'``.
+    The defined parameters are:
 
+    .. include:: ../tables/bandpassfilterpar.rst
     """
-    def __init__(self, index, name, blueside, redside, restwave=None, primary=None, units=None,
-                 component=None, integrand=None, order=None):
+    def __init__(self, index=None, name=None, blueside=None, redside=None, restwave=None,
+                 primary=None, units=None, component=None, integrand=None, order=None):
         
         in_fl = [ int, float ]
         ar_like = [ numpy.ndarray, list ]
-        n = name.strip()
+        n = None if name is None else name.strip()
         unit_opts = [ 'ang', 'mag' ]
         integ_opts = [ 'flambda', 'fnu' ]
         order_opts = [ 'b_r', 'r_b' ]
@@ -127,9 +90,41 @@ class BandPassFilterPar(ParSet):
         dtypes  =  [     int,    str,      in_fl,   ar_like,    ar_like,   ar_like,       str,
                             bool,         str,        str ]
 
-        ParSet.__init__(self, pars, values=values, options=options, dtypes=dtypes)
-        self._check()
+        descr = ['An index used to refer to the bandpass filter',
+                 'A name for the bandpass filter',
+                 'A two-element vector with the starting and ending wavelength (angstroms in ' \
+                    '**vacuum**) for a passband to the blue of the primary spectral feature.',
+                 'A two-element vector with the starting and ending wavelength (angstroms in ' \
+                    '**vacuum**) for a passband to the red of the primary spectral feature.',
+                 'The rest wavelength of the line in the primary passband in angstroms **in ' \
+                    'vacuum**.  This is used to convert the first and second moments to ' \
+                    'velocity (km/s) for emission lines.',
+                 'A two-element vector with the starting and ending wavelength (angstroms in ' \
+                    '**vacuum**) for the primary passband surrounding the spectral feature of ' \
+                    'interest.  This is used by ' \
+                    ':class:`mangadap.par.emissionmomentsdb.EmissionMomentsDB` and ' \
+                    ':class:`mangadap.par.absorptionindexdb.AbsorptionIndexDB`, but it is ' \
+                    'irrelevant for :class:`mangadap.par.bandheadindexdb.BandheadIndexDB`.',
+                 'Define the unit for the spectral index as either angstroms (``ang``) or ' \
+                    'magnitudes (``mag``).  Currently only used by ' \
+                    ':class:`mangadap.par.absorptionindexdb.AbsorptionIndexDB`.',
+                 'Flag that the bandpass definition is a component of a larger set of bandpass ' \
+                    'filters.  This is currently only used by ' \
+                    ':class:`mangadap.par.absorptionindexdb.AbsorptionIndexDB` to combine index ' \
+                    'measurements into a single index.  If True, all components with the same ' \
+                    '*name* are summed to form the composite index.',
+                 r'Currently only used by :class:`mangadap.par.bandheadindexdb.BandheadIndexDB`.' \
+                    r'  Define the integrand over the passband used to construct and index as ' \
+                    r'either flux per unit frequency (``fnu``), :math:`F_\nu`, or flux per unit ' \
+                    r'wavelength (``flambda``), :math:`F_\lambda`.',
+                 'Currently only used by :class:`mangadap.par.bandheadindexdb.BandheadIndexDB`.' \
+                    '  Define the order to use when constructing the index.  The options are ' \
+                    'either a ratio of red-to-blue or blue-to-red, which are respectively ' \
+                    'selected using ``r_b`` or ``b_r``.']
 
+        super(BandPassFilterPar, self).__init__(pars, values=values, options=options,
+                                                dtypes=dtypes, descr=descr)
+        self._check()
 
     def __repr__(self):
         """Return a string representation of the bandpass filter."""
@@ -151,7 +146,6 @@ class BandPassFilterPar(ParSet):
             summary += '\norder     : {0}'.format(self['order'])
         return summary
 
-
     def _check(self):
         """
         Check the parameter list:
@@ -167,9 +161,9 @@ class BandPassFilterPar(ParSet):
         """
         if self.data['primary'] is not None and len(self.data['primary']) != 2:
             raise ValueError('Primary passband must have two and only two elements.')
-        if len(self.data['blueside']) != 2:
+        if self.data['blueside'] is not None and len(self.data['blueside']) != 2:
             raise ValueError('Blue sideband must have two and only two elements.')
-        if len(self.data['redside']) != 2:
+        if self.data['redside'] is not None and len(self.data['redside']) != 2:
             raise ValueError('Red sideband must have two and only two elements.')
 
 

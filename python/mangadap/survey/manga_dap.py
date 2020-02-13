@@ -3,29 +3,24 @@
 """
 Provides the main wrapper function for the MaNGA DAP.
 
-*License*:
-    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+Revision history
+----------------
 
-*Usage*:
-    Add usage examples
-
-*Revision history*:
     | **21 Mar 2016**: Original implementation by K. Westfall (KBW): started.
     | **19 Jul 2016**: (KBW) Always provide the NSA redshift to the modules!
     | **05 May 2017**: (KBW) Clean up documentation; use import to get
         __version__
 
+----
+
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../links.rst
 """
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
-import sys
-if sys.version > '3':
-    long = int
-
 import logging
 import resource
 import time

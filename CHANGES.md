@@ -30,6 +30,7 @@ TODO
 
 2.5.0dev
 --------
+
  - Added BPASS theoretical spectral template library
  - Added numerous config files / line lists to allow for masking of NaD
    in both stellar continuum modeling and emission line modeling steps
@@ -40,6 +41,11 @@ TODO
    single number instead of a vector.
  - Significant doc improvements by migrating most of the information on
    the internal wiki into the docs/ directory.
+ - Significant reworking of I/O interface for "spectral feature
+   databases".  These were databases where the config files basically
+   just pointed to the file in the data/ directory.  The new interface
+   circumvents the need for these config files.
+ - Added tests to ensure available configuration files are valid.
 
 2.4.1 (01 Nov 2019)
 -------------------

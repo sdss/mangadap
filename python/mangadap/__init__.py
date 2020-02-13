@@ -4,7 +4,7 @@ __license__ = 'BSD3'
 __author__ = 'Kyle B. Westfall'
 __maintainer__ = 'Kyle B. Westfall'
 __email__ = 'westfall@ucolick.org'
-__copyright__ = '(c) 2014-2018, SDSS-IV/MaNGA Pipeline Group'
+__copyright__ = '(c) 2014-2019, SDSS-IV/MaNGA Pipeline Group'
 __credits__ = [ 'Kyle B. Westfall', 'Brett H. Andrews', 'Michele Cappellari',
                 'Xihan Ji' ]
 # 'Matthew Bershady', 'Francesco Belfiore', 'Kevin Bundy', 'David Law',
@@ -40,7 +40,7 @@ def default_paths():
 def check_environment():
     ev = default_paths()
     for k in ev.keys():
-        if k not in os.environ:
+        if k not in os.environ and 'MANGACORE' not in k:
             warnings.warn('{0} environmental variable undefined.  Using: {1}'.format(k,ev[k]))
             os.environ[k] = ev[k]
 

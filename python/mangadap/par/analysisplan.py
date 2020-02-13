@@ -3,42 +3,41 @@
 r"""
 Classes to handle MaNGA DAP analysis plans.
 
-*License*:
-    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+Revision history
+----------------
 
-*Class usage examples*:
-        Add usage comments!
-
-*Revision history*:
     | **11 May 2016**: Original implementation by K. Westfall (KBW)
     | **03 Jun 2016**: (KBW) Any key with value 'None' is converted to
         NoneType
+
+----
+
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../links.rst
 """
 
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
 import os
-import sys
-if sys.version > '3':
-    long = int
-
-import numpy
 from pydl.pydlutils.yanny import yanny
 
-from .parset import ParSet, ParDatabase
+from .parset import KeywordParSet, ParDatabase
 
-class AnalysisPlan(ParSet):
+class AnalysisPlan(KeywordParSet):
     """
     Generic class to handle MaNGA DAP analysis plans.
-    """
 
-    def __init__(self, drpqa_key=None, drpqa_clobber=False, bin_key=None, bin_clobber=False,
-                 continuum_key=None, continuum_clobber=False, elmom_key=None, elmom_clobber=False,
-                 elfit_key=None, elfit_clobber=False, spindex_key=None, spindex_clobber=False):
+    The defined parameters are:
+
+    .. include:: ../tables/analysisplan.rst
+
+    """
+    def __init__(self, drpqa_key=None, drpqa_clobber=None, bin_key=None, bin_clobber=None,
+                 continuum_key=None, continuum_clobber=None, elmom_key=None, elmom_clobber=None,
+                 elfit_key=None, elfit_clobber=None, spindex_key=None, spindex_clobber=None):
 
         # TODO: Include covariance keys that is applied to each/some analyses
         _drpqa_key = None if drpqa_key == 'None' or drpqa_key is None else drpqa_key
@@ -55,14 +54,29 @@ class AnalysisPlan(ParSet):
                    continuum_clobber, _elmom_key, elmom_clobber, _elfit_key, elfit_clobber,
                    _spindex_key, spindex_clobber ]
         dtypes = [ str, bool, str, bool, str, bool, str, bool, str, bool, str, bool ]
+        defaults = [ None, False, None, False, None, False, None, False, None, False, None, False ]
 
-        ParSet.__init__(self, pars, values=values, dtypes=dtypes)
+        descr = ['Data reduction quality assessment method keyword',
+                 'Overwrite any existing data-quality assessment reference files',
+                 'Spatial binning method keyword',
+                 'Overwrite any existing spatial binning reference files',
+                 'Stellar-continuum fitting method keyword',
+                 'Overwrite any existing stellar-continuum fitting reference files',
+                 'Emission-line moments measurement method keyword',
+                 'Overwrite any existing emission-line moments reference files',
+                 'Emission-line modeling method keyword',
+                 'Overwrite any existing emission-line modeling reference files',
+                 'Spectral-index measurement method keyword',
+                 'Overwrite any existing spectral-index reference files']
+
+        super(AnalysisPlan, self).__init__(pars, values=values, defaults=defaults, dtypes=dtypes,
+                                           descr=descr)
         self._check()
-
 
     def _check(self):
         """
         Check that the plan makes sense:
+
             - To bin, must first assess the DRP data
             - To do anythin else, must bin.
             - Emission-line moments and profile fits *should* subtract
@@ -74,6 +88,7 @@ class AnalysisPlan(ParSet):
               continuum to determine the velocity dispersion
               corrections, but neither is explicitly necessary for the
               code to run.
+
         """
         if self.data['bin_key'] is not None and self.data['drpqa_key'] is None:
             raise ValueError('To bin, must provide key for reduction assessments.')
@@ -98,7 +113,7 @@ class AnalysisPlanSet(ParDatabase):
             if not isinstance(_planlist[i], AnalysisPlan):
                 raise TypeError('Input must be a single or list of AnalysisPlan objects.')
 
-        ParDatabase.__init__(self, _planlist)
+        super(AnalysisPlanSet, self).__init__(_planlist)
 
     @classmethod
     def from_par_file(cls, f):

@@ -1,9 +1,4 @@
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import pytest
 import os
 
@@ -48,7 +43,8 @@ def test_ppxffit():
     tpl_sres = numpy.mean(tpl['SPECRES'].data, axis=0)
 
     # Get the pixel mask
-    pixelmask = SpectralPixelMask(artdb=ArtifactDB('BADSKY'), emldb=EmissionLineDB('ELPFULL'))
+    pixelmask = SpectralPixelMask(artdb=ArtifactDB.from_key('BADSKY'),
+                                  emldb=EmissionLineDB.from_key('ELPFULL'))
 
     # Instantiate the fitting class
     ppxf = PPXFFit(StellarContinuumModelBitMask())

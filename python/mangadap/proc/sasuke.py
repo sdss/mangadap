@@ -3,14 +3,9 @@
 """
 Implements an emission-line fitting class that largely wraps pPXF.
 
-*License*:
-    Copyright (c) 2017, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+Revision history
+----------------
 
-*Class usage examples*:
-        Add examples
-
-*Revision history*:
     | **24 May 2017**: Original implementation started by K. Westfall (KBW)
     | **23 Jun 2017**: (KBW) Documentation; fix error in
         :func:`Sasuke._save_results`
@@ -30,14 +25,19 @@ Implements an emission-line fitting class that largely wraps pPXF.
     | **22 May 2018**: (KBW) Change import to ppxf package.
     | **29 May 2018**: (KBW) Change xjmc function import and call
 
-.. _numpy.ndarray: https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html
-.. _numpy.ma.MaskedArray: https://docs.scipy.org/doc/numpy/reference/maskedarray.baseclass.html
-.. _numpy.recarray: https://docs.scipy.org/doc/numpy/reference/generated/numpy.recarray.html
-.. _logging.Logger: https://docs.python.org/3/library/logging.html
+----
 
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../links.rst
 """
 
 import time
+import warnings
 import logging
 import warnings
 
@@ -47,7 +47,7 @@ from scipy import interpolate, fftpack
 import astropy.constants
 from ppxf import ppxf
 
-from ..par.parset import ParSet
+from ..par.parset import KeywordParSet
 from ..par.emissionlinedb import EmissionLineDB
 from ..util.fitsutil import DAPFitsUtil
 from ..util.fileio import init_record_array
@@ -70,12 +70,12 @@ from ..contrib.xjmc import emline_fitter_with_ppxf, ppxf_tied_parameters
 # For debugging
 from matplotlib import pyplot
 
-class SasukePar(ParSet):
+class SasukePar(KeywordParSet):
     r"""
-    A class specific to the DAP's use of Sasuke.
+    Hold the parameers necessary to run the Sasuke emission-line fitter.
 
     This is the object that gets passed to
-    :func:`Sasuke.fit_SpatiallyBinnedSpectra`.  In the DAP, it is
+    :func:`Sasuke.fit_SpatiallyBinnedSpectra`. In the DAP, it is
     instantiated by
     :func:`mangadap.proc.emissionlinemodel.available_emission_line_modeling_methods`
     and some of its components are filled by
@@ -86,64 +86,16 @@ class SasukePar(ParSet):
     the former, the :func:`Sasuke.fit_SpatiallyBinnedSpectra` method
     will construct the template library for later callback.
 
-    When instantiated, the :class:`mangadap.par.parset.ParSet` objects
-    test that the input objects match the provided dtypes.  See
-    documentation for :class:`mangadap.par.parset.ParSet` for the list
-    of attributes and exceptions raised.
+    When instantiated, the :class:`mangadap.par.parset.KeywordParSet`
+    objects test that the input objects match the provided dtypes.
+    See documentation for :class:`mangadap.par.parset.ParSet` for the
+    list of attributes and exceptions raised.
 
-    Args:
-        stellar_continuum (:class:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel`):
-            The result of the previous fit to the stellar continuum.
-        emission_lines (:class:`mangadap.par.emissionlinedb.EmissionLineDB`):
-            Emission-line database with the details of the lines to be
-            fit.
-        continuum_templates
-            (:obj:`str`, :class:`mangadap.proc.templatelibrary.TemplateLibrary`, optional):
-            The new continuum template library to use during the
-            emission-line fit.
-        etpl_line_sigma_mode (:obj:`str`, optional): 
-            Mode used to set the instrumental dispersion of the
-            emission-line templates.  Mode options are explated by
-            :func:`Sasuke.etpl_line_sigma_options`.  Default is
-            'default'.
-        etpl_line_sigma_min (scalar-like, optional):
-            Impose a minimum emission-line sigma by offsetting the
-            nominal trend, in quadrature, to have this minimum value.
-            Default is 0.
-        guess_redshift (array-like, optinal):
-            Single or per-spectrum redshift to use as the initial
-            velocity guess.
-        guess_dispersion (array-like, optional):
-            Single or per-spectrum velocity dispersion to use as the
-            initial guess.
-        minimum_snr (scalar-like, optional):
-            Minimum S/N of spectrum to fit.
-        deconstruct_bins (:obj:`str`, optional):
-            Method to use for deconstructing binned spectra into
-            individual spaxels for emission-line fitting.  See
-            :func:`Sasuke.deconstruct_bin_options`.
-        pixelmask (:class:`mangadap.util.pixelmask.SpectralPixelMask`, optional):
-            Mask to apply to all spectra being fit.
-        reject_boxcar (:obj:`int`, optional):
-            Size of the boxcar to use when rejecting fit outliers.
-        bias (:obj:`float`, optional):
-            pPXF bias parameter.  (Irrelevant because gas is currently
-            always fit with moments=2.)
-        moments (:obj:`int`, optional):
-            pPXF moments parameter.  (Irrelevant because gas is
-            currently always fit with moments=2.)
-        degree (:obj:`int`, optional):
-            pPXF degree parameter setting the degree of the additive
-            polynomials to use.
-        mdegree (:obj:`int`, optional):
-            pPXF mdegree parameter setting the degree of the
-            multiplicative polynomials to use.
-        reddening (:obj:`float`, optional):
-            pPXF reddening parameter setting the initial :math:`E(B-V)`
-            to fit, based on a Calzetti law.
+    The defined parameters are:
 
+    .. include:: ../tables/sasukepar.rst
     """
-    def __init__(self, stellar_continuum, emission_lines, continuum_templates=None,
+    def __init__(self, stellar_continuum=None, emission_lines=None, continuum_templates=None,
                  etpl_line_sigma_mode=None, etpl_line_sigma_min=None, velscale_ratio=None,
                  guess_redshift=None, guess_dispersion=None, minimum_snr=None,
                  deconstruct_bins=None, pixelmask=None, reject_boxcar=None, bias=None,
@@ -172,11 +124,37 @@ class SasukePar(ParSet):
                      int, arr_in_fl, arr_in_fl, in_fl, str, SpectralPixelMask, int, in_fl, int,
                      int, int, in_fl ]
 
-        ParSet.__init__(self, pars, values=values, defaults=defaults, options=options,
-                        dtypes=dtypes)
+        descr = ['The result of the previous fit to the stellar continuum.',
+                 'Emission-line database with the details of the lines to be fit.',
+                 'The new continuum template library to use during the emission-line fit.',
+                 'Mode used to set the instrumental dispersion of the emission-line templates.  ' \
+                    'Mode options are explated by :func:`Sasuke.etpl_line_sigma_options`.  ' \
+                    'Default is ``default``.',
+                 'Impose a minimum emission-line sigma by offsetting the nominal trend, in ' \
+                    'quadrature, to have this minimum value.  Default is 0.',
+                 'Integer ratio between the width of the spectral pixels in the galaxy and ' \
+                    'template spectra.  If ``velscale_ratio = 2``, the template pixels are ' \
+                    'half as wide as the galaxy pixels.',
+                 'Single or per-spectrum redshift to use as the initial velocity guess.',
+                 'Single or per-spectrum velocity dispersion to use as the initial guess.',
+                 'Minimum S/N of spectrum to fit.',
+                 'Method to use for deconstructing binned spectra into individual spaxels ' \
+                    'for emission-line fitting.  See :func:`Sasuke.deconstruct_bin_options`.',
+                 'Mask to apply to all spectra being fit.',
+                 'Size of the boxcar to use when rejecting fit outliers.',
+                 'pPXF bias parameter.  (Irrelevant because gas is currently always fit with ' \
+                    'moments=2.)',
+                 'pPXF moments parameter.  (Irrelevant because gas is currently always fit with ' \
+                    'moments=2.)',
+                 'pPXF degree parameter setting the degree of the additive polynomials to use.',
+                 'pPXF mdegree parameter setting the degree of the multiplicative polynomials ' \
+                    'to use.',
+                 r'pPXF reddening parameter setting the initial :math:`E(B-V)` to fit, based ' \
+                    r'on a Calzetti law.']
 
+        super(SasukePar, self).__init__(pars, values=values, defaults=defaults, options=options,
+                                        dtypes=dtypes, descr=descr)
         self._check()
-
 
     def _check(self):
         if self['mdegree'] > 0 and self['reddening'] is not None:
@@ -194,7 +172,7 @@ class Sasuke(EmissionLineFit):
     emission lines would be::
 
         # Read the emission-line database
-        emldb = EmissionLineDB('ELPMILES')
+        emldb = EmissionLineDB.from_key('ELPMILES')
         # Instantiate the emission-line fitter
         el_fitter = Sasuke(EmissionLineModelBitMask())
         # Fit the spectra
@@ -2001,7 +1979,7 @@ class Sasuke(EmissionLineFit):
         # Build the emission-line templates; the EmissionLineTemplates
         # object will check the database
         self.emldb = emission_lines
-        self.neml = self.emldb.neml
+        self.neml = self.emldb.size
         etpl = EmissionLineTemplates(self.tpl_wave, etpl_sinst, emldb=self.emldb,
                                      loggers=self.loggers, quiet=self.quiet)
     
