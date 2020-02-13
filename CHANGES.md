@@ -45,6 +45,7 @@ TODO
    databases".  These were databases where the config files basically
    just pointed to the file in the data/ directory.  The new interface
    circumvents the need for these config files.
+ - Added tests to ensure available configuration files are valid.
 
 2.4.1 (01 Nov 2019)
 -------------------
