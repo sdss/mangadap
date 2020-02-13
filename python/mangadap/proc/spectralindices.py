@@ -218,8 +218,6 @@ def available_spectral_index_databases(dapsrc=None):
         # library
         validate_spectral_indices_config(cnfg)
 
-    def __init__(self, key=None, minimum_snr=None, fwhm=None, compute_corrections=None,
-                 artifacts=None, absindex=None, bandhead=None):
         index_set_list += [ SpectralIndicesDef(key=cnfg['key'],
                                                minimum_snr=cnfg.getfloat('minimum_snr', default=0.), 
                                                fwhm=cnfg.getfloat('resolution_fwhm', default=-1),

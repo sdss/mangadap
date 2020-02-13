@@ -144,13 +144,14 @@ def available_emission_line_modeling_methods(dapsrc=None):
         Fill in
 
     Args:
-        dapsrc (str): (**Optional**) Root path to the DAP source
-            directory.  If not provided, the default is defined by
+        dapsrc (:obj:`str`, optional):
+            Root path to the DAP source directory. If not provided,
+            the default is defined by
             :func:`mangadap.config.defaults.dap_source_dir`.
 
     Returns:
-        list: A list of :func:`EmissionLineModelDef` objects, each
-        defining an emission-line modeling method.
+        :obj:`list`: A list of :class:`EmissionLineModelDef` objects,
+        each defining an emission-line modeling method.
 
     Raises:
         NotADirectoryError: Raised if the provided or default

@@ -121,6 +121,7 @@ class SpatiallyBinnedSpectraDef(KeywordParSet):
                  stackfunc=None, spec_res=None, prepixel_sres=None):
         in_fl = [ int, float ]
         res_opt = SpatiallyBinnedSpectra.spectral_resolution_options()
+        # TODO: Set valid options for galactic reddening?
 #        bincls_opt = [ spatialbinning.SpatialBinning ]
 #        stackcls_opt = [ SpectralStack ]
         par_opt = [ ParSet, dict ]

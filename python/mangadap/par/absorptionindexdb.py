@@ -46,6 +46,7 @@ Revision history
 .. include:: ../links.rst
 """
 import os
+import warnings
 import numpy
 
 from pydl.goddard.astro import airtovac

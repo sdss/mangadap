@@ -21,7 +21,7 @@ def test_read():
     for key in TemplateLibrary.supported_libraries:
         tpl = TemplateLibrary(key, tpllib_list=tpl_list, match_to_drp_resolution=False,
                               velscale_ratio=1, spectral_step=1e-4, log=True, hardcopy=False)
-    
+
 
 def test_mileshc():
     tpl = TemplateLibrary('MILESHC', match_to_drp_resolution=False, velscale_ratio=4,

@@ -178,8 +178,6 @@ def available_emission_line_moment_databases(dapsrc=None):
         # library
         validate_emission_line_moments_config(cnfg)
 
-    def __init__(self, key=None, minimum_snr=None, artifacts=None, passbands=None,
-                 redo_postmodeling=None, fit_vel_name=None):
         moment_set_list += [ EmissionLineMomentsDef(key=cnfg['key'],
                                             minimum_snr=cnfg.getfloat('minimum_snr', default=0.),
                                             artifacts=cnfg.get('artifact_mask'),
