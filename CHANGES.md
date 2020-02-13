@@ -28,6 +28,11 @@ TODO
     - Make more independent of stellar-continnuum module reference file
     - Change `BASE` extension to `CONTINUUM` extension.
 
+2.5.1 (13 Feb 2020)
+-------------------
+
+ - Jumped the gun.  Fixed Travis testing issues.
+
 2.5.0 (13 Feb 2020)
 -------------------
 
