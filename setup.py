@@ -11,9 +11,9 @@ from setuptools import setup, find_packages
 import requests
 import warnings
 
-_IDLUTILS_VER = 'v5_5_30'
-_MANGADRP_VER = 'v2_4_3'
-_MANGACORE_VER = 'v1_6_2'
+_IDLUTILS_VER = 'v5_5_34'
+_MANGADRP_VER = 'v2_7_1'
+_MANGACORE_VER = 'v1_8_0'
 
 _VERSION = '2.5.0'
 _RELEASE = 'dev' not in _VERSION
@@ -32,8 +32,7 @@ def get_data_files(root=['data'], ext=['par', 'fits', 'fits.gz'], depth=2):
         for d in range(depth):
             _d = '/'.join(['*']*(d+1))
             for e in ext:
-                _data_files += [os.path.relpath(f, r) 
-                                    for f in glob.glob(os.path.join(r, _d, '*.{0}'.format(e)))]
+                _data_files += glob.glob(os.path.join(r, _d, '*.{0}'.format(e)))
         data_files += [(r, _data_files)]
     return data_files
 
