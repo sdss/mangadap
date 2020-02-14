@@ -4,13 +4,15 @@ __license__ = 'BSD3'
 __author__ = 'Kyle B. Westfall'
 __maintainer__ = 'Kyle B. Westfall'
 __email__ = 'westfall@ucolick.org'
-__copyright__ = '(c) 2014-2019, SDSS-IV/MaNGA Pipeline Group'
-__credits__ = [ 'Kyle B. Westfall', 'Brett H. Andrews', 'Michele Cappellari',
-                'Xihan Ji' ]
-# 'Matthew Bershady', 'Francesco Belfiore', 'Kevin Bundy', 'David Law',
-# 'Renbin Yan', , 'Daniel Goddard', 'Cheng Li', 'Taniya Parikh', 'Oliver
-# Steele', 'Adam Schaefer', 'Shravan Shetty', 'Daniel Thomas', 'Christy
-# Tremonti', 'David Wilkinson', 'Zheng Zheng'
+__copyright__ = '(c) 2014-2020, SDSS-IV/MaNGA Pipeline Group'
+__credits__ = ['Kyle B. Westfall', 'Brett H. Andrews', 'Jorge Barrera-Ballesteros',
+               'Francesco Belfiore', 'Matthew A. Bershady', 'Kevin Bundy', 'Joel R. Brownstein',
+               'Michele Cappellari', 'Brian Cherinka', 'Lodovico Coccato', 'Niv Drory',
+               'Cheng Du', 'Eric Emsellem', 'Daniel Goddard', 'Xihan Ji', 'David R. Law',
+               'Niu Li', 'Claudia Maraston', 'Karen Masters', 'Héctor Javier Ibarra Medel',
+               'Taniya Parikh', 'Sebastián F. Sánchez', 'José R. Sánchez-Gallego',
+               'Adam Schaefer', 'Shravan Shetty', 'Daniel Thomas', 'Christy A. Tremonti',
+               'Anne-Marie Weijmans', 'Renbin Yan', 'Meng Yang', 'Zheng Zheng', 'Shuang Zhou']
 
 import os
 
