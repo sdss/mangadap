@@ -29,8 +29,12 @@ TODO
     - Change `BASE` extension to `CONTINUUM` extension.
 
 
-2.5.2dev
---------
+2.5.2 (14 Feb 2020)
+-------------------
+
+ - Had to retag for pip release after increase in space limit to 150MB.
+   Version 2.5.1 on pip (code-base only) removed.
+
 
 2.5.1 (13 Feb 2020)
 -------------------
