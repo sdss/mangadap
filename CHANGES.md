@@ -28,6 +28,10 @@ TODO
     - Make more independent of stellar-continnuum module reference file
     - Change `BASE` extension to `CONTINUUM` extension.
 
+
+2.5.2dev
+--------
+
 2.5.1 (13 Feb 2020)
 -------------------
 
