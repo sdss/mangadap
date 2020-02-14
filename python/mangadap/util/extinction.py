@@ -1,35 +1,11 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 # -*- coding: utf-8 -*-
 """
-
 Provides a set of utility functions to deal with dust extinction.
 
-*License*:
-    Copyright (c) 2016, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+Revision history
+----------------
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/util/extinction.py
-
-*Imports and python version compliance*:
-    ::
-
-        from __future__ import division
-        from __future__ import print_function
-        from __future__ import absolute_import
-        from __future__ import unicode_literals
-
-        import sys
-        if sys.version > '3':
-            long = int
-
-        import numpy
-        from scipy import linalg
-
-*Class usage examples*:
-    Add examples
-
-*Revision history*:
     | **02 Jun 2016**: Original implementation by K. Westfall (KBW).
         Drawn from dust.py in David Wilkinson's FIREFLY code, and the
         dereddening functions in IDLUTILS.
@@ -38,18 +14,17 @@ Provides a set of utility functions to deal with dust extinction.
     | **15 Sep 2017**: (KBW) Allow to pass error instead of inverse
         variance to :func:`GalacticExtinction.apply`.
 
+----
+
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../links.rst
 """
-
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
-import sys
 import warnings
-if sys.version > '3':
-    long = int
-
 import numpy
 from numpy.polynomial.polynomial import polyval
 import scipy.interpolate
@@ -385,7 +360,7 @@ class GalacticExtinction:
 
     """
     def __init__(self, form='ODonnell', wave=None, ebv=None, rv=None, coeffs=None):
-        if form not in GalacticExtinction._valid_forms():
+        if form not in GalacticExtinction.valid_forms():
             raise ValueError('Unrecognized form of the extinction law: {0}'.format(form))
         self.form = form
 
@@ -399,7 +374,7 @@ class GalacticExtinction:
 
 
     @staticmethod
-    def _valid_forms():
+    def valid_forms():
         """
         Returns a list keyword for the allowed reddening curves forms
         implemented within the :class:`GalacticExtinction` class.

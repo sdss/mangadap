@@ -3,17 +3,15 @@
 """
 Implements a wrapper class for pPXF.
 
-*License*:
-    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+.. todo::
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/proc/ppxffit.py
+    Allow new iteration mode that iteratively fits until the velocity is
+    not up against one of the +/- 2000 km/s limits?  Could be useful for
+    poor redshift guesses.
 
-*Class usage examples*:
-        Add examples
+Revision history
+----------------
 
-*Revision history*:
     | **26 Apr 2016**: Moved from spectralfitting.py to its own file by
         K. Westfall (KBW)
     | **05 Jul 2016**: (KBW) V6.0.0 of pPXF does not use the oversample
@@ -44,31 +42,19 @@ Implements a wrapper class for pPXF.
     | **30 Aug 2018**: (KBW) Changed from resample1d to
         :class:`mangadap.util.sampling.Resample`.
 
-.. todo::
+----
 
-    Allow new iteration mode that iteratively fits until the velocity is
-    not up against one of the +/- 2000 km/s limits?  Could be useful for
-    poor redshift guesses.
+.. include license and copyright
+.. include:: ../copy.rst
 
-.. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
-.. _glob.glob: https://docs.python.org/3.4/library/glob.html
-.. _logging.Logger: https://docs.python.org/3/library/logging.html
+----
 
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../links.rst
 """
-
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
-import sys
-import warnings
-if sys.version > '3':
-    long = int
-
-import logging
-
 import time
+import warnings
+import logging
 
 import numpy
 from scipy import interpolate, fftpack
@@ -76,8 +62,7 @@ import astropy.constants
 
 from ppxf import ppxf, capfit
 
-from ..par.parset import ParSet
-from ..util.bitmask import BitMask
+from ..par.parset import KeywordParSet
 from ..util.pixelmask import PixelMask, SpectralPixelMask
 from ..util.fileio import init_record_array
 from ..util.filter import BoxcarFilter
@@ -95,9 +80,8 @@ from .util import sample_growth, optimal_scale
 from matplotlib import pyplot
 #from ..contrib import ppxf_util
 
-class PPXFFitPar(ParSet):
+class PPXFFitPar(KeywordParSet):
     r"""
-
     Define a parameter set used by the pPXF fitting method.
 
     .. todo::
@@ -105,51 +89,17 @@ class PPXFFitPar(ParSet):
         :class:`mangadap.proc.stellarcontinuummodel.StellarContinuumModelDef`
         is not well designed.
 
-    Args:
-        template_library_key (str): Keyword of the library to fit.  See
-            :func:`mangadap.proc.templatelibrary.available_template_libraries`.
+    The defined parameters are:
 
-        template_library
-            (:class:`mangadap.proc.templatelibrary.TemplateLibrary`):
-            Object with the spectra in the template library that have
-            been prepared for analysis of the data.
-
-        guess_redshift (array-like): Initial guess for the redshift
-            (:math:`cz`) of each binned spectrum.
-
-        guess_dispersion (array-like): Initial guess for the velocity
-            dispersion for each binned spectrum.
-
-        iteration_mode (str): (**Optional**) Iteration mode to use; see
-            :func:`PPXFFit.iteration_modes`.
-
-        match_resolution (bool): (**Optional**) Match the spectral
-            resolution of the template to that of the galaxy data.  This
-            is used only when constructing the template library.
-            Default is True.
-        
-        velscale_ratio (int): (**Optional**) The **integer** ratio
-            between the velocity scale of the pixel in the galaxy data
-            to that of the template data.  This is used only when
-            constructing the template library.  Default is None, which
-            is the same as assuming that the velocity scales are
-            identical.
-        
-        minimum_snr (float): (**Optional**) Minimum S/N ratio to include
-            in the fitting.
-
-        pixelmask (:class:`mangadap.proc.pixelmask.PixelMask`):
-            (**Optional**) Pixel mask to include during the fitting.
-        
-        bias, degree, mdegree, moments: (**Optional**) See
-            :class:`mangadap.contrib.ppxf.ppxf` documentation.
+    .. include:: ../tables/ppxffitpar.rst
 
     """
-    def __init__(self, template_library_key, template_library, guess_redshift, guess_dispersion,
-                 iteration_mode='global_template', reject_boxcar=None, filter_boxcar=None,
-                 filter_operation=None, filter_iterations=None, match_resolution=True,
-                 velscale_ratio=None, minimum_snr=None, pixelmask=None, bias=None, degree=None,
-                 mdegree=None, filt_degree=None, filt_mdegree=None, moments=None):
+    def __init__(self, template_library_key=None, template_library=None, guess_redshift=None,
+                 guess_dispersion=None, iteration_mode=None, reject_boxcar=None,
+                 filter_boxcar=None, filter_operation=None, filter_iterations=None,
+                 match_resolution=None, velscale_ratio=None, minimum_snr=None, pixelmask=None,
+                 bias=None, degree=None, mdegree=None, filt_degree=None, filt_mdegree=None,
+                 moments=None):
     
         arr_in_fl = [ numpy.ndarray, list, int, float ] # guess kinematics
         in_fl = [ int, float ]                          # bias, minimum S/N
@@ -177,8 +127,47 @@ class PPXFFitPar(ParSet):
         dtypes =   [ str, TemplateLibrary, arr_in_fl, arr_in_fl, str, int, int, str, int, bool,
                      int, in_fl, PixelMask, in_fl, int, int, int, int, int ]
 
-        ParSet.__init__(self, pars, values=values, defaults=defaults, options=options,
-                        dtypes=dtypes)
+
+        descr = ['Keyword of the library to fit.  See ' \
+                    ':func:`mangadap.proc.templatelibrary.available_template_libraries`.',
+                 'Object with the spectra in the template library that have been prepared ' \
+                    'for analysis of the data.',
+                 'Initial guess for the redshift (:math:`cz`) of each binned spectrum.',
+                 'Initial guess for the velocity dispersion for each binned spectrum.',
+                 'Iteration mode to use; see :func:`PPXFFit.iteration_modes`.',
+                 'Number of pixels in the boxcar used to determine the local sigma for ' \
+                    'rejecting outliers.',
+                 'Size of the boxcar in pixels used in a high-pass filter applied before ' \
+                    'fitting the spectra. (**To be deprecated**)',
+                 'Operation to use when constructing the filtered spectra.  The boxcar smoothed ' \
+                    'version of the spectrum is either subtracted or divided into the original ' \
+                    'spectrum if ``filter_operation`` is ``subtract`` or ``divide``, '
+                    'respectively. (**To be deprecated**)',
+                 'Number of fit-reject-filter iterations. (**To be deprecated**)',
+                 'Match the spectral resolution of the template to that of the galaxy data.  ' \
+                    'This is used only when constructing the template library.  Default is True.',
+                 'The **integer** ratio between the velocity scale of the pixel in the galaxy ' \
+                    'data to that of the template data.  This is used only when constructing ' \
+                    'the template library.  Default is None, which is the same as assuming ' \
+                    'that the velocity scales are identical.',
+                 'Minimum S/N ratio to include in the fitting.',
+                 'Pixel mask to include during the fitting.',
+                 '`ppxf`_ ``bias`` parameter used to penalize low S/N spectra toward a ' \
+                    'Gaussian LOSVD.',
+                 '`ppxf`_ ``degree`` parameter used to set the order of the additive polynomial ' \
+                    'to include in the fit.',
+                 '`ppxf`_ ``mdegree`` parameter used to set the order of the multiplicative ' \
+                    'polynomial to include in the fit.',
+                 'Order of the additive polynomial to include when fitting high-pass filtered ' \
+                    'spectra.  (**To be deprecated**)',
+                 'Order of the multiplicative polynomial to include when fitting high-pass ' \
+                    'filtered spectra.  (**To be deprecated**)',
+                 r'`ppxf`_ ``moments`` parameter used to set the number of moments of the ' \
+                    r'LOSVD to fit.  The DAP has not been well tested for fits that include ' \
+                    r'any more than :math:`V` and :math:`\sigma`.']
+
+        super(PPXFFitPar, self).__init__(pars, values=values, defaults=defaults, options=options,
+                                         dtypes=dtypes, descr=descr)
         self._check()
 
 

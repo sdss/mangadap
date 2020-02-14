@@ -21,10 +21,10 @@ The DAP uses an `SDSS parameter file
 <https://www.sdss.org/dr15/software/par/>`_ to define one or more
 methods to use when analyzing any given MaNGA datacube.  Each method, or
 "analysis plan", is defined by a set of six keywords that identify the
-configuration to use for each of the DAP's six main analysis modules.
-To execute the DAP, you must construct this parameter file with at least
-one analysis plan.  For example, the MPL-9 analysis-plan parameter file
-is:
+configuration to use for each of the DAP's six main
+:ref:`workflow-analysis-modules`.  To execute the DAP, you must
+construct this parameter file with at least one analysis plan.  For
+example, the MPL-9 analysis-plan parameter file is:
 
 .. code-block:: c
 
@@ -74,13 +74,14 @@ configurations are as follows:
 |   spindex |                       ``spectral_indices`` |               :class:`mangadap.proc.spectralindices.SpectralIndicesDef` |
 +-----------+--------------------------------------------+-------------------------------------------------------------------------+
 
-When setting the keyword values in the plan file, they must be
+When setting the keyword values in the analysis-plan file, they must be
 recognized as a method defined in the relevant configuration directory.
 The DAP will only execute properly if at least the first three steps
 have valid keywords.  The remaining three modules can be skipped (i.e.,
 the emission-line moments, emission-line-model parameters, and spectral
 indices are not measured) by setting their keyword to ``None``; the
-primary DAP output will still be produced but with empty arrays for the
+primary DAP output will still be produced but with empty arrays for
+those extensions/channels that would normally be populated by the
 skipped analysis steps.
 
 .. _execution-obs-input:
@@ -182,9 +183,10 @@ DAP installed, you can call the script directly from the command line:
 .. warning::
 
     When running the DAP, you should have both the DRP ``LOGRSS`` and
-    ``LOGCUBE`` files if you want to account for covariance!  If the
-    ``LOGRSS`` files are not present, the DAP will throw a warning and
-    continue, and the warnings can get buried in all the other messages.
+    ``LOGCUBE`` files if you want to account for the
+    :ref:`spatialcovariance`!  If the ``LOGRSS`` files are not present,
+    the DAP will throw a warning and continue, which means that the
+    warning can get buried among all the other messages and missed.
 
 An example execution of the DAP might look like this:
 
@@ -198,14 +200,14 @@ respectively, `The DAP ObsInputPar`_ and `The DAP AnalysisPlan`_ files.
 Programmatic execution
 ----------------------
 
-Alternatively, ``$MANGADAP_DIR/examples/fit_one_cube.py`` provides a
-programmatic approach to running the exact same script that is executed
-by the ``manga_dap`` command-line script.  The code provides a way to
-generate the `The DAP ObsInputPar`_ object directly from the DRPall
-file, instead of from a file, and it directly defines the
-``AnalysisPlan`` object with a hard-coded set of keywords.  Using this
-script as an example, one could construct a script that programmatically
-analyzes a large set of datacubes.
+Alternatively, ``$MANGADAP_DIR/examples/fit_one_cube.py`` (see
+:ref:`fitonecube`) provides a programmatic approach to running the exact
+same script that is executed by the ``manga_dap`` command-line script.
+The code provides a way to generate the `The DAP ObsInputPar`_ object
+directly from the DRPall file, instead of from a file, and it directly
+defines the ``AnalysisPlan`` object with a hard-coded set of keywords.
+Using this script as an example, one could construct a script that
+programmatically analyzes a large set of MaNGA datacubes.
 
 .. _execution-rundap:
 
@@ -320,16 +322,17 @@ analyzed with the same ``AnalysisPlan``.  An example call of this script that wi
 In this call, I've specified that the DRP data is in
 ``/path/with/drp/output/`` and that the DAP output should be placed in
 ``/path/for/dap/output/`` instead of using the default
-:ref:`datamodel-directory-structure`.  The script file this call
-produces is written to
+:ref:`datamodel-directory-structure`.
+
+The **script file** this call produces is written to
 ``/path/for/dap/output/log/[time]/7495/12704/mangadap-7495-12704``,
 where ``[time]`` is a time stamp of when ``rundap`` was executed.  (If
 you execute ``rundap`` multiple times, it will create new directories
-using new time stamps.)  The lines of the script file for each
+using new time stamps each time.)  The lines of the script file for each
 plate-ifu:
 
  - touches the ``*.started`` file
- - executes manga_dap
+ - executes ``manga_dap``
  - executes a series of QA plotting scripts
  - touches the ``*.done`` file 
 
@@ -356,7 +359,7 @@ To execute the script, you would then run:
 
 .. code-block:: bash
 
-    source /path/for/dap/output/log/01Nov2019T16.58.40UTC/7443/12701/mangadap-7443-12701
+    source /path/for/dap/output/v2_7_1/2.4.1/log/01Nov2019T16.58.40UTC/7443/12701/mangadap-7443-12701
 
 The ``rundap`` script allows you to construct scripts for all datacubes
 it can find on disk, all IFUs on a given plate, all combinations of a
@@ -367,13 +370,14 @@ IDs.
     
     The ``rundap`` script constructs the
     :class:`mangadap.survey.drpcomplete.DRPComplete` object and writes
-    its associated fits file.  The data compiled into this database can
-    either be drawn from the DRPall file or from the plateTargets data
-    in ``mangacore``; the latter is the only reason the DAP has
-    ``mangacore`` as a dependency.  For general use, you should have
-    ``rundap`` use the DRPall file.  The use of the plateTargets data is
-    only necessary in the rare case when the DAP is executed before the
-    relevant DRPall file has been constructed.
+    its associated fits file (see :ref:`metadatamodel-drpcomplete`).
+    The data compiled into this database can either be drawn from the
+    DRPall file or from the plateTargets data in ``mangacore``; the
+    latter is the only reason the DAP has ``mangacore`` as a dependency.
+    For general use, you should have ``rundap`` use the DRPall file.
+    The use of the plateTargets data is only necessary in the rare case
+    when the DAP is executed before the relevant DRPall file has been
+    constructed.
 
 To write the post-processing scripts, execute ``rundap`` with the
 ``--post`` and ``--post_plots`` options.  This produces two additional
@@ -395,7 +399,7 @@ types of scripts:
 
         touch /path/for/dap/output/v2_7_1/2.4.1/log/01Nov2019T16.58.40UTC/7443/7443_fitqa.done
 
- - A script that builds the DAPall file and writes its QA plots.  This
+ - A script that builds the :ref:`metadatamodel-dapall` and writes its QA plots.  This
    file is written to, e.g.,
    ``/path/for/dap/output/v2_7_1/2.4.1/log/01Nov2019T16.58.40UTC/build_dapall``
    and looks like this:

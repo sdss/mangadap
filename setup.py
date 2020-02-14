@@ -11,25 +11,32 @@ from setuptools import setup, find_packages
 import requests
 import warnings
 
-_IDLUTILS_VER = 'v5_5_30'
-_MANGADRP_VER = 'v2_4_3'
-_MANGACORE_VER = 'v1_6_2'
+_IDLUTILS_VER = 'v5_5_34'
+_MANGADRP_VER = 'v2_7_1'
+_MANGACORE_VER = 'v1_8_0'
 
-_VERSION = '2.5.0dev'
+_VERSION = '2.5.2dev'
 _RELEASE = 'dev' not in _VERSION
 _MINIMUM_PYTHON_VERSION = '3.5'
 
-def get_data_files():
+def get_package_data(root='python'):
+    """Generate the list of package data."""
+    return [os.path.relpath(f, root) 
+                    for f in glob.glob(os.path.join(root, 'mangadap/config/*/*.ini'))] \
+            + [os.path.relpath(f, root) 
+                    for f in glob.glob(os.path.join(root, 'mangadap/tests/data/*'))]
+
+def get_data_files(root=['data'], ext=['par', 'fits', 'fits.gz'], depth=2):
     """Generate the list of data files."""
     data_files = []
-    data_roots = [ 'data', 'python/mangadap/config' ]
-    for root in data_roots:
-        for path, directories, files in os.walk(root):
-            for f in files:
-                data_path = '/'.join(path.split('/')[1:])
-                data_files.append(os.path.join(data_path, f))
+    for r in root:
+        _data_files = []
+        for d in range(depth):
+            _d = '/'.join(['*']*(d+1))
+            for e in ext:
+                _data_files += glob.glob(os.path.join(r, _d, '*.{0}'.format(e)))
+        data_files += [(r, _data_files)]
     return data_files
-
 
 def get_scripts():
     """ Grab all the scripts in the bin directory.  """
@@ -51,13 +58,14 @@ def get_requirements():
     return install_requires
 
 
-def run_setup(data_files, scripts, packages, install_requires):
+def run_setup(package_data, data_files, scripts, packages, install_requires):
 
     setup(name='sdss-mangadap',
           version=_VERSION,
           license='BSD3',
           description='MaNGA Data Analysis Pipeline',
           long_description=open('README.md').read(),
+          long_description_content_type='text/markdown',
           author='SDSS-IV/MaNGA Pipeline Group',
           author_email='westfall@ucolick.org',
           keywords='astronomy analysis-pipeline spectroscopy MaNGA',
@@ -65,26 +73,28 @@ def run_setup(data_files, scripts, packages, install_requires):
           python_requires='>='+_MINIMUM_PYTHON_VERSION,
           packages=packages,
           package_dir={'': 'python'},
-          package_data={'': data_files},
+          package_data={'': package_data},
           include_package_data=True,
+          data_files=data_files,
           install_requires=install_requires,
           scripts=scripts,
           setup_requires=[ 'pytest-runner' ],
           tests_require=[ 'pytest' ],
           classifiers=[
-              'Development Status :: 4 - Beta',
+              'Development Status :: 5 - Production/Stable',
               'Intended Audience :: Science/Research',
               'License :: OSI Approved :: BSD License',
               'Natural Language :: English',
               'Operating System :: OS Independent',
               'Programming Language :: Python',
-              'Programming Language :: Python :: 3.5',
               'Programming Language :: Python :: 3.6',
+              'Programming Language :: Python :: 3.7',
               'Programming Language :: Python :: 3 :: Only',
               'Topic :: Documentation :: Sphinx',
               'Topic :: Scientific/Engineering :: Astronomy',
               'Topic :: Software Development :: Libraries :: Python Modules'
           ])
+
 
 # TODO: Put these in a config file
 def default_paths():
@@ -100,7 +110,7 @@ def default_paths():
 def check_environment():
     ev = default_paths()
     for k in ev.keys():
-        if k not in os.environ:
+        if k not in os.environ and 'MANGACORE' not in k:
             warnings.warn('{0} environmental variable undefined.  Default is: {1}'.format(k,ev[k]))
 
 
@@ -133,7 +143,11 @@ if __name__ == '__main__':
         except:
             warnings.warn('Could not download SDSS maskbits file!')
 
-    # Compile the data files to include
+    # Get the package data (data inside the main product root)
+    package_data = get_package_data()
+
+    # Compile the additional data files to include (data outside the
+    # main product root)
     data_files = get_data_files()
 
     # Compile the scripts in the bin/ directory
@@ -146,7 +160,7 @@ if __name__ == '__main__':
     install_requires = get_requirements()
 
     # Run setup from setuptools
-    run_setup(data_files, scripts, packages, install_requires)
+    run_setup(package_data, data_files, scripts, packages, install_requires)
 
     # Check if the environmental variables are found and warn the user
     # of their defaults

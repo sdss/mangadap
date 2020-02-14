@@ -4,16 +4,9 @@
 
 Stack some spectra!
 
-*License*:
-    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+Revision history
+----------------
 
-*Class usage examples*:
-
-    .. todo::
-        Add examples
-
-*Revision history*:
     | **01 Apr 2016**: Implementation begun by K. Westfall (KBW)
     | **10 Nov 2016**: (KBW) Include dispersion cube in DRP file to
         construct spectral resolution of binned spectra.
@@ -35,17 +28,23 @@ Stack some spectra!
     | **30 Aug 2018**: (KBW) Switch from resample1d to
         :func:`mangadap.util.sampling.Resample`
 
-.. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
-.. _astropy.io.fits.Header: http://docs.astropy.org/en/stable/io/fits/api/headers.html#header
-.. _numpy.ma.MaskedArray: http://docs.scipy.org/doc/numpy-1.10.1/reference/maskedarray.baseclass.html#numpy.ma.MaskedArray
+----
 
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../links.rst
 """
+
 import numpy
 from scipy import sparse
 from astropy.io import fits
 import astropy.constants
 
-from ..par.parset import ParSet
+from ..par.parset import KeywordParSet
 from ..util.covariance import Covariance
 from ..util.filter import interpolate_masked_vector
 from ..util.sampling import Resample, spectral_coordinate_step
@@ -55,7 +54,7 @@ from matplotlib import pyplot, rc
 # Add strict versioning
 # from distutils.version import StrictVersion
 
-class SpectralStackPar(ParSet):
+class SpectralStackPar(KeywordParSet):
     r"""
     Class with parameters used to set how to stack a set of spectra.
     See :class:`mangadap.par.parset.ParSet` for attributes.
@@ -63,31 +62,12 @@ class SpectralStackPar(ParSet):
     .. todo::
         Allow for sigma rejection.
 
-    Args:
-        operation (str): Operation to perform for the stacked spectrum.
-            See :func:`SpectralStack.operation_options` for the
-            available operation options.
-        vel_register (bool): Flag to velocity register the spectra
-            before adding them based on a provided prior measurement of
-            the velocities.
-        vel_offsets (list, numpy.ndarray): List of velocity offsets to
-            apply to the spectra to stack.
-        covar_mode (str): Describes how to incorporate covariance into
-            the spectral stacking.  See
-            :func:`SpectralStack.covariance_mode_options` for the
-            available options.
-        covar_par (int, float, numpy.ndarray, list): The parameter(s)
-            needed to perform a given method of handling the covariance.
-            See :func:`SpectralStack.covariance_mode_options` for the
-            available options.
-        stack_sres (bool): Stack the spectral resolution as well as the
-            flux data.
-        prepixel_sres (bool): Use the pre-pixelized spectral resolution.
-            If true and the prepixelized versions are not available, an
-            error will be raised!
+    The defined parameters are:
+
+    .. include:: ../tables/spectralstackpar.rst
     """
-    def __init__(self, operation, vel_register, vel_offsets, covar_mode, covar_par, stack_sres,
-                 prepixel_sres):
+    def __init__(self, operation=None, vel_register=None, vel_offsets=None, covar_mode=None,
+                 covar_par=None, stack_sres=None, prepixel_sres=None):
         in_fl = [ int, float ]
         ar_like = [ numpy.ndarray, list ]
         op_options = SpectralStack.operation_options()
@@ -104,9 +84,22 @@ class SpectralStackPar(ParSet):
         dtypes =   [         str,           bool,       ar_like,           str, in_fl+ar_like,
                                 bool,            bool ]
 
-        ParSet.__init__(self, pars, values=values, defaults=defaults, options=options,
-                        dtypes=dtypes)
+        descr = ['Operation to perform for the stacked spectrum.  See ' \
+                    ':func:`SpectralStack.operation_options` for the available operation options.',
+                 'Flag to velocity register the spectra before adding them based on a provided ' \
+                    'prior measurement of the velocities.',
+                 'List of velocity offsets to apply to the spectra to stack.',
+                 'Describes how to incorporate covariance into the spectral stacking.  ' \
+                    'See :func:`SpectralStack.covariance_mode_options` for the available options.',
+                 'The parameter(s) needed to perform a given method of handling the ' \
+                    'covariance.  See :func:`SpectralStack.covariance_mode_options` for the ' \
+                    'available options.',
+                 'Stack the spectral resolution as well as the flux data.',
+                 'Use the pre-pixelized spectral resolution.  If true and the prepixelized ' \
+                    'versions are not available, an error will be raised!']
 
+        super(SpectralStackPar, self).__init__(pars, values=values, defaults=defaults,
+                                               options=options, dtypes=dtypes, descr=descr)
 
     def toheader(self, hdr):
         """
@@ -124,7 +117,6 @@ class SpectralStackPar(ParSet):
         hdr['STCKRES'] = (str(self['stack_sres']), 'Spectral resolution stacked')
         hdr['STCKPRE'] = (str(self['prepixel_sres']), 'Use prepixelized spectral resolution')
         return hdr
-
 
     def fromheader(self, hdr):
         """

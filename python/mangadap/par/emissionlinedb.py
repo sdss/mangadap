@@ -4,234 +4,101 @@
 Container class for a database of emission-line parameters, as well as
 support classes and functions.
 
-*License*:
-    Copyright (c) 2016, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+Class usage examples
+--------------------
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/par/emissionlinedb.py
+To define an emission line::
 
-*Imports and python version compliance*:
-    ::
+    from mangadap.par.emissionlinedb import EmissionLinePar
+    p = EmissionLinePar(index=44, name='Ha', restwave=6564.632, action='f', line='l',
+                        flux=1.0, vel=0.0, sig=10., mode='f')
 
-        from __future__ import division
-        from __future__ import print_function
-        from __future__ import absolute_import
-        from __future__ import unicode_literals
+More often, however, you will want to define an emission-line
+database using an SDSS parameter file. To do so, you can use one of
+the default set of available emission-line databases::
 
-        import sys
-        import warnings
-        if sys.version > '3':
-            long = int
-        
-        import os.path
-        from os import environ
-        import glob
-        import numpy
+    from mangadap.par.emissionlinedb import EmissionLineDB
+    print(EmissionLineDB.available_databases())
+    emldb = EmissionLineDB.from_key('ELPMPL9')
 
-        from pydl.goddard.astro import airtovac
-        from pydl.pydlutils.yanny import yanny
-        from .parset import ParSet, ParDatabase
-        from .spectralfeaturedb import available_spectral_feature_databases, SpectralFeatureDBDef
-        from ..proc.util import select_proc_method
-        from ..config.defaults import dap_source_dir
+The above call uses the :func:`EmissionLineDB.from_key` method to
+define the database using its keyword and the database provided with
+the MaNGA DAP source distribution. You can also define the database
+directly for an SDSS-style parameter file::
 
-*Class usage examples*:
-    To define an emission line::
+    from mangadap.par.emissionlinedb import EmissionLineDB
+    emldb = EmissionLineDB('/path/to/emission/line/database/myeml.par')
 
-        from mangadap.par.emissionlinedb import EmissionLinePar
-        p = EmissionLinePar(44, 'Ha', 6564.632, action='f', line='l',
-                            flux=1.0, vel=0.0, sig=10., mode='f')
+The above will read the file and set the database keyword to
+'MYEML' (i.e., the capitalized root name of the ``*.par`` file).
+See :ref:`emissionlines` for the format of the parameter file.
 
-    More often, however, you will want to define an emission-line
-    database using an SDSS parameter file.  To do so, you can use one of
-    the default set of available emission-line databases (see
-    :func:`available_emission_line_databases`)::
-    
-        from mangadap.par.emissionlinedb import EmissionLineDB
-        p = EmissionLineDB('STRONG')
+Revision history
+----------------
 
-    The above call requires that the ``$MANGADAP_DIR`` environmental
-    variable is set.  If it is not, you can define it's location, as
-    in::
-
-        from mangadap.par.emissionlinedb import EmissionLineDB
-        p = EmissionLineDB('STRONG', dapsrc='/path/to/dap/source')
-
-    Finally, you can create your own `SDSS-style parameter file`_ with
-    your own emission lines to fit.  Example files are provided in
-    ``$MANGADAP_DIR/data/emission_lines`` with a companion
-    ``README`` file.  With your own file, you have to point to the file
-    using :class:`EmissionLineDBDef`, which you can then pass to
-    :class:`EmissionLineDB`::
-
-        from mangadap.par.emissionlinedb import EmissionLineDBDef
-        from mangadap.par.emissionlinedb import EmissionLineDB
-        d = EmissionLineDBDef(key='USER',
-                              file_path='/path/to/parameter/file',
-                              in_vacuum=True)
-        p = EmissionLineDB('USER', emldb_list=d)
-
-    The reference frame of the emission-line wavelengths must be defined
-    as either vacuum or air, using 'in_vacuum'.  It is expected that the
-    object spectra to be fit are calibrated to vacuum wavelengths.  If
-    'in_vacuum' is false, this class will use
-    :func:`mangadap.util.idlutils.airtovac` to convert the emission-line
-    wavelengths to vacuum.
-
-*Revision history*:
     | **17 Mar 2016**: Original implementation by K. Westfall (KBW)
     | **11 May 2016**: (KBW) Switch to using `pydl.pydlutils.yanny`_ and
         `pydl.goddard.astro.airtovac`_ instead of internal functions
     | **13 Jul 2016**: (KBW) Include log_bounded, blueside, and redside
         in database.
     | **06 Oct 2017**: (KBW) Add function to return channel names
+    | **02 Dec 2019**: (KBW) Significantly reworked to use the new
+        base class.
 
-.. _pydl.pydlutils.yanny: http://pydl.readthedocs.io/en/stable/api/pydl.pydlutils.yanny.yanny.html
-.. _pydl.goddard.astro.airtovac: http://pydl.readthedocs.io/en/stable/api/pydl.goddard.astro.airtovac.html#pydl.goddard.astro.airtovac
-.. _SDSS-style parameter file: http://www.sdss.org/dr12/software/par/
+----
 
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../links.rst
 """
 
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
-import sys
-import warnings
-if sys.version > '3':
-    long = int
-
-import os.path
-from os import environ
+import os
 import glob
 import numpy
 
 from pydl.goddard.astro import airtovac
 from pydl.pydlutils.yanny import yanny
-from .parset import ParSet, ParDatabase
-from .spectralfeaturedb import available_spectral_feature_databases, SpectralFeatureDBDef
-from ..proc.util import select_proc_method
-from ..config.defaults import dap_source_dir
 
-# Add strict versioning
-# from distutils.version import StrictVersion
+from .parset import KeywordParSet
+from .spectralfeaturedb import SpectralFeatureDB
+from ..proc import util
 
-
-class EmissionLinePar(ParSet):
-    """
+class EmissionLinePar(KeywordParSet):
+    r"""
     Parameter object that defines a set of emission-line parameters used
     by various algorithms in the DAP.
-
-    .. todo::
-        - Specify these algorithms
-        - provide some basic printing functions for user-level
-          interaction
 
     See :class:`mangadap.par.parset.ParSet` for attributes and raised
     exceptions.
 
-    Args:
-        index (int) : An index used to refer to the line in the *line*
-            and *mode* attributes.
-        name (str) : A name for the line.
-        restwave (float) : The rest wavelength of the line in angstroms
-            *in vacuum*.
-        action (str) : (**Optional**) Describes how the line should be
-            treated; default is ``'f'``.  Possible values are:
+    .. todo::
 
-            - ``'i'``: ignore the line, as if the line were commented
-              out.
-            - ``'f'``': fit the line and/or mask the line when fitting
-              the stellar continuum.
-            - ``'m'``': mask the line when fitting the stellar continuum
-              but do NOT fit the line itself
-            - ``'s'``: defines a sky line that should be masked.  When
-              masked, the wavelength of the line is NOT adjusted for the
-              redshift of the object spectrum.
+        - Specify these algorithms
+        - provide some basic printing functions for user-level
+          interaction
+        - match the variable names to those in the parameter file
+          typedef
 
-        flux (float) : (**Optional**) **Relative** flux of the emission
-            (positive) or absorption (negative) lines.  This should most
-            often be unity if ``line='l'`` and indicates the ratio of
-            line flux if ``line='dN'``.  Default is 1.0.
+    The defined parameters are:
 
-        mode (float) : (**Optional**) Fitting mode for the line; default
-            is ``'f'``.  Possible values are:
+    .. include:: ../tables/emissionlinepar.rst
 
-                - ``'f'``: Fit the line independently of all others in
-                  its own window.
-                - ``'wN'``: Fit the line with untied parameters, but use
-                  a window that includes both this line and the line
-                  with index N.
-                - ``'xN'``: Fit the line with its flux tied to the line
-                  with index N.
-                - ``'vN'``: Fit the line with the velocity tied to the
-                  line with index N.
-                - ``'sN'``: Fit the line with the velocity dispersion
-                  tied to the line with index N.
-                - ``'kN'``: Fit the line with the velocity and velocity
-                  dispersion tied to the line with index N.
-                - ``'aN'``: Fit the line with the flux, velocity, and
-                  velocity dispersion tied to the line with index N.
+    ----
 
-        profile (str): (**Optional**)  The class definition of the
-            profile shape.  This is kept as a string until it is used.
-            Once it is used, it is converted to the class name using::
-        
-                eval(profile)
-            
-            This line will fail if the profile type has not been
-            defined.  Default is ``'GaussianLineProfile'``.
-        ncomp (int): (**Optional**) The number of components (number of
-            separate line profiles) to use when fitting the line.
-            Default is 1.
-        output_model (bool): (**Optional**) Flag to include the
-            best-fitting model of the line in the emission-line model
-            spectrum. Default is True.
-        par (numpy.ndarray) : (**Optional**) A list of the initial guess
-            for the line profile parameters.  The number of parameters
-            must match the struct declaration at the top of the file.
-            The initial parameters are automatically adjusted to provide
-            any designated flux ratios, and the center is automatically
-            adjusted to the provided redshift for the spectrum.  For
-            example, for a GaussianLineProfile, this is typically set to
-            ``[1.0, 0.0, 100.0]``.
-        fix (numpy.ndarray): (**Optional**) A list of flags for fixing
-            the input guess parameters during the fit.  Use 0 for a free
-            parameter, 1 for a fixed parameter.  The parameter value is
-            only fixed **after** adjusted in the flux and or center
-            based on the redshift and the implied tied parameters.  For
-            a free set of parameters using a GaussianLineProfile, this
-            is set to ``[ 0, 0, 0 ]``.
-        lobnd (numpy.ndarray): (**Optional**) A list of lower bounds for
-            the parameters.  For each parameter, use None to indicate no
-            lower bound.  For a GaussianLineProfile with positive flux
-            and standard deviation, this is set to ``[ 0.0, None, 0.0
-            ]``.
-        hibnd (numpy.ndarray): (**Optional**) A list of upper bounds for
-            the parameters.  For each parameter, use None to indicate no
-            upper bound.  For a GaussianLineProfile with maximum
-            standard deviation of 500 km/s, this is set to ``[ None,
-            None, 500.0 ]``.
-        log_bnd (numpy.ndarray): (**Optional**) A list of flags used
-            when determining if a fit parameter is near the imposed
-            boundary.  If true, the fraction of the boundary range used
-            is done in logarithmic, not linear, separation.
-        blueside (numpy.ndarray): (**Optional**) A two-element vector
-            with the starting and ending wavelength for a bandpass
-            blueward of the emission line, which is used to set the
-            continuum level near the emission line when calculating the
-            equivalent width.
-        redside (numpy.ndarray): (**Optional**) A two-element vector
-            with the starting and ending wavelength for a bandpass
-            redward of the emission line, which is used to set the
-            continuum level near the emission line when calculating the
-            equivalent width.
+    .. include:: ../emissionline-action.rst
+
+    ----
+
+    .. include:: ../emissionline-mode.rst
+
     """
-    def __init__(self, index, name, restwave, action=None, flux=None, mode=None, profile=None,
-                 ncomp=None, output_model=None, par=None, fix=None, lobnd=None, hibnd=None,
-                 log_bnd=None, blueside=None, redside=None):
+    def __init__(self, index=None, name=None, restwave=None, action=None, flux=None, mode=None,
+                 profile=None, ncomp=None, output_model=None, par=None, fix=None, lobnd=None,
+                 hibnd=None, log_bnd=None, blueside=None, redside=None):
         
         in_fl = [ int, float ]
         action_options = [ 'i', 'f', 'm', 's']
@@ -255,10 +122,52 @@ class EmissionLinePar(ParSet):
         dtypes =   [ int, str, in_fl, str, in_fl, str, str, int, bool, arr_like, arr_like,
                      arr_like, arr_like, arr_like, arr_like, arr_like ]
 
-        ParSet.__init__(self, pars, values=values, defaults=defaults, options=options,
-                        dtypes=dtypes)
-        self._check()
+        descr = ['An index used to refer to the line in the *line* and *mode* attributes.',
+                 'A name for the line.',
+                 'The rest wavelength of the line in angstroms *in vacuum*.',
+                 'Describes how the line should be treated.  See ' \
+                    ':ref:`emission-line-modeling-action`. Default is ``f``.',
+                 '**Relative** flux of the emission (positive) or absorption (negative) lines.  ' \
+                    'This should most often be unity if ``line=l`` and indicates the ratio of ' \
+                    'line flux if ``line=dN``.  Default is 1.0.',
+                 'Fitting mode for the line.  See :ref:`emission-line-modeling-action`.  ' \
+                    'Default is ``f``.',
+                 'The class definition of the profile shape.  Must be a class in ' \
+                    ':mod:`mangadap.util.lineprofiles`.',
+                 'The number of components (number of separate line profiles) to use when ' \
+                 'fitting the line.  Default is 1.',
+                 'Flag to include the best-fitting model of the line in the emission-line model ' \
+                    'spectrum.  Default is True.',
+                 'A list of the initial guess for the line profile parameters.  The number of ' \
+                    'parameters must match the struct declaration at the top of the file.  The ' \
+                    'initial parameters are automatically adjusted to provide any designated ' \
+                    'flux ratios, and the center is automatically adjusted to the provided ' \
+                    'redshift for the spectrum.  For example, for a GaussianLineProfile, this ' \
+                    'is typically set to ``[1.0, 0.0, 100.0]``.',
+                 'A list of flags for fixing the input guess parameters during the fit.  Use 0 ' \
+                    'for a free parameter, 1 for a fixed parameter.  The parameter value is ' \
+                    'only fixed **after** adjusted in the flux and or center based on the ' \
+                    'redshift and the implied tied parameters.  For a free set of parameters ' \
+                    'using a GaussianLineProfile, this is set to ``[0, 0, 0]``.',
+                 'A list of lower bounds for the parameters.  For each parameter, use None to ' \
+                    'indicate no lower bound.  For a GaussianLineProfile with positive flux and ' \
+                    'standard deviation, this is set to ``[0.0, None, 0.0]``.',
+                 'A list of upper bounds for the parameters.  For each parameter, use None to ' \
+                    'indicate no upper bound.  For a GaussianLineProfile with maximum standard ' \
+                    'deviation of 500 km/s, this is set to ``[None, None, 500.0]``.',
+                 'A list of flags used when determining if a fit parameter is near the imposed ' \
+                    'boundary.  If true, the fraction of the boundary range used is done in ' \
+                    'logarithmic, not linear, separation.',
+                 'A two-element vector with the starting and ending wavelength for a bandpass ' \
+                    'blueward of the emission line, which is used to set the continuum level ' \
+                    'near the emission line when calculating the equivalent width.',
+                 'A two-element vector with the starting and ending wavelength for a bandpass ' \
+                    'redward of the emission line, which is used to set the continuum level ' \
+                    'near the emission line when calculating the equivalent width.']
 
+        super(EmissionLinePar, self).__init__(pars, values=values, defaults=defaults,
+                                              options=options, dtypes=dtypes, descr=descr)
+        self._check()
 
     def _check(self):
         """
@@ -273,8 +182,8 @@ class EmissionLinePar(ParSet):
             - Add check of profile type
 
         Raises:
-            ValueError: Raised if one of the conditions above are not
-                met.
+            ValueError:
+                Raised if one of the conditions above are not met.
         """
         if self.data['action'] != 'i' and not self.data['flux'] > 0:
             warnings.warn('Emission-line fluxes must be larger than 0.  Ignoring line with ' \
@@ -286,7 +195,9 @@ class EmissionLinePar(ParSet):
                              '(v), with a tied velocity dispersion (s), with both kinematics ' \
                              'tied (k), or with the fluxes and kinematics tied (a).')
         # Check the lengths of all the arrays
-        npar = len(self.data['par'])
+        npar = 0 if self.data['par'] is None else len(self.data['par'])
+        if npar == 0:
+            return
         if numpy.any(numpy.array([len(self.data['fix']), len(self.data['lobnd']),
                                   len(self.data['hibnd']), len(self.data['log_bnd'])]) != npar):
             raise ValueError('Number of parameters must be the same for par, fix, lobnd, hibnd, '
@@ -295,101 +206,61 @@ class EmissionLinePar(ParSet):
             raise ValueError('Bandpasses must be two-element vectors!')
 
 
-def available_emission_line_databases(dapsrc=None):
-    """
-    Return the list of database keys and file names for the available
-    emission-line databases.  The currently available libraries are:
-    
-    +-------------+-----+----------------------------------+
-    |         KEY |   N | Description                      |
-    +=============+=====+==================================+
-    |    STANDARD |  62 |  Original line list with nearly  |
-    |             |     |  all strong and weak lines       |
-    +-------------+-----+----------------------------------+
-    |      STRONG |  13 | A subset of mostly strong lines. |
-    +-------------+-----+----------------------------------+
-    |    EXTENDED |  21 |  Include HeI/II, SIII, Hgam-Heps |
-    +-------------+-----+----------------------------------+
-
-    This is a simple wrapper for
-    :func:`mangadap.par.spectralfeaturedb.available_spectral_feature_databases`.
-
-    Args:
-        dapsrc (str): (**Optional**) Root path to the DAP source
-            directory.  If not provided, the default is defined by
-            :func:`mangadap.config.defaults.dap_source_dir`.
-
-    Returns:
-        list: An list of :func:`SpectralFeatureDBDef` objects, each of
-        which defines a unique emission-line database.
-
-    .. todo::
-        - Add backup function for Python 2.
-        - Somehow add a python call that reads the databases and
-          constructs the table for presentation in sphinx so that the
-          text above doesn't have to be edited with changes in the
-          available databases.
-        
-    """
-    return available_spectral_feature_databases('emission_lines', dapsrc=dapsrc)
-
-
-class EmissionLineDB(ParDatabase):
-    """
+class EmissionLineDB(SpectralFeatureDB):
+    r"""
     Basic container class for the database of emission-line parameters.
-    See :class:`mangadap.parset.ParDatabase` for additional attributes.
+
+    Each row of the database is parsed using
+    :class:`mangadap.proc.emissionlinedb.EmissionLinePar`.  For the
+    format of the input file, see :ref:`emissionlines-modeling`.
+
+    The primary instantiation requires the SDSS parameter file with
+    the emission-line data. To instantiate using a keyword (and
+    optionally a directory that holds the parameter files), use the
+    :func:`mangadap.par.spectralfeaturedb.SpectralFeatureDB.from_key`
+    class method.  See the base class for additional attributes.
 
     Args:
-        database_key (str): Keyword selecting the database to use.
-        emldb_list (list): (**Optional**) List of
-            :class:`SpectralFeatureDBDef` objects that defines the
-            unique key for the database and the path to the source SDSS
-            parameter file.
-        dapsrc (str): (**Optional**) Root path to the DAP source
-            directory.  If not provided, the default is defined by
-            :func:`mangadap.config.defaults.dap_source_dir`.
+        parfile (:obj:`str`):
+            The SDSS parameter file with the emission-line database.
 
     Attributes:
-        database (str): Keyword of the selected database to use.
-        neml (int): Number of emission lines in the database
-
+        key (:obj:`str`):
+            Database signifying keyword
+        file (:obj:`str`):
+            File with the emission-line data
+        size (:obj:`int`):
+            Number of emission lines in the database. 
     """
-    def __init__(self, database_key, emldb_list=None, dapsrc=None):
+    default_data_dir = 'emission_lines'
+    def _parse_yanny(self):
+        """
+        Parse the yanny file (provided by :attr:`file`) for the emission-line database.
 
-        # TODO: The approach here (read using yanny, set to par
-        # individually, then covert back to record array using
-        # ParDatabase) is stupid...
-
-        # Get the details of the selected database
-        self.database = select_proc_method(database_key, SpectralFeatureDBDef,
-                                           method_list=emldb_list,
-                                           available_func=available_emission_line_databases,
-                                           dapsrc=dapsrc)
-        
-        # Check that the database exists
-        if not os.path.isfile(self.database['file_path']):
-            raise FileNotFoundError('Database file {0} does not exist!'.format(
-                                                                    self.database['file_path']))
-
+        Returns:
+            :obj:`list`: The list of
+            :class:`mangadap.par.parset.ParSet` instances for each
+            line of the database.
+        """
         # Read the yanny file
-#        par = yanny(self.database['file_path'])
-        par = yanny(filename=self.database['file_path'], raw=True)
+        par = yanny(filename=self.file, raw=True)
         if len(par['DAPEML']['index']) == 0:
-            raise ValueError('Could not find DAPEML entries in {0}!'.format(
-                                                                    self.database['file_path']))
+            raise ValueError('Could not find DAPEML entries in {0}!'.format(self.file))
 
         # Setup the array of emission line database parameters
-        self.neml = len(par['DAPEML']['index'])
+        self.size = len(par['DAPEML']['index'])
         parlist = []
-        for i in range(self.neml):
+        for i in range(self.size):
             invac = par['DAPEML']['waveref'][i] == 'vac'
             # Convert None's to +/- inf
             lobnd = [ -numpy.inf if p == 'None' else float(p) \
                             for p in par['DAPEML']['lower_bound'][i]]
             hibnd = [ numpy.inf if p == 'None' else float(p) \
                             for p in par['DAPEML']['upper_bound'][i] ]
-            parlist += [ EmissionLinePar(par['DAPEML']['index'][i], par['DAPEML']['name'][i],
-                    par['DAPEML']['lambda'][i] if invac else airtovac(par['DAPEML']['lambda'][i]),
+            parlist += [ EmissionLinePar(index=par['DAPEML']['index'][i],
+                                         name=par['DAPEML']['name'][i],
+                                         restwave=par['DAPEML']['lambda'][i] 
+                                            if invac else airtovac(par['DAPEML']['lambda'][i]),
                                          action=par['DAPEML']['action'][i],
                                          flux=par['DAPEML']['relative_flux'][i],
                                          mode=par['DAPEML']['mode'][i],
@@ -400,21 +271,20 @@ class EmissionLineDB(ParDatabase):
                                          fix=par['DAPEML']['fix'][i],
                                          lobnd=lobnd, hibnd=hibnd,
                                          log_bnd=par['DAPEML']['log_bounded'][i],
-                                blueside=par['DAPEML']['blueside'][i] if invac \
+                                    blueside=par['DAPEML']['blueside'][i] if invac \
                                         else airtovac(numpy.array(par['DAPEML']['blueside'][i])),
-                                redside=par['DAPEML']['redside'][i] if invac \
+                                    redside=par['DAPEML']['redside'][i] if invac \
                                         else airtovac(numpy.array(par['DAPEML']['redside'][i])) ) ]
-
-        ParDatabase.__init__(self, parlist)
-
-        # Ensure that all indices are unique
-        if len(numpy.unique(self.data['index'])) != self.neml:
-            raise ValueError('Indices in {0} database are not all unique!'.format(
-                                                                            self.database['key']))
-
+        return parlist
 
     def channel_names(self, dicttype=True):
+        """
+        Return a dictionary with the channel names as the dictionary
+        key and the channel number as the dictionary value. If
+        ``dicttype`` is False, a list is returned with just the
+        string keys.
+        """
         channels = [ '{0}-{1}'.format(self.data['name'][i], int(self.data['restwave'][i])) 
-                            for i in range(self.neml) ]
+                            for i in range(self.size) ]
         return { n:i for i,n in enumerate(channels) } if dicttype else channels
 

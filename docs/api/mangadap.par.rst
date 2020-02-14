@@ -15,6 +15,7 @@ Submodules
    mangadap.par.obsinput
    mangadap.par.parset
    mangadap.par.spectralfeaturedb
+   mangadap.par.util
 
 Module contents
 ---------------

@@ -5,36 +5,42 @@ r"""
 Class that constructs a set of emission-line templates, primarily for
 use with :class:`mangadap.proc.sasuke.Sasuke`.
 
-*License*:
-    Copyright (c) 2017, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+Class usage examples
+--------------------
 
-*Class usage examples*:
-
-    To construct emission-line templates, you need a wavelength vector,
-    the instrumental resolution at which to construct the templates, and
-    an emission line database (see
-    :class:`mangadap.par.emissionlinedb.EmissionLineDB`).  A simple
-    construction would be::
+To construct emission-line templates, you need a wavelength vector,
+the instrumental resolution at which to construct the templates, and
+an emission line database (see
+:class:`mangadap.par.emissionlinedb.EmissionLineDB`). A simple
+construction would be::
         
-        # Imports
-        import numpy
-        from mangadap.par.emissionlinedb import EmissionLineDB
-        from mangadap.proc.emissionlinetemplates import EmissionLineTemplates
+    # Imports
+    import numpy
+    from mangadap.par.emissionlinedb import EmissionLineDB
+    from mangadap.proc.emissionlinetemplates import EmissionLineTemplates
 
-        wave = numpy.logspace(*(numpy.log10([3600,10300]), 4563)
-        sigma_inst = 30                     # Instrumental resolution in km/s
+    wave = numpy.logspace(*(numpy.log10([3600,10300]), 4563)
+    sigma_inst = 30                     # Instrumental resolution in km/s
 
-        tpl = EmissionLineTemplates(wave, sigma_inst, emldb=EmissionLineDB('ELPMILES'))
+    tpl = EmissionLineTemplates(wave, sigma_inst, emldb=EmissionLineDB.from_key('ELPMILES'))
 
-*Revision history*:
+Revision history
+----------------
+
     | **08 Sep 2017**: Originally pulled from
         :mod:`mangadap.proc.sasuke` by K. Westfall (KBW)
 
-.. _scipy.interpolate.interp1d: https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.interp1d.html
-.. _logging.Logger: https://docs.python.org/3/library/logging.html
+----
 
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../links.rst
 """
+
 import os
 import time
 import logging
@@ -235,7 +241,7 @@ class EmissionLineTemplates:
                 be avoided!
 
         """
-        db_rows = numpy.arange(self.emldb.neml)
+        db_rows = numpy.arange(self.emldb.size)
         indx = db_rows[self.emldb['index'] == int(self.emldb['mode'][i][1:])][0]
         if not primary:
             return indx
@@ -293,7 +299,7 @@ class EmissionLineTemplates:
         # The total number of templates to construct is the number of
         # lines in the database minus the number of lines with mode=aN
         tied_all = numpy.array([m[0] == 'a' for m in self.emldb['mode']])
-        self.ntpl = self.emldb.neml - numpy.sum(ignore_line) - numpy.sum(tied_all)
+        self.ntpl = self.emldb.size - numpy.sum(ignore_line) - numpy.sum(tied_all)
 
         # Initialize the components
         self.comp = numpy.zeros(self.ntpl, dtype=int)-1
@@ -302,7 +308,7 @@ class EmissionLineTemplates:
 
         # All the primary lines go into individual templates, kinematic
         # components, velocity groups, and sigma groups
-        self.tpli = numpy.zeros(self.emldb.neml, dtype=int)-1
+        self.tpli = numpy.zeros(self.emldb.size, dtype=int)-1
         primary_line = (self.emldb['mode'] == 'f') & numpy.invert(ignore_line)
         nprimary = numpy.sum(primary_line)
         self.tpli[primary_line] = numpy.arange(nprimary)
@@ -311,10 +317,10 @@ class EmissionLineTemplates:
         self.sgrp[:nprimary] = numpy.arange(nprimary)
 
         finished = primary_line | ignore_line
-        while numpy.sum(finished) != self.emldb.neml:
+        while numpy.sum(finished) != self.emldb.size:
             # Find the indices of lines that are tied to finished lines
             start_sum = numpy.sum(finished)
-            for i in range(self.emldb.neml):
+            for i in range(self.emldb.size):
                 if finished[i]:
                     continue
                 indx = self._tied_index(i)
@@ -512,7 +518,7 @@ class EmissionLineTemplates:
         self.flux = numpy.zeros((self.ntpl,self.wave.size), dtype=float)
         for i in range(self.ntpl):
             # Find all the lines associated with this template:
-            index = numpy.arange(self.emldb.neml)[self.tpli == i]
+            index = numpy.arange(self.emldb.size)[self.tpli == i]
             # Add each line to the template
             for j in index:
                 # Declare an instance of the desired profile

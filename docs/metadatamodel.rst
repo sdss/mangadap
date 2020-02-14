@@ -1,8 +1,8 @@
 
 .. _metadatamodel:
 
-DAP Metadata Model
-==================
+Metadata Model
+==============
 
 .. _metadatamodel-maskbits:
 
@@ -18,7 +18,7 @@ relevant file from the public SDSS SVN repository using the python
 If you're unfamiliar with maskbits, see the `SDSS Primer
 <http://www.sdss.org/dr15/algorithms/bitmasks/>`_
 
-See :ref:`bitmasks` for examples of how to use the mask bits.
+See :ref:`gettingstarted-bitmasks` for examples of how to use the mask bits.
 
 .. note::
 
@@ -30,6 +30,45 @@ See :ref:`bitmasks` for examples of how to use the mask bits.
     Some mask bits are still *placeholders*.  They're notional bits that
     are actually never set in the current version of the DAP.
 
+The three bitmask groups for DAP output files are:
+
+    - :ref:`metadatamodel-dapqual`: Global quality bit
+    - :ref:`metadatamodel-dappixmask`: Spaxel-by-spaxel bits for the DAP
+      MAPS quantities
+    - :ref:`metadatamodel-dapspecmask`:Pixel-by-pixel bits for the DAP
+      model LOGCUBE data
+
+These bitmask groups are further described and listed below.  For
+reference, we also list the two *DRP* bitmask groups that the DAP
+uses to flag the data it analyzes.
+
+.. _metadatamodel-drp3qual:
+
+MANGA_DRP3QUAL
+~~~~~~~~~~~~~~
+
+The MaNGA DRP uses a single bit to summarize the quality of the data
+reduction.  The DAP class used to handle these bits and the bit values
+are below.
+
+.. include:: tables/drpquality3dbitmask.rst
+
+The DAP essentially only uses the CRITICAL flag and only when
+constructing the MANGA_DAPQUAL flag value.
+
+.. _metadatamodel-drp3pixmask:
+
+MANGA_DRP3PIXMASK
+~~~~~~~~~~~~~~~~~
+
+The MaNGA DRP flags the datacube data using a small set of bits that are
+a consolidation of the bits flagged during the data reduction.  The DAP
+currently uses a single class to handle the bitmasks associated with
+either the 2D RSS files and the 3D datacubes.  Below are the bits for
+the 3D datacubes:
+
+.. include:: tables/drpfitsbitmask.rst
+
 .. _metadatamodel-dapqual:
 
 MANGA_DAPQUAL
@@ -37,27 +76,11 @@ MANGA_DAPQUAL
 
 There is a single summary maskbit ``MANGA_DAPQUAL`` included in the
 headers of both the MAPS and LOGCUBE files describing the overall
-quality of the data:
+quality of the data.
+The DAP class used to handle these bits and the
+bit values are below.
 
-+-----+-----------+--------------------------------------------------------------+
-| Bit | Name      | Description                                                  |
-+=====+===========+==============================================================+
-|   0 | FORESTAR  | There is a foreground star within the data cube              |
-+-----+-----------+--------------------------------------------------------------+
-|   1 | BADZ      | NSA redshift does not match derived redshift (*placeholder*) |
-+-----+-----------+--------------------------------------------------------------+
-|   2 | LINELESS  | No emission lines in data cube (*placeholder*)               |
-+-----+-----------+--------------------------------------------------------------+
-|   3 | PPXFFAIL  | PPXF fails to fit this object (*placeholder*)                |
-+-----+-----------+--------------------------------------------------------------+
-|   4 | SINGLEBIN | Voronoi binning resulted in all spectra in a single bin      |
-+-----+-----------+--------------------------------------------------------------+
-|  28 | DRPCRIT   | Critical failure in DRP                                      |
-+-----+-----------+--------------------------------------------------------------+
-|  29 | DAPCRIT   | Critical failure in DAP                                      |
-+-----+-----------+--------------------------------------------------------------+
-|  30 | CRITICAL  | Critical failure in DRP or DAP                               |
-+-----+-----------+--------------------------------------------------------------+
+.. include:: tables/dapqualitybitmask.rst
 
 Anything with the CRITICAL bit set in MANGA_DAPQUAL should generally not
 be used for scientific purposes.
@@ -68,36 +91,11 @@ MANGA_DAPPIXMASK
 ~~~~~~~~~~~~~~~~
 
 ``MANGA_DAPPIXMASK`` is the 2D image bitmap used to describe the quality
-of individual pixel measurements in the DAP ``MAPS`` file.  It can take
-values:
+of individual pixel measurements in the DAP ``MAPS`` file.
+The DAP class used to handle these bits and the
+bit values are below.
 
-+-----+--------------+---------------------------------------------------------------+
-| Bit | Name         | Description                                                   |
-+=====+==============+===============================================================+
-|  0  | NOCOV        | No coverage in this spaxel                                    |
-+-----+--------------+---------------------------------------------------------------+
-|  1  | LOWCOV       | Low coverage in this spaxel                                   |
-+-----+--------------+---------------------------------------------------------------+
-|  2  | DEADFIBER    | Major contributing fiber is dead                              |
-+-----+--------------+---------------------------------------------------------------+
-|  3  | FORESTAR     | Foreground star                                               |
-+-----+--------------+---------------------------------------------------------------+
-|  4  | NOVALUE      | Spaxel was not fit because it did not meet selection criteria |
-+-----+--------------+---------------------------------------------------------------+
-|  5  | UNRELIABLE   | Value is deemed unreliable; see definition below              |
-+-----+--------------+---------------------------------------------------------------+
-|  6  | MATHERROR    | Mathematical error in computing value                         |
-+-----+--------------+---------------------------------------------------------------+
-|  7  | FITFAILED    | Attempted fit for property failed                             |
-+-----+--------------+---------------------------------------------------------------+
-|  8  | NEARBOUND    | Fitted value is too near an imposed boundary                  |
-+-----+--------------+---------------------------------------------------------------+
-|  9  | NOCORRECTION | Appropriate correction not available                          |
-+-----+--------------+---------------------------------------------------------------+
-| 10  | MULTICOMP    | Multi-component velocity features present (*placeholder*)     |
-+-----+--------------+---------------------------------------------------------------+
-| 30  | DONOTUSE     | Do not use this spaxel for science                            |
-+-----+--------------+---------------------------------------------------------------+
+.. include:: tables/dapmapsbitmask.rst
 
 The most important flags are incorporated into the ``DONOTUSE`` bit,
 which indicates that a given pixel should not be used for science.
@@ -178,32 +176,22 @@ MANGA_DAPSPECMASK
 ~~~~~~~~~~~~~~~~~
 
 ``MANGA_DAPPIXMASK`` is the 3D model cube bitmask used to describe the
-quality of individual spaxel fits in the DAP model data cube file.  It
-can take values:
+quality of individual spaxel fits in the DAP model data cube file.
+The DAP class used to handle these bits and the
+bit values are below.
 
-+-----+--------------+--------------------------------------------------------+
-| Bit | Name         | Description                                            |
-+=====+==============+========================================================+
-|  0  | IGNORED      | Ignored because of DRP flags or stacking parameters    |
-+-----+--------------+--------------------------------------------------------+
-|  1  | FORESTAR     | There is a foreground star within the data cube        |
-+-----+--------------+--------------------------------------------------------+
-|  2  | FLUXINVALID  | Ignored because (stacked) flux not valid               |
-+-----+--------------+--------------------------------------------------------+
-|  3  | IVARINVALID  | Ignored because inverse variance not valid             |
-+-----+--------------+--------------------------------------------------------+
-|  4  | ARTIFACT     | Contains a designated artifact                         |
-+-----+--------------+--------------------------------------------------------+
-|  5  | FITIGNORED   | Ignored during fit                                     |
-+-----+--------------+--------------------------------------------------------+
-|  6  | FITFAILED    | Fit failed in this region                              |
-+-----+--------------+--------------------------------------------------------+
-|  7  | ELIGNORED    | Ignored during emission-line fit (**deprecated**)      |
-+-----+--------------+--------------------------------------------------------+
-|  8  | ELFAILED     | Emission-line fit failed (**deprecated**)              |
-+-----+--------------+--------------------------------------------------------+
-|  9  | NOMODEL      | Identifies pixels outside of the fitted spectral range |
-+-----+--------------+--------------------------------------------------------+
+.. include:: tables/dapcubebitmask.rst
+
+Reference Files
+~~~~~~~~~~~~~~~
+
+Internally, the DAP uses separate bitmasks to flag data resulting from
+each of its main modules.  These bitmasks are written to the module
+reference files and then consolidated into the bits tabulated above for
+the main DAP output files (the ``MAPS`` and model ``LOGCUBE`` files).
+These bits are listed in the description of each module.
+
+----
 
 DAP Execution Files
 -------------------
@@ -382,6 +370,8 @@ is the IFU number, ``[MODE]`` is the data format (always ``CUBE`` for
 now), and ``[DAPTYPE]`` is the keyword for the analysis approach.  These
 files provide input observational parameters to the DAP, and are almost
 entirely from the NASA-Sloan Atlas.
+
+----
 
 .. _metadatamodel-dapall:
 

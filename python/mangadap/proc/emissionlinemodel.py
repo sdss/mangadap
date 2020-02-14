@@ -3,14 +3,9 @@
 """
 A class hierarchy that fits the emission lines.
 
-*License*:
-    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+Revision history
+----------------
 
-*Class usage examples*:
-    Add examples!
-
-*Revision history*:
     | **26 Apr 2016**: Implementation begun by K. Westfall (KBW)
     | **28 Jul 2016**: (KBW) Fixed error in initialization of guess
         redshift when stellar continuum is provided.
@@ -28,26 +23,19 @@ A class hierarchy that fits the emission lines.
         that can be used instead of the same templates used during the
         stellar-continuum fit.
     
-.. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
-.. _glob.glob: https://docs.python.org/3.4/library/glob.html
-.. _logging.Logger: https://docs.python.org/3/library/logging.html
-.. _numpy.ma.MaskedArray: http://docs.scipy.org/doc/numpy-1.10.1/reference/maskedarray.baseclass.html#numpy.ma.MaskedArray
+----
 
+.. include license and copyright
+.. include:: ../copy.rst
 
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../links.rst
 """
 
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
-import sys
-import warnings
-if sys.version > '3':
-    long = int
-
-import glob
 import os
+import glob
 import logging
 
 import numpy
@@ -58,14 +46,14 @@ from astropy.io import fits
 import astropy.constants
 
 from ..drpfits import DRPFits
-from ..par.parset import ParSet
+from ..par.parset import KeywordParSet, ParSet
 from ..par.artifactdb import ArtifactDB
 from ..par.emissionlinedb import EmissionLineDB
 from ..config.defaults import dap_source_dir, default_dap_file_name
 from ..config.defaults import default_dap_method, default_dap_method_path
 from ..util.fitsutil import DAPFitsUtil
 from ..util.fileio import init_record_array, rec_to_fits_type, rec_to_fits_col_dim
-from ..util.bitmask import BitMask
+from ..util.dapbitmask import DAPBitMask
 from ..util.pixelmask import SpectralPixelMask
 from ..util.log import log_output
 from ..util.parser import DefaultConfig
@@ -78,7 +66,7 @@ from .spectralfitting import EmissionLineFit
 
 from matplotlib import pyplot
 
-class EmissionLineModelDef(ParSet):
+class EmissionLineModelDef(KeywordParSet):
     """
     A class that holds the parameters necessary to perform the
     emission-line profile fits.
@@ -86,26 +74,13 @@ class EmissionLineModelDef(ParSet):
     .. todo::
         Include waverange?
 
-    Args:
-        key (:obj:`str`):
-            Keyword used to distinguish between different emission-line
-            moment databases.
-        minimum_snr (:obj:`bool`):
-            Minimum S/N of spectrum to fit
-        deconstruct_bins (:obj:`str`):
-            Method to use for deconstructing binned spectra into
-            individual spaxels for emission-line fitting.  See
-            :func:`mangadap.proc.sasuke.Sasuke.deconstruct_bin_options`.
-        artifacts (:obj:`str`):
-            String identifying the artifact database to use
-        emission_lines (:obj:`str`):
-            String identifying the emission-line database to use
-        continuum_tpl_key (:obj:`str`):
-            String identifying the continuum templates to use
+    The defined parameters are:
+
+    .. include:: ../tables/emissionlinemodeldef.rst
     """
-    def __init__(self, key, minimum_snr, deconstruct_bins, mom_vel_name, mom_disp_name,
-                 artifacts, ism_mask, emission_lines, continuum_tpl_key, fitpar, fitclass,
-                 fitfunc):
+    def __init__(self, key=None, minimum_snr=None, deconstruct_bins=None, mom_vel_name=None,
+                 mom_disp_name=None, artifacts=None, ism_mask=None, emission_lines=None,
+                 continuum_tpl_key=None, fitpar=None, fitclass=None, fitfunc=None):
         in_fl = [ int, float ]
         par_opt = [ ParSet, dict ]
 
@@ -118,7 +93,26 @@ class EmissionLineModelDef(ParSet):
         can_call = [ False, False, False, False, False, False, False, False, False, False, False,
                      True ]
 
-        ParSet.__init__(self, pars, values=values, dtypes=dtypes)
+        descr = ['Keyword used to distinguish between different emission-line moment databases.',
+                 'Minimum S/N of spectrum to fit',
+                 'Method to use for deconstructing binned spectra into individual spaxels for ' \
+                    'emission-line fitting.  See ' \
+                    ':func:`mangadap.proc.sasuke.Sasuke.deconstruct_bin_options`.',
+                 'Name of the emission-line moments band used to set the initial velocity guess ' \
+                    'for each spaxel.',
+                 'Name of the emission-line moments band used to set the initial velocity ' \
+                    'dispersion guess for each spaxel.',
+                 'String identifying the artifact database to use',
+                 'String identifying an emission-line database used only for **masking** lines ' \
+                    'during the fit.',
+                 'String identifying the emission-line database to use',
+                 'String identifying the continuum templates to use',
+                 'Fitting function parameters',
+                 'Class used to perform the fit.',
+                 'Function or method that performs the fit; **must** be callable.']
+
+        super(EmissionLineModelDef, self).__init__(pars, values=values, dtypes=dtypes,
+                                                   can_call=can_call, descr=descr)
 
 
 def validate_emission_line_modeling_method_config(cnfg):
@@ -150,13 +144,14 @@ def available_emission_line_modeling_methods(dapsrc=None):
         Fill in
 
     Args:
-        dapsrc (str): (**Optional**) Root path to the DAP source
-            directory.  If not provided, the default is defined by
+        dapsrc (:obj:`str`, optional):
+            Root path to the DAP source directory. If not provided,
+            the default is defined by
             :func:`mangadap.config.defaults.dap_source_dir`.
 
     Returns:
-        list: A list of :func:`EmissionLineModelDef` objects, each
-        defining an emission-line modeling method.
+        :obj:`list`: A list of :class:`EmissionLineModelDef` objects,
+        each defining an emission-line modeling method.
 
     Raises:
         NotADirectoryError: Raised if the provided or default
@@ -210,9 +205,10 @@ def available_emission_line_modeling_methods(dapsrc=None):
             if continuum_tpl_key is not None:
                 raise NotImplementedError('When using Elric, cannot change continuum templates.')
 
-            fitpar = ElricPar(None, cnfg.getint('baseline_order'), cnfg.getfloat('window_buffer'),
-                              None, None, minimum_snr=minimum_snr)
-            fitclass = Elric(EmissionLineModelBitMask(dapsrc=dapsrc))
+            fitpar = ElricPar(base_order=cnfg.getint('baseline_order'),
+                              window_buffer=cnfg.getfloat('window_buffer'),
+                              minimum_snr=minimum_snr)
+            fitclass = Elric(EmissionLineModelBitMask())
             fitfunc = fitclass.fit_SpatiallyBinnedSpectra
 
         elif cnfg['fit_method'] == 'sasuke':
@@ -220,7 +216,7 @@ def available_emission_line_modeling_methods(dapsrc=None):
             # missing or None values for reject_boxcar, bias, moments,
             # degree, mdegree; if provided new continuum templates are
             # constructed during the _fill_method_par call.
-            fitpar = SasukePar(None, None, continuum_templates=continuum_tpl_key,
+            fitpar = SasukePar(continuum_templates=continuum_tpl_key,
                                etpl_line_sigma_mode=cnfg.get('etpl_line_sigma_mode'),
                                etpl_line_sigma_min=cnfg.getfloat('etpl_line_sigma_min'),
                                velscale_ratio=cnfg.getint('velscale_ratio'),
@@ -230,15 +226,18 @@ def available_emission_line_modeling_methods(dapsrc=None):
                                bias=cnfg.getfloat('bias'), moments=cnfg.getint('moments'),
                                degree=cnfg.getint('degree'), mdegree=cnfg.getint('mdegree'),
                                reddening=cnfg.getfloat('internal_reddening'))
-            fitclass = Sasuke(EmissionLineModelBitMask(dapsrc=dapsrc))
+            fitclass = Sasuke(EmissionLineModelBitMask())
             fitfunc = fitclass.fit_SpatiallyBinnedSpectra
 
-
-        method_list += [ EmissionLineModelDef(cnfg['key'], minimum_snr, deconstruct_bins,
-                                            cnfg.get('mom_vel_name'), cnfg.get('mom_disp_name'),
-                                            cnfg.get('artifact_mask'), ism_mask,
-                                            cnfg['emission_lines'], continuum_tpl_key, fitpar,
-                                            fitclass, fitfunc) ]
+        method_list += [ EmissionLineModelDef(key=cnfg['key'], minimum_snr=minimum_snr,
+                                              deconstruct_bins=deconstruct_bins,
+                                              mom_vel_name=cnfg.get('mom_vel_name'),
+                                              mom_disp_name=cnfg.get('mom_disp_name'),
+                                              artifacts=cnfg.get('artifact_mask'),
+                                              ism_mask=ism_mask,
+                                              emission_lines=cnfg['emission_lines'],
+                                              continuum_tpl_key=continuum_tpl_key, fitpar=fitpar,
+                                              fitclass=fitclass, fitfunc=fitfunc) ]
 
     # Check the keywords of the libraries are all unique
     if len(numpy.unique(numpy.array([method['key'] for method in method_list]))) \
@@ -249,25 +248,14 @@ def available_emission_line_modeling_methods(dapsrc=None):
     return method_list
 
 
-class EmissionLineModelBitMask(BitMask):
+class EmissionLineModelBitMask(DAPBitMask):
     r"""
-
     Derived class that specifies the mask bits for the emission-line
-    modeling.  See :class:`mangadap.util.bitmask.BitMask` for
-    attributes.
+    modeling. The maskbits defined are:
 
-    A list of the bits and meanings are provided by the base class
-    function :func:`mangadap.util.bitmask.BitMask.info`; i.e.,::
-
-        from mangadap.proc.emissionlinemodel import EmissionLineModelBitMask
-        bm = EmissionLineModelBitMask()
-        bm.info()
-
+    .. include:: ../tables/emissionlinemodelbitmask.rst
     """
-    def __init__(self, dapsrc=None):
-        dapsrc = dap_source_dir() if dapsrc is None else str(dapsrc)
-        BitMask.__init__(self, ini_file=os.path.join(dapsrc, 'python', 'mangadap', 'config',
-                                                     'bitmasks', 'emission_line_model_bits.ini'))
+    cfg_root = 'emission_line_model_bits'
 
 
 class EmissionLineModel:
@@ -289,11 +277,10 @@ class EmissionLineModel:
         quiet (bool): Suppress all terminal and logging output.
 
     """
-#    @profile
     def __init__(self, method_key, binned_spectra, stellar_continuum=None,
                  emission_line_moments=None, redshift=None, dispersion=None, minimum_error=None,
-                 method_list=None, artifact_list=None, ism_line_list=None,
-                 emission_line_db_list=None, dapsrc=None, dapver=None, analysis_path=None,
+                 method_list=None, artifact_path=None, ism_line_path=None,
+                 emission_line_db_path=None, dapsrc=None, dapver=None, analysis_path=None,
                  directory_path=None, output_file=None, hardcopy=True, clobber=False,
                  checksum=False, loggers=None, quiet=False):
 
@@ -305,23 +292,24 @@ class EmissionLineModel:
 
         # Instantiate the artifact...
         self.artdb = None if self.method['artifacts'] is None else \
-                    ArtifactDB(self.method['artifacts'], artdb_list=artifact_list, dapsrc=dapsrc)
+                    ArtifactDB.from_key(self.method['artifacts'], directory_path=artifact_path)
         # ... the pixel mask...
         if self.method['ism_mask'] is None:
             self.pixelmask = SpectralPixelMask(artdb=self.artdb)
         else:
             # Mask ISM lines if a list is provided -- KHRR
             # use nsigma=2.0 to avoid masking HeI
-            self.pixelmask = SpectralPixelMask(artdb=self.artdb, \
-                                               emldb=EmissionLineDB(self.method['ism_mask'],
-                                                                    emldb_list=ism_line_list),
+            self.pixelmask = SpectralPixelMask(artdb=self.artdb,
+                                               emldb=EmissionLineDB.from_key(
+                                                        self.method['ism_mask'],
+                                                        directory_path=ism_line_path),
                                                nsig=2.0)
         # ... and the emission-line database
         self.emldb = None if self.method['emission_lines'] is None else \
-                        EmissionLineDB(self.method['emission_lines'],
-                                       emldb_list=emission_line_db_list, dapsrc=dapsrc)
+                        EmissionLineDB.from_key(self.method['emission_lines'],
+                                                directory_path=emission_line_db_path)
 
-        self.neml = None if self.emldb is None else self.emldb.neml
+        self.neml = None if self.emldb is None else self.emldb.size
 
         self.binned_spectra = None
         self.redshift = None
@@ -334,7 +322,7 @@ class EmissionLineModel:
         self.hardcopy = None
 
         # Initialize the objects used in the assessments
-        self.bitmask = EmissionLineModelBitMask(dapsrc=dapsrc)
+        self.bitmask = EmissionLineModelBitMask()
 
         self.hdu = None
         self.checksum = checksum
@@ -388,8 +376,7 @@ class EmissionLineModel:
         """
         # Grab the specific method
         return select_proc_method(method_key, EmissionLineModelDef, method_list=method_list,
-                                  available_func=available_emission_line_modeling_methods,
-                                  dapsrc=dapsrc)
+                                  available_func=available_emission_line_modeling_methods)
 
 
     def _set_paths(self, directory_path, dapver, analysis_path, output_file):
@@ -496,7 +483,7 @@ class EmissionLineModel:
 
         # Instatiate the table data that will be saved defining the set
         # of emission-line moments measured
-        line_database = init_record_array(self.emldb.neml,
+        line_database = init_record_array(self.emldb.size,
                                 self._emission_line_database_dtype(name_len, mode_len, prof_len))
 
         hk = [ 'ID', 'NAME', 'RESTWAVE', 'ACTION', 'FLUXRATIO', 'MODE', 'PROFILE', 'NCOMP' ]

@@ -1,53 +1,25 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 # -*- coding: utf-8 -*-
 """
-
 Defines some utility routines used to map a provided set of quantities.
 
-*License*:
-    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+Revision history
+----------------
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/util/mapping.py
-
-*Imports and python version compliance*:
-    ::
-
-        from __future__ import print_function
-        from __future__ import division
-        from __future__ import absolute_import
-        from __future__ import unicode_literals
-
-        import sys
-        if sys.version > '3':
-            long = int
-
-        import numpy
-        from matplotlib import pyplot
-        from mpl_toolkits.axes_grid1 import make_axes_locatable
-        from matplotlib.ticker import MaxNLocator
-
-*Revision history*:
     | **10 Jun 2015**: Pulled out functions by Michele Cappellari into a
         utility file (K. Westfall; KBW)
     | **07 Jul 2017**: (KBW) Added map matching functions
 
-.. _`numpy.ma.MaskedArray`: http://docs.scipy.org/doc/numpy/reference/maskedarray.baseclass.html#numpy.ma.MaskedArray
-.. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/stable/io/fits/api/hdulists.html
-.. _`pyplot.imshow`: http://matplotlib.org/api/pyplot_api.html#matplotlib.pyplot.imshow
+----
 
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../links.rst
 """
-
-from __future__ import print_function
-from __future__ import division
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
-import sys
-if sys.version > '3':
-    long = int
-
 import numpy
 from scipy import ndimage
 
@@ -82,7 +54,7 @@ def masked_pixelized_image(x, y, z, pixelscale=1.0, zmin=None, zmax=None, imshow
         zmax (float): (Optional) Maximum z value to include in the
             output image.  Default is to allow all pixel values.
         imshow_prep (bool): (Optional) Prepare the matrix for use with
-            `pyplot.imshow`_.  If *imshow_prep* is True, before output,
+            `matplotlib.pyplot.imshow`_.  If *imshow_prep* is True, before output,
             the matrix is reordered such that increasing :math:`x`
             values are along columns and increasing :math:`y` values are
             along rows; i.e., the output is the transpose of the default
@@ -94,8 +66,8 @@ def masked_pixelized_image(x, y, z, pixelscale=1.0, zmin=None, zmax=None, imshow
                 pyplot.imshow(img, interpolation='nearest', extent=ext, origin='lower')
 
             Note that origin **must** be "lower" when calling
-            `pyplot.imshow`_ on the array produced by this routine for
-            the :math:`x,y` ordering to be as expected!
+            `matplotlib.pyplot.imshow`_ on the array produced by this
+            routine for the :math:`x,y` ordering to be as expected!
         fill_value (float): (Optional) The default value to use for
             pixels without any data.
 

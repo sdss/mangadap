@@ -1,6 +1,6 @@
 
-DAP Quality Assessment Plots
-============================
+Quality Assessment Plots
+========================
 
 The DAP produces a number of quality assessment plots.
 

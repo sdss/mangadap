@@ -9,6 +9,7 @@ Emission-line Moments
 *Reference root:* ``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/[PLATE]/[IFUDESIGN]/ref``
 
 *Reference file:*
+
     - Before Gaussian emission-line modeling: ``manga-[PLATE]-[IFUDESIGN]-[DRPQA_KEY]-[BIN_KEY]-[CONTINUUM_KEY]-[ELMOM_KEY].fits.gz``
     - After Gaussian emission-line modeling:
       ``manga-[PLATE]-[IFUDESIGN]-[DRPQA_KEY]-[BIN_KEY]-[CONTINUUM_KEY]-[ELFIT_KEY]-[ELMOM_KEY].fits.gz``

@@ -6,49 +6,52 @@
 Development Guidelines
 ======================
 
-The development strategy for the DAP has been allow for high-level
+The development strategy for the DAP has been to allow for high-level
 interaction with the software to make subtle changes to its execution
 parameters.  For help with the high-level interaction with the DAP
 parameters, see the description of its :ref:`execution`.
 
 However, we have also specifically constructed the low-level, core
 algorithms in a way that is largely agnostic to the data being analyzed.
-This should allow users to use DAP methods/classes new scripts tailored
-to their own needs.
+This should allow users to use DAP methods/classes in new scripts
+tailored to their own needs and analysis of non-MaNGA data.
 
 We are very interested in having the community building on the existing
-DAP algorithms.  The following is an introduction to some of the
-guidelines we tried to follow in the development of the code, as a means
-of introducing some of the nuances of its structure:
+DAP algorithms.  As a means of introducing some of the nuances of its
+structure, the following is list of some of the guidelines we tried to
+follow in the development of the code:
 
- * minimize code repetition by isolating repeated functionality into a
-   flexible function or class
- * provide utility level classes that ease interaction with the input
-   and output data
- * provide utility level classes that ease inclusion of new spectral
-   template libraries and emission-line and absortion-line databases for
-   use in the main analysis classes
- * compartmentalize analysis into low-level functions that are
-   independent of the specifics of the MaNGA data
- * generalize the interfaces of these low-level functions such that they
-   can be incorporated into user-level scripts
- * where possible and appropriate, therefore, the low-level functions
-   should operate on arrays of spectra that can effectively be
-   considered independently
- * minimize hardcoded behavior in favor of parameter files
- * provide an infrastructure that includes hooks for user-provided
+ - Minimize code repetition by isolating repeated functionality into a
+   flexible function or class.
+ - Provide utility level classes that ease interaction with the input
+   and output data.
+ - Provide utility level classes that ease inclusion of new spectral
+   template libraries, emission-line parameters, and spectral-index
+   paraemters for use in the main analysis classes.
+ - Compartmentalize analysis into low-level functions that are
+   independent of the specifics of the MaNGA data.
+ - Generalize the interfaces of these low-level functions such that they
+   can be incorporated into user-level scripts.
+ - Where possible and appropriate, ensure the low-level functions
+   operate on arrays of spectra that can effectively be considered
+   independent of one another.
+ - Minimize hardcoded behavior in favor of parameter files.
+ - Provide an infrastructure that includes hooks for user-provided
    functions to override the base-level DAP analysis functions while
-   still maintaining the output DAP datamodel
- * high-level classes write reference fits files and the class
-   interfaces with data in those files via an `astropy.io.fits.HDUList`_
-   object
-    
+   still maintaining the output DAP datamodel.
+ - Use an `astropy.io.fits.HDUList`_ object as the primary interface to
+   the high-level classes to generalize interaction and allow them to be
+   directly written to their reference fits files with a well formed
+   datamodel.
+
+.. _templatelibrary-dev-example:
+
 TemplateLibrary example
 -----------------------
 
 As an example of what some of this looks like in practice, consider the
-"Class usage examples" section for the
-:mod:`mangadap.proc.templatelibrary` module.
+:ref:`templatelibrary-usage` for a
+:class:`mangadap.proc.templatelibrary.TemplateLibrary`.
 
 The :class:`mangadap.proc.templatelibrary.TemplateLibrary` object is setup to read and process the template library used to model the stellar continuum.  The survey-level execution of the DAP currently uses the ``MILESHC`` library for the stellar kinematics and the ``MASTARHC`` library for the stellar continuum model in the emission-line module.  The way that the DAP knows where to find the templates and how to process them is via the configuration files that live in ``$MANGADAP_DIR/python/mangadap/config/spectral_templates``.  The one specific to the ``MILESHC`` library is ``$MANGADAP_DIR/python/mangadap/config/spectral_templates/miles_hc.ini`` and looks like this:
 
@@ -121,11 +124,12 @@ execute the full DAP using a new template library is a matter of setting
 up these configuration files.
 
 However, you can also write scripts that incorporate the DAP
-functionality without the need to add configuration files.  If you had a
-script that used a :class:`mangadap.proc.templatelibary.TemplateLibrary`
-object, you can define a new template library in the code itself using
-the :class:`mangadap.proc.templatelibrary.TemplateLibraryDef`` object.
-The :class:`mangadap.proc.templatelibrary.TemplateLibraryDef`` object is
+functionality without the need to add configuration files.  Assume you
+have a script that uses a
+:class:`mangadap.proc.templatelibary.TemplateLibrary` object, you can
+define a new template library in the code itself using the
+:class:`mangadap.proc.templatelibrary.TemplateLibraryDef`` object.  The
+:class:`mangadap.proc.templatelibrary.TemplateLibraryDef`` object is
 actually the product of the parsed configuration file within the main
 DAP code.  For example:
 

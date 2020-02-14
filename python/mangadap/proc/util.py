@@ -3,50 +3,29 @@
 """
 Provides a set of processing utility functions for the MaNGA DAP.
 
-*License*:
-    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+Revision history
+----------------
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/proc/util.py
-
-*Imports and python version compliance*:
-    ::
-
-        from __future__ import division
-        from __future__ import print_function
-        from __future__ import absolute_import
-        from __future__ import unicode_literals
-
-        import sys
-        if sys.version > '3':
-            long = int
-
-        import numpy
-        import astropy.constants
-
-*Revision history*:
     | **01 Feb 2016**: Original implementation by K. Westfall (KBW)
 
-.. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
+----
 
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../links.rst
 """
-
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
-import sys
-if sys.version > '3':
-    long = int
-
+import os
+import glob
 import warnings
-import numpy
-import astropy.constants
-from scipy import interpolate, spatial
 
-from matplotlib import pyplot
+import numpy
+
+from scipy import interpolate, spatial
+import astropy.constants
 
 def HDUList_mask_wavelengths(hdu, bitmask, bitmask_flag, wave_limits, wave_ext='WAVE', \
                              mask_ext='MASK', invert=False):
@@ -88,25 +67,23 @@ def HDUList_mask_wavelengths(hdu, bitmask, bitmask_flag, wave_limits, wave_ext='
     return hdu
 
 
-def select_proc_method(method_key, method_type, method_list=None, available_func=None, dapsrc=None):
+def select_proc_method(method_key, method_type, method_list=None, available_func=None):
     r"""
     Select a method from a list.  One of method_list or available_func
     must be provided.
 
     Args:
-        method_key (str): Keyword used to select the method.
-        method_type (object): Object type to check *method_list*
-            against.
-        method_list (list): (**Optional**) List of methods from which to
-            find the selection keyword.  If none is provided,
-            *available_func* **must** be provided.
-        available_func (callable): (**Optional**) Callable function that
-            returns a list of default methods in place of *method_list*.
-            For example, see
+        method_key (:obj:`str`):
+            Keyword used to select the method.
+        method_type (object):
+            Object type to check ``method_list`` against.
+        method_list (:obj:`list`, optional):
+            List of methods from which to find the selection keyword.
+            If None, ``available_func`` **must** be provided.
+        available_func (callable, optional):
+            Callable function that returns a list of default methods
+            in place of ``method_list``. For example, see
             :func:`mangadap.proc.templatelibrary.available_template_libraries`.
-        dapsrc (str): (**Optional**) Root path to the DAP source
-            directory.  If not provided, the default is defined by
-            :func:`mangadap.config.defaults.dap_source_dir`.
 
     Returns:
         object: An object with base class :class:`mangadap.par.ParSet`,
@@ -114,22 +91,21 @@ def select_proc_method(method_key, method_type, method_list=None, available_func
         database.
 
     Raises:
-        KeyError: Raised if the selected keyword is not among the
-            provided list or if the provided list has more than one
-            identical keyword.
-        TypeError: Raised if the input *method_list* object is not a
-            list or *method_type*, or if available function is not a
-            callable function.
+        KeyError:
+            Raised if the selected keyword is not among the provided
+            list or if the provided list has more than one identical
+            keyword.
+        TypeError:
+            Raised if the input *method_list* object is not a list or
+            *method_type*, or if available function is not a callable
+            function.
     """
     # Get the default methods if no list provided
     if method_list is None:
         if not callable(available_func):
             raise TypeError('If not providing a list, must provide a callable function to ' \
                             'produce the default list of methods/databases/libraries.')
-        method_list = available_func(dapsrc=dapsrc)
-
-#    for m in method_list:
-#        print(m['key'])
+        method_list = available_func()
 
     # Make sure the methods have the right type
     if not isinstance(method_list, list):
@@ -151,7 +127,65 @@ def select_proc_method(method_key, method_type, method_list=None, available_func
     # Return the method selected via the input keyword
     indx = numpy.where(selected_method)[0][0]
     return method_list[indx]
-    
+
+
+def get_database_key(f):
+    """
+    Construct a key from the provided file or file path.
+
+    The key is a capitalized version of the file after removing any
+    extension.
+
+    Args:
+        f (:obj:`str`):
+            The file name or path.
+
+    Returns:
+        :obj:`str`: The keyword.
+
+    Examples:
+
+        >>> get_database_key('junk')
+        'JUNK'
+        >>> get_database_key('test.par')
+        'TEST'
+        >>> get_database_key('/path/to/test.par')
+        'TEST'
+
+    """
+    return os.path.split(f)[1].split('.')[0].upper()
+
+def select_database(key, directory_path):
+    r"""
+    Select a database using a keyword and directory path.
+
+    Args:
+        key (:obj:`str`):
+            Keyword used to select the method.
+        directory_path (:obj:`str`):
+            Full path with the valid database files. All files in the
+            directory with a ``.par`` extension will be included.
+
+    Returns:
+        :obj:`str`: Returns the file with the selected database.
+
+    Raises:
+        NotADirectoryError:
+            Raised if the provided directory path does not exist.j
+        KeyError:
+            Raised if the selected keyword cannot be associated with
+            a file in the provided directory.
+    """
+    if not os.path.isdir(directory_path):
+        raise NotADirectoryError('{0} not found!'.format(directory_path))
+
+    files = glob.glob(os.path.join(directory_path, '*.par'))
+    keys = [ get_database_key(f) for f in files]
+    if key not in keys:
+        raise KeyError('No database found to associate with {0}.'.format(key))
+
+    return files[numpy.where(numpy.array(keys) == key)[0][0]]
+
 
 #def _fill_vector(v, length, missing, value):
 #    if v.size == length:
@@ -347,13 +381,6 @@ def optimal_scale(dat, mod, wgt=None):
     _wgt = numpy.ones(_dat.shape, dtype=float) if wgt is None else numpy.atleast_1d(wgt)
     if _mod.shape != _dat.shape or (_wgt is not None and _wgt.shape != _dat.shape):
         raise ValueError('Shapes of all input arrays must match.')
-
-#    print(len(_dat))
-#    print(len(_mod))
-#    print(len(_wgt))
-#    pyplot.scatter(_dat, _mod, marker='.', color='k', lw=0)
-#    pyplot.scatter(_dat, _wgt, marker='.', color='r', lw=0)
-#    pyplot.show()
 
     dp = _dat*_wgt
     norm_mp = numpy.sum(numpy.square(_wgt*_mod))

@@ -3,50 +3,15 @@
 """
 Implements an emission-line profile fitting class.
 
-*License*:
-    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+.. warning::
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/proc/elric.py
+    Although it may still be possible to use :class:`Elric`, it is
+    currently not actively used by the survey-level operation of the
+    MaNGA DAP. See instead :class:`mangadap.proc.sasuke.Sasuke`.
 
-*Imports and python version compliance*:
-    ::
+Revision history
+----------------
 
-        from __future__ import division
-        from __future__ import print_function
-        from __future__ import absolute_import
-        from __future__ import unicode_literals
-
-        import sys
-        import warnings
-        if sys.version > '3':
-            long = int
-
-        import time
-        import os
-        import logging
-
-        import numpy
-        from scipy import interpolate, integrate, optimize
-        from scipy.special import erf
-        import astropy.constants
-        from astropy.modeling import FittableModel, Parameter
-
-        from ..par.parset import ParSet
-        from ..par.emissionlinedb import EmissionLineDB
-        from ..util.fileio import init_record_array
-        from ..util.log import log_output
-        from ..util.pixelmask import SpectralPixelMask
-        from .spatiallybinnedspectra import SpatiallyBinnedSpectra
-        from .stellarcontinuummodel import StellarContinuumModel
-        from .spectralfitting import EmissionLineFit
-        from .util import sample_growth
-
-*Class usage examples*:
-        Add examples
-
-*Revision history*:
     | **26 Apr 2016**: Original implementation by K. Westfall (KBW)
     | **13 Jul 2016**: (KBW) Include log_bounds determining whether or
         not a returned parameters is near its boundary.
@@ -75,37 +40,29 @@ Implements an emission-line profile fitting class.
     | **02 Feb 2018**: (KBW) Adjust for change to
         :func:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel.fill_to_match`.
 
-.. _glob.glob: https://docs.python.org/3.4/library/glob.html
-.. _scipy.optimize.least_squares: http://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.least_squares.html
-.. _scipy.optimize.OptimizeResult: http://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.OptimizeResult.html
+----
 
-.. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
-.. _astropy.modeling.polynomial.Legendre1D: http://docs.astropy.org/en/stable/api/astropy.modeling.polynomial.Legendre1D.html
-.. _astropy.modeling.models.CompoundModel: http://docs.astropy.org/en/stable/modeling/compound-models.html
+.. include license and copyright
+.. include:: ../copy.rst
 
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../links.rst
 """
 
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
-import sys
-import warnings
-if sys.version > '3':
-    long = int
-
-import time
 import os
+import time
 import logging
 
 import numpy
 from scipy import interpolate, integrate, optimize
 from scipy.special import erf
+
 import astropy.constants
 from astropy.modeling.polynomial import Legendre1D
 
-from ..par.parset import ParSet
+from ..par.parset import KeywordParSet
 from ..par.emissionlinedb import EmissionLineDB
 from ..util.fileio import init_record_array
 from ..util.log import log_output
@@ -144,7 +101,7 @@ class LineProfileFit:
             polynomial to include in the model for the baseline trend in
             y below the fitted line profile(s).
         error (1D array): (**Optional**) Error in the dependent
-            variables.  If not provided, no error weighting is peformed
+            variables.  If not provided, no error weighting is performed
             during the fitting process, and the covariance *will not* be
             constructed.
         mask (1D array): (**Optional**) Boolean array used to ignore
@@ -434,9 +391,17 @@ class LineProfileFit:
                 print('    ', self.cov)
 
 
-class ElricPar(ParSet):
-    def __init__(self, emission_lines, base_order, window_buffer, guess_redshift, guess_dispersion,
-                 minimum_snr=None, pixelmask=None, stellar_continuum=None):
+class ElricPar(KeywordParSet):
+    """
+    Elric emission-line fitting parameters.
+
+    The defined parameters are:
+
+    .. include:: ../tables/elricpar.rst
+    """
+    def __init__(self, emission_lines=None, base_order=None, window_buffer=None,
+                 guess_redshift=None, guess_dispersion=None, minimum_snr=None, pixelmask=None,
+                 stellar_continuum=None):
 
         arr_in_fl = [ numpy.ndarray, list, int, float ]
         in_fl = [ int, float ]
@@ -449,7 +414,7 @@ class ElricPar(ParSet):
         dtypes =   [ EmissionLineDB, int, in_fl, arr_in_fl, arr_in_fl, in_fl, SpectralPixelMask,
                      StellarContinuumModel ]
 
-        ParSet.__init__(self, pars, values=values, defaults=defaults, dtypes=dtypes)
+        super(ElricPar, self).__init__(pars, values=values, defaults=defaults, dtypes=dtypes)
 
 
     def toheader(self, hdr):

@@ -6,14 +6,9 @@ Defines the class that constructs the DAPall summary table.
 This is a post processing script that **must** be run after the DRPall
 file is created.
 
-*License*:
-    Copyright (c) 2017, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+Revision history
+----------------
 
-*Class usage examples*:
-    Add some usage comments here!
-
-*Revision history*:
     | **19 Aug 2016**: Original Implementation by K. Westfall (KBW)
     | **29 Sep 2017**: (KBW) Force the number of emission-line
         passbands, emission-lines to fit, and spectral indices to be the
@@ -21,12 +16,17 @@ file is created.
     | **30 Jan 2019**: (KBW) Add effective chi-square for emission-line
         fits.
 
-.. _astropy.io.fits.open: http://docs.astropy.org/en/stable/io/fits/api/files.html#astropy.io.fits.open
-.. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
-.. _astropy.cosmology.FlatLambdaCDM: http://docs.astropy.org/en/stable/api/astropy.cosmology.FlatLambdaCDM.html#flatlambdacdm
-.. _logging.Logger: https://docs.python.org/3/library/logging.html
+----
 
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../links.rst
 """
+
 import logging
 import time
 import os
@@ -238,32 +238,29 @@ class DAPall:
         if key == 'None':
             return 'None', None
         db = select_proc_method(key, EmissionLineMomentsDef,
-                                available_func=available_emission_line_moment_databases,
-                                dapsrc=dapsrc)
-        return db['passbands'], EmissionMomentsDB(db['passbands'], dapsrc=dapsrc).channel_names()
+                                available_func=available_emission_line_moment_databases)
+        return db['passbands'], EmissionMomentsDB.from_key(db['passbands']).channel_names()
 
     @staticmethod
     def _emission_line_db_info(key, dapsrc=None):
         if key == 'None':
             return 'None', None
         db = select_proc_method(key, EmissionLineModelDef,
-                                available_func=available_emission_line_modeling_methods,
-                                dapsrc=dapsrc)
-        return db['emission_lines'], \
-                    EmissionLineDB(db['emission_lines'], dapsrc=dapsrc).channel_names()
+                                available_func=available_emission_line_modeling_methods)
+        return db['emission_lines'], EmissionLineDB.from_key(db['emission_lines']).channel_names()
 
     @staticmethod
     def _spectral_index_db_info(key, dapsrc=None):
         if key == 'None':
             return 0, 'None', 'None', None
         db = select_proc_method(key, SpectralIndicesDef,
-                                available_func=available_spectral_index_databases, dapsrc=dapsrc)
-        absdb = AbsorptionIndexDB(db['absindex'], dapsrc=dapsrc)
-        bhddb = BandheadIndexDB(db['bandhead'], dapsrc=dapsrc)
-        nindx = absdb.nindx + bhddb.nindx
-        units = numpy.array(absdb['units'].tolist() + ['']*bhddb.nindx)
+                                available_func=available_spectral_index_databases)
+        absdb = AbsorptionIndexDB.from_key(db['absindex'])
+        bhddb = BandheadIndexDB.from_key(db['bandhead'])
+        nindx = absdb.size + bhddb.size
+        units = numpy.array(absdb['units'].tolist() + ['']*bhddb.size)
         channels = absdb.channel_names()
-        channels.update(bhddb.channel_names(offset=absdb.nindx))
+        channels.update(bhddb.channel_names(offset=absdb.size))
         if len(channels) != nindx:
             raise ValueError('Spectral index channel names not unique!')
         return db['absindex'], db['bandhead'], channels, units

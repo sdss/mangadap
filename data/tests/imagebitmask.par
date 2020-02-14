@@ -1,0 +1,19 @@
+
+typedef struct {
+    char flag[20]; # Flag name
+    short datatype; # Data type {8, 16, 32, 64}
+    char description[100]; # text description
+} masktype;
+
+typedef struct {
+    char flag[20]; # Flag name
+    short bit; # Bit number, 0-indexed
+    char label[30]; # Bit label
+    char description[100]; # text description
+} maskbits;
+
+masktype IMAGEMASK 16 "Mask bits for image flagging"
+maskbits IMAGEMASK  0 BPM "Pixel is part of a bad-pixel mask"
+maskbits IMAGEMASK  1 COSMIC "Pixel is contaminated by a cosmic ray"
+maskbits IMAGEMASK  2 SATURATED "Pixel is saturated"
+

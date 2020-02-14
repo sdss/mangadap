@@ -1,8 +1,8 @@
 
 .. _datamodel:
 
-DAP Data Model
-==============
+Data Model
+==========
 
 The DAP data model consists of a number of input files and two main
 output files, the :ref:`datamodel-maps` and :ref:`datamodel-cube` files,

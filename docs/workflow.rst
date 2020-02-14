@@ -55,6 +55,8 @@ primary python classes:
    :class:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra`
    when the hybrid-binning approach is not used.
 
+.. _workflow-analysis-modules:
+
 Analysis Modules
 ----------------
 
