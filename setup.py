@@ -93,6 +93,7 @@ def run_setup(package_data, data_files, scripts, packages, install_requires):
               'Topic :: Software Development :: Libraries :: Python Modules'
           ])
 
+
 # TODO: Put these in a config file
 def default_paths():
     return { 'MANGADRP_VER': _MANGADRP_VER,
