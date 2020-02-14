@@ -65,6 +65,7 @@ def run_setup(package_data, data_files, scripts, packages, install_requires):
           license='BSD3',
           description='MaNGA Data Analysis Pipeline',
           long_description=open('README.md').read(),
+          long_description_content_type='text/markdown',
           author='SDSS-IV/MaNGA Pipeline Group',
           author_email='westfall@ucolick.org',
           keywords='astronomy analysis-pipeline spectroscopy MaNGA',
