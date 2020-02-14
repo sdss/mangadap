@@ -23,8 +23,8 @@ def short_warning(message, category, filename, lineno, file=None, line=None):
 import warnings
 warnings.formatwarning = short_warning
 
-_MANGADRP_VER = 'v2_4_3'
-_MANGACORE_VER = 'v1_6_2'
+_MANGADRP_VER = 'v2_7_1'
+_MANGACORE_VER = 'v1_8_0'
 
 # WARNING: This has to be kept in sync with setup.py
 # TODO: Put these in a config file

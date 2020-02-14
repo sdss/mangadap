@@ -31,7 +31,9 @@ TODO
 2.5.1 (13 Feb 2020)
 -------------------
 
- - Jumped the gun.  Fixed Travis testing issues.
+ - Jumped the gun on tagging 2.5.0.  Fixed Travis testing and package
+   data installation issues.
+
 
 2.5.0 (13 Feb 2020)
 -------------------

@@ -22,7 +22,9 @@ _MINIMUM_PYTHON_VERSION = '3.5'
 def get_package_data(root='python'):
     """Generate the list of package data."""
     return [os.path.relpath(f, root) 
-                    for f in glob.glob(os.path.join(root, 'mangadap/config/*/*.ini'))]
+                    for f in glob.glob(os.path.join(root, 'mangadap/config/*/*.ini'))] \
+            + [os.path.relpath(f, root) 
+                    for f in glob.glob(os.path.join(root, 'mangadap/tests/data/*'))]
 
 def get_data_files(root=['data'], ext=['par', 'fits', 'fits.gz'], depth=2):
     """Generate the list of data files."""
