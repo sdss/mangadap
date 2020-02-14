@@ -8,6 +8,8 @@ import os
 import glob
 from setuptools import setup, find_packages
 
+from IPython import embed
+
 import requests
 import warnings
 
@@ -19,24 +21,22 @@ _VERSION = '2.5.3dev'
 _RELEASE = 'dev' not in _VERSION
 _MINIMUM_PYTHON_VERSION = '3.5'
 
-def get_package_data(root='python'):
+def get_package_data(root='python/mangadap'):
     """Generate the list of package data."""
     return [os.path.relpath(f, root) 
-                    for f in glob.glob(os.path.join(root, 'mangadap/config/*/*.ini'))] \
-            + [os.path.relpath(f, root) 
-                    for f in glob.glob(os.path.join(root, 'mangadap/tests/data/*'))]
+                    for f in glob.glob(os.path.join(root, 'config/*/*.ini'))]
 
-def get_data_files(root=['data'], ext=['par', 'fits', 'fits.gz'], depth=2):
-    """Generate the list of data files."""
-    data_files = []
-    for r in root:
-        _data_files = []
-        for d in range(depth):
-            _d = '/'.join(['*']*(d+1))
-            for e in ext:
-                _data_files += glob.glob(os.path.join(r, _d, '*.{0}'.format(e)))
-        data_files += [(r, _data_files)]
-    return data_files
+#def get_data_files(root=['data'], ext=['par', 'fits', 'fits.gz'], depth=2):
+#    """Generate the list of data files."""
+#    data_files = []
+#    for r in root:
+#        _data_files = []
+#        for d in range(depth):
+#            _d = '/'.join(['*']*(d+1))
+#            for e in ext:
+#                _data_files += glob.glob(os.path.join(r, _d, '*.{0}'.format(e)))
+#        data_files += [(r, _data_files)]
+#    return data_files
 
 def get_scripts():
     """ Grab all the scripts in the bin directory.  """
@@ -72,8 +72,8 @@ def run_setup(package_data, data_files, scripts, packages, install_requires):
           url='https://github.com/sdss/mangadap',
           python_requires='>='+_MINIMUM_PYTHON_VERSION,
           packages=packages,
-          package_dir={'': 'python'},
-          package_data={'': package_data},
+          package_dir={'mangadap': 'python/mangadap'},
+          package_data={'mangadap': package_data},
           include_package_data=True,
           data_files=data_files,
           install_requires=install_requires,
@@ -148,13 +148,16 @@ if __name__ == '__main__':
 
     # Compile the additional data files to include (data outside the
     # main product root)
-    data_files = get_data_files()
+    data_files = None #get_data_files()
 
     # Compile the scripts in the bin/ directory
     scripts = get_scripts()
 
     # Get the packages to include
     packages = find_packages(where='python')
+
+#    embed()
+#    exit()
 
     # Collate the dependencies based on the system text file
     install_requires = get_requirements()
