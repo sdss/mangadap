@@ -11,6 +11,7 @@ import numpy
 from astropy.io import fits
 
 from mangadap.util.bitmask import BitMask
+from .util import data_file
 
 #-----------------------------------------------------------------------------
 
@@ -24,7 +25,7 @@ class ImageBitMask(BitMask):
 
 class ImageBitMaskFromPar(BitMask):
     def __init__(self):
-        tmp = BitMask.from_par_file('imagebitmask.par', 'IMAGEMASK')    
+        tmp = BitMask.from_par_file(data_file('imagebitmask.par'), 'IMAGEMASK')    
         super(ImageBitMaskFromPar, self).__init__(tmp.keys(), descr=tmp.descr)
 
 
@@ -95,7 +96,7 @@ def test_hdr_io():
 
 def test_par_io():
     
-    bm = BitMask.from_par_file('imagebitmask.par', 'IMAGEMASK')
+    bm = BitMask.from_par_file(data_file('imagebitmask.par'), 'IMAGEMASK')
     assert list(bm.keys()) == ['BPM', 'COSMIC', 'SATURATED']
     assert list(bm.bits.values()) == [0, 1, 2]
 
@@ -106,7 +107,7 @@ def test_par_io():
 
 def test_ini_io():
     
-    bm = BitMask.from_ini_file('imagebitmask.ini')
+    bm = BitMask.from_ini_file(data_file('imagebitmask.ini'))
     assert list(bm.bits.keys()) == ['BPM', 'COSMIC', 'SATURATED']
     assert list(bm.bits.values()) == [0, 1, 2]
 
