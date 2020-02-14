@@ -2,27 +2,16 @@
 # -*- coding: utf-8 -*-
 """
 Defines a class used to produce and provide an interface for data
-required to create the input `SDSS parameter files`_ for the DAP.
+required to create the input `SDSS-style parameter file`_ for the DAP,
+the :ref:`execution-obs-input` file.
 
 The drpcomplete file/data is primarily required for the survey-level
-execution of the `DAP at Utah`_.  However, it does provide useful
-information regarding the completed DRP files, and it can be used to
-create DAP par files.
+:ref:`execution` of the DAP. However, it does provide useful information
+regarding the completed DRP files.
 
-Preferrably, however, one should get this information from the DRPall,
-or forthcoming DAPall, file for a given MPL.
+Revision history
+----------------
 
-Until further documented here, the description of the `DAP par
-file`_ is available in the SDSS-IV/MaNGA `Technical Reference Manual`_.
-
-*License*:
-    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
-
-*Class usage examples*:
-    Add some usage comments here!
-
-*Revision history*:
     | **20 Nov 2014**: Started implementation by K. Westfall (KBW)
     | **01 Dec 2014**: (KBW) Committed to SVN
     | **12 Jan 2015**: (KBW) Allow for use of plateTargets file using yanny.py
@@ -66,13 +55,15 @@ file`_ is available in the SDSS-IV/MaNGA `Technical Reference Manual`_.
     | **15 Jan 2019**: (KBW) Allow the object to be defined using the
         DRPall file.
     
-.. _DAP par file: https://trac.sdss.org/wiki/MANGA/TRM/TRM_ActiveDev/dap/Summary/parFile
-.. _Technical Reference Manual: https://trac.sdss.org/wiki/MANGA/TRM/TRM_ActiveDev
-.. _SDSS parameter files: http://www.sdss.org/dr12/software/par/
-.. _DAP at Utah: https://trac.sdss.org/wiki/MANGA/TRM/TRM_ActiveDev/dap/Summary/Utah
-.. _pydl.pydlutils.yanny: http://pydl.readthedocs.io/en/stable/api/pydl.pydlutils.yanny.yanny.html
-.. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
+----
 
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../links.rst
 """
 
 import os

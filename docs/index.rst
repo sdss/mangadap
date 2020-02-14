@@ -1,5 +1,25 @@
-Welcome to the MaNGA Data Analysis Pipeline
-===========================================
+The MaNGA Data Analysis Pipeline
+================================
+
+.. image:: http://img.shields.io/badge/powered%20by-AstroPy-orange.svg?style=flat)
+   :target: http://www.astropy.org/
+   :alt: Powered by Astropy
+
+.. image:: https://travis-ci.org/sdss/mangadap.svg?branch=master
+   :target: https://travis-ci.org/sdss/mangadap
+   :alt: Build Status
+
+.. image:: https://coveralls.io/repos/github/sdss/mangadap/badge.svg?branch=master
+   :target: https://coveralls.io/github/sdss/mangadap?branch=master
+   :alt: Coverage Status
+
+.. image:: https://readthedocs.org/projects/sdss-mangadap/badge/?version=latest
+  :target: https://sdss-mangadap.readthedocs.io/en/latest/
+  :alt: Documentation Status
+
+.. image:: https://img.shields.io/github/license/sdss/mangadap
+   :target: https://github.com/sdss/mangadap/blob/master/LICENSE.md
+   :alt: License
 
 The MaNGA data-analysis pipeline (MaNGA DAP) is the survey-led software
 package that analyzes the data produced by the MaNGA data-reduction
@@ -22,6 +42,12 @@ on "model-independent" properties.  Higher-level, model-dependent
 properties, such as stellar-population parameters, will be included in
 future releases on a best-effort basis.
 
+.. warning::
+    
+    This documentation is for the most recent tag of the DAP.  If you're
+    looking for DR15 (DAP version 2.2.1) documentation, see the `DR15
+    MaNGA Overview <https://www.sdss.org/dr15/manga/>`_.
+
 .. _citation:
 
 Citation
@@ -29,42 +55,46 @@ Citation
 
 If you use the DAP software and/or its output products, please cite the following two papers:
 
- - *Overview*: `Westfall et al. (2019)
+ - *Overview*: `Westfall et al. (2019, AJ, 158, 231)
    <https://ui.adsabs.harvard.edu/abs/2019AJ....158..231W/abstract>`_
- - *Emission-line Modeling*: `Belfiore et al. (2019)
+ - *Emission-line Modeling*: `Belfiore et al. (2019, AJ, 158, 160)
    <https://ui.adsabs.harvard.edu/abs/2019AJ....158..160B/abstract>`_
 
 ----
 
 .. toctree::
+   :caption: Welcome!
    :maxdepth: 2
 
    whatsnew
    knownissues
 
-Usage
-=====
+----
 
 .. toctree::
+   :caption: Usage
    :maxdepth: 1
 
    installation
    execution
    development
 
-Methods
-=======
+----
 
 .. toctree::
+   :caption: Methods
    :maxdepth: 1
 
    workflow
+   templatelibraries
+   emissionlines
+   spectralindices
    spatialcovariance
 
-Output
-======
+----
 
 .. toctree::
+   :caption: Output
    :maxdepth: 1
 
    gettingstarted
@@ -73,27 +103,42 @@ Output
    corrections
    qualityassessment
 
-Beyond MaNGA
-============
-
-The MaNGA DAP software was written to be more broadely useful.  What
-follows are some examples of how the code can be used more generally
-beyond its application to MaNGA (see also generality discussion included
-in our :ref:`development`).
+----
 
 .. toctree::
+   :caption: Beyond MaNGA
    :maxdepth: 1
 
-   fit_one_spec
+   fitonespec
+   fitonecube
 
-API Reference
-=============
+The MaNGA DAP software was written to be more broadely useful.  The
+pages above provide some examples of how the code can be used more
+generally, beyond its application to MaNGA.
+
+----
 
 .. toctree::
+   :caption: Utilities
+   :maxdepth: 1
+
+   parameters
+   bitmasks
+   covariance
+   resampling
+   resolution
+   smoothing
+
+----
+
+.. toctree::
+   :caption: API
    :maxdepth: 2
 
    MaNGA DAP API <api/mangadap>
    MaNGA DAP Modules <api/modules>
+
+----
 
 Search
 ======

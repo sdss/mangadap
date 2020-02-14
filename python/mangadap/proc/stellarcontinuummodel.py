@@ -3,17 +3,9 @@
 """
 A class hierarchy that performs the stellar-continuum fitting.
 
-*License*:
-    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+Revision history
+----------------
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/proc/stellarcontinuummodel.py
-
-*Class usage examples*:
-        Add examples
-
-*Revision history*:
     | **14 Apr 2016**: Implementation begun by K. Westfall (KBW)
     | **19 Apr 2016**: (KBW) First version
     | **19 May 2016**: (KBW) Added loggers and quiet keyword arguments
@@ -32,24 +24,17 @@ A class hierarchy that performs the stellar-continuum fitting.
         :func:`StellarContinuumModel.unmasked_continuum_model`.
     | **23 Feb 2017**: (KBW) Use DAPFitsUtil read and write functions.
 
-.. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
-.. _glob.glob: https://docs.python.org/3.4/library/glob.html
-.. _logging.Logger: https://docs.python.org/3/library/logging.html
-.. _numpy.ma.MaskedArray: http://docs.scipy.org/doc/numpy-1.10.1/reference/maskedarray.baseclass.html#numpy.ma.MaskedArray
+----
 
+.. include license and copyright
+.. include:: ../copy.rst
 
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../links.rst
 """
-
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
-import sys
 import warnings
-if sys.version > '3':
-    long = int
-
 import os
 import glob
 import logging
@@ -59,7 +44,7 @@ from astropy.io import fits
 import astropy.constants
 
 from ..drpfits import DRPFits
-from ..par.parset import ParSet
+from ..par.parset import KeywordParSet, ParSet
 from ..par.artifactdb import ArtifactDB
 from ..par.emissionlinedb import EmissionLineDB
 from ..util.log import log_output
@@ -68,6 +53,7 @@ from ..util.fileio import rec_to_fits_type, create_symlink
 from ..util.sampling import spectral_coordinate_step, spectrum_velocity_scale
 from ..util.resolution import SpectralResolution
 from ..util.bitmask import BitMask
+from ..util.dapbitmask import DAPBitMask
 from ..util.pixelmask import SpectralPixelMask
 from ..util.parser import DefaultConfig
 from ..config import defaults
@@ -83,45 +69,29 @@ from matplotlib import pyplot
 # from distutils.version import StrictVersion
 
 
-class StellarContinuumModelDef(ParSet):
+class StellarContinuumModelDef(KeywordParSet):
     """
     A class that holds the parameters necessary to perform the
     stellar-continuum fitting.
 
-    The function use to fit the stellar continuum model must have the
-    form::
+    The provided ``fitfunc`` must have the form::
 
         model_wave, model_flux, model_mask, model_par \
                 = fitfunc(self, binned_spectra, par=None)
 
-    where `binned_spectra` has type
+    where ``binned_spectra`` has type
     :class:`mangadap.proc.spatiallybinnedspetra.SpatiallyBinnedSpectra`,
-    and the returned objects are the wavelength vector, the fitted model
-    flux, a bitmask for the model, and the set of model parameters.  For
-    example, see
+    and the returned objects are the wavelength vector, the fitted
+    model flux, a bitmask for the model, and the set of model
+    parameters. For example, see
     :func:`mangadap.proc.ppxffit.PPXFFit.fit_SpatiallyBinnedSpectra`.
 
-    Args:
-        key (str): Keyword used to distinguish between different spatial
-            binning schemes.
-        minimum_snr (bool): Minimum S/N of spectrum to fit
-        fit_type (str): Currently can be anything.  In the DAP, this is
-            used to identify the primary purpose of the fit as either
-            producing stellar kinematics, composition measurements, or
-            emission line fits; see
-            :mod:`mangadap.proc.spectralfitting'.  The purpose for this
-            type is to isolate the expected format of the binary table
-            data; see, e.g.,
-            :func:`mangadap.proc.spectralfitting._per_stellar_kinematics_dtype`.
-        fitpar (:class:`mangadap.par.parset.ParSet` or dict): Any
-            additional parameters, aside from the spectra themselves,
-            required by the fitting function.
-        fitclass (object): Instance of class object to use for the
-            model fitting.  Needed in case fitfunc is a non-static member
-            function of a class.
-        fitfunc (callable): The function that models the spectra
+    The defined parameters are:
+
+    .. include:: ../tables/stellarcontinuummodeldef.rst
     """
-    def __init__(self, key, minimum_snr, fit_type, fitpar, fitclass, fitfunc):
+    def __init__(self, key=None, minimum_snr=None, fit_type=None, fitpar=None, fitclass=None,
+                 fitfunc=None):
         in_fl = [ int, float ]
         par_opt = [ ParSet, dict ]
 
@@ -129,8 +99,22 @@ class StellarContinuumModelDef(ParSet):
         values =   [   key,   minimum_snr,   fit_type,   fitpar,   fitclass,   fitfunc ]
         dtypes =   [   str,         in_fl,        str,  par_opt,       None,      None ]
         can_call = [ False,         False,      False,    False,      False,      True ]
+        descr = ['Keyword used to distinguish between different spatial binning schemes.',
+                 'Minimum S/N of spectrum to fit',
+                 'Currently can be anything.  In the DAP, this is used to identify the primary ' \
+                    'purpose of the fit as either producing stellar kinematics, composition ' \
+                    'measurements, or emission line fits; see ' \
+                    ':mod:`mangadap.proc.spectralfitting`.  The purpose for this type is to ' \
+                    'isolate the expected format of the binary table data; see, e.g., ' \
+                    ':func:`mangadap.proc.spectralfitting._per_stellar_kinematics_dtype`.',
+                 'Any additional parameters, aside from the spectra themselves, required by ' \
+                    'the fitting function.',
+                 'Instance of class object to use for the model fitting.  Needed in case ' \
+                    'fitfunc is a non-static member function of a class.',
+                 'The function that models the spectra']
 
-        ParSet.__init__(self, pars, values=values, dtypes=dtypes, can_call=can_call)
+        super(StellarContinuumModelDef, self).__init__(pars, values=values, dtypes=dtypes,
+                                                       can_call=can_call, descr=descr)
 
 
 def validate_stellar_continuum_modeling_method_config(cnfg):
@@ -218,15 +202,15 @@ def available_stellar_continuum_modeling_methods(dapsrc=None):
 
         # TODO: Pull this out; shouldn't be instantiating these already
         artifacts = None if cnfg['artifact_mask'] is None else \
-                        ArtifactDB(cnfg['artifact_mask'], dapsrc=dapsrc)
+                        ArtifactDB.from_key(cnfg['artifact_mask'])
         emission_lines = None if cnfg['emission_line_mask'] is None else \
-                            EmissionLineDB(cnfg['emission_line_mask'], dapsrc=dapsrc)
+                            EmissionLineDB.from_key(cnfg['emission_line_mask'])
         waverange = cnfg.getlist('waverange', evaluate=True)
         minimum_snr = cnfg.getfloat('minimum_snr', default=0.0)
 
         if cnfg['fit_method'] == 'ppxf':
             # sky is always none for now
-            fitpar = PPXFFitPar(cnfg['template_library'], None, None, None,
+            fitpar = PPXFFitPar(template_library_key=cnfg['template_library'],
                                 iteration_mode=cnfg.get('fit_iter', default='global_template'),
                                 reject_boxcar=cnfg.getint('reject_boxcar'),
                                 filter_boxcar=cnfg.getint('filter_boxcar'),
@@ -241,16 +225,16 @@ def available_stellar_continuum_modeling_methods(dapsrc=None):
                                 mdegree=cnfg.getint('mdegree'),
                                 filt_degree=cnfg.getint('filter_degree'),
                                 filt_mdegree=cnfg.getint('filter_mdegree'),
-                                moments=cnfg.getint('moments') )
-            fitclass = PPXFFit(StellarContinuumModelBitMask(dapsrc=dapsrc))
+                                moments=cnfg.getint('moments'))
+            fitclass = PPXFFit(StellarContinuumModelBitMask())
             fitfunc = fitclass.fit_SpatiallyBinnedSpectra
         else:
             raise ValueError('Unknown fitting method: {0}'.format(cnfg['default']['fit_method']))
 
-        modeling_methods += [ StellarContinuumModelDef(cnfg['key'], 
-                                                       cnfg.getfloat('minimum_snr', default=0.0),
-                                                       cnfg['fit_type'],
-                                                       fitpar, fitclass, fitfunc) ]
+        modeling_methods += [ StellarContinuumModelDef(key=cnfg['key'], 
+                                            minimum_snr=cnfg.getfloat('minimum_snr', default=0.0),
+                                            fit_type=cnfg['fit_type'], fitpar=fitpar,
+                                            fitclass=fitclass, fitfunc=fitfunc) ]
 
     # Check the keywords of the libraries are all unique
     if len(numpy.unique( numpy.array([ method['key'] for method in modeling_methods ]) )) \
@@ -261,25 +245,14 @@ def available_stellar_continuum_modeling_methods(dapsrc=None):
     return modeling_methods
 
 
-class StellarContinuumModelBitMask(BitMask):
+class StellarContinuumModelBitMask(DAPBitMask):
     r"""
     Derived class that specifies the mask bits for the stellar-continuum
-    modeling.  See :class:`mangadap.util.bitmask.BitMask` for
-    attributes.
+    modeling. The maskbits defined are:
 
-    A list of the bits and meanings are provided by the base class
-    function :func:`mangadap.util.bitmask.BitMask.info`; i.e.,::
-
-        from mangadap.proc.stellarcontinuummodel import StellarContinuumModelBitMask
-        bm = StellarContinuumModelBitMask()
-        bm.info()
-
+    .. include:: ../tables/stellarcontinuummodelbitmask.rst
     """
-    def __init__(self, dapsrc=None):
-        dapsrc = defaults.dap_source_dir() if dapsrc is None else str(dapsrc)
-        BitMask.__init__(self, ini_file=os.path.join(dapsrc, 'python', 'mangadap', 'config',
-                                                     'bitmasks',
-                                                     'stellar_continuum_model_bits.ini'))
+    cfg_root = 'stellar_continuum_model_bits'
 
 
 class StellarContinuumModel:
@@ -376,7 +349,7 @@ class StellarContinuumModel:
         self.symlink_dir = None
 
         # Define the bitmask
-        self.bitmask = StellarContinuumModelBitMask(dapsrc=dapsrc)
+        self.bitmask = StellarContinuumModelBitMask()
 
         # Initialize the main class attributes
         self.hdu = None
@@ -404,6 +377,7 @@ class StellarContinuumModel:
                  tpl_symlink_dir=tpl_symlink_dir, clobber=clobber, loggers=loggers, quiet=quiet)
 
 
+
 #    def __del__(self):
 #        """
 #        Deconstruct the data object by ensuring that the fits file is
@@ -426,8 +400,7 @@ class StellarContinuumModel:
         """
         # Grab the specific method
         return select_proc_method(method_key, StellarContinuumModelDef, method_list=method_list,
-                                  available_func=available_stellar_continuum_modeling_methods,
-                                  dapsrc=dapsrc)
+                                  available_func=available_stellar_continuum_modeling_methods)
 
 
     def _fill_method_par(self, dapsrc=None, dapver=None, analysis_path=None, tpl_symlink_dir=None):

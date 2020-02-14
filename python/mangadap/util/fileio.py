@@ -1,17 +1,11 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 # -*- coding: utf-8 -*-
 """
-
 Provides a set of file I/O routines.
 
-*License*:
-    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+Revision history
+----------------
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/util/fileio.py
-
-*Revision history*:
     | **27 May 2015**: Original implementation by K. Westfall (KBW)
     | **29 Jan 2016**: (KBW) Added :func:`read_template_spectrum`
     | **01 Feb 2016**: (KBW) Moved wavelength calculation to a common
@@ -27,9 +21,15 @@ Provides a set of file I/O routines.
     | **23 Mar 2017**: (KBW) Force type of header keywords in
         :func:`wavelength_vector`.
 
-.. _numpy.recarray: http://docs.scipy.org/doc/numpy-1.10.1/reference/generated/numpy.recarray.html
-.. _logging.Logger: https://docs.python.org/3/library/logging.html
+----
 
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../links.rst
 """
 
 import os
@@ -47,6 +47,18 @@ def wavelength_vector(npix, header, log10=False):
     Return a vector with wavelength coordinates drawn from the WCS
     coordinates in the header.  The function uses CRVAL1, CRPIX1,
     CDELT1.
+
+    Args:
+        npix (:obj:`int`):
+            Length of the vector in pixels.
+        header (`astropy.io.fits.Header`_):
+            Header with the WCS data
+        log10 (:obj:`bool`, optional):
+            Flag that the wavelengths are logarithmically sampled.
+
+    Returns:
+        `numpy.ndarray`_: Wavelengths of a spectrum.
+
     """
     crval = float(header['CRVAL1'])
     crpix = int(header['CRPIX1'])
@@ -61,16 +73,17 @@ def readfits_1dspec(filename, log10=False):
     and flux.
 
     Args:
-        filename (str): Name of the file to read.
+        filename (:obj:`str`):
+            Name of the file to read.
 
     Returns:
-        numpy.ndarray: Two numpy.float64 arrays with the wavelength and
-        flux read for the spectrum.
+        `numpy.ndarray`_: Two numpy.float64 arrays with the
+        wavelength and flux read for the spectrum.
 
     Raises:
-        Exception: Raised if the input fits file has more than one
-            extension or its primary extension has more than two
-            dimensions.
+        ValueError:
+            Raised if the input fits file has more than one extension
+            or its primary extension has more than two dimensions.
     """
     hdu = fits.open(filename, mode='readonly')
 
@@ -78,7 +91,7 @@ def readfits_1dspec(filename, log10=False):
         warnings.warn('{0} has more than one extension.'.format(filename))
     
     if hdu[0].header['NAXIS'] != 1:
-        raise Exception('{0} is not one dimensional!'.format(filename))
+        raise ValueError('{0} is not one dimensional!'.format(filename))
     
     spec = numpy.copy(hdu[0].data).astype(numpy.float64)
     wave = wavelength_vector(spec.size, hdu[0].header, log10=log10)
@@ -112,7 +125,7 @@ def writefits_1dspec(ofile, crval1, cdelt1, flux, hdr=None, clobber=False):
                  #clobber=clobber)
 
 
-def read_template_spectrum(filename, data_ext=None, ivar_ext=None, sres_ext=None, log10=False):
+def read_template_spectrum(filename, data_ext=0, ivar_ext=None, sres_ext=None, log10=False):
     r"""
     Read a template spectrum.
     
@@ -124,60 +137,58 @@ def read_template_spectrum(filename, data_ext=None, ivar_ext=None, sres_ext=None
         hdu[0].header['CDELT1']
         hdu[data_ext].data
 
-    The latter has the flux data.  If `log10` is true, the wavelength
-    solution above is expected to be in log wavelengths.
+    The latter has the flux data. If ``log10`` is true, the
+    wavelength solution above is expected to be in log wavelengths.
     
     Args:
-        filename (str): Name of the fits file to read.
-        data_ext (str): (**Optional**) Name of the extension with the
-            flux data.  If None, default is 0.
-        ivar_ext (str): (**Optional**) Name of the extension with the
-            inverse variance data.  If None, no inverse data are
-            returned.
-        sres_ext (str): (**Optional**) Name of the extension with the
-            specral resolution (:math:R=\lambda/\delta\lambda`)
-            measurements.  If None, no spectral resolution data are
-            returned.
-        log10 (bool): (**Optional**) Flag the WCS wavelength coordinates
-            as being in base-10 log wavelength, instead of linear.
-            Default is to assume linear.
+        filename (:obj:`str`):
+            Name of the fits file to read.
+        data_ext (:obj:`str`, optional):
+            Name of the extension with the flux data.
+        ivar_ext (:obj:`str`, optional):
+            Name of the extension with the inverse variance data. If
+            None, no inverse data are returned.
+        sres_ext (:obj:`str`, optional):
+            Name of the extension with the spectral resolution
+            (:math:R=\lambda/\delta\lambda`) measurements. If None,
+            no spectral resolution data are returned.
+        log10 (:obj:`bool`, optional):
+            Flag the WCS wavelength coordinates as being in base-10
+            log wavelength, instead of linear. Default is to assume
+            linear.
 
     Returns:
-        numpy.ndarray : Up to four numpy.float64 arrays with the
-        wavelength, flux, inverse variance (if `ivar_ext` is provided),
-        and spectral resolution (if `sres_ext` is provided) of the
+        `numpy.ndarray`_: Up to four vectors with the wavelength,
+        flux, inverse variance (if `ivar_ext` is provided), and
+        spectral resolution (if `sres_ext` is provided) of the
         template spectrum.
 
     Raises:
-        ValueError: Raised if fits file is not one-dimensional.
-        KeyError: Raised if various header keywords or extension names
-            are not available.
+        ValueError:
+            Raised if fits file is not one-dimensional.
+        KeyError:
+            Raised if various header keywords or extension names are
+            not available.
     """
-    if data_ext is None:
-        data_ext = 0
-
-    hdu = fits.open(filename, mode='readonly')
-    if len(hdu[data_ext].data.shape) != 1:
-        raise ValueError('Spectrum in {0} is not one dimensional!'.format(filename))
+    with fits.open(filename, mode='readonly') as hdu:
+        if len(hdu[data_ext].data.shape) != 1:
+            raise ValueError('Spectrum in {0} is not one dimensional!'.format(filename))
     
-    spec = numpy.copy(hdu[data_ext].data).astype(numpy.float64)
-    wave = wavelength_vector(spec.size, hdu[0].header, log10=log10)
+        spec = numpy.copy(hdu[data_ext].data).astype(numpy.float64)
+        wave = wavelength_vector(spec.size, hdu[0].header, log10=log10)
 
-    ret = (wave, spec)
+        ret = (wave, spec)
 
-    if ivar_ext is not None:
-        ret += (numpy.copy(hdu[ivar_ext].data).astype(numpy.float64), )
-    if sres_ext is not None:
-        ret += (numpy.copy(hdu[sres_ext].data).astype(numpy.float64), )
+        if ivar_ext is not None:
+            ret += (numpy.copy(hdu[ivar_ext].data).astype(numpy.float64), )
+        if sres_ext is not None:
+            ret += (numpy.copy(hdu[sres_ext].data).astype(numpy.float64), )
 
-    hdu.close()
-
-    return ret
+        return ret
     
 
 def init_record_array(shape, dtype):
     r"""
-
     Utility function that initializes a record array using a provided
     input data type.  For example::
 
@@ -195,7 +206,7 @@ def init_record_array(shape, dtype):
             element in the record array.
 
     Returns:
-        numpy.recarray: Zeroed record array
+        `numpy.recarray`_: Zeroed record array
     """
     data = numpy.zeros(shape, dtype=dtype)
     return data.view(numpy.recarray)

@@ -1,25 +1,26 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 # -*- coding: utf-8 -*-
 """
-A class heirarchy for pixel masks.
+A class hierarchy for pixel masks.
 
-*License*:
-    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+Revision history
+----------------
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/proc/pixelmask.py
-
-*Class usage examples*:
-        Add examples
-
-*Revision history*:
     | **18 Apr 2016**: Original implementation K. Westfall (KBW)
     | **30 Nov 2016**: (KBW) Generalization of :class:`PixelMask` and
         minor edits
     | **16 Oct 2019**:  KHRR made nsigma a class attribute so that it
     |   it can be set externally.  The default value is still 3.0 (same as before).
 
+----
+
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../links.rst
 """
 import numpy
 import astropy.constants
@@ -126,7 +127,7 @@ class SpectralPixelMask(PixelMask):
     """
     def __init__(self, artdb=None, emldb=None, waverange=None, nsig=None):
         if artdb is not None and not isinstance(artdb, ArtifactDB):
-            raise TypeError('Must provide EmissionLineDB for emission-lines to mask.')
+            raise TypeError('Must provide an ArtifactDB for artifacts to mask.')
         self.artdb = artdb
 
         if emldb is not None and not isinstance(emldb, EmissionLineDB):
@@ -200,9 +201,9 @@ class SpectralPixelMask(PixelMask):
             return None
 
         if isinstance(kin, (int,float)):
-            return numpy.full(self.emldb.neml, kin, dtype=numpy.float)
+            return numpy.full(self.emldb.size, kin, dtype=numpy.float)
         if isinstance(kin, (list, numpy.ndarray)):
-            if len(kin) != self.emldb.neml:
+            if len(kin) != self.emldb.size:
                 raise ValueError('Provided vector does not have a matching length.')
             return numpy.atleast_1d(kin).astype(numpy.float)
        

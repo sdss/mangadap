@@ -3,8 +3,8 @@
 
 .. _corrections:
 
-DAP MAPS Corrections
-====================
+MAPS Corrections
+================
 
 The :ref:`datamodel-maps` provide values that *must be corrected by the
 user* using provided corrections.

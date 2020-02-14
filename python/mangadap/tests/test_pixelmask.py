@@ -1,9 +1,4 @@
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import pytest
 import os
 
@@ -22,7 +17,8 @@ warnings.simplefilter("ignore", RuntimeWarning)
 def test_pixelmask():
     specfile = data_file('MaNGA_test_spectra.fits.gz')
     hdu = fits.open(specfile)
-    pixelmask = SpectralPixelMask(artdb=ArtifactDB('BADSKY'), emldb=EmissionLineDB('ELPFULL'))
+    pixelmask = SpectralPixelMask(artdb=ArtifactDB.from_key('BADSKY'),
+                                  emldb=EmissionLineDB.from_key('ELPFULL'))
     assert numpy.sum(pixelmask.boolean(hdu['WAVE'].data, nspec=1)) == 487, \
                 'Incorrect number of masked pixels'
 

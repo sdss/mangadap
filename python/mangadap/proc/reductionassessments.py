@@ -5,17 +5,9 @@ Class that performs a number of assessments of a DRP file needed for
 handling of the data by the DAP.  These assessments need only be done
 once per DRP data file.
 
-*License*:
-    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+Revision history
+----------------
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/proc/reductionassessments.py
-
-*Class usage examples*:
-    Add examples!
-
-*Revision history*:
     | **24 Mar 2016**: Implementation begun by K. Westfall (KBW)
     | **11 May 2016**: (KBW) Switch to using
         `pydl.goddard.astro.airtovac`_ instead of internal function
@@ -26,27 +18,22 @@ once per DRP data file.
     | **17 May 2017**: (KBW) Added ability to use a response function
         for the flux statistics.
 
-.. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
-.. _glob.glob: https://docs.python.org/3.4/library/glob.html
-.. _pydl.goddard.astro.airtovac: http://pydl.readthedocs.io/en/stable/api/pydl.goddard.astro.airtovac.html#pydl.goddard.astro.airtovac
-.. _logging.Logger: https://docs.python.org/3/library/logging.html
+----
 
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../links.rst
 """
-
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
-import sys
-import warnings
-if sys.version > '3':
-    long = int
-
-import glob
 import os
 import time
+import glob
+import warnings
 import logging
+
 import numpy
 
 from scipy import sparse
@@ -54,7 +41,7 @@ from pydl.goddard.astro import airtovac
 from astropy.io import fits
 
 from ..drpfits import DRPFits
-from ..par.parset import ParSet
+from ..par.parset import KeywordParSet
 from ..config.defaults import dap_source_dir, default_dap_common_path
 from ..config.defaults import default_dap_file_name
 from ..util.fitsutil import DAPFitsUtil
@@ -72,7 +59,7 @@ from matplotlib import pyplot
 # Add strict versioning
 # from distutils.version import StrictVersion
 
-class ReductionAssessmentDef(ParSet):
+class ReductionAssessmentDef(KeywordParSet):
     """
     Class with parameters used to define how the reduction assessments
     are performed.  At the moment this is just a set of parameters that
@@ -84,18 +71,12 @@ class ReductionAssessmentDef(ParSet):
 
         - Allow for different ways of calculating covariance?
 
-    Args:
-        key (str): Keyword to distinguish the assessment method.
-        waverange (numpy.ndarray, list) : A two-element vector with the
-            starting and ending wavelength (angstroms in VACUUM) within
-            which to calculate the signal-to-noise
-        response_func (array-like): A two-column array with a response
-            function to use for the S/N calculation.  The columns must
-            br the wavelength and amplitude of the response function,
-            respectively.
-        covariance (str) : Type of covariance measurement to produce
+    The defined parameters are:
+
+    .. include:: ../tables/reductionassessmentdef.rst
+
     """
-    def __init__(self, key, waverange=None, response_func=None, covariance=False):
+    def __init__(self, key=None, waverange=None, response_func=None, covariance=False):
         # Perform some checks of the input
         ar_like = [ numpy.ndarray, list ]
         #covar_opt = covariance_options()
@@ -104,9 +85,16 @@ class ReductionAssessmentDef(ParSet):
         values = [   key,   waverange,   response_func,   covariance ]
         #options = [ None,        None,    covar_opt ]
         dtypes = [   str,     ar_like,         ar_like,         bool ]
+        descr = ['Keyword to distinguish the assessment method.',
+                 'A two-element vector with the starting and ending wavelength (angstroms ' \
+                    'in **vacuum**) within which to calculate the signal-to-noise',
+                 'A two-column array with a response function to use for the S/N calculation.  ' \
+                    'The columns must br the wavelength and amplitude of the response function, ' \
+                    'respectively.',
+                 'Type of covariance measurement to produce.']
 
-        #ParSet.__init__(self, pars, values=values, options=options, dtypes=dtypes)
-        ParSet.__init__(self, pars, values=values, dtypes=dtypes)
+        super(ReductionAssessmentDef, self).__init__(pars, values=values, dtypes=dtypes,
+                                                     descr=descr)
 
 
 def validate_reduction_assessment_config(cnfg):
@@ -214,14 +202,14 @@ def available_reduction_assessments(dapsrc=None):
             waverange = cnfg.getlist('wave_limits', evaluate=True)
             if not in_vacuum:
                 waverange = airtovac(waverange)
-            assessment_methods += [ ReductionAssessmentDef(cnfg['key'], waverange=waverange,
+            assessment_methods += [ ReductionAssessmentDef(key=cnfg['key'], waverange=waverange,
                                                            covariance=cnfg.getbool('covariance',
                                                                             default=False)) ]
         elif def_response:
             response = numpy.genfromtxt(cnfg['response_function_file'])[:,:2]
             if not in_vacuum:
                 response[:,0] = airtovac(response[:,0])
-            assessment_methods += [ ReductionAssessmentDef(cnfg['key'], response_func=response,
+            assessment_methods += [ ReductionAssessmentDef(key=cnfg['key'], response_func=response,
                                                            covariance=cnfg.getbool('covariance',
                                                                                    default=False)) ]
         else:
@@ -400,9 +388,7 @@ class ReductionAssessment:
         """
         self.method = select_proc_method(method_key, ReductionAssessmentDef,
                                          method_list=method_list,
-                                         available_func=available_reduction_assessments,
-                                         dapsrc=dapsrc)
-
+                                         available_func=available_reduction_assessments)
 
     def _set_paths(self, directory_path, dapver, analysis_path, output_file):
         """

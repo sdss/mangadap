@@ -3,14 +3,9 @@
 """
 A class hierarchy that measures moments of the observed emission lines.
 
-*License*:
-    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+Revision history
+----------------
 
-*Class usage examples*:
-    Add examples!
-
-*Revision history*:
     | **25 Apr 2016**: Implementation begun by K. Westfall (KBW)
     | **20 May 2016**: (KBW) Added loggers and quiet keyword arguments
         to :class:`EmissionLineMoments`, removed verbose 
@@ -30,15 +25,21 @@ A class hierarchy that measures moments of the observed emission lines.
         modeling.  Allow to pass an emission-line model for setting up
         the continuum and the velocities to measure.
 
-.. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
-.. _glob.glob: https://docs.python.org/3.4/library/glob.html
-.. _logging.Logger: https://docs.python.org/3/library/logging.html
+----
 
+.. include license and copyright
+.. include:: ../copy.rst
 
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../links.rst
 """
-import glob
+
 import os
+import glob
 import logging
+
 import numpy
 
 from astropy.io import fits
@@ -49,10 +50,11 @@ from ..config.defaults import default_dap_method, default_dap_method_path
 from ..util.fitsutil import DAPFitsUtil
 from ..util.fileio import init_record_array, rec_to_fits_type
 from ..util.bitmask import BitMask
+from ..util.dapbitmask import DAPBitMask
 from ..util.pixelmask import SpectralPixelMask
 from ..util.log import log_output
 from ..util.parser import DefaultConfig
-from ..par.parset import ParSet
+from ..par.parset import KeywordParSet
 from ..par.artifactdb import ArtifactDB
 from ..par.emissionmomentsdb import EmissionMomentsDB
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
@@ -70,21 +72,17 @@ from matplotlib import pyplot
 # from distutils.version import StrictVersion
 
 
-class EmissionLineMomentsDef(ParSet):
+class EmissionLineMomentsDef(KeywordParSet):
     """
     A class that holds the parameters necessary to perform the
     emission-line moment measurements.
 
-    Args:
-        key (str): Keyword used to distinguish between different
-            emission-line moment databases.
-        minimum_snr (bool): Minimum S/N of spectrum to fit
-        artifacts (str): String identifying the artifact database to use
-        passbands (str): String identifying the emission-line bandpass
-            filter database to use
-        
+    The defined parameters are:
+
+    .. include:: ../tables/emissionlinemomentsdef.rst
     """
-    def __init__(self, key, minimum_snr, artifacts, passbands, redo_postmodeling, fit_vel_name):
+    def __init__(self, key=None, minimum_snr=None, artifacts=None, passbands=None,
+                 redo_postmodeling=None, fit_vel_name=None):
         in_fl = [ int, float ]
 
         pars =     [ 'key', 'minimum_snr', 'artifacts', 'passbands', 'redo_postmodeling',
@@ -92,7 +90,17 @@ class EmissionLineMomentsDef(ParSet):
         values =   [ key, minimum_snr, artifacts, passbands, redo_postmodeling, fit_vel_name ]
         dtypes =   [ str, in_fl, str, str, bool, str ]
 
-        ParSet.__init__(self, pars, values=values, dtypes=dtypes)
+        descr = ['Keyword used to distinguish between different emission-line moment databases.',
+                 'Minimum S/N of spectrum to fit',
+                 'String identifying the artifact database to use',
+                 'String identifying the emission-line bandpass filter database to use',
+                 'Redo the moment measurements after the emission-line modeling has been ' \
+                    'performed',
+                 'The name of the emission line used to set the redshift of each spaxel used ' \
+                    'to set the observed wavelength of the bandpasses.']
+
+        super(EmissionLineMomentsDef, self).__init__(pars, values=values, dtypes=dtypes,
+                                                     descr=descr)
 
 
 def validate_emission_line_moments_config(cnfg):
@@ -170,13 +178,13 @@ def available_emission_line_moment_databases(dapsrc=None):
         # library
         validate_emission_line_moments_config(cnfg)
 
-        moment_set_list += [ EmissionLineMomentsDef(cnfg['key'],
-                                                    cnfg.getfloat('minimum_snr', default=0.),
-                                                    cnfg.get('artifact_mask'),
-                                                    cnfg['emission_passbands'],
-                                                    cnfg.getbool('redo_postmodeling',
-                                                                 default=False),
-                                                    cnfg.get('fit_vel_name')) ]
+        moment_set_list += [ EmissionLineMomentsDef(key=cnfg['key'],
+                                            minimum_snr=cnfg.getfloat('minimum_snr', default=0.),
+                                            artifacts=cnfg.get('artifact_mask'),
+                                            passbands=cnfg['emission_passbands'],
+                                            redo_postmodeling=cnfg.getbool('redo_postmodeling',
+                                                                           default=False),
+                                            fit_vel_name=cnfg.get('fit_vel_name')) ]
 
     # Check the keywords of the libraries are all unique
     if len(numpy.unique(numpy.array([moment['key'] for moment in moment_set_list]))) \
@@ -187,24 +195,14 @@ def available_emission_line_moment_databases(dapsrc=None):
     return moment_set_list
 
 
-class EmissionLineMomentsBitMask(BitMask):
+class EmissionLineMomentsBitMask(DAPBitMask):
     r"""
     Derived class that specifies the mask bits for the emission-line
-    moment measurements.  See :class:`mangadap.util.bitmask.BitMask` for
-    attributes.
-
-    A list of the bits and meanings are provided by the base class
-    function :func:`mangadap.util.bitmask.BitMask.info`; i.e.,::
-
-        from mangadap.proc.emissionlinemoments import EmissionLineMomentsBitMask
-        bm = EmissionLineMomentsBitMask()
-        bm.info()
-
+    moment measurements.  The maskbits defined are:
+    
+    .. include:: ../tables/emissionlinemomentsbitmask.rst
     """
-    def __init__(self, dapsrc=None):
-        dapsrc = dap_source_dir() if dapsrc is None else str(dapsrc)
-        BitMask.__init__(self, ini_file=os.path.join(dapsrc, 'python', 'mangadap', 'config',
-                                                     'bitmasks', 'emission_line_moments_bits.ini'))
+    cfg_root = 'emission_line_moments_bits'
 
 
 class EmissionLineMoments:
@@ -229,8 +227,8 @@ class EmissionLineMoments:
     """
 #    @profile
     def __init__(self, database_key, binned_spectra, stellar_continuum=None,
-                 emission_line_model=None, redshift=None, database_list=None, artifact_list=None,
-                 bandpass_list=None, dapsrc=None, dapver=None, analysis_path=None,
+                 emission_line_model=None, redshift=None, database_list=None, artifact_path=None,
+                 bandpass_path=None, dapsrc=None, dapver=None, analysis_path=None,
                  directory_path=None, output_file=None, hardcopy=True, clobber=False,
                  checksum=False, loggers=None, quiet=False):
 
@@ -243,9 +241,9 @@ class EmissionLineMoments:
         self.artdb = None
         self.momdb = None
         self._define_databases(database_key, database_list=database_list,
-                               artifact_list=artifact_list, bandpass_list=bandpass_list)
+                               artifact_path=artifact_path, bandpass_path=bandpass_path)
 
-        self.nmom = self.momdb.nsets
+        self.nmom = self.momdb.size
 
         self.binned_spectra = None
         self.stellar_continuum = None
@@ -258,7 +256,7 @@ class EmissionLineMoments:
         self.hardcopy = None
 
         # Initialize the objects used in the assessments
-        self.bitmask = EmissionLineMomentsBitMask(dapsrc=dapsrc)
+        self.bitmask = EmissionLineMomentsBitMask()
 
         self.hdu = None
         self.checksum = checksum
@@ -283,25 +281,24 @@ class EmissionLineMoments:
         return self.hdu[key]
 
 
-    def _define_databases(self, database_key, database_list=None, artifact_list=None,
-                          bandpass_list=None, dapsrc=None):
+    def _define_databases(self, database_key, database_list=None, artifact_path=None,
+                          bandpass_path=None, dapsrc=None):
         r"""
         Select the database of bandpass filters.
         """
         # Grab the specific database
         self.database = select_proc_method(database_key, EmissionLineMomentsDef,
                                            method_list=database_list,
-                                           available_func=available_emission_line_moment_databases,
-                                           dapsrc=dapsrc)
+                                           available_func=available_emission_line_moment_databases)
 
         # Instantiate the artifact and bandpass filter database
         self.artdb = None if self.database['artifacts'] is None else \
-                    ArtifactDB(self.database['artifacts'], artdb_list=artifact_list, dapsrc=dapsrc)
+                    ArtifactDB.from_key(self.database['artifacts'], directory_path=artifact_path)
         self.pixelmask = SpectralPixelMask(artdb=self.artdb)
 
         self.momdb = None if self.database['passbands'] is None else \
-                EmissionMomentsDB(self.database['passbands'], emldb_list=bandpass_list,
-                                  dapsrc=dapsrc)
+                EmissionMomentsDB.from_key(self.database['passbands'],
+                                           directory_path=bandpass_path)
 
 
     def _set_paths(self, directory_path, dapver, analysis_path, output_file):
@@ -852,7 +849,7 @@ class EmissionLineMoments:
 
         # Initialize the output data
         nspec = _flux.shape[0]
-        nmom = momdb.nsets
+        nmom = momdb.size
         measurements = init_record_array(nspec, EmissionLineMoments.output_dtype(nmom,
                                                                                  bitmask=bitmask))
 

@@ -3,84 +3,48 @@
 """
 Container class for the database of bandhead indices to measure.
 
-*License*:
-    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+Class usage examples
+--------------------
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/par/bandheadindexdb.py
+Bandhead index databases are defined using SDSS parameter files. To
+define a database, you can use one of the default set of available
+bandhead index databases::
 
-*Imports and python version compliance*:
-    ::
+    from mangadap.par.bandheadindexdb import BandheadIndexDB
+    print(BandheadIndexDB.available_databases())
+    bhddb = BandheadIndexDB.from_key('BHBASIC')
 
-        from __future__ import division
-        from __future__ import print_function
-        from __future__ import absolute_import
-        from __future__ import unicode_literals
+The above call uses the :func:`BandheadIndexDB.from_key` method to
+define the database using its keyword and the database provided with
+the MaNGA DAP source distribution. You can also define the database
+directly for an SDSS-style parameter file::
 
-        import sys
-        import warnings
-        if sys.version > '3':
-            long = int
+    from mangadap.par.bandheadindexdb import BandheadIndexDB
+    bhddb = BandheadIndexDB('/path/to/bandhead/index/database/mybhd.par')
 
-        import os.path
-        import numpy
+The above will read the file and set the database keyword to
+'MYBHD' (i.e., the capitalized root name of the ``*.par`` file).
+See :ref:`spectralindices` for the format of the parameter file.
 
-        from pydl.goddard.astro import airtovac
-        from pydl.pydlutils.yanny import yanny
-        from .parset import ParDatabase
-        from .spectralfeaturedb import available_spectral_feature_databases, SpectralFeatureDBDef
-        from ..proc.bandpassfilter import BandPassFilterPar
-        from ..proc.util import select_proc_method
+Revision history
+----------------
 
-
-*Class usage examples*:
-    Bandhead index databases are defined using SDSS parameter files.  To
-    define a database, you can use one of the default set of available
-    bandhead index databases (see
-    :func:`available_bandhead_index_databases`)::
-    
-        from mangadap.par.bandheadindexdb import BandheadIndexDB
-        p = BandheadIndexDB('STANDARD')
-
-    The above call requires that the ``$MANGADAP_DIR`` environmental
-    variable is set.  If it is not, you can define it's location, as
-    in::
-
-        from mangadap.par.bandheadindexdb import BandheadIndexDB
-        p = BandheadIndexDB('STANDARD', dapsrc='/path/to/dap/source')
-
-    Finally, you can create your own `SDSS-style parameter file`_ with
-    your own bandhead indices to use.  Example files are provided in
-    ``$MANGADAP_DIR/data/bandhead_indices`` with a companion
-    ``README`` file.  With your own file, you have to point to the file
-    using :class:`SpectralFeatureDBDef`, which you can then pass to
-    :class:`BandheadIndexDB`::
-
-        from mangadap.par.spectralfeaturedb import SpectralFeatureDBDef
-        from mangadap.par.bandheadindexdb import BandheadIndexDB
-        d = SpectralFeatureDBDef(key='USER',
-                                 file_path='/path/to/parameter/file')
-        p = BandheadIndexDB('USER', indxdb_list=d)
-
-    The reference frame of the bandhead index can be different *for each
-    index*; a column in the SDSS parameter file is used to specify
-    either air or vacuum wavelengths.  When reading the input parameter
-    file, :class:`BandheadIndexDB` will convert the input index
-    definition to vacuum on a case-by-case basis based on the SDSS
-    parameter file entries, meaning :class:`BandheadIndexDB` only
-    provides vacuum wavelengths.
-    
-*Revision history*:
     | **18 Mar 2016**: Original implementation by K. Westfall (KBW)
     | **11 May 2016**: (KBW) Switch to using `pydl.pydlutils.yanny`_ and
         `pydl.goddard.astro.airtovac`_ instead of internal functions
     | **06 Oct 2017**: (KBW) Add function to return channel names
+    | **02 Dec 2019**: (KBW) Significantly reworked to use the new
+        base class.
 
-.. _pydl.pydlutils.yanny: http://pydl.readthedocs.io/en/stable/api/pydl.pydlutils.yanny.yanny.html
-.. _pydl.goddard.astro.airtovac: http://pydl.readthedocs.io/en/stable/api/pydl.goddard.astro.airtovac.html#pydl.goddard.astro.airtovac
-.. _SDSS-style parameter file: http://www.sdss.org/dr12/software/par/
+----
 
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../links.rst
 """
 
 from __future__ import division
@@ -98,95 +62,54 @@ import numpy
 
 from pydl.goddard.astro import airtovac
 from pydl.pydlutils.yanny import yanny
-from .parset import ParDatabase
-from .spectralfeaturedb import available_spectral_feature_databases, SpectralFeatureDBDef
+
+from .spectralfeaturedb import SpectralFeatureDB
 from ..proc.bandpassfilter import BandPassFilterPar
-from ..proc.util import select_proc_method
 
-# Add strict versioning
-# from distutils.version import StrictVersion
+class BandheadIndexDB(SpectralFeatureDB):
+    r"""
+    Basic container class for the database of bandhead or color
+    indices.
 
-def available_bandhead_index_databases(dapsrc=None):
-    """
-    Return the list of database keys and file names for the available
-    bandhead-line index databases.  The currently available databases
-    are:
-    
-    +-------------+-----+----------------------------------+
-    |         KEY |   N | Description                      |
-    +=============+=====+==================================+
-    |    STANDARD |   3 | D4000, Dn4000, and Ti0 (8860 A). |
-    +-------------+-----+----------------------------------+
+    Each row of the database is parsed using
+    :class:`mangadap.proc.bandpassfilter.BandPassFilterPar`.  For the
+    format of the input file, see :ref:`spectralindices-bandhead`.
 
-    This is a simple wrapper for
-    :func:`mangadap.par.spectralfeaturedb.available_spectral_feature_databases`.
+    The primary instantiation requires the SDSS parameter file with the
+    bandpass data. To instantiate using a keyword (and optionally a
+    directory that holds the parameter files), use the
+    :func:`mangadap.par.spectralfeaturedb.SpectralFeatureDB.from_key`
+    class method.  See the base class for additional attributes.
 
     Args:
-        dapsrc (str): (**Optional**) Root path to the DAP source
-            directory.  If not provided, the default is defined by
-            :func:`mangadap.config.defaults.dap_source_dir`.
-
-    Returns:
-        list: An list of :class:`SpectralFeatureDBDef` objects, each of
-        which defines a unique set of bandhead indices (see
-        :class:`mangadap.proc.bandpassfilter.BandPassFilterPar`).
-
-    .. todo::
-        - Add backup function for Python 2.
-        - Somehow add a python call that reads the databases and
-          constructs the table for presentation in sphinx so that the
-          text above doesn't have to be edited with changes in the
-          available databases.
-
-    """
-    return available_spectral_feature_databases('bandhead_indices', dapsrc=dapsrc)
-    
-
-class BandheadIndexDB(ParDatabase):
-    """
-    Basic container class for the database of bandhead-index parameters.
-    See :class:`mangadap.parset.ParDatabase` for additional attributes.
-
-    Args:
-        database_key (str): Keyword selecting the database to use.
-        indxdb_list (list): (**Optional**) List of
-            :class:`SpectralFeatureDBDef` objects that define the
-            parameters required to setup the bandhead-index database.
-            The *database_key* must select one of the objects in this
-            list.
-        dapsrc (str): (**Optional**) Root path to the DAP source
-            directory.  If not provided, the default is defined by
-            :func:`mangadap.config.defaults.dap_source_dir`.
+        parfile (:obj:`str`):
+            The SDSS parameter file with the database.
 
     Attributes:
-        database (:class:`mangadap.par.ParSet`): Database parameters.
-        nindx (int): Number of artifacts in the database
-
+        key (:obj:`str`):
+            Database signifying keyword
+        file (:obj:`str`):
+            File with the data
+        size (:obj:`int`):
+            Number of features in the database. 
+        dummy (`numpy.ndarray`_):
+            Boolean array flagging bandpasses as dummy placeholders.
     """
-    def __init__(self, database_key, indxdb_list=None, dapsrc=None):
+    default_data_dir = 'bandhead_indices'
+    def _parse_yanny(self):
+        """
+        Parse the yanny file (provided by :attr:`file`) for the
+        bandhead database.
 
-
-        # TODO: The approach here (read using yanny, set to par
-        # individually, then covert back to record array using
-        # ParDatabase) is stupid...
-
-        # Get the details of the selected database
-        self.database = select_proc_method(database_key, SpectralFeatureDBDef,
-                                           method_list=indxdb_list,
-                                           available_func=available_bandhead_index_databases,
-                                           dapsrc=dapsrc)
-        
-        # Check that the database exists
-        if not os.path.isfile(self.database['file_path']):
-            raise FileNotFoundError('Database file {0} does not exist!'.format(
-                                                                    self.database['file_path']))
-
+        Returns:
+            :obj:`list`: The list of
+            :class:`mangadap.par.parset.ParSet` instances for each
+            line of the database.
+        """
         # Read the yanny file
-#        par = yanny(self.database['file_path'])
-        par = yanny(filename=self.database['file_path'], raw=True)
+        par = yanny(filename=self.file, raw=True)
         if len(par['DAPBHI']['index']) == 0:
-            raise ValueError('Could not find DAPBHI entries in {0}!'.format(
-                                                                    self.database['file_path']))
+            raise ValueError('Could not find DAPBHI entries in {0}!'.format(self.file))
 
         # Check if any of the bands are dummy bands and warn the user
         self.dummy = numpy.any(numpy.array(par['DAPBHI']['blueside']) < 0, axis=1)
@@ -197,34 +120,27 @@ class BandheadIndexDB(ParDatabase):
                                                 numpy.array(par['DAPBHI']['index'])[self.dummy]))
 
         # Setup the array of bandhead index database parameters
-        self.nindx = len(par['DAPBHI']['index'])
+        self.size = len(par['DAPBHI']['index'])
         parlist = []
-        for i in range(self.nindx):
+        for i in range(self.size):
             invac = par['DAPBHI']['waveref'][i] == 'vac'
-            parlist += [ BandPassFilterPar(par['DAPBHI']['index'][i],
-                                           par['DAPBHI']['name'][i],
-                                par['DAPBHI']['blueside'][i] if invac \
+            parlist += [ BandPassFilterPar(index=par['DAPBHI']['index'][i],
+                                           name=par['DAPBHI']['name'][i],
+                                blueside=par['DAPBHI']['blueside'][i] if invac \
                                         else airtovac(numpy.array(par['DAPBHI']['blueside'][i])),
-                                par['DAPBHI']['redside'][i] if invac \
+                                redside=par['DAPBHI']['redside'][i] if invac \
                                         else airtovac(numpy.array(par['DAPBHI']['redside'][i])),
                                            integrand=par['DAPBHI']['integrand'][i],
                                            order=par['DAPBHI']['order'][i]) ]
-
-        ParDatabase.__init__(self, parlist)
-
-        # Ensure that all indices are unique
-        if len(numpy.unique(self.data['index'])) != self.nindx:
-            raise ValueError('Indices in {0} database are not all unique!'.format(
-                                                                            self.database['key']))
-
+        return parlist
 
     def channel_names(self, offset=0):
-        channels = {}
-        for i in range(self.nindx):
-#            channels['{0}-{1}'.format(self.data['name'][i], int(self.data['index'][i]))] \
-#                        = i + offset
-            channels[self.data['name'][i]] = i + offset
-        return channels
-
-
+        """
+        Return a dictionary with the channel names as the dictionary
+        key and the channel number as the dictionary value. An
+        ``offset`` can be added to the channel number; i.e., if the
+        offset is 2, the channel numbers will be a running number
+        starting with 2.
+        """
+        return {self.data['name'][i] : i + offset for i in range(self.size)}
 

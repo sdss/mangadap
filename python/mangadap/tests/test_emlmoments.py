@@ -1,9 +1,4 @@
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import pytest
 import os
 
@@ -46,7 +41,7 @@ def test_moments():
     nspec = flux.shape[0]
 
     # Read the database that define the emission lines and passbands
-    momdb = EmissionMomentsDB('ELBMILES')
+    momdb = EmissionMomentsDB.from_key('ELBMILES')
     
     # Measure the moments
     elmombm = EmissionLineMomentsBitMask()
@@ -142,7 +137,8 @@ def test_moments_with_continuum():
     tpl_sres = numpy.mean(tpl['SPECRES'].data, axis=0)
 
     # Get the pixel mask
-    pixelmask = SpectralPixelMask(artdb=ArtifactDB('BADSKY'), emldb=EmissionLineDB('ELPFULL'))
+    pixelmask = SpectralPixelMask(artdb=ArtifactDB.from_key('BADSKY'),
+                                  emldb=EmissionLineDB.from_key('ELPFULL'))
 
     # Instantiate the fitting class
     ppxf = PPXFFit(StellarContinuumModelBitMask())
@@ -160,7 +156,7 @@ def test_moments_with_continuum():
                             numpy.ma.MaskedArray(fit_flux, mask=fit_mask>0))
 
     # Read the database that define the emission lines and passbands
-    momdb = EmissionMomentsDB('ELBMILES')
+    momdb = EmissionMomentsDB.from_key('ELBMILES')
     
     # Measure the moments
     elmombm = EmissionLineMomentsBitMask()

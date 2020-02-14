@@ -17,7 +17,6 @@ from mangadap.util.fileio import read_template_spectrum
 from mangadap.util.pixelmask import SpectralPixelMask
 
 from mangadap.par.artifactdb import ArtifactDB
-from mangadap.par.emissionmomentsdb import EmissionMomentsDB
 from mangadap.par.emissionlinedb import EmissionLineDB
 
 from mangadap.proc.templatelibrary import available_template_libraries
@@ -142,7 +141,8 @@ if __name__ == '__main__':
     # Fit the stellar continuum
 
     # Mask the 5577 sky line and the emission lines
-    sc_pixel_mask = SpectralPixelMask(artdb=ArtifactDB('BADSKY'), emldb=EmissionLineDB('ELPFULL'))
+    sc_pixel_mask = SpectralPixelMask(artdb=ArtifactDB('BADSKY'),
+                                      emldb=EmissionLineDB.from_key('ELPFULL'))
 
     # Construct the template library
     sc_tpl = TemplateLibrary(sc_tpl_key, tpllib_list=tpllib_list, match_to_drp_resolution=False,

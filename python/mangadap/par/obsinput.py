@@ -4,27 +4,24 @@ r"""
 Define a parameter instance that holds the input information needed to
 run the DAP for a specific MaNGA observation.
 
-*License*:
-    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+Class usage examples
+--------------------
 
-*Source location*:
-    $MANGADAP_DIR/python/mangadap/par/obsinput.py
+To define a set of observation parameteters::
 
-*Class usage examples*:
-    To define a set of observation parameteters::
+    from mangadap.par.obsinput import ObsInputPar
+    p = ObsInputPar(plate=7443, ifudesign=12701, mode='CUBE', vel=6139,
+                    vdisp=100, ell=0.3416, pa=150.24, reff=5.70)
 
-        from mangadap.par.obsinput import ObsInputPar
-        p = ObsInputPar(plate=7443, ifudesign=12701, mode='CUBE', vel=6139,
-                        vdisp=100, ell=0.3416, pa=150.24, reff=5.70)
+Or declare the parameter object by reading an `SDSS-style parameter
+file`_:
 
-    Or declare the parameter object by reading an `SDSS-style parameter
-    file`_:
+    from mangadap.par.obsinput import ObsInputPar
+    p = ObsInputPar.from_par_file('mangadap-7443-12701-LOGCUBE.par')
 
-        from mangadap.par.obsinput import ObsInputPar
-        p = ObsInputPar.from_par_file('mangadap-7443-12701-LOGCUBE.par')
+Revision history
+----------------
 
-*Revision history*:
     | **15 Mar 2016**: Original implementation by K. Westfall (KBW)
     | **11 May 2016**: (KBW) Switch to using `pydl.pydlutils.yanny`_
         instead of internal yanny reader.
@@ -33,49 +30,40 @@ run the DAP for a specific MaNGA observation.
     | **11 Nov 2017**: (KBW) Change velocity minimum to -500 km/s to
         match :class:`mangadap.survey.drpcomplete.DRPComplete`
 
-.. _pydl.pydlutils.yanny: http://pydl.readthedocs.io/en/stable/api/pydl.pydlutils.yanny.yanny.html
-.. _SDSS-style parameter file: http://www.sdss.org/dr12/software/par/
+----
 
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../links.rst
 """
 
-import numpy
-import os.path
+import os
 import warnings
+
+import numpy
 from pydl.pydlutils.yanny import yanny
 
-from .parset import ParSet
+from .parset import KeywordParSet
 from ..drpfits import DRPFits
 
-class ObsInputPar(ParSet):
+class ObsInputPar(KeywordParSet):
     r"""
     Parameter object that defines the input observation and guess
     parameters to be used by the DAP.
 
-    Although technically optional in this version, use of the class by
-    the DAP requires that *vel* must be defined.
+    The defined parameters are:
+
+    .. include:: ../tables/obsinputpar.rst
 
     See :class:`mangadap.par.parset.ParSet` for attributes and raised
     exceptions.
 
-    Args:
-        plate (:obj:`int`):
-            Plate number.
-        ifudesign (:obj:`int`):
-            IFU designation.
-        mode (:obj:`str`):
-            DRP 3D mode; see
-            :func:`mangadap.drpfits.DRPFits.mode_options`.
-        vel (:obj:`float`):
-            Systemic velocity (km/s).
-        vdisp (:obj:`float`):
-            Guess velocity dispersion (km/s).
-        ell (:obj:`float`):
-            Isophotal ellipticity (:math:`\varepsilon = 1-b/a`).
-        pa (:obj:`float`):
-            Position angle (degrees) of the isophotal major axis from N
-            through E.
-        reff (:obj:`float`):
-            Effective radius (arcsec).
+    .. todo::
+        Set default velocity to 0?
 
     Attributes:
         valid_vdisp (:obj:`bool`):
@@ -87,8 +75,8 @@ class ObsInputPar(ParSet):
         valid_reff (:obj:`bool`):
             Input effective radius was >0.
     """
-    def __init__(self, plate, ifudesign, mode=None, vel=None, vdisp=None, ell=None, pa=None,
-                 reff=None):
+    def __init__(self, plate=None, ifudesign=None, mode=None, vel=None, vdisp=None, ell=None,
+                 pa=None, reff=None):
 
         in_fl = [ int, float ]
         mode_keys = DRPFits.mode_options()
@@ -98,9 +86,15 @@ class ObsInputPar(ParSet):
         defaults = [    None,        None,    'CUBE',  None,   100.0,   0.0,   0.0,    1.0 ]
         options =  [    None,        None, mode_keys,  None,    None,  None,  None,   None ]
         dtypes =   [     int,         int,       str, in_fl,   in_fl, in_fl, in_fl,  in_fl ]
+        descr = [ 'Plate number', 'IFU designation',
+                  'DRP 3D mode; see :func:`mangadap.drpfits.DRPFits.mode_options`.',
+                  'Systemic velocity (km/s)', 'Guess velocity dispersion (km/s)',
+                  r'Isophotal ellipticity (:math:`\varepsilon = 1-b/a`)',
+                  'Position angle (degrees) of the isophotal major axis from N through E',
+                  'Effective radius (arcsec)']
 
-        ParSet.__init__(self, pars, values=values, defaults=defaults, options=options,
-                        dtypes=dtypes)
+        super(ObsInputPar, self).__init__(pars, values=values, defaults=defaults, options=options,
+                                          dtypes=dtypes, descr=descr)
 
         self.valid_vdisp = True
         self.valid_ell = True
@@ -108,7 +102,6 @@ class ObsInputPar(ParSet):
         self.valid_reff = True
 
         self._check()
-
 
     def _check(self):
         r"""
@@ -125,7 +118,7 @@ class ObsInputPar(ParSet):
             ValueError: Raised if velocity (:math:`cz`) is less than
                 zero.
         """
-        if not self.data['vel'] > -500:
+        if self.data['vel'] is not None and not self.data['vel'] > -500:
             raise ValueError('Velocity must be > -500!')
         if self.data['vdisp'] < 0:
             warnings.warn('Velocity dispersion less than 0; using default of 100 km/s.')
@@ -147,9 +140,12 @@ class ObsInputPar(ParSet):
             self.data['reff'] = 1.0
             self.valid_reff = False
 
+    # Add a "to_par_file" method?
+
     @classmethod
     def from_par_file(cls, f):
-        """ Read the observation parameters from the provided yanny file.
+        """
+        Read the observation parameters from the provided yanny file.
 
         Args:
             f (str) : Name of the file to read
@@ -171,7 +167,6 @@ class ObsInputPar(ParSet):
             raise FileNotFoundError('Could not open {0}!'.format(f))
    
         # Read the file
-#        par = yanny(f)
         par = yanny(filename=f, raw=True)
 
         # Check the number of entries
@@ -179,15 +174,12 @@ class ObsInputPar(ParSet):
             raise ValueError('File must contain only instance of DAPPAR!')
 
         # Return the ObsInputPar instance
-        return cls( par['DAPPAR']['plate'][0],
-                    par['DAPPAR']['ifudesign'][0],
-                    mode=par['DAPPAR']['mode'][0],
-                    vel=par['DAPPAR']['vel'][0],
-                    vdisp=par['DAPPAR']['vdisp'][0],
-                    ell=par['DAPPAR']['ell'][0],
-                    pa=par['DAPPAR']['pa'][0],
-                    reff=par['DAPPAR']['reff'][0]
-                  )
-    
-
+        return cls(par['DAPPAR']['plate'][0],
+                   par['DAPPAR']['ifudesign'][0],
+                   mode=par['DAPPAR']['mode'][0],
+                   vel=par['DAPPAR']['vel'][0],
+                   vdisp=par['DAPPAR']['vdisp'][0],
+                   ell=par['DAPPAR']['ell'][0],
+                   pa=par['DAPPAR']['pa'][0],
+                   reff=par['DAPPAR']['reff'][0])
 

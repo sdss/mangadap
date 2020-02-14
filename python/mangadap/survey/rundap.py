@@ -4,14 +4,9 @@
 Defines the class used to automate the execution of the MaNGA DAP at
 Utah.
 
-*License*:
-    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+Revision history
+----------------
 
-*Class usage examples*:
-    Add some usage comments here!
-
-*Revision history*:
     | **?? Nov 2014**: Architecture setup by J. Brownstein
         <joelbrownstein@astro.utah.edu>
     | **18 Nov 2014**: Handover to K. Westfall (KBW) for development.
@@ -65,23 +60,17 @@ Utah.
         longer an option, only analyzes CUBEs.
     | **23 Jan 2019**: (KBW) Add fit QA plots
 
-.. _PEP 8: https://www.python.org/dev/peps/pep-0008
-.. _PEP 257: https://www.python.org/dev/peps/pep-0257
-.. _argparse.Namespace: https://docs.python.org/3/library/argparse.html#argparse.Namespace
-.. _argparse.ArgumentParser: https://docs.python.org/3/library/argparse.html#argparse.ArgumentParser
+----
 
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../links.rst
 """
 
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
-import sys
-if sys.version > '3':
-    long = int
-
-import subprocess
 import time
 import shutil
 import os

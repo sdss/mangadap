@@ -4,14 +4,13 @@
 Defines a class used to interface with the final maps files produced by
 the MaNGA Data Analysis Pipeline (DAP).
 
-*License*:
-    Copyright (c) 2015, SDSS-IV/MaNGA Pipeline Group
-        Licensed under BSD 3-clause license - see LICENSE.rst
+.. todo::
+    - Allow DAPFits to read/access both the MAPS and the LOGCUBE files,
+      not just the former.
 
-*Class usage examples*:
-    Add some usage comments here!
+Revision history
+----------------
 
-*Revision history*:
     | **08 Jun 2016**: Original Implementation by K. Westfall (KBW)
     | **25 Aug 2016**: (KBW) Added :func:`DAPFits.unique_indices`,
         :func:`DAPFits.unique_mask`, and :func:`DAPFits.channel_map`
@@ -28,25 +27,16 @@ the MaNGA Data Analysis Pipeline (DAP).
     | **19 Mar 2018**: (KBW) Mask spectral indices with incomplete band
         coverage as unreliable.
 
-.. todo::
-    - Allow DAPFits to read/access both the MAPS and the LOGCUBE files,
-      not just the former.
+----
 
-.. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/v1.0.2/io/fits/api/hdulists.html
-.. _astropy.io.fits.open: http://docs.astropy.org/en/stable/io/fits/api/files.html#astropy.io.fits.open
-.. _astropy.io.fits.Header: http://docs.astropy.org/en/stable/io/fits/api/headers.html
+.. include license and copyright
+.. include:: ../copy.rst
 
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../links.rst
 """
-
-from __future__ import print_function
-from __future__ import division
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
-import sys
-if sys.version > '3':
-    long = int
-
 import logging
 import time
 import os
@@ -61,7 +51,7 @@ from astropy.cosmology import FlatLambdaCDM
 
 from .drpfits import DRPFits, DRPQuality3DBitMask
 from .util.fitsutil import DAPFitsUtil
-from .util.bitmask import BitMask
+from .util.dapbitmask import DAPBitMask
 from .util.log import log_output
 from .util.fileio import channel_dictionary
 from .util.exception_tools import print_frame
@@ -79,37 +69,40 @@ from .proc.spectralindices import SpectralIndices
 from matplotlib import pyplot
 
 #-----------------------------------------------------------------------
-class DAPQualityBitMask(BitMask):
+class DAPQualityBitMask(DAPBitMask):
     """
+    Class used to flag/interpret global quality bit.
+
+    The defined bits are listed at :ref:`metadatamodel-dapqual`.
+
     .. todo::
         - Force read IDLUTILS version as opposed to internal one?
     """
-    def __init__(self, dapsrc=None):
-        _dapsrc = defaults.dap_source_dir() if dapsrc is None else str(dapsrc)
-        BitMask.__init__(self, ini_file=os.path.join(_dapsrc, 'python', 'mangadap', 'config',
-                                                     'bitmasks', 'dap_quality_bits.ini'))
+    cfg_root = 'dap_quality_bits'
 
 
-class DAPMapsBitMask(BitMask):
+class DAPMapsBitMask(DAPBitMask):
     """
+    Class used to flag/interpret bits in DAP MAPS files.
+
+    The defined bits are listed at :ref:`metadatamodel-dappixmask`.
+
     .. todo::
         - Force read IDLUTILS version as opposed to internal one?
     """
-    def __init__(self, dapsrc=None):
-        _dapsrc = defaults.dap_source_dir() if dapsrc is None else str(dapsrc)
-        BitMask.__init__(self, ini_file=os.path.join(_dapsrc, 'python', 'mangadap', 'config',
-                                                     'bitmasks', 'dap_maps_bits.ini'))
+    cfg_root = 'dap_maps_bits'
 
 
-class DAPCubeBitMask(BitMask):
+class DAPCubeBitMask(DAPBitMask):
     """
+    Class used to flag/interpret bits in DAP model LOGCUBE files.
+
+    The defined bits are listed at :ref:`metadatamodel-dapspecmask`.
+
     .. todo::
         - Force read IDLUTILS version as opposed to internal one?
     """
-    def __init__(self, dapsrc=None):
-        _dapsrc = defaults.dap_source_dir() if dapsrc is None else str(dapsrc)
-        BitMask.__init__(self, ini_file=os.path.join(_dapsrc, 'python', 'mangadap', 'config',
-                                                     'bitmasks', 'dap_cube_bits.ini'))
+    cfg_root = 'dap_cube_bits'
 
 
 #-----------------------------------------------------------------------
@@ -675,7 +668,7 @@ class construct_maps_file:
 
         #---------------------------------------------------------------
         # Initialize the pixel mask
-        self.bitmask = DAPMapsBitMask(dapsrc=dapsrc)
+        self.bitmask = DAPMapsBitMask()
 
         # Get the mask for the binned spectra
         self.bin_mask = self._build_binning_mask(binned_spectra)
@@ -1881,7 +1874,7 @@ class construct_cube_file:
 
         #---------------------------------------------------------------
         # Initialize the pixel mask
-        self.bitmask = DAPCubeBitMask(dapsrc=dapsrc)
+        self.bitmask = DAPCubeBitMask()
 
         #---------------------------------------------------------------
         # Construct the hdu list for each input object.
@@ -2295,7 +2288,7 @@ def finalize_dap_primary_header(prihdr, drpf, obs, binned_spectra, stellar_conti
                                 loggers=None, quiet=False):
 
     # Initialize the DAP quality flag
-    dapqualbm = DAPQualityBitMask(dapsrc=dapsrc)
+    dapqualbm = DAPQualityBitMask()
     drp3qualbm = DRPQuality3DBitMask()
     dapqual = dapqualbm.minimum_dtype()(0)          # Type casting original flag to 0
     if drp3qualbm.flagged(drpf['PRIMARY'].header['DRP3QUAL'], flag='CRITICAL'):
