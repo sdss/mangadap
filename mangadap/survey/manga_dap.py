@@ -50,7 +50,7 @@ from ..util.fitsutil import DAPFitsUtil
 from matplotlib import pyplot
 
 def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path=None,
-              directory_path=None, dapver=None, dapsrc=None, analysis_path=None):
+              directory_path=None, dapver=None, analysis_path=None):
     r"""
     Main wrapper function for the MaNGA DAP.
 
@@ -218,8 +218,7 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
         #---------------------------------------------------------------
         rdxqa = None if plan['drpqa_key'][i] is None else \
                     ReductionAssessment(plan['drpqa_key'][i], drpf, pa=obs['pa'], ell=obs['ell'],
-                                        dapsrc=dapsrc, analysis_path=_analysis_path,
-                                        symlink_dir=method_ref_dir,
+                                        analysis_path=_analysis_path, symlink_dir=method_ref_dir,
                                         clobber=plan['drpqa_clobber'][i], loggers=loggers)
 
         #---------------------------------------------------------------
@@ -227,7 +226,7 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
         #---------------------------------------------------------------
         binned_spectra = None if plan['bin_key'][i] is None else \
                     SpatiallyBinnedSpectra(plan['bin_key'][i], drpf, rdxqa, reff=obs['reff'],
-                                           dapsrc=dapsrc, analysis_path=_analysis_path,
+                                           analysis_path=_analysis_path,
                                            symlink_dir=method_ref_dir,
                                            clobber=plan['bin_clobber'][i], loggers=loggers)
 
@@ -237,8 +236,7 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
         stellar_continuum = None if plan['continuum_key'][i] is None else \
                     StellarContinuumModel(plan['continuum_key'][i], binned_spectra,
                                           guess_vel=obs['vel'], guess_sig=obs['vdisp'],
-                                          dapsrc=dapsrc, analysis_path=_analysis_path,
-                                          symlink_dir=method_ref_dir,
+                                          analysis_path=_analysis_path, symlink_dir=method_ref_dir,
                                           tpl_symlink_dir=method_ref_dir,
                                           clobber=plan['continuum_clobber'][i], loggers=loggers)
 
@@ -256,7 +254,7 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
         emission_line_moments = None if plan['elmom_key'][i] is None else \
                     EmissionLineMoments(plan['elmom_key'][i], binned_spectra,
                                         stellar_continuum=stellar_continuum, redshift=nsa_redshift,
-                                        dapsrc=dapsrc, analysis_path=_analysis_path,
+                                        analysis_path=_analysis_path,
                                         directory_path=method_ref_dir,
                                         clobber=plan['elmom_clobber'][i], loggers=loggers)
 
@@ -275,8 +273,7 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
                                      stellar_continuum=stellar_continuum,
                                      emission_line_moments=emission_line_moments, dispersion=100.0,
                                      minimum_error=numpy.finfo(numpy.float32).eps,
-                                     dapsrc=dapsrc, analysis_path=_analysis_path,
-                                     directory_path=method_ref_dir,
+                                     analysis_path=_analysis_path, directory_path=method_ref_dir,
                                      clobber=plan['elfit_clobber'][i], loggers=loggers)
 
 #        model_flux = emission_line_model['FLUX'].data
@@ -353,7 +350,7 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
         if emission_line_moments is not None \
                 and emission_line_moments.database['redo_postmodeling']:
             emission_line_moments.measure(binned_spectra, stellar_continuum=stellar_continuum,
-                                          emission_line_model=emission_line_model, dapsrc=dapsrc,
+                                          emission_line_model=emission_line_model,
                                           analysis_path=_analysis_path,
                                           directory_path=method_ref_dir,
                                           clobber=plan['elmom_clobber'][i], loggers=loggers)
@@ -383,7 +380,7 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
         spectral_indices = None if plan['spindex_key'][i] is None else \
                     SpectralIndices(plan['spindex_key'][i], binned_spectra, redshift=nsa_redshift,
                                     stellar_continuum=stellar_continuum,
-                                    emission_line_model=emission_line_model, dapsrc=dapsrc,
+                                    emission_line_model=emission_line_model,
                                     analysis_path=_analysis_path, directory_path=method_ref_dir,
                                     tpl_symlink_dir=method_ref_dir,
                                     clobber=plan['spindex_clobber'][i], loggers=loggers)
@@ -396,14 +393,14 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
                             emission_line_moments=emission_line_moments,
                             emission_line_model=emission_line_model,
                             spectral_indices=spectral_indices, nsa_redshift=nsa_redshift,
-                            dapsrc=dapsrc, analysis_path=_analysis_path, clobber=True,
-                            loggers=loggers, single_precision=True)
+                            analysis_path=_analysis_path, clobber=True, loggers=loggers,
+                            single_precision=True)
 
         construct_cube_file(drpf, obs=obs, binned_spectra=binned_spectra,
                             stellar_continuum=stellar_continuum,
                             emission_line_model=emission_line_model,
-                            dapsrc=dapsrc, analysis_path=_analysis_path, clobber=True,
-                            loggers=loggers, single_precision=True)
+                            analysis_path=_analysis_path, clobber=True, loggers=loggers,
+                            single_precision=True)
 
         # Force memory to be freed
         del spectral_indices

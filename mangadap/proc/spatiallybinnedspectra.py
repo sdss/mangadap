@@ -332,9 +332,6 @@ class SpatiallyBinnedSpectra:
             to use the config files in the DAP source directory to
             construct the available methods using
             :func:`available_spatial_binning_methods`.
-        dapsrc (str): (**Optional**) Root path to the DAP source
-            directory.  If not provided, the default is defined by
-            :func:`mangadap.config.defaults.dap_source_dir`.
         dapver (str): (**Optional**) The DAP version to use for the
             analysis, used to override the default defined by
             :func:`mangadap.config.defaults.dap_version`.
@@ -380,16 +377,15 @@ class SpatiallyBinnedSpectra:
    
     """
 #    @profile
-    def __init__(self, method_key, drpf, rdxqa, reff=None, method_list=None, dapsrc=None,
-                 dapver=None, analysis_path=None, directory_path=None, output_file=None,
-                 hardcopy=True, symlink_dir=None, clobber=False, checksum=False, loggers=None,
-                 quiet=False):
+    def __init__(self, method_key, drpf, rdxqa, reff=None, method_list=None, dapver=None,
+                 analysis_path=None, directory_path=None, output_file=None, hardcopy=True,
+                 symlink_dir=None, clobber=False, checksum=False, loggers=None, quiet=False):
 
         self.loggers = None
         self.quiet = False
 
         # Define the method properties
-        self.method = self.define_method(method_key, method_list=method_list, dapsrc=dapsrc)
+        self.method = self.define_method(method_key, method_list=method_list)
 
         self.drpf = None
         self.rdxqa = None
@@ -446,7 +442,7 @@ class SpatiallyBinnedSpectra:
 
 
     @staticmethod
-    def define_method(method_key, method_list=None, dapsrc=None):
+    def define_method(method_key, method_list=None):
         r"""
         Select the method
         """

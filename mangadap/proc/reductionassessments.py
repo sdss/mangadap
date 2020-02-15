@@ -307,17 +307,16 @@ class ReductionAssessment:
 
     """
 #    @profile
-    def __init__(self, method_key, drpf, pa=0.0, ell=0.0, method_list=None, dapsrc=None,
-                 dapver=None, analysis_path=None, directory_path=None, output_file=None,
-                 hardcopy=True, symlink_dir=None, clobber=False, checksum=False, loggers=None,
-                 quiet=False):
+    def __init__(self, method_key, drpf, pa=0.0, ell=0.0, method_list=None, dapver=None,
+                 analysis_path=None, directory_path=None, output_file=None, hardcopy=True,
+                 symlink_dir=None, clobber=False, checksum=False, loggers=None, quiet=False):
                  
         self.loggers = None
         self.quiet = False
 
         # Define the method properties
         self.method = None
-        self._define_method(method_key, method_list=method_list, dapsrc=dapsrc)
+        self._define_method(method_key, method_list=method_list)
 
         # Set in compute via _set_paths
         self.drpf = None

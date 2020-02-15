@@ -138,12 +138,12 @@ def available_emission_line_moment_databases():
         defining an emission-line moment database to measure.
 
     Raises:
-        NotADirectoryError: Raised if the provided or default
-            *dapsrc* is not a directory.
-        OSError/IOError: Raised if no emission-line moment configuration
-            files could be found.
-        KeyError: Raised if the emission-line moment database keywords
-            are not all unique.
+        IOError:
+            Raised if no emission-line moment configuration files
+            could be found.
+        KeyError:
+            Raised if the emission-line moment database keywords are
+            not all unique.
 
     .. todo::
         - Somehow add a python call that reads the databases and
@@ -217,9 +217,9 @@ class EmissionLineMoments:
 #    @profile
     def __init__(self, database_key, binned_spectra, stellar_continuum=None,
                  emission_line_model=None, redshift=None, database_list=None, artifact_path=None,
-                 bandpass_path=None, dapsrc=None, dapver=None, analysis_path=None,
-                 directory_path=None, output_file=None, hardcopy=True, clobber=False,
-                 checksum=False, loggers=None, quiet=False):
+                 bandpass_path=None, dapver=None, analysis_path=None, directory_path=None,
+                 output_file=None, hardcopy=True, clobber=False, checksum=False, loggers=None,
+                 quiet=False):
 
         self.loggers = None
         self.quiet = False
@@ -260,8 +260,8 @@ class EmissionLineMoments:
 
         # Run the assessments of the DRP file
         self.measure(binned_spectra, stellar_continuum=stellar_continuum,
-                     emission_line_model=emission_line_model, redshift=redshift, dapsrc=dapsrc,
-                     dapver=dapver, analysis_path=analysis_path, directory_path=directory_path,
+                     emission_line_model=emission_line_model, redshift=redshift, dapver=dapver,
+                     analysis_path=analysis_path, directory_path=directory_path,
                      output_file=output_file, hardcopy=hardcopy, clobber=clobber, loggers=loggers,
                      quiet=quiet)
 
@@ -271,7 +271,7 @@ class EmissionLineMoments:
 
 
     def _define_databases(self, database_key, database_list=None, artifact_path=None,
-                          bandpass_path=None, dapsrc=None):
+                          bandpass_path=None):
         r"""
         Select the database of bandpass filters.
         """
@@ -1032,7 +1032,7 @@ class EmissionLineMoments:
 
 
     def measure(self, binned_spectra, stellar_continuum=None, emission_line_model=None,
-                redshift=None, dapsrc=None, dapver=None, analysis_path=None, directory_path=None,
+                redshift=None, dapver=None, analysis_path=None, directory_path=None,
                 output_file=None, hardcopy=True, clobber=False, loggers=None, quiet=False):
         """
         Measure the emission-line moments using the binned spectra.

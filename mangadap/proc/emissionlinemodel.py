@@ -149,15 +149,15 @@ def available_emission_line_modeling_methods():
         each defining an emission-line modeling method.
 
     Raises:
-        NotADirectoryError: Raised if the provided or default
-            *dapsrc* is not a directory.
-        OSError/IOError: Raised if no emission-line moment configuration
-            files could be found.
-        KeyError: Raised if the emission-line modeling method keywords
-            are not all unique.
-        NotImplementedError: Raised if the method requests the
-            deconstruction of the bins into spaxls for using the Elric
-            fitter.
+        IOError:
+            Raised if no emission-line moment configuration files
+            could be found.
+        KeyError:
+            Raised if the emission-line modeling method keywords are
+            not all unique.
+        NotImplementedError:
+            Raised if the method requests the deconstruction of the
+            bins into spaxls for using the Elric fitter.
 
     .. todo::
         Possible to add a python call that reads the databases and
@@ -270,15 +270,15 @@ class EmissionLineModel:
     def __init__(self, method_key, binned_spectra, stellar_continuum=None,
                  emission_line_moments=None, redshift=None, dispersion=None, minimum_error=None,
                  method_list=None, artifact_path=None, ism_line_path=None,
-                 emission_line_db_path=None, dapsrc=None, dapver=None, analysis_path=None,
-                 directory_path=None, output_file=None, hardcopy=True, clobber=False,
-                 checksum=False, loggers=None, quiet=False):
+                 emission_line_db_path=None, dapver=None, analysis_path=None, directory_path=None,
+                 output_file=None, hardcopy=True, clobber=False, checksum=False, loggers=None,
+                 quiet=False):
 
         self.loggers = None
         self.quiet = False
 
         # Define the database properties
-        self.method = self.define_method(method_key, method_list=method_list, dapsrc=dapsrc)
+        self.method = self.define_method(method_key, method_list=method_list)
 
         # Instantiate the artifact...
         self.artdb = None if self.method['artifacts'] is None else \
@@ -332,7 +332,7 @@ class EmissionLineModel:
         # Fit the binned spectra
         self.fit(binned_spectra, stellar_continuum=stellar_continuum,
                  emission_line_moments=emission_line_moments, redshift=redshift,
-                 dispersion=dispersion, minimum_error=minimum_error, dapsrc=dapsrc, dapver=dapver,
+                 dispersion=dispersion, minimum_error=minimum_error, dapver=dapver,
                  analysis_path=analysis_path, directory_path=directory_path,
                  output_file=output_file, hardcopy=hardcopy, clobber=clobber, loggers=loggers,
                  quiet=quiet)
@@ -341,7 +341,7 @@ class EmissionLineModel:
         return self.hdu[key]
 
     @staticmethod
-    def define_method(method_key, method_list=None, dapsrc=None):
+    def define_method(method_key, method_list=None):
         r"""
         Select the modeling method
 
@@ -596,7 +596,7 @@ class EmissionLineModel:
                                 if len(_dispersion) == 1 else _dispersion.copy()
 
 
-    def _fill_method_par(self, dapsrc=None, analysis_path=None):
+    def _fill_method_par(self, analysis_path=None):
         """
 
         Fill in any remaining modeling parameters.
@@ -961,9 +961,9 @@ class EmissionLineModel:
 
 
     def fit(self, binned_spectra, stellar_continuum=None, emission_line_moments=None,
-            redshift=None, dispersion=None, minimum_error=None, dapsrc=None, dapver=None,
-            analysis_path=None, directory_path=None, output_file=None, hardcopy=True,
-            clobber=False, loggers=None, quiet=False):
+            redshift=None, dispersion=None, minimum_error=None, dapver=None, analysis_path=None,
+            directory_path=None, output_file=None, hardcopy=True, clobber=False, loggers=None,
+            quiet=False):
         """
         Fit the emission lines.
         """
@@ -1042,7 +1042,7 @@ class EmissionLineModel:
 
         #---------------------------------------------------------------
         # Fill in any remaining binning parameters
-        self._fill_method_par(dapsrc=dapsrc, analysis_path=analysis_path)
+        self._fill_method_par(analysis_path=analysis_path)
 
         # (Re)Set the output paths
         self._set_paths(directory_path, dapver, analysis_path, output_file)

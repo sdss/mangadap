@@ -266,9 +266,6 @@ class StellarContinuumModel:
             default list is provided by the config files in the DAP
             source directory and compiled into this list using
             :func:`available_stellar_continuum_modeling_methods`.
-        dapsrc (str): (**Optional**) Root path to the DAP source
-            directory.  If not provided, the default is defined by
-            :func:`mangadap.config.defaults.dap_source_dir`.
         dapver (str): (**Optional**) The DAP version to use for the
             analysis, used to override the default defined by
             :func:`mangadap.config.defaults.dap_version`.
@@ -317,15 +314,15 @@ class StellarContinuumModel:
     """
 #    @profile
     def __init__(self, method_key, binned_spectra, guess_vel, guess_sig=None,
-                 method_list=None, dapsrc=None, dapver=None, analysis_path=None,
-                 directory_path=None, output_file=None, hardcopy=True, symlink_dir=None,
-                 tpl_symlink_dir=None, clobber=False, checksum=False, loggers=None, quiet=False):
+                 method_list=None, dapver=None, analysis_path=None, directory_path=None,
+                 output_file=None, hardcopy=True, symlink_dir=None, tpl_symlink_dir=None,
+                 clobber=False, checksum=False, loggers=None, quiet=False):
 
         self.loggers = None
         self.quiet = False
 
         # Define the method properties
-        self.method = self.define_method(method_key, method_list=method_list, dapsrc=dapsrc)
+        self.method = self.define_method(method_key, method_list=method_list)
 
         self.binned_spectra = None
         self.guess_vel = None
@@ -360,8 +357,8 @@ class StellarContinuumModel:
         # TODO: Include covariance between measured properties
 
         # Run the assessments of the DRP file
-        self.fit(binned_spectra, guess_vel, guess_sig=guess_sig, dapsrc=dapsrc,
-                 dapver=dapver, analysis_path=analysis_path, directory_path=directory_path,
+        self.fit(binned_spectra, guess_vel, guess_sig=guess_sig, dapver=dapver,
+                 analysis_path=analysis_path, directory_path=directory_path,
                  output_file=output_file, hardcopy=hardcopy, symlink_dir=symlink_dir,
                  tpl_symlink_dir=tpl_symlink_dir, clobber=clobber, loggers=loggers, quiet=quiet)
 
@@ -383,7 +380,7 @@ class StellarContinuumModel:
 
 
     @staticmethod
-    def define_method(method_key, method_list=None, dapsrc=None):
+    def define_method(method_key, method_list=None):
         r"""
         Select the method
         """
@@ -392,7 +389,7 @@ class StellarContinuumModel:
                                   available_func=available_stellar_continuum_modeling_methods)
 
 
-    def _fill_method_par(self, dapsrc=None, dapver=None, analysis_path=None, tpl_symlink_dir=None):
+    def _fill_method_par(self, dapver=None, analysis_path=None, tpl_symlink_dir=None):
         """
         Fill in any remaining modeling parameters.
 
@@ -436,27 +433,26 @@ class StellarContinuumModel:
         if self.method['fitpar']['template_library_key'] is not None:
             if not self.quiet:
                 log_output(self.loggers, 1, logging.INFO, 'Instantiating template library...')
-            self.method['fitpar']['template_library'] = self.get_template_library(
-                            dapsrc=dapsrc, dapver=dapver, analysis_path=analysis_path,
-                            tpl_symlink_dir=tpl_symlink_dir,
+            self.method['fitpar']['template_library'] \
+                    = self.get_template_library(dapver=dapver, analysis_path=analysis_path,
+                                                tpl_symlink_dir=tpl_symlink_dir,
                             velocity_offset=numpy.mean(c*self.method['fitpar']['guess_redshift']),
                             match_to_drp_resolution=self.method['fitpar']['match_resolution'],
-                            hardcopy=False)
+                                                hardcopy=False)
 
 
-    def get_template_library(self, dapsrc=None, dapver=None, analysis_path=None,
-                             tpl_symlink_dir=None, velocity_offset=None,
-                             match_to_drp_resolution=False, resolution_fwhm=None,
-                             hardcopy=False):
+    def get_template_library(self, dapver=None, analysis_path=None, tpl_symlink_dir=None,
+                             velocity_offset=None, match_to_drp_resolution=False,
+                             resolution_fwhm=None, hardcopy=False):
 
         if resolution_fwhm is None:
             return TemplateLibrary(self.method['fitpar']['template_library_key'],
                                    velocity_offset=velocity_offset, drpf=self.binned_spectra.drpf,
                                    match_to_drp_resolution=match_to_drp_resolution,
                                    velscale_ratio=self.method['fitpar']['velscale_ratio'],
-                                   dapsrc=dapsrc, analysis_path=analysis_path,
-                                   hardcopy=hardcopy, symlink_dir=tpl_symlink_dir,
-                                   loggers=self.loggers, quiet=self.quiet)
+                                   analysis_path=analysis_path, hardcopy=hardcopy,
+                                   symlink_dir=tpl_symlink_dir, loggers=self.loggers,
+                                   quiet=self.quiet)
         else:
             # Set the spectral resolution
             wave = self.binned_spectra['WAVE'].data
@@ -482,10 +478,9 @@ class StellarContinuumModel:
 
             return TemplateLibrary(self.method['fitpar']['template_library_key'], sres=sres,
                                    velocity_offset=velocity_offset, spectral_step=spectral_step,
-                                   log=True, dapsrc=dapsrc, directory_path=directory_path,
-                                   hardcopy=hardcopy, symlink_dir=tpl_symlink_dir,
-                                   processed_file=processed_file, loggers=self.loggers,
-                                   quiet=self.quiet)
+                                   log=True, directory_path=directory_path, hardcopy=hardcopy,
+                                   symlink_dir=tpl_symlink_dir, processed_file=processed_file,
+                                   loggers=self.loggers, quiet=self.quiet)
 
 
     def _set_paths(self, directory_path, dapver, analysis_path, output_file):
@@ -744,9 +739,9 @@ class StellarContinuumModel:
                 'TRUNCATED', 'PPXF_REJECT', 'INVALID_ERROR', 'FIT_FAILED', 'NEAR_BOUND' ]
 
 
-    def fit(self, binned_spectra, guess_vel, guess_sig=None, dapsrc=None, dapver=None,
-            analysis_path=None, directory_path=None, output_file=None, hardcopy=True,
-            symlink_dir=None, tpl_symlink_dir=None, clobber=False, loggers=None, quiet=False):
+    def fit(self, binned_spectra, guess_vel, guess_sig=None, dapver=None, analysis_path=None,
+            directory_path=None, output_file=None, hardcopy=True, symlink_dir=None,
+            tpl_symlink_dir=None, clobber=False, loggers=None, quiet=False):
         """
         Fit the binned spectra using the specified method.
 
@@ -760,10 +755,6 @@ class StellarContinuumModel:
             guess_sig (:obj:`float`, `numpy.ndarray`, optional):
                 A single or spectrum-dependent initial estimate of the
                 velocity dispersion in km/s.
-            dapsrc (:obj:`str`, optional):
-                Root path to the DAP source directory.  If not provided,
-                the default is defined by
-                :func:`mangadap.config.defaults.dap_source_dir`.
             dapver (:obj:`str`, optional):
                 The DAP version to use for the analysis paths, used to
                 override the default defined by
@@ -860,8 +851,7 @@ class StellarContinuumModel:
 
         #---------------------------------------------------------------
         # Fill in any remaining binning parameters
-        self._fill_method_par(dapsrc=dapsrc, analysis_path=analysis_path,
-                              tpl_symlink_dir=tpl_symlink_dir)
+        self._fill_method_par(analysis_path=analysis_path, tpl_symlink_dir=tpl_symlink_dir)
 
         # (Re)Set the output paths
         self._set_paths(directory_path, dapver, analysis_path, output_file)

@@ -40,9 +40,6 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--directory_path', type=str,
                         help='Path directly to directory with DRP file to analyze', default=None)
     parser.add_argument('--dapver', type=str, help='DAP version', default=None)
-    parser.add_argument('-s', '--dap_src', type=str,
-                        help='Top-level directory with the DAP source code; defaults to '
-                            '$MANGADAP_DIR', default=None)
     parser.add_argument('-a', '--analysis_path', type=str,
                         help='Top-level output directory for the DAP results; defaults to '
                              '$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER', default=None)
@@ -53,7 +50,7 @@ if __name__ == '__main__':
 
     status = manga_dap(obspar, analysisplan, dbg=arg.dbg, log=arg.log, verbose=arg.verbose,
                        drpver=arg.drpver, redux_path=arg.redux_path,
-                       directory_path=arg.directory_path, dapver=arg.dapver, dapsrc=arg.dap_src,
+                       directory_path=arg.directory_path, dapver=arg.dapver,
                        analysis_path=arg.analysis_path)
 
     print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))

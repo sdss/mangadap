@@ -532,9 +532,6 @@ class SpectralIndices:
             :class:`mangadap.par.spectralfeaturedb.SpectralFeatureDBDef`
             objects that define the unique key for the bandhead-index
             database (see :mod:`mangadap.par.bandheadindexdb`).
-        dapsrc (str): (**Optional**) Root path to the DAP source
-            directory.  If not provided, the default is defined by
-            :func:`mangadap.config.defaults.dap_source_dir`.
         dapver (str): (**Optional**) The DAP version to use for the
             analysis, used to override the default defined by
             :func:`mangadap.config.defaults.dap_version`.
@@ -571,7 +568,7 @@ class SpectralIndices:
     """
     def __init__(self, database_key, binned_spectra, redshift=None, stellar_continuum=None,
                  emission_line_model=None, database_list=None, artifact_list=None,
-                 absorption_index_list=None, bandhead_index_list=None, dapsrc=None, dapver=None,
+                 absorption_index_list=None, bandhead_index_list=None, dapver=None,
                  analysis_path=None, directory_path=None, output_file=None, hardcopy=True,
                  tpl_symlink_dir=None, clobber=False, checksum=False, loggers=None, quiet=False):
 
@@ -620,7 +617,7 @@ class SpectralIndices:
 
         # Run the assessments of the DRP file
         self.measure(binned_spectra, redshift=redshift, stellar_continuum=stellar_continuum,
-                     emission_line_model=emission_line_model, dapsrc=dapsrc, dapver=dapver,
+                     emission_line_model=emission_line_model, dapver=dapver,
                      analysis_path=analysis_path, directory_path=directory_path,
                      output_file=output_file, hardcopy=hardcopy, tpl_symlink_dir=tpl_symlink_dir,
                      clobber=clobber, loggers=loggers, quiet=quiet)
@@ -631,7 +628,7 @@ class SpectralIndices:
 
 
     def _define_databases(self, database_key, database_list=None, artifact_path=None,
-                          absorption_index_path=None, bandhead_index_path=None, dapsrc=None):
+                          absorption_index_path=None, bandhead_index_path=None):
         r"""
 
         Select the database of indices
@@ -1141,14 +1138,13 @@ class SpectralIndices:
         return ules, angu, magu
 
 
-    def _resolution_matched_templates(self, dapsrc=None, dapver=None, analysis_path=None,
-                                      tpl_symlink_dir=None):
+    def _resolution_matched_templates(self, dapver=None, analysis_path=None, tpl_symlink_dir=None):
         """
         Get a version of the template library that has had its
         resolution matched to that of the spectral-index database.
         """
         velocity_offset=self.stellar_continuum.method['fitpar']['template_library'].velocity_offset
-        return self.stellar_continuum.get_template_library(dapsrc=dapsrc, dapver=dapver,
+        return self.stellar_continuum.get_template_library(dapver=dapver,
                                                            analysis_path=analysis_path,
                                                            tpl_symlink_dir=tpl_symlink_dir,
                                                            velocity_offset=velocity_offset,
@@ -1674,9 +1670,9 @@ class SpectralIndices:
 
 
     def measure(self, binned_spectra, redshift=None, stellar_continuum=None,
-                emission_line_model=None, dapsrc=None, dapver=None, analysis_path=None,
-                directory_path=None, output_file=None, hardcopy=True, tpl_symlink_dir=None,
-                clobber=False, loggers=None, quiet=False):
+                emission_line_model=None, dapver=None, analysis_path=None, directory_path=None,
+                output_file=None, hardcopy=True, tpl_symlink_dir=None, clobber=False, loggers=None,
+                quiet=False):
         """
         Measure the spectral indices using the binned spectra and the
         internal spectral index database, and construct the internal
@@ -1754,9 +1750,6 @@ class SpectralIndices:
                 (:class:`mangadap.proc.emissionlinemodel.EmissionLineModel`):
                 (**Optional**) The emission-line model as applied to
                 either the binned spectra or the unbinned spaxels.
-            dapsrc (str): (**Optional**) Root path to the DAP source
-                directory.  If not provided, the default is defined by
-                :func:`mangadap.config.defaults.dap_source_dir`.
             dapver (str): (**Optional**) The DAP version to use for the
                 analysis, used to override the default defined by
                 :func:`mangadap.config.defaults.dap_version`.
@@ -1939,7 +1932,7 @@ class SpectralIndices:
 
             # Get the template spectra to use
             replacement_templates = None if self.database['fwhm'] < 0 \
-                    else self._resolution_matched_templates(dapsrc=dapsrc, dapver=dapver,
+                    else self._resolution_matched_templates(dapver=dapver,
                                                             analysis_path=self.analysis_path,
                                                             tpl_symlink_dir=tpl_symlink_dir)
             # Have to use the corrected velocity dispersion if templates

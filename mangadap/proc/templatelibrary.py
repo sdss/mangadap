@@ -402,10 +402,6 @@ class TemplateLibrary:
             parameters required to read and interpret a template
             library.  The ``library_key`` must select one of the objects
             in this list.
-        dapsrc (:obj:`str`, optional):
-            Root path to the DAP source directory.  If not provided, the
-            default is defined by
-            :func:`mangadap.config.defaults.dap_source_dir`.
         drpf (:class:`mangadap.drpfits.DRPFits`, optional):
             DRP file (object) with which the template library is
             associated for analysis
@@ -524,12 +520,12 @@ class TemplateLibrary:
                            'M11STELIBZSOL', 'MASTARHC', 'MILES', 'MILESAVG', 'MILESHC',
                            'MILESTHIN', 'MIUSCAT', 'MIUSCATTHIN', 'STELIB']
 
-    def __init__(self, library_key, tpllib_list=None, dapsrc=None, drpf=None,
-                 match_to_drp_resolution=True, velscale_ratio=None, sres=None, velocity_offset=0.0,
-                 min_sig_pix=0.0, no_offset=True, spectral_step=None, log=True,
-                 wavelength_range=None, renormalize=True, dapver=None, analysis_path=None,
-                 directory_path=None, processed_file=None, read=True, process=True, hardcopy=True,
-                 symlink_dir=None, clobber=False, checksum=False, loggers=None, quiet=False):
+    def __init__(self, library_key, tpllib_list=None, drpf=None, match_to_drp_resolution=True,
+                 velscale_ratio=None, sres=None, velocity_offset=0.0, min_sig_pix=0.0,
+                 no_offset=True, spectral_step=None, log=True, wavelength_range=None,
+                 renormalize=True, dapver=None, analysis_path=None, directory_path=None,
+                 processed_file=None, read=True, process=True, hardcopy=True, symlink_dir=None,
+                 clobber=False, checksum=False, loggers=None, quiet=False):
 
         self.loggers = loggers
         self.quiet = quiet
@@ -556,7 +552,7 @@ class TemplateLibrary:
         self.library = None
         self.file_list = None
         self.ntpl = None
-        self.library = self.define_library(library_key, tpllib_list=tpllib_list, dapsrc=dapsrc)
+        self.library = self.define_library(library_key, tpllib_list=tpllib_list)
 
         # Define the processed file and flag, and the HDUList used to
         # keep the data
@@ -596,7 +592,7 @@ class TemplateLibrary:
         return self.hdu[key]
 
     @staticmethod
-    def define_library(library_key, tpllib_list=None, dapsrc=None):
+    def define_library(library_key, tpllib_list=None):
         """
         Select the library from the provided list.  Used to set
         :attr:`library`; see
@@ -610,10 +606,6 @@ class TemplateLibrary:
                 List of :class:`TemplateLibraryDef` objects that define
                 the parameters required to read and interpret a template
                 library.
-            dapsrc (:obj:`str`, optional):
-                Root path to the DAP source directory.  If not provided,
-                the default is defined by
-                :func:`mangadap.config.defaults.dap_source_dir`.
         """
         # Get the details of the selected template library
         return select_proc_method(library_key, TemplateLibraryDef, method_list=tpllib_list,
@@ -1196,7 +1188,7 @@ class TemplateLibrary:
         return os.path.join(self.directory_path, self.processed_file)
 
 
-    def read_raw_template_library(self, library_key=None, tpllib_list=None, dapsrc=None):
+    def read_raw_template_library(self, library_key=None, tpllib_list=None):
         """
         Read the identified template library.  If all the arguments are
         the default, the preset attributes from the initialization of
@@ -1209,18 +1201,15 @@ class TemplateLibrary:
                 :class:`TemplateLibraryDef`
                 objects that define the parameters required to read and
                 interpret a template library.
-            dapsrc (str): (**Optional**) Root path to the DAP source
-                directory.  If not provided, the default is defined by
-                :func:`mangadap.config.defaults.dap_source_dir`.
 
         """
         if library_key is not None:
             # Redefine the library
-            self.library = self.define_library(library_key, tpllib_list=tpllib_list, dapsrc=dapsrc)
+            self.library = self.define_library(library_key, tpllib_list=tpllib_list)
         self._read_raw()
 
 
-    def process_template_library(self, library_key=None, tpllib_list=None, dapsrc=None, drpf=None,
+    def process_template_library(self, library_key=None, tpllib_list=None, drpf=None,
                                  match_to_drp_resolution=True, velscale_ratio=None, sres=None,
                                  velocity_offset=0.0, min_sig_pix=0.0, no_offset=True,
                                  spectral_step=None, log=True, wavelength_range=None,
@@ -1270,10 +1259,6 @@ class TemplateLibrary:
                 the parameters required to read and interpret a template
                 library.  The ``library_key`` must select one of the
                 objects in this list.
-            dapsrc (:obj:`str`, optional):
-                Root path to the DAP source directory.  If not provided,
-                the default is defined by
-                :func:`mangadap.config.defaults.dap_source_dir`.
             drpf (:class:`mangadap.drpfits.DRPFits`, optional):
                 DRP file (object) with which the template library is
                 associated for analysis
