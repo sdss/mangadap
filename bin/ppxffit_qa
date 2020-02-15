@@ -560,17 +560,14 @@ def continuum_component_data(plt, ifu, plan, drpver, dapver, analysis_path, sign
 
     
 def maps_data(plt, ifu, plan, drpver, dapver, analysis_path):
-#    method = defaults.default_dap_method(plan=plan)
     bin_method = SpatiallyBinnedSpectra.define_method(plan['bin_key'])
     sc_method = StellarContinuumModel.define_method(plan['continuum_key'])
     el_method = EmissionLineModel.define_method(plan['elfit_key'])
-    method = defaults.default_dap_method(bin_method['key'],
-                                         sc_method['fitpar']['template_library_key'],
-                                         el_method['continuum_tpl_key'])
-    directory_path = defaults.default_dap_method_path(method, plate=plt, ifudesign=ifu,
-                                                      drpver=drpver, dapver=dapver,
-                                                      analysis_path=analysis_path)
-    maps_file = defaults.default_dap_file_name(plt, ifu, method, mode='MAPS')
+    method = defaults.dap_method(bin_method['key'], sc_method['fitpar']['template_library_key'],
+                                 el_method['continuum_tpl_key'])
+    directory_path = defaults.dap_method_path(method, plate=plt, ifudesign=ifu, drpver=drpver,
+                                              dapver=dapver, analysis_path=analysis_path)
+    maps_file = defaults.dap_file_name(plt, ifu, method, mode='MAPS')
     
     hdu = fits.open(os.path.join(directory_path, maps_file))
 
@@ -594,31 +591,29 @@ def ppxffit_qa_plot(plt, ifu, plan, drpver=None, redux_path=None, dapver=None, a
                     tpl_flux_renorm=None):
 
     # Set the redux and DRP directory paths
-    _drpver = defaults.default_drp_version() if drpver is None else drpver
-    _redux_path = defaults.default_redux_path(drpver=_drpver) if redux_path is None else redux_path
+    _drpver = defaults.drp_version() if drpver is None else drpver
+    _redux_path = defaults.redux_path(drpver=_drpver) if redux_path is None else redux_path
     if not os.path.isdir(_redux_path):
         raise NotADirectoryError('{0} is not a directory.'.format(_redux_path))
 
     # Set the analysis path
-    _dapver = defaults.default_dap_version() if dapver is None else dapver
-    _analysis_path = defaults.default_analysis_path(drpver=_drpver, dapver=_dapver) \
+    _dapver = defaults.dap_version() if dapver is None else dapver
+    _analysis_path = defaults.analysis_path(drpver=_drpver, dapver=_dapver) \
                             if analysis_path is None else analysis_path
     if not os.path.isdir(_analysis_path):
         raise NotADirectoryError('{0} is not a directory.'.format(_analysis_path))
 
     # Get the method, it's root directory, and the qa directories
-#    method = defaults.default_dap_method(plan=plan)
     bin_method = SpatiallyBinnedSpectra.define_method(plan['bin_key'])
     sc_method = StellarContinuumModel.define_method(plan['continuum_key'])
     el_method = EmissionLineModel.define_method(plan['elfit_key'])
-    method = defaults.default_dap_method(bin_method['key'],
-                                         sc_method['fitpar']['template_library_key'],
-                                         el_method['continuum_tpl_key'])
-    method_dir = defaults.default_dap_method_path(method, plate=plt, ifudesign=ifu, drpver=_drpver,
-                                                  dapver=_dapver, analysis_path=_analysis_path)
-    method_qa_dir = defaults.default_dap_method_path(method, plate=plt, ifudesign=ifu, qa=True,
-                                                     drpver=_drpver, dapver=_dapver,
-                                                     analysis_path=_analysis_path)
+    method = defaults.dap_method(bin_method['key'], sc_method['fitpar']['template_library_key'],
+                                 el_method['continuum_tpl_key'])
+    method_dir = defaults.dap_method_path(method, plate=plt, ifudesign=ifu, drpver=_drpver,
+                                          dapver=_dapver, analysis_path=_analysis_path)
+    method_qa_dir = defaults.dap_method_path(method, plate=plt, ifudesign=ifu, qa=True,
+                                             drpver=_drpver, dapver=_dapver,
+                                             analysis_path=_analysis_path)
 
     # Check that the paths exists
     if not os.path.isdir(method_dir):
@@ -718,9 +713,9 @@ if __name__ == '__main__':
         pyplot.switch_backend('agg')
 
     # Get the DAP method types to plot
-    plan_file = defaults.default_dap_plan_file(drpver=arg.drpver, dapver=arg.dapver,
-                                               analysis_path=arg.analysis_path) \
-                                            if arg.plan_file is None else arg.plan_file
+    plan_file = defaults.dap_plan_file(drpver=arg.drpver, dapver=arg.dapver,
+                                       analysis_path=arg.analysis_path) \
+                            if arg.plan_file is None else arg.plan_file
     analysisplan = AnalysisPlanSet.from_par_file(plan_file)
 
     # Construct the plot for each analysis plan

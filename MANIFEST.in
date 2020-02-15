@@ -1,0 +1,10 @@
+include *.md
+include setup.cfg
+
+recursive-include mangadap/data *.fits*
+recursive-include mangadap/data *.par
+recursive-include mangadap/data README
+recursive-include python/mangadap/config *.ini
+
+global-exclude *.pyc *.o
+

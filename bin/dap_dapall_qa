@@ -706,31 +706,30 @@ if __name__ == '__main__':
         pyplot.switch_backend('agg')
 
     # Set the paths
-    redux_path = defaults.default_redux_path(drpver=arg.drpver) \
+    redux_path = defaults.redux_path(drpver=arg.drpver) \
                         if arg.redux_path is None else arg.redux_path
-    analysis_path = defaults.default_analysis_path(drpver=arg.drpver, dapver=arg.dapver) \
+    analysis_path = defaults.analysis_path(drpver=arg.drpver, dapver=arg.dapver) \
                             if arg.analysis_path is None else arg.analysis_path
 
     daptypes = []
     if arg.daptype is None:
-        plan_file = defaults.default_dap_plan_file(drpver=arg.drpver, dapver=arg.dapver,
+        plan_file = defaults.dap_plan_file(drpver=arg.drpver, dapver=arg.dapver,
                                           analysis_path=arg.analysis_path) \
                                             if arg.plan_file is None else arg.plan_file
         analysisplan = AnalysisPlanSet.from_par_file(plan_file)
-#        daptypes = [ defaults.default_dap_method(plan=p) for p in analysisplan ]
         for p in analysisplan:
             bin_method = SpatiallyBinnedSpectra.define_method(p['bin_key'])
             sc_method = StellarContinuumModel.define_method(p['continuum_key'])
             el_method = EmissionLineModel.define_method(p['elfit_key'])
-            daptypes += [defaults.default_dap_method(bin_method['key'],
-                                                     sc_method['fitpar']['template_library_key'],
-                                                     el_method['continuum_tpl_key'])]
+            daptypes += [defaults.dap_method(bin_method['key'],
+                                             sc_method['fitpar']['template_library_key'],
+                                             el_method['continuum_tpl_key'])]
     else:
         daptypes = [arg.daptype]
 
-    drpall_file = defaults.default_drpall_file(drpver=arg.drpver, redux_path=redux_path)
-    dapall_file = defaults.default_dapall_file(drpver=arg.drpver, dapver=arg.dapver,
-                                               analysis_path=analysis_path)
+    drpall_file = defaults.drpall_file(drpver=arg.drpver, redux_path=redux_path)
+    dapall_file = defaults.dapall_file(drpver=arg.drpver, dapver=arg.dapver,
+                                       analysis_path=analysis_path)
 
     drpall_hdu = fits.open(drpall_file)
     dapall_hdu = fits.open(dapall_file)

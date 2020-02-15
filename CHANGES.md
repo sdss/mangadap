@@ -32,6 +32,10 @@ TODO
 2.5.3dev
 --------
 
+ - Directory restructuring:  Removed "python" top-level directory and
+   moved "data" into "mangadap".  This should make package distribution
+   via pip easier.
+
 2.5.2 (14 Feb 2020)
 -------------------
 

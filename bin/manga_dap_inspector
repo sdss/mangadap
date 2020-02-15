@@ -17,8 +17,7 @@ from mangadap.par.obsinput import ObsInputPar
 from mangadap.par.analysisplan import AnalysisPlanSet
 from mangadap.util.bitmask import BitMask
 from mangadap.drpfits import DRPFits
-from mangadap.config.defaults import default_dap_method, default_dap_method_path
-from mangadap.config.defaults import default_dap_file_name, sdss_maskbits_file
+from mangadap.config import defaults
 from mangadap.proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
 from mangadap.proc.stellarcontinuummodel import StellarContinuumModel
 from mangadap.proc.emissionlinemodel import EmissionLineModel
@@ -799,24 +798,25 @@ def generate_file_paths(obs, analysisplan, drpver=None, redux_path=None, dapver=
                         directory_path=None, analysis_path=None):
 
     # Generate the paths to the MAPS and LOGCUBE files:
-#    method = default_dap_method(plan=analysisplan) if directory_path is None else None
     bin_method = SpatiallyBinnedSpectra.define_method(analysisplan['bin_key'])
     sc_method = StellarContinuumModel.define_method(analysisplan['continuum_key'])
     el_method = EmissionLineModel.define_method(analysisplan['elfit_key'])
-    method = default_dap_method(bin_method['key'], sc_method['fitpar']['template_library_key'],
-                                el_method['continuum_tpl_key'])
-    directory_path = default_dap_method_path(method, plate=obs['plate'], ifudesign=obs['ifudesign'],
-                                             drpver=drpver, dapver=dapver,
-                                             analysis_path=analysis_path) \
+    method = defaults.dap_method(bin_method['key'], sc_method['fitpar']['template_library_key'],
+                                 el_method['continuum_tpl_key'])
+    directory_path = defaults.dap_method_path(method, plate=obs['plate'],
+                                              ifudesign=obs['ifudesign'], drpver=drpver,
+                                              dapver=dapver, analysis_path=analysis_path) \
                                 if directory_path is None else str(directory_path)
 
     #-------------------------------------------------------------------
     # Read the maps to plot
-    maps_file = os.path.join(directory_path, default_dap_file_name(obs['plate'], obs['ifudesign'],
-                                                                   method, mode='MAPS'))
+    maps_file = os.path.join(directory_path,
+                             defaults.dap_file_name(obs['plate'], obs['ifudesign'], method,
+                                                    mode='MAPS'))
     print('MAP file: {0}'.format(maps_file))
-    model_file = os.path.join(directory_path, default_dap_file_name(obs['plate'], obs['ifudesign'],
-                                                                   method, mode='LOGCUBE'))
+    model_file = os.path.join(directory_path,
+                              defaults.dap_file_name(obs['plate'], obs['ifudesign'], method,
+                                                     mode='LOGCUBE'))
     print('LOGCUBE file: {0}'.format(model_file))
 
     return maps_file, model_file
@@ -1085,70 +1085,3 @@ if __name__ == '__main__':
     manga_dap_inspector(maps_file, model_file, ext=arg.ext, masked_spectra=arg.maskspec)
     
     print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
-
-
-
-#from mangadap.proc.reductionassessments import ReductionAssessment
-#from mangadap.proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
-#from mangadap.proc.stellarcontinuummodel import StellarContinuumModel
-#from mangadap.proc.emissionlinemoments import EmissionLineMoments
-#from mangadap.proc.emissionlinemodel import EmissionLineModel
-#from mangadap.proc.spectralindices import SpectralIndices
-
-#    # Instantiate the data objects
-#    drpf = DRPFits(obs['plate'], obs['ifudesign'], obs['mode'], drpver=drpver,
-#                   redux_path=redux_path, directory_path=directory_path, read=True)
-#
-#    rdxqa = None if analysisplan['drpqa_key'] is None else \
-#                ReductionAssessment(analysisplan['drpqa_key'], drpf, pa=obs['pa'], ell=obs['ell'],
-#                                    dapsrc=dapsrc, analysis_path=analysis_path, clobber=False)
-# 
-#    binned_spectra = None if analysisplan['bin_key'] is None else \
-#                SpatiallyBinnedSpectra(analysisplan['bin_key'], drpf, rdxqa, reff=obs['reff'],
-#                                       dapsrc=dapsrc, analysis_path=analysis_path, clobber=False)
-#
-#    stellar_continuum = None if analysisplan['continuum_key'] is None else \
-#                StellarContinuumModel(analysisplan['continuum_key'], binned_spectra,
-#                                      guess_vel=obs['vel'], guess_sig=obs['vdisp'], dapsrc=dapsrc,
-#                                      analysis_path=analysis_path, clobber=False)
-#
-#    emission_line_model = None if analysisplan['elfit_key'] is None else \
-#                EmissionLineModel(analysisplan['elfit_key'], binned_spectra,
-#                                  guess_vel=obs['vel'], stellar_continuum=stellar_continuum,
-#                                  dapsrc=dapsrc, analysis_path=analysis_path,
-#                                  clobber=False)
-#
-#    method = default_dap_method(plan=analysisplan) if directory_path is None else None
-#    directory_path = default_dap_method_path(method, plate=obs['plate'], ifudesign=obs['ifudesign'],
-#                                             drpver=drpver, dapver=dapver,
-#                                             analysis_path=analysis_path) \
-#                                if directory_path is None else str(directory_path)
-#    maps_file = os.path.join(directory_path, default_dap_file_name(obs['plate'], obs['ifudesign'],
-#                                                                   method, mode='MAPS'))
-#    print('MAP file: {0}'.format(maps_file))
-#
-#    hdu = fits.open(maps_file)
-#    restructure_hdu(hdu)
-#    channel_names, channel_bits, map_cube, map_cube_ivar, map_cube_mask, map_zmin, map_zmax \
-#            = build_maps(hdu)
-
-
-#    # Binned spectra:
-#    masked_spec = numpy.ma.MaskedArray(binned_spectra['FLUX'].data,
-#                                       mask=binned_spectra.bitmask.flagged(
-#                                                binned_spectra['MASK'].data,
-#                                                binned_spectra.do_not_fit_flags()))
-#    # Best-fitting continuum model:
-#    model_continuum = numpy.ma.MaskedArray(stellar_continuum['FLUX'].data,
-#                                           mask=stellar_continuum.bitmask.flagged(
-#                                                    stellar_continuum['MASK'].data,
-#                                                    stellar_continuum.all_except_emission_flags()))
-#    # Best-fitting emission-line model:
-#    model_emission = numpy.ma.MaskedArray(emission_line_model['FLUX'].data,
-#                                          mask=stellar_continuum.bitmask.flagged(
-#                                                    stellar_continuum['MASK'].data,
-#                                                    stellar_continuum.all_except_emission_flags()))
-#    # Combined model:
-#    model_spec = model_continuum + model_emission
-
-
