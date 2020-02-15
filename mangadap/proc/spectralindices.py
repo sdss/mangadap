@@ -540,7 +540,7 @@ class SpectralIndices:
             :func:`mangadap.config.defaults.dap_version`.
         analysis_path (str): (**Optional**) The top-level path for the
             DAP output files, used to override the default defined by
-            :func:`mangadap.config.defaults.analysis_path`.
+            :func:`mangadap.config.defaults.dap_analysis_path`.
         directory_path (str): The exact path to the directory with DAP
             output that is common to number DAP "methods".  See
             :attr:`directory_path`.
@@ -681,8 +681,8 @@ class SpectralIndices:
                             else self.emission_line_model.method['continuum_tpl_key']
         method = defaults.dap_method(self.binned_spectra.method['key'], continuum_templates,
                                      eml_templates)
-        self.analysis_path = defaults.analysis_path(drpver=self.binned_spectra.drpf.drpver,
-                                                    dapver=dapver) \
+        self.analysis_path = defaults.dap_analysis_path(drpver=self.binned_spectra.drpf.drpver,
+                                                        dapver=dapver) \
                                     if analysis_path is None else str(analysis_path)
         self.directory_path \
                 = defaults.dap_method_path(method, plate=self.binned_spectra.drpf.plate,
@@ -1763,7 +1763,7 @@ class SpectralIndices:
             analysis_path (str): (**Optional**) The top-level path for
                 the DAP output files, used to override the default
                 defined by
-                :func:`mangadap.config.defaults.analysis_path`.
+                :func:`mangadap.config.defaults.dap_analysis_path`.
             directory_path (str): The exact path to the directory with
                 DAP output that is common to number DAP "methods".  See
                 :attr:`directory_path`.

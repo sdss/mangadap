@@ -20,4 +20,3 @@ def test_lick():
     absdb = AbsorptionIndexDB.from_key('LICKINDX')
     assert len(absdb) == 21, 'Incorrect number of Lick indices'
     assert 'Hb' in absdb['name'], 'Does not contain Hb in list'
-

@@ -130,7 +130,7 @@ class DAPFits:
             The path to the top level directory containing the DAP
             output files for a given DRP and DAP version. Default is
             defined by
-            :func:`mangadap.config.defaults.analysis_path`.
+            :func:`mangadap.config.defaults.dap_analysis_path`.
         directory_path (:obj:`str`, optional):
             The exact path to the DAP file. Default is defined by
             :func:`mangadap.config.defaults.dap_method_path`.
@@ -193,7 +193,7 @@ class DAPFits:
         if directory_path is None:
             self.drpver = defaults.drp_version() if drpver is None else str(drpver)
             self.dapver = defaults.dap_version() if dapver is None else str(dapver)
-            self.analysis_path = defaults.analysis_path(self.drpver, self.dapver) \
+            self.analysis_path = defaults.dap_analysis_path(self.drpver, self.dapver) \
                                  if analysis_path is None else str(analysis_path)
             self.directory_path = defaults.dap_method_path(method, plate=self.plate,
                                                            ifudesign=self.ifudesign,

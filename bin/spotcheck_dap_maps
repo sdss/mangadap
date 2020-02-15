@@ -573,7 +573,7 @@ if __name__ == '__main__':
         pyplot.switch_backend('agg')
 
     # Set the the analysis path and make sure it exists
-    analysis_path = defaults.analysis_path(drpver=arg.drpver, dapver=arg.dapver) \
+    analysis_path = defaults.dap_analysis_path(drpver=arg.drpver, dapver=arg.dapver) \
                             if arg.analysis_path is None else arg.analysis_path
 
     daptypes = []

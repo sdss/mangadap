@@ -146,7 +146,7 @@ class rundap:
         redux_path (:obj:`str`, optional):
             The top-level path with the DRP files used to override the
             default defined by
-            :func:`mangadap.config.defaults.redux_path`.
+            :func:`mangadap.config.defaults.drp_redux_path`.
         dapver (:obj:`str`, optional):
             The DAP version to use for the analysis, used to override
             the default defined by
@@ -156,7 +156,7 @@ class rundap:
         analysis_path (:obj:`str`, optional):
             The top-level path for the DAP output files, used to
             override the default defined by
-            :func:`mangadap.config.defaults.analysis_path`.
+            :func:`mangadap.config.defaults.dap_analysis_path`.
         plan_file (:obj:`str`, optional):
             Name of the plan file to use for *all* DRP data in this run,
             used to override the default defined by
@@ -409,9 +409,9 @@ class rundap:
         self.dapver = defaults.dap_version() if self.dapver is None else self.dapver
 
         # Set the output paths
-        self.redux_path = defaults.redux_path(self.mpl.drpver) if self.redux_path is None \
+        self.redux_path = defaults.drp_redux_path(self.mpl.drpver) if self.redux_path is None \
                                     else os.path.abspath(self.redux_path)
-        self.analysis_path = defaults.analysis_path(self.mpl.drpver, self.dapver) \
+        self.analysis_path = defaults.dap_analysis_path(self.mpl.drpver, self.dapver) \
                                     if self.analysis_path is None \
                                     else os.path.abspath(self.analysis_path)
 

@@ -758,9 +758,9 @@ if __name__ == '__main__':
         pyplot.switch_backend('agg')
 
     # Set the paths
-    redux_path = defaults.redux_path(drpver=arg.drpver) \
+    redux_path = defaults.drp_redux_path(drpver=arg.drpver) \
                     if arg.redux_path is None else arg.redux_path
-    analysis_path = defaults.analysis_path(drpver=arg.drpver, dapver=arg.dapver) \
+    analysis_path = defaults.dap_analysis_path(drpver=arg.drpver, dapver=arg.dapver) \
                             if arg.analysis_path is None else arg.analysis_path
 
     daptypes = []

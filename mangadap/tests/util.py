@@ -5,7 +5,7 @@ import pytest
 from mangadap.config import defaults
 
 def data_file(filename):
-    return os.path.join(os.environ['MANGADAP_DIR'], 'data', 'tests', filename)
+    return os.path.join(defaults.dap_data_root(), 'tests', filename)
 
 def cube_test_file():
     plt = 7815

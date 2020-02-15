@@ -340,7 +340,7 @@ class SpatiallyBinnedSpectra:
             :func:`mangadap.config.defaults.dap_version`.
         analysis_path (str): (**Optional**) The top-level path for the
             DAP output files, used to override the default defined by
-            :func:`mangadap.config.defaults.analysis_path`.
+            :func:`mangadap.config.defaults.dap_analysis_path`.
         directory_path (str): The exact path to the directory with DAP
             output that is common to number DAP "methods".  See
             :attr:`directory_path`.
@@ -1161,7 +1161,7 @@ class SpatiallyBinnedSpectra:
             analysis_path (str): (**Optional**) The top-level path for
                 the DAP output files, used to override the default
                 defined by
-                :func:`mangadap.config.defaults.analysis_path`.
+                :func:`mangadap.config.defaults.dap_analysis_path`.
             directory_path (str): The exact path to the directory with
                 DAP output that is common to number DAP "methods".  See
                 :attr:`directory_path`.

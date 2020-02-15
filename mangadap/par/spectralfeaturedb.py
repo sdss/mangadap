@@ -35,6 +35,7 @@ import numpy
 
 from pydl.pydlutils.yanny import yanny
 
+from ..config import defaults
 from .parset import ParDatabase
 from ..util.parser import DefaultConfig
 from ..proc import util
@@ -105,7 +106,7 @@ class SpectralFeatureDB(ParDatabase):
         if cls.default_data_dir is None:
             raise ValueError('Default data directory is not defined for {0} objects.'.format(
                                 cls.__class__.__name__))
-        return os.path.join(os.environ['MANGADAP_DIR'], 'data', cls.default_data_dir)
+        return os.path.join(defaults.dap_data_root(), cls.default_data_dir)
 
     @classmethod
     def available_databases(cls, directory_path=None):

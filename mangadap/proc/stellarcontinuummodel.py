@@ -274,7 +274,7 @@ class StellarContinuumModel:
             :func:`mangadap.config.defaults.dap_version`.
         analysis_path (str): (**Optional**) The top-level path for the
             DAP output files, used to override the default defined by
-            :func:`mangadap.config.defaults.analysis_path`.
+            :func:`mangadap.config.defaults.dap_analysis_path`.
         directory_path (str): The exact path to the directory with DAP
             output that is common to number DAP "methods".  See
             :attr:`directory_path`.
@@ -697,7 +697,7 @@ class StellarContinuumModel:
             analysis_path (str): (**Optional**) The path to the
                 top-level directory containing the DAP output files for
                 a given DRP and DAP version. Default set by
-                :func:`mangadap.config.defaults.analysis_path`.
+                :func:`mangadap.config.defaults.dap_analysis_path`.
             output_file (str): (**Optional**) The name of the file with
                 the reduction assessments.  Default set by
                 :func:`mangadap.config.defaults.dap_file_name`.
@@ -773,7 +773,7 @@ class StellarContinuumModel:
             analysis_path (:obj:`str`, optional):
                 The top-level path for the DAP output files, used to
                 override the default defined by
-                :func:`mangadap.config.defaults.analysis_path`.
+                :func:`mangadap.config.defaults.dap_analysis_path`.
             directory_path (:obj:`str`, optional):
                 The exact path to the directory with DAP output that is
                 common to number DAP "methods".  See

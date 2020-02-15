@@ -247,7 +247,7 @@ class ReductionAssessment:
         analysis_path (str): (**Optional**) The path to the top level
             directory containing the DAP output files for a given DRP
             and DAP version.  Default is defined by
-            :func:`mangadap.config.defaults.analysis_path`.
+            :func:`mangadap.config.defaults.dap_analysis_path`.
         directory_path (str): (**Optional**) The exact path for the
             output file.  Default is defined by
             :func:`mangadap.config.defaults.dap_common_path`.
@@ -451,13 +451,13 @@ class ReductionAssessment:
                 DAP reduction assessments file.  Default set by
                 :func:`mangadap.config.defaults.dap_common_path`.
             drpver (str): (**Optional**) DRP version.  Default set by
-                :func:`mangadap.config.defaults.default_drp_version`.
+                :func:`mangadap.config.defaults.drp_version`.
             dapver (str): (**Optional**) DAP version.  Default set by
                 :func:`mangadap.config.defaults.dap_version`.
             analysis_path (str): (**Optional**) The path to the
                 top-level directory containing the DAP output files for
                 a given DRP and DAP version. Default set by
-                :func:`mangadap.config.defaults.default_analysis_path`.
+                :func:`mangadap.config.defaults.dap_analysis_path`.
             output_file (str): (**Optional**) The name of the file with
                 the reduction assessments.  Default set by
                 :func:`mangadap.config.defaults.dap_file_name`.
@@ -551,7 +551,7 @@ class ReductionAssessment:
             analysis_path (str): (**Optional**) The path to the top
                 level directory containing the DAP output files for a
                 given DRP and DAP version.  Default is defined by
-                :func:`mangadap.config.defaults.default_analysis_path`.
+                :func:`mangadap.config.defaults.dap_analysis_path`.
             directory_path (str): (**Optional**) The exact path for the
                 output file.  Default is defined by
                 :func:`mangadap.config.defaults.dap_common_path`.
@@ -559,7 +559,7 @@ class ReductionAssessment:
                 the computed assessments.  The full path of the output
                 file will be :attr:`directory_path`/:attr:`output_file`.
                 Default is defined by
-                :func:`mangadap.config.defaults.default_reduction_assessments_file`.
+                :func:`mangadap.config.defaults.reduction_assessments_file`.
             hardcopy (bool): (**Optional**) Flag to write the data to a
                 fits file.  Default is True.
             symlink_dir (str): (**Optional**) Create a symlink to the

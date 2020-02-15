@@ -447,7 +447,7 @@ class TemplateLibrary:
             The path to the top level directory containing the DAP
             output files for a given DRP and DAP version.  Default is
             defined by
-            :func:`mangadap.config.defaults.analysis_path`.
+            :func:`mangadap.config.defaults.dap_analysis_path`.
         directory_path (:obj:`str`, optional):
             The exact path to the processed template library file.
             Default is defined by
@@ -1318,7 +1318,7 @@ class TemplateLibrary:
                 The path to the top level directory containing the DAP
                 output files for a given DRP and DAP version.  Default
                 is defined by
-                :func:`mangadap.config.defaults.analysis_path`.
+                :func:`mangadap.config.defaults.dap_analysis_path`.
             directory_path (:obj:`str`, optional):
                 The exact path to the processed template library file.
                 Default is defined by

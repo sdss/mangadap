@@ -35,6 +35,7 @@ TODO
  - Directory restructuring:  Removed "python" top-level directory and
    moved "data" into "mangadap".  This should make package distribution
    via pip easier.
+ - Remove "default" prefix from methods in `mangadap.config.defaults`.
 
 2.5.2 (14 Feb 2020)
 -------------------

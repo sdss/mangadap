@@ -23,7 +23,7 @@ Revision history
 .. include:: ../links.rst
 """
 import inspect
-from os import environ
+import os
 
 def print_frame(prefix):
     """
@@ -45,12 +45,13 @@ def check_environment_variable(name):
     Check for the existence of an environment variable.
 
     Args:
-        name (str): Name of a required environmental variable
+        name (:obj:`str`):
+            Name of a required environmental variable
 
     Raises:
         EnvironmentError: Raised if *name* is not defined.
     """
-    if name not in environ:
+    if name not in os.environ:
         raise EnvironmentError('{0} not defined in current environment!')
 
 

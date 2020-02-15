@@ -128,7 +128,7 @@ class DRPComplete:
             The path to the top level directory containing the DRP
             output files; this is the same as the ``redux_path`` in the
             :class:`mangadap.drpfits.DRPFits` class.  Default is defined
-            by :func:`mangadap.config.defaults.redux_path`.
+            by :func:`mangadap.config.defaults.drp_redux_path`.
         dapver (:obj:`str`, optional):
             DAP version, which is:
 
@@ -142,7 +142,7 @@ class DRPComplete:
             The path to the top level directory for the DAP output
             files; this is **different** from the directory_path in the
             :class:`mangadap.dapfile` class.  Default is defined by
-            :func:`mangadap.config.defaults.analysis_path`
+            :func:`mangadap.config.defaults.dap_analysis_path`
         directory_path (:obj:`str`, optional):
             Direct path to the output file produced using
             :func:`mangadap.config.defaults.dap_common_path`
@@ -190,11 +190,11 @@ class DRPComplete:
 
         # Input properties
         self.drpver = defaults.drp_version() if drpver is None else str(drpver)
-        self.redux_path = defaults.redux_path(self.drpver) \
+        self.redux_path = defaults.drp_redux_path(self.drpver) \
                                 if redux_path is None else str(redux_path)
 
         self.dapver = defaults.dap_version() if dapver is None else str(dapver)
-        self.analysis_path = defaults.analysis_path(self.drpver, self.dapver) \
+        self.analysis_path = defaults.dap_analysis_path(self.drpver, self.dapver) \
                              if analysis_path is None else str(analysis_path)
         self.directory_path = defaults.dap_common_path(drpver=self.drpver, dapver=self.dapver,
                                                        analysis_path=self.analysis_path) \

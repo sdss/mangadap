@@ -103,7 +103,7 @@ def drp_version():
     return os.environ['MANGADRP_VER']
 
 
-def redux_path(drpver=None):
+def drp_redux_path(drpver=None):
     """
     Return the main output path for the DRP products using the
     environmental variable MANGA_SPECTRO_REDUX.
@@ -133,14 +133,15 @@ def drp_directory_path(plate, drpver=None, redux_path=None):
             DRP version. Default is to use :func:`drp_version`.
         redux_path (:obj:`str`, optional):
             Path to the root reduction directory. Default is to use
-            :func:`redux_path`.
+            :func:`drp_redux_path`.
 
     Returns:
         :obj:`str`: Path to the directory with the 3D products of the
         DRP
     """
     # Make sure the redux path is set
-    _redux_path = redux_path(drpver=drpver) if redux_path is None else os.path.abspath(redux_path)
+    _redux_path = drp_redux_path(drpver=drpver) \
+                        if redux_path is None else os.path.abspath(redux_path)
     return os.path.join(_redux_path, str(plate), 'stack')
 
 
@@ -153,13 +154,14 @@ def drpall_file(drpver=None, redux_path=None):
             DRP version.  Default is to use :func:`drp_version`.
         redux_path (:obj:`str`, optional):
             Path to the root reduction directory. Default is to use
-            :func:`redux_path`.
+            :func:`drp_redux_path`.
 
     Returns:
         :obj:`str`: Full path to the DRPall fits file.
     """
     _drpver = drp_version() if drpver is None else drpver
-    _redux_path = redux_path(drpver=_drpver) if redux_path is None else os.path.abspath(redux_path)
+    _redux_path = drp_redux_path(drpver=_drpver) \
+                        if redux_path is None else os.path.abspath(redux_path)
     return os.path.join(_redux_path, 'drpall-{0}.fits'.format(_drpver))
 
 def dapall_file(drpver=None, dapver=None, analysis_path=None):
@@ -173,14 +175,14 @@ def dapall_file(drpver=None, dapver=None, analysis_path=None):
             DAP version.  Default is to use :func:`dap_version`.
         analysis_path (:obj:`str`, optional):
             Path to the root analysis directory.  Default is to use
-            :func:`analysis_path`
+            :func:`dap_analysis_path`
 
     Returns:
         :obj:`str`: Full path to the DAPall fits file.
     """
     _drpver = drp_version() if drpver is None else drpver
     _dapver = dap_version() if dapver is None else dapver
-    _analysis_path = analysis_path(drpver=_drpver, dapver=_dapver) \
+    _analysis_path = dap_analysis_path(drpver=_drpver, dapver=_dapver) \
                         if analysis_path is None else os.path.abspath(analysis_path)
     return os.path.join(_analysis_path, 'dapall-{0}-{1}.fits'.format(_drpver, _dapver))
 
@@ -239,7 +241,7 @@ def dap_version():
     return __version__ if no_environ_var else os.environ['MANGADAP_VER']
 
 
-def analysis_path(drpver=None, dapver=None):
+def dap_analysis_path(drpver=None, dapver=None):
     """
     Return the main output path for the DAP using the environmental
     variable MANGA_SPECTRO_ANALYSIS.
@@ -280,7 +282,7 @@ def dap_common_path(plate=None, ifudesign=None, drpver=None, dapver=None, analys
             DAP version.  Default is to use :func:`dap_version`.
         analysis_path (:obj:`str`, optional):
             Path to the root analysis directory. Default is to use
-            :func:`analysis_path`.
+            :func:`dap_analysis_path`.
 
     Returns:
         :obj:`str`: Path to the directory with DAP reference files
@@ -294,7 +296,7 @@ def dap_common_path(plate=None, ifudesign=None, drpver=None, dapver=None, analys
         raise ValueError('For IFU design subdirectory, must provide plate number.')
 
     # Get the main analysis path
-    _analysis_path = analysis_path(drpver=drpver, dapver=dapver) \
+    _analysis_path = dap_analysis_path(drpver=drpver, dapver=dapver) \
                         if analysis_path is None else os.path.abspath(analysis_path)
 
     output_path = os.path.join(_analysis_path, 'common')
@@ -384,7 +386,7 @@ def dap_method_path(method, plate=None, ifudesign=None, qa=False, ref=False, drp
             DAP version. Default is to use :func:`dap_version`.
         analysis_path (:obj:`str`, optional):
             Path to the root analysis directory. Default is to use
-            :func:`analysis_path`.
+            :func:`dap_analysis_path`.
 
     Returns:
         :obj:`str`: Path to the plan subdirectory
@@ -402,7 +404,7 @@ def dap_method_path(method, plate=None, ifudesign=None, qa=False, ref=False, drp
         raise ValueError('Cannot provide path for both qa and ref directory.  Pick one.')
 
     # Get the main analysis path
-    _analysis_path = analysis_path(drpver=drpver, dapver=dapver) \
+    _analysis_path = dap_analysis_path(drpver=drpver, dapver=dapver) \
                         if analysis_path is None else os.path.abspath(analysis_path)
 
     # Build the plan subirectory
@@ -491,7 +493,7 @@ def dap_par_file(plate, ifudesign, mode, partype='input', drpver=None, dapver=No
             DAP version. Default is to use :func:`dap_version`.
         analysis_path (:obj:`str`, optional): 
             Path to the root analysis directory. Default is to use
-            :func:`analysis_path`.
+            :func:`dap_analysis_path`.
         directory_path (:obj:`str`, optional):
             Path to the directory with the DAP output files. Default
             is to use :func:`dap_common_path`
@@ -519,7 +521,7 @@ def dap_plan_file(drpver=None, dapver=None, analysis_path=None):
             DAP version. Default is to use :func:`dap_version`.
         analysis_path (:obj:`str`, optional):
             Path to the root analysis directory. Default is to use
-            :func:`analysis_path`
+            :func:`dap_analysis_path`
 
     Returns:
         :obj:`str`: Full path to the DAP plan file
@@ -528,7 +530,7 @@ def dap_plan_file(drpver=None, dapver=None, analysis_path=None):
     if dapver is None:
         dapver = dap_version()
 
-    _analysis_path = analysis_path(drpver=drpver, dapver=dapver) \
+    _analysis_path = dap_analysis_path(drpver=drpver, dapver=dapver) \
                         if analysis_path is None else os.path.abspath(analysis_path)
     
     # Set the name of the plan file

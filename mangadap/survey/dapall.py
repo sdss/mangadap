@@ -90,14 +90,14 @@ class DAPall:
         redux_path (:obj:`str`, optional):
             Top-level directory with the DRP products; default is
             defined by
-            :func:`mangadap.config.defaults.redux_path`.
+            :func:`mangadap.config.defaults.drp_redux_path`.
         dapver (:obj:`str`, optional):
             DAP version.  Default determined by
             :func:`mangadap.config.defaults.dap_version`.
         analysis_path (:obj:`str`, optional):
             Top-level directory for the DAP output data; default is
             defined by
-            :func:`mangadap.config.defaults.analysis_path`.
+            :func:`mangadap.config.defaults.dap_analysis_path`.
         readonly (:obj:`bool`, optional):
             If it exists, open any existing file and disallow any
             modifications of the database.  Default is to automatically
@@ -159,11 +159,11 @@ class DAPall:
 
         # Path definitions
         self.drpver = defaults.drp_version() if drpver is None else str(drpver)
-        self.redux_path = defaults.redux_path(self.drpver) \
+        self.redux_path = defaults.drp_redux_path(self.drpver) \
                                 if redux_path is None else str(redux_path)
 
         self.dapver = defaults.dap_version() if dapver is None else str(dapver)
-        self.analysis_path = defaults.analysis_path(self.drpver, self.dapver) \
+        self.analysis_path = defaults.dap_analysis_path(self.drpver, self.dapver) \
                                 if analysis_path is None else str(analysis_path)
 
         # Set the name of the DRPall file

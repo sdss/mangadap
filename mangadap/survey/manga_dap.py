@@ -105,18 +105,15 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
             :func:`mangadap.config.defaults.drp_version`.
         redux_path (str) : (**Optional**) Top-level directory with the
             DRP products; default is defined by
-            :func:`mangadap.config.defaults.redux_path`.
+            :func:`mangadap.config.defaults.drp_redux_path`.
         directory_path (str) : (**Optional**) Direct path to directory
             containing the DRP output file; default is defined by
             :func:`mangadap.config.defaults.drp_directory_path`
         dapver (str): (**Optional**) DAP version.  Default determined by
             :func:`mangadap.config.defaults.dap_version`.
-        dapsrc (str): (**Optional**) Source directory of the DAP.
-            Default determined by
-            :func:`mangadap.config.defaults.dap_source_dir`.
         analysis_path (str) : (**Optional**) Top-level directory for the DAP
             output data; default is defined by
-            :func:`mangadap.config.defaults.analysis_path`.
+            :func:`mangadap.config.defaults.dap_analysis_path`.
 
     Returns:
         int: Status flag (under development; currently always 0)
@@ -169,7 +166,7 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
     del drpf_rss
 
     # Set the the analysis path and make sure it exists
-    _analysis_path = defaults.analysis_path(drpver=drpver, dapver=dapver) \
+    _analysis_path = defaults.dap_analysis_path(drpver=drpver, dapver=dapver) \
                             if analysis_path is None else analysis_path
     if not os.path.isdir(_analysis_path):
         os.makedirs(_analysis_path)

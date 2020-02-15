@@ -592,13 +592,13 @@ def ppxffit_qa_plot(plt, ifu, plan, drpver=None, redux_path=None, dapver=None, a
 
     # Set the redux and DRP directory paths
     _drpver = defaults.drp_version() if drpver is None else drpver
-    _redux_path = defaults.redux_path(drpver=_drpver) if redux_path is None else redux_path
+    _redux_path = defaults.drp_redux_path(drpver=_drpver) if redux_path is None else redux_path
     if not os.path.isdir(_redux_path):
         raise NotADirectoryError('{0} is not a directory.'.format(_redux_path))
 
     # Set the analysis path
     _dapver = defaults.dap_version() if dapver is None else dapver
-    _analysis_path = defaults.analysis_path(drpver=_drpver, dapver=_dapver) \
+    _analysis_path = defaults.dap_analysis_path(drpver=_drpver, dapver=_dapver) \
                             if analysis_path is None else analysis_path
     if not os.path.isdir(_analysis_path):
         raise NotADirectoryError('{0} is not a directory.'.format(_analysis_path))

@@ -512,7 +512,7 @@ def radial_coverage_histogram(dapall, daptype, ofile=None):
     rore_rng = growth_lim(rore, 0.99, fac=1.1)
 
     # Determine the sample
-    sdssMaskbits = os.path.join(os.environ['MANGADAP_DIR'], 'data', 'sdss', 'sdssMaskbits.par')
+    sdssMaskbits = defaults.sdss_maskbits_file()
     targ1bm = BitMask.from_par_file(sdssMaskbits, 'MANGA_TARGET1')
 
     ancillary = dapall['MNGTARG3'][indx] > 0
@@ -706,9 +706,9 @@ if __name__ == '__main__':
         pyplot.switch_backend('agg')
 
     # Set the paths
-    redux_path = defaults.redux_path(drpver=arg.drpver) \
+    redux_path = defaults.drp_redux_path(drpver=arg.drpver) \
                         if arg.redux_path is None else arg.redux_path
-    analysis_path = defaults.analysis_path(drpver=arg.drpver, dapver=arg.dapver) \
+    analysis_path = defaults.dap_analysis_path(drpver=arg.drpver, dapver=arg.dapver) \
                             if arg.analysis_path is None else arg.analysis_path
 
     daptypes = []

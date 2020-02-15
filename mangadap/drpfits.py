@@ -275,7 +275,7 @@ class DRPFits:
         redux_path (:obj:`str`, optional):
             The path to the top level directory containing the DRP
             output files for a given DRP version. Default is defined
-            by :func:`mangadap.config.defaults.redux_path`.
+            by :func:`mangadap.config.defaults.drp_redux_path`.
         directory_path (:obj:`str`, optional):
             The exact path to the DRP file. Default is defined by
             :func:`mangadap.config.defaults.drp_directory_path`.
@@ -460,7 +460,7 @@ class DRPFits:
         # Setup the directory path.
         if directory_path is None:
             self.drpver = defaults.drp_version() if drpver is None else str(drpver)
-            self.redux_path = defaults.redux_path(drpver=self.drpver) \
+            self.redux_path = defaults.drp_redux_path(drpver=self.drpver) \
                               if redux_path is None else str(redux_path)
             self.directory_path = defaults.drp_directory_path(self.plate, drpver=self.drpver,
                                                               redux_path=self.redux_path)
@@ -1076,7 +1076,7 @@ class DRPFits:
                 The path to the top level directory containing the DRP
                 output files for a given DRP version.  Default is
                 defined by
-                :func:`mangadap.config.defaults.redux_path`.
+                :func:`mangadap.config.defaults.drp_redux_path`.
             directory_path (:obj:`str`, optional):
                 The exact path to the DAP reduction assessments file.
                 Default set by
