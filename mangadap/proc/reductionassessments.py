@@ -42,8 +42,9 @@ from astropy.io import fits
 
 from ..drpfits import DRPFits
 from ..par.parset import KeywordParSet
-from ..config.defaults import dap_source_dir, default_dap_common_path
-from ..config.defaults import default_dap_file_name
+
+from ..config import defaults
+
 from ..util.fitsutil import DAPFitsUtil
 from ..util.covariance import Covariance
 from ..util.geometry import SemiMajorAxisCoo
@@ -138,7 +139,7 @@ def validate_reduction_assessment_config(cnfg):
     return def_range, def_response
 
 
-def available_reduction_assessments(dapsrc=None):
+def available_reduction_assessments():
     r"""
     Return the list of available reduction assessment methods.  To get a
     list of default methods provided by the DAP do::
@@ -152,41 +153,30 @@ def available_reduction_assessments(dapsrc=None):
     :class:`ParSet` base class representation function.
 
     New methods can be included by adding ini config files to
-    `$MANGADAP_DIR/python/mangadap/config/reduction_assessments`.  See
-    an example file at
-    `$MANGADAP_DIR/python/mangadap/config/example_ini/example_reduction_assessment_config.ini`.
-
-    Args:
-        dapsrc (str): (**Optional**) Root path to the DAP source
-            directory (i.e., $MANGADAP_DIR).  If not provided, the
-            default is defined by
-            :func:`mangadap.config.defaults.dap_source_dir`.
+    `$MANGADAP_DIR/mangadap/config/reduction_assessments`. See an
+    example file at
+    `$MANGADAP_DIR/example_ini/example_reduction_assessment_config.ini`.
 
     Returns:
         list: A list of :func:`ReductionAssessmentDef` objects, each
         defining a separate assessment method.
 
     Raises:
-        NotADirectoryError: Raised if the provided or default
-            *dapsrc* is not a directory.
-        OSError/IOError: Raised if no reduction assessment configuration
-            files could be found.
-        KeyError: Raised if the assessment method keywords are not all
+        IOError:
+            Raised if no reduction assessment configuration files
+            could be found.
+        KeyError:
+            Raised if the assessment method keywords are not all
             unique.
-        NameError: Raised if either ConfigParser or
-            ExtendedInterpolation are not correctly imported.  The
-            latter is a *Python 3 only module*!
+        NameError:
+            Raised if either ConfigParser or ExtendedInterpolation
+            are not correctly imported.
     """
-    # Check the source directory exists
-    dapsrc = dap_source_dir() if dapsrc is None else str(dapsrc)
-    if not os.path.isdir(dapsrc):
-        raise NotADirectoryError('{0} does not exist!'.format(dapsrc))
-
     # Check the configuration files exist
-    ini_files = glob.glob(dapsrc+'/python/mangadap/config/reduction_assessments/*.ini')
+    search_dir = os.path.join(defaults.dap_config_root(), 'reduction_assessments')
+    ini_files = glob.glob(os.path.join(search_dir, '*.ini'))
     if len(ini_files) == 0:
-        raise IOError('Could not find any configuration files in {0} !'.format(
-                      dapsrc+'/python/mangadap/config/reduction_assessments'))
+        raise IOError('Could not find any configuration files in {0} !'.format(search_dir))
 
     # Build the list of library definitions
     assessment_methods = []
@@ -195,7 +185,6 @@ def available_reduction_assessments(dapsrc=None):
         cnfg = DefaultConfig(f=f, interpolate=True)
         # Ensure it has the necessary elements to define the template
         # library
-#        def_range, def_par, def_response = validate_reduction_assessment_config(cnfg)
         def_range, def_response = validate_reduction_assessment_config(cnfg)
         in_vacuum = cnfg.getbool('in_vacuum', default=False)
         if def_range:
@@ -254,19 +243,19 @@ class ReductionAssessment:
             :func:`available_reduction_assessments`.
         dapver (str): (**Optional**) DAP version, which is used to
             define the default DAP analysis path.  Default is defined by
-            :func:`mangadap.config.defaults.default_dap_version`
+            :func:`mangadap.config.defaults.dap_version`
         analysis_path (str): (**Optional**) The path to the top level
             directory containing the DAP output files for a given DRP
             and DAP version.  Default is defined by
-            :func:`mangadap.config.defaults.default_analysis_path`.
+            :func:`mangadap.config.defaults.analysis_path`.
         directory_path (str): (**Optional**) The exact path for the
             output file.  Default is defined by
-            :func:`mangadap.config.defaults.default_dap_common_path`.
+            :func:`mangadap.config.defaults.dap_common_path`.
         output_file (str): (**Optional**) The name of the file for the
             computed assessments.  The full path of the output file will
             be :attr:`directory_path`/:attr:`output_file`.  Default is
             defined by
-            :func:`mangadap.config.defaults.default_dap_file_name`.
+            :func:`mangadap.config.defaults.dap_file_name`.
         hardcopy (bool): (**Optional**) Flag to write the data to a fits
             file.  Default is True.
         symlink_dir (str): (**Optional**) Create a symlink to the file
@@ -298,7 +287,7 @@ class ReductionAssessment:
             elliptical, semi-major-axis coordinates.
         directory_path (str): The exact path for the output file.
             Default is defined by
-            :func:`mangadap.config.defaults.default_dap_common_path`.
+            :func:`mangadap.config.defaults.dap_common_path`.
         output_file (str): The name of the file for the computed
             assessments.  The full path of the output file will be
             :attr:`directory_path`/:attr:`output_file`.  Default is
@@ -369,22 +358,20 @@ class ReductionAssessment:
         return self.hdu[key]
 
 
-    def _define_method(self, method_key, method_list=None, dapsrc=None):
+    def _define_method(self, method_key, method_list=None):
         """
         Select the assessment method from the provided list.  Used to
         set :attr:`method`; see
         :func:`mangadap.proc.util.select_proc_method`.
 
         Args:
-            method_key (str): Keyword of the selected method.  Available
-                methods are provided by
-                :func:`available_reduction_assessments`
-            method_list (list): (**Optional**) List of
-                :class:`ReductionAssessmentDef` objects that define the
-                parameters required to assess the reduced data.
-            dapsrc (str): (**Optional**) Root path to the DAP source
-                directory.  If not provided, the default is defined by
-                :func:`mangadap.config.defaults.dap_source_dir`.
+            method_key (:obj:`str`):
+                Keyword of the selected method. Available methods are
+                provided by :func:`available_reduction_assessments`
+            method_list (:obj:`list`, optional):
+                List of :class:`ReductionAssessmentDef` objects that
+                define the parameters required to assess the reduced
+                data.
         """
         self.method = select_proc_method(method_key, ReductionAssessmentDef,
                                          method_list=method_list,
@@ -395,8 +382,8 @@ class ReductionAssessment:
         Set the I/O paths.  Used to set :attr:`directory_path` and
         :attr:`output_file`.  If not provided, the defaults are set
         using, respectively,
-        :func:`mangadap.config.defaults.default_dap_common_path` and
-        :func:`mangadap.config.defaults.default_dap_file_name`.
+        :func:`mangadap.config.defaults.dap_common_path` and
+        :func:`mangadap.config.defaults.dap_file_name`.
 
         Args:
             directory_path (str): The exact path to the DAP reduction
@@ -462,28 +449,28 @@ class ReductionAssessment:
                 the reduction assessments.
             directory_path (str): (**Optional**) The exact path to the
                 DAP reduction assessments file.  Default set by
-                :func:`mangadap.config.defaults.default_dap_common_path`.
+                :func:`mangadap.config.defaults.dap_common_path`.
             drpver (str): (**Optional**) DRP version.  Default set by
                 :func:`mangadap.config.defaults.default_drp_version`.
             dapver (str): (**Optional**) DAP version.  Default set by
-                :func:`mangadap.config.defaults.default_dap_version`.
+                :func:`mangadap.config.defaults.dap_version`.
             analysis_path (str): (**Optional**) The path to the
                 top-level directory containing the DAP output files for
                 a given DRP and DAP version. Default set by
                 :func:`mangadap.config.defaults.default_analysis_path`.
             output_file (str): (**Optional**) The name of the file with
                 the reduction assessments.  Default set by
-                :func:`mangadap.config.defaults.default_dap_file_name`.
+                :func:`mangadap.config.defaults.dap_file_name`.
 
         Returns:
             str: Two strings with the path for the output file and the
             name of the output file.
         """
-        _directory_path = default_dap_common_path(plate=plate, ifudesign=ifudesign,
-                                                  drpver=drpver, dapver=dapver,
-                                                  analysis_path=analysis_path) \
+        _directory_path = defaults.dap_common_path(plate=plate, ifudesign=ifudesign,
+                                                   drpver=drpver, dapver=dapver,
+                                                   analysis_path=analysis_path) \
                                         if directory_path is None else str(directory_path)
-        _output_file = default_dap_file_name(plate, ifudesign, method_key) \
+        _output_file = defaults.dap_file_name(plate, ifudesign, method_key) \
                                         if output_file is None else str(output_file)
         return _directory_path, _output_file
 
@@ -560,14 +547,14 @@ class ReductionAssessment:
             dapver (str): (**Optional**) DAP version, which is used to
                 define the default DAP analysis path.  Default is
                 defined by
-                :func:`mangadap.config.defaults.default_dap_version`
+                :func:`mangadap.config.defaults.dap_version`
             analysis_path (str): (**Optional**) The path to the top
                 level directory containing the DAP output files for a
                 given DRP and DAP version.  Default is defined by
                 :func:`mangadap.config.defaults.default_analysis_path`.
             directory_path (str): (**Optional**) The exact path for the
                 output file.  Default is defined by
-                :func:`mangadap.config.defaults.default_dap_common_path`.
+                :func:`mangadap.config.defaults.dap_common_path`.
             output_file (str): (**Optional**) The name of the file for
                 the computed assessments.  The full path of the output
                 file will be :attr:`directory_path`/:attr:`output_file`.

@@ -104,16 +104,16 @@ class DRPComplete:
             full DRP path.
         drpall (:obj:`str`, optional):
             The full path to the DRPall fits file.  Default is set by
-            :func:`mangadap.config.defaults.default_drpall_file`.
+            :func:`mangadap.config.defaults.drpall_file`.
         platetargets (:obj:`str`, :obj:`list`, optional):
             List of platetargets files to search through to find any
             given plate ifudesign combination.  Default is returned as
             the first element in
-            :func:`mangadap.config.defaults.default_plate_target_files`.
+            :func:`mangadap.config.defaults.plate_target_files`.
         catid (:obj:`str`, :obj:`list`, optional):
             List of target catalog ID numbers.  Default is returned as
             the second element in
-            :func:`mangadap.config.defaults.default_plate_target_files`.
+            :func:`mangadap.config.defaults.plate_target_files`.
         drpver (:obj:`str`, optional):
             DRP version, which is:
 
@@ -123,12 +123,12 @@ class DRPComplete:
                 - included as a header keyword in the output file
 
             Default is defined by
-            :func:`mangadap.config.defaults.default_drp_version`.
+            :func:`mangadap.config.defaults.drp_version`.
         redux_path (:obj:`str`, optional): 
             The path to the top level directory containing the DRP
             output files; this is the same as the ``redux_path`` in the
             :class:`mangadap.drpfits.DRPFits` class.  Default is defined
-            by :func:`mangadap.config.defaults.default_redux_path`.
+            by :func:`mangadap.config.defaults.redux_path`.
         dapver (:obj:`str`, optional):
             DAP version, which is:
 
@@ -137,15 +137,15 @@ class DRPComplete:
                   fits file
 
             Default is defined by
-            :func:`mangadap.config.defaults.default_dap_version`.
+            :func:`mangadap.config.defaults.dap_version`.
         analysis_path (:obj:`str`, optional):
             The path to the top level directory for the DAP output
             files; this is **different** from the directory_path in the
             :class:`mangadap.dapfile` class.  Default is defined by
-            :func:`mangadap.config.defaults.default_analysis_path`
+            :func:`mangadap.config.defaults.analysis_path`
         directory_path (:obj:`str`, optional):
             Direct path to the output file produced using
-            :func:`mangadap.config.defaults.default_dap_common_path`
+            :func:`mangadap.config.defaults.dap_common_path`
         readonly (:obj:`bool`, optional):
             Flag that the drpcomplete fits file is only opened for
             reading, not for updating.  If True, many of the attributes
@@ -174,7 +174,7 @@ class DRPComplete:
             see above.
         directory_path (:obj:`str`):
             Direct path to the output file produced using
-            :func:`mangadap.config.defaults.default_dap_common_path`
+            :func:`mangadap.config.defaults.dap_common_path`
         readonly (:obj:`bool`):
             Flag that the drpcomplete fits file is only opened for
             reading, not for updating.
@@ -189,15 +189,15 @@ class DRPComplete:
                  directory_path=None, readonly=False):
 
         # Input properties
-        self.drpver = defaults.default_drp_version() if drpver is None else str(drpver)
-        self.redux_path = defaults.default_redux_path(self.drpver) if redux_path is None \
-                                                                  else str(redux_path)
+        self.drpver = defaults.drp_version() if drpver is None else str(drpver)
+        self.redux_path = defaults.redux_path(self.drpver) \
+                                if redux_path is None else str(redux_path)
 
-        self.dapver = defaults.default_dap_version() if dapver is None else str(dapver)
-        self.analysis_path = defaults.default_analysis_path(self.drpver, self.dapver) \
+        self.dapver = defaults.dap_version() if dapver is None else str(dapver)
+        self.analysis_path = defaults.analysis_path(self.drpver, self.dapver) \
                              if analysis_path is None else str(analysis_path)
-        self.directory_path = defaults.default_dap_common_path(drpver=self.drpver,
-                                            dapver=self.dapver, analysis_path=self.analysis_path) \
+        self.directory_path = defaults.dap_common_path(drpver=self.drpver, dapver=self.dapver,
+                                                       analysis_path=self.analysis_path) \
                              if directory_path is None else str(directory_path)
 
         self.hdu = None
@@ -219,7 +219,7 @@ class DRPComplete:
         self.platelist = arginp_to_list(platelist, evaluate=True)
         self.ifudesignlist = arginp_to_list(ifudesignlist, evaluate=True)
 
-        self.drpall = defaults.default_drpall_file(drpver=self.drpver,redux_path=self.redux_path) \
+        self.drpall = defaults.drpall_file(drpver=self.drpver,redux_path=self.redux_path) \
                             if drpall is None else drpall
         
         if (platetargets is not None and catid is None) or \
@@ -232,7 +232,7 @@ class DRPComplete:
             self.catid = numpy.array( arginp_to_list(catid) ).astype(numpy.int)
         else:
             try:
-                self.platetargets, self.catid = defaults.default_plate_target_files()
+                self.platetargets, self.catid = defaults.plate_target_files()
             except:
                 warnings.warn('Could not define platetargets files.  '
                               'Updates must use DRPall file.')
@@ -349,7 +349,7 @@ class DRPComplete:
             yanny: A yanny structure with the redshift fixes.  Returns
             None and raises a warning if the file does not exist.
         """
-        fix_file = defaults.default_redshift_fix_file()
+        fix_file = defaults.redshift_fix_file()
         if not os.path.isfile(fix_file):
             warnings.warn('No redshift fix file available.')
             return None

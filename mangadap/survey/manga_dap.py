@@ -102,21 +102,21 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
         verbose (int) : (**Optional**) Verbosity level, see above;
             default is 0.
         drpver (str): (**Optional**) DRP version.  Default determined by
-            :func:`mangadap.config.defaults.default_drp_version`.
+            :func:`mangadap.config.defaults.drp_version`.
         redux_path (str) : (**Optional**) Top-level directory with the
             DRP products; default is defined by
-            :func:`mangadap.config.defaults.default_redux_path`.
+            :func:`mangadap.config.defaults.redux_path`.
         directory_path (str) : (**Optional**) Direct path to directory
             containing the DRP output file; default is defined by
-            :func:`mangadap.config.defaults.default_drp_directory_path`
+            :func:`mangadap.config.defaults.drp_directory_path`
         dapver (str): (**Optional**) DAP version.  Default determined by
-            :func:`mangadap.config.defaults.default_dap_version`.
+            :func:`mangadap.config.defaults.dap_version`.
         dapsrc (str): (**Optional**) Source directory of the DAP.
             Default determined by
             :func:`mangadap.config.defaults.dap_source_dir`.
         analysis_path (str) : (**Optional**) Top-level directory for the DAP
             output data; default is defined by
-            :func:`mangadap.config.defaults.default_analysis_path`.
+            :func:`mangadap.config.defaults.analysis_path`.
 
     Returns:
         int: Status flag (under development; currently always 0)
@@ -155,8 +155,8 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
     #-------------------------------------------------------------------
     # Declare the DRP fits file
     #-------------------------------------------------------------------
-    _drpver = defaults.default_drp_version() if drpver is None else drpver
-    _dapver = defaults.default_dap_version() if dapver is None else dapver
+    _drpver = defaults.drp_version() if drpver is None else drpver
+    _dapver = defaults.dap_version() if dapver is None else dapver
     drpf = DRPFits(obs['plate'], obs['ifudesign'], obs['mode'], drpver=_drpver,
                    redux_path=redux_path, directory_path=directory_path, read=True)
     log_output(loggers, 1, logging.INFO, ' Opened DRP file: {0}\n'.format(drpf.file_path()))
@@ -169,7 +169,7 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
     del drpf_rss
 
     # Set the the analysis path and make sure it exists
-    _analysis_path = defaults.default_analysis_path(drpver=drpver, dapver=dapver) \
+    _analysis_path = defaults.analysis_path(drpver=drpver, dapver=dapver) \
                             if analysis_path is None else analysis_path
     if not os.path.isdir(_analysis_path):
         os.makedirs(_analysis_path)
@@ -197,17 +197,17 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
         el_method = None if plan['elfit_key'][i] is None \
                             else EmissionLineModel.define_method(plan['elfit_key'][i])
 
-        method = defaults.default_dap_method(bin_method['key'],
-                                             sc_method['fitpar']['template_library_key'],
-                                             'None' if el_method is None
-                                                else el_method['continuum_tpl_key'])
-        method_dir = defaults.default_dap_method_path(method, plate=obs['plate'],
-                                                      ifudesign=obs['ifudesign'], drpver=drpver,
-                                                      dapver=dapver, analysis_path=_analysis_path)
-        method_ref_dir = defaults.default_dap_method_path(method, plate=obs['plate'],
-                                                          ifudesign=obs['ifudesign'], ref=True,
-                                                          drpver=drpver, dapver=dapver,
-                                                          analysis_path=_analysis_path)
+        method = defaults.dap_method(bin_method['key'],
+                                     sc_method['fitpar']['template_library_key'],
+                                     'None' if el_method is None
+                                        else el_method['continuum_tpl_key'])
+        method_dir = defaults.dap_method_path(method, plate=obs['plate'],
+                                              ifudesign=obs['ifudesign'], drpver=drpver,
+                                              dapver=dapver, analysis_path=_analysis_path)
+        method_ref_dir = defaults.dap_method_path(method, plate=obs['plate'],
+                                                  ifudesign=obs['ifudesign'], ref=True,
+                                                  drpver=drpver, dapver=dapver,
+                                                  analysis_path=_analysis_path)
 
         log_output(loggers, 1, logging.INFO, '-'*50)
         log_output(loggers, 1, logging.INFO, '{0:^50}'.format('Plan {0}'.format(i+1)))

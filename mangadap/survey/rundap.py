@@ -146,21 +146,21 @@ class rundap:
         redux_path (:obj:`str`, optional):
             The top-level path with the DRP files used to override the
             default defined by
-            :func:`mangadap.config.defaults.default_redux_path`.
+            :func:`mangadap.config.defaults.redux_path`.
         dapver (:obj:`str`, optional):
             The DAP version to use for the analysis, used to override
             the default defined by
-            :func:`mangadap.config.defaults.default_dap_version`.  *Only
+            :func:`mangadap.config.defaults.dap_version`.  *Only
             used to define the file paths, not used to switch to the
             specified code version!*
         analysis_path (:obj:`str`, optional):
             The top-level path for the DAP output files, used to
             override the default defined by
-            :func:`mangadap.config.defaults.default_analysis_path`.
+            :func:`mangadap.config.defaults.analysis_path`.
         plan_file (:obj:`str`, optional):
             Name of the plan file to use for *all* DRP data in this run,
             used to override the default defined by
-            :func:`mangadap.config.defaults.default_dap_plan_file`.
+            :func:`mangadap.config.defaults.dap_plan_file`.
         platelist (:obj:`int`, :obj:`str`, optional):
             List of plates to analyze; default is to search the
             :attr:`redux_path` for any DRP files; see
@@ -181,7 +181,7 @@ class rundap:
             List of platetargets files to search through to find any
             given plate-ifudesign combination.  Default is returned as
             the first element in
-            :func:`mangadap.config.defaults.default_plate_target_files`.
+            :func:`mangadap.config.defaults.plate_target_files`.
         on_disk (:obj:`bool`, optional):
             When searching for available files to analyze, search the
             DRP directory path instead of using the data in the DRPall
@@ -406,13 +406,12 @@ class rundap:
             e = sys.exc_info()
             print_frame(e[0])
             raise ValueError('MPL is undefined: {0}'.format(e[1]))
-        self.dapver = defaults.default_dap_version() if self.dapver is None else self.dapver
+        self.dapver = defaults.dap_version() if self.dapver is None else self.dapver
 
         # Set the output paths
-        self.redux_path = defaults.default_redux_path(self.mpl.drpver) \
-                                    if self.redux_path is None \
+        self.redux_path = defaults.redux_path(self.mpl.drpver) if self.redux_path is None \
                                     else os.path.abspath(self.redux_path)
-        self.analysis_path = defaults.default_analysis_path(self.mpl.drpver, self.dapver) \
+        self.analysis_path = defaults.analysis_path(self.mpl.drpver, self.dapver) \
                                     if self.analysis_path is None \
                                     else os.path.abspath(self.analysis_path)
 
@@ -424,9 +423,8 @@ class rundap:
 
         # Make sure there is an analysis plan
         if self.plan_file is None:
-            self.plan_file = defaults.default_dap_plan_file(drpver=self.mpl.drpver,
-                                                            dapver=self.dapver,
-                                                            analysis_path=self.analysis_path)
+            self.plan_file = defaults.dap_plan_file(drpver=self.mpl.drpver, dapver=self.dapver,
+                                                    analysis_path=self.analysis_path)
         if not os.path.isfile(self.plan_file):
             raise FileNotFoundError('No file: {0}'.format(self.plan_file))
 
@@ -445,18 +443,16 @@ class rundap:
         # unique list
         # TODO: This should probably be check done in AnalysisPlanSet
         self.plan = AnalysisPlanSet.from_par_file(self.plan_file)
-#        self.daptypes = [defaults.default_dap_method(plan=self.plan.data[i]) 
-#                            for i in range(self.plan.nplans)]
         self.daptypes = []
         for p in self.plan:
             bin_method = SpatiallyBinnedSpectra.define_method(p['bin_key'])
             sc_method = StellarContinuumModel.define_method(p['continuum_key'])
             el_method = None if p['elfit_key'] is None \
                                 else EmissionLineModel.define_method(p['elfit_key'])
-            self.daptypes += [defaults.default_dap_method(bin_method['key'],
-                                                    sc_method['fitpar']['template_library_key'],
-                                                    'None' if el_method is None else
-                                                            el_method['continuum_tpl_key'])]
+            self.daptypes += [defaults.dap_method(bin_method['key'],
+                                                  sc_method['fitpar']['template_library_key'],
+                                                  'None' if el_method is None else
+                                                        el_method['continuum_tpl_key'])]
         if len(numpy.unique(self.daptypes)) != self.plan.nplans:
             raise ValueError('Plans in {0} do not yield unique DAPTYPEs.'.format(self.plan_file))
 
@@ -743,7 +739,7 @@ class rundap:
             - The calling path that contains a copy of the plan, the
               script input and output files, and the touch files
             - The main common path defined by
-              :func:`mangadap.config.defaults.default_dap_common_path`.
+              :func:`mangadap.config.defaults.dap_common_path`.
             - The plan-based subdirectories based on the plan file
 
         Args:
@@ -758,19 +754,17 @@ class rundap:
             os.makedirs(path)
 
         # Generate the main common path
-        path = defaults.default_dap_common_path(plate=plate, ifudesign=ifudesign,
-                                                drpver=self.mpl.drpver, dapver=self.dapver,
-                                                analysis_path=self.analysis_path)
+        path = defaults.dap_common_path(plate=plate, ifudesign=ifudesign, drpver=self.mpl.drpver,
+                                        dapver=self.dapver, analysis_path=self.analysis_path)
         if not os.path.isdir(path):
             os.makedirs(path)
 
         # Check the reference directories, which creates the full plan
         # path if necessary
         for daptype in self.daptypes:
-            path = defaults.default_dap_method_path(daptype, plate=plate, ifudesign=ifudesign,
-                                                    ref=True, drpver=self.mpl.drpver,
-                                                    dapver=self.dapver,
-                                                    analysis_path=self.analysis_path)
+            path = defaults.dap_method_path(daptype, plate=plate, ifudesign=ifudesign, ref=True,
+                                            drpver=self.mpl.drpver, dapver=self.dapver,
+                                            analysis_path=self.analysis_path)
             if not os.path.isdir(path):
                 os.makedirs(path)
 
@@ -962,7 +956,7 @@ class rundap:
         """
         Generate a touch file that signifies the status for a given
         plate/ifudesign/mode.  The root of the touch file is set by
-        :func:`mangadap.config.defaults.default_dap_file_root`.
+        :func:`mangadap.config.defaults.dap_file_root`.
 
         Args:
             plate (int): Plate number
@@ -972,7 +966,7 @@ class rundap:
                 touch file.
         """
         # Get the name of the status file        
-        root = defaults.default_dap_file_root(plate, ifudesign, mode=mode)
+        root = defaults.dap_file_root(plate, ifudesign, mode=mode)
         self.set_status(os.path.join(self.calling_path, str(plate), str(ifudesign), root),
                         status)
         
@@ -988,41 +982,6 @@ class rundap:
         # Touch the file by opening and closing it
         file = open('{0}.{1}'.format(root, status), 'w')
         file.close()
-
-#    def dap_complete(self, drpf):
-#        """
-#        Determine if the DAP has finished working on a given DRP file.
-#
-#        Conditions that the DAP has completes its processing of the
-#        given DRP file:
-#
-#            - the output path for the DAP file exists
-#            - within the path, the \*.done touch file exits
-#
-#        .. todo::
-#
-#            - Add whether or not the DAP ended in error
-#
-#        Args:
-#            drpf (:class:`mangadap.drpfits.DRPFits`) : DRP file object
-#                used to pass the plate, ifudesign, and mode values.
-#
-#        Returns:
-#            bool: Flag that the DAP has finished (True) or not (False).
-#        """
-#        path = default_dap_common_path(plate=drpf.plate, drpver=self.mpl.drpver,
-#                                       dapver=self.dapver, analysis_path=self.analysis_path)
-#        if not os.path.isdir(path):
-#            return False
-#
-#        root = default_dap_file_root(drpf.plate, drpf.ifudesign, drpf.mode)
-##        print(root)
-#        donefile = '{0}.done'.format(os.path.join(path,root))
-##        print(donefile)
-#        if os.path.exists(donefile):
-#            return True
-#
-#        return False
 
     def _selected_drpfile_rows(self):
         """
@@ -1092,9 +1051,8 @@ class rundap:
         self._check_paths(plate, ifudesign)
 
         # Create the parameter file
-        parfile = defaults.default_dap_par_file(plate, ifudesign, mode, drpver=self.mpl.drpver,
-                                                dapver=self.dapver,
-                                                analysis_path=self.analysis_path)
+        parfile = defaults.dap_par_file(plate, ifudesign, mode, drpver=self.mpl.drpver,
+                                        dapver=self.dapver, analysis_path=self.analysis_path)
 
         # Write the par file if it doesn't exist
         if not os.path.isfile(parfile) or clobber:
@@ -1103,16 +1061,16 @@ class rundap:
             # and create symlinks to it
             for daptype in self.daptypes:
                 # Generate the ref subdirectory for this plan
-                path = defaults.default_dap_method_path(daptype, plate=plate, ifudesign=ifudesign,
-                                                        ref=True, drpver=self.mpl.drpver,
-                                                        dapver=self.dapver,
-                                                        analysis_path=self.analysis_path)
+                path = defaults.dap_method_path(daptype, plate=plate, ifudesign=ifudesign,
+                                                ref=True, drpver=self.mpl.drpver,
+                                                dapver=self.dapver,
+                                                analysis_path=self.analysis_path)
                 create_symlink(parfile, path, relative_symlink=relative_symlink, clobber=clobber,
                                quiet=True)
 
         # Set the root path for the scripts, inputs, outputs, and logs
         _calling_path = os.path.join(self.calling_path, str(plate), str(ifudesign))
-        scr_file_root = defaults.default_dap_file_root(plate, ifudesign)
+        scr_file_root = defaults.dap_file_root(plate, ifudesign)
 
         # Set the names for the script, stdout, and stderr files
         scriptfile = os.path.join(_calling_path, scr_file_root)

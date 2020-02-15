@@ -165,7 +165,7 @@ def validate_spectral_indices_config(cnfg):
                          'database, or both.')
 
 
-def available_spectral_index_databases(dapsrc=None):
+def available_spectral_index_databases():
     """
     Return the list of available spectral index databases
 
@@ -174,21 +174,16 @@ def available_spectral_index_databases(dapsrc=None):
     .. todo::
         Fill in
 
-    Args:
-        dapsrc (str): (**Optional**) Root path to the DAP source
-            directory.  If not provided, the default is defined by
-            :func:`mangadap.config.defaults.dap_source_dir`.
-
     Returns:
         list: A list of :func:`SpectralIndicesDef` objects, each
         defining a spectral-index database to measure.
 
     Raises:
-        NotADirectoryError: Raised if the provided or default
-            *dapsrc* is not a directory.
-        OSError/IOError: Raised if no spectral-index configuration files
-            could be found.
-        KeyError: Raised if the spectral-index database keywords are not
+        IOError:
+            Raised if no spectral-index configuration files could be
+            found.
+        KeyError:
+            Raised if the spectral-index database keywords are not
             all unique.
 
     .. todo::
@@ -198,13 +193,8 @@ def available_spectral_index_databases(dapsrc=None):
           available databases.
         
     """
-    # Check the source directory exists
-    dapsrc = defaults.dap_source_dir() if dapsrc is None else str(dapsrc)
-    if not os.path.isdir(dapsrc):
-        raise NotADirectoryError('{0} does not exist!'.format(dapsrc))
-
     # Check the configuration files exist
-    search_dir = os.path.join(dapsrc, 'python/mangadap/config/spectral_indices')
+    search_dir = os.path.join(defaults.dap_config_root(), 'spectral_indices')
     ini_files = glob.glob(os.path.join(search_dir, '*.ini'))
     if len(ini_files) == 0:
         raise IOError('Could not find any configuration files in {0} !'.format(search_dir))
@@ -547,16 +537,16 @@ class SpectralIndices:
             :func:`mangadap.config.defaults.dap_source_dir`.
         dapver (str): (**Optional**) The DAP version to use for the
             analysis, used to override the default defined by
-            :func:`mangadap.config.defaults.default_dap_version`.
+            :func:`mangadap.config.defaults.dap_version`.
         analysis_path (str): (**Optional**) The top-level path for the
             DAP output files, used to override the default defined by
-            :func:`mangadap.config.defaults.default_analysis_path`.
+            :func:`mangadap.config.defaults.analysis_path`.
         directory_path (str): The exact path to the directory with DAP
             output that is common to number DAP "methods".  See
             :attr:`directory_path`.
         output_file (str): (**Optional**) Exact name for the output
             file.  The default is to use
-            :func:`mangadap.config.defaults.default_dap_file_name`.
+            :func:`mangadap.config.defaults.dap_file_name`.
         hardcopy (bool): (**Optional**) Flag to write the HDUList
             attribute to disk.  Default is True; if False, the HDUList
             is only kept in memory and would have to be reconstructed.
@@ -671,8 +661,8 @@ class SpectralIndices:
         """
         Set the :attr:`directory_path` and :attr:`output_file`.  If not
         provided, the defaults are set using, respectively,
-        :func:`mangadap.config.defaults.default_dap_common_path` and
-        :func:`mangadap.config.defaults.default_dap_file_name`.
+        :func:`mangadap.config.defaults.dap_common_path` and
+        :func:`mangadap.config.defaults.dap_file_name`.
 
         Args:
             directory_path (str): The exact path to the DAP
@@ -689,19 +679,17 @@ class SpectralIndices:
                             else self.stellar_continuum.method['fitpar']['template_library_key']
         eml_templates = 'None' if self.emission_line_model is None \
                             else self.emission_line_model.method['continuum_tpl_key']
-        method = defaults.default_dap_method(self.binned_spectra.method['key'],
-                                             continuum_templates, eml_templates)
-        self.analysis_path = defaults.default_analysis_path(drpver=self.binned_spectra.drpf.drpver,
-                                                            dapver=dapver) \
+        method = defaults.dap_method(self.binned_spectra.method['key'], continuum_templates,
+                                     eml_templates)
+        self.analysis_path = defaults.analysis_path(drpver=self.binned_spectra.drpf.drpver,
+                                                    dapver=dapver) \
                                     if analysis_path is None else str(analysis_path)
-        self.directory_path = defaults.default_dap_method_path(method,
-                                                    plate=self.binned_spectra.drpf.plate,
-                                                    ifudesign=self.binned_spectra.drpf.ifudesign,
-                                                    ref=True,
-                                                    drpver=self.binned_spectra.drpf.drpver,
-                                                    dapver=dapver,
-                                                    analysis_path=self.analysis_path) \
-                                        if directory_path is None else str(directory_path)
+        self.directory_path \
+                = defaults.dap_method_path(method, plate=self.binned_spectra.drpf.plate,
+                                           ifudesign=self.binned_spectra.drpf.ifudesign, ref=True,
+                                           drpver=self.binned_spectra.drpf.drpver, dapver=dapver,
+                                           analysis_path=self.analysis_path) \
+                                    if directory_path is None else str(directory_path)
 
         # Set the output file
         ref_method = '{0}-{1}'.format(self.binned_spectra.rdxqa.method['key'],
@@ -712,9 +700,8 @@ class SpectralIndices:
             ref_method = '{0}-{1}'.format(ref_method, self.emission_line_model.method['key'])
         ref_method = '{0}-{1}'.format(ref_method, self.database['key'])
 
-        self.output_file = defaults.default_dap_file_name(self.binned_spectra.drpf.plate,
-                                                          self.binned_spectra.drpf.ifudesign,
-                                                          ref_method) \
+        self.output_file = defaults.dap_file_name(self.binned_spectra.drpf.plate,
+                                                  self.binned_spectra.drpf.ifudesign, ref_method) \
                                         if output_file is None else str(output_file)
 
 
@@ -1772,17 +1759,17 @@ class SpectralIndices:
                 :func:`mangadap.config.defaults.dap_source_dir`.
             dapver (str): (**Optional**) The DAP version to use for the
                 analysis, used to override the default defined by
-                :func:`mangadap.config.defaults.default_dap_version`.
+                :func:`mangadap.config.defaults.dap_version`.
             analysis_path (str): (**Optional**) The top-level path for
                 the DAP output files, used to override the default
                 defined by
-                :func:`mangadap.config.defaults.default_analysis_path`.
+                :func:`mangadap.config.defaults.analysis_path`.
             directory_path (str): The exact path to the directory with
                 DAP output that is common to number DAP "methods".  See
                 :attr:`directory_path`.
             output_file (str): (**Optional**) Exact name for the output
                 file.  The default is to use
-                :func:`mangadap.config.defaults.default_dap_file_name`.
+                :func:`mangadap.config.defaults.dap_file_name`.
             hardcopy (bool): (**Optional**) Flag to write the HDUList
                 attribute to disk.  Default is True; if False, the
                 HDUList is only kept in memory and would have to be

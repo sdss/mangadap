@@ -146,7 +146,7 @@ def validate_stellar_continuum_modeling_method_config(cnfg):
         raise KeyError('Keyword \'template_library\' must be provided for pPXF fitting.')
 
 
-def available_stellar_continuum_modeling_methods(dapsrc=None):
+def available_stellar_continuum_modeling_methods():
     """
     Return the list of available stellar-continuum modeling methods.
 
@@ -155,23 +155,17 @@ def available_stellar_continuum_modeling_methods(dapsrc=None):
     .. todo::
         Fill in
 
-    Args:
-        dapsrc (str): (**Optional**) Root path to the DAP source
-            directory.  If not provided, the default is defined by
-            :func:`mangadap.config.defaults.dap_source_dir`.
-
     Returns:
         list: A list of
         :func:`mangadap.proc.stellarcontinuummodel.StellarContinuumModelDef`
         objects, each defining a stellar-continuum modeling approach.
 
     Raises:
-        NotADirectoryError: Raised if the provided or default
-            *dapsrc* is not a directory.
-        OSError/IOError: Raised if no binning scheme configuration files
-            could be found.
-        KeyError: Raised if the binning method keywords are not all
-            unique.
+        IOError:
+            Raised if no binning scheme configuration files could be
+            found.
+        KeyError:
+            Raised if the binning method keywords are not all unique.
 
     .. todo::
         - Somehow add a python call that reads the databases and
@@ -180,13 +174,8 @@ def available_stellar_continuum_modeling_methods(dapsrc=None):
           available databases.
         
     """
-    # Check the source directory exists
-    dapsrc = defaults.dap_source_dir() if dapsrc is None else str(dapsrc)
-    if not os.path.isdir(dapsrc):
-        raise NotADirectoryError('{0} does not exist!'.format(dapsrc))
-
     # Check the configuration files exist
-    search_dir = os.path.join(dapsrc, 'python/mangadap/config/stellar_continuum_modeling')
+    search_dir = os.path.join(defaults.dap_config_root(), 'stellar_continuum_modeling')
     ini_files = glob.glob(os.path.join(search_dir, '*.ini'))
     if len(ini_files) == 0:
         raise IOError('Could not find any configuration files in {0} !'.format(search_dir))
@@ -282,16 +271,16 @@ class StellarContinuumModel:
             :func:`mangadap.config.defaults.dap_source_dir`.
         dapver (str): (**Optional**) The DAP version to use for the
             analysis, used to override the default defined by
-            :func:`mangadap.config.defaults.default_dap_version`.
+            :func:`mangadap.config.defaults.dap_version`.
         analysis_path (str): (**Optional**) The top-level path for the
             DAP output files, used to override the default defined by
-            :func:`mangadap.config.defaults.default_analysis_path`.
+            :func:`mangadap.config.defaults.analysis_path`.
         directory_path (str): The exact path to the directory with DAP
             output that is common to number DAP "methods".  See
             :attr:`directory_path`.
         output_file (str): (**Optional**) Exact name for the output
             file.  The default is to use
-            :func:`mangadap.config.defaults.default_dap_file_name`.
+            :func:`mangadap.config.defaults.dap_file_name`.
         hardcopy (bool): (**Optional**) Flag to write the HDUList
             attribute to disk.  Default is True; if False, the HDUList
             is only kept in memory and would have to be reconstructed.
@@ -478,14 +467,14 @@ class StellarContinuumModel:
             designation = '{0}-FWHM{1:.2f}'.format(self.method['fitpar']['template_library_key'],
                                                    resolution_fwhm)
             # Set the output file name
-            processed_file = defaults.default_dap_file_name(self.binned_spectra.drpf.plate,
-                                                            self.binned_spectra.drpf.ifudesign,
-                                                            designation)
+            processed_file = defaults.dap_file_name(self.binned_spectra.drpf.plate,
+                                                    self.binned_spectra.drpf.ifudesign,
+                                                    designation)
 
-            directory_path = defaults.default_dap_common_path(plate=self.binned_spectra.drpf.plate,
-                                                    ifudesign=self.binned_spectra.drpf.ifudesign,
-                                                    drpver=self.binned_spectra.drpf.drpver,
-                                                    dapver=dapver, analysis_path=analysis_path)
+            directory_path = defaults.dap_common_path(plate=self.binned_spectra.drpf.plate,
+                                                      ifudesign=self.binned_spectra.drpf.ifudesign,
+                                                      drpver=self.binned_spectra.drpf.drpver,
+                                                      dapver=dapver, analysis_path=analysis_path)
 
             velscale_ratio = 1 if self.method['fitpar']['velscale_ratio'] is None \
                                 else self.method['fitpar']['velscale_ratio']
@@ -503,8 +492,8 @@ class StellarContinuumModel:
         """
         Set the :attr:`directory_path` and :attr:`output_file`.  If not
         provided, the defaults are set using, respectively,
-        :func:`mangadap.config.defaults.default_dap_common_path` and
-        :func:`mangadap.config.defaults.default_dap_file_name`.
+        :func:`mangadap.config.defaults.dap_common_path` and
+        :func:`mangadap.config.defaults.dap_file_name`.
 
         Args:
             directory_path (str): The exact path to the DAP reduction
@@ -700,31 +689,30 @@ class StellarContinuumModel:
                 the stellar-continuum fitting.
             directory_path (str): (**Optional**) The exact path to the
                 DAP stellar-continuum file.  Default set by
-                :func:`mangadap.config.defaults.default_dap_common_path`.
+                :func:`mangadap.config.defaults.dap_common_path`.
             drpver (str): (**Optional**) DRP version.  Default set by
-                :func:`mangadap.config.defaults.default_drp_version`.
+                :func:`mangadap.config.defaults.drp_version`.
             dapver (str): (**Optional**) DAP version.  Default set by
-                :func:`mangadap.config.defaults.default_dap_version`.
+                :func:`mangadap.config.defaults.dap_version`.
             analysis_path (str): (**Optional**) The path to the
                 top-level directory containing the DAP output files for
                 a given DRP and DAP version. Default set by
-                :func:`mangadap.config.defaults.default_analysis_path`.
+                :func:`mangadap.config.defaults.analysis_path`.
             output_file (str): (**Optional**) The name of the file with
                 the reduction assessments.  Default set by
-                :func:`mangadap.config.defaults.default_dap_file_name`.
+                :func:`mangadap.config.defaults.dap_file_name`.
 
         Returns:
             str: Two strings with the path for the output file and the
             name of the output file.
         """
         # Set the output directory path
-        directory_path = defaults.default_dap_common_path(plate=plate, ifudesign=ifudesign,
-                                                          drpver=drpver, dapver=dapver,
-                                                          analysis_path=analysis_path) \
+        directory_path = defaults.dap_common_path(plate=plate, ifudesign=ifudesign, drpver=drpver,
+                                                  dapver=dapver, analysis_path=analysis_path) \
                                         if directory_path is None else str(directory_path)
         # Set the output file
         ref_method = '{0}-{1}-{2}'.format(rdxqa_method, binning_method, method_key)
-        output_file = defaults.default_dap_file_name(plate, ifudesign, ref_method) \
+        output_file = defaults.dap_file_name(plate, ifudesign, ref_method) \
                                         if output_file is None else str(output_file)
         return directory_path, output_file
 
@@ -779,20 +767,20 @@ class StellarContinuumModel:
             dapver (:obj:`str`, optional):
                 The DAP version to use for the analysis paths, used to
                 override the default defined by
-                :func:`mangadap.config.defaults.default_dap_version`.
+                :func:`mangadap.config.defaults.dap_version`.
                 This only sets the path names and does *not* change the
                 version of the code being used.
             analysis_path (:obj:`str`, optional):
                 The top-level path for the DAP output files, used to
                 override the default defined by
-                :func:`mangadap.config.defaults.default_analysis_path`.
+                :func:`mangadap.config.defaults.analysis_path`.
             directory_path (:obj:`str`, optional):
                 The exact path to the directory with DAP output that is
                 common to number DAP "methods".  See
                 :attr:`directory_path`.
             output_file (:obj:`str`, optional):
                 Exact name for the output file.  The default is to use
-                :func:`mangadap.config.defaults.default_dap_file_name`.
+                :func:`mangadap.config.defaults.dap_file_name`.
             hardcopy (:obj:`bool`, optional):
                 Flag to write the HDUList attribute to disk.  Default is
                 True; if False, the HDUList is only kept in memory and

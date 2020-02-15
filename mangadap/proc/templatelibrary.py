@@ -92,13 +92,14 @@ defining the wavelength solution; see above.  Using an existing DAP
 library as an example::
 
     # Imports
+    import os
     from mangadap.proc.templatelibrary import TemplateLibraryDef
     from mangadap.proc.templatelibrary import TemplateLibrary
-    from mangadap.config.defaults import dap_source_dir
+    from mangadap.config.defaults import dap_data_root
     from matplotlib import pyplot
 
     # Define the search string for the library
-    search_str = dap_source_dir()+'/data/stellar_templates/miles/*.fits'
+    search_str = os.path.join(dap_data_root(), 'stellar_templates/miles/*.fits')
 
     # Define the template library parameters
     tpl_par = TemplateLibraryDef(key='MILES',    # Unique keyword for the library
@@ -195,8 +196,7 @@ import astropy.constants
 from pydl.goddard.astro import airtovac
 
 from ..par.parset import KeywordParSet
-from ..config.defaults import dap_source_dir, default_dap_common_path
-from ..config.defaults import default_dap_file_name
+from ..config import defaults
 from ..util.bitmask import BitMask
 from ..util.dapbitmask import DAPBitMask
 from ..util.log import log_output
@@ -271,7 +271,7 @@ def validate_spectral_template_config(cnfg):
         raise KeyError('Must provide either \'fwhm\' or \'sres_ext\'.')
 
 
-def available_template_libraries(dapsrc=None):
+def available_template_libraries():
     r"""
     Return the list of library keys, the searchable string of the 1D
     template library fits files for the template libraries available for
@@ -281,22 +281,13 @@ def available_template_libraries(dapsrc=None):
     The stellar template library files should be a list of 1D fits
     files, and be associated with one of the following library keys:
 
-    Args:
-        dapsrc (:obj:`str`, optional):
-            Root path to the DAP source directory.  If not provided, the
-            default is defined by
-            :func:`mangadap.config.defaults.dap_source_dir`.
-
     Returns:
         list: A list of
         :func:`mangadap.proc.templatelibrary.TemplateLibraryDef`
         objects, each defining a separate template library.
 
     Raises:
-        NotADirectoryError:
-            Raised if the provided or default *dapsrc* is not a
-            directory.
-        OSError/IOError:
+        IOError:
             Raised if no template configuration files could be found.
         KeyError:
             Raised if the template-library keywords are not all unique.
@@ -310,16 +301,11 @@ def available_template_libraries(dapsrc=None):
           available databases.
         
     """
-    # Check the source directory exists
-    dapsrc = dap_source_dir() if dapsrc is None else str(dapsrc)
-    if not os.path.isdir(dapsrc):
-        raise NotADirectoryError('{0} does not exist!'.format(dapsrc))
-
     # Check the configuration files exist
-    ini_files = glob.glob(dapsrc+'/python/mangadap/config/spectral_templates/*.ini')
+    search_dir = os.path.join(defaults.dap_config_root(), 'spectral_templates')
+    ini_files = glob.glob(os.path.join(search_dir, '*.ini'))
     if len(ini_files) == 0:
-        raise IOError('Could not find any configuration files in {0} !'.format(
-                      dapsrc+'/python/mangadap/config/spectral_templates'))
+        raise IOError('Could not find any configuration files in {0} !'.format(search_dir))
 
     # Build the list of library definitions
     template_libraries = []
@@ -456,22 +442,22 @@ class TemplateLibrary:
         dapver (:obj:`str`, optional):
             DAP version, which is used to define the default DAP
             analysis path.  Default is defined by
-            :func:`mangadap.config.defaults.default_dap_version`
+            :func:`mangadap.config.defaults.dap_version`
         analysis_path (:obj:`str`, optional):
             The path to the top level directory containing the DAP
             output files for a given DRP and DAP version.  Default is
             defined by
-            :func:`mangadap.config.defaults.default_analysis_path`.
+            :func:`mangadap.config.defaults.analysis_path`.
         directory_path (:obj:`str`, optional):
             The exact path to the processed template library file.
             Default is defined by
-            :func:`mangadap.config.defaults.default_dap_common_path`.
+            :func:`mangadap.config.defaults.dap_common_path`.
         processed_file (:obj:`str`, optional):
             The name of the file containing the prepared template
             library output file.  The file should be found at
             :attr:`directory_path`/:attr:`processed_file`.  Default is
             defined by
-            :func:`mangadap.config.defaults.default_dap_file_name`.
+            :func:`mangadap.config.defaults.dap_file_name`.
         process (:obj:`bool`, optional):
             If :attr:`drpf` is defined and the prepared template library
             does not exist, this will process the template library in
@@ -656,8 +642,8 @@ class TemplateLibrary:
         Set the I/O path to the processed template library.  Used to set
         :attr:`directory_path` and :attr:`processed_file`.  If not
         provided, the defaults are set using, respectively,
-        :func:`mangadap.config.defaults.default_dap_common_path` and
-        :func:`mangadap.config.defaults.default_dap_file_name`.
+        :func:`mangadap.config.defaults.dap_common_path` and
+        :func:`mangadap.config.defaults.dap_file_name`.
 
         Args:
             directory_path (str): The exact path to the DAP template
@@ -677,14 +663,14 @@ class TemplateLibrary:
         self._can_set_paths(directory_path, drpf, processed_file)
 
         # Set the output directory path
-        self.directory_path = default_dap_common_path(plate=drpf.plate, ifudesign=drpf.ifudesign,
-                                                      drpver=drpf.drpver, dapver=dapver,
-                                                      analysis_path=analysis_path) \
+        self.directory_path = defaults.dap_common_path(plate=drpf.plate, ifudesign=drpf.ifudesign,
+                                                       drpver=drpf.drpver, dapver=dapver,
+                                                       analysis_path=analysis_path) \
                                         if directory_path is None else str(directory_path)
 
         # Set the output file
-        self.processed_file = default_dap_file_name(drpf.plate, drpf.ifudesign,
-                                                    self.library['key']) \
+        self.processed_file = defaults.dap_file_name(drpf.plate, drpf.ifudesign,
+                                                     self.library['key']) \
                                         if processed_file is None else str(processed_file)
 
     
@@ -1327,22 +1313,22 @@ class TemplateLibrary:
             dapver (:obj:`str`, optional):
                 DAP version, which is used to define the default DAP
                 analysis path.  Default is defined by
-                :func:`mangadap.config.defaults.default_dap_version`
+                :func:`mangadap.config.defaults.dap_version`
             analysis_path (:obj:`str`, optional):
                 The path to the top level directory containing the DAP
                 output files for a given DRP and DAP version.  Default
                 is defined by
-                :func:`mangadap.config.defaults.default_analysis_path`.
+                :func:`mangadap.config.defaults.analysis_path`.
             directory_path (:obj:`str`, optional):
                 The exact path to the processed template library file.
                 Default is defined by
-                :func:`mangadap.config.defaults.default_dap_common_path`.
+                :func:`mangadap.config.defaults.dap_common_path`.
             processed_file (:obj:`str`, optional):
                 The name of the file containing the prepared template
                 library output file.  The file should be found at
                 :attr:`directory_path`/:attr:`processed_file`.  Default
                 is defined by
-                :func:`mangadap.config.defaults.default_dap_file_name`.
+                :func:`mangadap.config.defaults.dap_file_name`.
             hardcopy (:obj:`bool`, optional):
                 Flag to keep a hardcopy of the processed template
                 library.  Default is True.

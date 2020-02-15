@@ -45,8 +45,7 @@ import numpy
 from astropy.io import fits
 import astropy.constants
 
-from ..config.defaults import dap_source_dir, default_dap_file_name
-from ..config.defaults import default_dap_method, default_dap_method_path
+from ..config import defaults
 from ..util.fitsutil import DAPFitsUtil
 from ..util.fileio import init_record_array, rec_to_fits_type
 from ..util.bitmask import BitMask
@@ -125,7 +124,7 @@ def validate_emission_line_moments_config(cnfg):
         raise KeyError('Keywords {0} must all have valid values.'.format(required_keywords))
 
 
-def available_emission_line_moment_databases(dapsrc=None):
+def available_emission_line_moment_databases():
     """
     Return the list of available emission-line moment databases.
 
@@ -133,11 +132,6 @@ def available_emission_line_moment_databases(dapsrc=None):
 
     .. todo::
         Fill in
-
-    Args:
-        dapsrc (str): (**Optional**) Root path to the DAP source
-            directory.  If not provided, the default is defined by
-            :func:`mangadap.config.defaults.dap_source_dir`.
 
     Returns:
         list: A list of :func:`EmissionLineMomentsDef` objects, each
@@ -158,13 +152,8 @@ def available_emission_line_moment_databases(dapsrc=None):
           available databases.
         
     """
-    # Check the source directory exists
-    dapsrc = dap_source_dir() if dapsrc is None else str(dapsrc)
-    if not os.path.isdir(dapsrc):
-        raise NotADirectoryError('{0} does not exist!'.format(dapsrc))
-
     # Check the configuration files exist
-    search_dir = os.path.join(dapsrc, 'python/mangadap/config/emission_line_moments')
+    search_dir = os.path.join(defaults.dap_config_root(), 'emission_line_moments')
     ini_files = glob.glob(os.path.join(search_dir, '*.ini'))
     if len(ini_files) == 0:
         raise IOError('Could not find any configuration files in {0} !'.format(search_dir))
@@ -305,8 +294,8 @@ class EmissionLineMoments:
         """
         Set the :attr:`directory_path` and :attr:`output_file`.  If not
         provided, the defaults are set using, respectively,
-        :func:`mangadap.config.defaults.default_dap_method_path` and
-        :func:`mangadap.config.defaults.default_dap_file_name`.
+        :func:`mangadap.config.defaults.dap_method_path` and
+        :func:`mangadap.config.defaults.dap_file_name`.
 
         ..warning::
 
@@ -328,14 +317,14 @@ class EmissionLineMoments:
                             else self.stellar_continuum.method['fitpar']['template_library_key']
         eml_templates = 'None' if self.emission_line_model is None \
                             else self.emission_line_model.method['continuum_tpl_key']
-        method = default_dap_method(self.binned_spectra.method['key'], continuum_templates,
-                                    eml_templates)
-        self.directory_path = default_dap_method_path(method, plate=self.binned_spectra.drpf.plate,
-                                                      ifudesign=self.binned_spectra.drpf.ifudesign,
-                                                      ref=True,
-                                                      drpver=self.binned_spectra.drpf.drpver,
-                                                      dapver=dapver, analysis_path=analysis_path) \
-                                        if directory_path is None else str(directory_path)
+        method = defaults.dap_method(self.binned_spectra.method['key'], continuum_templates,
+                                     eml_templates)
+        self.directory_path \
+                = defaults.dap_method_path(method, plate=self.binned_spectra.drpf.plate,
+                                           ifudesign=self.binned_spectra.drpf.ifudesign, ref=True,
+                                           drpver=self.binned_spectra.drpf.drpver, dapver=dapver,
+                                           analysis_path=analysis_path) \
+                                if directory_path is None else str(directory_path)
 
         # Set the output file
         ref_method = '{0}-{1}'.format(self.binned_spectra.rdxqa.method['key'],
@@ -345,8 +334,8 @@ class EmissionLineMoments:
         if self.emission_line_model is not None:
             ref_method = '{0}-{1}'.format(ref_method, self.emission_line_model.method['key'])
         ref_method = '{0}-{1}'.format(ref_method, self.database['key'])
-        self.output_file = default_dap_file_name(self.binned_spectra.drpf.plate,
-                                                 self.binned_spectra.drpf.ifudesign, ref_method) \
+        self.output_file = defaults.dap_file_name(self.binned_spectra.drpf.plate,
+                                                  self.binned_spectra.drpf.ifudesign, ref_method) \
                                         if output_file is None else str(output_file)
 
 

@@ -40,8 +40,9 @@ Revision history
 import logging
 import time
 import os
-import numpy
 import warnings
+
+import numpy
 
 from astropy.wcs import WCS
 from astropy.io import fits
@@ -111,57 +112,72 @@ class DAPFits:
     Object used to hold properties of and read data from a DAP-produced file.
 
     Args:
-        plate (int): Plate number
-        ifudesign (int): IFU design
-        method (str): Method type (e.g., ``'SPX-GAU-MILESTHIN'``)
-        drpver (str): (**Optional**) DRP version, which is used to
-            define the default DAP analysis path.  Default is defined by
-            :func:`mangadap.config.defaults.default_drp_version`
-        dapver (str): (**Optional**) DAP version, which is used to define
-            the default DAP analysis path.  Default is defined by
-            :func:`mangadap.config.defaults.default_dap_version`
-        analysis_path (str): (**Optional**) The path to the top level
-            directory containing the DAP output files for a given DRP
-            and DAP version.  Default is defined by
-            :func:`mangadap.config.defaults.default_analysis_path`.
-        directory_path (str): (**Optional**) The exact path to the DAP
-            file.  Default is defined by
-            :func:`mangadap.config.defaults.default_dap_method_path`.
-        reference_path (str): (**Optional**) The exact path of the DAP
-            reference directory.  Default is defined by
-            :func:`mangadap.config.defaults.default_dap_method_path`.
-        par_file (str): (**Optional**) SDSS parameter file used to
-            provide input parameters for the DAP.  Default is defined by
-            :func:`mangadap.config.defaults.default_dap_par_file`.
-        read (bool) : (**Optional**) Read the DAP file upon
-            instantiation of the object.
-        checksum (bool): (**Optional**) Flag for `astropy.io.fits.open`_
-            checksum operation.
+        plate (:obj:`int`):
+            Plate number
+        ifudesign (:obj:`int`):
+            IFU design
+        method (:obj:`str`):
+            Method type (e.g., ``'SPX-GAU-MILESTHIN'``)
+        drpver (:obj:`str`, optional):
+            DRP version, which is used to define the default DAP
+            analysis path. Default is defined by
+            :func:`mangadap.config.defaults.drp_version`.
+        dapver (:obj:`str`, optional):
+            DAP version, which is used to define the default DAP
+            analysis path. Default is defined by
+            :func:`mangadap.config.defaults.dap_version`.
+        analysis_path (:obj:`str`, optional):
+            The path to the top level directory containing the DAP
+            output files for a given DRP and DAP version. Default is
+            defined by
+            :func:`mangadap.config.defaults.analysis_path`.
+        directory_path (:obj:`str`, optional):
+            The exact path to the DAP file. Default is defined by
+            :func:`mangadap.config.defaults.dap_method_path`.
+        reference_path (:obj:`str`, optional):
+            The exact path of the DAP reference directory. Default is
+            defined by
+            :func:`mangadap.config.defaults.dap_method_path`.
+        par_file (:obj:`str`, optional):
+            SDSS parameter file used to provide input parameters for
+            the DAP. Default is defined by
+            :func:`mangadap.config.defaults.dap_par_file`.
+        read (:obj:`bool`, optional):
+            Read the DAP file upon instantiation of the object.
+        checksum (:obj:`bool`, optional):
+            Flag for `astropy.io.fits.open`_ checksum operation.
 
     Attributes:
-        plate (int): Plate number
-        ifudesign (int): IFU design
-        method (str): Method type
-        drpver (str): DRP version
-        dapver (str): DAP version
-        analysis_path (str): The path to the top level
-            directory containing the DAP output files for a given DRP
-            and DAP version.
-        directory_path (str): The exact path to the DAP file.
-        reference_path (str): The exact path of the DAP reference directory.
-        par_file (str): SDSS parameter file used to provide input
-            parameters for the DAP.
-        dapqual (:class:`mangadap.dapmaps.DAPQualityBitMask`): Global
-            quality bit
-        bitmask (:class:`mangadap.dapmaps.DAPMapsBitMask`): Map mask
-            bits
-        hdu (`astropy.io.fits.hdu.hdulist.HDUList`_): HDUList read from
-            the DRP file
-        par (:class:`mangadap.par.ObsInputPar`): List of parameters used
-            by the DAP.
-        checksum (bool): Boolean to use for checksum in
-            `astropy.io.fits.open`_.
-
+        plate (:obj:`int`):
+            Plate number
+        ifudesign (:obj:`int`):
+            IFU design
+        method (:obj:`str`):
+            Method type
+        drpver (:obj:`str`):
+            DRP version
+        dapver (:obj:`str`):
+            DAP version
+        analysis_path (:obj:`str`):
+            The path to the top level directory containing the DAP
+            output files for a given DRP and DAP version.
+        directory_path (:obj:`str`):
+            The exact path to the DAP file.
+        reference_path (:obj:`str`):
+            The exact path of the DAP reference directory.
+        par_file (:obj:`str`):
+            SDSS parameter file used to provide input parameters for
+            the DAP.
+        dapqual (:class:`mangadap.dapmaps.DAPQualityBitMask`):
+            Global quality bit
+        bitmask (:class:`mangadap.dapmaps.DAPMapsBitMask`):
+            Map mask bits
+        hdu (`astropy.io.fits.hdu.hdulist.HDUList`_):
+            HDUList read from the DRP file
+        par (:class:`mangadap.par.ObsInputPar`):
+            List of parameters used by the DAP.
+        checksum (:obj:`bool`):
+            Boolean to use for checksum in `astropy.io.fits.open`_.
     """
     def __init__(self, plate, ifudesign, method, drpver=None, dapver=None, analysis_path=None,
                  directory_path=None, reference_path=None, par_file=None, read=True,
@@ -175,15 +191,14 @@ class DAPFits:
         # TODO: Do we need drpver, dapver, analysis_path to be kept
         # by self?
         if directory_path is None:
-            self.drpver = defaults.default_drp_version() if drpver is None else str(drpver)
-            self.dapver = defaults.default_dap_version() if dapver is None else str(dapver)
-            self.analysis_path = defaults.default_analysis_path(self.drpver, self.dapver) \
+            self.drpver = defaults.drp_version() if drpver is None else str(drpver)
+            self.dapver = defaults.dap_version() if dapver is None else str(dapver)
+            self.analysis_path = defaults.analysis_path(self.drpver, self.dapver) \
                                  if analysis_path is None else str(analysis_path)
-            self.directory_path = defaults.default_dap_method_path(method, plate=self.plate,
-                                                                   ifudesign=self.ifudesign,
-                                                                   drpver=self.drpver,
-                                                                   dapver=self.dapver,
-                                                                analysis_path=self.analysis_path)
+            self.directory_path = defaults.dap_method_path(method, plate=self.plate,
+                                                           ifudesign=self.ifudesign,
+                                                           drpver=self.drpver, dapver=self.dapver,
+                                                           analysis_path=self.analysis_path)
         else:
             self.drpver = None
             self.dapver = None
@@ -191,19 +206,18 @@ class DAPFits:
             self.directory_path = str(directory_path)
 
         # Set the reference directory path
-        self.reference_path = defaults.default_dap_method_path(method, plate=self.plate,
-                                                               ifudesign=self.ifudesign, ref=True,
-                                                               drpver=self.drpver,
-                                                               dapver=self.dapver,
-                                                               analysis_path=self.analysis_path) \
+        self.reference_path = defaults.dap_method_path(method, plate=self.plate,
+                                                       ifudesign=self.ifudesign, ref=True,
+                                                       drpver=self.drpver, dapver=self.dapver,
+                                                       analysis_path=self.analysis_path) \
                                     if reference_path is None else reference_path
 
         # drpver, dapver, and analysis_path can be None and par_file
         # will still only use the above defined directory_path
-        self.par_file = defaults.default_dap_par_file(self.plate, self.ifudesign, 'CUBE',
-                                                      drpver=self.drpver, dapver=self.dapver,
-                                                      analysis_path=self.analysis_path,
-                                                      directory_path=self.reference_path) \
+        self.par_file = defaults.dap_par_file(self.plate, self.ifudesign, 'CUBE',
+                                              drpver=self.drpver, dapver=self.dapver,
+                                              analysis_path=self.analysis_path,
+                                              directory_path=self.reference_path) \
                                     if par_file is None else str(par_file)
 
         # Set the bitmasks
@@ -221,38 +235,27 @@ class DAPFits:
             self.open_hdu(checksum=self.checksum)
             self.read_par()
 
-
-#    def __del__(self):
-#        """
-#        Destroy the dapfile object, ensuring that the fits file is
-#        properly closed.
-#        """
-#        if self.hdu is None:
-#            return
-#        self.hdu.close()
-#        self.hdu = None
-
-
     def __getitem__(self, key):
         """Access elements of the hdu."""
         if self.hdu is None:
             return None
         return self.hdu[key]
 
-
     def open_hdu(self, permissions='readonly', checksum=False, quiet=True):
         """
-        Open the fits file and save it to :attr:`hdu`; if :attr:`hdu` is
-        not None, the function returns without re-reading the data.
+        Open the fits file and save it to :attr:`hdu`; if :attr:`hdu`
+        is not None, the function returns without re-reading the
+        data.
 
         Args:
-            permissions (string): (**Optional**) Open the fits file with
-                these read/write permissions.
-            checksum (bool): (**Optional**) Flag for
-                `astropy.io.fits.open`_ checksum operation.  This
-                overrides the internal :attr:`checksum` attribute **for
-                the current operation only**.
-            quiet (bool): (**Optional**) Suppress terminal output
+            permissions (:obj:`str`, optional):
+                Open the fits file with these read/write permissions.
+            checksum (:obj:`bool`, optional):
+                Flag for `astropy.io.fits.open`_ checksum operation.
+                This overrides the internal :attr:`checksum`
+                attribute **for the current operation only**.
+            quiet (:obj:`bool`, optional):
+                Suppress terminal output
 
         Raises:
             FileNotFoundError: Raised if the DAP file doesn't exist.
@@ -268,12 +271,9 @@ class DAPFits:
             raise FileNotFoundError('Cannot open file: {0}'.format(inp))
 
         # Open the fits file with the requested read/write permission
-        #check = self.checksum if checksum is None else checksum
-#        self.hdu = fits.open(inp, mode=permissions, checksum=checksum)
         self.hdu = DAPFitsUtil.read(inp, permissions=permissions, checksum=checksum)
 
         self.spatial_shape = self.hdu['BINID'].data.shape
-#        print(self.spatial_shape)
 
         self.smap_ext = []      # Extensions with single maps
         self.mmap_ext = []      # Extensions with multiple maps
@@ -289,19 +289,6 @@ class DAPFits:
             for i in range(1,len(self.mmap_ext)):
                 self.channel_dict[self.mmap_ext[i]] = channel_dictionary(self.hdu, self.mmap_ext[i])
 
-#        if not restructure:
-#            return
-#
-#        if len(self.smap_ext) > 0:
-#            if not quiet:
-#                print('Restructuring single map extensions.')
-#            DAPFitsUtil.restructure_map(self.hdu, ext=self.smap_ext)
-#        if len(self.mmap_ext) > 0:
-#            if not quiet:
-#                print('Restructuring multi-map extensions.')
-#            DAPFitsUtil.restructure_cube(self.hdu, ext=self.mmap_ext)
-
-
     def read_par(self, quiet=True):
         """
         Open the parameter file and save it to :attr:`par`; if
@@ -309,8 +296,8 @@ class DAPFits:
         the data.
 
         Args:
-            quiet (bool): Suppress terminal output
-
+            quiet (:obj:`bool`, optional):
+                Suppress terminal output
         """
         if self.par is not None:
             if not quiet:
@@ -325,16 +312,13 @@ class DAPFits:
         # TODO: Is all of this also in the file header?
         self.par = ObsInputPar.from_par_file(self.par_file)
 
-    
     def file_name(self):
         """Return the name of the DAP file"""
-        return defaults.default_dap_file_name(self.plate, self.ifudesign, self.method, mode='MAPS')
-
+        return defaults.dap_file_name(self.plate, self.ifudesign, self.method, mode='MAPS')
 
     def file_path(self):
         """Return the full path to the DAP file"""
         return os.path.join(self.directory_path, self.file_name())
-
     
     def list_channels(self, ext):
         """
@@ -352,10 +336,8 @@ class DAPFits:
                         numpy.array(list(self.channel_dict[ext].values()))[srt]):
             print('   {0:>3} {1}'.format(v,k))
 
-
     def thin_disk_polar_coo(self, xc=None, yc=None, rot=None, pa=None, inc=None, flip=False):
         r"""
-
         Calculate the disk-plane coordinates for all the binned spectra
         using :class:`mangadap.util.geometry.SemiMajorAxisCoo`.  See the
         documentation their for further information regarding the
@@ -577,8 +559,8 @@ class construct_maps_file:
     """
     def __init__(self, drpf, obs=None, rdxqa=None, binned_spectra=None, stellar_continuum=None,
                  emission_line_moments=None, emission_line_model=None, spectral_indices=None,
-                 nsa_redshift=None, dapsrc=None, dapver=None, analysis_path=None,
-                 directory_path=None, output_file=None, clobber=True, loggers=None, quiet=False,
+                 nsa_redshift=None, dapver=None, analysis_path=None, directory_path=None,
+                 output_file=None, clobber=True, loggers=None, quiet=False,
                  single_precision=False):
 
         #---------------------------------------------------------------
@@ -648,7 +630,7 @@ class construct_maps_file:
         # Initialize the primary header
         prihdr = DAPFitsUtil.initialize_dap_primary_header(self.drpf, maskname='MANGA_DAPPIXMASK')
         # Add the DAP method
-        prihdr['DAPTYPE'] = (defaults.default_dap_method(binned_spectra.method['key'],
+        prihdr['DAPTYPE'] = (defaults.dap_method(binned_spectra.method['key'],
                                     stellar_continuum.method['fitpar']['template_library_key'],
                                     'None' if emission_line_model is None
                                         else emission_line_model.method['continuum_tpl_key']),
@@ -698,12 +680,11 @@ class construct_maps_file:
         sindxlist = self.spectral_index_maps(prihdr, spectral_indices)
 
         # Save the data to the hdu attribute
-        prihdr = add_snr_metrics_to_header(prihdr, self.drpf, rdxqalist[1].data[:,:,1].ravel(),
-                                           dapsrc=dapsrc)
+        prihdr = add_snr_metrics_to_header(prihdr, self.drpf, rdxqalist[1].data[:,:,1].ravel())
         
         prihdr = finalize_dap_primary_header(prihdr, self.drpf, obs, binned_spectra,
-                                             stellar_continuum, dapsrc=dapsrc,
-                                             loggers=self.loggers, quiet=self.quiet)
+                                             stellar_continuum, loggers=self.loggers,
+                                             quiet=self.quiet)
         self.hdu = fits.HDUList([ fits.PrimaryHDU(header=prihdr),
                                   *rdxqalist,
                                   *binidlist,
@@ -804,29 +785,26 @@ class construct_maps_file:
         # Set the output directory path
         # TODO: Get DAP version from __version__ string
 
-        self.method = defaults.default_dap_method(binned_spectra.method['key'],
+        self.method = defaults.dap_method(binned_spectra.method['key'],
                                     stellar_continuum.method['fitpar']['template_library_key'],
                                     'None' if emission_line_model is None 
                                         else emission_line_model.method['continuum_tpl_key']) \
                                 if directory_path is None else None
-        self.directory_path = defaults.default_dap_method_path(self.method, plate=self.drpf.plate,
-                                                               ifudesign=self.drpf.ifudesign,
-                                                               drpver=self.drpf.drpver,
-                                                               dapver=dapver,
-                                                               analysis_path=analysis_path) \
+        self.directory_path = defaults.dap_method_path(self.method, plate=self.drpf.plate,
+                                                       ifudesign=self.drpf.ifudesign,
+                                                       drpver=self.drpf.drpver, dapver=dapver,
+                                                       analysis_path=analysis_path) \
                                                 if directory_path is None else str(directory_path)
 
         # Set the output file
-        self.output_file = defaults.default_dap_file_name(self.drpf.plate, self.drpf.ifudesign,
-                                                          self.method, mode='MAPS') \
+        self.output_file = defaults.dap_file_name(self.drpf.plate, self.drpf.ifudesign,
+                                                  self.method, mode='MAPS') \
                                     if output_file is None else str(output_file)
 
-
     def _consolidate_donotuse(self, mask):
-        return self.bitmask.consolidate(mask, [ 'NOCOV', 'LOWCOV', 'DEADFIBER', 'FORESTAR',
-                                                'NOVALUE', 'MATHERROR', 'FITFAILED', 'NEARBOUND' ],
+        return self.bitmask.consolidate(mask, ['NOCOV', 'LOWCOV', 'DEADFIBER', 'FORESTAR',
+                                               'NOVALUE', 'MATHERROR', 'FITFAILED', 'NEARBOUND'],
                                         'DONOTUSE')
-
 
     def _build_binning_mask(self, binned_spectra):
         """
@@ -1778,10 +1756,6 @@ class construct_maps_file:
         return DAPFitsUtil.list_of_image_hdus(data, hdr, ext)
 
 
-
-
-    
-
 #-----------------------------------------------------------------------
 class construct_cube_file:
     """
@@ -1794,8 +1768,8 @@ class construct_cube_file:
 
     """
     def __init__(self, drpf, obs=None, binned_spectra=None, stellar_continuum=None,
-                 emission_line_model=None, dapsrc=None, dapver=None, analysis_path=None,
-                 directory_path=None, output_file=None, clobber=True, loggers=None, quiet=False,
+                 emission_line_model=None, dapver=None, analysis_path=None, directory_path=None,
+                 output_file=None, clobber=True, loggers=None, quiet=False,
                  single_precision=False):
 
         #---------------------------------------------------------------
@@ -1859,7 +1833,7 @@ class construct_cube_file:
         # Initialize the primary header
         prihdr = DAPFitsUtil.initialize_dap_primary_header(self.drpf, maskname='MANGA_DAPSPECMASK')
         # Add the DAP method
-        prihdr['DAPTYPE'] = (defaults.default_dap_method(binned_spectra.method['key'],
+        prihdr['DAPTYPE'] = (defaults.dap_method(binned_spectra.method['key'],
                                     stellar_continuum.method['fitpar']['template_library_key'],
                                     'None' if emission_line_model is None
                                         else emission_line_model.method['continuum_tpl_key']),
@@ -1887,13 +1861,6 @@ class construct_cube_file:
                                            stellar_continuum_3d_hdu, emission_line_model,
                                            emission_line_model_3d_hdu)
 
-#        # Finalize the (stellar-continuum) mask
-#        masklist = DAPFitsUtil.list_of_image_hdus([mask],
-#                        [ DAPFitsUtil.finalize_dap_header(self.base_cubehdr, 'FLUX',
-#                                                          hduclas2='QUALITY', err=True,
-#                                                          bit_type=self.bitmask.minimum_dtype(),
-#                                                          prepend=False) ], ['MASK'])
-
         # Get the BINIDs
         binidlist = combine_binid_extensions(self.drpf, binned_spectra, stellar_continuum, None,
                                              emission_line_model, None, dtype='int32')
@@ -1901,8 +1868,8 @@ class construct_cube_file:
         #---------------------------------------------------------------
         # Save the data to the hdu attribute
         prihdr = finalize_dap_primary_header(prihdr, self.drpf, obs, binned_spectra,
-                                             stellar_continuum, dapsrc=dapsrc,
-                                             loggers=self.loggers, quiet=self.quiet)
+                                             stellar_continuum, loggers=self.loggers,
+                                             quiet=self.quiet)
 
         # Ensure extensions are in the correct order
         self.hdu = fits.HDUList([ fits.PrimaryHDU(header=prihdr),
@@ -1934,12 +1901,12 @@ class construct_cube_file:
             raise ValueError('Could not define output directory path.')
 
         # Set the output directory path
-        self.method = defaults.default_dap_method(binned_spectra.method['key'],
+        self.method = defaults.dap_method(binned_spectra.method['key'],
                                     stellar_continuum.method['fitpar']['template_library_key'],
                                     'None' if emission_line_model is None
                                         else emission_line_model.method['continuum_tpl_key']) \
                                 if directory_path is None else None
-        self.directory_path = defaults.default_dap_method_path(self.method, plate=self.drpf.plate,
+        self.directory_path = defaults.dap_method_path(self.method, plate=self.drpf.plate,
                                                                ifudesign=self.drpf.ifudesign,
                                                                drpver=self.drpf.drpver,
                                                                dapver=dapver,
@@ -1947,33 +1914,9 @@ class construct_cube_file:
                                                 if directory_path is None else str(directory_path)
 
         # Set the output file
-        self.output_file = defaults.default_dap_file_name(self.drpf.plate, self.drpf.ifudesign,
+        self.output_file = defaults.dap_file_name(self.drpf.plate, self.drpf.ifudesign,
                                                           self.method, mode='LOGCUBE') \
                                     if output_file is None else str(output_file)
-
-#    def _initialize_mask(self, binned_spectra, binned_spectra_3d_hdu):
-#        """
-#        Initialize the mask based on the DRP cube mask.
-#
-#        Set IVARINVALID by testing for invalid inverse variance data.
-#        THIS SHOULD BE A TEST THAT IS INCLUDED IN THE BINNED_SPECTRA
-#        OBJECT.  This should match the flags from the stellar continuum
-#        model object.
-#
-#        Copy the FORESTAR flags from the DRP file to the this one
-#        """
-#        mask = numpy.zeros(self.shape, dtype=self.bitmask.minimum_dtype())
-#        if binned_spectra is None:
-#            return mask
-#
-#        indx = numpy.invert(binned_spectra_3d_hdu['IVAR'].data > 0) \
-#                    | numpy.invert(numpy.isfinite(binned_spectra_3d_hdu['IVAR'].data))
-#        mask[indx] = self.bitmask.turn_on(mask[indx], 'IVARINVALID')
-#
-#        indx = binned_spectra.bitmask.flagged(binned_spectra_3d_hdu['MASK'].data, flag='FORESTAR')
-#        mask[indx] = self.bitmask.turn_on(mask[indx], 'FORESTAR')
-#
-#        return mask
 
     def _get_data_mask(self, binned_spectra, binned_spectra_3d_hdu):
         """
@@ -2283,8 +2226,7 @@ def confirm_dap_types(drpf, obs, rdxqa, binned_spectra, stellar_continuum, emiss
         raise TypeError('Input must have type SpectralIndices.')
 
 
-
-def finalize_dap_primary_header(prihdr, drpf, obs, binned_spectra, stellar_continuum, dapsrc=None,
+def finalize_dap_primary_header(prihdr, drpf, obs, binned_spectra, stellar_continuum,
                                 loggers=None, quiet=False):
 
     # Initialize the DAP quality flag
@@ -2328,11 +2270,10 @@ def finalize_dap_primary_header(prihdr, drpf, obs, binned_spectra, stellar_conti
 
     # Finalize authors
     prihdr['AUTHOR'] = 'K Westfall <westfall@ucolick.org>'
-
     return prihdr
 
 
-def add_snr_metrics_to_header(hdr, drpf, r_re, dapsrc=None):
+def add_snr_metrics_to_header(hdr, drpf, r_re):
     """
     For all valid spaxels within 1 Re < R < 1.5 Re calculate the median
     S/N and combined S/N (including covariance) in the griz bands.
@@ -2348,12 +2289,15 @@ def add_snr_metrics_to_header(hdr, drpf, r_re, dapsrc=None):
     correlation within the broad band.
 
     Args:
-        hdr (`astropy.io.fits.Header`_): Header object to edit
-        drpf (:class:`mangadap.drpfits.DRPFits`): DRP fits cube
-        r_re (numpy.ndarray): *Flattened* array with the semi-major axis
-            radius in units of the effective radius for all spaxels in
-            the datacube.  Shape should be (Nx*Ny,), where the shape of
-            the datacube is (Nx,Ny,Nwave).
+        hdr (`astropy.io.fits.Header`_):
+            Header object to edit
+        drpf (:class:`mangadap.drpfits.DRPFits`):
+            DRP fits cube
+        r_re (`numpy.ndarray`_):
+            *Flattened* array with the semi-major axis
+            radius in units of the effective radius for all spaxels
+            in the datacube. Shape should be (Nx*Ny,), where the
+            shape of the datacube is (Nx,Ny,Nwave).
 
     Returns:
         `astropy.io.fits.Header`_: The edited header object.
@@ -2362,12 +2306,9 @@ def add_snr_metrics_to_header(hdr, drpf, r_re, dapsrc=None):
         FileNotFoundError: Raised if any of the response function files
             cannot be found.
     """
-    _dapsrc = defaults.dap_source_dir() if dapsrc is None else str(dapsrc)
-    filter_response_file = [ os.path.join(_dapsrc, 'data', 'filter_response',
-                                           f) for f in [ 'gunn_2001_g_response.db',
-                                                         'gunn_2001_r_response.db',
-                                                         'gunn_2001_i_response.db',
-                                                         'gunn_2001_z_response.db'] ]
+    filter_response_file = [os.path.join(defaults.dap_data_root(), 'filter_response', f) 
+                                for f in ['gunn_2001_g_response.db', 'gunn_2001_r_response.db',
+                                          'gunn_2001_i_response.db', 'gunn_2001_z_response.db']]
     for f in filter_response_file:
         if not os.path.isfile(f):
             raise FileNotFoundError('{0} does not exist!'.format(f))

@@ -49,8 +49,9 @@ from ..drpfits import DRPFits
 from ..par.parset import KeywordParSet, ParSet
 from ..par.artifactdb import ArtifactDB
 from ..par.emissionlinedb import EmissionLineDB
-from ..config.defaults import dap_source_dir, default_dap_file_name
-from ..config.defaults import default_dap_method, default_dap_method_path
+
+from ..config import defaults
+
 from ..util.fitsutil import DAPFitsUtil
 from ..util.fileio import init_record_array, rec_to_fits_type, rec_to_fits_col_dim
 from ..util.dapbitmask import DAPBitMask
@@ -134,7 +135,7 @@ def validate_emission_line_modeling_method_config(cnfg):
         raise KeyError('Keyword \'key\' must be provided.')
 
 
-def available_emission_line_modeling_methods(dapsrc=None):
+def available_emission_line_modeling_methods():
     """
     Return the list of available emission-line modeling methods.
 
@@ -142,12 +143,6 @@ def available_emission_line_modeling_methods(dapsrc=None):
 
     .. todo::
         Fill in
-
-    Args:
-        dapsrc (:obj:`str`, optional):
-            Root path to the DAP source directory. If not provided,
-            the default is defined by
-            :func:`mangadap.config.defaults.dap_source_dir`.
 
     Returns:
         :obj:`list`: A list of :class:`EmissionLineModelDef` objects,
@@ -171,13 +166,8 @@ def available_emission_line_modeling_methods(dapsrc=None):
         databases?
 
     """
-    # Check the source directory exists
-    dapsrc = dap_source_dir() if dapsrc is None else str(dapsrc)
-    if not os.path.isdir(dapsrc):
-        raise NotADirectoryError('{0} does not exist!'.format(dapsrc))
-
     # Check the configuration files exist
-    search_dir = os.path.join(dapsrc, 'python/mangadap/config/emission_line_modeling')
+    search_dir = os.path.join(defaults.dap_config_root(), 'emission_line_modeling')
     ini_files = glob.glob(os.path.join(search_dir, '*.ini'))
     if len(ini_files) == 0:
         raise IOError('Could not find any configuration files in {0} !'.format(search_dir))
@@ -347,21 +337,8 @@ class EmissionLineModel:
                  output_file=output_file, hardcopy=hardcopy, clobber=clobber, loggers=loggers,
                  quiet=quiet)
 
-
-#    def __del__(self):
-#        """
-#        Deconstruct the data object by ensuring that the fits file is
-#        properly closed.
-#        """
-#        if self.hdu is None:
-#            return
-#        self.hdu.close()
-#        self.hdu = None
-
-
     def __getitem__(self, key):
         return self.hdu[key]
-
 
     @staticmethod
     def define_method(method_key, method_list=None, dapsrc=None):
@@ -378,13 +355,12 @@ class EmissionLineModel:
         return select_proc_method(method_key, EmissionLineModelDef, method_list=method_list,
                                   available_func=available_emission_line_modeling_methods)
 
-
     def _set_paths(self, directory_path, dapver, analysis_path, output_file):
         """
         Set the :attr:`directory_path` and :attr:`output_file`.  If not
         provided, the defaults are set using, respectively,
-        :func:`mangadap.config.defaults.default_dap_method_path` and
-        :func:`mangadap.config.defaults.default_dap_file_name`.
+        :func:`mangadap.config.defaults.dap_method_path` and
+        :func:`mangadap.config.defaults.dap_file_name`.
 
         Args:
             directory_path (str): The exact path to the DAP
@@ -399,14 +375,14 @@ class EmissionLineModel:
         # Set the output directory path
         continuum_templates = 'None' if self.stellar_continuum is None \
                             else self.stellar_continuum.method['fitpar']['template_library_key']
-        method = default_dap_method(self.binned_spectra.method['key'], continuum_templates,
-                                    self.method['continuum_tpl_key'])
-        self.directory_path = default_dap_method_path(method, plate=self.binned_spectra.drpf.plate,
-                                                      ifudesign=self.binned_spectra.drpf.ifudesign,
-                                                      ref=True,
-                                                      drpver=self.binned_spectra.drpf.drpver,
-                                                      dapver=dapver, analysis_path=analysis_path) \
-                                        if directory_path is None else str(directory_path)
+        method = defaults.dap_method(self.binned_spectra.method['key'], continuum_templates,
+                                     self.method['continuum_tpl_key'])
+        self.directory_path \
+                = defaults.dap_method_path(method, plate=self.binned_spectra.drpf.plate,
+                                           ifudesign=self.binned_spectra.drpf.ifudesign, ref=True,
+                                           drpver=self.binned_spectra.drpf.drpver, dapver=dapver,
+                                           analysis_path=analysis_path) \
+                            if directory_path is None else str(directory_path)
 
         # Set the output file
         ref_method = '{0}-{1}'.format(self.binned_spectra.rdxqa.method['key'],
@@ -414,16 +390,13 @@ class EmissionLineModel:
         if self.stellar_continuum is not None:
             ref_method = '{0}-{1}'.format(ref_method, self.stellar_continuum.method['key'])
         ref_method = '{0}-{1}'.format(ref_method, self.method['key'])
-        self.output_file = default_dap_file_name(self.binned_spectra.drpf.plate,
-                                                 self.binned_spectra.drpf.ifudesign, ref_method) \
+        self.output_file = defaults.dap_file_name(self.binned_spectra.drpf.plate,
+                                                  self.binned_spectra.drpf.ifudesign, ref_method) \
                                         if output_file is None else str(output_file)
-
 
     def _initialize_primary_header(self, hdr=None):
         """
-
         Initialize the header.
-
         """
         # Copy the from the DRP and clean it
         if hdr is None:
@@ -440,7 +413,6 @@ class EmissionLineModel:
         hdr['NELMOD'] = (self.nmodels, 'Number of unique emission-line models')
         return hdr
 
-
     def _emission_line_database_dtype(self, name_len, mode_len, prof_len):
         r"""
         Construct the record array data type for the output fits
@@ -455,7 +427,6 @@ class EmissionLineModel:
                  ('PROFILE', '<U{0:d}'.format(prof_len)),
                  ('NCOMP', int)
                ]
-
 
     def _compile_database(self, quiet=False):
         """

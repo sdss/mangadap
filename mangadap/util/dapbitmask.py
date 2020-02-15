@@ -38,9 +38,8 @@ class DAPBitMask(BitMask):
     def __init__(self):
         if self.cfg_root is None:
             raise ValueError('Class does not define the configuration file root name!')
-        dapsrc = defaults.dap_source_dir()
-        tmp = BitMask.from_ini_file(os.path.join(dapsrc, 'python', 'mangadap', 'config',
-                                                 'bitmasks', '{0}.ini'.format(self.cfg_root)))
+        tmp = BitMask.from_ini_file(os.path.join(defaults.dap_config_root(), 'bitmasks',
+                                                 '{0}.ini'.format(self.cfg_root)))
         keys, descr = tmp._init_objs()
         super(DAPBitMask, self).__init__(keys, descr=descr)
 

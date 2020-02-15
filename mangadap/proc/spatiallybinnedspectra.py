@@ -68,8 +68,7 @@ from ..util.covariance import Covariance
 from ..util.geometry import SemiMajorAxisCoo
 from ..util.extinction import GalacticExtinction
 from ..util.log import log_output
-from ..config.defaults import dap_source_dir, default_dap_common_path
-from ..config.defaults import default_dap_file_name, default_cube_pixelscale
+from ..config import defaults
 from . import spatialbinning
 from .reductionassessments import ReductionAssessment
 from .spectralstack import SpectralStackPar, SpectralStack
@@ -207,33 +206,21 @@ def validate_spatial_binning_scheme_config(cnfg):
 
 
 
-def available_spatial_binning_methods(dapsrc=None):
+def available_spatial_binning_methods():
     """
     Return the list of available binning schemes.
     
-    The list of available binning schemes is defined by the set of
-    configuration files at::
-
-        config_path = os.path.join(dapsrc, 'python', 'mangadap', 'config', 'spatial_binning')
-        ini_files = glob.glob(os.path.join(config_path, '/*.ini'))
-
-    Args:
-        dapsrc (str): (**Optional**) Root path to the DAP source
-            directory.  If not provided, the default is defined by
-            :func:`mangadap.config.defaults.dap_source_dir`.
-
     Returns:
         list: A list of
         :func:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectraDef`
         objects, each defining a separate binning method.
 
     Raises:
-        NotADirectoryError: Raised if the provided or default
-            *dapsrc* is not a directory.
-        OSError/IOError: Raised if no binning scheme configuration files
-            could be found.
-        KeyError: Raised if the binning method keywords are not all
-            unique.
+        IOError:
+            Raised if no binning scheme configuration files could be
+            found.
+        KeyError:
+            Raised if the binning method keywords are not all unique.
 
     .. todo::
         - Somehow add a python call that reads the databases and
@@ -242,16 +229,11 @@ def available_spatial_binning_methods(dapsrc=None):
           available databases.
         
     """
-    # Check the source directory exists
-    dapsrc = dap_source_dir() if dapsrc is None else str(dapsrc)
-    if not os.path.isdir(dapsrc):
-        raise NotADirectoryError('{0} does not exist!'.format(dapsrc))
-
     # Check the configuration files exist
-    ini_files = glob.glob(dapsrc+'/python/mangadap/config/spatial_binning/*.ini')
+    search_dir = os.path.join(defaults.dap_config_root(), 'spatial_binning')
+    ini_files = glob.glob(os.path.join(search_dir, '*.ini'))
     if len(ini_files) == 0:
-        raise IOError('Could not find any configuration files in {0} !'.format(
-                      dapsrc+'/python/mangadap/config/spatial_binning'))
+        raise IOError('Could not find any configuration files in {0} !'.format(search_dir))
 
     # Build the list of library definitions
     binning_methods = []
@@ -355,16 +337,16 @@ class SpatiallyBinnedSpectra:
             :func:`mangadap.config.defaults.dap_source_dir`.
         dapver (str): (**Optional**) The DAP version to use for the
             analysis, used to override the default defined by
-            :func:`mangadap.config.defaults.default_dap_version`.
+            :func:`mangadap.config.defaults.dap_version`.
         analysis_path (str): (**Optional**) The top-level path for the
             DAP output files, used to override the default defined by
-            :func:`mangadap.config.defaults.default_analysis_path`.
+            :func:`mangadap.config.defaults.analysis_path`.
         directory_path (str): The exact path to the directory with DAP
             output that is common to number DAP "methods".  See
             :attr:`directory_path`.
         output_file (str): (**Optional**) Exact name for the output
             file.  The default is to use
-            :func:`mangadap.config.defaults.default_dap_file_name`.
+            :func:`mangadap.config.defaults.dap_file_name`.
         hardcopy (bool): (**Optional**) Flag to write the HDUList
             attribute to disk.  Default is True; if False, the HDUList
             is only kept in memory and would have to be reconstructed.
@@ -530,8 +512,8 @@ class SpatiallyBinnedSpectra:
         """
         Set the :attr:`directory_path` and :attr:`output_file`.  If not
         provided, the defaults are set using, respectively,
-        :func:`mangadap.config.defaults.default_dap_common_path` and
-        :func:`mangadap.config.defaults.default_dap_file_name`.
+        :func:`mangadap.config.defaults.dap_common_path` and
+        :func:`mangadap.config.defaults.dap_file_name`.
 
         Args:
             directory_path (str): The exact path to the directory with
@@ -546,15 +528,15 @@ class SpatiallyBinnedSpectra:
 
         """
         # Set the output directory path
-        self.directory_path = default_dap_common_path(plate=self.drpf.plate,
-                                                      ifudesign=self.drpf.ifudesign,
-                                                      drpver=self.drpf.drpver, dapver=dapver,
-                                                      analysis_path=analysis_path) \
+        self.directory_path = defaults.dap_common_path(plate=self.drpf.plate,
+                                                       ifudesign=self.drpf.ifudesign,
+                                                       drpver=self.drpf.drpver, dapver=dapver,
+                                                       analysis_path=analysis_path) \
                                         if directory_path is None else str(directory_path)
 
         # Set the output file
         method = '{0}-{1}'.format(self.rdxqa.method['key'], self.method['key'])
-        self.output_file = default_dap_file_name(self.drpf.plate, self.drpf.ifudesign, method) \
+        self.output_file = defaults.dap_file_name(self.drpf.plate, self.drpf.ifudesign, method) \
                                         if output_file is None else str(output_file)
 
 
@@ -765,7 +747,7 @@ class SpatiallyBinnedSpectra:
         bin_data['LW_ELL_COO'] = bin_data['ELL_COO'].copy()
 
         if self.drpf.pixelscale is None:
-            self.drpf.pixelscale = default_cube_pixelscale()
+            self.drpf.pixelscale = defaults.cube_pixelscale()
 
         bin_data['AREA'] = numpy.full(self.nbins, numpy.square(self.drpf.pixelscale),
                                       dtype=numpy.float)
@@ -1175,17 +1157,17 @@ class SpatiallyBinnedSpectra:
                 galaxy.
             dapver (str): (**Optional**) The DAP version to use for the
                 analysis, used to override the default defined by
-                :func:`mangadap.config.defaults.default_dap_version`.
+                :func:`mangadap.config.defaults.dap_version`.
             analysis_path (str): (**Optional**) The top-level path for
                 the DAP output files, used to override the default
                 defined by
-                :func:`mangadap.config.defaults.default_analysis_path`.
+                :func:`mangadap.config.defaults.analysis_path`.
             directory_path (str): The exact path to the directory with
                 DAP output that is common to number DAP "methods".  See
                 :attr:`directory_path`.
             output_file (str): (**Optional**) Exact name for the output
                 file.  The default is to use
-                :func:`mangadap.config.defaults.default_dap_file_name`.
+                :func:`mangadap.config.defaults.dap_file_name`.
             hardcopy (bool): (**Optional**) Flag to write the HDUList
                 attribute to disk.  Default is True; if False, the
                 HDUList is only kept in memory and would have to be

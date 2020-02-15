@@ -86,21 +86,18 @@ class DAPall:
             file are included.
         drpver (:obj:`str`, optional):
             DRP version.  Default determined by
-            :func:`mangadap.config.defaults.default_drp_version`.
+            :func:`mangadap.config.defaults.drp_version`.
         redux_path (:obj:`str`, optional):
             Top-level directory with the DRP products; default is
             defined by
-            :func:`mangadap.config.defaults.default_redux_path`.
+            :func:`mangadap.config.defaults.redux_path`.
         dapver (:obj:`str`, optional):
             DAP version.  Default determined by
-            :func:`mangadap.config.defaults.default_dap_version`.
-        dapsrc (:obj:`str`, optional):
-            Source directory of the DAP.  Default determined by
-            :func:`mangadap.config.defaults.dap_source_dir`.
+            :func:`mangadap.config.defaults.dap_version`.
         analysis_path (:obj:`str`, optional):
             Top-level directory for the DAP output data; default is
             defined by
-            :func:`mangadap.config.defaults.default_analysis_path`.
+            :func:`mangadap.config.defaults.analysis_path`.
         readonly (:obj:`bool`, optional):
             If it exists, open any existing file and disallow any
             modifications of the database.  Default is to automatically
@@ -119,7 +116,6 @@ class DAPall:
     Attributes:
         drpver (str): DRP version
         redux_path (str): Path to top-level redux directory
-        dapsrc (str): Path to DAP source distribution
         dapver (str): DAP version
         analysis_path (str): Path to top-level analysis directory
         drpall_file (str): Path to the DRPall file
@@ -151,7 +147,7 @@ class DAPall:
         float_dtype (str): Sets precision for floating-point numbers.
 
     """
-    def __init__(self, plan, methods=None, drpver=None, redux_path=None, dapver=None, dapsrc=None,
+    def __init__(self, plan, methods=None, drpver=None, redux_path=None, dapver=None,
                  analysis_path=None, readonly=False, loggers=None, quiet=False,
                  single_precision=False):
 
@@ -162,15 +158,13 @@ class DAPall:
         self.float_dtype = 'float32' if single_precision else 'float'
 
         # Path definitions
-        self.drpver = defaults.default_drp_version() if drpver is None else str(drpver)
-        self.redux_path = defaults.default_redux_path(self.drpver) if redux_path is None \
-                                                                  else str(redux_path)
+        self.drpver = defaults.drp_version() if drpver is None else str(drpver)
+        self.redux_path = defaults.redux_path(self.drpver) \
+                                if redux_path is None else str(redux_path)
 
-        self.dapsrc = defaults.dap_source_dir() if dapsrc is None else str(dapsrc)
-
-        self.dapver = defaults.default_dap_version() if dapver is None else str(dapver)
-        self.analysis_path = defaults.default_analysis_path(self.drpver, self.dapver) \
-                             if analysis_path is None else str(analysis_path)
+        self.dapver = defaults.dap_version() if dapver is None else str(dapver)
+        self.analysis_path = defaults.analysis_path(self.drpver, self.dapver) \
+                                if analysis_path is None else str(analysis_path)
 
         # Set the name of the DRPall file
         self.drpall_file = os.path.join(self.redux_path, 'drpall-{0}.fits'.format(self.drpver))
@@ -234,7 +228,7 @@ class DAPall:
         return self.hdu['DAPALL'].data[key]
 
     @staticmethod
-    def _emission_line_moment_db_info(key, dapsrc=None):
+    def _emission_line_moment_db_info(key):
         if key == 'None':
             return 'None', None
         db = select_proc_method(key, EmissionLineMomentsDef,
@@ -242,7 +236,7 @@ class DAPall:
         return db['passbands'], EmissionMomentsDB.from_key(db['passbands']).channel_names()
 
     @staticmethod
-    def _emission_line_db_info(key, dapsrc=None):
+    def _emission_line_db_info(key):
         if key == 'None':
             return 'None', None
         db = select_proc_method(key, EmissionLineModelDef,
@@ -250,7 +244,7 @@ class DAPall:
         return db['emission_lines'], EmissionLineDB.from_key(db['emission_lines']).channel_names()
 
     @staticmethod
-    def _spectral_index_db_info(key, dapsrc=None):
+    def _spectral_index_db_info(key):
         if key == 'None':
             return 0, 'None', 'None', None
         db = select_proc_method(key, SpectralIndicesDef,
@@ -842,16 +836,14 @@ class DAPall:
 
     def file_name(self):
         """Return the name of the DRP complete database."""
-        name = defaults.default_dapall_file(drpver=self.drpver, dapver=self.dapver,
-                                            analysis_path=self.analysis_path)
+        name = defaults.dapall_file(drpver=self.drpver, dapver=self.dapver,
+                                    analysis_path=self.analysis_path)
         return os.path.split(name)[1]
-#        return ('dapall-{0}-{1}.fits'.format(self.drpver, self.dapver))
 
     def file_path(self):
         """Return the full pat to the DRP complete database."""
-        return defaults.default_dapall_file(drpver=self.drpver, dapver=self.dapver,
-                                            analysis_path=self.analysis_path)
-#        return os.path.join(self.analysis_path, self.file_name())
+        return defaults.dapall_file(drpver=self.drpver, dapver=self.dapver,
+                                    analysis_path=self.analysis_path)
 
     def update(self, plan, methods=None):
         """
@@ -884,15 +876,14 @@ class DAPall:
             raise TypeError('Input plan must have type AnalysisPlanSet.')
 
         # Get the full list of available plan methods
-#        plan_methods = numpy.array([ defaults.default_dap_method(plan=p) for p in plan ])
         plan_methods = []
         for p in plan:
             bin_method = SpatiallyBinnedSpectra.define_method(p['bin_key'])
             sc_method = StellarContinuumModel.define_method(p['continuum_key'])
             el_method = EmissionLineModel.define_method(p['elfit_key'])
-            plan_methods += [defaults.default_dap_method(bin_method['key'],
-                                                sc_method['fitpar']['template_library_key'],
-                                                el_method['continuum_tpl_key'])]
+            plan_methods += [defaults.dap_method(bin_method['key'],
+                                                 sc_method['fitpar']['template_library_key'],
+                                                 el_method['continuum_tpl_key'])]
         # Check that the plan methods are unique.  This should never be
         # raised, unless it also causes problems in the DAP itself.
         if len(numpy.unique(plan_methods)) != len(plan_methods):
@@ -919,9 +910,8 @@ class DAPall:
         # Check that all the plans to use have the same emission-line
         # bandpass channels, ...
         elmom_keys, elmom_channels \
-                    = numpy.array([ DAPall._emission_line_moment_db_info(p['elmom_key'],
-                                                                         dapsrc=self.dapsrc)
-                                        for p in plan[use_plans] ], dtype=object).T
+                    = numpy.array([DAPall._emission_line_moment_db_info(p['elmom_key'])
+                                        for p in plan[use_plans]], dtype=object).T
         if numpy.any([ len(k) != len(elmom_channels[0]) or len(set(k)-set(elmom_channels[0])) > 0
                         for k in elmom_channels]):
             raise ValueError('All plans must provide the same emission-line bandpass channels.')
@@ -931,9 +921,8 @@ class DAPall:
 
         # ..., emission-line fit channels, and...
         elfit_keys, elfit_channels \
-                    = numpy.array([ DAPall._emission_line_db_info(p['elfit_key'],
-                                                                  dapsrc=self.dapsrc)
-                                        for p in plan[use_plans] ], dtype=object).T
+                    = numpy.array([DAPall._emission_line_db_info(p['elfit_key'])
+                                        for p in plan[use_plans]], dtype=object).T
         if numpy.any([ len(k) != len(elfit_channels[0]) or len(set(k)-set(elfit_channels[0])) > 0
                         for k in elfit_channels]):
             raise ValueError('All plans must provide the same emission-line fit channels.')
@@ -943,9 +932,8 @@ class DAPall:
 
         # ..., and spectral-index channels
         abs_keys, bhd_keys, spindx_channels, spindx_units \
-                    = numpy.array([ DAPall._spectral_index_db_info(p['spindex_key'],
-                                                                   dapsrc=self.dapsrc)
-                                        for p in plan[use_plans] ], dtype=object).T
+                    = numpy.array([DAPall._spectral_index_db_info(p['spindex_key'])
+                                        for p in plan[use_plans]], dtype=object).T
         if numpy.any([ len(k) != len(spindx_channels[0]) or len(set(k)-set(spindx_channels[0])) > 0
                         for k in spindx_channels]):
             raise ValueError('All plans must provide the same emission-line fit channels.')

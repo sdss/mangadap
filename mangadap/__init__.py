@@ -14,8 +14,6 @@ __credits__ = ['Kyle B. Westfall', 'Brett H. Andrews', 'Jorge Barrera-Ballestero
                'Adam Schaefer', 'Shravan Shetty', 'Daniel Thomas', 'Christy A. Tremonti',
                'Anne-Marie Weijmans', 'Renbin Yan', 'Meng Yang', 'Zheng Zheng', 'Shuang Zhou']
 
-import os
-
 def short_warning(message, category, filename, lineno, file=None, line=None):
     """
     Return the format for a short warning message.
@@ -30,6 +28,7 @@ _MANGACORE_VER = 'v1_8_0'
 
 # WARNING: This has to be kept in sync with setup.py
 # TODO: Put these in a config file
+import os
 def default_paths():
     return { 'MANGADRP_VER': _MANGADRP_VER,
              'MANGA_SPECTRO_REDUX': os.path.join(os.environ['HOME'], 'MaNGA', 'redux'),
@@ -50,7 +49,7 @@ check_environment()
 
 def dap_source_dir():
     """Return the root path to the DAP source directory."""
-    dirlist = os.path.dirname(os.path.abspath(__file__)).split('/')[:-2]
+    dirlist = os.path.dirname(os.path.abspath(__file__)).split('/')[:-1]
     return os.path.join(os.sep, *dirlist) if dirlist[0] == '' else os.path.join(*dirlist)
 
 os.environ['MANGADAP_DIR'] = dap_source_dir()
