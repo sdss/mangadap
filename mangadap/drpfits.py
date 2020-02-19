@@ -1090,7 +1090,7 @@ class DRPFits:
             data file.
         """    
         _directory_path = defaults.drp_directory_path(plate, drpver=drpver,
-                                                     redux_path=redux_path) \
+                                                      redux_path=redux_path) \
                                 if directory_path is None else directory_path
         _output_file = '{0}.fits.gz'.format(defaults.manga_fits_root(plate, ifudesign,
                                                                      'LOG{0}'.format(mode))) \
@@ -2705,7 +2705,6 @@ class DRPFits:
         return numpy.sqrt( self.regrid_T.dot(numpy.square(_df*self.hdu[ext].data[:,channel]))
                                                 / Tc ).reshape(self.nx, self.ny)
 
-
     def pointing_offset(self):
         """
         Return the offsets in RA and DEC between the pointing
@@ -2716,10 +2715,9 @@ class DRPFits:
         Returns:
             float: Sky-right arcsecond offsets in RA and DEC.
         """
-        return ( (self.hdu[0].header['IFURA'] - self.hdu[0].header['OBJRA']) \
+        return ((self.hdu[0].header['IFURA'] - self.hdu[0].header['OBJRA']) \
                     * numpy.cos(numpy.radians(self.hdu[0].header['OBJDEC'])) * 3600.), \
                ((self.hdu[0].header['IFUDEC'] - self.hdu[0].header['OBJDEC']) * 3600.)
-
 
     def mean_sky_coordinates(self, waverange=None, response_func=None, per_pixel=True, offset=True,
                              flag=None, fluxwgt=False):
