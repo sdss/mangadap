@@ -10,4 +10,5 @@ examples/data/*.fits.gz
 examples/output/HYB10-GAU-MILESHC/
 examples/output/VOR10-GAU-MILESHC/
 examples/output/common/
+mangadap/data/remote
 

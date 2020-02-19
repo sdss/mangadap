@@ -910,7 +910,7 @@ class RowStackedSpectra:
             # NOTE: Calculating full matrix is actually faster than
             # determining submatrix for calculation
 
-            # Calcuate the distance
+            # Calculate the distance
             # ---- WITH RESPECT TO THE EDGE OF THE FIRST PIXEL ----
             #  - matches DRP, but why?!?!
             r2 = numpy.square((self.xpos[k,self.rect_channel]-self.xs)/self.pixelscale - ii) \
@@ -942,6 +942,8 @@ class RowStackedSpectra:
                                         shape=(nim,self.nspec)).tocsr()
         # TODO: Does this need to be returned?
         return self.rect_T
+
+    # TODO: Include mask propagation
 
     def rectify_wavelength_plane(self, channel, pixelscale=None, rlim=None, sigma=None,
                                  recenter=False, width_buffer=10, quiet=False, rej_flag=None,
