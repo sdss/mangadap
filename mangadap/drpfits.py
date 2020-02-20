@@ -406,7 +406,7 @@ class DRPFits:
             List of fits extensions in the file
         checksum (:obj:`bool`):
             Flag to check for file corruption when opening the HDU.
-        wcs (`astropy.wcs.wcs.WCS`_):
+        wcs (`astropy.wcs.WCS`_):
             WCS object based on WCS keywords in the header of the
             FLUX extension.
         shape (:obj:`tuple`):
@@ -960,7 +960,7 @@ class DRPFits:
     def _fix_header(self):
         """
         Use of 'degrees' in early versions of the DRP did not adhere to
-        the fits standard causing the `astropy.wcs.wcs.WCS`_ to fail
+        the fits standard causing the `astropy.wcs.WCS`_ to fail
         when initialized; see, e.g., :func:`world_mesh`. This changes
         the units to be 'deg' instead.
 
@@ -1636,7 +1636,7 @@ class DRPFits:
             Prior to v1_5_1 of the DRP, this function required a
             correction to the DRP header because of its use of
             'degrees', which does not adhere to the fits standard
-            causing the `astropy.wcs.wcs.WCS`_ to fail when initialized.
+            causing the `astropy.wcs.WCS`_ to fail when initialized.
             This call is not longer made.
 
         .. todo::
@@ -1724,7 +1724,7 @@ class DRPFits:
             Prior to v1_5_1 of the DRP, this function required a
             correction to the DRP header because of its use of
             'degrees', which does not adhere to the fits standard
-            causing the `astropy.wcs.wcs.WCS`_ to fail when initialized.
+            causing the `astropy.wcs.WCS`_ to fail when initialized.
             This call is not longer made.
 
         .. todo::

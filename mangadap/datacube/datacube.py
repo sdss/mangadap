@@ -1,5 +1,15 @@
 """
 Base class for a datacube
+
+----
+
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../links.rst
 """
 
 # TODO: Pilfer the pypeit.DataContainer for this.

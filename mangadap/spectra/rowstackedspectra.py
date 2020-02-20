@@ -1,5 +1,15 @@
 """
 Base class for row-stacked spectra
+
+----
+
+.. include license and copyright
+.. include:: ../copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../links.rst
 """
 
 # TODO: Pilfer the pypeit.DataContainer for this.
@@ -1053,7 +1063,7 @@ class RowStackedSpectra:
         This method requires that :attr:`rect_T` not be None, it
         assumes that the current transfer matrix is correct for this
         channel, and it is largely a wrapper for
-        :func:`mangadap.util.covariance.Covariance.from_matrix_multiplication.
+        :func:`mangadap.util.covariance.Covariance.from_matrix_multiplication`.
 
         Args:
             csr (:obj:`bool`, optional):

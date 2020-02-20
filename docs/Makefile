@@ -18,7 +18,7 @@ clean:
 	rm -rf $(LOCALFILES)
 
 apirst:
-	SPHINX_APIDOC_OPTIONS=$(SPHINXAPIOPT) $(SPHINXAPI) --separate -o ./api ../python/mangadap ../python/mangadap/tests/* 
+	SPHINX_APIDOC_OPTIONS=$(SPHINXAPIOPT) $(SPHINXAPI) --separate -o ./api ../mangadap ../mangadap/tests/* 
 	python3 ./scripts/write_bitmask_tables.py
 	python3 ./scripts/write_parset_tables.py
 

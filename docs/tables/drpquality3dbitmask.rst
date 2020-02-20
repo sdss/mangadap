@@ -14,7 +14,7 @@ BADSET       7    One or more sets are bad
 BADFLUX      8    Bad flux calibration                             
 BADPSF       9    PSF estimate may be bad                          
 MANYDEAD     10   Many dead fibers                                 
-BADHELIORV   11   MASTAR: High variance between stellar RVs        
+RETIRED2     11   Bit retired, moved into MASTAR_QUAL instead      
 CRITICAL     30   Critical failure in one or more frames           
 ===========  ===  =================================================
 

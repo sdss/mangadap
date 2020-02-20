@@ -764,7 +764,7 @@ class Covariance:
         For a higher dimensional source array (see
         :attr:`raw_shape`), the indices in the covariance matrix
         relevant to source array can be found using
-        `numpy.ravel_multi_index`_ (or `numpy.unravel_indices`_ for
+        `numpy.ravel_multi_index`_ (or `numpy.unravel_index`_ for
         vice versa). However, if the source array is transposed,
         these operations will be invalid.
 
