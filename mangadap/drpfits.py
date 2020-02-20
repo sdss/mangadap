@@ -1976,11 +1976,9 @@ class DRPFits:
         scale = pixelscale*pixelscale/numpy.pi
         non_zero_wgt *= scale/tot[numpy.unravel_index(non_zero_pix.astype(int), (self.nx,self.ny))]
 
-        # Set the transfer matrix to a sparse object
+        # Set the transfer matrix to a sparse object and return it
         self.regrid_T = sparse.coo_matrix( (non_zero_wgt, (non_zero_pix, non_zero_spc)), \
                                                    shape=(nim,self.nspec) ).tocsr()
-
-        # Return the transfer matrix
         return self.regrid_T
 
 
