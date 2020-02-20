@@ -77,7 +77,7 @@ def test_wcs():
     assert abs(x[21,21]) < 1e-2 and abs(y[21,21]) < 1e-2, 'Offset incorrect'
 
 
-@requires_remote
+#@requires_remote
 def test_copyto():
     cube = MaNGADataCube.from_plateifu(7815, 3702, directory_path=remote_data_file())
     flux = cube.copy_to_array()
@@ -99,16 +99,32 @@ def test_copyto():
     indx = ((sig > 0) & numpy.invert(numpy.ma.getmaskarray(sig))).data.ravel()
     ngood = numpy.sum(indx)
 
+    # Select the spaxels with non-zero signal
     flux = cube.copy_to_array(waverange=waverange, select_bins=indx)
     assert flux.shape[0] == ngood, 'Bin selection failed'
 
+    # Get the masked array
     flux = cube.copy_to_masked_array()
     assert isinstance(flux, numpy.ma.MaskedArray), 'Should output a masked array'
     assert flux.shape[0] == cube.nspec, 'Should be flattened into a 2D array.'
     assert flux.shape[1] == cube.nwave, 'Should be flattened into a 2D array.'
 
+    # Select the spaxels with non-zero signal
     flux = cube.copy_to_masked_array(select_bins=indx)
     assert flux.shape[0] == ngood, 'Bin selection failed'
+
+    # Try to get the inverse variance
+    i = cube.nspec//2 + cube.spatial_shape[1]//2
+    ivar = cube.copy_to_masked_array(attr='ivar')
+    assert ivar.shape == (cube.nspec, cube.nwave), 'Bad ivar shape'
+    assert numpy.array_equal(cube.ivar[numpy.unravel_index(i, cube.spatial_shape)],
+                             ivar[i].data), 'Did not pull ivar data.'
+
+    # Try to get the spectral resolution
+    sres = cube.copy_to_masked_array(attr='sres')
+    assert sres.shape == (cube.nspec, cube.nwave), 'Bad ivar shape'
+    assert numpy.array_equal(cube.sres[numpy.unravel_index(i, cube.spatial_shape)],
+                             sres[i].data), 'Did not pull sres data.'
 
 
 @requires_remote
