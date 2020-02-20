@@ -954,10 +954,10 @@ class Covariance:
         # Remove some fraction of the array to effectively zoom in on
         # the center of the covariance matrix
         if zoom is not None:
-            xs = int(self.shape[self.dim-2]/2 - self.shape[self.dim-2]/2/zoom)
-            xe = xs + int(self.shape[self.dim-2]/zoom) + 1
-            ys = int(self.shape[self.dim-1]/2 - self.shape[self.dim-1]/2/zoom)
-            ye = ys + int(self.shape[self.dim-1]/zoom) + 1
+            xs = int(self.shape[0]/2 - self.shape[0]/2/zoom)
+            xe = xs + int(self.shape[0]/zoom) + 1
+            ys = int(self.shape[1]/2 - self.shape[1]/2/zoom)
+            ye = ys + int(self.shape[1]/zoom) + 1
             a = a[xs:xe,ys:ye]
 
         # Print the plot to the screen if no output file is provided.

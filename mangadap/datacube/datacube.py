@@ -18,6 +18,8 @@ from IPython import embed
 
 import numpy
 
+from scipy import sparse, interpolate
+
 from ..util.bitmask import BitMask
 from ..util.mapping import permute_wcs_axes
 from ..util.covariance import Covariance
@@ -326,9 +328,9 @@ class DataCube:
             `numpy.ndarray`_: A 2D array with a copy of the data from the
             selected attribute.
         """
-        masked_data = self.copy_to_masked_array(attr=attr, waverange=waverange, nbins=nbins,
-                                                select_bins=select_bins, missing_bins=missing_bins,
-                                                unique_bins=unique_bins)
+        masked_data = self.copy_to_masked_array(attr=attr, use_mask=False, waverange=waverange,
+                                                nbins=nbins, select_bins=select_bins,
+                                                missing_bins=missing_bins, unique_bins=unique_bins)
         # For this approach, the wavelengths masked should be
         # *identical* for all spectra
         nwave = numpy.sum(numpy.invert(numpy.ma.getmaskarray(masked_data)), axis=1)
@@ -343,8 +345,8 @@ class DataCube:
         # reshaped for the new number of (unmasked) wavelength channels
         return masked_data.compressed().reshape(-1,nwave[0])
 
-    def copy_to_masked_array(self, attr='flux', flag=None, waverange=None, nbins=None,
-                             select_bins=None, missing_bins=None, unique_bins=None):
+    def copy_to_masked_array(self, attr='flux', use_mask=True, flag=None, waverange=None,
+                             nbins=None, select_bins=None, missing_bins=None, unique_bins=None):
         r"""
         Return a copy of the selected data array as a masked array
         with a flattened spatial axis.
@@ -366,6 +368,11 @@ class DataCube:
                 better off using :func:`copy_to_array`. Strings are
                 always set to be lower-case, so capitalization
                 shouldn't matter.
+            use_mask (:obj:`bool`, optional):
+                Use the internal mask to mask the data. This is
+                largely here to allow for :func:`copy_to_array` to
+                wrap this function while not applying the internal
+                mask.
             waverange (array-like, optional):
                 Two-element array with the first and last wavelength
                 to include in the computation. Default is to use the
@@ -418,11 +425,12 @@ class DataCube:
         mask = SpectralPixelMask(waverange=waverange).boolean(self.wave, nspec=nspec)
 
         # Add in any masked data
-        mask |= self.mask if self.bitmask is None \
+        if use_mask:
+            mask |= self.mask if self.bitmask is None \
                     else self.bitmask.flagged(self.mask.reshape(nspec,-1), flag=flag)
 
         # Create the output MaskedArray
-        a = numpy.ma.MaskedArray(getattr(self, attr.lower()), mask=mask)
+        a = numpy.ma.MaskedArray(getattr(self, attr.lower()).reshape(nspec,-1), mask=mask)
 
         # Apply any bin selection
         if select_bins is not None:
@@ -726,8 +734,9 @@ class DataCube:
             :class:`mangadap.util.covariance.Covariance`: Correlation
             matrix
         """
-        if self.approx_correl is not None and self.sigma_rho == sigma_rho \
-                and self.correl_rlim == rlim:
+        if self.approx_correl is not None \
+                and any([sigma_rho == this for this in [None, self.sigma_rho]]) \
+                and any([rlim == this for this in [None, self.correl_rlim]]):
             return self.approx_correl
 
         if sigma_rho is None or rlim is None:
@@ -740,8 +749,8 @@ class DataCube:
                                     indexing='ij'))
 
         # Convert covariance pixels to spatial pixels along both dimensions
-        i_i, i_j = numpy.unravel_indices(ii, self.spatial_shape)
-        j_i, j_j = numpy.unravel_indices(jj, self.spatial_shape)
+        i_i, i_j = numpy.unravel_index(ii, self.spatial_shape)
+        j_i, j_j = numpy.unravel_index(jj, self.spatial_shape)
 
         # Get the (square of the) distances from each spaxel to every
         # other spaxel
@@ -815,6 +824,7 @@ class DataCube:
         self.approximate_correlation_matrix(sigma_rho, rlim)
         var = numpy.ma.power(self.ivar[...,channel], -1).filled(0.0).ravel()
         covar = self.approx_correl.apply_new_variance(var)
+        covar.revert_correlation()
         return covar.with_lower_triangle() if csr else covar
 
     def approximate_covariance_cube(self, channels=None, sigma_rho=None, rlim=None, csr=False,

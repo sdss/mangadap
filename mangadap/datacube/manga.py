@@ -441,3 +441,55 @@ class MaNGADataCube(DataCube):
                        self.prihdr['{0}DEC'.format(offset.upper())]) \
                            if center_coo is None and offset is not None else center_coo
         return super(MaNGADataCube, self).mean_sky_coordinates(center_coo=_center_coo)
+
+    def approximate_correlation_matrix(self, sigma_rho=1.92, rlim=None, redo=False):
+        """
+        Construct an approximate correlation matrix for the datacube.
+
+        This is a simple wrapper for
+        :func:`mangadap.datacube.DataCube.approximate_correlation_matrix`
+        that defaults to the expected values for a MaNGA datacube.
+        See that method for a description of the arguments. The
+        default ``sigma_rho`` is from Westfall et al. (2019, AJ, 158,
+        231). The default ``rlim`` is provided by
+        :func:`mangadap.config.defaults.regrid_rlim`.
+        """
+        _rlim = defaults.regrid_rlim() if rlim is None else rlim
+        return super(MaNGADataCube, self).approximate_correlation_matrix(sigma_rho, _rlim,
+                                                                         redo=redo)
+
+    def approximate_covariance_matrix(self, channel, sigma_rho=1.92, rlim=None, csr=False,
+                                      quiet=False):
+        """
+        Construct an approximate covariance matrix.
+        
+        This is a simple wrapper for
+        :func:`mangadap.datacube.DataCube.approximate_covariance_matrix`
+        that defaults to the expected values for a MaNGA datacube.
+        See that method for a description of the arguments. The
+        default ``sigma_rho`` is from Westfall et al. (2019, AJ, 158,
+        231). The default ``rlim`` is provided by
+        :func:`mangadap.config.defaults.regrid_rlim`.
+        """
+        _rlim = defaults.regrid_rlim() if rlim is None else rlim
+        return super(MaNGADataCube, 
+                    self).approximate_covariance_matrix(channel, sigma_rho=sigma_rho, rlim=_rlim,
+                                                        csr=csr, quiet=quiet)
+
+    def approximate_covariance_cube(self, channels=None, sigma_rho=1.92, rlim=None, csr=False,
+                                    quiet=False):
+        """
+        Construct approximate covariance matrices for multiple channels.
+        
+        This is a simple wrapper for
+        :func:`mangadap.datacube.DataCube.approximate_covariance_cube`
+        that defaults to the expected values for a MaNGA datacube.
+        See that method for a description of the arguments. The
+        default ``sigma_rho`` is from Westfall et al. (2019, AJ, 158,
+        231). The default ``rlim`` is provided by
+        :func:`mangadap.config.defaults.regrid_rlim`.
+        """
+        _rlim = defaults.regrid_rlim() if rlim is None else rlim
+        return super(MaNGADataCube, 
+                    self).approximate_covariance_cube(channels=channels, sigma_rho=sigma_rho,
+                                                      rlim=_rlim, csr=csr, quiet=quiet)

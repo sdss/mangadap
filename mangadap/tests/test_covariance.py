@@ -138,7 +138,7 @@ def test_io():
     # Clean-up 
     os.remove(ofile)
 
-#@requires_remote
+@requires_remote
 def test_rectification_recovery():
     cube = MaNGADataCube.from_plateifu(7815, 3702, directory_path=remote_data_file(),
                                        covar_ext='GCORREL')

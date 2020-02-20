@@ -6,6 +6,7 @@ from IPython import embed
 import numpy
 from astropy.io import fits
 
+from mangadap.proc.reductionassessments import available_reduction_assessments
 from mangadap.util.covariance import Covariance
 from mangadap.datacube import MaNGADataCube
 from mangadap.tests.util import remote_data_file, requires_remote
@@ -13,6 +14,7 @@ from mangadap.tests.util import remote_data_file, requires_remote
 import warnings
 warnings.simplefilter("ignore", UserWarning)
 warnings.simplefilter("ignore", RuntimeWarning)
+
 
 @requires_remote
 def test_sres_ext():
@@ -26,6 +28,7 @@ def test_sres_ext():
                 == 'PRESPECRES', 'Bad spectral resolution extension selection'
     assert MaNGADataCube.spectral_resolution_extension(hdu, ext='junk') is None, \
                 'Should return None for a bad extension name.'
+
 
 @requires_remote
 def test_read():
@@ -45,6 +48,7 @@ def test_read():
             'Bad calculation of wavelength vector.'
     assert cube.covar is None, 'Covariance should not have been read'
 
+
 @requires_remote
 def test_read_correl():
     cube = MaNGADataCube.from_plateifu(7815, 3702, directory_path=remote_data_file(),
@@ -56,6 +60,7 @@ def test_read_correl():
     # Check that the variances are all unity (or close to it when it's defined)
     unique_var = numpy.unique(cube.covar.var)
     assert numpy.allclose(unique_var[unique_var>0], 1.), 'Bad variance values'
+
 
 @requires_remote
 def test_wcs():
@@ -71,6 +76,78 @@ def test_wcs():
     x, y = cube.mean_sky_coordinates(offset='obj')
     assert abs(x[21,21]) < 1e-2 and abs(y[21,21]) < 1e-2, 'Offset incorrect'
 
+
+@requires_remote
+def test_copyto():
+    cube = MaNGADataCube.from_plateifu(7815, 3702, directory_path=remote_data_file())
+    flux = cube.copy_to_array()
+    assert not isinstance(flux, numpy.ma.MaskedArray), 'Should output normal array'
+    assert flux.shape[0] == cube.nspec, 'Should be flattened into a 2D array.'
+    assert flux.shape[1] == cube.nwave, 'Should be flattened into a 2D array.'
+
+    # Apply a wavelength mask
+    waverange = [5000, 7000]
+    flux = cube.copy_to_array(waverange=waverange)
+    indx = (cube.wave > waverange[0]) & (cube.wave < waverange[1])
+    assert flux.shape[1] == numpy.sum(indx), 'Wavelength range masking failed'
+
+    # Find the spaxels with non-zero signal
+    methods = available_reduction_assessments()
+    i = numpy.where([m['key'] == 'SNRG' for m in methods])[0]
+    assert len(i) == 1, 'Could not find correct reduction assessment definition.'
+    sig, var, snr = cube.flux_stats(response_func=methods[i[0]]['response_func'])
+    indx = ((sig > 0) & numpy.invert(numpy.ma.getmaskarray(sig))).data.ravel()
+    ngood = numpy.sum(indx)
+
+    flux = cube.copy_to_array(waverange=waverange, select_bins=indx)
+    assert flux.shape[0] == ngood, 'Bin selection failed'
+
+    flux = cube.copy_to_masked_array()
+    assert isinstance(flux, numpy.ma.MaskedArray), 'Should output a masked array'
+    assert flux.shape[0] == cube.nspec, 'Should be flattened into a 2D array.'
+    assert flux.shape[1] == cube.nwave, 'Should be flattened into a 2D array.'
+
+    flux = cube.copy_to_masked_array(select_bins=indx)
+    assert flux.shape[0] == ngood, 'Bin selection failed'
+
+
+@requires_remote
+def test_stats():
+    cube = MaNGADataCube.from_plateifu(7815, 3702, directory_path=remote_data_file())
+
+    # Create a fake bin map
+    bin_indx = numpy.arange(cube.nspec/4, dtype=int).reshape(cube.spatial_shape[0]//2,
+                                                             cube.spatial_shape[0]//2)
+    bin_indx = numpy.repeat(bin_indx, 2, axis=0)
+    bin_indx = numpy.repeat(bin_indx, 2, axis=1)
+
+    # Get the bin area
+    bins, area = cube.binned_on_sky_area(bin_indx)
+
+    assert numpy.array_equal(bins, numpy.arange(cube.nspec/4)), 'Bad bin list'
+    assert numpy.allclose(area, 1.), 'Bad area calculation'
+
+    methods = available_reduction_assessments()
+    i = numpy.where([m['key'] == 'SNRG' for m in methods])[0]
+    assert len(i) == 1, 'Could not find correct reduction assessment definition.'
+
+    sig, var, snr = cube.flux_stats(response_func=methods[i[0]]['response_func'])
+    assert sig.shape == cube.spatial_shape, 'Should be shaped as a map.'
+    assert isinstance(sig, numpy.ma.MaskedArray), 'Expected masked arrays'
+    assert numpy.ma.amax(snr) > 60, 'S/N changed'
+
+    # Try it with the linear cube
+    cube = MaNGADataCube.from_plateifu(7815, 3702, directory_path=remote_data_file(), log=False)
+    _sig, _var, _snr = cube.flux_stats(response_func=methods[i[0]]['response_func'])
+    # TODO: Not sure why these are not closer.
+    assert numpy.absolute(numpy.ma.median((sig-_sig)/_sig)) < 0.01, \
+            'Signal should be the same to better than 1%.'
+    assert numpy.absolute(numpy.ma.median((var-_var)/_var)) < 0.03, \
+            'Variance should be the same to better than 3%.'
+    assert numpy.absolute(numpy.ma.median((snr-_snr)/_snr)) < 0.02, \
+            'S/N should be the same to better than 2%.'
+
+
 @requires_remote
 def test_read_lin():
     cube = MaNGADataCube.from_plateifu(7815, 3702, directory_path=remote_data_file(), log=False)
@@ -78,13 +155,51 @@ def test_read_lin():
     assert numpy.isclose(numpy.std(numpy.diff(cube.wave)), 0.), \
                 'Wavelength sampling should be linear'
 
-#@requires_remote
+
+@requires_remote
 def test_load_rss():
     cube = MaNGADataCube.from_plateifu(7815, 3702, directory_path=remote_data_file())
     cube.load_rss()
 
-    embed()
-    exit()
 
-if __name__ == '__main__':
-    test_load_rss()
+@requires_remote
+def test_covariance():
+    cube = MaNGADataCube.from_plateifu(7815, 3702, directory_path=remote_data_file())
+
+    with pytest.raises(ValueError):
+        # Have to load the RSS first
+        cube.covariance_matrix(1000)
+
+    # Load the RSS
+    cube.load_rss()
+
+    # Construct a covariance matrix
+    C = cube.covariance_matrix(1000)
+    assert C.shape == (1764, 1764), 'Bad covariance shape'
+
+    # Make it a correlation matrix and check it
+    C.to_correlation()
+
+    # Check that the variances are all unity (or close to it when it's defined)
+    unique_var = numpy.unique(numpy.diag(C.toarray()))
+    assert numpy.allclose(unique_var[unique_var>0], 1.), 'Bad correlation diagonal'
+
+    # Try multiple channels
+    C = cube.covariance_cube(channels=[1000,2000])
+    assert numpy.array_equal(C.input_indx, [1000,2000]), 'Bad matrix indices'
+    assert C.shape == (1764, 1764, 2), 'Bad covariance shape'
+
+    # Try to convert multiple channels
+    C.to_correlation()
+    # And reverting it
+    C.revert_correlation()
+
+    # Try to generate an approximate correlation matrix, covariance
+    # matrix, and covariance cube
+    approxC = cube.approximate_correlation_matrix()
+    approxC = cube.approximate_covariance_matrix(1000)
+    approxC = cube.approximate_covariance_cube(channels=[1000,2000])
+
+    # Variance should be the same for direct and approximate calculations
+    assert numpy.allclose(approxC.variance(), C.variance()), 'Variances should be the same.'
+
