@@ -1,8 +1,6 @@
 """
 Implement the derived class for MaNGA datacubes.
 """
-
-
 import os
 import warnings
 
@@ -18,6 +16,7 @@ from ..drpfits import DRPFitsBitMask
 from ..util.constants import DAPConstants
 from ..util.covariance import Covariance
 from ..util.filter import interpolate_masked_vector
+from ..spectra import MaNGARSS
 from .datacube import DataCube
 
 class MaNGADataCube(DataCube):
@@ -60,8 +59,8 @@ class MaNGADataCube(DataCube):
             raise FileNotFoundError('File does not exist: {0}'.format(ifile))
 
         # Parse the relevant information from the filename
-        self.directory_path, _ifile = os.path.split(os.path.abspath(ifile)) 
-        self.plate, self.ifudesign, log = _ifile.split('-')[1:4]
+        self.directory_path, self.file = os.path.split(os.path.abspath(ifile)) 
+        self.plate, self.ifudesign, log = self.file.split('-')[1:4]
         self.plate = int(self.plate)
         self.ifudesign = int(self.ifudesign)
         log = 'LOG' in log
@@ -76,14 +75,26 @@ class MaNGADataCube(DataCube):
 
         # Open the file and initialize the base class
         with fits.open(ifile) as hdu:
-            print('Reading file data ...', end='\r')
+            # Read covariance first
+            covar = None if covar_ext is None \
+                        else Covariance.from_fits(hdu, ivar_ext=None, transpose_ivar=True,
+                                                  covar_ext=covar_ext, impose_triu=True,
+                                                  correlation=True)
+
+            print('Reading MaNGA datacube data ...', end='\r')
             self.prihdr = hdu[0].header
             self.fluxhdr = hdu['FLUX'].header
-            sres = MaNGADataCube.spectral_resolution(hdu, ext=sres_ext, pre=sres_pre,
-                                                     fill=sres_fill).filled(0.0)
-            covar = None if covar_ext is None \
-                        else Covariance.from_fits(hdu, ivar_ext=None, covar_ext=covar_ext,
-                                                  impose_triu=True, correlation=True)
+            # NOTE: Need to keep a log of what spectral resolution
+            # vectors were used so that the same vectors are read from
+            # the RSS file, if/when it is loaded.
+            self.sres_ext, sres = MaNGADataCube.spectral_resolution(hdu, ext=sres_ext,
+                                                                    pre=sres_pre, fill=sres_fill)
+            self.sres_pre = sres_pre
+            if self.sres_pre:
+                # Remove the pre prefix
+                self.sres_ext = self.sres_ext[3:]
+            self.sres_fill = sres_fill
+            sres = sres.filled(0.0)
 
             # NOTE: Transposes are done here because of how the data is
             # read from the fits file. The covariance is NOT transposed
@@ -99,7 +110,7 @@ class MaNGADataCube(DataCube):
                                                 bitmask=bitmask, sres=sres.T, covar=covar,
                                                 wcs=WCS(header=self.fluxhdr, fix=True),
                                                 pixelscale=0.5, log=log)
-        print('Reading file data ... DONE')
+        print('Reading MaNGA datacube data ... DONE')
 
         # Try to use the header to set the DRP version
         self.drpver = self.prihdr['VERSDRP3'] if 'VERSDRP3' in self.prihdr \
@@ -144,6 +155,8 @@ class MaNGADataCube(DataCube):
             _ext = 'PREDISP' if pre else 'DISP'
             if _ext not in sres_ext:
                 _ext = 'PRESPECRES' if pre else 'SPECRES'
+        elif pre:
+            _ext = 'PRE{0}'.format(_ext)
         return None if _ext not in sres_ext else _ext
 
     @staticmethod
@@ -181,11 +194,13 @@ class MaNGADataCube(DataCube):
                 masked in all vectors.
 
         Returns:
-            `numpy.ma.MaskedArray`_ : Even if interpolated such that
-            there should be no masked values, the function returns a
-            masked array.  Array contains the spectral resolution
-            (:math:`R = \lambda/\Delta\lambda`) pulled from the DRP
-            file.
+            :obj:`tuple`: Returns a :obj:`str` with the name of the
+            extension used for the spectral resolution measurements
+            and a `numpy.ma.MaskedArray`_ with the spectral
+            resolution data. Even if interpolated such that there
+            should be no masked values, the function returns a masked
+            array. Array contains the spectral resolution (:math:`R =
+            \lambda/\Delta\lambda`) pulled from the DRP file.
         """
         # Determine which spectral resolution element to use
         _ext = MaNGADataCube.spectral_resolution_extension(hdu, ext=ext, pre=pre)
@@ -203,7 +218,7 @@ class MaNGADataCube(DataCube):
             if not median:
                 spatial_shape = hdu['FLUX'].data.shape[1:][::-1]
                 sres = numpy.ma.tile(sres, spatial_shape + (1,)).T
-            return sres
+            return _ext, sres
 
         # Otherwise dealing with the DISP cube
         sres = numpy.ma.MaskedArray(hdu[_ext].data)
@@ -220,7 +235,7 @@ class MaNGADataCube(DataCube):
                                                   sres.reshape(outshape[0], -1))).reshape(outshape)
         if median:
             sres = numpy.ma.median(sres.reshape(outshape[0],-1), axis=1)
-        return sres
+        return _ext, sres
 
     @classmethod
     def from_plateifu(cls, plate, ifudesign, log=True, drpver=None, redux_path=None,
@@ -269,12 +284,43 @@ class MaNGADataCube(DataCube):
             directory_path = defaults.drp_directory_path(_plate, drpver=drpver,
                                                          redux_path=redux_path)
         return cls(os.path.join(directory_path,
-                                MaNGADataCube.file_name(_plate, _ifudesign, log=log)), **kwargs)
+                                MaNGADataCube.build_file_name(_plate, _ifudesign, log=log)),
+                   **kwargs)
 
     # TODO: Include a class method that instantiates from (or wraps a Marvin Cube)
 
+    def load_rss(self):
+        """
+        Try to load the source row-stacked spectra for this datacube.
+
+        The method first looks for the relevant file in the same
+        directory with the datacube. If the file is not there, it
+        uses the DRP version in the header of the datacube file and
+        the paths defined by the keyword arguments to construct the
+        nominal path to the RSS file. If the file is also not there,
+        the method faults.
+
+        Nothing is returned. If successful, the method initializes
+        the row-stacked spectra object
+        (:class:`mangadap.spectra.manga.MaNGARSS`) to :attr:`rss`.
+        """
+        rss_file = MaNGARSS.build_file_name(self.plate, self.ifudesign, log=self.log)
+        rss_file_path = os.path.join(self.directory_path, rss_file)
+        if not os.path.isfile(rss_file_path):
+            # Not in this directory.  Check the nominal directory
+            warnings.warn('Could not find: {0}'.format(rss_file_path))
+            rss_file_path = os.path.join(
+                    defaults.drp_directory_path(self.plate, drpver=self.drpver,
+                                                redux_path=self.redux_path), rss_file)
+        if not os.path.isfile(rss_file_path):
+            warnings.warn('Could not find: {0}'.format(rss_file_path))
+            raise FileNotFoundError('Could not find RSS file.')
+
+        self.rss = MaNGARSS(rss_file_path, sres_ext=self.sres_ext, sres_pre=self.sres_pre,
+                            sres_fill=self.sres_fill)
+
     @staticmethod
-    def file_name(plate, ifudesign, log=True):
+    def build_file_name(plate, ifudesign, log=True):
         """
         Return the name of the DRP datacube file.
 
@@ -295,8 +341,7 @@ class MaNGADataCube(DataCube):
 
     def file_path(self):
         """Return the full path to the DRP datacube file."""
-        return os.path.join(self.directory_path,
-                            self.file_name(self.plate, self.ifudesign, log=self.log))
+        return os.path.join(self.directory_path, self.file)
 
     @staticmethod
     def do_not_fit_flags():
@@ -339,7 +384,7 @@ class MaNGADataCube(DataCube):
                 ``drpver`` or ``redux_path``.
             output_file (:obj:`str`, optional):
                 The name of the file with the DRP data. Default set
-                by :func:`MaNGADataCube.file_name`.
+                by :func:`MaNGADataCube.build_file_name`.
 
         Returns:
             :obj:`str`: Two strings with the path to and name of the DRP
@@ -348,7 +393,7 @@ class MaNGADataCube(DataCube):
         _directory_path = defaults.drp_directory_path(plate, drpver=drpver,
                                                       redux_path=redux_path) \
                                 if directory_path is None else directory_path
-        _output_file = MaNGADataCube.file_name(plate, ifudesign, log=log) \
+        _output_file = MaNGADataCube.build_file_name(plate, ifudesign, log=log) \
                             if output_file is None else output_file
         return _directory_path, _output_file
 
@@ -385,5 +430,5 @@ class MaNGADataCube(DataCube):
             raise ValueError('Offset must be None, obj or ifu.')
         _center_coo = (self.prihdr['{0}RA'.format(offset.upper())],
                        self.prihdr['{0}DEC'.format(offset.upper())]) \
-                           if center_coo is None else center_coo
+                           if center_coo is None and offset is not None else center_coo
         return super(MaNGADataCube, self).mean_sky_coordinates(center_coo=_center_coo)

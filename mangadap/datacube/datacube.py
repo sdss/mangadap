@@ -165,6 +165,7 @@ class DataCube:
             The source row-stacked spectra used to build the
             datacube.
     """
+    # TODO: Add reconstructed PSF?
     def __init__(self, flux, wave=None, ivar=None, mask=None, bitmask=None, sres=None, covar=None,
                  axes=[0,1,2], wcs=None, pixelscale=None, log=True):
 
@@ -191,7 +192,7 @@ class DataCube:
 
         self.wave = None if wave is None else numpy.atleast_1d(wave)
         if self.wave is None:
-            self._generate_wavelength_vector()
+            self.wave = self._get_wavelength_vector()
         if self.wave.shape != (self.nwave,):
             raise ValueError('Wavelength vector shape is incorrect ')
         self.log = log
@@ -266,18 +267,26 @@ class DataCube:
         x = (x - x[0])*numpy.cos(numpy.radians(y[0]))
         return numpy.sqrt(polygon_area(x, y))*3600
 
-    def _generate_wavelength_vector(self, nwave):
+    def _get_wavelength_vector(self, nwave):
         """
         Use the `astropy.wcs.WCS`_ attribute (:attr:`wcs`) to
         generate the datacube wavelength vector.
 
         :attr:`wcs` cannot be None and the wavelength coordinate
         system must be defined along its third axis.
+
+        Returns:
+            `numpy.ndarray`_: Vector with wavelengths along the third
+            axis defined by :attr:`wcs`.
+
+        Raises:
+            ValueError:
+                Raised if :attr:`wcs` is not defined.
         """
         if self.wcs is None:
             raise ValueError('World coordinate system required to construct wavelength vector.')
         coo = numpy.array([numpy.ones(nwave), numpy.ones(nwave), numpy.arange(nwave)+1]).T
-        self.wave = self.wcs.all_pix2world(coo, 1)[:,2]*self.wcs.wcs.cunit[2].to('angstrom')
+        return self.wcs.all_pix2world(coo, 1)[:,2]*self.wcs.wcs.cunit[2].to('angstrom')
 
     @property
     def nspec(self):
@@ -700,6 +709,10 @@ class DataCube:
                 Force the recalculation of the cube dimensions if
                 they are already defined and :math:`sigma_{\rho}` has
                 not changed.
+
+        Returns:
+            :class:`mangadap.util.covariance.Covariance`: Correlation
+            matrix
         """
         if self.approx_correl is not None and self.sigma_rho == sigma_rho \
                 and self.correl_rlim == rlim:
@@ -733,6 +746,7 @@ class DataCube:
                                                           shape=(self.nspec,self.nspec)).tocsr(),
                                         impose_triu=True, correlation=True,
                                         raw_shape=self.spatial_shape)
+        return self.approx_correl
 
     def approximate_covariance_matrix(self, channel, sigma_rho=None, rlim=None, csr=False,
                                       quiet=False):
@@ -789,7 +803,7 @@ class DataCube:
         self.approximate_correlation_matrix(sigma_rho, rlim)
         var = numpy.ma.power(self.ivar[...,channel], -1).filled(0.0).ravel()
         covar = self.approx_correl.apply_new_variance(var)
-        return covar.cov if csr else covar
+        return covar.with_lower_triangle() if csr else covar
 
     def approximate_covariance_cube(self, channels=None, sigma_rho=None, rlim=None, csr=False,
                                     quiet=False):

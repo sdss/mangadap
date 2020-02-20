@@ -50,8 +50,8 @@ class MaNGARSS(RowStackedSpectra):
             raise FileNotFoundError('File does not exist: {0}'.format(ifile))
 
         # Parse the relevant information from the filename
-        self.directory_path, _ifile = os.path.split(os.path.abspath(ifile)) 
-        self.plate, self.ifudesign, log = _ifile.split('-')[1:4]
+        self.directory_path, self.file = os.path.split(os.path.abspath(ifile)) 
+        self.plate, self.ifudesign, log = self.file.split('-')[1:4]
         self.plate = int(self.plate)
         self.ifudesign = int(self.ifudesign)
         log = 'LOG' in log
@@ -67,11 +67,17 @@ class MaNGARSS(RowStackedSpectra):
 
         # Open the file and initialize the base class
         with fits.open(ifile) as hdu:
-            print('Reading file data ...', end='\r')
+            print('Reading MaNGA row-stacked spectra data ...', end='\r')
             self.prihdr = hdu[0].header
             self.fluxhdr = hdu['FLUX'].header
-            sres = MaNGARSS.spectral_resolution(hdu, ext=sres_ext, pre=sres_pre,
-                                                fill=sres_fill).filled(0.0)
+            self.sres_ext, sres = MaNGARSS.spectral_resolution(hdu, ext=sres_ext, pre=sres_pre,
+                                                               fill=sres_fill)
+            self.sres_pre = sres_pre
+            if self.sres_pre:
+                # Remove the pre prefix
+                self.sres_ext = self.sres_ext[3:]
+            self.sres_fill = sres_fill
+            sres = sres.filled(0.0)
 
             # The negative for XPOS is because the data in that
             # extension has negative offsets going toward increasing
@@ -83,7 +89,7 @@ class MaNGARSS(RowStackedSpectra):
                                            bitmask=bitmask, sres=sres,
                                            xpos=-hdu['XPOS'].data, ypos=hdu['YPOS'].data,
                                            area=numpy.pi, log=log)
-        print('Reading file data ... DONE')
+        print('Reading MaNGA row-stacked spectra data ... DONE')
 
         # Try to use the header to set the DRP version
         self.drpver = self.prihdr['VERSDRP3'] if 'VERSDRP3' in self.prihdr \
@@ -128,6 +134,8 @@ class MaNGARSS(RowStackedSpectra):
             _ext = 'PREDISP' if pre else 'DISP'
             if _ext not in sres_ext:
                 _ext = 'PRESPECRES' if pre else 'SPECRES'
+        elif pre:
+            _ext = 'PRE{0}'.format(_ext)
         return None if _ext not in sres_ext else _ext
 
     @staticmethod
@@ -164,11 +172,13 @@ class MaNGARSS(RowStackedSpectra):
                 masked in all vectors.
 
         Returns:
-            `numpy.ma.MaskedArray`_ : Even if interpolated such that
-            there should be no masked values, the function returns a
-            masked array.  Array contains the spectral resolution
-            (:math:`R = \lambda/\Delta\lambda`) pulled from the DRP
-            file.
+            :obj:`tuple`: Returns a :obj:`str` with the name of the
+            extension used for the spectral resolution measurements
+            and a `numpy.ma.MaskedArray`_ with the spectral
+            resolution data. Even if interpolated such that there
+            should be no masked values, the function returns a masked
+            array. Array contains the spectral resolution (:math:`R =
+            \lambda/\Delta\lambda`) pulled from the DRP file.
         """
         # Determine which spectral resolution element to use
         _ext = MaNGARSS.spectral_resolution_extension(hdu, ext=ext, pre=pre)
@@ -186,7 +196,7 @@ class MaNGARSS(RowStackedSpectra):
             if not median:
                 nspec = hdu['FLUX'].data.shape[0]
                 sres = numpy.ma.tile(sres, (nspec,1))
-            return sres
+            return _ext, sres
 
         # Otherwise dealing with the DISP cube
         sres = numpy.ma.MaskedArray(hdu[_ext].data)
@@ -201,7 +211,7 @@ class MaNGARSS(RowStackedSpectra):
                                                                   sres))
         if median:
             sres = numpy.ma.median(sres, axis=0)
-        return sres
+        return _ext, sres
 
     @classmethod
     def from_plateifu(cls, plate, ifudesign, log=True, drpver=None, redux_path=None,
@@ -249,11 +259,12 @@ class MaNGARSS(RowStackedSpectra):
         if directory_path is None:
             directory_path = defaults.drp_directory_path(_plate, drpver=drpver,
                                                          redux_path=redux_path)
-        return cls(os.path.join(directory_path, MaNGARSS.file_name(_plate, _ifudesign, log=log)),
+        return cls(os.path.join(directory_path, MaNGARSS.build_file_name(_plate, _ifudesign,
+                                                                         log=log)),
                    **kwargs)
 
     @staticmethod
-    def file_name(plate, ifudesign, log=True):
+    def build_file_name(plate, ifudesign, log=True):
         """
         Return the name of the DRP row-stacked spectra file.
 
@@ -275,7 +286,7 @@ class MaNGARSS(RowStackedSpectra):
     def file_path(self):
         """Return the full path to the DRP datacube file."""
         return os.path.join(self.directory_path,
-                            self.file_name(self.plate, self.ifudesign, log=self.log))
+                            MaNGARSS.build_file_name(self.plate, self.ifudesign, log=self.log))
 
     @staticmethod
     def do_not_fit_flags():
@@ -319,7 +330,7 @@ class MaNGARSS(RowStackedSpectra):
                 ``drpver`` or ``redux_path``.
             output_file (:obj:`str`, optional):
                 The name of the file with the DRP data. Default set
-                by :func:`MaNGARSS.file_name`.
+                by :func:`MaNGARSS.build_file_name`.
 
         Returns:
             :obj:`str`: Two strings with the path to and name of the DRP
@@ -328,7 +339,7 @@ class MaNGARSS(RowStackedSpectra):
         _directory_path = defaults.drp_directory_path(plate, drpver=drpver,
                                                       redux_path=redux_path) \
                                 if directory_path is None else directory_path
-        _output_file = MaNGADataCube.file_name(plate, ifudesign, log=log) \
+        _output_file = MaNGADataCube.build_file_name(plate, ifudesign, log=log) \
                             if output_file is None else output_file
         return _directory_path, _output_file
 

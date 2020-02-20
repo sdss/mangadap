@@ -453,8 +453,8 @@ class Covariance:
                                      shape=(n,n)).tocsr(), impose_triu=True, raw_shape=raw_shape)
 
     @classmethod
-    def from_fits(cls, source, ivar_ext='IVAR', covar_ext='CORREL', row_major=False,
-                  impose_triu=False, correlation=False, quiet=False):
+    def from_fits(cls, source, ivar_ext='IVAR', transpose_ivar=False, covar_ext='CORREL',
+                  row_major=False, impose_triu=False, correlation=False, quiet=False):
         r"""
         Read an existing covariance object previously written to disk;
         see :func:`write`.  The class can read covariance data written
@@ -481,6 +481,9 @@ class Covariance:
                 of the extension with the inverse variance data.
                 Default is ``'IVAR'``. If None, the variance is taken
                 as unity.
+            transpose_ivar (:obj:`bool`, optional):
+                Flag to transpose the inverse variance data before
+                rescaling the correlation matrix.
             covar_ext (:obj:`str`, optional):
                 If reading the data from ``source``, this is the name
                 of the extension with covariance data. Default is
@@ -509,15 +512,17 @@ class Covariance:
             quiet (:obj:`bool`, optional):
                 Suppress terminal output.
         """
-        if isinstance(source, fits.HDUList):
-            hdu = source if row_major else DAPFitsUtil.transpose_image_data(source)
-        else:
-            try:
-                hdu = DAPFitsUtil.read(source)
-            except Exception as e:
-                print(e)
-                warnings.warn('Problem reading covariance from file.')
-                return
+#        if isinstance(source, fits.HDUList):
+#            hdu = source if row_major else DAPFitsUtil.transpose_image_data(source)
+#        else:
+#            try:
+#                hdu = DAPFitsUtil.read(source)
+#            except Exception as e:
+#                print(e)
+#                warnings.warn('Problem reading covariance from file.')
+#                return
+
+        hdu = source if isinstance(source, fits.HDUList) else fits.open(source)
 
         # Read a coordinate data
         shape = eval(hdu[covar_ext].header['COVSHAPE'])
@@ -539,10 +544,17 @@ class Covariance:
         # Number of non-zero elements
         nnz = len(rhoij)
 
+        ivar = None if ivar_ext is None else hdu[ivar_ext].data
+
         # Set correlation data
         if dim == 2:
-            var = numpy.ones(shape[1:], dtype=float) if ivar_ext is None \
-                    else numpy.ma.power(hdu[ivar_ext].data.ravel(), -1).filled(0.0)
+            if ivar is not None:
+                if transpose_ivar:
+                    ivar = ivar.T
+                if reshape:
+                    ivar = ivar.ravel()
+            var = numpy.ones(shape[1:], dtype=float) if ivar is None \
+                    else numpy.ma.power(ivar, -1).filled(0.0)
             cij = rhoij * numpy.sqrt( var[i]*var[j] )
             cov = sparse.coo_matrix((cij, (i, j)), shape=shape).tocsr()
             input_indx = None
@@ -554,8 +566,13 @@ class Covariance:
             if len(input_indx) < shape[-1]:
                 warnings.warn('Fewer unique channels than all available.')
 
-            var = numpy.ones(shape[1:], dtype=float) if ivar_ext is None \
-                    else numpy.ma.power(hdu[ivar_ext].data.reshape(-1, shape[-1]), -1).filled(0.0)
+            if ivar is not None:
+                if transpose_ivar:
+                    ivar = ivar.tranpose(1,0,2)
+                if reshape:
+                    ivar = ivar.reshape(-1, shape[-1])
+            var = numpy.ones(shape[1:], dtype=float) if ivar is None \
+                    else numpy.ma.power(ivar, -1).filled(0.0)
             cov = numpy.empty(shape[-1], dtype=sparse.csr.csr_matrix)
             for ii, uk in enumerate(input_indx):
                 indx = k == uk
@@ -737,7 +754,7 @@ class Covariance:
         n = numpy.floor(numpy.sqrt(size)).astype(int)
         if n*n != size:
             raise ValueError('{0} is not the square of an integer!'.format(size))
-        return n
+        return (n,n)
 
     def transpose_raw_shape(self):
         """
@@ -1234,7 +1251,7 @@ class Covariance:
         The covariance matrix (matrices) are stored in "coordinate"
         format using fits binary tables; see
         `scipy.sparse.coo_matrix`_. The matrix is *always* stored as
-        a correlation matix, even if the object is currently in the
+        a correlation matrix, even if the object is currently in the
         state holding the covariance data.
 
         Independent of the dimensionality of the covariance matrix, the

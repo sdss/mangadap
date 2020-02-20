@@ -179,8 +179,7 @@ class RowStackedSpectra:
 
         self.sres = None
         if sres is not None:
-            self.sres = numpy.tile(sres, self.spatial_shape+(1,)) \
-                            if sres.ndim == 1 else sres.transpose(self.original_axes)
+            self.sres = numpy.tile(sres, (self.shape[0],1)) if sres.ndim == 1 else sres
             if self.sres.shape != self.shape:
                 raise ValueError('Spectral resolution array has incorrect shape.')
 
