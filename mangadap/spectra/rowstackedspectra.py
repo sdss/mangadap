@@ -14,7 +14,10 @@ Base class for row-stacked spectra
 
 # TODO: Pilfer the pypeit.DataContainer for this.
 
+from IPython import embed
+
 import numpy
+from scipy import sparse
 
 try:
     from shapely.ops import cascaded_union
@@ -704,7 +707,7 @@ class RowStackedSpectra:
             raise ValueError('Must provide pixelscale on first use of _cube_dimensions.')
         if self.recenter is None and recenter is None:
             raise ValueError('Must provide recenter on first use of _cube_dimensions.')
-        if self.width_buffer is None and self.width_buffer is None:
+        if self.width_buffer is None and width_buffer is None:
             raise ValueError('Must provide width_buffer on first use of _cube_dimensions.')
 
         # Check if the calculation needs to redone. This will always be
@@ -726,8 +729,11 @@ class RowStackedSpectra:
             self.width_buffer = width_buffer
 
         # Get the size in each dimension
-        minx = numpy.amin(self.xpos)
-        maxx = numpy.amax(self.ypos)
+        # TODO: This negative here is just to ensure that the
+        # calculation matches what's done by the DRP, which defines
+        # xpos as increasing from E to W.
+        minx = numpy.amin(-self.xpos)
+        maxx = numpy.amax(-self.xpos)
         Dx = numpy.floor(maxx-minx)
 
         miny = numpy.amin(self.ypos)
@@ -919,10 +925,14 @@ class RowStackedSpectra:
             # NOTE: Calculating full matrix is actually faster than
             # determining submatrix for calculation
 
-            # Calculate the distance
+            # NOTE: The negative sign in xpos is again to match the
+            # calculation done by the DRP, which defines xpos as
+            # increasing from E to W.
+
+            # Calculate the distance.
             # ---- WITH RESPECT TO THE EDGE OF THE FIRST PIXEL ----
-            #  - matches DRP, but why?!?!
-            r2 = numpy.square((self.xpos[k,self.rect_channel]-self.xs)/self.pixelscale - ii) \
+            #  - matches DRP, but why?
+            r2 = numpy.square((-self.xpos[k,self.rect_channel]-self.xs)/self.pixelscale - ii) \
                  + numpy.square((self.ypos[k,self.rect_channel]-self.ys)/self.pixelscale - jj)
             # ---- WITH RESPECT TO THE CENTER OF THE FIRST PIXEL ----
 #           r2 = numpy.square( (self.hdu['XPOS'].data[k,channel]-self.xs)/pixelscale-0.5 - ii) \
@@ -932,8 +942,8 @@ class RowStackedSpectra:
             # TODO: Can this be done quicker if I'm not appending things?
             non_zero_spc = numpy.append(non_zero_spc, sp[r2 < rl2])
             non_zero_pix = numpy.append(non_zero_pix, ij[r2 < rl2])
-            wgt = self.area[r2<rl2] * numpy.exp(-r2[r2 < rl2]/s2/2.0)
-            tot[r2<rl2] += wgt
+            wgt = numpy.exp(-r2[r2 < rl2]/s2/2.0)
+            tot[r2<rl2] += self.area[k] * wgt
             non_zero_wgt = numpy.append(non_zero_wgt, wgt)
 
             if not quiet:
@@ -1087,7 +1097,7 @@ class RowStackedSpectra:
         if self.rect_T is None:
             raise ValueError('To calculate the formal covariance matrix, must first calculate '
                              'the rectification transfer matrix.')
-        var = numpy.ma.power(self.ivar[:,channel], -1.0).filled(0.0)
+        var = numpy.ma.power(self.ivar[:,self.rect_channel], -1.0).filled(0.0)
         covar = Covariance.from_matrix_multiplication(self.rect_T, var)
         return covar.with_lower_triangle() if csr else covar
 

@@ -14,6 +14,8 @@ Base class for a datacube
 
 # TODO: Pilfer the pypeit.DataContainer for this.
 
+from IPython import embed
+
 import numpy
 
 from ..util.bitmask import BitMask

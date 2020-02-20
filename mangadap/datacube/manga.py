@@ -87,9 +87,8 @@ class MaNGADataCube(DataCube):
         with fits.open(ifile) as hdu:
             # Read covariance first
             covar = None if covar_ext is None \
-                        else Covariance.from_fits(hdu, ivar_ext=None, transpose_ivar=True,
-                                                  covar_ext=covar_ext, impose_triu=True,
-                                                  correlation=True)
+                        else Covariance.from_fits(hdu, ivar_ext=None, covar_ext=covar_ext,
+                                                  impose_triu=True, correlation=True)
 
             print('Reading MaNGA datacube data ...', end='\r')
             self.prihdr = hdu[0].header

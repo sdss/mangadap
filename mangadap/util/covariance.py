@@ -454,22 +454,38 @@ class Covariance:
 
     @classmethod
     def from_fits(cls, source, ivar_ext='IVAR', transpose_ivar=False, covar_ext='CORREL',
-                  row_major=False, impose_triu=False, correlation=False, quiet=False):
+                  impose_triu=False, correlation=False, quiet=False):
         r"""
-        Read an existing covariance object previously written to disk;
-        see :func:`write`.  The class can read covariance data written
-        by other programs *as long as they have a commensurate format*.
+        Read covariance data from a fits file.
+
+        This read operation matches the data saved to a fits file
+        using :func:`write`. The class can read covariance data
+        written by other programs *as long as they have a
+        commensurate format*. See the description of the
+        :func:`write` method.
 
         If the extension names and column names are correct,
         :class:`Covariance` can read fits files that were not
-        necessarily produced by the class itself. This is useful for
-        MaNGA DAP products that include the covariance data in among
-        other output products. Because of this, :func:`output_hdus`
-        and :func:`coordinate_data` are provided to produce the data
-        that can be placed in any fits file.
+        produced explicitly by this method. This is useful for MaNGA
+        DAP products that include the covariance data as one
+        extension among others. The methods :func:`output_hdus` and
+        :func:`coordinate_data` are provided to produce the data that
+        can be placed in any fits file.
 
-        The function determines if the output data were reordered by
-        checking the number of binary columns.
+        The method determines if the output data were reshaped by
+        checking the number of columns in the binary table.
+
+        When the covariance data are for a higher dimensional array,
+        the memory order of the higher dimensional array
+        (particularly whether it's constructed row- or column-major)
+        is important to ensuring the loaded data is correct. This is
+        why we have chosen the specific format for the binary table
+        used to store the covariance data. Regardless of whether the
+        data was written by a row-major or column-major language, the
+        format should be such that this class can properly read and
+        recover the covariance matrix. However, in some cases, you
+        still may need to transpose the inverse variance data; see
+        ``transpose_ivar``.
 
         Args:
             source (:obj:`str`, `astropy.io.fits.hdu.hdulist.HDUList`_):
@@ -483,18 +499,13 @@ class Covariance:
                 as unity.
             transpose_ivar (:obj:`bool`, optional):
                 Flag to transpose the inverse variance data before
-                rescaling the correlation matrix.
+                rescaling the correlation matrix. Should only be
+                necessary in some cases when the covariance data was
+                written by a method other than :func:`write`.
             covar_ext (:obj:`str`, optional):
                 If reading the data from ``source``, this is the name
                 of the extension with covariance data. Default is
                 ``'CORREL'``.
-            row_major (:obj:`bool`, optional):
-                If reading the data from an
-                `astropy.io.fits.hdu.hdulist.HDUList`_, this sets if
-                the data arrays have been rearranged into a
-                python-native (row-major) structure. See
-                :func:`mangadap.util.fitsutil.DAPFitsUtil.transpose_image_data`.
-                Default is False.
             impose_triu (:obj:`bool`, optional):
                 Flag to force the `scipy.sparse.csr_matrix`_ object
                 to only be the upper triangle of the covariance
@@ -538,6 +549,9 @@ class Covariance:
                 raw_shape = Covariance.square_shape(shape[0])
             i = numpy.ravel_multi_index((i_c1, i_c2), raw_shape)
             j = numpy.ravel_multi_index((j_c1, j_c2), raw_shape)
+            # Make sure the data are only in the upper triangle
+            indx = j < i
+            i[indx], j[indx] = j[indx], i[indx]
         else:
             i, j, rhoij = [hdu[covar_ext].data[ext] for ext in ['INDXI', 'INDXJ', 'RHOIJ']]
 
@@ -799,6 +813,8 @@ class Covariance:
             # Get the new coordinates
             i = numpy.ravel_multi_index((i_c2, i_c1), raw_shape_t)
             j = numpy.ravel_multi_index((j_c2, j_c1), raw_shape_t)
+            indx = j < i
+            i[indx], j[indx] = j[indx], i[indx]
 
             # Return the new covariance matrix
             return Covariance(sparse.coo_matrix((cij, (i, j)), shape=self.shape).tocsr(),
@@ -1129,8 +1145,8 @@ class Covariance:
                 return i, j, rhoij, self.var.copy()
 
             # Returns six arrays
-            i_c1, i_c2 = numpy.unravel_indices(i, new_shape)
-            j_c1, j_c2 = numpy.unravel_indices(j, new_shape)
+            i_c1, i_c2 = numpy.unravel_index(i, new_shape)
+            j_c1, j_c2 = numpy.unravel_index(j, new_shape)
             return i_c1, i_c2, j_c1, j_c2, rhoij, self.var.reshape(new_shape).copy()
 
         # More than one covariance matrix
@@ -1155,8 +1171,8 @@ class Covariance:
             return i, j, k, rhoij, self.var.copy()
 
         # Returns seven arrays
-        i_c1, i_c2 = numpy.unravel_indices(i, new_shape)
-        j_c1, j_c2 = numpy.unravel_indices(j, new_shape)
+        i_c1, i_c2 = numpy.unravel_index(i, new_shape)
+        j_c1, j_c2 = numpy.unravel_index(j, new_shape)
         return i_c1, i_c2, j_c1, j_c2, k, rhoij, self.var.reshape(new_shape, -1).copy()
 
     def output_hdus(self, reshape=False, hdr=None):

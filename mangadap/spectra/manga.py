@@ -501,7 +501,9 @@ class MaNGARSS(RowStackedSpectra):
                                                               rlim=_rlim, sigma=_sigma,
                                                               recenter=_recenter,
                                                               width_buffer=_width_buffer,
-                                                              quiet=quiet, rej_flag='3DREJECT')
+                                                              quiet=quiet, rej_flag='3DREJECT',
+                                                              return_ivar=return_ivar,
+                                                              return_covar=return_covar)
 
     def covariance_matrix(self, channel, pixelscale=None, rlim=None, sigma=None, recenter=None,
                           width_buffer=None, csr=False, quiet=False, rej_flag='3DREJECT'):
