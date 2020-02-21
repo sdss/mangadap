@@ -17,15 +17,15 @@ warnings.simplefilter("ignore", RuntimeWarning)
 def test_calculate_covariance():
 
     # Basic help call
-    logfile = 'test_cov.log'
+    logfile = 'test.log'
     if os.path.isfile(logfile):
         os.remove(logfile)
     with open(logfile, 'w') as f:
-        retval = subprocess.call(['calculate_covariance', '-h'], stdout=f, stderr=f)
+        retval = subprocess.call(['dap_calculate_covariance', '-h'], stdout=f, stderr=f)
     os.remove(logfile)
     assert retval == 0, 'Basic help call failed'
 
-    ofile = 'test_cov.fits'
+    ofile = 'test.fits'
     if os.path.isfile(ofile):
         # Clean-up a previous failure
         os.remove(ofile)
@@ -50,5 +50,18 @@ def test_calculate_covariance():
     # Clean-up
     os.remove(ofile)
 
+# TODO: Add some remote files to test this?
+def test_construct_dapall():
+
+    # Basic help call
+    logfile = 'test.log'
+    if os.path.isfile(logfile):
+        os.remove(logfile)
+    with open(logfile, 'w') as f:
+        retval = subprocess.call(['construct_dapall', '-h'], stdout=f, stderr=f)
+    os.remove(logfile)
+    assert retval == 0, 'Basic help call failed'
+
 if __name__ == '__main__':
-    test_calculate_covariance()
+    test_construct_dapall()
+

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import mangadap.scripts import construct_dapall
+from mangadap.scripts import construct_dapall
 
 if __name__ == '__main__':
     construct_dapall.main(construct_dapall.parse_args())
