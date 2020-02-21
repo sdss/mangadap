@@ -61,7 +61,7 @@ class MaNGADataCube(DataCube):
             for all wavelength channels, read from the DRP file. For
             generating the covariance matrix directly for an
             arbitrary wavelength channel using the RSS file, see
-            :func:`covariance_matrix`.
+            :func:`mangadap.datacube.datacube.DataCube.covariance_matrix`.
     """
     def __init__(self, ifile, sres_ext='DISP', sres_pre=True, sres_fill=True, covar_ext=None):
 

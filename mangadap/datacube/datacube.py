@@ -640,7 +640,7 @@ class DataCube:
         channel.
 
         This is a simple wrapper for a call to
-        :func:`mangadap.spectra.rowstackedspectra.covariance_matrix`
+        :func:`mangadap.spectra.rowstackedspectra.RowStackedSpectra.covariance_matrix`
         executed using :attr:`rss`, which cannot be None. See that
         method for the argument description.
 
@@ -719,7 +719,7 @@ class DataCube:
 
         Args:
             sigma_rho (:obj:`float`):
-                The :math:`sigma_{\rho}` of the Gaussian function
+                The :math:`\sigma_{\rho}` of the Gaussian function
                 used to approximate the trend of the correlation
                 coefficient with spaxel separation.
             rlim (:obj:`float`):
@@ -727,7 +727,7 @@ class DataCube:
                 (Gaussian) kernel in arcseconds.
             redo (:obj:`bool`, optional):
                 Force the recalculation of the cube dimensions if
-                they are already defined and :math:`sigma_{\rho}` has
+                they are already defined and :math:`\sigma_{\rho}` has
                 not changed.
 
         Returns:
@@ -777,10 +777,12 @@ class DataCube:
         
         .. math::
 
-            C_{ij} = \frac{\rho_{ij}}{(V^{-1}_{ii} V^{-1}_{jj})^{1/2}}
+            C_{ij} = \rho_{ij}(V_{i} V_{j})^{1/2}
 
         where :math:`\rho_{ij}` is approximated by
-        :func:`approximate_correlation_matrix`.
+        :func:`approximate_correlation_matrix` and
+        :math:`V_i\equivC_{ii}` are the variances provided by the
+        inverse of :attr:`ivar`.
 
         The method first calculates :math:`\rho_{ij}` if it hasn't
         been yet or the provided ``sigma_rho`` and/or ``rlim`` values
@@ -797,7 +799,7 @@ class DataCube:
                 Index of the spectral channel for which to calculate
                 the covariance matrix.
             sigma_rho (:obj:`float`, optional):
-                The :math:`sigma_{\rho}` of the Gaussian function
+                The :math:`\sigma_{\rho}` of the Gaussian function
                 used to approximate the trend of the correlation
                 coefficient with spaxel separation.
             rlim (:obj:`float`, optional):
@@ -847,7 +849,7 @@ class DataCube:
                 calculate the covariance matrix. If None, the
                 covariance matrix is calculated for *all* channels.
             sigma_rho (:obj:`float`, optional):
-                The :math:`sigma_{\rho}` of the Gaussian function
+                The :math:`\sigma_{\rho}` of the Gaussian function
                 used to approximate the trend of the correlation
                 coefficient with spaxel separation.
             rlim (:obj:`float`, optional):
