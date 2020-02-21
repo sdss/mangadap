@@ -13,7 +13,7 @@ from mangadap.util.bitmask import BitMask
 from mangadap.survey.drpcomplete import DRPComplete
 from mangadap.config import defaults
 
-#-----------------------------------------------------------------------------
+
 def double_print(ostream, line, **kwargs):
     print(line, **kwargs)
     print(line, file=ostream, **kwargs)
@@ -78,14 +78,8 @@ def find_repeat_observations(output_file, drpver, redux_path, dapver, analysis_p
                     double_print(f, ' {0:>4} {1:>5}'.format(-1, -1), end='')
             double_print(f, '')
 
-
-#-----------------------------------------------------------------------------
-
-if __name__ == '__main__':
-    t = time.perf_counter()
-
+def parse_args(options=None):
     parser = ArgumentParser()
-
     parser.add_argument('--drpver', type=str, help='DRP version', default=None)
     parser.add_argument('--redux_path', type=str, help='main DRP output path', default=None)
     parser.add_argument('--dapver', type=str, help='DAP version', default=None)
@@ -94,22 +88,25 @@ if __name__ == '__main__':
                         default=None)
     parser.add_argument('--output_file', type=str, help='output file name, including path',
                         default=None)
+    return parser.parse_args() if options is None else parser.parse_args(options)
 
-    arg = parser.parse_args()
+def main(args):
 
-    drpver = defaults.drp_version() if arg.drpver is None else arg.drpver
-    dapver = defaults.dap_version() if arg.dapver is None else arg.dapver
+    t = time.perf_counter()
 
-    if arg.output_file is None:
+    drpver = defaults.drp_version() if args.drpver is None else args.drpver
+    dapver = defaults.dap_version() if args.dapver is None else args.dapver
+
+    if args.output_file is None:
         path_root = defaults.dap_common_path(drpver=drpver, dapver=dapver,
-                                             analysis_path=arg.analysis_path)
+                                             analysis_path=args.analysis_path)
         ofile = 'repeat-observations-{0}-{1}.db'.format(drpver, dapver)
         output_file = os.path.join(path_root, ofile)
     else:
-        output_file = arg.output_file
+        output_file = args.output_file
 
-    find_repeat_observations(output_file, drpver, arg.redux_path, dapver, arg.analysis_path,
-                             arg.directory_path)
+    find_repeat_observations(output_file, drpver, args.redux_path, dapver, args.analysis_path,
+                             args.directory_path)
 
     print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
 
