@@ -113,7 +113,7 @@ class MaNGADataCube(DataCube):
             # storage from C to Fortran contiguous. However, everything
             # is expected to be okay because numpy array flattening
             # always performs a C-like flattening, even if the memory
-            # storage Fortran contiguous.
+            # storage is Fortran contiguous.
             super(MaNGADataCube, self).__init__(hdu['FLUX'].data.T, wave=hdu['WAVE'].data,
                                                 ivar=hdu['IVAR'].data.T, mask=hdu['MASK'].data.T,
                                                 bitmask=bitmask, sres=sres.T, covar=covar,
