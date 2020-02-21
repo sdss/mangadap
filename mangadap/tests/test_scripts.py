@@ -84,6 +84,17 @@ def test_find_repeat_observations():
     os.remove(logfile)
     assert retval == 0, 'Basic help call failed'
 
+# TODO: Add some remote files?
+def test_fit_residuals():
+    # Basic help call
+    logfile = 'test.log'
+    if os.path.isfile(logfile):
+        os.remove(logfile)
+    with open(logfile, 'w') as f:
+        retval = subprocess.call(['dap_fit_residuals', '-h'], stdout=f, stderr=f)
+    os.remove(logfile)
+    assert retval == 0, 'Basic help call failed'
+
 if __name__ == '__main__':
-    test_find_repeat_observations()
+    test_fit_residuals()
 

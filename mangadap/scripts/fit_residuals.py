@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import os
 import time
 import argparse
@@ -24,7 +22,7 @@ from mangadap.util.sampling import spectral_coordinate_step
 from mangadap.util.mapping import map_extent, map_beam_patch
 from mangadap.util.fileio import channel_dictionary
 
-#-----------------------------------------------------------------------------
+
 def init_ax(fig, pos, facecolor=None, grid=False):
     ax = fig.add_axes(pos, facecolor=facecolor)
     ax.minorticks_on()
@@ -187,6 +185,7 @@ def get_emission_line_data(drpcube, daptype, dapmaps, dapcube):
 
     return cube_hdu['WAVE'].data, flux, error, model, snrg, rms, frms, rchi2
 
+
 def get_emission_line_fom_maps(dapmaps):
 
     maps_hdu = fits.open(dapmaps)
@@ -249,9 +248,6 @@ def fom_lambda(plt, ifu, wave, flux, error, model, fit='sc', wave_limits=None, o
     resid_lim = numpy.exp(growth_lim(numpy.ma.log(mean_resid).compressed(), 0.99, fac=2.0))
     fresid_lim = numpy.exp(growth_lim(numpy.ma.log(mean_fresid).compressed(), 0.99, fac=2.0))
     chi_lim = numpy.exp(growth_lim(numpy.ma.log(mean_chi).compressed(), 0.99, fac=2.0, midpoint=0))
-#   chi_lim = numpy.array([0.1, 10.0])
-#    if chi2_lim[0] < 1e-2:
-#        chi2_lim[0] = 1e-2
 
     l0 = numpy.log10(wave[0])
     dl = spectral_coordinate_step(wave, log=True)
@@ -531,7 +527,6 @@ def fom_maps(plt, ifu, image_file, snr, color, rms, frms, rchi2, chi_grw, extent
                     if fit != 'sc' else growth_lim(color, 0.95, fac=1.10)
 
     snr_lim = numpy.power(10., growth_lim(numpy.ma.log10(snr), 0.90, fac=1.05))
-#    snr_lim[0] = max(0.1, snr_lim[0])
     rms_lim = numpy.power(10., growth_lim(numpy.ma.log10(rms), 0.90, fac=1.05))
     frm_lim = numpy.power(10., growth_lim(numpy.ma.log10(frms), 0.90, fac=1.05))
 
@@ -729,11 +724,7 @@ def fit_residuals(drpver, redux_path, dapver, analysis_path, daptype, plt, ifu):
     fom_maps(plt, ifu, image_file, anr, aob, rms, frms, rchi2, chi_grw, extent=extent, fit='el',
              ofile=ofile)
 
-#-----------------------------------------------------------------------------
-
-if __name__ == '__main__':
-    t = time.perf_counter()
-
+def parse_args(options=None):
     parser = argparse.ArgumentParser()
 
     parser.add_argument('plate', type=int, help='plate ID to process')
@@ -752,22 +743,25 @@ if __name__ == '__main__':
     parser.add_argument('--daptype', type=str, help='DAP processing type', default=None)
     parser.add_argument('--normal_backend', dest='bgagg', action='store_false', default=True)
 
-    arg = parser.parse_args()
+    return parser.parse_args() if options is None else parser.parse_args(options)
 
-    if arg.bgagg:
+def main(args):
+    t = time.perf_counter()
+
+    if args.bgagg:
         pyplot.switch_backend('agg')
 
     # Set the paths
-    redux_path = defaults.drp_redux_path(drpver=arg.drpver) \
-                    if arg.redux_path is None else arg.redux_path
-    analysis_path = defaults.dap_analysis_path(drpver=arg.drpver, dapver=arg.dapver) \
-                            if arg.analysis_path is None else arg.analysis_path
+    redux_path = defaults.drp_redux_path(drpver=args.drpver) \
+                    if args.redux_path is None else args.redux_path
+    analysis_path = defaults.dap_analysis_path(drpver=args.drpver, dapver=args.dapver) \
+                            if args.analysis_path is None else args.analysis_path
 
     daptypes = []
-    if arg.daptype is None:
-        plan_file = defaults.dap_plan_file(drpver=arg.drpver, dapver=arg.dapver,
-                                           analysis_path=arg.analysis_path) \
-                            if arg.plan_file is None else arg.plan_file
+    if args.daptype is None:
+        plan_file = defaults.dap_plan_file(drpver=args.drpver, dapver=args.dapver,
+                                           analysis_path=args.analysis_path) \
+                            if args.plan_file is None else args.plan_file
         analysisplan = AnalysisPlanSet.from_par_file(plan_file)
         for p in analysisplan:
             bin_method = SpatiallyBinnedSpectra.define_method(p['bin_key'])
@@ -777,11 +771,11 @@ if __name__ == '__main__':
                                              sc_method['fitpar']['template_library_key'],
                                              el_method['continuum_tpl_key'])]
     else:
-        daptypes = [arg.daptype]
+        daptypes = [args.daptype]
 
     for daptype in daptypes:
-        fit_residuals(arg.drpver, redux_path, arg.dapver, analysis_path, daptype, arg.plate,
-                      arg.ifudesign)
+        fit_residuals(args.drpver, redux_path, args.dapver, analysis_path, daptype, args.plate,
+                      args.ifudesign)
 
     print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
 
