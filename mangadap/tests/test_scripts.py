@@ -106,6 +106,17 @@ def test_inspector():
     os.remove(logfile)
     assert retval == 0, 'Basic help call failed'
 
+# TODO: Sort out an execution mode that can run in a few minutes.
+def test_manga_dap():
+    # Basic help call
+    logfile = 'test.log'
+    if os.path.isfile(logfile):
+        os.remove(logfile)
+    with open(logfile, 'w') as f:
+        retval = subprocess.call(['manga_dap', '-h'], stdout=f, stderr=f)
+    os.remove(logfile)
+    assert retval == 0, 'Basic help call failed'
+
 if __name__ == '__main__':
-    test_inspector()
+    test_manga_dap()
 
