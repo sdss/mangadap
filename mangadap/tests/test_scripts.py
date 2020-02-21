@@ -110,11 +110,15 @@ def test_template_flux_norm():
 def test_write_dap_par():
     assert script_help_okay('write_dap_par'), 'Basic help call failed'
 
+
 # TODO: Add some remote files?
 def test_status():
     assert script_help_okay('dap_status'), 'Basic help call failed'
 
-if __name__ == '__main__':
-    test_status()
+
+# TODO: Improve this!
+def test_run():
+    assert script_help_okay('rundap'), 'Basic help call failed'
+
 
 
