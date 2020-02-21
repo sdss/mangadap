@@ -1,6 +1,3 @@
-#!/usr/bin/env python3
-
-# Imports
 import os
 import time
 
@@ -1014,11 +1011,7 @@ def manga_dap_inspector(maps_file, model_file, ext=None, masked_spectra=True):
 
     pyplot.show()
 
-
-#-----------------------------------------------------------------------------
-if __name__ == '__main__':
-    t = time.perf_counter()
-
+def parse_args(options=None):
     parser = ArgumentParser()
 
     parser.add_argument('--maps_file', type=str, default=None, help='Output MAPS file')
@@ -1054,34 +1047,34 @@ if __name__ == '__main__':
 
     # - Use Marvin instead of just reading fits files; specify auto
     # mode...
+    return parser.parse_args() if options is None else parser.parse_args(options)
 
-    arg = parser.parse_args()
+
+def main(args):
 
     # Can it proceed?
-    if arg.maps_file is None and arg.model_file is None:
+    if args.maps_file is None and args.model_file is None:
         
-        if arg.obs is None or arg.plan is None:
+        if args.obs is None or args.plan is None:
             raise ValueError('If not providing exact file names, must provide --obs and --plan.')
-        planid = 0 if arg.planid is None else arg.planid
+        planid = 0 if args.planid is None else args.planid
 
-        obspar = ObsInputPar.from_par_file(arg.obs)
-        analysisplan = AnalysisPlanSet.from_par_file(arg.plan)
+        obspar = ObsInputPar.from_par_file(args.obs)
+        analysisplan = AnalysisPlanSet.from_par_file(args.plan)
 
         if planid > analysisplan.nplans:
             raise ValueError('Number of plans is {0}; cannot select plan {1}!'.format(
                                                                     analysisplan.nplans, planid))
 
         maps_file, model_file = generate_file_paths(obspar, analysisplan[planid-1],
-                                                    redux_path=arg.redux_path, 
-                                                    directory_path=arg.directory_path,
-                                                    analysis_path=arg.analysis_path)
+                                                    redux_path=args.redux_path, 
+                                                    directory_path=args.directory_path,
+                                                    analysis_path=args.analysis_path)
 
     else:
-        maps_file, model_file = arg.maps_file, arg.model_file
+        maps_file, model_file = args.maps_file, args.model_file
 
     if maps_file is None or model_file is None:
         raise ValueError('Must provide both a MAPS file and a model LOGCUBE file.')
 
-    manga_dap_inspector(maps_file, model_file, ext=arg.ext, masked_spectra=arg.maskspec)
-    
-    print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
+    manga_dap_inspector(maps_file, model_file, ext=args.ext, masked_spectra=args.maskspec)

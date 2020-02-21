@@ -95,6 +95,17 @@ def test_fit_residuals():
     os.remove(logfile)
     assert retval == 0, 'Basic help call failed'
 
+# TODO: Add some remote files?
+def test_inspector():
+    # Basic help call
+    logfile = 'test.log'
+    if os.path.isfile(logfile):
+        os.remove(logfile)
+    with open(logfile, 'w') as f:
+        retval = subprocess.call(['manga_dap_inspector', '-h'], stdout=f, stderr=f)
+    os.remove(logfile)
+    assert retval == 0, 'Basic help call failed'
+
 if __name__ == '__main__':
-    test_fit_residuals()
+    test_inspector()
 
