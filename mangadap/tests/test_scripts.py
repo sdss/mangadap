@@ -73,6 +73,17 @@ def test_dapall_qa():
     os.remove(logfile)
     assert retval == 0, 'Basic help call failed'
 
+# TODO: Include a DRPComplete file in remote?
+def test_find_repeat_observations():
+    # Basic help call
+    logfile = 'test.log'
+    if os.path.isfile(logfile):
+        os.remove(logfile)
+    with open(logfile, 'w') as f:
+        retval = subprocess.call(['dap_find_repeat_observations', '-h'], stdout=f, stderr=f)
+    os.remove(logfile)
+    assert retval == 0, 'Basic help call failed'
+
 if __name__ == '__main__':
-    test_dapall_qa()
+    test_find_repeat_observations()
 
