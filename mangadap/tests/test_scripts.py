@@ -150,6 +150,17 @@ def test_spotcheck():
     os.remove(logfile)
     assert retval == 0, 'Basic help call failed'
 
+# TODO: Add some remote data?
+def test_template_flux_norm():
+    # Basic help call
+    logfile = 'test.log'
+    if os.path.isfile(logfile):
+        os.remove(logfile)
+    with open(logfile, 'w') as f:
+        retval = subprocess.call(['dap_template_flux_norm', '-h'], stdout=f, stderr=f)
+    os.remove(logfile)
+    assert retval == 0, 'Basic help call failed'
+
 if __name__ == '__main__':
-    test_spotcheck()
+    test_template_flux_norm()
 

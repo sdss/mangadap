@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import os
 import time
 import numpy
@@ -11,6 +9,7 @@ from scipy import interpolate
 from mangadap.config import defaults
 from mangadap.proc.templatelibrary import TemplateLibrary
 from mangadap.util.sampling import spectral_coordinate_step
+
 
 def parse_args(options=None):
 
@@ -27,6 +26,7 @@ def parse_args(options=None):
                         help='pixel sampling should be linear (default is log)')
 
     return parser.parse_args() if options is None else parser.parse_args(options)
+
 
 def main(args):
 
@@ -73,9 +73,4 @@ def main(args):
                   fmt=[ '%5d', '%15.8e', '%15.8e', '%15.8e', '%15.8e', '%15.8e'],
                   header='{0:>3} {1:>15} {2:>15} {3:>15} {4:>15} {5:>15}'.format(
                                     'ID', 'FLXMID', 'FLXRNG', 'MEANg', 'MEANr', '-2.5LOG(g/r)'))
-
-
-if __name__ == '__main__':
-    main(parse_args())
-
 
