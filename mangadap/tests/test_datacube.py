@@ -77,7 +77,7 @@ def test_wcs():
     assert abs(x[21,21]) < 1e-2 and abs(y[21,21]) < 1e-2, 'Offset incorrect'
 
 
-#@requires_remote
+@requires_remote
 def test_copyto():
     cube = MaNGADataCube.from_plateifu(7815, 3702, directory_path=remote_data_file())
     flux = cube.copy_to_array()
@@ -122,7 +122,7 @@ def test_copyto():
 
     # Try to get the spectral resolution
     sres = cube.copy_to_masked_array(attr='sres')
-    assert sres.shape == (cube.nspec, cube.nwave), 'Bad ivar shape'
+    assert sres.shape == (cube.nspec, cube.nwave), 'Bad sres shape'
     assert numpy.array_equal(cube.sres[numpy.unravel_index(i, cube.spatial_shape)],
                              sres[i].data), 'Did not pull sres data.'
 

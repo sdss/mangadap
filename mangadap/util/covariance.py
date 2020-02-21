@@ -448,7 +448,7 @@ class Covariance:
 
         indx = _covar > 0.0
         i, j = numpy.meshgrid(numpy.arange(n), numpy.arange(n), indexing='ij')
-        return cls(sparse.coo_matrix((_covariance[indx].ravel(),
+        return cls(sparse.coo_matrix((_covar[indx].ravel(),
                                       (i[indx].ravel(), j[indx].ravel())),
                                      shape=(n,n)).tocsr(), impose_triu=True, raw_shape=raw_shape)
 

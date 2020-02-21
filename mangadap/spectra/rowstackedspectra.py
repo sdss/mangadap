@@ -14,10 +14,11 @@ Base class for row-stacked spectra
 
 # TODO: Pilfer the pypeit.DataContainer for this.
 
+import warnings
 from IPython import embed
 
 import numpy
-from scipy import sparse
+from scipy import sparse, interpolate
 
 try:
     from shapely.ops import cascaded_union
@@ -252,9 +253,9 @@ class RowStackedSpectra:
             `numpy.ndarray`_: A 2D array with a copy of the data from the
             selected attribute.
         """
-        masked_data = self.copy_to_masked_array(attr=attr, waverange=waverange, nbins=nbins,
-                                                select_bins=select_bins, missing_bins=missing_bins,
-                                                unique_bins=unique_bins)
+        masked_data = self.copy_to_masked_array(attr=attr, use_mask=False, waverange=waverange,
+                                                nbins=nbins, select_bins=select_bins,
+                                                missing_bins=missing_bins, unique_bins=unique_bins)
         # For this approach, the wavelengths masked should be
         # *identical* for all spectra
         nwave = numpy.sum(numpy.invert(numpy.ma.getmaskarray(masked_data)), axis=1)
@@ -269,8 +270,8 @@ class RowStackedSpectra:
         # reshaped for the new number of (unmasked) wavelength channels
         return masked_data.compressed().reshape(-1,nwave[0])
 
-    def copy_to_masked_array(self, attr='flux', flag=None, waverange=None, nbins=None,
-                             select_bins=None, missing_bins=None, unique_bins=None):
+    def copy_to_masked_array(self, attr='flux', use_mask=True, flag=None, waverange=None,
+                             nbins=None, select_bins=None, missing_bins=None, unique_bins=None):
         r"""
         Return a copy of the selected data array with selected
         pixels, wavelength ranges, and/or full spectra masked.
@@ -288,6 +289,11 @@ class RowStackedSpectra:
                 'mask', you're likely better off using
                 :func:`copy_to_array`. Strings are always set to be
                 lower-case, so capitalization shouldn't matter.
+            use_mask (:obj:`bool`, optional):
+                Use the internal mask to mask the data. This is
+                largely here to allow for :func:`copy_to_array` to
+                wrap this function while not applying the internal
+                mask.
             waverange (array-like, optional):
                 Two-element array with the first and last wavelength
                 to include in the computation. Default is to use the
@@ -338,7 +344,9 @@ class RowStackedSpectra:
         mask = SpectralPixelMask(waverange=waverange).boolean(self.wave, nspec=nspec)
 
         # Add in any masked data
-        mask |= self.mask if self.bitmask is None else self.bitmask.flagged(self.mask, flag=flag)
+        if use_mask:
+            mask |= self.mask if self.bitmask is None \
+                                else self.bitmask.flagged(self.mask, flag=flag)
 
         # Create the output MaskedArray
         a = numpy.ma.MaskedArray(getattr(self, attr.lower()), mask=mask)
@@ -446,8 +454,6 @@ class RowStackedSpectra:
         if len(_offset) != 2:
             raise ValueError('Offset should be two numbers for the offset in x and y.')
 
-        # The negative here is because the XPOS extension has negative
-        # offsets going toward increasing RA.
         xpos = self.copy_to_masked_array(attr='xpos', waverange=waverange, flag=flag) + _offset[0]
         ypos = self.copy_to_masked_array(attr='ypos', waverange=waverange, flag=flag) + _offset[1]
         if fluxwgt:
@@ -1387,4 +1393,6 @@ class RowStackedSpectra:
         # Rectify the data
         Tc = self.rect_T.sum(axis=1).flatten()
         Tc[numpy.invert(Tc>0)] = 1.0                # Control for zeros
-        return numpy.sqrt(self.rect_T.dot(numpy.square(disp)) / Tc ).reshape(self.nx, self.ny)
+        # NOTE: This returns a numpy.ndarray instead of a numpy.matrix
+        return numpy.asarray(numpy.sqrt(self.rect_T.dot(numpy.square(disp)) 
+                                / Tc).reshape(self.nx, self.ny))

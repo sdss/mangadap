@@ -15,6 +15,7 @@ from matplotlib import pyplot
 
 from mangadap.datacube import MaNGADataCube
 from mangadap.util.covariance import Covariance
+from mangadap.util.constants import DAPConstants
 from mangadap.tests.util import requires_remote, remote_data_file
 
 #-----------------------------------------------------------------------------
@@ -109,6 +110,7 @@ def test_var():
     assert numpy.array_equal(covar.toarray(), numpy.identity(3)), \
             'Result should be an identity matrix'
 
+
 def test_io():
 
     # Clean up in case of a failure
@@ -137,6 +139,7 @@ def test_io():
     assert numpy.allclose(covar.toarray(), _covar.toarray()), 'Bad I/O'
     # Clean-up 
     os.remove(ofile)
+
 
 @requires_remote
 def test_rectification_recovery():
@@ -167,6 +170,16 @@ def test_rectification_recovery():
     C.to_correlation()
     assert numpy.allclose(C.toarray(), gcorrel), 'Bad covariance calculation'
 
+    sres = numpy.ma.divide(cube.rss.wave[channel],
+                           cube.rss.instrumental_dispersion_plane(channel).ravel()) \
+                / DAPConstants.sig2fwhm
+
+    # WARNING: The computations done by the DRP and DAP are different
+    # in detail, but (at least for this test cube) the results are
+    # virtually identical except for notable outliers.
+    assert numpy.ma.median(cube.sres[...,channel].ravel() - sres) < 0.1, \
+            'Bad spectral resolution rectification'
+
 #    zoom = 12
 #    xs = int(C.shape[0]/2 - C.shape[0]/2/zoom)
 #    xe = xs + int(C.shape[0]/zoom) + 1
@@ -185,11 +198,4 @@ def test_rectification_recovery():
 #                   interpolation='nearest', aspect='auto', cmap='inferno')
 #    pyplot.colorbar(cs, cax=cax)
 #    pyplot.show()
-
-
-if __name__ == '__main__':
-    test_rectification_recovery()
-
-
-    
 

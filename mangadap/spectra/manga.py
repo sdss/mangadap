@@ -439,6 +439,11 @@ class MaNGARSS(RowStackedSpectra):
             The first has the unique (non-negative) bin indices, and
             the second provides the on-sky area of that bin.
         """
+        # TODO: May need a better way to do this. I.e., coordinates
+        # will be need to figure out which spectra to bin, and this
+        # recalculation of the fiducial coordinates runs the risk that
+        # the binned area is not calculated using the same coordinates
+        # used to determine which spectra went in each bin.
         x, y = self.mean_sky_coordinates(offset=offset, **kwargs)
         return super(MaNGARSS, self).binned_on_sky_area(bin_indx, x=x, y=y)
 
