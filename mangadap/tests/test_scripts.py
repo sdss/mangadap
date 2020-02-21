@@ -117,6 +117,17 @@ def test_manga_dap():
     os.remove(logfile)
     assert retval == 0, 'Basic help call failed'
 
+# TODO: Add some remote data?
+def test_plate_fit_qa():
+    # Basic help call
+    logfile = 'test.log'
+    if os.path.isfile(logfile):
+        os.remove(logfile)
+    with open(logfile, 'w') as f:
+        retval = subprocess.call(['dap_plate_fit_qa', '-h'], stdout=f, stderr=f)
+    os.remove(logfile)
+    assert retval == 0, 'Basic help call failed'
+
 if __name__ == '__main__':
-    test_manga_dap()
+    test_plate_fit_qa()
 
