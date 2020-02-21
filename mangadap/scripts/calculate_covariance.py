@@ -2,6 +2,8 @@ import os
 import time
 import sys
 
+from IPython import embed
+
 import numpy
 
 from argparse import ArgumentParser
@@ -29,7 +31,7 @@ def parse_args(options=None):
     parser.add_argument('-d', '--directory_path', type=str,
                         help='Directory with the DRP produced RSS file; default uses environmental '
                              'variables to define the default MaNGA DRP redux path', default=None)
-    return parser.parse_args() if options is None else parse.parse_args(options)
+    return parser.parse_args() if options is None else parser.parse_args(options)
 
 
 def main(args):
@@ -65,15 +67,13 @@ def calculate_covariance_cube(plate, ifudesign, ofile, nc=1, wave=None, director
             C = drpf.covariance_cube()
             print('... done.')
         elif nc == 1:
+            channel = nw//2
             print('Calculating covariance matrix at central channel: {0:.1f} ang.'.format(
-                                                                    drpf['WAVE'].data[nw/2]))
-            C = drpf.covariance_matrix(nw/2)
+                                                                    drpf['WAVE'].data[channel]))
+            C = drpf.covariance_matrix(channel)
         else:
             print('Calculating covariance in {0} wavelength channels...'.format(nc))
-            if sys.version > '3':
-                channels = numpy.linspace(0, nw-1, num=nc, dtype=numpy.int)
-            else:
-                channels = numpy.linspace(0, nw-1, num=nc).astype(numpy.int)
+            channels = numpy.linspace(0, nw-1, num=nc, dtype=int)
             C = drpf.covariance_cube(channels=channels)
 
     print('Writing data to {0}.'.format(ofile))
