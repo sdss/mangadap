@@ -139,6 +139,17 @@ def test_ppxffit_qa():
     os.remove(logfile)
     assert retval == 0, 'Basic help call failed'
 
+# TODO: Add some remote data?
+def test_spotcheck():
+    # Basic help call
+    logfile = 'test.log'
+    if os.path.isfile(logfile):
+        os.remove(logfile)
+    with open(logfile, 'w') as f:
+        retval = subprocess.call(['spotcheck_dap_maps', '-h'], stdout=f, stderr=f)
+    os.remove(logfile)
+    assert retval == 0, 'Basic help call failed'
+
 if __name__ == '__main__':
-    test_ppxffit_qa()
+    test_spotcheck()
 

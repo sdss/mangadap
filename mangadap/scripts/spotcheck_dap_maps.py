@@ -1,10 +1,3 @@
-#!/usr/bin/env python3
-
-from __future__ import print_function
-from __future__ import division
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
 import os
 import glob
 import time
@@ -26,7 +19,6 @@ from mangadap.proc.stellarcontinuummodel import StellarContinuumModel
 from mangadap.proc.emissionlinemodel import EmissionLineModel
 from mangadap.util.mapping import map_extent, map_beam_patch
 
-#-----------------------------------------------------------------------------
 
 def init_ax(fig, pos):
     ax = fig.add_axes(pos, facecolor='0.9')
@@ -545,11 +537,7 @@ def spotcheck_images(analysis_path, daptype, plate, ifudesign, ofile=None, drpve
     pyplot.close(fig)
     
 
-#-----------------------------------------------------------------------------
-
-if __name__ == '__main__':
-    t = time.perf_counter()
-
+def parse_args(options=None):
     parser = ArgumentParser()
 
     parser.add_argument('plate', type=int, help='plate ID to process')
@@ -567,20 +555,25 @@ if __name__ == '__main__':
     parser.add_argument('--daptype', type=str, help='DAP processing type', default=None)
     parser.add_argument('--normal_backend', dest='bgagg', action='store_false', default=True)
 
-    arg = parser.parse_args()
+    return parser.parse_args() if options is None else parser.parse_args(options)
 
-    if arg.bgagg:
+
+def main(args):
+
+    t = time.perf_counter()
+
+    if args.bgagg:
         pyplot.switch_backend('agg')
 
     # Set the the analysis path and make sure it exists
-    analysis_path = defaults.dap_analysis_path(drpver=arg.drpver, dapver=arg.dapver) \
-                            if arg.analysis_path is None else arg.analysis_path
+    analysis_path = defaults.dap_analysis_path(drpver=args.drpver, dapver=args.dapver) \
+                            if args.analysis_path is None else args.analysis_path
 
     daptypes = []
-    if arg.daptype is None:
-        plan_file = defaults.dap_plan_file(drpver=arg.drpver, dapver=arg.dapver,
-                                                   analysis_path=arg.analysis_path) \
-                                            if arg.plan_file is None else arg.plan_file
+    if args.daptype is None:
+        plan_file = defaults.dap_plan_file(drpver=args.drpver, dapver=args.dapver,
+                                                   analysis_path=args.analysis_path) \
+                                            if args.plan_file is None else args.plan_file
         analysisplan = AnalysisPlanSet.from_par_file(plan_file)
         for p in analysisplan:
             bin_method = SpatiallyBinnedSpectra.define_method(p['bin_key'])
@@ -590,19 +583,19 @@ if __name__ == '__main__':
                                              sc_method['fitpar']['template_library_key'],
                                              el_method['continuum_tpl_key'])]
     else:
-        daptypes = [arg.daptype]
+        daptypes = [args.daptype]
 
     for daptype in daptypes:
-        plan_qa_dir = defaults.dap_method_path(daptype, plate=arg.plate, ifudesign=arg.ifudesign,
-                                               qa=True, drpver=arg.drpver, dapver=arg.dapver,
+        plan_qa_dir = defaults.dap_method_path(daptype, plate=args.plate, ifudesign=args.ifudesign,
+                                               qa=True, drpver=args.drpver, dapver=args.dapver,
                                                analysis_path=analysis_path)
         ofile = os.path.join(plan_qa_dir,
-                             'manga-{0}-{1}-MAPS-{2}-spotcheck.png'.format(arg.plate,
-                                                                           arg.ifudesign, daptype))
+                             'manga-{0}-{1}-MAPS-{2}-spotcheck.png'.format(args.plate,
+                                                                           args.ifudesign, daptype))
         if not os.path.isdir(plan_qa_dir):
             os.makedirs(plan_qa_dir)
 
-        spotcheck_images(analysis_path, daptype, arg.plate, arg.ifudesign, ofile=ofile)
+        spotcheck_images(analysis_path, daptype, args.plate, args.ifudesign, ofile=ofile)
 
     print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
 
