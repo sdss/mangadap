@@ -25,7 +25,7 @@ Revision history
     | **27 Aug 2015**: (KBW) Sphinx documentation; prep for MPL-4;
         accommodate changes in drpcomplete; removed arg as an attribute
         because it was only used in
-        :func:`mangadap.survey.rundap._read_arg`; despite not doing
+        :func:`mangadap.scripts.rundap._read_arg`; despite not doing
         anything before, commented out _write_module_commands for the
         time-being; removed file_root() and parameter_file() functions
         in favor of adding/using functions from
@@ -86,20 +86,17 @@ except:
 import numpy
 
 from mangadap import __version__
-
-from .drpcomplete import DRPComplete
-from ..drpfits import DRPFits
-from ..config import defaults
-from ..util.exception_tools import print_frame
-from ..util.parser import arginp_to_list
-from ..util.fileio import create_symlink
-from .mangampl import MaNGAMPL
-from ..par.analysisplan import AnalysisPlanSet
-from ..proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
-from ..proc.stellarcontinuummodel import StellarContinuumModel
-from ..proc.emissionlinemodel import EmissionLineModel
-
-#from . import util
+from mangadap.config import defaults
+from mangadap.drpfits import DRPFits
+from mangadap.survey.drpcomplete import DRPComplete
+from mangadap.survey.mangampl import MaNGAMPL
+from mangadap.util.exception_tools import print_frame
+from mangadap.util.parser import arginp_to_list
+from mangadap.util.fileio import create_symlink
+from mangadap.par.analysisplan import AnalysisPlanSet
+from mangadap.proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
+from mangadap.proc.stellarcontinuummodel import StellarContinuumModel
+from mangadap.proc.emissionlinemodel import EmissionLineModel
 
 class rundap:
     r"""

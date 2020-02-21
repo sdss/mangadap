@@ -21,7 +21,7 @@ Revision history
         edited :func:`available_template_libraries` accordingly
     | **27 Aug 2015**: (KBW) Changed the name of the plan file; added
         :func:`default_dap_file_root` based on file_root() from
-        :class:`mangadap.survey.rundap`.
+        :class:`mangadap.scripts.rundap`.
     | **28 Aug 2015**: (KBW) Added :func:`default_manga_fits_root` and
         :func:`default_cube_covariance_file`
     | **07 Oct 2015**: (KBW) Adjusted for changes to naming of the
