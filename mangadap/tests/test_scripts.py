@@ -52,7 +52,6 @@ def test_calculate_covariance():
 
 # TODO: Add some remote files to test this?
 def test_construct_dapall():
-
     # Basic help call
     logfile = 'test.log'
     if os.path.isfile(logfile):
@@ -62,6 +61,18 @@ def test_construct_dapall():
     os.remove(logfile)
     assert retval == 0, 'Basic help call failed'
 
+# TODO: Include this in the construct_dapall test and test the
+# constructed file?
+def test_dapall_qa():
+    # Basic help call
+    logfile = 'test.log'
+    if os.path.isfile(logfile):
+        os.remove(logfile)
+    with open(logfile, 'w') as f:
+        retval = subprocess.call(['dapall_qa', '-h'], stdout=f, stderr=f)
+    os.remove(logfile)
+    assert retval == 0, 'Basic help call failed'
+
 if __name__ == '__main__':
-    test_construct_dapall()
+    test_dapall_qa()
 
