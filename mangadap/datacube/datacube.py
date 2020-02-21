@@ -142,6 +142,10 @@ class DataCube:
         log (:obj:`bool`, optional):
             Flag that the datacube spectral pixels are binned
             logarithmically in wavelength.
+        meta (:obj:`dict`, optional):
+
+            A free-form dictionary used to hold meta data relevant to
+            the datacube.
 
     Attributes:
         original_axes (`numpy.ndarray`_):
