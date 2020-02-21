@@ -406,7 +406,7 @@ class DRPFits:
             List of fits extensions in the file
         checksum (:obj:`bool`):
             Flag to check for file corruption when opening the HDU.
-        wcs (`astropy.wcs.wcs.WCS`_):
+        wcs (`astropy.wcs.WCS`_):
             WCS object based on WCS keywords in the header of the
             FLUX extension.
         shape (:obj:`tuple`):
@@ -960,7 +960,7 @@ class DRPFits:
     def _fix_header(self):
         """
         Use of 'degrees' in early versions of the DRP did not adhere to
-        the fits standard causing the `astropy.wcs.wcs.WCS`_ to fail
+        the fits standard causing the `astropy.wcs.WCS`_ to fail
         when initialized; see, e.g., :func:`world_mesh`. This changes
         the units to be 'deg' instead.
 
@@ -1090,7 +1090,7 @@ class DRPFits:
             data file.
         """    
         _directory_path = defaults.drp_directory_path(plate, drpver=drpver,
-                                                     redux_path=redux_path) \
+                                                      redux_path=redux_path) \
                                 if directory_path is None else directory_path
         _output_file = '{0}.fits.gz'.format(defaults.manga_fits_root(plate, ifudesign,
                                                                      'LOG{0}'.format(mode))) \
@@ -1636,7 +1636,7 @@ class DRPFits:
             Prior to v1_5_1 of the DRP, this function required a
             correction to the DRP header because of its use of
             'degrees', which does not adhere to the fits standard
-            causing the `astropy.wcs.wcs.WCS`_ to fail when initialized.
+            causing the `astropy.wcs.WCS`_ to fail when initialized.
             This call is not longer made.
 
         .. todo::
@@ -1724,7 +1724,7 @@ class DRPFits:
             Prior to v1_5_1 of the DRP, this function required a
             correction to the DRP header because of its use of
             'degrees', which does not adhere to the fits standard
-            causing the `astropy.wcs.wcs.WCS`_ to fail when initialized.
+            causing the `astropy.wcs.WCS`_ to fail when initialized.
             This call is not longer made.
 
         .. todo::
@@ -1976,11 +1976,9 @@ class DRPFits:
         scale = pixelscale*pixelscale/numpy.pi
         non_zero_wgt *= scale/tot[numpy.unravel_index(non_zero_pix.astype(int), (self.nx,self.ny))]
 
-        # Set the transfer matrix to a sparse object
+        # Set the transfer matrix to a sparse object and return it
         self.regrid_T = sparse.coo_matrix( (non_zero_wgt, (non_zero_pix, non_zero_spc)), \
                                                    shape=(nim,self.nspec) ).tocsr()
-
-        # Return the transfer matrix
         return self.regrid_T
 
 
@@ -2705,7 +2703,6 @@ class DRPFits:
         return numpy.sqrt( self.regrid_T.dot(numpy.square(_df*self.hdu[ext].data[:,channel]))
                                                 / Tc ).reshape(self.nx, self.ny)
 
-
     def pointing_offset(self):
         """
         Return the offsets in RA and DEC between the pointing
@@ -2716,10 +2713,9 @@ class DRPFits:
         Returns:
             float: Sky-right arcsecond offsets in RA and DEC.
         """
-        return ( (self.hdu[0].header['IFURA'] - self.hdu[0].header['OBJRA']) \
+        return ((self.hdu[0].header['IFURA'] - self.hdu[0].header['OBJRA']) \
                     * numpy.cos(numpy.radians(self.hdu[0].header['OBJDEC'])) * 3600.), \
                ((self.hdu[0].header['IFUDEC'] - self.hdu[0].header['OBJDEC']) * 3600.)
-
 
     def mean_sky_coordinates(self, waverange=None, response_func=None, per_pixel=True, offset=True,
                              flag=None, fluxwgt=False):

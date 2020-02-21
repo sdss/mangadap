@@ -469,5 +469,55 @@ def map_beam_patch(extent, ax, pos=(0.1,0.1), **kwargs):
 
 
 
+def permute_wcs_axes(wcs, axes):
+    r"""
+    Permute the axes in an `astropy.wcs.WCS`_ object.
 
+    The number of axes must match the number axes defined by the
+    `astropy.wcs.WCS`_ object. Axes are iteratively swapped until
+    they're in the requested order. For example, to transpose the
+    axes of a 3D WCS, set ``axes=[2,1,0]``.
+
+    .. note::
+
+        Method uses the :func:`deepcopy` method of the
+        `astropy.wcs.WCS`_ object when altering and returning a new
+        object. If the axes are already sorted, this function returns
+        a deepcopy of the input ``wcs``.
+
+    Args:
+        wcs (`astropy.wcs.WCS`_):
+            Object with the world-coordinate system.
+        axes (array-like):
+            New locations for the current axes; i.e., the axis
+            currently at index ``i`` (0-indexed) is moved to be at
+            index ``axis[i]``. For example, to swap the axes for a 2D
+            WCS, set ``axes=[1,0]``.
+
+    Returns:
+        `astropy.wcs.WCS`_: The world-coordinate system with
+        re-ordered axes.
+
+    Raises:
+        ValueError:
+            Raised if the length of the ``axes`` vector is not the
+            same as the number of axes defined by the
+            `astropy.wcs.WCS`_ object, or if ``axes`` includes
+            undefined axes (i.e., a value less than 0 or >= the
+            number of axes in the WCS.)
+    """
+    if len(axes) != wcs.wcs.naxis:
+        raise ValueError('Number of specified axes must match the WCS object.')
+    if not numpy.array_equal(numpy.arange(len(axes)), numpy.sort(axes)):
+        raise ValueError('Must select defined axes; 0 ... wcs.wcs.naxis-1.')
+    _wcs = wcs.deepcopy()
+    if numpy.array_equal(axes, numpy.sort(axes)):
+        return _wcs
+    _axes = numpy.atleast_1d(axes).copy()
+    for i,a in enumerate(_axes):
+        if a == i:
+            continue
+        _wcs = _wcs.swapaxes(a,i)
+        _axes[i], _axes[a] = i, a
+    return _wcs
 

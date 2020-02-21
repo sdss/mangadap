@@ -87,11 +87,7 @@ class EmissionLinePar(KeywordParSet):
 
     .. include:: ../tables/emissionlinepar.rst
 
-    ----
-
     .. include:: ../emissionline-action.rst
-
-    ----
 
     .. include:: ../emissionline-mode.rst
 

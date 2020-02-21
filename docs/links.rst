@@ -19,6 +19,8 @@
 .. _numpy.meshgrid: http://docs.scipy.org/doc/numpy/reference/generated/numpy.meshgrid.html
 .. _numpy.where: http://docs.scipy.org/doc/numpy/reference/generated/numpy.where.html
 .. _numpy.cov: https://docs.scipy.org/doc/numpy/reference/generated/numpy.cov.html
+.. _numpy.ravel_multi_index: https://docs.scipy.org/doc/numpy/reference/generated/numpy.ravel_multi_index.html
+.. _numpy.unravel_index: https://docs.scipy.org/doc/numpy/reference/generated/numpy.unravel_index.html
 
 .. scipy
 .. _scipy.optimize.least_squares: http://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.least_squares.html
@@ -42,7 +44,7 @@
 .. _astropy.io.fits.BinTableHDU: http://docs.astropy.org/en/stable/io/fits/api/tables.html#astropy.io.fits.BinTableHDU
 .. _astropy.io.fits.ImageHDU: https://docs.astropy.org/en/stable/io/fits/api/images.html#astropy.io.fits.ImageHDU
 .. _astropy.io.fits.Column: http://docs.astropy.org/en/stable/io/fits/api/tables.html#astropy.io.fits.Column
-.. _astropy.wcs.wcs.WCS: http://docs.astropy.org/en/stable/api/astropy.wcs.WCS.html
+.. _astropy.wcs.WCS: http://docs.astropy.org/en/stable/api/astropy.wcs.WCS.html
 .. _astropy.modeling: http://docs.astropy.org/en/stable/modeling/index.html
 .. _astropy.modeling.polynomial.Legendre1D: http://docs.astropy.org/en/stable/api/astropy.modeling.polynomial.Legendre1D.html
 .. _astropy.modeling.models.CompoundModel: http://docs.astropy.org/en/stable/modeling/compound-models.html

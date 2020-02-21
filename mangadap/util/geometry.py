@@ -109,6 +109,28 @@ def point_inside_polygon(polygon, point):
     return numpy.array([ abs(polygon_winding_number(polygon, p)) == 1 for p in _point ])
 
 
+def polygon_area(x, y):
+    """
+    Compute the area of a polygon using the `Shoelace formula
+    <https://en.wikipedia.org/wiki/Shoelace_formula>`_.
+
+    Inspired by `this discussion
+    <https://stackoverflow.com/questions/24467972/calculate-area-of-polygon-given-x-y-coordinates>`_.
+
+    Args:
+        x (`numpy.ndarray`_):
+            Vector with the Cartesian x-coordinates of the polygon
+            vertices.
+        y (`numpy.ndarray`_):
+            Vector with the Cartesian y-coordinates of the polygon
+            vertices.
+            
+    Returns:
+        :obj:`float`: Polygon area
+    """
+    return 0.5 * numpy.abs(numpy.dot(x, numpy.roll(y, 1)) - numpy.dot(y, numpy.roll(x, 1)))
+
+
 class SemiMajorAxisCoo:
     r"""
     Calculate the semi-major axis coordinates given a set of input
