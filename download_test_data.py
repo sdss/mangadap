@@ -5,7 +5,8 @@ import tqdm
 import requests
 import netrc
 
-from mangadap.tests.util import remote_data_file, remote_data_files, drp_test_version
+from mangadap.tests.util import remote_data_file, remote_data_files
+from mangadap.tests.util import drp_test_version, dap_test_version
 
 try:
     NETRC = netrc.netrc()
@@ -62,12 +63,18 @@ def main():
     # Get the spectral data
     for plate, f in zip(plates, files):
         url_root = 'https://{0}/sas/mangawork/manga/spectro/redux/{1}/{2}/stack/'.format(
-                        HOST, version, plate)
+                        HOST, drp_test_version, plate)
         download_file(url_root, usr, passwd, local_root, f)
 
+    # Get the DRPComplete file
+    f = 'drpcomplete-{0}.fits'.format(drp_test_version)
+    url_root = 'https://{0}/sas/mangawork/manga/spectro/analysis/{1}/{2}/common/'.format(
+                    HOST, drp_test_version, dap_test_version)
+    download_file(url_root, usr, passwd, local_root, f)
+
     # Get the DRPall file
-    f = 'drpall-{0}.fits'.format(version)
-    url_root = 'https://{0}/sas/mangawork/manga/spectro/redux/{1}/'.format(HOST, version)
+    f = 'drpall-{0}.fits'.format(drp_test_version)
+    url_root = 'https://{0}/sas/mangawork/manga/spectro/redux/{1}/'.format(HOST, drp_test_version)
     download_file(url_root, usr, passwd, local_root, f)
 
 

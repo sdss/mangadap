@@ -111,6 +111,10 @@ def test_write_dap_par():
     assert script_help_okay('write_dap_par'), 'Basic help call failed'
 
 
+def test_write_dap_config():
+    assert script_help_okay('write_dap_config'), 'Basic help call failed'
+
+
 # TODO: Add some remote files?
 def test_status():
     assert script_help_okay('dap_status'), 'Basic help call failed'
