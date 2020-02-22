@@ -67,7 +67,7 @@ def main():
         download_file(url_root, usr, passwd, local_root, f)
 
     # Get the DRPComplete file
-    f = 'drpcomplete-{0}.fits'.format(drp_test_version)
+    f = 'drpcomplete_{0}.fits'.format(drp_test_version)
     url_root = 'https://{0}/sas/mangawork/manga/spectro/analysis/{1}/{2}/common/'.format(
                     HOST, drp_test_version, dap_test_version)
     download_file(url_root, usr, passwd, local_root, f)

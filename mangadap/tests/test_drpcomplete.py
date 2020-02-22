@@ -6,8 +6,9 @@ from IPython import embed
 
 from mangadap.survey.drpcomplete import DRPComplete
 from mangadap.util.parser import DefaultConfig
-from mangadap.tests.util import test_data_file
+from mangadap.tests.util import remote_data_file, drp_test_version, requires_drpcomplete
 
+@requires_drpcomplete
 def test_write_cfg():
     ofile = 'test.ini'
     if os.path.isfile(ofile):
@@ -15,7 +16,7 @@ def test_write_cfg():
         os.remove(ofile)
 
     # Read the test DRPComplete file.
-    drpc = DRPComplete(drpver='v2_7_1', directory_path=test_data_file(), readonly=True)
+    drpc = DRPComplete(drpver=drp_test_version, directory_path=remote_data_file(), readonly=True)
 
     # Write the base-level configuration file
     drpc.write_config(ofile, plate=7815, ifudesign=3702)

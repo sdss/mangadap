@@ -20,7 +20,7 @@ def remote_data_files():
 drp_test_version = 'v2_7_1'
 dap_test_version = '2.4.1'
 remote_available = all([os.path.isfile(remote_data_file(f)) for f in remote_data_files()])
-drpcomplete_available = os.path.isfile(remote_data_file('drpcomplete-{0}.fits'.format(
+drpcomplete_available = os.path.isfile(remote_data_file('drpcomplete_{0}.fits'.format(
                                        drp_test_version)))
 drpall_available = os.path.isfile(remote_data_file('drpall-{0}.fits'.format(drp_test_version)))
 

@@ -2,6 +2,8 @@ import os
 import time
 import argparse
 
+import numpy
+
 from astropy.io import fits
 
 from mangadap.datacube import MaNGADataCube
@@ -35,7 +37,7 @@ def parse_args(options=None):
                         help='Exact path to the directory with the MaNGA DRP datacube.  The name '
                              'of the file itself must match the nominal MaNGA DRP naming '
                              'convention.  Default set by MaNGADataCube class.')
-    parser.add_argument('-o', '--overwrite', type=bool, default=False, action='store_true',
+    parser.add_argument('-o', '--overwrite', default=False, action='store_true',
                         help='Overwrite any existing files.')
 
     return parser.parse_args() if options is None else parser.parse_args(options)
@@ -57,22 +59,23 @@ def main(args):
         drpver = args.drpcomplete[args.drpcomplete.find('_v')+1 : args.drpcomplete.find('.fits')]
         drpc = DRPComplete(drpver=drpver, directory_path=root_dir, readonly=True)
         drpc.write_config(args.ofile, plate=args.plate, ifudesign=args.ifudesign,
-                          sres_ext=args.sres_ext, sres_pre=args.sres_pre, sres_fill=args.sres_fill,
+                          sres_ext=args.sres_ext, sres_pre=sres_pre, sres_fill=args.sres_fill,
                           covar_ext=args.covar_ext, overwrite=args.overwrite)
         return
 
     # Use the DRPall file
     with fits.open(args.drpall) as hdu:
-        indx = hdu['MANGA'].data['PLATEIFU'] == '{0}-{1}'.format(plate, ifudesign)
-        if numpy.sum(indx) != 1:
+        indx = numpy.where(hdu['MANGA'].data['PLATEIFU'] == '{0}-{1}'.format(args.plate,
+                                                                             args.ifudesign))[0]
+        if len(indx) != 1:
             raise ValueError('{0}-{1} either does not exist or has more than one match!'.format(
-                                plate, ifudesign))
+                                args.plate, args.ifudesign))
 
         MaNGADataCube.write_config(args.ofile, args.plate, args.ifudesign,
-                                   z=hdu[1].data['z'][indx],
-                                   ell=1-hdu[1].data['nsa_elpetro_ba'][indx],
-                                   pa=hdu[1].data['nsa_elpetro_phi'][indx],
-                                   reff=hdu[1].data['nsa_elpetro_th50_r'][indx],
+                                   z=hdu[1].data['z'][indx[0]],
+                                   ell=1-hdu[1].data['nsa_elpetro_ba'][indx[0]],
+                                   pa=hdu[1].data['nsa_elpetro_phi'][indx[0]],
+                                   reff=hdu[1].data['nsa_elpetro_th50_r'][indx[0]],
                                    sres_ext=args.sres_ext, sres_pre=sres_pre,
                                    sres_fill=args.sres_fill, covar_ext=args.covar_ext,
                                    drpver=args.drpver, redux_path=args.redux_path,

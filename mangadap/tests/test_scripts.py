@@ -3,11 +3,15 @@ import pytest
 import os
 import subprocess
 
+
 from IPython import embed
 
-from mangadap.tests.util import remote_data_file, requires_remote
+from mangadap.tests.util import remote_data_file, drp_test_version
+from mangadap.tests.util import requires_remote, requires_drpcomplete, requires_drpall
 
 from mangadap.scripts import calculate_covariance
+from mangadap.scripts import write_dap_config
+from mangadap.util.parser import DefaultConfig
 
 import warnings
 warnings.simplefilter("ignore", UserWarning)
@@ -111,8 +115,50 @@ def test_write_dap_par():
     assert script_help_okay('write_dap_par'), 'Basic help call failed'
 
 
-def test_write_dap_config():
+def test_write_dap_config_basic():
     assert script_help_okay('write_dap_config'), 'Basic help call failed'
+
+
+@requires_drpcomplete
+def test_write_dap_config_drpcomplete():
+    ofile = 'test.ini'
+    if os.path.isfile(ofile):
+        # Clean-up a previous failure
+        os.remove(ofile)
+
+    drpc = remote_data_file('drpcomplete_{0}.fits'.format(drp_test_version))
+    write_dap_config.main(write_dap_config.parse_args(['7815', '3702', ofile, '-c', drpc]))
+
+    assert os.path.isfile(ofile), 'Output file not written.'
+
+    cfg = DefaultConfig(ofile)
+    assert cfg.getint('plate') == 7815, 'Wrong plate number'
+    assert cfg.get('directory_path') is None, 'No directory path should be defined.'
+    assert cfg.getfloat('z') == 0.0293823, 'Bad redshift'
+
+    # Clean-up a previous failure
+    os.remove(ofile)
+
+
+@requires_drpall
+def test_write_dap_config_drpall():
+    ofile = 'test.ini'
+    if os.path.isfile(ofile):
+        # Clean-up a previous failure
+        os.remove(ofile)
+
+    drpall = remote_data_file('drpall-{0}.fits'.format(drp_test_version))
+    write_dap_config.main(write_dap_config.parse_args(['7815', '3702', ofile, '-a', drpall]))
+
+    assert os.path.isfile(ofile), 'Output file not written.'
+
+    cfg = DefaultConfig(ofile)
+    assert cfg.getint('plate') == 7815, 'Wrong plate number'
+    assert cfg.get('directory_path') is None, 'No directory path should be defined.'
+    assert cfg.getfloat('z') == 0.0293823, 'Bad redshift'
+
+    # Clean-up a previous failure
+    os.remove(ofile)
 
 
 # TODO: Add some remote files?
@@ -124,5 +170,6 @@ def test_status():
 def test_run():
     assert script_help_okay('rundap'), 'Basic help call failed'
 
-
+if __name__ == '__main__':
+    test_write_dap_config_drpall()
 
