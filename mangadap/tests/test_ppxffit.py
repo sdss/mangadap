@@ -18,7 +18,7 @@ from mangadap.proc.templatelibrary import TemplateLibrary
 from mangadap.proc.ppxffit import PPXFFit
 from mangadap.proc.stellarcontinuummodel import StellarContinuumModelBitMask
 
-from mangadap.tests.util import data_file
+from mangadap.tests.util import test_data_file
 
 import warnings
 warnings.simplefilter("ignore", UserWarning)
@@ -26,7 +26,7 @@ warnings.simplefilter("ignore", RuntimeWarning)
 
 def test_ppxffit():
     # Read the data
-    specfile = data_file('MaNGA_test_spectra.fits.gz')
+    specfile = test_data_file('MaNGA_test_spectra.fits.gz')
     hdu = fits.open(specfile)
     drpbm = DRPFitsBitMask()
     flux = numpy.ma.MaskedArray(hdu['FLUX'].data,

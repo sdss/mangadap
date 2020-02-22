@@ -23,6 +23,7 @@ from astropy.wcs import WCS
 
 from ..config import defaults
 from ..drpfits import DRPFitsBitMask
+from ..util.parser import DefaultConfig
 from ..util.constants import DAPConstants
 from ..util.covariance import Covariance
 from ..util.filter import interpolate_masked_vector
@@ -63,7 +64,8 @@ class MaNGADataCube(DataCube):
             arbitrary wavelength channel using the RSS file, see
             :func:`mangadap.datacube.datacube.DataCube.covariance_matrix`.
     """
-    def __init__(self, ifile, sres_ext='DISP', sres_pre=True, sres_fill=True, covar_ext=None):
+    def __init__(self, ifile, sres_ext='DISP', sres_pre=True, sres_fill=True, covar_ext=None,
+                 z=None, vdisp=None, ell=None, pa=None, reff=None):
 
         if not os.path.isfile(ifile):
             raise FileNotFoundError('File does not exist: {0}'.format(ifile))
@@ -74,6 +76,14 @@ class MaNGADataCube(DataCube):
         self.plate = int(self.plate)
         self.ifudesign = int(self.ifudesign)
         log = 'LOG' in log
+
+        # Collect the metadata into a dictionary
+        meta = {}
+        meta['z'] = z
+        meta['vdisp'] = vdisp
+        meta['ell'] = ell
+        meta['pa'] = pa
+        meta['reff'] = reff
 
         # Try to define the BitMask object
         try:
@@ -118,7 +128,7 @@ class MaNGADataCube(DataCube):
                                                 ivar=hdu['IVAR'].data.T, mask=hdu['MASK'].data.T,
                                                 bitmask=bitmask, sres=sres.T, covar=covar,
                                                 wcs=WCS(header=self.fluxhdr, fix=True),
-                                                pixelscale=0.5, log=log)
+                                                pixelscale=0.5, log=log, meta=meta)
         print('Reading MaNGA datacube data ... DONE')
 
         # Try to use the header to set the DRP version
@@ -250,7 +260,7 @@ class MaNGADataCube(DataCube):
     def from_plateifu(cls, plate, ifudesign, log=True, drpver=None, redux_path=None,
                       directory_path=None, **kwargs):
         """
-        Construct MaNGA datacube object based on its plate-ifu
+        Construct a MaNGA datacube object based on its plate-ifu
         designation.
 
         The provided plate, ifudesign, and boolean for the log
@@ -295,6 +305,69 @@ class MaNGADataCube(DataCube):
         return cls(os.path.join(directory_path,
                                 MaNGADataCube.build_file_name(_plate, _ifudesign, log=log)),
                    **kwargs)
+
+    @classmethod
+    def from_config(cls, cfgfile, drpver=None, redux_path=None, directory_path=None):
+        """
+        Construct a MaNGA datacube object using a configuration file.
+
+        The format of the configuration file is:
+
+        .. todo::
+
+            Fill this in.
+
+        Args:
+            cfgfile (:obj:`str`):
+                Configuration file
+            drpver (:obj:`str`, optional):
+                DRP version, which is used to define the default DRP
+                redux path. Default is defined by
+                :func:`mangadap.config.defaults.drp_version`.
+                Overrides any value in the configuration file.
+            redux_path (:obj:`str`, optional):
+                The path to the top level directory containing the
+                DRP output files for a given DRP version. Default is
+                defined by
+                :func:`mangadap.config.defaults.drp_redux_path`.
+                Overrides any value in the configuration file.
+            directory_path (:obj:`str`, optional):
+                The exact path to the DRP file. Default is defined by
+                :func:`mangadap.config.defaults.drp_directory_path`.
+                Providing this ignores anything provided for
+                ``drpver`` or ``redux_path``. Overrides any value i
+                the configuration file.
+        """
+        # Read the configuration file
+        cfg = DefaultConfig(cfgfile, interpolate=True)
+
+        # Set the attributes, forcing a known type
+        plate = cfg.getint('plate')
+        ifu = cfg.getint('ifu')
+        if plate is None or ifu is None:
+            raise ValueError('Configuration file must define the plate and IFU.')
+        log = cfg.getbool('log', default=True)
+
+        # Overwrite what's in the file with the method keyword arguments
+        _drpver = cfg.get('drpver') if drpver is None else drpver
+        _redux_path = cfg.get('redux_path') if redux_path is None else redux_path
+        _directory_path = cfg.get('directory_path') if directory_path is None else directory_path
+
+        # Get the other possible keywords
+        # TODO: Come up with a better way to do this
+        kwargs = {}
+        kwargs['sres_ext'] = cfg.get('sres_ext')
+        kwargs['sres_pre'] = cfg.getbool('sres_pre', default=True)
+        kwargs['sres_fill'] = cfg.getbool('sres_fill', default=True)
+        kwargs['covar_ext'] = cfg.get('covar_ext')
+        kwargs['z'] = cfg.getfloat('z')
+        kwargs['vdisp'] = cfg.getfloat('vdisp')
+        kwargs['ell'] = cfg.getfloat('ell')
+        kwargs['pa'] = cfg.getfloat('pa')
+        kwargs['reff'] = cfg.getfloat('reff')
+
+        return cls.from_plateifu(plate, ifu, log=log, drpver=_drpver, redux_path=_redux_path,
+                                 directory_path=_directory_path, **kwargs)
 
     # TODO: Include a class method that instantiates from (or wraps a Marvin Cube)
 

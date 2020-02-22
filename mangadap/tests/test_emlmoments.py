@@ -21,7 +21,7 @@ from mangadap.proc.ppxffit import PPXFFit
 from mangadap.proc.stellarcontinuummodel import StellarContinuumModel, StellarContinuumModelBitMask
 from mangadap.proc.emissionlinemoments import EmissionLineMoments, EmissionLineMomentsBitMask
 
-from mangadap.tests.util import data_file
+from mangadap.tests.util import test_data_file
 
 import warnings
 warnings.simplefilter("ignore", UserWarning)
@@ -30,7 +30,7 @@ warnings.simplefilter("ignore", RuntimeWarning)
 def test_moments():
 
     # Read the data
-    specfile = data_file('MaNGA_test_spectra.fits.gz')
+    specfile = test_data_file('MaNGA_test_spectra.fits.gz')
     hdu = fits.open(specfile)
     drpbm = DRPFitsBitMask()
     flux = numpy.ma.MaskedArray(hdu['FLUX'].data,
@@ -120,7 +120,7 @@ def test_moments():
 
 def test_moments_with_continuum():
     # Read the data
-    specfile = data_file('MaNGA_test_spectra.fits.gz')
+    specfile = test_data_file('MaNGA_test_spectra.fits.gz')
     hdu = fits.open(specfile)
     drpbm = DRPFitsBitMask()
     flux = numpy.ma.MaskedArray(hdu['FLUX'].data,

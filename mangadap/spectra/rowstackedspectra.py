@@ -14,6 +14,8 @@ Base class for row-stacked spectra
 
 # TODO: Pilfer the pypeit.DataContainer for this.
 
+# TODO: Add meta, as in DataCube.
+
 import warnings
 from IPython import embed
 

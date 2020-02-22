@@ -14,6 +14,10 @@ Base class for a datacube
 
 # TODO: Pilfer the pypeit.DataContainer for this.
 
+# TODO: List the required metadata somewhere in here?
+
+# TODO: Force the datacube data arrays to be read-only?
+
 from IPython import embed
 
 import numpy
@@ -142,6 +146,20 @@ class DataCube:
         log (:obj:`bool`, optional):
             Flag that the datacube spectral pixels are binned
             logarithmically in wavelength.
+        meta (:obj:`dict`, optional):
+            A free-form dictionary used to hold meta data relevant to
+            the datacube. Metadata required by analysis modules are
+            indicated where relevant. If None, :attr:`meta` is
+            instantiated as an empty dictionary.
+
+    Raises:
+        ValueError:
+            Raised if the wavelength vector cannot be produced, if
+            the WCS has the wrong dimensionality, or if there are any
+            shape mismatches between the input data arrays.
+        TypeError:
+            Raised if the input metadata are not provided as a
+            dictionary.
 
     Attributes:
         original_axes (`numpy.ndarray`_):
@@ -163,6 +181,12 @@ class DataCube:
         log (:obj:`bool`):
             Flag that the datacube spectral pixels are binned
             logarithmically in wavelength.
+        meta (:obj:`dict`):
+            A free-form dictionary used to hold meta data relevant to
+            the datacube. Metadata required by analysis modules are
+            indicated where relevant. If no metadata has been
+            defined, :attr:`meta` is instantiated as an empty
+            dictionary.
         wave (`numpy.ndarray`_):
             Wavelength vector applicable to all spatial positions.
         flux (`numpy.ndarray`_):
@@ -181,7 +205,7 @@ class DataCube:
     """
     # TODO: Add reconstructed PSF?
     def __init__(self, flux, wave=None, ivar=None, mask=None, bitmask=None, sres=None, covar=None,
-                 axes=[0,1,2], wcs=None, pixelscale=None, log=True):
+                 axes=[0,1,2], wcs=None, pixelscale=None, log=True, meta=None):
 
         if wcs is None and wave is None:
             raise ValueError('Must either provide a single wavelength vector or a WCS that can '
@@ -203,6 +227,10 @@ class DataCube:
         # TODO: Not sure this is useful
         self.spatial_index = [(i,j) for i,j in zip(*numpy.unravel_index(numpy.arange(self.nspec),
                                                                         self.spatial_shape))]
+
+        self.meta = {} if meta is None else meta
+        if not isinstance(self.meta, dict):
+            raise TypeError('Metadata must be provided as a dictionary.')
 
         self.wave = None if wave is None else numpy.atleast_1d(wave)
         if self.wave is None:
@@ -259,6 +287,29 @@ class DataCube:
         self.sigma_rho = None
         self.approx_correl = None
 
+    @classmethod
+    def from_config(cls, cfgfile, **kwargs):
+        """
+        Construct a datacube object using a configuration file.
+
+        The method is undefined for the base class. If called, an
+        exception is raised. Derived classes must override this
+        method to allow for a configuration file to be used to
+        instantiate the relevant :class:`DataCube` subclass.
+
+        Args:
+            cfgfile (:obj:`str`):
+                Configuration file. See `configparser.ConfigParser`_.
+            **kwargs:
+                Any other keyword arguments that invoke optional
+                instantiation methods. Note that these arguments will
+                *never* be used in a command-line level execution of
+                the DAP. They should only be available for custom
+                scripts.
+        """
+        raise NotImplementedError('No from_config method is available for {0}.'.format(
+                                  self.__class__.__name__))
+
     # TODO: write a from_rss classmethod
 
     def _get_pixelscale(self):
@@ -306,6 +357,24 @@ class DataCube:
     def nspec(self):
         """Number of spectra in the datacube."""
         return numpy.prod(self.spatial_shape)
+
+    def metakeys(self):
+        """Get a :obj:`list` of the keys in the datacube metadata."""
+        return list(self.meta.keys())
+
+    # TODO: Add a getitem method that returns the datacube flux?
+
+    def load_rss(self):
+        """
+        Try to load the source row-stacked spectra for this datacube.
+
+        This method is undefined in the base class, and simply passes.
+
+        Derived classes should override this method if it's possible
+        to load the row-stacked spectra. If the load is successful,
+        :attr:`rss` should no longer be None.
+        """
+        pass
 
     def copy_to_array(self, attr='flux', waverange=None, nbins=None, select_bins=None,
                       missing_bins=None, unique_bins=None):
