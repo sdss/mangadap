@@ -204,8 +204,9 @@ class DefaultConfig:
         self.cnfg = ConfigParser(os.environ, allow_no_value=True,
                                  interpolation=ExtendedInterpolation()) \
                         if interpolate else ConfigParser(allow_no_value=True)
-        if f is not None:
-            self.cnfg.read(f)
+        if f is None:
+            return
+        self.read(f)
 
     def __getitem__(self, key):
         return self.cnfg['default'][key]
@@ -214,7 +215,9 @@ class DefaultConfig:
         return self.cnfg.options('default').__iter__()
 
     def read(self, f):
-        return self.cnfg.read(f)
+        if not os.path.isfile(f):
+            raise FileNotFoundError('Configuration file not found: {0}'.format(f))
+        self.cnfg.read(f)
 
     def keyword_specified(self, key):
         return key in self and self[key] is not None

@@ -67,8 +67,13 @@ Revision history
 """
 
 import os
+import time
 import warnings
 import glob
+
+from configparser import ConfigParser
+
+from IPython import embed
 
 import numpy
 
@@ -1199,6 +1204,95 @@ class DRPComplete:
         self._write_parameter_list(ostream, index, mode)
         ostream.write('\n')
         ostream.close()
+
+    def write_config(self, ofile, plate=None, ifudesign=None, index=None, sres_ext=None,
+                     sres_pre=None, sres_fill=None, covar_ext=None, reread=False, overwrite=True):
+        """
+        Write a config file with the data used to instantiate a
+        :class:`mangadap.datacube.manga.MaNGADataCube` datacube for
+        analysis.
+
+        Args: 
+            ofile (:obj:`str`):
+                Output file name.
+            plate (:obj:`int`, optional):
+                Plate number.
+            ifudesign (:obj:`int`, optional):
+                IFU design.
+            index (:obj:`int`, optional):
+                Index of the row in :attr:`data` with the data to
+                return.
+            sres_ext (:obj:`str`, optional):
+                The base extension name to use when constructing the
+                spectral resolution vectors for the MaNGA datacubes.
+                See
+                :func:`mangadap.datacube.manga.MaNGADataCube.spectral_resolution`.
+            sres_pre (:obj:`bool`, optional):
+                Read the pre-pixelized version of the spectral
+                resolution, instead of the post-pixelized version.
+            sres_fill (:obj:`bool`, optional):
+                Fill masked spectral-resolution data by simple linear
+                interpolation.
+            covar_ext (:obj:`str`, optional):
+                Extension in the MaNGA DRP CUBE file to use as the
+                single spatial correlation matrix for all wavelength
+                channels.
+            reread (:obj:`bool`, optional):
+                Force the database to be re-read
+            overwrite (:obj:`bool`, optional):
+                Overwrite any existing parameter file
+
+        Raises:
+            IOError:
+                Raised if the parameter file already exists and
+                clobber is False.
+            ValueError:
+                Raised if
+                    - the row with the data is unknown because either
+                      ``index`` is not defined or one or both of
+                      ``plate`` and ``ifudesign`` is not defined.
+                    - ``index`` does not exist in the data array.
+
+        """
+        if not self._confirm_access(reread=reread):
+            raise IOError('Could not access database!')
+
+        if os.path.exists(ofile) and not overwrite:
+            raise FileExistsError('Configuration file already exists; to overwrite, set '
+                                  'overwrite=True.')
+
+        if (plate is None or ifudesign is None) and index is None:
+            raise ValueError('Must provide plate and ifudesign or row index!')
+
+        if index is None:
+            index = self.entry_index(plate, ifudesign, reread=reread)
+        elif index >= self.nobs:
+            raise ValueError('Selected row index does not exist')
+
+        # Build the configuration data
+        cfg = ConfigParser(allow_no_value=True)
+        cfg['default'] = {'drpver': self.drpver,
+                          'redux_path': self.redux_path,
+                          'plate': str(self['PLATE'][index]),
+                          'ifu': str(self['IFUDESIGN'][index]),
+                          'log': str(True),
+                          'sres_ext': sres_ext,
+                          'sres_pre': sres_pre,
+                          'sres_fill': sres_fill,
+                          'covar_ext': covar_ext,
+                           'z': '{0:.7e}'.format(self['VEL'][index]
+                                                    / astropy.constants.c.to('km/s').value),
+                           'vdisp': '{0:.7e}'.format(self['VDISP'][index]),
+                           'ell': '{0:.7e}'.format(self['ELL'][index]),
+                           'pa': '{0:.7e}'.format(self['PA'][index]),
+                           'reff': '{0:.7e}'.format(self['REFF'][index])}
+
+        # Write the configuration file
+        with open(ofile, 'w') as f:
+            f.write('# Auto-generated configuration file\n')
+            f.write('# {0}\n'.format(time.strftime("%a %d %b %Y %H:%M:%S",time.localtime())))
+            f.write('\n')
+            cfg.write(f)
 
     def entry_index(self, plate, ifudesign, reread=False):
         """

@@ -9,7 +9,7 @@ from astropy.io import fits
 from mangadap.proc.reductionassessments import available_reduction_assessments
 from mangadap.util.covariance import Covariance
 from mangadap.datacube import MaNGADataCube
-from mangadap.tests.util import remote_data_file, requires_remote
+from mangadap.tests.util import test_data_file, remote_data_file, requires_remote
 
 import warnings
 warnings.simplefilter("ignore", UserWarning)
@@ -170,6 +170,13 @@ def test_read_lin():
     assert not cube.log, 'Wavelength sampling should be linear'
     assert numpy.isclose(numpy.std(numpy.diff(cube.wave)), 0.), \
                 'Wavelength sampling should be linear'
+
+
+@requires_remote
+def test_from_config():
+    cube = MaNGADataCube.from_config(test_data_file('datacube.ini'))
+    assert cube.meta['z'] == 0.0293823, 'Bad config file read'
+    assert cube.meta['ell'] == 0.110844, 'Bad config file read'
 
 
 @requires_remote
