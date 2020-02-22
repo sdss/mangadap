@@ -1280,12 +1280,12 @@ class DRPComplete:
                           'sres_pre': sres_pre,
                           'sres_fill': sres_fill,
                           'covar_ext': covar_ext,
-                           'z': '{0:.7e}'.format(self['VEL'][index]
+                          'z': '{0:.7e}'.format(self['VEL'][index]
                                                     / astropy.constants.c.to('km/s').value),
-                           'vdisp': '{0:.7e}'.format(self['VDISP'][index]),
-                           'ell': '{0:.7e}'.format(self['ELL'][index]),
-                           'pa': '{0:.7e}'.format(self['PA'][index]),
-                           'reff': '{0:.7e}'.format(self['REFF'][index])}
+                          'vdisp': '{0:.7e}'.format(self['VDISP'][index]),
+                          'ell': '{0:.7e}'.format(self['ELL'][index]),
+                          'pa': '{0:.7e}'.format(self['PA'][index]),
+                          'reff': '{0:.7e}'.format(self['REFF'][index])}
 
         # Write the configuration file
         with open(ofile, 'w') as f:
