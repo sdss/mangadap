@@ -1206,7 +1206,7 @@ class DRPComplete:
         ostream.close()
 
     def write_config(self, ofile, plate=None, ifudesign=None, index=None, sres_ext=None,
-                     sres_pre=None, sres_fill=None, covar_ext=None, reread=False, overwrite=True):
+                     sres_fill=None, covar_ext=None, reread=False, overwrite=True):
         """
         Write a config file with the data used to instantiate a
         :class:`mangadap.datacube.manga.MaNGADataCube` datacube for
@@ -1223,13 +1223,9 @@ class DRPComplete:
                 Index of the row in :attr:`data` with the data to
                 return.
             sres_ext (:obj:`str`, optional):
-                The base extension name to use when constructing the
-                spectral resolution vectors for the MaNGA datacubes.
-                See
+                The extension to use when constructing the spectral
+                resolution vectors for the MaNGA datacubes. See
                 :func:`mangadap.datacube.manga.MaNGADataCube.spectral_resolution`.
-            sres_pre (:obj:`bool`, optional):
-                Read the pre-pixelized version of the spectral
-                resolution, instead of the post-pixelized version.
             sres_fill (:obj:`bool`, optional):
                 Fill masked spectral-resolution data by simple linear
                 interpolation.
@@ -1269,9 +1265,9 @@ class DRPComplete:
                                    z=self['VEL'][index]/astropy.constants.c.to('km/s').value,
                                    vdisp=self['VDISP'][index], ell=self['ELL'][index],
                                    pa=self['PA'][index], reff=self['REFF'][index],
-                                   sres_ext=sres_ext, sres_pre=sres_pre, sres_fill=sres_fill,
-                                   covar_ext=covar_ext, drpver=self.drpver,
-                                   redux_path=self.redux_path, overwrite=overwrite)
+                                   sres_ext=sres_ext, sres_fill=sres_fill, covar_ext=covar_ext,
+                                   drpver=self.drpver, redux_path=self.redux_path,
+                                   overwrite=overwrite)
 
     def entry_index(self, plate, ifudesign, reread=False):
         """

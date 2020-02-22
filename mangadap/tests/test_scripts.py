@@ -170,6 +170,3 @@ def test_status():
 def test_run():
     assert script_help_okay('rundap'), 'Basic help call failed'
 
-if __name__ == '__main__':
-    test_write_dap_config_drpall()
-

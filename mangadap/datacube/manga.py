@@ -72,13 +72,8 @@ class MaNGADataCube(DataCube):
             the DAP modules will issue a warning and continue by
             assuming ``reff=1``.
         sres_ext (:obj:`str`, optional):
-            The base extension name to use when constructing the
-            spectral resolution vectors. See
-            :func:`spectral_resolution`. Should be either 'SPECRES'
-            or 'DISP'.
-        sres_pre (:obj:`bool`, optional):
-            Read the pre-pixelized version of the spectral
-            resolution, instead of the post-pixelized version.
+            The extension to use when constructing the spectral
+            resolution vectors. See :func:`spectral_resolution`.
         sres_fill (:obj:`bool`, optional):
             Fill masked values by interpolation. Default is to leave
             masked pixels in returned array.
@@ -89,8 +84,8 @@ class MaNGADataCube(DataCube):
             arbitrary wavelength channel using the RSS file, see
             :func:`mangadap.datacube.datacube.DataCube.covariance_matrix`.
     """
-    def __init__(self, ifile, z=None, vdisp=None, ell=None, pa=None, reff=None, sres_ext='DISP',
-                 sres_pre=True, sres_fill=True, covar_ext=None):
+    def __init__(self, ifile, z=None, vdisp=None, ell=None, pa=None, reff=None, sres_ext=None,
+                 sres_fill=True, covar_ext=None):
 
         if not os.path.isfile(ifile):
             raise FileNotFoundError('File does not exist: {0}'.format(ifile))
@@ -132,11 +127,7 @@ class MaNGADataCube(DataCube):
             # vectors were used so that the same vectors are read from
             # the RSS file, if/when it is loaded.
             self.sres_ext, sres = MaNGADataCube.spectral_resolution(hdu, ext=sres_ext,
-                                                                    pre=sres_pre, fill=sres_fill)
-            self.sres_pre = sres_pre
-            if self.sres_pre:
-                # Remove the pre prefix
-                self.sres_ext = self.sres_ext[3:]
+                                                                    fill=sres_fill)
             self.sres_fill = sres_fill
             sres = sres.filled(0.0)
 
@@ -169,42 +160,41 @@ class MaNGADataCube(DataCube):
                           'find paired RSS file if requested.')
 
     @staticmethod
-    def spectral_resolution_extension(hdu, ext=None, pre=False):
+    def spectral_resolution_extension(hdu, ext=None):
         """
         Determine the spectral resolution channel to use.
 
-        Precedence is to use the DISP extension if it exists, and the
-        SPECRES extension otherwise.
+        Precedence follows this order: ``PREDISP``, ``PRESPECRES``,
+        ``DISP``, ``SPECRES``.
 
         Args:
             hdu (`astropy.io.fits.HDUList`):
                 The opened MaNGA DRP file.
             ext (:obj:`str`, optional):
-                Specify the extension with the spectral estimate to use.
-                Should be in [ None, 'DISP', 'SPECRES'].  The default is
-                None, which means it will return, in order of
-                precedence, the data in 'DISP', 'SPECRES', or a None
-                value if neither are present.
-            pre (:obj:`bool`, optional):
-                Read the pre-pixelized version of the spectral
-                resolution, instead of the post-pixelized version.  This
-                prepends 'PRE' to the extension name.
+                Specify the extension with the spectral estimate to
+                use. Should be in None, ``PREDISP``, ``PRESPECRES``,
+                ``DISP``, or ``SPECRES``. The default is None, which
+                means it will return the extension found first in the
+                order above. None is returned if none of the
+                extensions are present.
 
         Returns:
             :obj:`str`: The name of the preferred extension to use.
         """
-        sres_ext = [h.name for h in hdu if h.name in ['PREDISP', 'DISP', 'PRESPECRES', 'SPECRES']]
+        available = [h.name for h in hdu if h.name in ['PREDISP', 'DISP', 'PRESPECRES', 'SPECRES']]
         _ext = ext
         if ext is None:
-            _ext = 'PREDISP' if pre else 'DISP'
-            if _ext not in sres_ext:
-                _ext = 'PRESPECRES' if pre else 'SPECRES'
-        elif pre:
-            _ext = 'PRE{0}'.format(_ext)
-        return None if _ext not in sres_ext else _ext
+            _ext = 'PREDISP'
+            if _ext not in available:
+                _ext = 'PRESPECRES'
+            if _ext not in available:
+                _ext = 'DISP'
+            if _ext not in available:
+                _ext = 'SPECRES'
+        return None if _ext not in available else _ext
 
     @staticmethod
-    def spectral_resolution(hdu, ext=None, pre=False, fill=False, median=False):
+    def spectral_resolution(hdu, ext=None, fill=False, median=False):
         """
         Return the spectral resolution at each spatial and spectral
         position.
@@ -216,15 +206,8 @@ class MaNGADataCube(DataCube):
             hdu (`astropy.io.fits.HDUList`):
                 The opened MaNGA DRP file.
             ext (:obj:`str`, optional):
-                Specify the extension with the spectral estimate to use.
-                Should be in [ None, 'DISP', 'SPECRES'].  The default is
-                None, which means it will return, in order of
-                precedence, the data in 'DISP', 'SPECRES', or a None
-                value if neither are present.
-            pre (:obj:`bool`, optional):
-                Read the pre-pixelized version of the spectral
-                resolution, instead of the post-pixelized version.  This
-                prepends 'PRE' to the extension name.
+                Specify the extension with the spectral estimate to
+                use. See :func:`spectral_resolution_extension`.
             fill (:obj:`bool`, optional):
                 Fill masked values by interpolation.  Default is to
                 leave masked pixels in returned array.
@@ -247,7 +230,7 @@ class MaNGADataCube(DataCube):
             \lambda/\Delta\lambda`) pulled from the DRP file.
         """
         # Determine which spectral resolution element to use
-        _ext = MaNGADataCube.spectral_resolution_extension(hdu, ext=ext, pre=pre)
+        _ext = MaNGADataCube.spectral_resolution_extension(hdu, ext=ext)
         # If no valid extension, raise an exception
         if ext is None and _ext is None:
             raise ValueError('No valid spectral resolution extension.')
@@ -382,7 +365,6 @@ class MaNGADataCube(DataCube):
         # TODO: Come up with a better way to do this
         kwargs = {}
         kwargs['sres_ext'] = cfg.get('sres_ext')
-        kwargs['sres_pre'] = cfg.getbool('sres_pre', default=True)
         kwargs['sres_fill'] = cfg.getbool('sres_fill', default=True)
         kwargs['covar_ext'] = cfg.get('covar_ext')
         kwargs['z'] = cfg.getfloat('z')
@@ -396,8 +378,8 @@ class MaNGADataCube(DataCube):
 
     @staticmethod
     def write_config(ofile, plate, ifudesign, log=True, z=None, vdisp=None, ell=None, pa=None,
-                     reff=None, sres_ext=None, sres_pre=None, sres_fill=None, covar_ext=None,
-                     drpver=None, redux_path=None, directory_path=None, overwrite=True):
+                     reff=None, sres_ext=None, sres_fill=None, covar_ext=None, drpver=None,
+                     redux_path=None, directory_path=None, overwrite=True):
         """
         Write the configuration file that can be used to instantiate
         the datacube.
@@ -434,13 +416,8 @@ class MaNGADataCube(DataCube):
                 some of the DAP modules will issue a warning and
                 continue by assuming ``reff=1``.
             sres_ext (:obj:`str`, optional):
-                The base extension name to use when constructing the
-                spectral resolution vectors. See
-                :func:`spectral_resolution`. Should be either
-                'SPECRES' or 'DISP'.
-            sres_pre (:obj:`bool`, optional):
-                Read the pre-pixelized version of the spectral
-                resolution, instead of the post-pixelized version.
+                The extension to use when constructing the spectral
+                resolution vectors. See :func:`spectral_resolution`.
             sres_fill (:obj:`bool`, optional):
                 Fill masked values by interpolation. Default is to
                 leave masked pixels in returned array.
@@ -481,7 +458,6 @@ class MaNGADataCube(DataCube):
                           'ifu': str(ifudesign),
                           'log': str(log),
                           'sres_ext': sres_ext,
-                          'sres_pre': sres_pre,
                           'sres_fill': sres_fill,
                           'covar_ext': covar_ext,
                           'z': None if z is None else '{0:.7e}'.format(z),
@@ -526,8 +502,7 @@ class MaNGADataCube(DataCube):
             warnings.warn('Could not find: {0}'.format(rss_file_path))
             raise FileNotFoundError('Could not find RSS file.')
 
-        self.rss = MaNGARSS(rss_file_path, sres_ext=self.sres_ext, sres_pre=self.sres_pre,
-                            sres_fill=self.sres_fill)
+        self.rss = MaNGARSS(rss_file_path, sres_ext=self.sres_ext, sres_fill=self.sres_fill)
 
     @staticmethod
     def build_file_name(plate, ifudesign, log=True):

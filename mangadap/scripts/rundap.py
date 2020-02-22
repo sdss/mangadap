@@ -116,6 +116,8 @@ class rundap:
 
         - Have :func:`_read_arg` return the boolean for :attr:`version`
           instead of keeping it as an attribute.
+        - Ditch ``console`` and :func:`_read_arg` in favor of the
+          more typical ``parser`` and ``main`` pairing.
 
     Args:
         clobber (:obj:`bool`, optional):
@@ -171,6 +173,20 @@ class rundap:
             plate/ifudesign/mode lists to create the full list of DRP
             files to analyze.  See
             :func:`mangadap.drpfits.drpfits_list`.
+        list_file (:obj:`str`, optional):
+            File with a list of plates and ifudesigns to analyze. The
+            file must have two columns, with one plate-ifu
+            combination per file row.
+        sres_ext (:obj:`str`, optional):
+            The extension to use when constructing the
+            spectral resolution vectors for the MaNGA datacubes. See
+            :func:`mangadap.datacube.manga.MaNGADataCube.spectral_resolution`.
+        sres_fill (:obj:`bool`, optional):
+            Fill masked spectral-resolution data by simple linear
+            interpolation.
+        covar_ext (:obj:`str`, optional):
+            Extension in the MaNGA DRP CUBE file to use as the single
+            spatial correlation matrix for all wavelength channels.
         use_platetargets (:obj:`bool`, optional): 
             Flag to use the plateTargets files, instead of the DRPall
             file, as the source of the input data need by the DAP.
@@ -292,8 +308,9 @@ class rundap:
     def __init__(self, clobber=None, console=None, quiet=False, print_version=False,
                  strictver=True, mplver=None, redux_path=None, dapver=None, analysis_path=None,
                  plan_file=None, platelist=None, ifudesignlist=None, combinatorics=False,
-                 list_file=None, use_platetargets=False, platetargets=None, on_disk=False,
-                 log=False, dapproc=True, pltifu_plots=True, post_process=False, post_plots=False,
+                 list_file=None, sres_ext=None, sres_fill=None, covar_ext=None,
+                 use_platetargets=False, platetargets=None, on_disk=False, log=False,
+                 dapproc=True, pltifu_plots=True, post_process=False, post_plots=False,
                  report_progress=False, verbose=0, label='mangadap', nodes=1, cpus=None, qos=None,
                  umask='0027', walltime='240:00:00', hard=True, create=False, submit=False,
                  queue=None):
@@ -322,6 +339,9 @@ class rundap:
                 warnings.warn('Provided file with list of files supercedes other input.')
             self.platelist, self.ifudesignlist = self._read_file_list(list_file)
         self.combinatorics = combinatorics
+        self.sres_ext = sres_ext
+        self.sres_fill = sres_fill
+        self.covar_ext = covar_ext
 
         # Select if plateTargets files should be used to generate the
         # DRPComplete database, and possibly provide them directly 
@@ -580,10 +600,21 @@ class rundap:
         parser.add_argument("--ifudesignlist", type=str, help="set list of ifus to reduce",
                             default=None)
         parser.add_argument("--list_file", type=str,
-                            help="a file with the list of plates, ifudesigns, and modes to analyze",
+                            help='A file with the list of plates and ifudesigns to analyze',
                             default=None)
         parser.add_argument("--combinatorics", help="force execution of all permutations of the "
                             "provided lists", action="store_true", default=False)
+
+        parser.add_argument('--sres_ext', type=str, default=None,
+                            help='Spectral resolution extension to use.  Default set by '
+                                 'MaNGADataCube class.')
+        parser.add_argument('--sres_fill', type=str, default=None,
+                            help='If present, use interpolation to fill any masked pixels in the '
+                                 'spectral resolution vectors. Default set by MaNGADataCube '
+                                 'class.')
+        parser.add_argument('--covar_ext', type=str, default=None,
+                            help='Use this extension to define the spatial correlation matrix.  '
+                                 'Default set by MaNGADataCube class.')
 
         parser.add_argument("--use_plttargets", action="store_true", default=False,
                             help="Use platetargets files instead of the DRPall file to "
@@ -683,6 +714,9 @@ class rundap:
             self.platelist, self.ifudesignlist = self._read_file_list(arg.list_file)
 
         self.combinatorics = arg.combinatorics
+        self.sres_ext = arg.sres_ext
+        self.sres_fill = arg.sres_fill
+        self.covar_ext = arg.covar_ext
    
         # Set the plateTargets and NSA catalog path
         if arg.plttargets is not None:

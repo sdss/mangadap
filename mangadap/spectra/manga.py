@@ -43,18 +43,13 @@ class MaNGARSS(RowStackedSpectra):
             is used to parse the plate, ifudesign, and whether or not
             the spectra are binned logarithmically in wavelength.
         sres_ext (:obj:`str`, optional):
-            The base extension name to use when constructing the
-            spectral resolution vectors. See
-            :func:`spectral_resolution`. Should be either 'SPECRES'
-            or 'DISP'.
-        sres_pre (:obj:`bool`, optional):
-            Read the pre-pixelized version of the spectral
-            resolution, instead of the post-pixelized version.
+            The extension to use when constructing the spectral
+            resolution vectors. See :func:`spectral_resolution`.
         sres_fill (:obj:`bool`, optional):
             Fill masked values by interpolation. Default is to leave
             masked pixels in returned array.
     """
-    def __init__(self, ifile, sres_ext='DISP', sres_pre=True, sres_fill=True):
+    def __init__(self, ifile, sres_ext=None, sres_fill=True):
 
         if not os.path.isfile(ifile):
             raise FileNotFoundError('File does not exist: {0}'.format(ifile))
@@ -80,12 +75,7 @@ class MaNGARSS(RowStackedSpectra):
             print('Reading MaNGA row-stacked spectra data ...', end='\r')
             self.prihdr = hdu[0].header
             self.fluxhdr = hdu['FLUX'].header
-            self.sres_ext, sres = MaNGARSS.spectral_resolution(hdu, ext=sres_ext, pre=sres_pre,
-                                                               fill=sres_fill)
-            self.sres_pre = sres_pre
-            if self.sres_pre:
-                # Remove the pre prefix
-                self.sres_ext = self.sres_ext[3:]
+            self.sres_ext, sres = MaNGARSS.spectral_resolution(hdu, ext=sres_ext, fill=sres_fill)
             self.sres_fill = sres_fill
             sres = sres.filled(0.0)
 
@@ -114,42 +104,41 @@ class MaNGARSS(RowStackedSpectra):
                           'find paired RSS file if requested.')
 
     @staticmethod
-    def spectral_resolution_extension(hdu, ext=None, pre=False):
+    def spectral_resolution_extension(hdu, ext=None):
         """
         Determine the spectral resolution channel to use.
 
-        Precedence is to use the DISP extension if it exists, and the
-        SPECRES extension otherwise.
+        Precedence follows this order: ``PREDISP``, ``PRESPECRES``,
+        ``DISP``, ``SPECRES``.
 
         Args:
             hdu (`astropy.io.fits.HDUList`):
                 The opened MaNGA DRP file.
             ext (:obj:`str`, optional):
-                Specify the extension with the spectral estimate to use.
-                Should be in [ None, 'DISP', 'SPECRES'].  The default is
-                None, which means it will return, in order of
-                precedence, the data in 'DISP', 'SPECRES', or a None
-                value if neither are present.
-            pre (:obj:`bool`, optional):
-                Read the pre-pixelized version of the spectral
-                resolution, instead of the post-pixelized version.  This
-                prepends 'PRE' to the extension name.
+                Specify the extension with the spectral estimate to
+                use. Should be in None, ``PREDISP``, ``PRESPECRES``,
+                ``DISP``, or ``SPECRES``. The default is None, which
+                means it will return the extension found first in the
+                order above. None is returned if none of the
+                extensions are present.
 
         Returns:
             :obj:`str`: The name of the preferred extension to use.
         """
-        sres_ext = [h.name for h in hdu if h.name in ['PREDISP', 'DISP', 'PRESPECRES', 'SPECRES']]
+        available = [h.name for h in hdu if h.name in ['PREDISP', 'DISP', 'PRESPECRES', 'SPECRES']]
         _ext = ext
         if ext is None:
-            _ext = 'PREDISP' if pre else 'DISP'
-            if _ext not in sres_ext:
-                _ext = 'PRESPECRES' if pre else 'SPECRES'
-        elif pre:
-            _ext = 'PRE{0}'.format(_ext)
-        return None if _ext not in sres_ext else _ext
+            _ext = 'PREDISP'
+            if _ext not in available:
+                _ext = 'PRESPECRES'
+            if _ext not in available:
+                _ext = 'DISP'
+            if _ext not in available:
+                _ext = 'SPECRES'
+        return None if _ext not in available else _ext
 
     @staticmethod
-    def spectral_resolution(hdu, ext=None, pre=False, fill=False, median=False):
+    def spectral_resolution(hdu, ext=None, fill=False, median=False):
         """
         Return the spectral resolution for all spectra.
 
@@ -160,15 +149,8 @@ class MaNGARSS(RowStackedSpectra):
             hdu (`astropy.io.fits.HDUList`):
                 The opened MaNGA DRP file.
             ext (:obj:`str`, optional):
-                Specify the extension with the spectral estimate to use.
-                Should be in [ None, 'DISP', 'SPECRES'].  The default is
-                None, which means it will return, in order of
-                precedence, the data in 'DISP', 'SPECRES', or a None
-                value if neither are present.
-            pre (:obj:`bool`, optional):
-                Read the pre-pixelized version of the spectral
-                resolution, instead of the post-pixelized version.  This
-                prepends 'PRE' to the extension name.
+                Specify the extension with the spectral estimate to
+                use. See :func:`spectral_resolution_extension`.
             fill (:obj:`bool`, optional):
                 Fill masked values by interpolation.  Default is to
                 leave masked pixels in returned array.
@@ -191,7 +173,7 @@ class MaNGARSS(RowStackedSpectra):
             \lambda/\Delta\lambda`) pulled from the DRP file.
         """
         # Determine which spectral resolution element to use
-        _ext = MaNGARSS.spectral_resolution_extension(hdu, ext=ext, pre=pre)
+        _ext = MaNGARSS.spectral_resolution_extension(hdu, ext=ext)
         # If no valid extension, raise an exception
         if ext is None and _ext is None:
             raise ValueError('No valid spectral resolution extension.')

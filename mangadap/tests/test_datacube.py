@@ -9,7 +9,7 @@ from astropy.io import fits
 from mangadap.proc.reductionassessments import available_reduction_assessments
 from mangadap.util.covariance import Covariance
 from mangadap.datacube import MaNGADataCube
-from mangadap.tests.util import test_data_file, remote_data_file, requires_remote
+from mangadap.tests.util import data_test_file, remote_data_file, requires_remote
 
 import warnings
 warnings.simplefilter("ignore", UserWarning)
@@ -20,12 +20,10 @@ warnings.simplefilter("ignore", RuntimeWarning)
 def test_sres_ext():
     file = remote_data_file(filename=MaNGADataCube.build_file_name(7815, 3702, log=True))
     hdu = fits.open(file)
-    assert MaNGADataCube.spectral_resolution_extension(hdu) == 'DISP', \
+    assert MaNGADataCube.spectral_resolution_extension(hdu) == 'PREDISP', \
                 'Bad spectral resolution extension selection'
-    assert MaNGADataCube.spectral_resolution_extension(hdu, pre=True) == 'PREDISP', \
+    assert MaNGADataCube.spectral_resolution_extension(hdu, ext='SPECRES') == 'SPECRES', \
                 'Bad spectral resolution extension selection'
-    assert MaNGADataCube.spectral_resolution_extension(hdu, ext='SPECRES', pre=True) \
-                == 'PRESPECRES', 'Bad spectral resolution extension selection'
     assert MaNGADataCube.spectral_resolution_extension(hdu, ext='junk') is None, \
                 'Should return None for a bad extension name.'
 
@@ -41,7 +39,7 @@ def test_read():
     assert cube.shape[:2] == cube.spatial_shape, 'Spatial shape should be first two axes.'
     assert cube.nspec == numpy.prod(cube.spatial_shape), 'Definition of number of spectra changed.'
     assert cube.sres is not None, 'Spectral resolution data was not constructed.'
-    assert cube.sres_ext == 'DISP' and cube.sres_pre, 'Should default to PREDISP extension.'
+    assert cube.sres_ext == 'PREDISP', 'Should default to PREDISP extension.'
     assert abs(cube.pixelscale - cube._get_pixelscale()) < 1e-6, 'Bad match in pixel scale.'
     # NOTE: This is worse than it should be because of how the WCS in MaNGA is defined.
     assert numpy.all(numpy.absolute(cube.wave - cube._get_wavelength_vector(cube.nwave)) < 2e-4), \
@@ -174,7 +172,7 @@ def test_read_lin():
 
 @requires_remote
 def test_from_config():
-    cube = MaNGADataCube.from_config(test_data_file('datacube.ini'))
+    cube = MaNGADataCube.from_config(data_test_file('datacube.ini'))
     assert cube.meta['z'] == 0.0293823, 'Bad config file read'
     assert cube.meta['ell'] == 0.110844, 'Bad config file read'
 
