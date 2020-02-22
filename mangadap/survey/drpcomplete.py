@@ -71,7 +71,6 @@ import time
 import warnings
 import glob
 
-from configparser import ConfigParser
 
 from IPython import embed
 
@@ -83,6 +82,7 @@ import astropy.constants
 from pydl.pydlutils.yanny import yanny
 
 
+from ..datacube import MaNGADataCube
 from ..config import defaults
 from .. import drpfits
 from ..util.parser import arginp_to_list, list_to_csl_string, parse_drp_file_name
@@ -1257,10 +1257,6 @@ class DRPComplete:
         if not self._confirm_access(reread=reread):
             raise IOError('Could not access database!')
 
-        if os.path.exists(ofile) and not overwrite:
-            raise FileExistsError('Configuration file already exists; to overwrite, set '
-                                  'overwrite=True.')
-
         if (plate is None or ifudesign is None) and index is None:
             raise ValueError('Must provide plate and ifudesign or row index!')
 
@@ -1269,30 +1265,13 @@ class DRPComplete:
         elif index >= self.nobs:
             raise ValueError('Selected row index does not exist')
 
-        # Build the configuration data
-        cfg = ConfigParser(allow_no_value=True)
-        cfg['default'] = {'drpver': self.drpver,
-                          'redux_path': self.redux_path,
-                          'plate': str(self['PLATE'][index]),
-                          'ifu': str(self['IFUDESIGN'][index]),
-                          'log': str(True),
-                          'sres_ext': sres_ext,
-                          'sres_pre': sres_pre,
-                          'sres_fill': sres_fill,
-                          'covar_ext': covar_ext,
-                          'z': '{0:.7e}'.format(self['VEL'][index]
-                                                    / astropy.constants.c.to('km/s').value),
-                          'vdisp': '{0:.7e}'.format(self['VDISP'][index]),
-                          'ell': '{0:.7e}'.format(self['ELL'][index]),
-                          'pa': '{0:.7e}'.format(self['PA'][index]),
-                          'reff': '{0:.7e}'.format(self['REFF'][index])}
-
-        # Write the configuration file
-        with open(ofile, 'w') as f:
-            f.write('# Auto-generated configuration file\n')
-            f.write('# {0}\n'.format(time.strftime("%a %d %b %Y %H:%M:%S",time.localtime())))
-            f.write('\n')
-            cfg.write(f)
+        MaNGADataCube.write_config(ofile, self['PLATE'][index], self['IFUDESIGN'][index], log=True,
+                                   z=self['VEL'][index]/astropy.constants.c.to('km/s').value,
+                                   vdisp=self['VDISP'][index], ell=self['ELL'][index],
+                                   pa=self['PA'][index], reff=self['REFF'][index],
+                                   sres_ext=sres_ext, sres_pre=sres_pre, sres_fill=sres_fill,
+                                   covar_ext=covar_ext, drpver=self.drpver,
+                                   redux_path=self.redux_path, overwrite=overwrite)
 
     def entry_index(self, plate, ifudesign, reread=False):
         """

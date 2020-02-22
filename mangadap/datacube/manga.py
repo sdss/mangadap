@@ -11,8 +11,11 @@ Implement the derived class for MaNGA datacubes.
 .. include common links, assuming primary doc root is up one directory
 .. include:: ../links.rst
 """
+import time
 import os
 import warnings
+
+from configparser import ConfigParser
 
 from IPython import embed
 
@@ -40,12 +43,34 @@ class MaNGADataCube(DataCube):
     See :func:`from_plateifu` to instantiate using the plate and ifu
     numbers.
 
+    Note that ``z``, ``vdisp``, ``ell``, ``pa``, and ``reff`` are
+    saved to the :attr:`meta` dictionary.
+
     Args:
         ifile (:obj:`str`):
             The file with the MaNGA datacube. The name is expected to
             follow the nominal naming convention, which is used to
             parse the plate, ifudesign, and whether or not the
             datacube has been binned logarithmically in wavelength.
+        z (:obj:`float`, optional):
+            Estimated bulk redshift. If None, some of the DAP
+            analysis modules will fault.
+        vdisp (:obj:`float`, optional):
+            Estimated velocity dispersion. If None, some of the DAP
+            analysis modules will assume an initial guess of 100
+            km/s.
+        ell (:obj:`float`, optional):
+            Characteristic isophotal ellipticity (1-b/a). If None,
+            some of the DAP modules will issue a warning and continue
+            by assuming ``ell=0``.
+        pa (:obj:`float`, optional):
+            Characteristic isophotal position angle (through E from
+            N). If None, some of the DAP modules will issue a warning
+            and continue by assuming ``pa=0``.
+        reff (:obj:`float`, optional):
+            Effective (half-light) radius in arcsec. If None, some of
+            the DAP modules will issue a warning and continue by
+            assuming ``reff=1``.
         sres_ext (:obj:`str`, optional):
             The base extension name to use when constructing the
             spectral resolution vectors. See
@@ -64,8 +89,8 @@ class MaNGADataCube(DataCube):
             arbitrary wavelength channel using the RSS file, see
             :func:`mangadap.datacube.datacube.DataCube.covariance_matrix`.
     """
-    def __init__(self, ifile, sres_ext='DISP', sres_pre=True, sres_fill=True, covar_ext=None,
-                 z=None, vdisp=None, ell=None, pa=None, reff=None):
+    def __init__(self, ifile, z=None, vdisp=None, ell=None, pa=None, reff=None, sres_ext='DISP',
+                 sres_pre=True, sres_fill=True, covar_ext=None):
 
         if not os.path.isfile(ifile):
             raise FileNotFoundError('File does not exist: {0}'.format(ifile))
@@ -368,6 +393,109 @@ class MaNGADataCube(DataCube):
 
         return cls.from_plateifu(plate, ifu, log=log, drpver=_drpver, redux_path=_redux_path,
                                  directory_path=_directory_path, **kwargs)
+
+    @staticmethod
+    def write_config(ofile, plate, ifudesign, log=True, z=None, vdisp=None, ell=None, pa=None,
+                     reff=None, sres_ext=None, sres_pre=None, sres_fill=None, covar_ext=None,
+                     drpver=None, redux_path=None, directory_path=None, overwrite=True):
+        """
+        Write the configuration file that can be used to instantiate
+        the datacube.
+
+        See :func:`from_config`.
+
+        Args:
+            ofile (:obj:`str`, optional):
+                Name of the configuration file.
+            plate (:obj:`int`):
+                Plate number
+            ifudesign (:obj:`int`):
+                IFU design
+            log (:obj:`bool`, optional):
+                Use the datacube that is logarithmically binned in
+                wavelength.
+            z (:obj:`float`, optional):
+                Estimated bulk redshift. If None, some of the DAP
+                analysis modules will fault.
+            vdisp (:obj:`float`, optional):
+                Estimated velocity dispersion. If None, some of the
+                DAP analysis modules will assume an initial guess of
+                100 km/s.
+            ell (:obj:`float`, optional):
+                Characteristic isophotal ellipticity (1-b/a). If
+                None, some of the DAP modules will issue a warning
+                and continue by assuming ``ell=0``.
+            pa (:obj:`float`, optional):
+                Characteristic isophotal position angle (through E
+                from N). If None, some of the DAP modules will issue
+                a warning and continue by assuming ``pa=0``.
+            reff (:obj:`float`, optional):
+                Effective (half-light) radius in arcsec. If None,
+                some of the DAP modules will issue a warning and
+                continue by assuming ``reff=1``.
+            sres_ext (:obj:`str`, optional):
+                The base extension name to use when constructing the
+                spectral resolution vectors. See
+                :func:`spectral_resolution`. Should be either
+                'SPECRES' or 'DISP'.
+            sres_pre (:obj:`bool`, optional):
+                Read the pre-pixelized version of the spectral
+                resolution, instead of the post-pixelized version.
+            sres_fill (:obj:`bool`, optional):
+                Fill masked values by interpolation. Default is to
+                leave masked pixels in returned array.
+            covar_ext (:obj:`str`, optional):
+                Extension to use as the single spatial correlation
+                matrix for all wavelength channels, read from the DRP
+                file. For generating the covariance matrix directly
+                for an arbitrary wavelength channel using the RSS
+                file, see
+                :func:`mangadap.datacube.datacube.DataCube.covariance_matrix`.
+            drpver (:obj:`str`, optional):
+                DRP version, which is used to define the default DRP
+                redux path. Default is defined by
+                :func:`mangadap.config.defaults.drp_version`
+            redux_path (:obj:`str`, optional):
+                The path to the top level directory containing the
+                DRP output files for a given DRP version. Default is
+                defined by
+                :func:`mangadap.config.defaults.drp_redux_path`.
+            directory_path (:obj:`str`, optional):
+                The exact path to the DRP file. Default is defined by
+                :func:`mangadap.config.defaults.drp_directory_path`.
+                Providing this ignores anything provided for
+                ``drpver`` or ``redux_path``.
+            overwrite (:obj:`bool`, optional):
+                Overwrite any existing parameter file.
+        """
+        if os.path.exists(ofile) and not overwrite:
+            raise FileExistsError('Configuration file already exists; to overwrite, set '
+                                  'overwrite=True.')
+
+        # Build the configuration data
+        cfg = ConfigParser(allow_no_value=True)
+        cfg['default'] = {'drpver': drpver,
+                          'redux_path': redux_path,
+                          'directory_path': directory_path,
+                          'plate': str(plate),
+                          'ifu': str(ifudesign),
+                          'log': str(log),
+                          'sres_ext': sres_ext,
+                          'sres_pre': sres_pre,
+                          'sres_fill': sres_fill,
+                          'covar_ext': covar_ext,
+                          'z': None if z is None else '{0:.7e}'.format(z),
+                          'vdisp': None if vdisp is None else '{0:.7e}'.format(vdisp),
+                          'ell': None if ell is None else '{0:.7e}'.format(ell),
+                          'pa': None if pa is None else '{0:.7e}'.format(pa),
+                          'reff': None if reff is None else '{0:.7e}'.format(reff)}
+
+        # Write the configuration file
+        with open(ofile, 'w') as f:
+            f.write('# Auto-generated configuration file\n')
+            f.write('# {0}\n'.format(time.strftime("%a %d %b %Y %H:%M:%S",time.localtime())))
+            f.write('\n')
+            cfg.write(f)
 
     # TODO: Include a class method that instantiates from (or wraps a Marvin Cube)
 

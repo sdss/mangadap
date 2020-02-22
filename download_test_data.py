@@ -5,8 +5,7 @@ import tqdm
 import requests
 import netrc
 
-from mangadap.config import defaults
-from mangadap.tests.util import remote_data_files
+from mangadap.tests.util import remote_data_file, remote_data_files, drp_test_version
 
 try:
     NETRC = netrc.netrc()
@@ -54,16 +53,22 @@ def main():
 
     usr, acc, passwd = NETRC.authenticators(HOST)
 
-    version = 'MPL-9'
+    version = drp_test_version
     files = remote_data_files()
     plates = [f.split('-')[1] for f in files]
 
-    local_root = os.path.join(defaults.dap_data_root(), 'remote')
+    local_root = remote_data_file()
 
+    # Get the spectral data
     for plate, f in zip(plates, files):
         url_root = 'https://{0}/sas/mangawork/manga/spectro/redux/{1}/{2}/stack/'.format(
                         HOST, version, plate)
         download_file(url_root, usr, passwd, local_root, f)
+
+    # Get the DRPall file
+    f = 'drpall-{0}.fits'.format(version)
+    url_root = 'https://{0}/sas/mangawork/manga/spectro/redux/{1}/'.format(HOST, version)
+    download_file(url_root, usr, passwd, local_root, f)
 
 
 if __name__ == '__main__':
