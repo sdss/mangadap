@@ -475,9 +475,12 @@ class MaNGADataCube(DataCube):
 
     # TODO: Include a class method that instantiates from (or wraps a Marvin Cube)
 
-    def load_rss(self):
+    def load_rss(self, force=False):
         """
         Try to load the source row-stacked spectra for this datacube.
+
+        If :attr:`rss` is not None, this method does not attempt to
+        reload it, unless ``force`` is True.
 
         The method first looks for the relevant file in the same
         directory with the datacube. If the file is not there, it
@@ -489,7 +492,15 @@ class MaNGADataCube(DataCube):
         Nothing is returned. If successful, the method initializes
         the row-stacked spectra object
         (:class:`mangadap.spectra.manga.MaNGARSS`) to :attr:`rss`.
+
+        Args:
+            force (:obj:`bool`, optional):
+                Reload the row-stacked spectra if :attr:`rss` is not
+                None.
         """
+        if self.rss is not None and not force:
+            return
+
         rss_file = MaNGARSS.build_file_name(self.plate, self.ifudesign, log=self.log)
         rss_file_path = os.path.join(self.directory_path, rss_file)
         if not os.path.isfile(rss_file_path):
@@ -527,6 +538,11 @@ class MaNGADataCube(DataCube):
     def file_path(self):
         """Return the full path to the DRP datacube file."""
         return os.path.join(self.directory_path, self.file)
+
+    @staticmethod
+    def do_not_use_flags():
+        """Return the maskbit names that should not be used."""
+        return ['DONOTUSE', 'FORESTAR']
 
     @staticmethod
     def do_not_fit_flags():
@@ -582,7 +598,7 @@ class MaNGADataCube(DataCube):
                             if output_file is None else output_file
         return _directory_path, _output_file
 
-    def mean_sky_coordinates(self, center_coo=None, offset=None):
+    def mean_sky_coordinates(self, center_coo=None, offset='OBJ'):
         """
         Calculate the sky coordinates for each spaxel.
 

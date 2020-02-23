@@ -66,16 +66,12 @@ def main(args):
         raise TypeError('Defined cube object must subclass from mangadap.datacube.DataCube.')
     #   - Instantiate using either the data cube file directly or a
     #     configuration file
-    cube = UserDataCube(args.cubefile) if args.cfgfile is None \
-                else UserDataCube.from_config(args.cfgfile) 
+    cube = UserDataCube(args.cubefile) if args.config is None \
+                else UserDataCube.from_config(args.config) 
 
     # Read the analysis plan
     analysisplan = AnalysisPlanSet.default() if args.plan is None \
                         else AnalysisPlanSet.from_par_file(args.plan)
-
-    from IPython import embed
-    embed()
-    exit()
 
     # Run the pipeline
     status = manga_dap(cube, analysisplan, dbg=args.dbg, log=args.log, verbose=args.verbose,

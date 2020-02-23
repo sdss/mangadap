@@ -26,6 +26,9 @@ import resource
 import time
 import os
 import warnings
+
+from IPython import embed
+
 import numpy
 
 import astropy.constants
@@ -35,7 +38,8 @@ from mangadap import __version__
 from ..config import defaults
 from ..util.log import init_DAP_logging, module_logging, log_output
 from ..drpfits import DRPFits
-from ..par.obsinput import ObsInputPar
+#from ..par.obsinput import ObsInputPar
+from ..datacube import DataCube
 from ..par.analysisplan import AnalysisPlanSet
 from ..proc.reductionassessments import ReductionAssessment
 from ..proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
@@ -49,38 +53,35 @@ from ..dapfits import construct_maps_file, construct_cube_file
 from ..util.fitsutil import DAPFitsUtil
 from matplotlib import pyplot
 
-def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path=None,
+def manga_dap(cube, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path=None,
               directory_path=None, dapver=None, analysis_path=None):
     r"""
     Main wrapper function for the MaNGA DAP.
 
-    This function is designed to be called once per PLATE-IFUDESIGN as
-    set by the provided :class:`mangadap.par.obsinput.ObsInputPar`
-    instance.  The :class:`mangadap.par.analysisplan.AnalysisPlanSet`
-    instance sets the types of analyses to perform on this observation.
-    Each analysis plan results in a MAPS and model LOGCUBE file.
+    This function is designed to be called once per datacube. The
+    :class:`mangadap.par.analysisplan.AnalysisPlanSet` instance sets
+    the types of analyses to perform on this observation. Each
+    analysis plan results in a MAPS and model LOGCUBE file.
 
-    The procedure is as follows:
-        - Read the DRP fits file specified by `obs`
-        - For each plan in `plan`:
-            - Determine basic assessments of the data, including the S/N
-              and spaxel coordinates.  See
-              :class:`mangadap.proc.reductionassessments.ReductionAssessment`.
-            - Bin the spectra.  See
-              :class:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra`.
-            - Fit the stellar continuum for stellar kinematics.  See
-              :class:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel`.
-            - Measure the emission-line moments.  See
-              :class:`mangadap.proc.emissionlinemoments.EmissionLineMoments`.
-            - Fit parameterized line profiles to the emission lines.
-              See
-              :class:`mangadap.proc.emissionlinemodel.EmissionLineModel`.
-            - Subtract the fitted emission-line models and measure the
-              spectral indices.  See
-              :class:`mangadap.proc.spectralindices.SpectralIndices`.
-            - Construct the primary output files based on the plan
-              results.  See :func:`mangadap.dapfits.construct_maps_file`
-              and :func:`mangadap.dapfits.construct_cube_file`.
+    The procedure is as follows.  For each plan in ``plan``:
+
+        - Determine basic assessments of the data, including the S/N
+          and spaxel coordinates. See
+          :class:`mangadap.proc.reductionassessments.ReductionAssessment`.
+        - Bin the spectra. See
+          :class:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra`.
+        - Fit the stellar continuum for stellar kinematics. See
+          :class:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel`.
+        - Measure the emission-line moments. See
+          :class:`mangadap.proc.emissionlinemoments.EmissionLineMoments`.
+        - Fit parameterized line profiles to the emission lines. See
+          :class:`mangadap.proc.emissionlinemodel.EmissionLineModel`.
+        - Subtract the fitted emission-line models and measure the
+          spectral indices. See
+          :class:`mangadap.proc.spectralindices.SpectralIndices`.
+        - Construct the primary output files based on the plan
+          results. See :func:`mangadap.dapfits.construct_maps_file`
+          and :func:`mangadap.dapfits.construct_cube_file`.
 
     Verbose levels (still under development):
         0. Nothing but errors.
@@ -90,38 +91,44 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
         3. Same as above, with figures.
 
     Args:
-        obs (dict, :class:`mangadap.par.obsinput.ObsInputPar`): Object
-            with the input parameters.
+        cube (:class:`mangadap.datacube.datacube.DataCube`):
+            Datacube to analyze.
         plan (:class:`mangadap.par.analysisplan.AnalysisPlanSet`):
             Object with the analysis plans to implement.
-        dbg (bool) : (**Optional**) Flag to run the DAP in debug mode,
-            see above; default is False.  Limited use; still under
-            development.
-        log (str) : (**Optional**) File name for log output, see above;
-            no log file is produced by default.
-        verbose (int) : (**Optional**) Verbosity level, see above;
-            default is 0.
-        drpver (str): (**Optional**) DRP version.  Default determined by
+        dbg (:obj:`bool`, optional):
+            Flag to run the DAP in debug mode, see above; default is
+            False. Limited use; still under development.
+        log (:obj:`str`, optional):
+            File name for log output, see above; no log file is
+            produced by default.
+        verbose (:obj:`int`, optional):
+            Verbosity level, see above; default is 0.
+        drpver (:obj:`str`, optional):
+            DRP version. Default determined by
             :func:`mangadap.config.defaults.drp_version`.
-        redux_path (str) : (**Optional**) Top-level directory with the
-            DRP products; default is defined by
+        redux_path (:obj:`str`, optional):
+            Top-level directory with the DRP products; default is
+            defined by
             :func:`mangadap.config.defaults.drp_redux_path`.
-        directory_path (str) : (**Optional**) Direct path to directory
-            containing the DRP output file; default is defined by
+        directory_path (:obj:`str`, optional):
+            Direct path to directory containing the DRP output file;
+            default is defined by
             :func:`mangadap.config.defaults.drp_directory_path`
-        dapver (str): (**Optional**) DAP version.  Default determined by
+        dapver (:obj:`str`, optional):
+            DAP version. Default determined by
             :func:`mangadap.config.defaults.dap_version`.
-        analysis_path (str) : (**Optional**) Top-level directory for the DAP
-            output data; default is defined by
+        analysis_path (:obj:`str`, optional):
+            Top-level directory for the DAP output data; default is
+            defined by
             :func:`mangadap.config.defaults.dap_analysis_path`.
 
     Returns:
-        int: Status flag (under development; currently always 0)
-
+        :obj:`int`: Status flag (under development; currently always
+        0).
     """
     # Check input
-    if not isinstance(obs, (ObsInputPar, dict)):
-        raise TypeError('obs must be of type dict or ObsInputPar')
+    if not isinstance(cube, DataCube):
+        raise TypeError('Input objects must be a subclass of DataCube.')
     if not isinstance(plan, AnalysisPlanSet):
         raise TypeError('plan must be of type AnalysisPlanSet')
 
@@ -131,48 +138,49 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
     # Start log
     loggers = module_logging(__name__, verbose)
 
-    log_output(loggers, 1, logging.INFO, '-'*50)
-    log_output(loggers, 1, logging.INFO, '{0:^50}'.format('MaNGA Data Analysis Pipeline'))
-    log_output(loggers, 1, logging.INFO, '-'*50)
-    log_output(loggers, 1, logging.INFO, '   VERSION: {0}'.format(__version__))
-    log_output(loggers, 1, logging.INFO, '     START: {0}'.format(
-                                    time.strftime("%a %d %b %Y %H:%M:%S",time.localtime())))
-    t = time.perf_counter()
-    log_output(loggers, 1, logging.INFO, '     PLATE: {0}'.format(obs['plate']))
-    log_output(loggers, 1, logging.INFO, ' IFUDESIGN: {0}'.format(obs['ifudesign']))
-    log_output(loggers, 1, logging.INFO, '   3D MODE: {0}'.format(obs['mode']))
-    log_output(loggers, 1, logging.INFO, '   N PLANS: {0}'.format(plan.nplans))
-    log_output(loggers, 1, logging.INFO, '-'*50)
-
-    status = 0
-    if obs['mode'] != 'CUBE':
-        status = 1
-        raise NotImplementedError('DAP can currently only analyze CUBE files.')
-
-    #-------------------------------------------------------------------
-    # Declare the DRP fits file
-    #-------------------------------------------------------------------
     _drpver = defaults.drp_version() if drpver is None else drpver
     _dapver = defaults.dap_version() if dapver is None else dapver
-    drpf = DRPFits(obs['plate'], obs['ifudesign'], obs['mode'], drpver=_drpver,
-                   redux_path=redux_path, directory_path=directory_path, read=True)
-    log_output(loggers, 1, logging.INFO, ' Opened DRP file: {0}\n'.format(drpf.file_path()))
-
-    # Test if the RSS file exists
-    drpf_rss = DRPFits(obs['plate'], obs['ifudesign'], 'RSS', drpver=_drpver,
-                       redux_path=redux_path, directory_path=directory_path, read=False)
-    if not os.path.isfile(drpf_rss.file_path()):
-        warnings.warn('RSS counterpart not available.  Some functionality may be limited!')
-    del drpf_rss
-
     # Set the the analysis path and make sure it exists
-    _analysis_path = defaults.dap_analysis_path(drpver=drpver, dapver=dapver) \
+    _analysis_path = defaults.dap_analysis_path(drpver=_drpver, dapver=_dapver) \
                             if analysis_path is None else analysis_path
     if not os.path.isdir(_analysis_path):
         os.makedirs(_analysis_path)
 
+    cube_root, cube_file = os.path.split(cube.file_path())
+
+    log_output(loggers, 1, logging.INFO, '-'*50)
+    log_output(loggers, 1, logging.INFO, '{0:^50}'.format('MaNGA Data Analysis Pipeline'))
+    log_output(loggers, 1, logging.INFO, '-'*50)
+    log_output(loggers, 1, logging.INFO, '     VERSION: {0}'.format(__version__))
+    log_output(loggers, 1, logging.INFO, '       START: {0}'.format(
+                                    time.strftime('%a %d %b %Y %H:%M:%S',time.localtime())))
+    t = time.perf_counter()
+    log_output(loggers, 1, logging.INFO, '  INPUT ROOT: {0}'.format(cube_root))
+    log_output(loggers, 1, logging.INFO, '   CUBE FILE: {0}'.format(cube_file))
+    log_output(loggers, 1, logging.INFO, '     N PLANS: {0}'.format(plan.nplans))
+    log_output(loggers, 1, logging.INFO, ' OUTPUT ROOT: {0}'.format(_analysis_path))
+    log_output(loggers, 1, logging.INFO, '-'*50)
+
+    status = 0
+
+    #-------------------------------------------------------------------
+    # Declare the DRP fits file
+    #-------------------------------------------------------------------
+#    drpf = DRPFits(obs['plate'], obs['ifudesign'], obs['mode'], drpver=_drpver,
+#                   redux_path=redux_path, directory_path=directory_path, read=True)
+#    log_output(loggers, 1, logging.INFO, ' Opened DRP file: {0}\n'.format(drpf.file_path()))
+#
+#    # Test if the RSS file exists
+#    drpf_rss = DRPFits(obs['plate'], obs['ifudesign'], 'RSS', drpver=_drpver,
+#                       redux_path=redux_path, directory_path=directory_path, read=False)
+#    if not os.path.isfile(drpf_rss.file_path()):
+#        warnings.warn('RSS counterpart not available.  Some functionality may be limited!')
+#    del drpf_rss
+
+
     # Set the nsa redshift
-    nsa_redshift = obs['vel']/astropy.constants.c.to('km/s').value
+#    nsa_redshift = obs['vel']/astropy.constants.c.to('km/s').value
+
 
     # Iterate over plans:
     for i in range(plan.nplans):
@@ -198,12 +206,12 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
                                      sc_method['fitpar']['template_library_key'],
                                      'None' if el_method is None
                                         else el_method['continuum_tpl_key'])
-        method_dir = defaults.dap_method_path(method, plate=obs['plate'],
-                                              ifudesign=obs['ifudesign'], drpver=drpver,
-                                              dapver=dapver, analysis_path=_analysis_path)
-        method_ref_dir = defaults.dap_method_path(method, plate=obs['plate'],
-                                                  ifudesign=obs['ifudesign'], ref=True,
-                                                  drpver=drpver, dapver=dapver,
+        method_dir = defaults.dap_method_path(method, plate=cube.plate, ifudesign=cube.ifudesign,
+                                              drpver=_drpver, dapver=_dapver,
+                                              analysis_path=_analysis_path)
+        method_ref_dir = defaults.dap_method_path(method, plate=cube.plate,
+                                                  ifudesign=cube.ifudesign, ref=True,
+                                                  drpver=_drpver, dapver=_dapver,
                                                   analysis_path=_analysis_path)
 
         log_output(loggers, 1, logging.INFO, '-'*50)
@@ -217,9 +225,12 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
         # S/N Assessments: placed in the common/ directory
         #---------------------------------------------------------------
         rdxqa = None if plan['drpqa_key'][i] is None else \
-                    ReductionAssessment(plan['drpqa_key'][i], drpf, pa=obs['pa'], ell=obs['ell'],
-                                        analysis_path=_analysis_path, symlink_dir=method_ref_dir,
+                    ReductionAssessment(plan['drpqa_key'][i], cube, pa=cube.meta['pa'],
+                                        ell=cube.meta['ell'], analysis_path=_analysis_path,
+                                        symlink_dir=method_ref_dir,
                                         clobber=plan['drpqa_clobber'][i], loggers=loggers)
+
+        return
 
         #---------------------------------------------------------------
         # Spatial Binning: placed in the common/ directory
@@ -253,7 +264,8 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
 #        warnings.filterwarnings('error', message='Warning: converting a masked element to nan.')
         emission_line_moments = None if plan['elmom_key'][i] is None else \
                     EmissionLineMoments(plan['elmom_key'][i], binned_spectra,
-                                        stellar_continuum=stellar_continuum, redshift=nsa_redshift,
+                                        stellar_continuum=stellar_continuum,
+                                        redshift=cube.meta['z'], #nsa_redshift,
                                         analysis_path=_analysis_path,
                                         directory_path=method_ref_dir,
                                         clobber=plan['elmom_clobber'][i], loggers=loggers)
@@ -378,7 +390,8 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
         # directory
         #---------------------------------------------------------------
         spectral_indices = None if plan['spindex_key'][i] is None else \
-                    SpectralIndices(plan['spindex_key'][i], binned_spectra, redshift=nsa_redshift,
+                    SpectralIndices(plan['spindex_key'][i], binned_spectra,
+                                    redshift=cube.meta['z'], #nsa_redshift,
                                     stellar_continuum=stellar_continuum,
                                     emission_line_model=emission_line_model,
                                     analysis_path=_analysis_path, directory_path=method_ref_dir,
@@ -392,7 +405,8 @@ def manga_dap(obs, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path
                             stellar_continuum=stellar_continuum,
                             emission_line_moments=emission_line_moments,
                             emission_line_model=emission_line_model,
-                            spectral_indices=spectral_indices, nsa_redshift=nsa_redshift,
+                            spectral_indices=spectral_indices, nsa_redshift=cube.meta['z'],
+                            #nsa_redshift,
                             analysis_path=_analysis_path, clobber=True, loggers=loggers,
                             single_precision=True)
 

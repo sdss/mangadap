@@ -145,6 +145,18 @@ def test_stats():
     i = numpy.where([m['key'] == 'SNRG' for m in methods])[0]
     assert len(i) == 1, 'Could not find correct reduction assessment definition.'
 
+    cen_wave = cube.central_wavelength(response_func=methods[i[0]]['response_func'],
+                                       flag=cube.do_not_use_flags())
+    assert cen_wave == 4637.773299952125, 'Central wavelength changed.'
+
+    cen_wave = cube.central_wavelength(waverange=[4000,8000], flag=cube.do_not_use_flags(),
+                                       fluxwgt=True)
+    assert cen_wave == 5893.7380000557105, 'Central wavelength changed.'
+
+    cen_wave = cube.central_wavelength(waverange=[4000,8000], flag=cube.do_not_use_flags(),
+                                       per_pixel=False)
+    assert cen_wave == 6045.295011956098, 'Central wavelength changed.'
+
     sig, var, snr = cube.flux_stats(response_func=methods[i[0]]['response_func'])
     assert sig.shape == cube.spatial_shape, 'Should be shaped as a map.'
     assert isinstance(sig, numpy.ma.MaskedArray), 'Expected masked arrays'
@@ -223,4 +235,3 @@ def test_covariance():
 
     # Variance should be the same for direct and approximate calculations
     assert numpy.allclose(approxC.variance(), C.variance()), 'Variances should be the same.'
-

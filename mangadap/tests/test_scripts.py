@@ -2,7 +2,7 @@
 import pytest
 import os
 import subprocess
-
+import shutil
 
 from IPython import embed
 
@@ -103,6 +103,30 @@ def test_manga_dap_import():
         manga_dap.main(manga_dap.parse_args(['-c', data_test_file('datacube.ini'), '-o', 'junk']))
     
 
+@requires_remote
+def test_manga_dap():
+    odir = data_test_file('manga_dap_output')
+
+    # Clean up previous failure
+    if os.path.isdir(odir):
+        shutil.rmtree(odir)
+
+    # Run the DAP
+    manga_dap.main(manga_dap.parse_args(['-c', data_test_file('datacube.ini'),
+                                         '-p', data_test_file('plan.par'), '-a', odir]))
+
+    embed()
+    exit()
+
+    # Re-run to use existing files
+    manga_dap.main(manga_dap.parse_args(['-c', data_test_file('datacube.ini'),
+                                         '-p', data_test_file('plan.par'), '-a', odir]))
+    embed()
+    exit()
+
+    # Clean up
+    shutil.rmtree(odir)
+
 # TODO: Add some remote data?
 def test_plate_fit_qa():
     assert script_help_okay('dap_plate_fit_qa'), 'Basic help call failed'
@@ -185,7 +209,7 @@ def test_run():
 
 
 if __name__ == '__main__':
-    test_manga_dap_import()
+    test_manga_dap()
 
 
 

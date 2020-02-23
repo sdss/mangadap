@@ -358,13 +358,40 @@ class DataCube:
         """Number of spectra in the datacube."""
         return numpy.prod(self.spatial_shape)
 
+    @staticmethod
+    def do_not_use_flags():
+        """
+        Return the maskbit names that should not be used.
+
+        The base class returns ``None``.
+        """
+        return None
+
+    @staticmethod
+    def do_not_fit_flags():
+        """
+        Return the maskbit names that should not be fit.
+
+        The base class returns ``None``.
+        """
+        return None
+
+    @staticmethod
+    def do_not_stack_flags():
+        """
+        Return the maskbit names that should not be stacked.
+        
+        The base class returns ``None``.
+        """
+        return None
+
     def metakeys(self):
         """Get a :obj:`list` of the keys in the datacube metadata."""
         return list(self.meta.keys())
 
     # TODO: Add a getitem method that returns the datacube flux?
 
-    def load_rss(self):
+    def load_rss(self, **kwargs):
         """
         Try to load the source row-stacked spectra for this datacube.
 
@@ -632,6 +659,68 @@ class DataCube:
         unique_bins, bin_count = numpy.unique(bin_indx, return_counts=True)
         indx = unique_bins > -1
         return unique_bins[indx], (bin_count[indx]*numpy.square(self.pixelscale)).astype(float)
+
+    def central_wavelength(self, waverange=None, response_func=None, per_pixel=True, flag=None,
+                           fluxwgt=False):
+        """
+        Determine the mean central wavelength for all spectra under
+        various conditions.
+
+        The wavelength channel is set to be the center of the
+        bandpass selected by ``waverange``, weighted by the response
+        function and the flux (if requested/provided). The mask is
+        also incorporated in these calculations. By default (i.e., no
+        wavelength limits or weighting) the wavelength channel is
+        just the central wavelength of the full spectral range. (Note
+        that if the spectra are binned logarithmically, this isn't
+        necessarily the central wavelength *channel*.)
+
+        Args:
+            waverange (array-like, optional):
+                Starting and ending wavelength over which to
+                calculate the statistics. Default is to use the full
+                wavelength range.
+            response_func (array-like, optional):
+                A two-column array with the wavelength and
+                transmission of a broad-band response function to use
+                as a weighting function for the calculation.
+            per_pixel (:obj:`bool`, optional):
+                When providing a response function, base the
+                calculation on per pixel measurements, instead of per
+                angstrom. Set to False for a per-angstrom
+                calculation.
+            flag (:obj:`str`, :obj:`list`, optional):
+                One or more flag names that are considered when
+                deciding if a pixel should be masked. The names
+                *must* be a valid bit name as defined by
+                :attr:`bitmask`. If :attr:`bitmask` is None, these
+                are ignored.
+            fluxwgt (:obj:`bool`, optional):
+                Flag to weight by the flux when determining the mean
+                coordinates.
+
+        Returns:
+            :obj:`float`: The mean central wavelength of all spectra.
+        """
+        if waverange is None and response_func is None and not fluxwgt:
+            return (self.wave[0] + self.wave[-1])/2.
+
+        flux = self.copy_to_masked_array(waverange=waverange, flag=flag)
+        dw = numpy.ones(self.nwave, dtype=float) if per_pixel \
+                else angstroms_per_pixel(self.wave, log=self.log)
+        _response_func = self.interpolate_to_match(response_func)
+
+        if fluxwgt:
+            norm = numpy.ma.sum(flux*_response_func[None,:]*dw[None,:], axis=1)
+            cen_wave = numpy.ma.sum(flux*self.wave[None,:]*_response_func[None,:]*dw[None,:],
+                                    axis=1) / norm
+            return float(numpy.ma.mean(cen_wave))
+
+        norm = numpy.ma.sum(numpy.invert(numpy.ma.getmaskarray(flux))
+                            * _response_func[None,:] * dw[None,:], axis=1)
+        cen_wave = numpy.ma.sum(numpy.invert(numpy.ma.getmaskarray(flux)) * self.wave[None,:]
+                                * _response_func[None,:] * dw[None,:], axis=1) / norm
+        return float(numpy.ma.mean(cen_wave))
 
     def flux_stats(self, waverange=None, response_func=None, per_pixel=True, flag=None):
         r"""
