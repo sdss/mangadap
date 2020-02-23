@@ -6,10 +6,11 @@ import subprocess
 
 from IPython import embed
 
-from mangadap.tests.util import remote_data_file, drp_test_version
+from mangadap.tests.util import remote_data_file, data_test_file, drp_test_version
 from mangadap.tests.util import requires_remote, requires_drpcomplete, requires_drpall
 
 from mangadap.scripts import calculate_covariance
+from mangadap.scripts import manga_dap
 from mangadap.scripts import write_dap_config
 from mangadap.util.parser import DefaultConfig
 
@@ -90,6 +91,18 @@ def test_manga_dap():
     assert script_help_okay('manga_dap'), 'Basic help call failed'
 
 
+def test_manga_dap():
+    assert script_help_okay('manga_dap'), 'Basic help call failed'
+
+
+def test_manga_dap_import():
+    with pytest.raises(ImportError):
+        manga_dap.main(manga_dap.parse_args(['-c', data_test_file('datacube.ini'), '-m', 'junk']))
+    
+    with pytest.raises(AttributeError):
+        manga_dap.main(manga_dap.parse_args(['-c', data_test_file('datacube.ini'), '-o', 'junk']))
+    
+
 # TODO: Add some remote data?
 def test_plate_fit_qa():
     assert script_help_okay('dap_plate_fit_qa'), 'Basic help call failed'
@@ -169,4 +182,10 @@ def test_status():
 # TODO: Improve this!
 def test_run():
     assert script_help_okay('rundap'), 'Basic help call failed'
+
+
+if __name__ == '__main__':
+    test_manga_dap_import()
+
+
 
