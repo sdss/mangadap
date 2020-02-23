@@ -232,6 +232,7 @@ class DRPComplete:
             raise ValueError('To use user-provided platetargets files, must provide both '
                              'platetargets and catid.')
 
+        self.platetargets = None
         if platetargets is not None:
             self.platetargets = numpy.array( arginp_to_list(platetargets) )
             self.catid = numpy.array( arginp_to_list(catid) ).astype(numpy.int)
@@ -1054,7 +1055,7 @@ class DRPComplete:
             os.makedirs(self.directory_path)
 
         # Create the primary header
-        nplttrg = len(self.platetargets)
+        nplttrg = 0 if self.platetargets is None else len(self.platetargets)
 
         hdr = fits.Header()
         hdr['VERSDRP'] = self.drpver if drpver is None else drpver

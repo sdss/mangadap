@@ -71,6 +71,7 @@ Revision history
 .. include:: ../links.rst
 """
 
+import sys
 import time
 import shutil
 import os
@@ -87,7 +88,6 @@ import numpy
 
 from mangadap import __version__
 from mangadap.config import defaults
-from mangadap.drpfits import DRPFits
 from mangadap.survey.drpcomplete import DRPComplete
 from mangadap.survey.mangampl import MaNGAMPL
 from mangadap.util.exception_tools import print_frame
@@ -1045,8 +1045,7 @@ class rundap:
                               relative_symlink=True):
         """
         Write the MaNGA DAP script file that is sent to a single CPU to
-        analyze a single DRP file with a given plate, ifudesign, and
-        mode.
+        analyze a single DRP file with a given plate and ifudesign.
 
         Args:
             index (:obj:`int`, optional):
@@ -1064,12 +1063,9 @@ class rundap:
                 instead of the absolute path.
 
         Returns:
-            str: Three strings with the name of the written script file,
-            the file for the output sent to STDOUT, and the file for the
-            output sent to STDERR.
-
-        Raises:
-            Exception: Raised if DAP version is not correctly defined.
+            :obj:`str`: Three strings with the name of the written
+            script file, the file for the output sent to STDOUT, and the
+            file for the output sent to STDERR.
         """
         # Get the plate and IFU from the DRPComplete database; alway use
         # the CUBE file
@@ -1082,13 +1078,18 @@ class rundap:
         self._check_paths(plate, ifudesign)
 
         # Create the parameter file
-        parfile = defaults.dap_par_file(plate, ifudesign, mode, drpver=self.mpl.drpver,
-                                        dapver=self.dapver, analysis_path=self.analysis_path)
+#        parfile = defaults.dap_par_file(plate, ifudesign, mode, drpver=self.mpl.drpver,
+#                                        dapver=self.dapver, analysis_path=self.analysis_path)
+        cfgfile = defaults.dap_config(plate, ifudesign, drpver=self.mpl.drpver, dapver=self.dapver,
+                                      analysis_path=self.analysis_path)
 
         # Write the par file if it doesn't exist
-        if not os.path.isfile(parfile) or clobber:
+#        if not os.path.isfile(parfile) or clobber:
+        if not os.path.isfile(cfgfile) or clobber:
             # clobber defaults to True
-            self.drpc.write_par(parfile, mode, index=index)
+#            self.drpc.write_par(parfile, mode, index=index)
+            self.drpc.write_config(cfgfile, index=index, sres_ext=self.sres_ext,
+                                   sres_fill=self.sres_fill, covar_ext=self.covar_ext)
             # and create symlinks to it
             for daptype in self.daptypes:
                 # Generate the ref subdirectory for this plan
@@ -1096,7 +1097,9 @@ class rundap:
                                                 ref=True, drpver=self.mpl.drpver,
                                                 dapver=self.dapver,
                                                 analysis_path=self.analysis_path)
-                create_symlink(parfile, path, relative_symlink=relative_symlink, clobber=clobber,
+#                create_symlink(parfile, path, relative_symlink=relative_symlink, clobber=clobber,
+#                               quiet=True)
+                create_symlink(cfgfile, path, relative_symlink=relative_symlink, clobber=clobber,
                                quiet=True)
 
         # Set the root path for the scripts, inputs, outputs, and logs
@@ -1132,9 +1135,11 @@ class rundap:
         file.write('\n')
 
         # Command that runs the DAP
+        # TODO: Define a "default" plan?
         if dapproc:
-            command = 'manga_dap {0} {1} -r {2} -a {3}'.format(parfile, self.plan_file,
-                                                               self.redux_path, self.analysis_path)
+            command = 'manga_dap {0} -c {1} -r {2} -a {3}'.format(self.plan_file, cfgfile,
+                                                                  self.redux_path,
+                                                                  self.analysis_path)
             if self.log:
                 command += (' --log {0}.log'.format(scriptfile))
             if self.verbose > 0:
@@ -1144,7 +1149,7 @@ class rundap:
 
         # Plotting scripts
         if plots:
-            command = 'ppxffit_qa {0} {1} --analysis_path {2} --plan_file {3}'.format(
+            command = 'dap_ppxffit_qa {0} {1} --analysis_path {2} --plan_file {3}'.format(
                             plate, ifudesign, self.analysis_path, self.plan_file)
             file.write('{0}\n'.format(command))
             file.write('\n')
@@ -1176,18 +1181,15 @@ class rundap:
         associated quality assessment plots.
 
         Args:
-            plots (bool): (**Optional**) Create the QA plots. Default is
-                True.
-            clobber (bool): (**Optional**) Flag to clobber any existing
-                files.
+            plots (:obj:`bool`, optional):
+                Create the QA plots. Default is True.
+            clobber (:obj:`bool`, optional):
+                Flag to clobber any existing files.
 
         Returns:
-            str: Three strings with the name of the written script file,
-            the file for the output sent to STDOUT, and the file for the
-            output sent to STDERR.
-
-        Raises:
-            ValueError: Raised if DAP version is not correctly defined.
+            :obj:`str`: Three strings with the name of the written
+            script file, the file for the output sent to STDOUT, and the
+            file for the output sent to STDERR.
         """
         # Check that the path exists, creating it if not
         if not os.path.isdir(self.calling_path):
@@ -1254,9 +1256,9 @@ class rundap:
                 Flag to clobber any existing files.
 
         Returns:
-            str: Three strings with the name of the written script file,
-            the file for the output sent to STDOUT, and the file for the
-            output sent to STDERR.
+            :obj:`str`: Three strings with the name of the written
+            script file, the file for the output sent to STDOUT, and the
+            file for the output sent to STDERR.
         """
         # Check that the path exists, creating it if not
         path = os.path.join(self.calling_path, str(plate))
