@@ -70,7 +70,10 @@ Revision history
 .. include common links, assuming primary doc root is up one directory
 .. include:: ../links.rst
 """
+<<<<<<< HEAD:mangadap/scripts/rundap.py
 
+=======
+>>>>>>> datacube:mangadap/survey/rundap.py
 import sys
 import time
 import shutil
