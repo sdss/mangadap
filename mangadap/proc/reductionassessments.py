@@ -654,14 +654,11 @@ class ReductionAssessment:
         self.cube = cube
 
         # Test if the RSS file exists; cannot compute covariance if not
-        if self.method['covariance']:
-            if self.cube.covar is None:
-                self.cube.load_rss()
-            if self.cube.covar is None and self.cube.rss is None:
-                warnings.warn('Datacube does not provide a covariance matrix and could not load '
-                              'RSS counterpart for the covariance computation.  Continuing by '
-                              'assuming **no** covariance calculations.')
-                self.method['covariance'] = False
+        if self.method['covariance'] and not self.cube.can_compute_covariance:
+            warnings.warn('Datacube does not provide a covariance matrix and could not load RSS '
+                          'counterpart for the covariance computation.  Continuing by assuming '
+                          '**no** covariance calculations.')
+            self.method['covariance'] = False
 
         # Reset the output paths if necessary
         self._set_paths(directory_path, dapver, analysis_path, output_file)

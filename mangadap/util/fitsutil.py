@@ -203,8 +203,8 @@ class DAPFitsUtil:
 
 
     @staticmethod
-    def build_map_header(drpf, author, multichannel=False, maskname=None):
-        hdr = drpf.hdu['FLUX'].header.copy()
+    def build_map_header(hdr, author, multichannel=False, maskname=None):
+        hdr = hdr.copy()
         hdr = DAPFitsUtil.clean_map_header(hdr, multichannel=multichannel)
         hdr['AUTHOR'] = author
         if maskname is not None:

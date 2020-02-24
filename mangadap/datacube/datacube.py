@@ -280,6 +280,10 @@ class DataCube:
             if spatial_transpose:
                 self.covar = self.covar.transpose_raw_shape()
 
+        # Allocate attributes for primary and flux array fits headers
+        self.prihdr = None
+        self.fluxhdr = None
+
         # Allow for a RowStackedSpectrum counterpart
         self.rss = None
 
@@ -390,6 +394,29 @@ class DataCube:
         return list(self.meta.keys())
 
     # TODO: Add a getitem method that returns the datacube flux?
+
+    @property
+    def can_compute_covariance(self):
+        """
+        Determine if the object can be used to compute the spatial
+        covariance.
+
+        If :attr:`covar` is currently not defined, the method tries
+        to load the row-stacked spectra used to build the datacube;
+        see :func:`load_rss`. If that is successful or if
+        :attr:`covar` is already defined, the method returns True. If
+        :attr:`covar` is None and the row-stacked spectra cannot be
+        loaded, the method returns False.
+
+        Returns:
+            :obj:`bool`: Flag that the object can be used to
+            calculate the spatial covariance.
+        """
+        if self.covar is None:
+            self.load_rss()
+        if self.covar is None and self.rss is None:
+            return False
+        return True
 
     def load_rss(self, **kwargs):
         """
