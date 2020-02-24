@@ -29,6 +29,9 @@ TODO
     - Change `BASE` extension to `CONTINUUM` extension.
 
 
+2.5.3dev
+--------
+
 2.5.2 (14 Feb 2020)
 -------------------
 
