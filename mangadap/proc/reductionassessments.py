@@ -462,7 +462,7 @@ class ReductionAssessment:
                 :func:`mangadap.util.fitsutil.DAPFitsUtil.clean_dap_primary_header`.
 
         Returns:
-            `astropy.fits.Header`_: Initialized header object.
+             `astropy.io.fits.Header`_: Initialized header object.
         """
         # Copy the from the DRP and clean it
         if hdr is None:

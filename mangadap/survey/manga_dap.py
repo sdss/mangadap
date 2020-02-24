@@ -230,16 +230,16 @@ def manga_dap(cube, plan, dbg=False, log=None, verbose=0, drpver=None, redux_pat
                                         symlink_dir=method_ref_dir,
                                         clobber=plan['drpqa_clobber'][i], loggers=loggers)
 
-        return
-
         #---------------------------------------------------------------
         # Spatial Binning: placed in the common/ directory
         #---------------------------------------------------------------
         binned_spectra = None if plan['bin_key'][i] is None else \
-                    SpatiallyBinnedSpectra(plan['bin_key'][i], drpf, rdxqa, reff=obs['reff'],
+                    SpatiallyBinnedSpectra(plan['bin_key'][i], cube, rdxqa, reff=cube.meta['reff'],
                                            analysis_path=_analysis_path,
                                            symlink_dir=method_ref_dir,
                                            clobber=plan['bin_clobber'][i], loggers=loggers)
+
+        return
 
         #---------------------------------------------------------------
         # Stellar Continuum Fit: placed in the common/ directory

@@ -7,9 +7,6 @@ two-dimensional data.
 The base class allows for user-defined definitions of binning
 procedures.
 
-.. todo::
-    - Check binning an RSS file
-
 Revision history
 ----------------
 
@@ -56,7 +53,8 @@ from scipy import sparse, spatial, interpolate
 from astropy.wcs import WCS
 from astropy.io import fits
 
-from ..drpfits import DRPFits
+from ..datacube import DataCube
+#from ..drpfits import DRPFits
 from ..par.parset import KeywordParSet, ParSet
 from ..util.fitsutil import DAPFitsUtil
 from ..util.fileio import init_record_array, rec_to_fits_type, create_symlink
@@ -78,8 +76,8 @@ from matplotlib import pyplot
 
 class SpatiallyBinnedSpectraDef(KeywordParSet):
     """
-    A class that holds the two parameter sets and the key designator for
-    the binning scheme.
+    A class that holds the two parameter sets and the key designator
+    for the binning scheme.
 
     The provided ``binfunc`` method must have a call with the
     following form::
@@ -97,11 +95,11 @@ class SpatiallyBinnedSpectraDef(KeywordParSet):
     following form::
         
         stack_wave, stack_flux, stack_sdev, stack_npix, stack_ivar, \
-                stack_sres, stack_covar = stack(drpf, id, par=par)
+                stack_sres, stack_covar = stack(cube, id, par=par)
 
-    where ``drpf`` is a :class:`mangadap.drpfits.DRPFits` object.
-    Note that the wavelengths are not returned because the input and
-    output wavelength ranges are expected to be the same!
+    where ``cube`` is a :class:`mangadap.datacube.datacube.DataCube`
+    object. Note that the wavelengths are not returned because the
+    input and output wavelength ranges are expected to be the same!
 
     As long as they are mutable, the values in ``par`` can change,
     meaning that some products of the bin algorithm can be passed to
@@ -117,23 +115,23 @@ class SpatiallyBinnedSpectraDef(KeywordParSet):
     """
     def __init__(self, key=None, galactic_reddening=None, galactic_rv=None, minimum_snr=None,
                  binpar=None, binclass=None, binfunc=None, stackpar=None, stackclass=None,
-                 stackfunc=None, spec_res=None, prepixel_sres=None):
+                 stackfunc=None): #, spec_res=None, prepixel_sres=None):
         in_fl = [ int, float ]
-        res_opt = SpatiallyBinnedSpectra.spectral_resolution_options()
+#        res_opt = SpatiallyBinnedSpectra.spectral_resolution_options()
         # TODO: Set valid options for galactic reddening?
 #        bincls_opt = [ spatialbinning.SpatialBinning ]
 #        stackcls_opt = [ SpectralStack ]
         par_opt = [ ParSet, dict ]
 
-        pars =     [ 'key', 'galactic_reddening', 'galactic_rv', 'minimum_snr', 'binpar',
-                     'binclass', 'binfunc', 'stackpar', 'stackclass', 'stackfunc', 'spec_res',
-                     'prepixel_sres' ]
-        values =   [ key, galactic_reddening, galactic_rv, minimum_snr, binpar, binclass, binfunc,
-                     stackpar, stackclass, stackfunc, spec_res, prepixel_sres ]
-        options =  [ None, None, None, None, None, None, None, None, None, None, res_opt, None ]
-        dtypes =   [ str, str, in_fl, in_fl, par_opt, None, None, par_opt, None, None, str, bool ]
-        can_call = [ False, False, False, False, False, False, True, False, False, True, False,
-                     False ]
+        pars =     ['key', 'galactic_reddening', 'galactic_rv', 'minimum_snr', 'binpar',
+                     'binclass', 'binfunc', 'stackpar', 'stackclass', 'stackfunc']
+#                     , 'spec_res', 'prepixel_sres' ]
+        values =   [key, galactic_reddening, galactic_rv, minimum_snr, binpar, binclass, binfunc,
+                     stackpar, stackclass, stackfunc] #, spec_res, prepixel_sres ]
+        options =  [None, None, None, None, None, None, None, None, None, None] #, res_opt, None]
+        dtypes =   [str, str, in_fl, in_fl, par_opt, None, None, par_opt, None, None] #, str, bool]
+        can_call = [False, False, False, False, False, False, True, False, False, True]
+                    #, False, False]
 
         descr = ['Keyword used to distinguish between different spatial binning schemes.',
                  'The string identifier for the Galactic extinction curve to use.  See ' \
@@ -148,11 +146,11 @@ class SpatiallyBinnedSpectraDef(KeywordParSet):
                  'The parameter set defining how to stack the spectra in each bin.',
                  'Instance of class object to used to stack the spectra.  Needed in case ' \
                     'stackfunc is a non-static member function of the class.',
-                 'The function that stacks the spectra in a given bin.',
-                 'Keyword defining the treatment of the spectral resolution.  See ' \
-                    ':func:`SpatiallyBinnedSpectra.spectral_resolution_options` for a list of ' \
-                    'the options.',
-                 'Use the prepixelized version of the LSF measurements.']
+                 'The function that stacks the spectra in a given bin.']
+#                 , 'Keyword defining the treatment of the spectral resolution.  See ' \
+#                    ':func:`SpatiallyBinnedSpectra.spectral_resolution_options` for a list of ' \
+#                    'the options.',
+#                 'Use the prepixelized version of the LSF measurements.']
 
         super(SpatiallyBinnedSpectraDef, self).__init__(pars, values=values, options=options,
                                                         dtypes=dtypes, can_call=can_call,
@@ -165,19 +163,24 @@ def validate_spatial_binning_scheme_config(cnfg):
     spatial-binning scheme parameters.
 
     Args:
-        cnfg (:class:`mangadap.util.parser.DefaultConfig`): Object with
-            the spatial-binning method parameters as needed by
+        cnfg (:class:`mangadap.util.parser.DefaultConfig`):
+            Object with the spatial-binning method parameters as
+            needed by
             :class:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectraDef`.
 
     Raises:
-        KeyError: Raised if any required keywords do not exist.
-        ValueError: Raised if keys have unacceptable values.
-        FileNotFoundError: Raised if a file is specified but could not
-            be found.
+        KeyError:
+            Raised if any required keywords do not exist.
+        ValueError:
+            Raised if keys have unacceptable values.
     """
-    # Check for required keywords
 
-    required_keywords = [ 'key', 'method', 'spec_res' ]
+    # TODO: Can most of this stuff move to the relevant classes
+    # themselves? Seems like the binning method should be agnostic
+    # about the parameters needed by specific class objects.
+
+    # Check for required keywords
+    required_keywords = ['key', 'method'] #, 'spec_res' ]
     if not cnfg.all_required(required_keywords):
         raise KeyError('Keywords {0} must all have valid values.'.format(required_keywords))
 
@@ -211,7 +214,7 @@ def available_spatial_binning_methods():
     Return the list of available binning schemes.
     
     Returns:
-        list: A list of
+        :obj:`list`: A list of
         :func:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectraDef`
         objects, each defining a separate binning method.
 
@@ -234,6 +237,10 @@ def available_spatial_binning_methods():
     ini_files = glob.glob(os.path.join(search_dir, '*.ini'))
     if len(ini_files) == 0:
         raise IOError('Could not find any configuration files in {0} !'.format(search_dir))
+
+    # TODO: Can most of this stuff move to the relevant classes
+    # themselves? Seems like the binning method should be agnostic
+    # about the parameters needed by specific class objects.
 
     # Build the list of library definitions
     binning_methods = []
@@ -273,29 +280,30 @@ def available_spatial_binning_methods():
             binclass = None
             binfunc = None
 
-        stack_spec_res = cnfg.get('spec_res') == 'spaxel'
-        prepixel_sres = cnfg.getbool('prepixel_sres', default=True)
+#        stack_spec_res = cnfg.get('spec_res') == 'spaxel'
+#        prepixel_sres = cnfg.getbool('prepixel_sres', default=True)
         stackpar = SpectralStackPar(operation=cnfg.get('operation', default='mean'),
                                     vel_register=cnfg.getbool('velocity_register', default=False),
                                     covar_mode=cnfg.get('stack_covariance_mode', default='none'),
                                     covar_par=SpectralStack.parse_covariance_parameters(
                                             cnfg.get('stack_covariance_mode', default='none'),
-                                            cnfg['stack_covariance_par']),
-                                    stack_sres=stack_spec_res, prepixel_sres=prepixel_sres)
+                                            cnfg['stack_covariance_par']))
+#                                    , stack_sres=stack_spec_res, prepixel_sres=prepixel_sres)
         stackclass = SpectralStack()
         stackfunc = stackclass.stack_DRPFits
 
-        binning_methods += [ SpatiallyBinnedSpectraDef(key=cnfg['key'],
+        binning_methods += [SpatiallyBinnedSpectraDef(key=cnfg['key'],
                                         galactic_reddening=cnfg['galactic_reddening'],
                                         galactic_rv=cnfg.getfloat('galactic_rv', default=3.1),
                                         minimum_snr=cnfg.getfloat('minimum_snr', default=0.),
                                         binpar=binpar, binclass=binclass, binfunc=binfunc,
                                         stackpar=stackpar, stackclass=stackclass,
-                                        stackfunc=stackfunc, spec_res=cnfg['spec_res'],
-                                        prepixel_sres=prepixel_sres) ]
+                                        stackfunc=stackfunc)]
+#                                        , spec_res=cnfg['spec_res'],
+#                                        prepixel_sres=prepixel_sres) ]
 
     # Check the keywords of the libraries are all unique
-    if len(numpy.unique( numpy.array([ method['key'] for method in binning_methods ]) )) \
+    if len(numpy.unique(numpy.array([method['key'] for method in binning_methods]))) \
             != len(binning_methods):
         raise KeyError('Spatial binning method keywords are not all unique!')
 
@@ -318,66 +326,75 @@ class SpatiallyBinnedSpectra:
     Class that holds spatially binned spectra.
 
     Args:
-        method_key (str): The keyword that designates which method,
-            provided in *method_list*, to use for the binning procedure.  
-        drpf (:class:`mangadap.drpfits.DRPFits`): The DRP datacube with
-            the spectra to bin.
+        method_key (:obj:`str`):
+            The keyword that designates which method, provided in
+            ``method_list``, to use for the binning procedure.
+        cube (:class:`mangadap.datacube.datacube.DataCube`):
+            The datacube with the spectra to bin.
         rdxqa (:class:`mangadap.proc.reductionassessments.ReductionAssessments`):
-            The basic assessments of the DRP data that are needed for
+            The basic assessments of the datacube that are used for
             the binning procedures.
-        reff (float): (**Optional**) The effective radius of the galaxy.
-        method_list (list): (**Optional**) List of
-            :class:`SpatiallyBinnedSpectraDef` objects that define one
-            or more methods to use for the spatial binning.  Default is
-            to use the config files in the DAP source directory to
-            construct the available methods using
+        reff (:obj:`float`, optional):
+            The effective radius of the galaxy in arcsec.
+        method_list (:obj:`list`, optional):
+            List of :class:`SpatiallyBinnedSpectraDef` objects that
+            define one or more methods to use for the spatial
+            binning. Default is to use the config files in the DAP
+            source directory to construct the available methods using
             :func:`available_spatial_binning_methods`.
-        dapver (str): (**Optional**) The DAP version to use for the
-            analysis, used to override the default defined by
-            :func:`mangadap.config.defaults.dap_version`.
-        analysis_path (str): (**Optional**) The top-level path for the
-            DAP output files, used to override the default defined by
+        dapver (:obj:`str`, optional):
+            The DAP version. Used to construct the output paths,
+            overriding the default defined by
+            :func:`mangadap.config.defaults.dap_version`. Does
+            **not** select the version of the code to use.
+        analysis_path (:obj:`str`, optional):
+            The top-level path for the DAP output files, used to
+            override the default defined by
             :func:`mangadap.config.defaults.dap_analysis_path`.
-        directory_path (str): The exact path to the directory with DAP
-            output that is common to number DAP "methods".  See
-            :attr:`directory_path`.
-        output_file (str): (**Optional**) Exact name for the output
-            file.  The default is to use
+        directory_path (:obj:`str`, optional):
+            The exact path to the directory with DAP output that is
+            common to the DAP "methods". Default is defined by
+            :func:`mangadap.confgi.defaults.dap_common_path`.
+        output_file (:obj:`str`, optional):
+            Exact name for the output file. The default is to use
             :func:`mangadap.config.defaults.dap_file_name`.
-        hardcopy (bool): (**Optional**) Flag to write the HDUList
-            attribute to disk.  Default is True; if False, the HDUList
-            is only kept in memory and would have to be reconstructed.
-        symlink_dir (str): (**Optional**) Create a symbolic link to the
-            created file in the supplied directory.  Default is to
-            produce no symbolic link.
-        clobber (bool): (**Optional**) Overwrite any existing files.
-            Default is to use any existing file instead of redoing the
-            analysis and overwriting the existing output.
-        checksum (bool): (**Optional**) Use the checksum in the fits
-            header to confirm that the data has not been corrupted.  The
-            checksum is **always** written to the fits header when the
-            file is created; this argument does not toggle that
-            functionality.
-        loggers (list): (**Optional**) List of `logging.Logger`_ objects
-            to log progress; ignored if quiet=True.  Logging is done
-            using :func:`mangadap.util.log.log_output`.  Default is no
-            logging.
-        quiet (bool): (**Optional**) Suppress all terminal and logging
-            output.  Default is False.
+        hardcopy (:obj:`bool`, optional):
+            Flag to write the `astropy.io.fits.HDUList`_
+            (:attr:`hdu`) to disk. If False, the object data is only
+            kept in memory.
+        symlink_dir (:obj:`str`, optional):
+            Create a symbolic link to the created file in the
+            supplied directory. If None, no symbolic link is created.
+        clobber (:obj:`bool`, optional):
+            Overwrite any existing files. If False, any existing
+            files will be used. If True, the analysis is redone and
+            any existing output is overwritten.
+        checksum (:obj:`bool`, optional):
+            Use the checksum in the fits header to confirm that the
+            data has not been corrupted. The checksum is **always**
+            written to the fits header when the file is created.
+        loggers (:obj:`list`, optional):
+            List of `logging.Logger`_ objects to log progress;
+            ignored if quiet=True. Logging is done using
+            :func:`mangadap.util.log.log_output`. If None, no logging
+            is performed and output is just written to ``stdout``.
+        quiet (:obj:`bool`, optional):
+            Suppress all terminal and logging output.
 
     Attributes:
-        loggers (list): List of `logging.Logger`_ objects to log
-            progress; ignored if quiet=True.  Logging is done using
+        loggers (:obj:`list`):
+            List of `logging.Logger`_ objects to log progress;
+            ignored if quiet=True. Logging is done using
             :func:`mangadap.util.log.log_output`.
-        quiet (bool): Suppress all terminal and logging output.
-
+        quiet (:obj:`bool`):
+            Suppress all terminal and logging output.
 
     .. todo::
         - Allow velocity offsets for registration.
+        - Fill in attributes.
    
     """
-#    @profile
-    def __init__(self, method_key, drpf, rdxqa, reff=None, method_list=None, dapver=None,
+    def __init__(self, method_key, cube, rdxqa, reff=None, method_list=None, dapver=None,
                  analysis_path=None, directory_path=None, output_file=None, hardcopy=True,
                  symlink_dir=None, clobber=False, checksum=False, loggers=None, quiet=False):
 
@@ -387,7 +404,7 @@ class SpatiallyBinnedSpectra:
         # Define the method properties
         self.method = self.define_method(method_key, method_list=method_list)
 
-        self.drpf = None
+        self.cube = None
         self.rdxqa = None
         self.reff = None
         self.galext = None
@@ -421,25 +438,12 @@ class SpatiallyBinnedSpectra:
         self.covariance = None
 
         # Bin the spectra
-        self.bin_spectra(drpf, rdxqa, reff=reff, dapver=dapver, analysis_path=analysis_path,
+        self.bin_spectra(cube, rdxqa, reff=reff, dapver=dapver, analysis_path=analysis_path,
                          directory_path=directory_path, output_file=output_file, hardcopy=hardcopy,
                          symlink_dir=symlink_dir, clobber=clobber, loggers=loggers, quiet=quiet)
 
-
-#    def __del__(self):
-#        """
-#        Deconstruct the data object by ensuring that the fits file is
-#        properly closed.
-#        """
-#        if self.hdu is None:
-#            return
-#        self.hdu.close()
-#        self.hdu = None
-
-
     def __getitem__(self, key):
         return self.hdu[key]
-
 
     @staticmethod
     def define_method(method_key, method_list=None):
@@ -450,7 +454,6 @@ class SpatiallyBinnedSpectra:
         return select_proc_method(method_key, SpatiallyBinnedSpectraDef, method_list=method_list,
                                   available_func=available_spatial_binning_methods)
 
-
     def _fill_method_par(self, good_spec):
         """
         Finalize the binning parameters, as needed.
@@ -460,10 +463,16 @@ class SpatiallyBinnedSpectra:
 
         **For the Voronoi binning**, set the signal and noise.
 
+        .. todo::
+            Abstract this so that this wrapper class doesn't need to
+            know about the internal constraints of each binning
+            approach.
+
         Args:
-            good_spec (numpy.ndarray):  List of spectra to include in
-                the binning.  See :func:`check_fgoodpix` and
-                :func:`_check_snr`.
+            good_spec (`numpy.ndarray`_):
+                List of spectra to include in the binning. See
+                :func:`check_fgoodpix` and :func:`_check_snr`.
+
         """
         if self.method['binclass'] is None:
             return
@@ -485,7 +494,6 @@ class SpatiallyBinnedSpectra:
             if self.rdxqa.correlation is not None:
                 # Overwrite any existing calibration coefficient
                 self.rdxqa.correlation.revert_correlation()
-#                self.rdxqa.correlation.show()
                 covar = self.rdxqa.correlation.toarray()[good_spec,:][:,good_spec]
                 self.rdxqa.correlation.to_correlation()
                 i, j = numpy.meshgrid(numpy.arange(covar.shape[0]), numpy.arange(covar.shape[1]))
@@ -493,63 +501,71 @@ class SpatiallyBinnedSpectra:
                                 inp=sparse.coo_matrix((covar[covar > 0].ravel(),
                                                       (i[covar > 0].ravel(), j[covar > 0].ravel())),
                                                       shape=covar.shape).tocsr())
-#                self.method['binpar']['covar'].show()
             else:
                 self.method['binpar']['noise'] \
                         = numpy.sqrt(self.rdxqa['SPECTRUM'].data['VARIANCE'][good_spec])
 
-
         # Nothing to add for binning types 'none' or 'global', or
         # user-defined function!
 
-
-
     def _set_paths(self, directory_path, dapver, analysis_path, output_file):
         """
-        Set the :attr:`directory_path` and :attr:`output_file`.  If not
-        provided, the defaults are set using, respectively,
+        Construct the main output paths.
+
+        This method sets :attr:`directory_path` and
+        :attr:`output_file`. If not provided as arguments, the
+        defaults are set using, respectively,
         :func:`mangadap.config.defaults.dap_common_path` and
         :func:`mangadap.config.defaults.dap_file_name`.
 
         Args:
-            directory_path (str): The exact path to the directory with
-                DAP output that is common to number DAP "methods".  See
-                :attr:`directory_path`.
-            dapver (str): DAP version.
-            analysis_path (str): The path to the top-level directory
-                containing the DAP output files for a given DRP and DAP
-                version.
-            output_file (str): The name of the file with the reduction assessments.
-                See :func:`compute`.
-
+            dapver (:obj:`str`, optional):
+                The DAP version. Used to construct the output paths,
+                overriding the default defined by
+                :func:`mangadap.config.defaults.dap_version`. Does
+                **not** select the version of the code to use.
+            analysis_path (:obj:`str`, optional):
+                The top-level path for the DAP output files, used to
+                override the default defined by
+                :func:`mangadap.config.defaults.dap_analysis_path`.
+            directory_path (:obj:`str`, optional):
+                The exact path to the directory with DAP output that
+                is common to the DAP "methods". Default is defined by
+                :func:`mangadap.confgi.defaults.dap_common_path`.
+            output_file (:obj:`str`, optional):
+                Exact name for the output file. The default is to use
+                :func:`mangadap.config.defaults.dap_file_name`.
         """
         # Set the output directory path
-        self.directory_path = defaults.dap_common_path(plate=self.drpf.plate,
-                                                       ifudesign=self.drpf.ifudesign,
-                                                       drpver=self.drpf.drpver, dapver=dapver,
+        self.directory_path = defaults.dap_common_path(plate=self.cube.plate,
+                                                       ifudesign=self.cube.ifudesign,
+                                                       drpver=self.cube.drpver, dapver=dapver,
                                                        analysis_path=analysis_path) \
                                         if directory_path is None else str(directory_path)
 
         # Set the output file
         method = '{0}-{1}'.format(self.rdxqa.method['key'], self.method['key'])
-        self.output_file = defaults.dap_file_name(self.drpf.plate, self.drpf.ifudesign, method) \
+        self.output_file = defaults.dap_file_name(self.cube.plate, self.cube.ifudesign, method) \
                                         if output_file is None else str(output_file)
-
 
     def _initialize_primary_header(self, hdr=None):
         """
-        Initialize the header of :attr:`hdu`.
+        Constuct the primary header for the reference file.
+
+        Args:
+            hdr (`astropy.fits.Header`_, optional):
+                Input base header for added keywords. If None, uses
+                the :attr:`cube` header (if there is one) and then
+                cleans the header using
+                :func:`mangadap.util.fitsutil.DAPFitsUtil.clean_dap_primary_header`.
 
         Returns:
-            astropy.io.fits.Header : Edited header object.
-
+            `astropy.io.fits.Header`_: Initialized header object.
         """
         # Copy the from the DRP and clean it
         if hdr is None:
-            hdr = self.drpf.hdu['PRIMARY'].header.copy()
+            hdr = self.cube.prihdr.copy()
             hdr = DAPFitsUtil.clean_dap_primary_header(hdr)
-        
-        # Add keywords specific to this object
         hdr['AUTHOR'] = 'Kyle B. Westfall <westfall@ucolick.org>'
         if self.reff is not None:
             hdr['REFF'] = self.reff
@@ -557,14 +573,23 @@ class SpatiallyBinnedSpectra:
         hdr['BINMINSN'] = (self.method['minimum_snr'], 'Minimum S/N of spectrum to include')
         hdr['FSPCOV'] = (0.8, 'Minimum allowed fraction of good pixels')
         hdr['NBINS'] = (self.nbins, 'Number of unique spatial bins')
-#        if len(self.missing_bins) > 0:
-#            hdr['EMPTYBIN'] = (str(self.missing_bins), 'List of bins with no data')
         return hdr
-
 
     def _add_method_header(self, hdr):
         """
         Add method-specific metadata to the header.
+
+        Note that the header object is both edited in-place and
+        returned.
+
+        Args:
+            hdr (`astropy.fits.Header`_):
+                Input base header for added keywords. Expected to
+                have been initialized using
+                :func:`_initialize_primary_header`.
+
+        Returns:
+            `astropy.io.fits.Header`_: Edited header object.
         """
         if self.is_unbinned:
             hdr['BINTYPE'] = ('None', 'Binning method')
@@ -593,50 +618,61 @@ class SpatiallyBinnedSpectra:
                 hdr = self.method['stackpar'].toheader(hdr)
         return hdr
 
-
     def _add_reddening_header(self, hdr):
         """
         Set the relevant reddening information to the header.
 
+        Note that the header object is both edited in-place and
+        returned.
+
         Args:
-            hdr (astropy.io.fits.Header): Input header object to edit.
+            hdr (`astropy.io.fits.Header`_):
+                Input header object to edit.
 
         Returns:
-            astropy.io.fits.Header : Edited header object.
+            `astropy.io.fits.Header`_: Edited header object.
         """
-        hdr['EBVGAL'] = (self.drpf['PRIMARY'].header['EBVGAL'], 'Galactic reddening E(B-V)')
+        hdr['EBVGAL'] = (self.cube.prihdr['EBVGAL'], 'Galactic reddening E(B-V)')
         hdr['GEXTLAW'] = (str(self.galext.form), 'Galactic extinction law')
         hdr['RVGAL'] = (self.galext.rv, 'Ratio of total to selective extinction, R(V)')
         return hdr
 
-
     def _finalize_cube_mask(self, mask):
         """
-        Finalize the mask after the 2D mask in self has already been
-        reconstructed into a 3D cube.
-        
-        This mostly handles the masks for regions outside the IFU field
-        of view.
+        Finalize the mask after the 2D mask has been reconstructed
+        into a 3D cube.
 
-        This propagates the DIDNOTUSE and FORESTAR bits
-        from the DRP file, and sets the LOW_SPECCOV and LOW_SNR bits
-        based on the input boolean arrays.
+        This mostly handles the masks for regions outside the
+        datacube field of view.
+
+        This propagates the bits flagging pixels that should not be
+        included in the stacked spectra, and sets the the LOW_SPECCOV
+        and LOW_SNR bits based on the results from
+        :func:`check_fgoodpix` and :func:`_check_snr`.
+
+        Note that the input mask is both edited in-place and
+        returned.
+
+        .. todo::
+            This needs to be abstracted for non-DRP datacubes.
+
+        Args:
+            mask (`numpy.ndarray`_):
+                3D array with the current bitmask data.
 
         Returns:
-            numpy.ndarray: Bitmask array.
+            `numpy.ndarray`_: Edited bitmask data.
         """
-
         # Get the spaxels with good spectral coverage and S/N
         good_fgoodpix = self.check_fgoodpix()
         good_snr = self._check_snr()
 
         # Turn on the flag stating that the pixel wasn't used
-        indx = self.drpf.bitmask.flagged(self.drpf['MASK'].data,
-                                         flag=self.drpf.do_not_stack_flags())
+        indx = self.drpf.bitmask.flagged(self.cube.mask, flag=self.cube.do_not_stack_flags())
         mask[indx] = self.bitmask.turn_on(mask[indx], 'DIDNOTUSE')
 
         # Turn on the flag stating that the pixel has a foreground star
-        indx = self.drpf.bitmask.flagged(self.drpf['MASK'].data, flag='FORESTAR')
+        indx = self.drpf.bitmask.flagged(self.cube.mask, flag='FORESTAR')
         mask[indx] = self.bitmask.turn_on(mask[indx], 'FORESTAR')
 
         # Turn on the flag stating that the number of valid channels in
@@ -651,7 +687,6 @@ class SpatiallyBinnedSpectra:
 
         return mask
 
-
     def _check_snr(self):
         """
         Determine which spectra in :attr:`rdxqa` have a S/N greater than
@@ -659,27 +694,24 @@ class SpatiallyBinnedSpectra:
         included in the binning.
     
         Returns:
-            numpy.ndarray : Boolean array for the spectra that satisfy
-            the criterion.
+            `numpy.ndarray`_: Boolean array for the spectra that
+            satisfy the criterion.
         """
         return self.rdxqa['SPECTRUM'].data['SNR'] > self.method['minimum_snr']
-
 
     def _assign_spectral_arrays(self):
         """
         Set :attr:`spectral_arrays`, which contains the list of
         extensions in :attr:`hdu` that contain spectral data.
         """
-        self.spectral_arrays = [ 'FLUX', 'IVAR', 'MASK', 'SPECRES', 'FLUXD', 'NPIX' ]
-
+        self.spectral_arrays = ['FLUX', 'IVAR', 'MASK', 'SPECRES', 'FLUXD', 'NPIX']
 
     def _assign_image_arrays(self):
         """
         Set :attr:`image_arrays`, which contains the list of extensions
         in :attr:`hdu` that are on-sky image data.
         """
-        self.image_arrays = [ 'BINID' ]
-
+        self.image_arrays = ['BINID']
 
     def _per_bin_dtype(self):
         """
@@ -705,25 +737,24 @@ class SpatiallyBinnedSpectra:
                  ('SNR',numpy.float)
                ]
 
-
     @staticmethod
     def _get_missing_bins(unique_bins):
+        """Return bin IDs omitted from a sequential list."""
         return list(set(numpy.arange(numpy.amax(unique_bins)+1)) - set(unique_bins))
-
 
     def _unbinned_data_table(self, bin_indx):
         """
         Construct the output data table for the unbinned spectra.
 
         Args:
-            bin_indx (numpy.ndarray): The integer vector with the bin
-                associated with each spectrum in the DRP cube.  This is
-                the flattened BINID array.
+            bin_indx (`numpy.ndarray`_):
+                The integer vector with the bin associated with each
+                spectrum in the DRP cube. This is the flattened
+                ``BINID`` array.
 
         Returns:
-            numpy.recarray : The record array that is put in the BINS
-            extension of :attr:`hdu`.
-    
+            `numpy.recarray`_: The record array that is put in the
+            BINS extension of :attr:`hdu`.
         """
         # Find the spectra that have a bin ID
         good_spec = bin_indx > -1
@@ -734,7 +765,7 @@ class SpatiallyBinnedSpectra:
         bin_data = init_record_array(self.nbins, self._per_bin_dtype())
 
         bin_data['BINID'] = numpy.arange(self.nbins)
-        bin_data['NBIN'] = numpy.ones(self.nbins, dtype=numpy.int)
+        bin_data['NBIN'] = numpy.ones(self.nbins, dtype=int)
         bin_data['SKY_COO'][:,0] = self.rdxqa['SPECTRUM'].data['SKY_COO'][good_spec,0]
         bin_data['SKY_COO'][:,1] = self.rdxqa['SPECTRUM'].data['SKY_COO'][good_spec,1]
         bin_data['LW_SKY_COO'] = bin_data['SKY_COO'].copy()
@@ -742,30 +773,26 @@ class SpatiallyBinnedSpectra:
         bin_data['ELL_COO'][:,1] = self.rdxqa['SPECTRUM'].data['ELL_COO'][good_spec,1]
         bin_data['LW_ELL_COO'] = bin_data['ELL_COO'].copy()
 
-        if self.drpf.pixelscale is None:
-            self.drpf.pixelscale = defaults.cube_pixelscale()
+        if self.cube.pixelscale is None:
+            if self.cube.wcs is not None:
+                self.cube._get_pixelscale()
+            else:
+                raise ValueError('Must provide datacube spatial pixelscale, or a WCS so that it '
+                                 'can be calculated.')
 
-        bin_data['AREA'] = numpy.full(self.nbins, numpy.square(self.drpf.pixelscale),
-                                      dtype=numpy.float)
-        bin_data['AREA_FRAC'] = numpy.ones(self.nbins, dtype=numpy.int)
-
+        bin_data['AREA'] = numpy.full(self.nbins, numpy.square(self.cube.pixelscale), dtype=float)
+        bin_data['AREA_FRAC'] = numpy.ones(self.nbins, dtype=int)
         bin_data['SIGNAL'] = self.rdxqa['SPECTRUM'].data['SIGNAL'][good_spec]
         bin_data['VARIANCE'] = self.rdxqa['SPECTRUM'].data['VARIANCE'][good_spec]
         bin_data['SNR'] = self.rdxqa['SPECTRUM'].data['SNR'][good_spec]
-
         return bin_data
-
 
     def _interpolated_response_function(self):
         response_func = self.rdxqa.method['response_func']
         if response_func is None:
             # Just return a uniform response function
-            return numpy.ones(self.drpf.nwave, dtype=float)
-        
-        interp = interpolate.interp1d(response_func[:,0], response_func[:,1], bounds_error=False,
-                                      fill_value=0.0, assume_sorted=True)
-        return interp(self.drpf['WAVE'].data)
-
+            return numpy.ones(self.cube.nwave, dtype=float)
+        return  self.cube.interpolate_to_match(response_func)
 
     def _binned_data_table(self, bin_indx, stack_flux, stack_ivar, per_pixel=True):
         r"""
