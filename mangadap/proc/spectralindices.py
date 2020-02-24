@@ -520,18 +520,21 @@ class SpectralIndices:
             default list is provided by the config files in the DAP
             source directory and compiled into this list using
             :func:`available_spectral_index_databases`.
-        artifact_list (list): (**Optional**) List of
-            :class:`mangadap.par.spectralfeaturedb.SpectralFeatureDBDef`
-            objects that define the unique key for the artifact database
-            (see :mod:`mangadap.par.artifactdb`).
-        absorption_index_list (list): (**Optional**) List of
-            :class:`mangadap.par.spectralfeaturedb.SpectralFeatureDBDef`
-            objects that define the unique key for the absorption-index
-            database (see :mod:`mangadap.par.absorptionindexdb`).
-        bandhead_index_list (list): (**Optional**) List of
-            :class:`mangadap.par.spectralfeaturedb.SpectralFeatureDBDef`
-            objects that define the unique key for the bandhead-index
-            database (see :mod:`mangadap.par.bandheadindexdb`).
+        artifact_path (:obj:`str`, optional):
+            Path to the directory with artifact parameter files.  If
+            None, defined by
+            :attr:`mangadap.par.artifactdb.ArtifactDB.default_data_dir`.
+        absorption_index_path (:obj:`str`, optional:
+            Path to the directory with absorption-line index parameter
+            files.  If None, defined by
+            :attr:`mangadap.par.absorptionindexdb.AbsorptionIndexDB.default_data_dir`.
+        bandhead_index_path (:obj:`str`, optional):
+            Path to the directory with bandhead index parameter files.
+            If None, defined by
+            :attr:`mangadap.par.bandheadindexdb.BandheadIndexDB.default_data_dir`.
+        dapsrc (str): (**Optional**) Root path to the DAP source
+            directory.  If not provided, the default is defined by
+            :func:`mangadap.config.defaults.dap_source_dir`.
         dapver (str): (**Optional**) The DAP version to use for the
             analysis, used to override the default defined by
             :func:`mangadap.config.defaults.dap_version`.
@@ -567,8 +570,8 @@ class SpectralIndices:
 
     """
     def __init__(self, database_key, binned_spectra, redshift=None, stellar_continuum=None,
-                 emission_line_model=None, database_list=None, artifact_list=None,
-                 absorption_index_list=None, bandhead_index_list=None, dapver=None,
+                 emission_line_model=None, database_list=None, artifact_path=None,
+                 absorption_index_path=None, bandhead_index_path=None, dapsrc=None, dapver=None,
                  analysis_path=None, directory_path=None, output_file=None, hardcopy=True,
                  tpl_symlink_dir=None, clobber=False, checksum=False, loggers=None, quiet=False):
 
@@ -582,9 +585,9 @@ class SpectralIndices:
         self.absdb = None
         self.bhddb = None
         self._define_databases(database_key, database_list=database_list,
-                               artifact_list=artifact_list,
-                               absorption_index_list=absorption_index_list,
-                               bandhead_index_list=bandhead_index_list)
+                               artifact_path=artifact_path,
+                               absorption_index_path=absorption_index_path,
+                               bandhead_index_path=bandhead_index_path)
 
         self.nabs, self.nbhd = self.count_indices(self.absdb, self.bhddb)
         self.nindx = self.nabs + self.nbhd

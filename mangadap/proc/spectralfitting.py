@@ -575,7 +575,7 @@ class EmissionLineFit(SpectralFitting):
             EmissionLineFit.check_emission_line_database(emission_lines)
 
         nspec = flux.shape[0]
-        nbands = emission_lines.neml
+        nbands = len(emission_lines)
         if redshift is None:
             # If the redshift is NOT provided, use the fitted velocity
             # for each emission line.  Replace masked measurements with
