@@ -216,8 +216,8 @@ class PPXFFitPar(KeywordParSet):
             hdr['PPXFRBOX'] = (self['reject_boxcar'], 'pPXF rejection boxcar')
         if self['filter_boxcar'] is not None:
             hdr['PPXFFBOX'] = (self['filter_boxcar'], 'pPXF filtering boxcar')
-        if self['filter_tterations'] is not None:
-            hdr['PPXFFILT'] = (self['filter_iteration'], 'pPXF number of filtering iterations')
+        if self['filter_iterations'] is not None:
+            hdr['PPXFFILT'] = (self['filter_iterations'], 'pPXF number of filtering iterations')
         return hdr
 
 
@@ -243,10 +243,10 @@ class PPXFFitPar(KeywordParSet):
             self['filter_boxcar'] = None
 
         try:
-            self['filter_iteration'] = hdr['PPXFFILT']
+            self['filter_iterations'] = hdr['PPXFFILT']
         except KeyError as e:
             warnings.warn('Input header does not specify number of filtering iterations.')
-            self['filter_iteration'] = None
+            self['filter_iterations'] = None
         
 
 

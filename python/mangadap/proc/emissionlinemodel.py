@@ -37,6 +37,7 @@ Revision history
 import os
 import glob
 import logging
+import warnings
 
 import numpy
 
