@@ -1182,7 +1182,7 @@ class Sasuke(EmissionLineFit):
         #   emission line
         return model_flux, model_eml_flux, model_mask, model_fit_par, model_eml_par
 
-    def get_stellar_templates(self, par, drpf, z=0., loggers=None, quiet=False):
+    def get_stellar_templates(self, par, cube, z=0., loggers=None, quiet=False):
         """
         Return the stellar template library.
 
@@ -1224,7 +1224,7 @@ class Sasuke(EmissionLineFit):
             # resolution match to the MaNGA data.
             return TemplateLibrary(par['continuum_templates'],
                                    velocity_offset=astropy.constants.c.to('km/s').value*z,
-                                   drpf=drpf, match_to_drp_resolution=True,
+                                   cube=cube, match_resolution=True,
                                    velscale_ratio=par['velscale_ratio'], hardcopy=False,
                                    loggers=loggers, quiet=quiet), True, par['velscale_ratio']
 
@@ -1340,7 +1340,7 @@ class Sasuke(EmissionLineFit):
 
         # Get the stellar templates
         stellar_templates, matched_resolution, velscale_ratio \
-                = self.get_stellar_templates(par, binned_spectra.drpf,
+                = self.get_stellar_templates(par, binned_spectra.cube,
                                              z=numpy.mean(par['guess_redshift'][bins_to_fit]),
                                              loggers=loggers, quiet=quiet)
         stpl_wave = None if stellar_templates is None else stellar_templates['WAVE'].data
@@ -1525,7 +1525,7 @@ class Sasuke(EmissionLineFit):
                                                     missing=binned_spectra.missing_bins)
 
                 # Construct the full 3D cube for the stellar continuum
-                sc_model_flux = DAPFitsUtil.reconstruct_cube(binned_spectra.drpf.shape,
+                sc_model_flux = DAPFitsUtil.reconstruct_cube(binned_spectra.shape,
                                                              binned_spectra['BINID'].data.ravel(),
                                                              sc_continuum.filled(0.0)
                                                             ).reshape(-1,self.npix_obj)
@@ -1533,7 +1533,7 @@ class Sasuke(EmissionLineFit):
                 # Construct the full 3D cube of the new stellar
                 # continuum from the combined stellar-continuum +
                 # emission-line fit
-                el_continuum = DAPFitsUtil.reconstruct_cube(binned_spectra.drpf.shape,
+                el_continuum = DAPFitsUtil.reconstruct_cube(binned_spectra.shape,
                                                             model_binid.ravel(),
                                                             model_flux - model_eml_flux
                                                            ).reshape(-1,self.npix_obj)

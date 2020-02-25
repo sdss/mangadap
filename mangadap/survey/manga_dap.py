@@ -269,8 +269,6 @@ def manga_dap(cube, plan, dbg=False, log=None, verbose=0, drpver=None, redux_pat
                                         directory_path=method_ref_dir,
                                         clobber=plan['elmom_clobber'][i], loggers=loggers)
 
-        return
-
         #---------------------------------------------------------------
         # Emission-line Fit: placed in the DAPTYPE/ref/ directory
         #---------------------------------------------------------------
@@ -398,6 +396,8 @@ def manga_dap(cube, plan, dbg=False, log=None, verbose=0, drpver=None, redux_pat
                                     analysis_path=_analysis_path, directory_path=method_ref_dir,
                                     tpl_symlink_dir=method_ref_dir,
                                     clobber=plan['spindex_clobber'][i], loggers=loggers)
+
+        return
 
         #-------------------------------------------------------------------
         # Construct the main output file(s)
