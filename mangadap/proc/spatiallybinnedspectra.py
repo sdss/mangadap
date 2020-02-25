@@ -534,7 +534,7 @@ class SpatiallyBinnedSpectra:
 
     def _initialize_primary_header(self, hdr=None):
         """
-        Constuct the primary header for the reference file.
+        Construct the primary header for the reference file.
 
         Args:
             hdr (`astropy.fits.Header`_, optional):

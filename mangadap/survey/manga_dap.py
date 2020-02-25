@@ -239,14 +239,13 @@ def manga_dap(cube, plan, dbg=False, log=None, verbose=0, drpver=None, redux_pat
                                            symlink_dir=method_ref_dir,
                                            clobber=plan['bin_clobber'][i], loggers=loggers)
 
-        return
-
         #---------------------------------------------------------------
         # Stellar Continuum Fit: placed in the common/ directory
         #---------------------------------------------------------------
+        cz = astropy.constants.c.to('km/s').value * cube.meta['z']
         stellar_continuum = None if plan['continuum_key'][i] is None else \
                     StellarContinuumModel(plan['continuum_key'][i], binned_spectra,
-                                          guess_vel=obs['vel'], guess_sig=obs['vdisp'],
+                                          guess_vel=cz, guess_sig=cube.meta['vdisp'],
                                           analysis_path=_analysis_path, symlink_dir=method_ref_dir,
                                           tpl_symlink_dir=method_ref_dir,
                                           clobber=plan['continuum_clobber'][i], loggers=loggers)
@@ -269,6 +268,8 @@ def manga_dap(cube, plan, dbg=False, log=None, verbose=0, drpver=None, redux_pat
                                         analysis_path=_analysis_path,
                                         directory_path=method_ref_dir,
                                         clobber=plan['elmom_clobber'][i], loggers=loggers)
+
+        return
 
         #---------------------------------------------------------------
         # Emission-line Fit: placed in the DAPTYPE/ref/ directory
