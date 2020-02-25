@@ -320,9 +320,9 @@ class EmissionLineMoments:
         method = defaults.dap_method(self.binned_spectra.method['key'], continuum_templates,
                                      eml_templates)
         self.directory_path \
-                = defaults.dap_method_path(method, plate=self.binned_spectra.drpf.plate,
-                                           ifudesign=self.binned_spectra.drpf.ifudesign, ref=True,
-                                           drpver=self.binned_spectra.drpf.drpver, dapver=dapver,
+                = defaults.dap_method_path(method, plate=self.binned_spectra.cube.plate,
+                                           ifudesign=self.binned_spectra.cube.ifudesign, ref=True,
+                                           drpver=self.binned_spectra.cube.drpver, dapver=dapver,
                                            analysis_path=analysis_path) \
                                 if directory_path is None else str(directory_path)
 
@@ -334,22 +334,34 @@ class EmissionLineMoments:
         if self.emission_line_model is not None:
             ref_method = '{0}-{1}'.format(ref_method, self.emission_line_model.method['key'])
         ref_method = '{0}-{1}'.format(ref_method, self.database['key'])
-        self.output_file = defaults.dap_file_name(self.binned_spectra.drpf.plate,
-                                                  self.binned_spectra.drpf.ifudesign, ref_method) \
+        self.output_file = defaults.dap_file_name(self.binned_spectra.cube.plate,
+                                                  self.binned_spectra.cube.ifudesign, ref_method) \
                                         if output_file is None else str(output_file)
 
 
     def _initialize_primary_header(self, hdr=None, measurements_binid=None):
         """
-        Initialize the header of :attr:`hdu`.
+        Construct the primary header for the reference file.
+
+        Args:
+            hdr (`astropy.fits.Header`_, optional):
+                Input base header for added keywords. If None, uses
+                the :attr:`cube` header (if there is one) and then
+                cleans the header using
+                :func:`mangadap.util.fitsutil.DAPFitsUtil.clean_dap_primary_header`.
+            measurements_binid (`numpy.ndarray`_, optional):
+                Bin IDs for moment measurements. Only use is to check
+                if this is None, and the boolean result is save to
+                the header to indicate if the emission-line moment
+                measurements are disconnected from the
+                stellar-continuum measurements.
 
         Returns:
-            astropy.io.fits.Header : Edited header object.
-
+            `astropy.io.fits.Header`_: Initialized header object.
         """
         # Copy the from the DRP and clean it
         if hdr is None:
-            hdr = self.binned_spectra.drpf.hdu['PRIMARY'].header.copy()
+            hdr = self.binned_spectra.cube.prihdr.copy()
             hdr = DAPFitsUtil.clean_dap_primary_header(hdr)
         
         hdr['AUTHOR'] = 'Kyle B. Westfall <westfall@ucolick.org>'
@@ -464,7 +476,7 @@ class EmissionLineMoments:
             binid = numpy.full(self.spatial_shape, -1, dtype=int)
             binid.ravel()[good_snr] = numpy.arange(self.nbins)
             missing = []
-            nspec = self.binned_spectra.drpf.nspec
+            nspec = self.binned_spectra.cube.nspec
         else:
             binid = self.binned_spectra['BINID'].data
             missing = self.binned_spectra.missing_bins
@@ -1128,7 +1140,7 @@ class EmissionLineMoments:
                 and self.emission_line_model.method['deconstruct_bins'] != 'ignore'
 
         self.spatial_shape =self.binned_spectra.spatial_shape
-        self.nspec = self.binned_spectra.drpf.nspec if measure_on_unbinned_spaxels \
+        self.nspec = self.binned_spectra.cube.nspec if measure_on_unbinned_spaxels \
                             else self.binned_spectra.nbins
         self.spatial_index = self.binned_spectra.spatial_index.copy()
         
@@ -1260,7 +1272,7 @@ class EmissionLineMoments:
         # Initialize the header
         self.hardcopy = hardcopy
         pri_hdr = self._initialize_primary_header(measurements_binid=measurements_binid)
-        map_hdr = DAPFitsUtil.build_map_header(self.binned_spectra.drpf,
+        map_hdr = DAPFitsUtil.build_map_header(self.binned_spectra.cube.fluxhdr,
                                                'K Westfall <westfall@ucolick.org>')
 
         # Get the spatial map mask
