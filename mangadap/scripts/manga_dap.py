@@ -51,8 +51,6 @@ def parse_args(options=None):
     return parser.parse_args() if options is None else parser.parse_args(options)
 
 def main(args):
-    t = time.perf_counter()
-
     # Instantiate the DataCube
     #   - Try to import the module
     try:
@@ -64,7 +62,7 @@ def main(args):
     #   - Check that the class is derived from DataCube
     if not issubclass(UserDataCube, DataCube):
         raise TypeError('Defined cube object must subclass from mangadap.datacube.DataCube.')
-    #   - Instantiate using either the data cube file directly or a
+    #   - Instantiate using either the datacube file directly or a
     #     configuration file
     cube = UserDataCube(args.cubefile) if args.config is None \
                 else UserDataCube.from_config(args.config) 
@@ -78,8 +76,4 @@ def main(args):
                        drpver=args.drpver, redux_path=args.redux_path,
                        directory_path=args.directory_path, dapver=args.dapver,
                        analysis_path=args.analysis_path)
-
-    print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
-
-
 

@@ -63,7 +63,7 @@ def test_read_correl():
 @requires_remote
 def test_wcs():
     cube = MaNGADataCube.from_plateifu(7815, 3702, directory_path=remote_data_file())
-    x, y = cube.mean_sky_coordinates()
+    x, y = cube.mean_sky_coordinates(offset=None)
     assert x[0,0] > x[-1,0], 'RA should increase from large to small indices'
     assert y[0,0] < y[0,-1], 'DEC should increase from small to small indices'
     assert numpy.unravel_index(numpy.argmin( numpy.square(x - cube.prihdr['OBJRA']) 
@@ -71,7 +71,7 @@ def test_wcs():
                 == (21,21), 'Object should be at cube center.'
     x, y = cube.mean_sky_coordinates(center_coo=(x[0,0], y[0,0]))
     assert numpy.isclose(x[0,0], 0.0) and numpy.isclose(y[0,0], 0.0), 'Offset incorrect'
-    x, y = cube.mean_sky_coordinates(offset='obj')
+    x, y = cube.mean_sky_coordinates()
     assert abs(x[21,21]) < 1e-2 and abs(y[21,21]) < 1e-2, 'Offset incorrect'
 
 

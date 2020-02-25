@@ -38,7 +38,7 @@ def test_ppxffit():
 
     # Instantiate the template libary
     velscale_ratio = 4
-    tpl = TemplateLibrary('MILESHC', match_to_drp_resolution=False, velscale_ratio=velscale_ratio,
+    tpl = TemplateLibrary('MILESHC', match_resolution=False, velscale_ratio=velscale_ratio,
                           spectral_step=1e-4, log=True, hardcopy=False)
     tpl_sres = numpy.mean(tpl['SPECRES'].data, axis=0)
 

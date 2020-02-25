@@ -93,9 +93,9 @@ class DAPFitsUtil:
 
 
     @staticmethod
-    def initialize_dap_primary_header(drpf, maskname=None):
+    def initialize_dap_primary_header(cube, maskname=None):
         # Copy the from the DRP and clean it
-        hdr = drpf.hdu['PRIMARY'].header.copy()
+        hdr = cube.prihdr.copy()
         hdr = DAPFitsUtil.clean_dap_primary_header(hdr)
 
         # Change MASKNAME

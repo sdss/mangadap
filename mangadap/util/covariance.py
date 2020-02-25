@@ -153,6 +153,8 @@ import os
 import numpy
 import warnings
 
+from IPython import embed
+
 from scipy import sparse
 from astropy.io import fits
 from matplotlib import pyplot
@@ -1173,7 +1175,7 @@ class Covariance:
         # Returns seven arrays
         i_c1, i_c2 = numpy.unravel_index(i, new_shape)
         j_c1, j_c2 = numpy.unravel_index(j, new_shape)
-        return i_c1, i_c2, j_c1, j_c2, k, rhoij, self.var.reshape(new_shape, -1).copy()
+        return i_c1, i_c2, j_c1, j_c2, k, rhoij, self.var.reshape(*new_shape, -1).copy()
 
     def output_hdus(self, reshape=False, hdr=None):
         r"""

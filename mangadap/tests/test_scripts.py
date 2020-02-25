@@ -111,21 +111,19 @@ def test_manga_dap():
     if os.path.isdir(odir):
         shutil.rmtree(odir)
 
-    # Run the DAP
+    # Run the DAP. The binning in plan.par is set to ALL binning, so
+    # this run of the DAP just analyzes one spectrum and takes about a
+    # minute.
     manga_dap.main(manga_dap.parse_args(['-c', data_test_file('datacube.ini'),
                                          '-p', data_test_file('plan.par'), '-a', odir]))
 
-    embed()
-    exit()
-
-    # Re-run to use existing files
+    # Re-run to use existing files.  Takes about 40s.
     manga_dap.main(manga_dap.parse_args(['-c', data_test_file('datacube.ini'),
                                          '-p', data_test_file('plan.par'), '-a', odir]))
-    embed()
-    exit()
 
     # Clean up
     shutil.rmtree(odir)
+
 
 # TODO: Add some remote data?
 def test_plate_fit_qa():
@@ -208,8 +206,8 @@ def test_run():
     assert script_help_okay('rundap'), 'Basic help call failed'
 
 
-if __name__ == '__main__':
-    test_manga_dap()
+#if __name__ == '__main__':
+#    test_manga_dap()
 
 
 

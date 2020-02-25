@@ -42,15 +42,18 @@ import time
 import os
 import warnings
 
+from IPython import embed
+
 import numpy
 
-from astropy.wcs import WCS
 from astropy.io import fits
 import astropy.constants
 import astropy.units
 from astropy.cosmology import FlatLambdaCDM
 
-from .drpfits import DRPFits, DRPQuality3DBitMask
+#from .drpfits import DRPFits, DRPQuality3DBitMask
+from .drpfits import DRPQuality3DBitMask
+from .datacube import DataCube
 from .util.fitsutil import DAPFitsUtil
 from .util.dapbitmask import DAPBitMask
 from .util.log import log_output
@@ -58,7 +61,6 @@ from .util.fileio import channel_dictionary
 from .util.exception_tools import print_frame
 from .util.geometry import SemiMajorAxisCoo
 from .util.covariance import Covariance
-from .par.obsinput import ObsInputPar
 from .config import defaults
 from .proc.reductionassessments import ReductionAssessment
 from .proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
@@ -551,15 +553,15 @@ class construct_maps_file:
     """
     Construct a DAP MAPS file.
 
-    Set as a class for coherency reasons, but should not be used as an
+    Set as a class to enforce a namespace. Should not be used as an
     object!
 
     Should force all intermediate objects to be provided.
 
     """
-    def __init__(self, drpf, obs=None, rdxqa=None, binned_spectra=None, stellar_continuum=None,
+    def __init__(self, cube, rdxqa=None, binned_spectra=None, stellar_continuum=None,
                  emission_line_moments=None, emission_line_model=None, spectral_indices=None,
-                 nsa_redshift=None, dapver=None, analysis_path=None, directory_path=None,
+                 redshift=None, dapver=None, analysis_path=None, directory_path=None,
                  output_file=None, clobber=True, loggers=None, quiet=False,
                  single_precision=False):
 
@@ -572,24 +574,12 @@ class construct_maps_file:
 
         #---------------------------------------------------------------
         # Check input types
-        confirm_dap_types(drpf, obs, rdxqa, binned_spectra, stellar_continuum,
-                          emission_line_moments, emission_line_model, spectral_indices)
-
-#        print('inside construct')
-#        bin_indx = stellar_continuum['BINID'].data.copy().ravel()
-#        pyplot.imshow(DAPFitsUtil.reconstruct_map(drpf.spatial_shape, bin_indx, #vel),
-#                                                  stellar_continuum['PAR'].data['KIN'][:,0]),
-#                      origin='lower', interpolation='nearest')
-#        pyplot.show()
-#
-#        pyplot.imshow(DAPFitsUtil.reconstruct_map(drpf.spatial_shape, bin_indx, #vel),
-#                                                  stellar_continuum['PAR'].data['KIN'][:,1]),
-#                      origin='lower', interpolation='nearest')
-#        pyplot.show()
+        confirm_dap_types(cube, rdxqa, binned_spectra, stellar_continuum, emission_line_moments,
+                          emission_line_model, spectral_indices)
 
         #---------------------------------------------------------------
         # Set the output paths
-        self.drpf = drpf
+        self.cube = cube
         self.method = None
         self.directory_path = None
         self.output_file = None
@@ -597,25 +587,21 @@ class construct_maps_file:
                         stellar_continuum, emission_line_model)
 
         # Save input for reference
-        self.spatial_shape = self.drpf.spatial_shape
-        self.nsa_redshift = nsa_redshift
-#        self.multichannel_arrays = None
-#        self._set_multichannel_arrays(emission_line_moments, emission_line_model, spectral_indices)
-#        self.singlechannel_arrays = None
-#        self._set_singlechannel_arrays(emission_line_moments, emission_line_model, spectral_indices)
+        self.spatial_shape = self.cube.spatial_shape
+        self.redshift = redshift
 
         # Report
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '-'*50)
             log_output(loggers, 1, logging.INFO, '{0:^50}'.format('CONSTRUCTING OUTPUT MAPS'))
             log_output(self.loggers, 1, logging.INFO, '-'*50)
-            log_output(self.loggers, 1, logging.INFO, 'Output path: {0}'.format(
-                                                                            self.directory_path))
-            log_output(self.loggers, 1, logging.INFO, 'Output file: {0}'.format(
-                                                                            self.output_file))
-            log_output(self.loggers, 1, logging.INFO, 'Output maps have shape {0}'.format(
-                                                                            self.spatial_shape))
-            log_output(self.loggers, 1, logging.INFO, 'NSA redshift: {0}'.format(self.nsa_redshift))
+            log_output(self.loggers, 1, logging.INFO,
+                       'Output path: {0}'.format(self.directory_path))
+            log_output(self.loggers, 1, logging.INFO,
+                       'Output file: {0}'.format(self.output_file))
+            log_output(self.loggers, 1, logging.INFO,
+                       'Output maps have shape {0}'.format(self.spatial_shape))
+            log_output(self.loggers, 1, logging.INFO, 'Redshift: {0}'.format(self.redshift))
 
         #---------------------------------------------------------------
         # Check if the file already exists
@@ -628,7 +614,8 @@ class construct_maps_file:
 
         #---------------------------------------------------------------
         # Initialize the primary header
-        prihdr = DAPFitsUtil.initialize_dap_primary_header(self.drpf, maskname='MANGA_DAPPIXMASK')
+        prihdr = DAPFitsUtil.initialize_dap_primary_header(self.cube, maskname='MANGA_DAPPIXMASK')
+
         # Add the DAP method
         prihdr['DAPTYPE'] = (defaults.dap_method(binned_spectra.method['key'],
                                     stellar_continuum.method['fitpar']['template_library_key'],
@@ -640,11 +627,12 @@ class construct_maps_file:
 
         # Get the base map headers
         self.multichannel_maphdr \
-                = DAPFitsUtil.build_map_header(self.drpf,
+                = DAPFitsUtil.build_map_header(self.cube.fluxhdr,
                                 'K Westfall <westfall@ucolick.org> & SDSS-IV Data Group',
                                                multichannel=True, maskname='MANGA_DAPPIXMASK')
+
         self.singlechannel_maphdr \
-                = DAPFitsUtil.build_map_header(self.drpf,
+                = DAPFitsUtil.build_map_header(self.cube.fluxhdr,
                                 'K Westfall <westfall@ucolick.org> & SDSS-IV Data Group',
                                                maskname='MANGA_DAPPIXMASK')
 
@@ -658,13 +646,13 @@ class construct_maps_file:
         #---------------------------------------------------------------
         # Construct the hdu list for each input object.
         # Reduction assessments:
-        rdxqalist = self.reduction_assessment_maps(prihdr, obs, rdxqa)
+        rdxqalist = self.reduction_assessment_maps(prihdr, rdxqa)
         # Construct the BINID extension
-        binidlist = combine_binid_extensions(self.drpf, binned_spectra, stellar_continuum,
+        binidlist = combine_binid_extensions(self.cube, binned_spectra, stellar_continuum,
                                              emission_line_moments, emission_line_model,
                                              spectral_indices, dtype='int32')
         # Binned spectra:
-        bspeclist = self.binned_spectra_maps(prihdr, obs, binned_spectra)
+        bspeclist = self.binned_spectra_maps(prihdr, binned_spectra)
         # Stellar-continuum fits:
         contlist = self.stellar_continuum_maps(prihdr, stellar_continuum)
         # Emission-line moments:
@@ -680,11 +668,10 @@ class construct_maps_file:
         sindxlist = self.spectral_index_maps(prihdr, spectral_indices)
 
         # Save the data to the hdu attribute
-        prihdr = add_snr_metrics_to_header(prihdr, self.drpf, rdxqalist[1].data[:,:,1].ravel())
+        prihdr = add_snr_metrics_to_header(prihdr, self.cube, rdxqalist[1].data[:,:,1].ravel())
         
-        prihdr = finalize_dap_primary_header(prihdr, self.drpf, obs, binned_spectra,
-                                             stellar_continuum, loggers=self.loggers,
-                                             quiet=self.quiet)
+        prihdr = finalize_dap_primary_header(prihdr, self.cube, binned_spectra, stellar_continuum,
+                                             loggers=self.loggers, quiet=self.quiet)
         self.hdu = fits.HDUList([ fits.PrimaryHDU(header=prihdr),
                                   *rdxqalist,
                                   *binidlist,
@@ -696,13 +683,6 @@ class construct_maps_file:
                                 ])
 
         extensions = [ h.name for h in self.hdu ]
-
-#        print('maps')
-#        pyplot.imshow(self.hdu['STELLAR_VEL'].data, origin='lower', interpolation='nearest')
-#        pyplot.show()
-#
-#        pyplot.imshow(self.hdu['STELLAR_SIGMA'].data, origin='lower', interpolation='nearest')
-#        pyplot.show()
 
         #---------------------------------------------------------------
         # TEMPORARY FLAGS:
@@ -743,8 +723,8 @@ class construct_maps_file:
 
         # Flag any inverse variances that are not positive as DONOTUSE
         # and MATHERROR
-        ext = [ 'BIN_MFLUX', 'STELLAR_VEL', 'STELLAR_SIGMA', 'EMLINE_SFLUX', 'EMLINE_SEW',
-                'EMLINE_GFLUX', 'EMLINE_GEW', 'EMLINE_GVEL', 'EMLINE_GSIGMA', 'SPECINDEX' ]
+        ext = ['BIN_MFLUX', 'STELLAR_VEL', 'STELLAR_SIGMA', 'EMLINE_SFLUX', 'EMLINE_SEW',
+               'EMLINE_GFLUX', 'EMLINE_GEW', 'EMLINE_GVEL', 'EMLINE_GSIGMA', 'SPECINDEX']
         for e in ext:
             if '{0}_MASK'.format(e) not in extensions \
                     or '{0}_IVAR'.format(e) not in extensions \
@@ -790,14 +770,14 @@ class construct_maps_file:
                                     'None' if emission_line_model is None 
                                         else emission_line_model.method['continuum_tpl_key']) \
                                 if directory_path is None else None
-        self.directory_path = defaults.dap_method_path(self.method, plate=self.drpf.plate,
-                                                       ifudesign=self.drpf.ifudesign,
-                                                       drpver=self.drpf.drpver, dapver=dapver,
+        self.directory_path = defaults.dap_method_path(self.method, plate=self.cube.plate,
+                                                       ifudesign=self.cube.ifudesign,
+                                                       drpver=self.cube.drpver, dapver=dapver,
                                                        analysis_path=analysis_path) \
                                                 if directory_path is None else str(directory_path)
 
         # Set the output file
-        self.output_file = defaults.dap_file_name(self.drpf.plate, self.drpf.ifudesign,
+        self.output_file = defaults.dap_file_name(self.cube.plate, self.cube.ifudesign,
                                                   self.method, mode='MAPS') \
                                     if output_file is None else str(output_file)
 
@@ -1061,7 +1041,7 @@ class construct_maps_file:
         cosmo = FlatLambdaCDM(H0=H0, Om0=0.3)
         return numpy.radians(1/3600) * 1e3 * cosmo.angular_diameter_distance(z).value
 
-    def reduction_assessment_maps(self, prihdr, obs, rdxqa):
+    def reduction_assessment_maps(self, prihdr, rdxqa):
         """
         Constructs the 'SPX_SKYCOO', 'SPX_ELLCOO', 'SPX_MFLUX',
         'SPX_MFLUX_IVAR', and 'SPX_SNR' map extensions.
@@ -1110,23 +1090,16 @@ class construct_maps_file:
         # Elliptical coordinates
         spx_ellcoo = rdxqa['SPECTRUM'].data['ELL_COO'].copy().reshape(*self.spatial_shape, -1)
         spx_ellcoo = numpy.repeat(spx_ellcoo, (3,1), axis=2)
-        if obs is None:
-            # This should never be tripped at the survey level!
-            warnings.warn('Input obs parameters not given.  Normalized radii not provided.')
-            spx_ellcoo[:,:,1] = -1
-            spx_ellcoo[:,:,2] = -1
+
+        # Calculate the radius normalized by the effective radius
+        spx_ellcoo[:,:,1] /= self.cube.meta['reff']
+
+        # Calculate the radius in units of h^-1 kpc
+        hkpc_per_arcsec = self.__class__._get_kpc_per_arcsec(self.cube.meta['z'])
+        if hkpc_per_arcsec > 0:
+            spx_ellcoo[:,:,2] *= hkpc_per_arcsec
         else:
-            # Calculate the radius normalized by the effective radius
-            spx_ellcoo[:,:,1] /= obs['reff']
-
-            # Calculate the radius in units of h^-1 kpc
-            z = obs['vel']/astropy.constants.c.to('km/s').value
-            hkpc_per_arcsec = self.__class__._get_kpc_per_arcsec(z)
-            if hkpc_per_arcsec > 0:
-                spx_ellcoo[:,:,2] *= hkpc_per_arcsec
-            else:
-                spx_ellcoo[:,:,2] = -1
-
+            spx_ellcoo[:,:,2] = -1
         spx_ellcoo[numpy.absolute(spx_ellcoo) < minimum_value] = 0.0
 
         # Bin signal
@@ -1150,7 +1123,7 @@ class construct_maps_file:
         return DAPFitsUtil.list_of_image_hdus(data, hdr, ext)
 
     
-    def binned_spectra_maps(self, prihdr, obs, binned_spectra):
+    def binned_spectra_maps(self, prihdr, binned_spectra):
         """
         Constructs the 'BIN_LWSKYCOO', 'BIN_LWELLCOO', 'BIN_AREA',
         'BIN_FAREA', 'BIN_MFLUX', 'BIN_MFLUX_IVAR', 'BIN_MFLUX_MASK',
@@ -1225,20 +1198,12 @@ class construct_maps_file:
         # Remap the data to the DRP spatial shape
         arr = list(DAPFitsUtil.reconstruct_map(self.spatial_shape, bin_indx, arr, dtype=dtypes))
 
-        # Get the normalized radii
-        if obs is None:
-            # This should never be tripped at the survey level!
-            warnings.warn('Input obs parameters not given.  Normalized radii not provided.')
-            arr[3] = (0*arr[3]-1).astype(self.float_dtype)
-            arr[4] = (0*arr[4]-1).astype(self.float_dtype)
-        else:
-            # Calculate the radius normalized by the effective radius
-            arr[3] = (arr[3]/obs['reff']).astype(self.float_dtype)
-            # Calculate the radius in units of h^-1 kpc
-            z = obs['vel']/astropy.constants.c.to('km/s').value
-            hkpc_per_arcsec = self.__class__._get_kpc_per_arcsec(z)
-            arr[4] = (arr[4]*hkpc_per_arcsec).astype(self.float_dtype) if hkpc_per_arcsec > 0 \
-                            else (0*arr[4]-1).astype(self.float_dtype)
+        # Calculate the radius normalized by the effective radius
+        arr[3] = (arr[3]/self.cube.meta['reff']).astype(self.float_dtype)
+        # Calculate the radius in units of h^-1 kpc
+        hkpc_per_arcsec = self.__class__._get_kpc_per_arcsec(self.cube.meta['z'])
+        arr[4] = (arr[4]*hkpc_per_arcsec).astype(self.float_dtype) if hkpc_per_arcsec > 0 \
+                        else (0*arr[4]-1).astype(self.float_dtype)
 
         # Organize the extension data
         data = [ numpy.array(arr[0:2]).transpose(1,2,0), numpy.array(arr[2:6]).transpose(1,2,0) ] \
@@ -1314,10 +1279,10 @@ class construct_maps_file:
         #---------------------------------------------------------------
         # Get the data arrays
         arr = [ DAPFitsUtil.redshift_to_Newtonian_velocity(
-                                    stellar_continuum['PAR'].data['KIN'][:,0], self.nsa_redshift),
+                                    stellar_continuum['PAR'].data['KIN'][:,0], self.redshift),
                 DAPFitsUtil.redshift_to_Newtonian_velocity(numpy.ma.power(
                                                     stellar_continuum['PAR'].data['KINERR'][:,0],
-                                                    -2).filled(0.0), self.nsa_redshift, ivar=True),
+                                                    -2).filled(0.0), self.redshift, ivar=True),
                 stellar_continuum['PAR'].data['KIN'][:,1],
                 numpy.ma.power(stellar_continuum['PAR'].data['KINERR'][:,1], -2).filled(0.0),
                 stellar_continuum['PAR'].data['SIGMACORR_EMP'],
@@ -1573,13 +1538,13 @@ class construct_maps_file:
         n_arr_with_eml_channels += 1
         # Velocities
         arr += [ DAPFitsUtil.redshift_to_Newtonian_velocity(
-                        emission_line_model['EMLDATA'].data['KIN'][:,m,0], self.nsa_redshift)
+                        emission_line_model['EMLDATA'].data['KIN'][:,m,0], self.redshift)
                     for m in range(emission_line_model.neml) ]
         n_arr_with_eml_channels += 1
         # Velocity errors
         arr += [ DAPFitsUtil.redshift_to_Newtonian_velocity(
                         numpy.ma.power(emission_line_model['EMLDATA'].data['KINERR'][:,m,0],
-                                       -2).filled(0.0), self.nsa_redshift, ivar=True) \
+                                       -2).filled(0.0), self.redshift, ivar=True) \
                     for m in range(emission_line_model.neml) ]
         n_arr_with_eml_channels += 1
         # Velocity dispersions
@@ -1767,10 +1732,9 @@ class construct_cube_file:
     Should force all intermediate objects to be provided.
 
     """
-    def __init__(self, drpf, obs=None, binned_spectra=None, stellar_continuum=None,
-                 emission_line_model=None, dapver=None, analysis_path=None, directory_path=None,
-                 output_file=None, clobber=True, loggers=None, quiet=False,
-                 single_precision=False):
+    def __init__(self, cube, binned_spectra=None, stellar_continuum=None, emission_line_model=None,
+                 dapver=None, analysis_path=None, directory_path=None, output_file=None,
+                 clobber=True, loggers=None, quiet=False, single_precision=False):
 
         #---------------------------------------------------------------
         # Initialize the reporting
@@ -1781,12 +1745,12 @@ class construct_cube_file:
 
         #---------------------------------------------------------------
         # Check input types
-        confirm_dap_types(drpf, None, None, binned_spectra, stellar_continuum, None,
+        confirm_dap_types(cube, None, binned_spectra, stellar_continuum, None,
                           emission_line_model, None)
 
         #---------------------------------------------------------------
         # Set the output paths
-        self.drpf = drpf
+        self.cube = cube
         self.method = None
         self.directory_path = None
         self.output_file = None
@@ -1794,22 +1758,20 @@ class construct_cube_file:
                         stellar_continuum, emission_line_model)
 
         # Save input for reference
-        self.shape = self.drpf.shape
-        self.spatial_shape = self.drpf.spatial_shape
-#        self.cube_arrays = None
-#        self._assign_cube_arrays()
+        self.shape = self.cube.shape
+        self.spatial_shape = self.cube.spatial_shape
 
         # Report
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '-'*50)
             log_output(loggers, 1, logging.INFO, '{0:^50}'.format('CONSTRUCTING OUTPUT MODEL CUBE'))
             log_output(self.loggers, 1, logging.INFO, '-'*50)
-            log_output(self.loggers, 1, logging.INFO, 'Output path: {0}'.format(
-                                                                            self.directory_path))
-            log_output(self.loggers, 1, logging.INFO, 'Output file: {0}'.format(
-                                                                            self.output_file))
-            log_output(self.loggers, 1, logging.INFO, 'Output cubes have shape {0}'.format(
-                                                                            self.shape))
+            log_output(self.loggers, 1, logging.INFO,
+                       'Output path: {0}'.format(self.directory_path))
+            log_output(self.loggers, 1, logging.INFO,
+                       'Output file: {0}'.format(self.output_file))
+            log_output(self.loggers, 1, logging.INFO,
+                       'Output cubes have shape {0}'.format(self.shape))
 
         #---------------------------------------------------------------
         # Check if the file already exists
@@ -1831,7 +1793,7 @@ class construct_cube_file:
 
         #---------------------------------------------------------------
         # Initialize the primary header
-        prihdr = DAPFitsUtil.initialize_dap_primary_header(self.drpf, maskname='MANGA_DAPSPECMASK')
+        prihdr = DAPFitsUtil.initialize_dap_primary_header(self.cube, maskname='MANGA_DAPSPECMASK')
         # Add the DAP method
         prihdr['DAPTYPE'] = (defaults.dap_method(binned_spectra.method['key'],
                                     stellar_continuum.method['fitpar']['template_library_key'],
@@ -1842,7 +1804,7 @@ class construct_cube_file:
         prihdr['DAPFRMT'] = ('LOGCUBE', 'DAP data file format')
 
         # Get the base map header
-        self.base_cubehdr = DAPFitsUtil.build_cube_header(self.drpf,
+        self.base_cubehdr = DAPFitsUtil.build_cube_header(self.cube,
                                 'K Westfall <westfall@ucolick.org> & SDSS-IV Data Group',
                                                         maskname='MANGA_DAPSPECMASK')
 
@@ -1862,14 +1824,13 @@ class construct_cube_file:
                                            emission_line_model_3d_hdu)
 
         # Get the BINIDs
-        binidlist = combine_binid_extensions(self.drpf, binned_spectra, stellar_continuum, None,
+        binidlist = combine_binid_extensions(self.cube, binned_spectra, stellar_continuum, None,
                                              emission_line_model, None, dtype='int32')
 
         #---------------------------------------------------------------
         # Save the data to the hdu attribute
-        prihdr = finalize_dap_primary_header(prihdr, self.drpf, obs, binned_spectra,
-                                             stellar_continuum, loggers=self.loggers,
-                                             quiet=self.quiet)
+        prihdr = finalize_dap_primary_header(prihdr, self.cube, binned_spectra, stellar_continuum,
+                                             loggers=self.loggers, quiet=self.quiet)
 
         # Ensure extensions are in the correct order
         self.hdu = fits.HDUList([ fits.PrimaryHDU(header=prihdr),
@@ -1906,15 +1867,15 @@ class construct_cube_file:
                                     'None' if emission_line_model is None
                                         else emission_line_model.method['continuum_tpl_key']) \
                                 if directory_path is None else None
-        self.directory_path = defaults.dap_method_path(self.method, plate=self.drpf.plate,
-                                                               ifudesign=self.drpf.ifudesign,
-                                                               drpver=self.drpf.drpver,
+        self.directory_path = defaults.dap_method_path(self.method, plate=self.cube.plate,
+                                                               ifudesign=self.cube.ifudesign,
+                                                               drpver=self.cube.drpver,
                                                                dapver=dapver,
                                                                analysis_path=analysis_path) \
                                                 if directory_path is None else str(directory_path)
 
         # Set the output file
-        self.output_file = defaults.dap_file_name(self.drpf.plate, self.drpf.ifudesign,
+        self.output_file = defaults.dap_file_name(self.cube.plate, self.cube.ifudesign,
                                                           self.method, mode='LOGCUBE') \
                                     if output_file is None else str(output_file)
 
@@ -2166,17 +2127,17 @@ class construct_cube_file:
 
 
 #-----------------------------------------------------------------------
-def combine_binid_extensions(drpf, binned_spectra, stellar_continuum, emission_line_moments,
+def combine_binid_extensions(cube, binned_spectra, stellar_continuum, emission_line_moments,
                              emission_line_model, spectral_indices, dtype=None):
 
     """
     Combine the bin IDs from the different analysis steps into a single
     multichannel extension.
     """
-    if drpf is None:
-        raise ValueError('DRP file must be provided.')
+    if cube is None:
+        raise ValueError('DataCube must be provided.')
 
-    hdr = DAPFitsUtil.finalize_dap_header( DAPFitsUtil.build_map_header(drpf,
+    hdr = DAPFitsUtil.finalize_dap_header( DAPFitsUtil.build_map_header(cube.fluxhdr,
                                         'K Westfall <westfall@ucolick.org> & SDSS-IV Data Group',
                                                     multichannel=True, maskname='MANGA_DAPPIXMASK'),
                                           'BINID', multichannel=True,
@@ -2185,7 +2146,7 @@ def combine_binid_extensions(drpf, binned_spectra, stellar_continuum, emission_l
                                                           'Spectral indices' ])
 
     # Build the ID data for each analysis product
-    binid = numpy.zeros(drpf.spatial_shape+(5,), dtype=int)
+    binid = numpy.zeros(cube.spatial_shape+(5,), dtype=int)
     if binned_spectra is not None:
         binid[:,:,0] = binned_spectra['BINID'].data
     if stellar_continuum is not None:
@@ -2202,13 +2163,11 @@ def combine_binid_extensions(drpf, binned_spectra, stellar_continuum, emission_l
     return DAPFitsUtil.list_of_image_hdus([ binid.astype(_dtype) ], [ hdr ], [ 'BINID' ])
 
 
-def confirm_dap_types(drpf, obs, rdxqa, binned_spectra, stellar_continuum, emission_line_moments,
+def confirm_dap_types(cube, rdxqa, binned_spectra, stellar_continuum, emission_line_moments,
                       emission_line_model, spectral_indices):
 
-    if not isinstance(drpf, DRPFits):
-        raise TypeError('Input must have type DRPFits.')
-    if obs is not None and not isinstance(obs, ObsInputPar):
-        raise TypeError('Input must have type ObsInputPar.')
+    if not isinstance(cube, DataCube):
+        raise TypeError('Input must have type DataCube.')
     if rdxqa is not None and not isinstance(rdxqa, ReductionAssessment):
         raise TypeError('Input must have type ReductionAssessment.')
     if binned_spectra is not None and not isinstance(binned_spectra, SpatiallyBinnedSpectra):
@@ -2226,14 +2185,15 @@ def confirm_dap_types(drpf, obs, rdxqa, binned_spectra, stellar_continuum, emiss
         raise TypeError('Input must have type SpectralIndices.')
 
 
-def finalize_dap_primary_header(prihdr, drpf, obs, binned_spectra, stellar_continuum,
-                                loggers=None, quiet=False):
+# TODO: Need to abstract this for non-DRP datacubes.
+def finalize_dap_primary_header(prihdr, cube, binned_spectra, stellar_continuum, loggers=None,
+                                quiet=False):
 
     # Initialize the DAP quality flag
     dapqualbm = DAPQualityBitMask()
     drp3qualbm = DRPQuality3DBitMask()
     dapqual = dapqualbm.minimum_dtype()(0)          # Type casting original flag to 0
-    if drp3qualbm.flagged(drpf['PRIMARY'].header['DRP3QUAL'], flag='CRITICAL'):
+    if drp3qualbm.flagged(cube.prihdr['DRP3QUAL'], flag='CRITICAL'):
         if not quiet:
             log_output(loggers, 1, logging.INFO, 'DRP File is flagged CRITICAL!')
         dapqual = dapqualbm.turn_on(dapqual, ['CRITICAL', 'DRPCRIT'])
@@ -2256,11 +2216,11 @@ def finalize_dap_primary_header(prihdr, drpf, obs, binned_spectra, stellar_conti
         dapqual = dapqualbm.turn_on(dapqual, 'SINGLEBIN')
 
     # Input photometric geometry and scale were invalid
-    if obs is not None and not (obs.valid_ell and obs.valid_pa and obs.valid_reff):
+    if not numpy.all(numpy.isin(['ell', 'pa', 'reff'], cube.metakeys())):
         dapqual = dapqualbm.turn_on(dapqual, 'BADGEOM')
 
     # Determine if there's a foreground star
-    if numpy.sum(drpf.bitmask.flagged(drpf['MASK'].data, flag='FORESTAR')) > 0:
+    if numpy.sum(cube.bitmask.flagged(cube.mask, flag='FORESTAR')) > 0:
         dapqual = dapqualbm.turn_on(dapqual, 'FORESTAR')
 
     # Commit the quality flag to the header
@@ -2273,7 +2233,7 @@ def finalize_dap_primary_header(prihdr, drpf, obs, binned_spectra, stellar_conti
     return prihdr
 
 
-def add_snr_metrics_to_header(hdr, drpf, r_re):
+def add_snr_metrics_to_header(hdr, cube, r_re):
     """
     For all valid spaxels within 1 Re < R < 1.5 Re calculate the median
     S/N and combined S/N (including covariance) in the griz bands.
@@ -2291,8 +2251,8 @@ def add_snr_metrics_to_header(hdr, drpf, r_re):
     Args:
         hdr (`astropy.io.fits.Header`_):
             Header object to edit
-        drpf (:class:`mangadap.drpfits.DRPFits`):
-            DRP fits cube
+        cube (:class:`mangadap.datacube.datacube.DataCube`):
+            Datacube
         r_re (`numpy.ndarray`_):
             *Flattened* array with the semi-major axis
             radius in units of the effective radius for all spaxels
@@ -2325,11 +2285,17 @@ def add_snr_metrics_to_header(hdr, drpf, r_re):
     # Run the S/N calculation; this is the same calculation as done in
     # mangadap.proc.spatialbinning.VoronoiBinning.sn_calculation_covariance_matrix
     nfilter = len(filter_response_file)
+    flags = ['DONOTUSE', 'FORESTAR']
     for i in range(nfilter):
         response_func = numpy.genfromtxt(filter_response_file[i])[:,:2]
-        signal, variance, snr, covar = drpf.flux_stats(response_func=response_func,
-                                                       flag=['DONOTUSE', 'FORESTAR'],
-                                                       covar=True) #, correlation=True)
+        signal, variance, snr = [a.ravel() for a in 
+                                 cube.flux_stats(response_func=response_func, flag=flags)]
+        covar = None
+        if cube.can_compute_covariance:
+            covar_wave = cube.central_wavelength(response_func=response_func, flag=flags)
+            covar_channel = numpy.argsort(numpy.absolute(cube.wave-covar_wave))[0]
+            covar = cube.covariance_matrix(covar_channel)
+
         # Get the spaxels within the radius limits
         indx = numpy.arange(r_re.size)[(r_re > 1) & (r_re < 1.5) & numpy.invert(signal.mask)]
         if len(indx) == 0:

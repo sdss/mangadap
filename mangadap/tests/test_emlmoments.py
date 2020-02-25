@@ -132,7 +132,7 @@ def test_moments_with_continuum():
 
     # Instantiate the template libary
     velscale_ratio = 4
-    tpl = TemplateLibrary('MILESHC', match_to_drp_resolution=False, velscale_ratio=velscale_ratio,
+    tpl = TemplateLibrary('MILESHC', match_resolution=False, velscale_ratio=velscale_ratio,
                           spectral_step=1e-4, log=True, hardcopy=False)
     tpl_sres = numpy.mean(tpl['SPECRES'].data, axis=0)
 
@@ -231,5 +231,4 @@ def test_moments_with_continuum():
                                   0.1338671 ,  0.02167785,  0.21755257,  0.38255201,  0.68948484,
                                   0.16922691,  0.13631431]),
                           rtol=0.0, atol=1e-2), 'EW changed'
-
 

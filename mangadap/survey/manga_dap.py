@@ -38,7 +38,6 @@ from mangadap import __version__
 from ..config import defaults
 from ..util.log import init_DAP_logging, module_logging, log_output
 from ..drpfits import DRPFits
-#from ..par.obsinput import ObsInputPar
 from ..datacube import DataCube
 from ..par.analysisplan import AnalysisPlanSet
 from ..proc.reductionassessments import ReductionAssessment
@@ -177,11 +176,6 @@ def manga_dap(cube, plan, dbg=False, log=None, verbose=0, drpver=None, redux_pat
 #        warnings.warn('RSS counterpart not available.  Some functionality may be limited!')
 #    del drpf_rss
 
-
-    # Set the nsa redshift
-#    nsa_redshift = obs['vel']/astropy.constants.c.to('km/s').value
-
-
     # Iterate over plans:
     for i in range(plan.nplans):
 
@@ -264,8 +258,7 @@ def manga_dap(cube, plan, dbg=False, log=None, verbose=0, drpver=None, redux_pat
         emission_line_moments = None if plan['elmom_key'][i] is None else \
                     EmissionLineMoments(plan['elmom_key'][i], binned_spectra,
                                         stellar_continuum=stellar_continuum,
-                                        redshift=cube.meta['z'], #nsa_redshift,
-                                        analysis_path=_analysis_path,
+                                        redshift=cube.meta['z'], analysis_path=_analysis_path,
                                         directory_path=method_ref_dir,
                                         clobber=plan['elmom_clobber'][i], loggers=loggers)
 
@@ -390,28 +383,24 @@ def manga_dap(cube, plan, dbg=False, log=None, verbose=0, drpver=None, redux_pat
         #---------------------------------------------------------------
         spectral_indices = None if plan['spindex_key'][i] is None else \
                     SpectralIndices(plan['spindex_key'][i], binned_spectra,
-                                    redshift=cube.meta['z'], #nsa_redshift,
-                                    stellar_continuum=stellar_continuum,
+                                    redshift=cube.meta['z'], stellar_continuum=stellar_continuum,
                                     emission_line_model=emission_line_model,
                                     analysis_path=_analysis_path, directory_path=method_ref_dir,
                                     tpl_symlink_dir=method_ref_dir,
                                     clobber=plan['spindex_clobber'][i], loggers=loggers)
 
-        return
-
         #-------------------------------------------------------------------
         # Construct the main output file(s)
         #-------------------------------------------------------------------
-        construct_maps_file(drpf, obs=obs, rdxqa=rdxqa, binned_spectra=binned_spectra,
+        construct_maps_file(cube, rdxqa=rdxqa, binned_spectra=binned_spectra,
                             stellar_continuum=stellar_continuum,
                             emission_line_moments=emission_line_moments,
                             emission_line_model=emission_line_model,
-                            spectral_indices=spectral_indices, nsa_redshift=cube.meta['z'],
-                            #nsa_redshift,
+                            spectral_indices=spectral_indices, redshift=cube.meta['z'],
                             analysis_path=_analysis_path, clobber=True, loggers=loggers,
                             single_precision=True)
 
-        construct_cube_file(drpf, obs=obs, binned_spectra=binned_spectra,
+        construct_cube_file(cube, binned_spectra=binned_spectra,
                             stellar_continuum=stellar_continuum,
                             emission_line_model=emission_line_model,
                             analysis_path=_analysis_path, clobber=True, loggers=loggers,

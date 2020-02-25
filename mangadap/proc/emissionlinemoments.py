@@ -351,7 +351,7 @@ class EmissionLineMoments:
                 :func:`mangadap.util.fitsutil.DAPFitsUtil.clean_dap_primary_header`.
             measurements_binid (`numpy.ndarray`_, optional):
                 Bin IDs for moment measurements. Only use is to check
-                if this is None, and the boolean result is save to
+                if this is None, and the boolean result is saved to
                 the header to indicate if the emission-line moment
                 measurements are disconnected from the
                 stellar-continuum measurements.
