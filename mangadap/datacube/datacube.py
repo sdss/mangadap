@@ -553,6 +553,7 @@ class DataCube:
                     else self.bitmask.flagged(self.mask.reshape(nspec,-1), flag=flag)
 
         # Create the output MaskedArray
+        # TODO: Handle when attr is None
         a = numpy.ma.MaskedArray(getattr(self, attr.lower()).reshape(nspec,-1), mask=mask)
 
         # Apply any bin selection

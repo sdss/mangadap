@@ -248,9 +248,19 @@ class DAPFitsUtil:
         return hdr
 
 
+#    @staticmethod
+#    def build_cube_header(drpf, author, maskname=None):
+#        hdr = drpf.hdu['FLUX'].header.copy()
+#        hdr = DAPFitsUtil.clean_cube_header(hdr)
+#        hdr['AUTHOR'] = author
+#        if maskname is not None:
+#            hdr['MASKNAME'] = maskname
+#        return hdr
+
+
     @staticmethod
-    def build_cube_header(drpf, author, maskname=None):
-        hdr = drpf.hdu['FLUX'].header.copy()
+    def build_cube_header(cube, author, maskname=None):
+        hdr = cube.fluxhdr.copy()
         hdr = DAPFitsUtil.clean_cube_header(hdr)
         hdr['AUTHOR'] = author
         if maskname is not None:
@@ -563,6 +573,7 @@ class DAPFitsUtil:
                     if return_index else numpy.unique(bin_indx.ravel())[1:]
 
 
+    # TODO: Consolidate these with what's in datacube and rowstackedspectra.
     @staticmethod
     def copy_to_array(hdu, ext='FLUX', allowed_ext=None, waverange=None, select_bins=None,
                       missing_bins=None, nbins=None, unique_bins=None):

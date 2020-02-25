@@ -48,12 +48,17 @@ class SpatialBinning():
         self.bintype = bintype
         self.par = par
 
-
+    @staticmethod
+    def bin_index(x, y, par=None):
+        """
+        Undefined in base class. Just provides expected calling
+        sequence.
+        """
+        pass
 # ----------------------------------------------------------------------
 
 
 # GLOBAL BINNING -------------------------------------------------------
-
 class GlobalBinning(SpatialBinning):
     """
     Class that performs the global binning.
@@ -63,14 +68,30 @@ class GlobalBinning(SpatialBinning):
 
     @staticmethod
     def bin_index(x, y, par=None):
-        return numpy.full(x.shape, 0, dtype=int)
+        """
+        Bin the data and return the indices of the bins.
 
+        The calling sequence is just needed to match the expectation
+        for a :class:`SpatialBinning` object.
 
+        Args:
+            x (`numpy.ndarray`_):
+                Fiducial on-sky X position of each spectrum. X
+                increases with RA. Only used to set the size of the
+                returned array.
+            y (`numpy.ndarray`_):
+                **Not used.**
+            par (object, optional):
+                **Not used.**
+
+        Returns:
+            `numpy.ndarray`_: An integer bin index for each spectrum.
+        """
+        return numpy.zeros(x.shape, dtype=int)
 # ----------------------------------------------------------------------
 
 
 # RADIAL BINNING -------------------------------------------------------
-
 class RadialBinningPar(KeywordParSet):
     """
     Class with parameters used by the radial binning algorithm.  See
@@ -113,14 +134,16 @@ class RadialBinningPar(KeywordParSet):
         Copy some of the parameters to a header.
 
         Args:
-            hdr (`astropy.io.fits.Header`_): Header object to write to.
+            hdr (`astropy.io.fits.Header`_):
+                Header object to write to.
 
         Returns:
             `astropy.io.fits.Header`_: Edited header object
 
         Raises:
-            TypeError: Raised if input is not an
-                `astropy.io.fits.Header`_ object.
+            TypeError:
+                Raised if input is not an `astropy.io.fits.Header`_
+                object.
         """
         if not isinstance(hdr, fits.Header):
             raise TypeError('Input is not a astropy.io.fits.Header object!')
@@ -134,12 +157,13 @@ class RadialBinningPar(KeywordParSet):
         hdr['BINLGR'] = (str(self['log_step']), 'Geometric step used by radial binning')
         return hdr
 
-
     def fromheader(self, hdr):
         """
         Copy the information from the header.
 
-        hdr (`astropy.io.fits.Header`_): Header object to write to.
+        Args:
+            hdr (`astropy.io.fits.Header`_):
+                Header object to read from.
         """
         if not isinstance(hdr, fits.Header):
             raise TypeError('Input is not a astropy.io.fits.Header object!')
@@ -163,7 +187,6 @@ class RadialBinning(SpatialBinning):
         self.rs = None
         self.dr = None
 
-
     def _r_start_step(self, r):
         """
         Bin starting radii are::
@@ -175,7 +198,11 @@ class RadialBinning(SpatialBinning):
                                             endpoint=False) if self.par['log_step'] else \
                              numpy.linspace(rs, re, num=nr, endpoint=False)
 
-        For ending radii, just swap rs and re above
+        For ending radii, just swap ``rs`` and ``re`` above.
+
+        Args:
+            r (`numpy.ndarray`_):
+                Fiducial radius of each spectrum.
         """
         # Set minimum radius, if necessary
         if self.par['radii'][0] < 0:
@@ -199,10 +226,27 @@ class RadialBinning(SpatialBinning):
         self.rs = self.par['radii'][0]
         self.dr = (self.par['radii'][1] - self.rs)/self.par['radii'][2]
         
-
     def bin_index(self, x, y, par=None):
         """
         Bin the data and return the indices of the bins.
+
+        Args:
+            x (`numpy.ndarray`_):
+                Fiducial on-sky X position of each spectrum. X
+                increases with RA.
+            y (`numpy.ndarray`_):
+                Fiducial on-sky Y position of each spectrum. Y
+                increases with DEC.
+            par (:class:`RadialBinningPar`, optional):
+                Binning parameters.  Cannot be None.
+
+        Returns:
+            `numpy.ndarray`_: An integer bin index for each spectrum.
+
+        Raises:
+            ValueError:
+                Raised if the sizes of ``x`` and ``y`` do not match
+                or if ``par`` is None.
         """
         # Check the input
         if x.size != y.size:
@@ -241,22 +285,20 @@ class RadialBinning(SpatialBinning):
             binid[r<self.rs] = -1            # or not
         binid[binid >= int(self.par['radii'][2])] = -1  # Remove any points outside the last bin
 
-#        print(binid)
-#        print(numpy.sum(binid < 0))
-#
-#        print(self.rs, self.dr, self.to_center, self.par['log_step'])
-#        pyplot.scatter(r, theta, marker='.', color='k', s=40, lw=0, c=binid, cmap='viridis')
-#        for i in range(self.par['radii'][2]+1):
-#            rr = self.rs + i*self.dr
-#            pyplot.plot( [rr, rr], [0,360], color='r')
-#        pyplot.show()
-
         return binid
-
 
     def bin_area(self):
         """
         Return the nominal area for each elliptical bin.
+
+        Returns:
+            `numpy.ndarray`_: Array with the analytic on-sky area of
+            each elliptical bin in square arcsec given its radial
+            limits.
+
+        Raises:
+            ValueError:
+                Raised if :attr:`par` is None.
         """
         if self.par is None:
             raise ValueError('Required parameters not defined.')
@@ -266,18 +308,15 @@ class RadialBinning(SpatialBinning):
         nr = int(self.par['radii'][2])
         bin_radii = numpy.append(
                         numpy.logspace(numpy.log10(rs), numpy.log10(re), num=nr, endpoint=False) \
-                        if self.par['log_step'] else numpy.linspace(rs, re, num=nr, endpoint=False),
-                        re)*self.par['radius_scale']
+                        if self.par['log_step'] \
+                        else numpy.linspace(rs, re, num=nr, endpoint=False), re) \
+                                * self.par['radius_scale']
+
         return numpy.pi*(1.0-self.par['ell'])*numpy.diff(numpy.square(bin_radii))
-
-        
-
-
 # ----------------------------------------------------------------------
 
 
 # VORONOI BINNING ------------------------------------------------------
-
 class VoronoiBinningPar(KeywordParSet):
     r"""
     Class with parameters used by the Voronoi binning algorithm.
@@ -314,14 +353,16 @@ class VoronoiBinningPar(KeywordParSet):
         Copy some of the parameters to a header.
 
         Args:
-            hdr (`astropy.io.fits.Header`_): Header object to write to.
+            hdr (`astropy.io.fits.Header`_):
+                Header object to write to.
 
         Returns:
             `astropy.io.fits.Header`_: Edited header object
 
         Raises:
-            TypeError: Raised if input is not an
-                `astropy.io.fits.Header`_ object.
+            TypeError:
+                Raised if input is not an `astropy.io.fits.Header`_
+                object.
         """
         if not isinstance(hdr, fits.Header):
             raise TypeError('Input is not a astropy.io.fits.Header object!')
@@ -340,7 +381,9 @@ class VoronoiBinningPar(KeywordParSet):
         """
         Copy the information from the header.
 
-        hdr (`astropy.io.fits.Header`_): Header object to write to.
+        Args:
+            hdr (`astropy.io.fits.Header`_):
+                Header object to read from.
         """
         if not isinstance(hdr, fits.Header):
             raise TypeError('Input is not a astropy.io.fits.Header object!')
@@ -365,20 +408,42 @@ class VoronoiBinning(SpatialBinning):
 
         This calculation is identical to the one provided directly by
         the code.
+
+        Args:
+            index (`numpy.ndarray`_):
+                Indices of the measurements in a single bin.
+            signal (`numpy.ndarray`_):
+                The signal measurements.
+            noise (`numpy.ndarray`_):
+                The noise measurements.
+
+        Returns:
+            :obj:`float`: The nominal signal-to-noise reached by
+            summing the measurements selected by ``index``.
         """
         return  numpy.sum(signal[index]) / numpy.sqrt(numpy.sum(numpy.square(noise[index])))
-
 
     def sn_calculation_covariance_matrix(self, index, signal, noise):
         """
         Calculate the S/N using a full covariance matrix.
+
+        The method uses the internal :attr:`covar`.
+
+        Args:
+            index (`numpy.ndarray`_):
+                Indices of the measurements in a single bin.
+            signal (`numpy.ndarray`_):
+                The signal measurements.
+            noise (`numpy.ndarray`_):
+                The noise measurements.
+
+        Returns:
+            :obj:`float`: The nominal signal-to-noise reached by
+            summing the measurements selected by ``index``, including
+            any covariance.
         """
-#        _index = numpy.arange(signal.size)[index]
-#        i, j = map( lambda x: x.ravel(), numpy.meshgrid(_index, _index) )
-#        return numpy.sum(signal[index])/numpy.sqrt(numpy.sum(self.covar[i,j]))
         _index = numpy.atleast_1d(index)
         return numpy.sum(signal[index])/numpy.sqrt(numpy.sum(self.covar[_index,:][:,_index]))
-
 
     def sn_calculation_calibrate_noise(self, index, signal, noise):
         r"""
@@ -391,13 +456,50 @@ class VoronoiBinning(SpatialBinning):
         where :math:`N_{\rm bin}` is the number of binned spaxels and
         :math:`\alpha` is an empirically derived constant used to adjust
         the noise for the affects of covariance.
-        """
-        return numpy.sum(signal[index]) \
-                / (numpy.sqrt(numpy.sum(numpy.square(noise[index]))) \
-                    * (1.0 + self.covar*numpy.log10(len(signal[index]))))
 
+        The calibration constant, :math:`\alpha`, is kept internally
+        using :attr:`covar`.
+
+        Args:
+            index (`numpy.ndarray`_):
+                Indices of the measurements in a single bin.
+            signal (`numpy.ndarray`_):
+                The signal measurements.
+            noise (`numpy.ndarray`_):
+                The noise measurements.
+
+        Returns:
+            :obj:`float`: The nominal signal-to-noise reached by
+            summing the measurements selected by ``index``, after
+            applying the covariance calibration.
+        """
+        return numpy.sum(signal[index]) / (numpy.sqrt(numpy.sum(numpy.square(noise[index]))) \
+                        * (1.0 + self.covar*numpy.log10(len(signal[index]))))
 
     def bin_index(self, x, y, par=None):
+        """
+        Bin the data and return the indices of the bins.
+
+        Args:
+            x (`numpy.ndarray`_):
+                Fiducial on-sky X position of each spectrum. X
+                increases with RA.
+            y (`numpy.ndarray`_):
+                Fiducial on-sky Y position of each spectrum. Y
+                increases with DEC.
+            par (:class:`RadialBinningPar`, optional):
+                Binning parameters.  Cannot be None.
+
+        Returns:
+            `numpy.ndarray`_: An integer bin index for each spectrum.
+
+        Raises:
+            ValueError:
+                Raised if the sizes of ``x`` and ``y`` do not match,
+                if ``par`` is None, if various checks of the signal,
+                noise, or covariance elements are incorrectly
+                matched.
+        """
         # Check the position input
         if x.size != y.size:
             raise ValueError('Dimensionality of x and y coordinates do not match!')
@@ -427,7 +529,6 @@ class VoronoiBinning(SpatialBinning):
                     self.par['covar'].revert_correlation()
             # Fill the full array if necessary
             if not isinstance(self.par['covar'], (numpy.ndarray,float)):
-#                self.par['covar'].show()
                 self.covar = self.par['covar'].toarray()
                 sn_func = self.sn_calculation_covariance_matrix
             else:
@@ -462,32 +563,21 @@ class VoronoiBinning(SpatialBinning):
             return numpy.zeros(self.par['signal'].size)
 
         # Call the contributed code and return the bin index
-#        pyplot.scatter(x, _noise, s=30, marker='.', color='k')
-#        pyplot.show()
         try:
             binid, xNode, yNode, xBar, yBar, sn, area, scale = \
                 voronoi_2d_binning(x, y, self.par['signal'], _noise, self.par['target_snr'],
                                    sn_func=sn_func, plot=False) #True, quiet=False)
-#            pyplot.show()
-#            pyplot.scatter(numpy.sqrt(numpy.square(xBar)+numpy.square(yBar)), sn, marker='.',
-#                           color='k', s=40, lw=0)
-#            pyplot.show()
         except:
             warnings.warn('Binning algorithm has raised an exception.  Assume this is because '
                           'all the spaxels should be in the same bin.')
             binid = numpy.zeros(self.par['signal'].size)
-
         return binid
-
-
 # ----------------------------------------------------------------------
 
 
 # SQUARE BINNING -------------------------------------------------------
-
-#Written by Kate Rubin 9/27/18
-#Based on KBW's test_new_binning_scheme.py and the RadialBinning class
-
+# Written by Kate Rubin 9/27/18
+# Based on KBW's test_new_binning_scheme.py and the RadialBinning class
 class SquareBinningPar(KeywordParSet):
     """
     Class with parameters used by the square binning algorithm.  See
@@ -498,7 +588,6 @@ class SquareBinningPar(KeywordParSet):
     .. include:: ../tables/squarebinningpar.rst
 
     """
-
     def __init__(self, binsz=None):
         in_fl = [int, float]
 
@@ -514,18 +603,19 @@ class SquareBinningPar(KeywordParSet):
         Copy some of the parameters to a header.
 
         Args:
-            hdr (`astropy.io.fits.Header`_): Header object to write to.
+            hdr (`astropy.io.fits.Header`_):
+                Header object to write to.
 
         Returns:
             `astropy.io.fits.Header`_: Edited header object
 
         Raises:
-            TypeError: Raised if input is not an
-                `astropy.io.fits.Header`_ object.
+            TypeError:
+                Raised if input is not an `astropy.io.fits.Header`_
+                object.
         """
         if not isinstance(hdr, fits.Header):
             raise TypeError('Input is not a astropy.io.fits.Header object!')
-
         hdr['BINSIZE'] = (self['binsz'], 'Square bin size (arcsec)')
         return hdr
 
@@ -533,7 +623,9 @@ class SquareBinningPar(KeywordParSet):
         """
         Copy the information from the header.
 
-        hdr (`astropy.io.fits.Header`_): Header object to write to.
+        Args:
+            hdr (`astropy.io.fits.Header`_):
+                Header object to write to.
         """
         if not isinstance(hdr, fits.Header):
             raise TypeError('Input is not a astropy.io.fits.Header object!')
@@ -542,11 +634,9 @@ class SquareBinningPar(KeywordParSet):
 
 
 class SquareBinning(SpatialBinning):
-
     """
     Class to perform binning of full cube in square apertures
     Length of aperture side is given in arcsec with binsz
-
     """
     def __init__(self, par=None):
         SpatialBinning.__init__(self, 'square', par=par)
@@ -554,7 +644,25 @@ class SquareBinning(SpatialBinning):
 
     def bin_index(self, x, y, par=None):
         """
-            Bin the data and return the indices of the bins.
+        Bin the data and return the indices of the bins.
+
+        Args:
+            x (`numpy.ndarray`_):
+                Fiducial on-sky X position of each spectrum. X
+                increases with RA.
+            y (`numpy.ndarray`_):
+                Fiducial on-sky Y position of each spectrum. Y
+                increases with DEC.
+            par (:class:`SquareBinningPar`, optional):
+                Binning parameters.  Cannot be None.
+
+        Returns:
+            `numpy.ndarray`_: An integer bin index for each spectrum.
+
+        Raises:
+            ValueError:
+                Raised if the sizes of ``x`` and ``y`` do not match or
+                if ``par`` is None.
         """
         _x = numpy.asarray(x)
         if len(_x.shape) != 1:
