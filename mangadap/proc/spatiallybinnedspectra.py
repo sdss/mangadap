@@ -45,6 +45,9 @@ import glob
 import warnings
 import time
 import logging
+
+from IPython import embed
+
 import numpy
 
 from scipy import sparse, spatial, interpolate
@@ -883,7 +886,7 @@ class SpatiallyBinnedSpectra:
         bin_data['ELL_COO'][indx,1] = _bt[indx]-180
 
         # Compute the area covered by each bin
-        bin_data['AREA'] = self.cube.binned_on_sky_area(bin_indx)
+        bin_data['AREA'] = self.cube.binned_on_sky_area(bin_indx)[1]
 
         # Calculate the fractional area of the bin covered by the
         # spectra, if possible; if not, the fractional area is unity
@@ -1040,7 +1043,7 @@ class SpatiallyBinnedSpectra:
                                   fits.ImageHDU(data=stack_flux.data, name='FLUX'),
                                   fits.ImageHDU(data=stack_ivar.data, name='IVAR'),
                                   fits.ImageHDU(data=stack_mask, name='MASK'),
-                                  self.cube.wave.copy(),
+                                  fits.ImageHDU(data=self.cube.wave, name='WAVE'),
                                   fits.ImageHDU(data=stack_sres.data, name='SPECRES'),
                                   fits.ImageHDU(data=self.galext.redcorr.data, header=red_hdr,
                                                 name='REDCORR'),
@@ -1048,7 +1051,7 @@ class SpatiallyBinnedSpectra:
                                   fits.ImageHDU(data=stack_npix.data, name='NPIX'),
                                   fits.ImageHDU(data=bin_indx, header=map_hdr, name='BINID'),
                                   fits.ImageHDU(data=map_mask, header=map_hdr, name='MAPMASK'),
-                                  fits.BinTableHDU.from_columns( [ fits.Column(name=n,
+                                  fits.BinTableHDU.from_columns([fits.Column(name=n,
                                                              format=rec_to_fits_type(bin_data[n]),
                                                 array=bin_data[n]) for n in bin_data.dtype.names ],
                                                                name='BINS')

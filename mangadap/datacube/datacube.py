@@ -24,6 +24,8 @@ import numpy
 
 from scipy import sparse, interpolate
 
+from astropy.io import fits
+
 from ..util.bitmask import BitMask
 from ..util.mapping import permute_wcs_axes
 from ..util.covariance import Covariance
@@ -151,6 +153,13 @@ class DataCube:
             the datacube. Metadata required by analysis modules are
             indicated where relevant. If None, :attr:`meta` is
             instantiated as an empty dictionary.
+        prihdr (`astropy.io.fits.Header`_, optional):
+            Primary header read from datacube fits file. If None,
+            instantiated as an empty `astropy.io.fits.Header`_.
+        fluxhdr (`astropy.io.fits.Header`_, optional):
+            Header specifically for the flux extension of the
+            datacube fits file. If None, set to be a copy of the
+            primary header.
 
     Raises:
         ValueError:
@@ -199,13 +208,20 @@ class DataCube:
             Datacube spectral resolution.  Can be None.
         covar (:class:`mangadap.util.covariance.Covariance`):
             Datacube spatial covariance.  Can be None.
+        prihdr (`astropy.io.fits.Header`_):
+            Primary header for the datacube. If not provided on
+            instantiation, set to an empty `astropy.io.fits.Header`_.
+        fluxhdr (`astropy.io.fits.Header`_):
+            Header specifically for the flux array. If not provided
+            on instantiation, set to be a copy of :attr:`prihdr`.
         rss (:class:`mangadap.spectra.rowstackedspectra.RowStackedSpectra`):
             The source row-stacked spectra used to build the
             datacube.
     """
     # TODO: Add reconstructed PSF?
     def __init__(self, flux, wave=None, ivar=None, mask=None, bitmask=None, sres=None, covar=None,
-                 axes=[0,1,2], wcs=None, pixelscale=None, log=True, meta=None):
+                 axes=[0,1,2], wcs=None, pixelscale=None, log=True, meta=None, prihdr=None,
+                 fluxhdr=None):
 
         if wcs is None and wave is None:
             raise ValueError('Must either provide a single wavelength vector or a WCS that can '
@@ -281,8 +297,8 @@ class DataCube:
                 self.covar = self.covar.transpose_raw_shape()
 
         # Allocate attributes for primary and flux array fits headers
-        self.prihdr = None
-        self.fluxhdr = None
+        self.prihdr = fits.Header() if prihdr is None else prihdr
+        self.fluxhdr = self.prihdr.deepcopy() if fluxhdr is None else fluxhdr
 
         # Allow for a RowStackedSpectrum counterpart
         self.rss = None

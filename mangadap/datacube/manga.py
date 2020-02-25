@@ -121,8 +121,8 @@ class MaNGADataCube(DataCube):
                                                   impose_triu=True, correlation=True)
 
             print('Reading MaNGA datacube data ...', end='\r')
-            self.prihdr = hdu[0].header
-            self.fluxhdr = hdu['FLUX'].header
+            prihdr = hdu[0].header
+            fluxhdr = hdu['FLUX'].header
             # NOTE: Need to keep a log of what spectral resolution
             # vectors were used so that the same vectors are read from
             # the RSS file, if/when it is loaded.
@@ -143,8 +143,8 @@ class MaNGADataCube(DataCube):
             super(MaNGADataCube, self).__init__(hdu['FLUX'].data.T, wave=hdu['WAVE'].data,
                                                 ivar=hdu['IVAR'].data.T, mask=hdu['MASK'].data.T,
                                                 bitmask=bitmask, sres=sres.T, covar=covar,
-                                                wcs=WCS(header=self.fluxhdr, fix=True),
-                                                pixelscale=0.5, log=log, meta=meta)
+                                                wcs=WCS(header=fluxhdr, fix=True), pixelscale=0.5,
+                                                log=log, meta=meta, prihdr=prihdr, fluxhdr=fluxhdr)
         print('Reading MaNGA datacube data ... DONE')
 
         # Try to use the header to set the DRP version
