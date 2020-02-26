@@ -685,3 +685,4 @@ class MaNGADataCube(DataCube):
         return super(MaNGADataCube, 
                     self).approximate_covariance_cube(channels=channels, sigma_rho=sigma_rho,
                                                       rlim=_rlim, csr=csr, quiet=quiet)
+

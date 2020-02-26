@@ -182,7 +182,7 @@ class DRPComplete:
         readonly (:obj:`bool`):
             Flag that the drpcomplete fits file is only opened for
             reading, not for updating.
-        hdu (`astropy.io.fits.hdu.hdulist.HDUList`_):
+        hdu (`astropy.io.fits.HDUList`_):
             Fits data with binary table data.
         nobs (:obj:`int`):
             Number of observations in the file

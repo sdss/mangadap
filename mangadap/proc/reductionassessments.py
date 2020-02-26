@@ -323,7 +323,7 @@ class ReductionAssessment:
             Flag to write the data to a fits file.
         symlink_dir (:obj:`str`):
             Create a symlink to the file in this directory.
-        hdu (`astropy.io.fits.hdu.hdulist.HDUList`_):
+        hdu (`astropy.io.fits.HDUList`_):
             HDUList with the data, with columns as described above.
         correlation (:class:`mangadap.util.covariance.Covariance`):
             If requested, provides the spatial correlation matrix for
@@ -389,7 +389,7 @@ class ReductionAssessment:
         Select the assessment method from the provided list.
 
         Used to set :attr:`method`; see
-       :func:`mangadap.proc.util.select_proc_method`.
+        :func:`mangadap.proc.util.select_proc_method`.
 
         Args:
             method_key (:obj:`str`):
@@ -455,7 +455,7 @@ class ReductionAssessment:
         Constuct the primary header for the reference file.
 
         Args:
-            hdr (`astropy.fits.Header`_, optional):
+            hdr (`astropy.io.fits.Header`_, optional):
                 Input base header for added keywords. If None, uses
                 the :attr:`cube` header (if there is one) and then
                 cleans the header using

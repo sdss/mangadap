@@ -400,7 +400,7 @@ class DRPFits:
         bitmask (:class:`DRPFitsBitMask`):
             Object used to interpret the DRP bit mask values in the
             ``MASK`` extension.
-        hdu (`astropy.io.fits.hdu.hdulist.HDUList`_):
+        hdu (`astropy.io.fits.HDUList`_):
             HDUList read from the DRP file
         ext (:obj:`list`):
             List of fits extensions in the file

@@ -544,7 +544,7 @@ class TemplateLibrary:
             Flag to keep a hardcopy of the processed template library.
         symlink_dir (:obj:`str`):
             Symlink created to the file in this directory
-        hdu (`astropy.io.fits.hdu.hdulist.HDUList`_):
+        hdu (`astropy.io.fits.HDUList`_):
             HDUList read from the DAP file
 
     """
@@ -880,7 +880,7 @@ class TemplateLibrary:
             No checking is done concerning the size of each array!
 
         Args:
-            wave (`numpy.ndarray):
+            wave (`numpy.ndarray`_):
                 Array with the wavelengths of each pixel.
             flux (`numpy.ndarray`_):
                 Array with the flux in each pixel.
@@ -967,7 +967,7 @@ class TemplateLibrary:
             fullRange (`numpy.ndarray`_):
                 Two-element array with the wavelength range for the
                 rebinned spectrum.
-            rmsk_lim (:obj:`float):
+            rmsk_lim (:obj:`float`):
                 Limit of the rebinned mask value that is allowed
                 before considering the pixel as masked.
 

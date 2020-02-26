@@ -174,7 +174,7 @@ class DAPFits:
             Global quality bit
         bitmask (:class:`mangadap.dapmaps.DAPMapsBitMask`):
             Map mask bits
-        hdu (`astropy.io.fits.hdu.hdulist.HDUList`_):
+        hdu (`astropy.io.fits.HDUList`_):
             HDUList read from the DRP file
         par (:class:`mangadap.par.ObsInputPar`):
             List of parameters used by the DAP.

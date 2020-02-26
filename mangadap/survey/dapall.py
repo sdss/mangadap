@@ -129,8 +129,7 @@ class DAPall:
         nindx (int): Number of spectral indices included in each method.
         str_len (dict): Dictionary with the number of characters used
             for each string entry in the database.
-        hdu (`astropy.io.fits.hdu.hdulist.HDUList`_): Object with the
-            table data.
+        hdu (`astropy.io.fits.HDUList`_): Object with the table data.
         ndap (int): Number of rows in the data table; equivalent to the
             number of processed MAPS files.
         plate (numpy.ndarray): Array of the plate numbers

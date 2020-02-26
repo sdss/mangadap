@@ -524,7 +524,7 @@ class SpectralIndices:
             Path to the directory with artifact parameter files.  If
             None, defined by
             :attr:`mangadap.par.artifactdb.ArtifactDB.default_data_dir`.
-        absorption_index_path (:obj:`str`, optional:
+        absorption_index_path (:obj:`str`, optional):
             Path to the directory with absorption-line index parameter
             files.  If None, defined by
             :attr:`mangadap.par.absorptionindexdb.AbsorptionIndexDB.default_data_dir`.
@@ -710,7 +710,7 @@ class SpectralIndices:
         Construct the primary header for the reference file.
 
         Args:
-            hdr (`astropy.fits.Header`_, optional):
+            hdr (`astropy.io.fits.Header`_, optional):
                 Input base header for added keywords. If None, uses
                 the :attr:`cube` header (if there is one) and then
                 cleans the header using

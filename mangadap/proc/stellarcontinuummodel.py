@@ -592,7 +592,7 @@ class StellarContinuumModel:
         Construct the primary header for the reference file.
 
         Args:
-            hdr (`astropy.fits.Header`_, optional):
+            hdr (`astropy.io.fits.Header`_, optional):
                 Input base header for added keywords. If None, uses
                 the datacube header from :attr:`binned_spectra` (if
                 there is one) and then cleans the header using
@@ -633,7 +633,7 @@ class StellarContinuumModel:
         returned.
 
         Args:
-            hdr (`astropy.fits.Header`_):
+            hdr (`astropy.io.fits.Header`_):
                 Input base header for added keywords. Expected to
                 have been initialized using
                 :func:`_initialize_primary_header`.

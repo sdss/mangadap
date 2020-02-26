@@ -344,7 +344,7 @@ class EmissionLineMoments:
         Construct the primary header for the reference file.
 
         Args:
-            hdr (`astropy.fits.Header`_, optional):
+            hdr (`astropy.io.fits.Header`_, optional):
                 Input base header for added keywords. If None, uses
                 the :attr:`cube` header (if there is one) and then
                 cleans the header using
