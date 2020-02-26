@@ -32,9 +32,6 @@ if __name__ == '__main__':
                         help='Top-level directory with the DRP products; defaults to '
                              '$MANGA_SPECTRO_REDUX/$MANGADRP_VER', default=None)
     parser.add_argument('--dapver', type=str, help='DAP version', default=None)
-    parser.add_argument('-s', '--dap_src', type=str,
-                        help='Top-level directory with the DAP source code; defaults to '
-                            '$MANGADAP_DIR', default=None)
     parser.add_argument('-a', '--analysis_path', type=str,
                         help='Top-level output directory for the DAP results; defaults to '
                              '$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER', default=None)
@@ -56,8 +53,8 @@ if __name__ == '__main__':
     loggers = module_logging(__name__, arg.verbose)
 
     DAPall(analysisplan, methods=arg.methods, drpver=arg.drpver, redux_path=arg.redux_path,
-           dapver=arg.dapver, dapsrc=arg.dap_src, analysis_path=arg.analysis_path,
-           loggers=loggers, quiet=arg.quiet, single_precision=arg.single_precision)
+           dapver=arg.dapver, analysis_path=arg.analysis_path, loggers=loggers, quiet=arg.quiet,
+           single_precision=arg.single_precision)
 
     print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
 
