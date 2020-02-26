@@ -108,31 +108,32 @@ class MaNGARSS(RowStackedSpectra):
         """
         Determine the spectral resolution channel to use.
 
-        Precedence follows this order: ``PREDISP``, ``PRESPECRES``,
-        ``DISP``, ``SPECRES``.
+        Precedence follows this order: ``LSFPRE``, ``PRESPECRES``,
+        ``LSFPOST``, ``SPECRES``.
 
         Args:
             hdu (`astropy.io.fits.HDUList`):
                 The opened MaNGA DRP file.
             ext (:obj:`str`, optional):
                 Specify the extension with the spectral estimate to
-                use. Should be in None, ``PREDISP``, ``PRESPECRES``,
-                ``DISP``, or ``SPECRES``. The default is None, which
-                means it will return the extension found first in the
-                order above. None is returned if none of the
+                use. Should be in None, ``LSFPRE``, ``PRESPECRES``,
+                ``LSFPOST``, or ``SPECRES``. The default is None,
+                which means it will return the extension found first
+                in the order above. None is returned if none of the
                 extensions are present.
 
         Returns:
             :obj:`str`: The name of the preferred extension to use.
         """
-        available = [h.name for h in hdu if h.name in ['PREDISP', 'DISP', 'PRESPECRES', 'SPECRES']]
+        available = [h.name for h in hdu 
+                        if h.name in ['LSFPRE', 'LSFPOST', 'PRESPECRES', 'SPECRES']]
         _ext = ext
         if ext is None:
-            _ext = 'PREDISP'
+            _ext = 'LSFPRE'
             if _ext not in available:
                 _ext = 'PRESPECRES'
             if _ext not in available:
-                _ext = 'DISP'
+                _ext = 'LSFPOST'
             if _ext not in available:
                 _ext = 'SPECRES'
         return None if _ext not in available else _ext
@@ -156,12 +157,12 @@ class MaNGARSS(RowStackedSpectra):
                 leave masked pixels in returned array.
             median (:obj:`bool`, optional):
                 Return a single vector with the median spectral
-                resolution instead of a per spectrum array.  When using
-                the `SPECRES` extension, this just returns the vector
-                provided by the DRP file; when using the `DISP`
-                extension, this performs a masked median across the
-                array and then interpolates any wavelengths that were
-                masked in all vectors.
+                resolution instead of a per spectrum array. When
+                using the `SPECRES` extension, this just returns the
+                vector provided by the DRP file; when using either of
+                the `LSF` extensions, this performs a masked median
+                across the array and then interpolates any
+                wavelengths that were masked in all vectors.
 
         Returns:
             :obj:`tuple`: Returns a :obj:`str` with the name of the
@@ -190,7 +191,7 @@ class MaNGARSS(RowStackedSpectra):
                 sres = numpy.ma.tile(sres, (nspec,1))
             return _ext, sres
 
-        # Otherwise dealing with the DISP cube
+        # Otherwise dealing with the LSF cube
         sres = numpy.ma.MaskedArray(hdu[_ext].data)
         # Mask any non-positive value
         sres[numpy.invert(sres > 0)] = numpy.ma.masked

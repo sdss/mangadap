@@ -81,6 +81,8 @@ TODO
    don't require an analysis plan yanny parameter file.
  - Docstring updates for modules up through `StellarContinuumModel`, but
    still lots to do.
+ - Incorporate change from 'PREDISP' to 'LSFPRE' and 'DISP' to 'LSFPOST'
+   in the spectral resolution extensions produced by the DRP.
 
 
 2.5.2 (14 Feb 2020)
