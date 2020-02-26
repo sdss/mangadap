@@ -36,6 +36,11 @@ TODO
    moved "data" into "mangadap".  This should make package distribution
    via pip easier.
  - Remove "default" prefix from methods in `mangadap.config.defaults`.
+ - Remove obsolete `dapsrc` keyword arguments
+ - Some general clean-up of commented code and docs.
+ - Import clean-up, including removal of any `from __future__` imports.
+ - Added `bin/dap_status` to check the status of a batch DAP run.
+ - `__credits__` now include all authors of the DAP papers
 
 2.5.2 (14 Feb 2020)
 -------------------
