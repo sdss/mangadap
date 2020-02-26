@@ -8,8 +8,10 @@ Subpackages
 
    mangadap.config
    mangadap.contrib
+   mangadap.datacube
    mangadap.par
    mangadap.proc
+   mangadap.spectra
    mangadap.survey
    mangadap.util
 

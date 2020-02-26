@@ -5,13 +5,18 @@ import warnings
 warnings.simplefilter("ignore", UserWarning)
 warnings.simplefilter("ignore", RuntimeWarning)
 
+from IPython import embed
+
 import numpy
 
 from astropy.io import fits
 
 from matplotlib import pyplot
 
+from mangadap.datacube import MaNGADataCube
 from mangadap.util.covariance import Covariance
+from mangadap.util.constants import DAPConstants
+from mangadap.tests.util import requires_remote, remote_data_file
 
 #-----------------------------------------------------------------------------
 
@@ -105,6 +110,7 @@ def test_var():
     assert numpy.array_equal(covar.toarray(), numpy.identity(3)), \
             'Result should be an identity matrix'
 
+
 def test_io():
 
     # Clean up in case of a failure
@@ -134,9 +140,62 @@ def test_io():
     # Clean-up 
     os.remove(ofile)
 
-if __name__ == '__main__':
-    test_io()
 
+@requires_remote
+def test_rectification_recovery():
+    cube = MaNGADataCube.from_plateifu(7815, 3702, directory_path=remote_data_file(),
+                                       covar_ext='GCORREL')
+    cube.load_rss()
 
-    
+    hdu = fits.open(cube.file_path())
+    channel = hdu['GCORREL'].header['BBINDEX']
+
+    gcorrel = numpy.zeros(eval(hdu['GCORREL'].header['COVSHAPE']), dtype=float)
+    i = numpy.ravel_multi_index((hdu['GCORREL'].data['INDXI_C1'],hdu['GCORREL'].data['INDXI_C2']),
+                                cube.spatial_shape)
+
+    j = numpy.ravel_multi_index((hdu['GCORREL'].data['INDXJ_C1'],hdu['GCORREL'].data['INDXJ_C2']),
+                                cube.spatial_shape)
+    gcorrel[i,j] = hdu['GCORREL'].data['RHOIJ']
+    gcorrel[j,i] = hdu['GCORREL'].data['RHOIJ']
+
+    assert numpy.allclose(cube.covar.toarray(), gcorrel), 'Bad covariance read'
+
+    flux, C = cube.rss.rectify_wavelength_plane(channel, return_covar=True)
+    assert numpy.allclose(cube.flux[...,channel], flux), 'Bad flux rectification'
+
+    ivar = numpy.ma.power(C.variance().reshape(cube.spatial_shape), -1).filled(0.0)
+    assert numpy.allclose(cube.ivar[...,channel], ivar), 'Bad inverse variance rectification'
+
+    C.to_correlation()
+    assert numpy.allclose(C.toarray(), gcorrel), 'Bad covariance calculation'
+
+    sres = numpy.ma.divide(cube.rss.wave[channel],
+                           cube.rss.instrumental_dispersion_plane(channel).ravel()) \
+                / DAPConstants.sig2fwhm
+
+    # WARNING: The computations done by the DRP and DAP are different
+    # in detail, but (at least for this test cube) the results are
+    # virtually identical except for notable outliers.
+    assert numpy.ma.median(cube.sres[...,channel].ravel() - sres) < 0.1, \
+            'Bad spectral resolution rectification'
+
+#    zoom = 12
+#    xs = int(C.shape[0]/2 - C.shape[0]/2/zoom)
+#    xe = xs + int(C.shape[0]/zoom) + 1
+#    ys = int(C.shape[1]/2 - C.shape[1]/2/zoom)
+#    ye = ys + int(C.shape[1]/zoom) + 1
+#
+#    fig = pyplot.figure(figsize=(pyplot.figaspect(1)))
+#    ax = fig.add_axes([0.1, 0.3, 0.35, 0.35])
+#    ax.imshow(C.toarray()[xs:xe,ys:ye], origin='lower', interpolation='nearest',
+#              cmap='inferno', aspect='auto')
+#    ax.set_title('DAP')
+#    ax = fig.add_axes([0.55, 0.3, 0.35, 0.35])
+#    cax = fig.add_axes([0.91, 0.3, 0.01, 0.35])
+#    ax.set_title('DRP')
+#    cs = ax.imshow(cube.covar.toarray()[xs:xe,ys:ye], origin='lower',
+#                   interpolation='nearest', aspect='auto', cmap='inferno')
+#    pyplot.colorbar(cs, cax=cax)
+#    pyplot.show()
 
