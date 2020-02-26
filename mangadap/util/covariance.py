@@ -525,16 +525,7 @@ class Covariance:
             quiet (:obj:`bool`, optional):
                 Suppress terminal output.
         """
-#        if isinstance(source, fits.HDUList):
-#            hdu = source if row_major else DAPFitsUtil.transpose_image_data(source)
-#        else:
-#            try:
-#                hdu = DAPFitsUtil.read(source)
-#            except Exception as e:
-#                print(e)
-#                warnings.warn('Problem reading covariance from file.')
-#                return
-
+        # Open the provided source, if it hasn't been yet
         hdu = source if isinstance(source, fits.HDUList) else fits.open(source)
 
         # Read a coordinate data

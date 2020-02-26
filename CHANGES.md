@@ -36,6 +36,28 @@ TODO
    moved "data" into "mangadap".  This should make package distribution
    via pip easier.
  - Remove "default" prefix from methods in `mangadap.config.defaults`.
+ - Remove obsolete `dapsrc` keyword arguments
+ - Some general clean-up of commented code and docs.
+ - Import clean-up, including removal of any `from __future__` imports.
+ - Added `bin/dap_status` to check the status of a batch DAP run.
+ - `__credits__` now include all authors of the DAP papers
+ - Added new DataCube and RowStackedSpectra classes, beginning the
+   generalization of the interface with the input data for use with
+   non-MaNGA data.
+ - For instantiating a MaNGADataCube, changed from using a yanny par
+   file to a configuration (ini) file.  Included code that can write
+   these files using data from the DRPall or DRPComplete files.
+ - Included a script that will download data into a new
+   `mangadap/data/remote` directory for testing.  The directory is not
+   included in the repo and has been added to .gitignore to prevent it
+   from being accidentally added.
+ - Included a number of tests that use the new remote data.  These will
+   be skipped if the remote data is not available.
+ - Significant improvements and testing of `mangadap.util.covariance`.
+   Ensuring that the correlation matrices provided by the DRP can be
+   read by `MaNGADataCube` and are effectively identical to the
+   calculation performed by `MaNGARSS`.
+
 
 2.5.2 (14 Feb 2020)
 -------------------
