@@ -8,7 +8,8 @@ import numpy
 
 from argparse import ArgumentParser
 
-from mangadap.drpfits import DRPFits
+from mangadap.spectra import MaNGARSS
+#from mangadap.drpfits import DRPFits
 
 def parse_args(options=None):
     parser = ArgumentParser()
@@ -50,31 +51,27 @@ def calculate_covariance_cube(plate, ifudesign, ofile, nc=1, wave=None, director
 
     # Access the DRP RSS file
     print('Attempting to open RSS file:')
-    drpf = DRPFits(plate, ifudesign, 'RSS', read=True, directory_path=directory_path)
-    print('     FOUND: {0}'.format(drpf.file_path()))
-
-    nw = drpf['WAVE'].data.size                     # Number of wavelength channels
+    rss = MaNGARSS.from_plateifu(plate, ifudesign, directory_path=directory_path)
+    print('     FOUND: {0}'.format(rss.file_path()))
 
     if wave is not None:
-        channel = numpy.argsort( numpy.absolute(drpf['WAVE'].data - wave) )[0]
-        print('Nearest wavelength channel has wavelength {0:.1f} ang.'.format(
-                                                                    drpf['WAVE'].data[channel]))
-        C = drpf.covariance_matrix(channel)
-
+        channel = numpy.argsort(numpy.absolute(drpf.wave - wave))[0]
+        print('Nearest wavelength channel has wavelength {0:.1f} ang.'.format(drpf.wave[channel]))
+        C = rss.covariance_matrix(channel)
     else:
-        if nc >= nw or nc == 0:
+        if nc >= rss.nwave or nc == 0:
             print('Calculating full covariance cube ...')
-            C = drpf.covariance_cube()
+            C = rss.covariance_cube()
             print('... done.')
         elif nc == 1:
-            channel = nw//2
-            print('Calculating covariance matrix at central channel: {0:.1f} ang.'.format(
-                                                                    drpf['WAVE'].data[channel]))
-            C = drpf.covariance_matrix(channel)
+            channel = rss.nwave//2
+            print('Calculating covariance matrix at central channel: '
+                  '{0:.1f} ang.'.format(rss.wave[channel]))
+            C = rss.covariance_matrix(channel)
         else:
             print('Calculating covariance in {0} wavelength channels...'.format(nc))
-            channels = numpy.linspace(0, nw-1, num=nc, dtype=int)
-            C = drpf.covariance_cube(channels=channels)
+            channels = numpy.linspace(0, rss.nwave-1, num=nc, dtype=int)
+            C = rss.covariance_cube(channels=channels)
 
     print('Writing data to {0}.'.format(ofile))
     C.write(ofile, clobber=True)            # Write the data

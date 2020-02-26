@@ -51,7 +51,6 @@ import astropy.constants
 import astropy.units
 from astropy.cosmology import FlatLambdaCDM
 
-#from .drpfits import DRPFits, DRPQuality3DBitMask
 from .drpfits import DRPQuality3DBitMask
 from .datacube import DataCube
 from .util.fitsutil import DAPFitsUtil

@@ -7,7 +7,8 @@ from scipy import interpolate
 from astropy.io import fits
 import astropy.constants
 
-from mangadap.drpfits import DRPFits, DRPFitsBitMask
+from mangadap.datacube import MaNGADataCube
+from mangadap.drpfits import DRPFitsBitMask
 
 from mangadap.par.artifactdb import ArtifactDB
 from mangadap.par.emissionlinedb import EmissionLineDB
@@ -29,8 +30,8 @@ def test_ppxffit():
     specfile = data_test_file('MaNGA_test_spectra.fits.gz')
     hdu = fits.open(specfile)
     drpbm = DRPFitsBitMask()
-    flux = numpy.ma.MaskedArray(hdu['FLUX'].data,
-                                mask=drpbm.flagged(hdu['MASK'].data, DRPFits.do_not_fit_flags()))
+    flux = numpy.ma.MaskedArray(hdu['FLUX'].data, mask=drpbm.flagged(hdu['MASK'].data,
+                                                                MaNGADataCube.do_not_fit_flags()))
     ferr = numpy.ma.power(hdu['IVAR'].data, -0.5)
     flux[ferr.mask] = numpy.ma.masked
     ferr[flux.mask] = numpy.ma.masked

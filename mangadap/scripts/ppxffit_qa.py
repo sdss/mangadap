@@ -8,7 +8,7 @@ from matplotlib import pyplot, colors, rc, colorbar, ticker
 
 from astropy.io import fits
 
-from mangadap.drpfits import DRPFits
+from mangadap.datacube import MaNGADataCube
 from mangadap.par.analysisplan import AnalysisPlanSet
 from mangadap.proc.templatelibrary import TemplateLibrary
 from mangadap.proc.reductionassessments import ReductionAssessment
@@ -454,8 +454,9 @@ def stellar_continuum_maps(plt, ifu, daptype, snr, r68, r99, rchi2, signal, a, d
 
 def gmr_data(plt, ifu, drpver, redux_path):
     # Get the g-r map from the data cube
-    drp_cube_file = os.path.join(*DRPFits.default_paths(plt, ifu, 'CUBE', drpver=drpver,
-                                                        redux_path=redux_path))
+
+    drp_cube_file = os.path.join(*MaNGADataCube.default_paths(plt, ifu, drpver=drpver,
+                                                              redux_path=redux_path))
     if not os.path.isfile(drp_cube_file):
         raise FileNotFoundError('{0} does not exist!'.format(drp_cube_file))
 

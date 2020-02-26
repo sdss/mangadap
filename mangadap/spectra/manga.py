@@ -331,7 +331,7 @@ class MaNGARSS(RowStackedSpectra):
         _directory_path = defaults.drp_directory_path(plate, drpver=drpver,
                                                       redux_path=redux_path) \
                                 if directory_path is None else directory_path
-        _output_file = MaNGADataCube.build_file_name(plate, ifudesign, log=log) \
+        _output_file = MaNGARSS.build_file_name(plate, ifudesign, log=log) \
                             if output_file is None else output_file
         return _directory_path, _output_file
 

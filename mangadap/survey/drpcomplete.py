@@ -81,10 +81,9 @@ import astropy.constants
 
 from pydl.pydlutils.yanny import yanny
 
-
 from ..datacube import MaNGADataCube
+from ..spectra import MaNGARSS
 from ..config import defaults
-from .. import drpfits
 from ..util.parser import arginp_to_list, list_to_csl_string, parse_drp_file_name
 from ..util.exception_tools import print_frame
 
@@ -252,66 +251,6 @@ class DRPComplete:
     # ******************************************************************
     #  Utility functions
     # ******************************************************************
-#    def _drp_mangaid(self, drplist):
-#        """
-#        Grab the MaNGA IDs from the DRP fits files.
-#        
-#        Args:
-#            drplist (list) : List of :class:`mangadap.drpfits.DRPFits`
-#                objects
-#
-#        Returns:
-#            numpy.array: Array with the MaNGA IDs from the headers of
-#            the DRP fits files.
-#
-#        .. note::
-#            This takes far too long; either astropy.io.fits is reading
-#            the entire file instead of just the header, or the slowdown
-#            is because the DRP files are compressed.
-#
-#        """
-#        nn = len(drplist)
-#        mangaid = []
-#        print('Gathering MANGA-IDs for DRP files...', end='\r')
-#        for i in range(0,nn):
-#            mangaid_, ra, dec = drplist[i].object_data()
-#            mangaid = mangaid + [mangaid_]
-#        print('Gathering MANGA-IDs for DRP files...DONE')
-#        mangaid = numpy.array(mangaid)
-#        return mangaid
-
-
-#    def _drp_info(self, drplist):
-#        """
-#        Grab the MaNGA IDs and object coordinates from the DRP fits
-#        files.
-#        
-#        Args:
-#            drplist (list) : List of :class:`mangadap.drpfits.DRPFits`
-#                objects
-#
-#        Returns:
-#            numpy.array: Three arrays with, respectively, the MaNGA IDs
-#            from the headers of the DRP fits files, the object right
-#            ascension, and the object declination.
-#
-#        .. note::
-#            This takes far too long; either astropy.io.fits is reading
-#            the entire file instead of just the header, or the slowdown
-#            is because the DRP files are compressed.
-#
-#        """
-#        nn = len(drplist)
-#        mangaid = []
-#        objra = numpy.empty(nn, dtype=numpy.float64)
-#        objdec = numpy.empty(nn, dtype=numpy.float64)
-#        print('Gathering DRP header data...', end='\r')
-#        for i in range(0,nn):
-#            mangaid_, objra[i], objdec[i] = drplist[i].object_data()
-#            mangaid = mangaid + [mangaid_]
-#        print('Gathering DRP header data...DONE')
-#        mangaid = numpy.array(mangaid)
-#        return mangaid, objra, objdec
 
     def _read_platetargets(self):
         """
@@ -726,8 +665,8 @@ class DRPComplete:
         # Get the list of files
         if matchedlist:
             # Lists already matched, just construct the file names
-            files = [os.path.join(*drpfits.DRPFits.default_paths(p, i, 'CUBE', drpver=self.drpver,
-                                                                 redux_path=self.redux_path)) \
+            files = [os.path.join(*MaNGADataCube.default_paths(p, i, drpver=self.drpver,
+                                                               redux_path=self.redux_path)) \
                         for p,i in zip(self.platelist, self.ifudesignlist)]
         elif on_disk:
             # Find the DRP LOGCUBE files on disk
@@ -740,9 +679,8 @@ class DRPComplete:
             pltifu = drpall_hdu[1].data['PLATEIFU']
             if len(numpy.unique(pltifu)) != len(pltifu):
                 raise ValueError('The PLATEIFU column in the DRPall file is not unique!')
-            files = [os.path.join(*drpfits.DRPFits.default_paths(int(p), int(i), 'CUBE',
-                                                                 drpver=self.drpver,
-                                                                 redux_path=self.redux_path)) \
+            files = [os.path.join(*MaNGADataCube.default_paths(int(p), int(i), drpver=self.drpver,
+                                                               redux_path=self.redux_path)) \
                         for p,i in zip(drpall_hdu[1].data['plate'], drpall_hdu[1].data['ifudsgn'])]
 
         # Only use those files that exist
@@ -786,9 +724,8 @@ class DRPComplete:
             `numpy.ndarray`: Array of modes for each input DRP file.
         """
         print('Checking for RSS counterparts...', end='\r')
-        has_rss = [os.path.isfile(os.path.join(
-                        *drpfits.DRPFits.default_paths(p, i, 'RSS', drpver=self.drpver,
-                                                       redux_path=self.redux_path)))
+        has_rss = [os.path.isfile(os.path.join(*MaNGARSS.default_paths(p, i, drpver=self.drpver,
+                                                                    redux_path=self.redux_path)))
                         for p,i in zip(self.platelist, self.ifudesignlist)]
         print('Checking for RSS counterparts...DONE.')
         modes = numpy.ones(len(has_rss), dtype=int)

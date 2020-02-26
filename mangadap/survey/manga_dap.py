@@ -37,7 +37,6 @@ from mangadap import __version__
 
 from ..config import defaults
 from ..util.log import init_DAP_logging, module_logging, log_output
-from ..drpfits import DRPFits
 from ..datacube import DataCube
 from ..par.analysisplan import AnalysisPlanSet
 from ..proc.reductionassessments import ReductionAssessment
@@ -162,23 +161,8 @@ def manga_dap(cube, plan, dbg=False, log=None, verbose=0, drpver=None, redux_pat
 
     status = 0
 
-    #-------------------------------------------------------------------
-    # Declare the DRP fits file
-    #-------------------------------------------------------------------
-#    drpf = DRPFits(obs['plate'], obs['ifudesign'], obs['mode'], drpver=_drpver,
-#                   redux_path=redux_path, directory_path=directory_path, read=True)
-#    log_output(loggers, 1, logging.INFO, ' Opened DRP file: {0}\n'.format(drpf.file_path()))
-#
-#    # Test if the RSS file exists
-#    drpf_rss = DRPFits(obs['plate'], obs['ifudesign'], 'RSS', drpver=_drpver,
-#                       redux_path=redux_path, directory_path=directory_path, read=False)
-#    if not os.path.isfile(drpf_rss.file_path()):
-#        warnings.warn('RSS counterpart not available.  Some functionality may be limited!')
-#    del drpf_rss
-
     # Iterate over plans:
     for i in range(plan.nplans):
-
         # Construct some directories to ensure all the reference files
         # are placed in the same path.  The references files placed in
         # the common directory are:

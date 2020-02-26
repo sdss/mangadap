@@ -5,7 +5,8 @@ import numpy
 from astropy.io import fits
 import astropy.constants
 
-from mangadap.drpfits import DRPFits, DRPFitsBitMask
+from mangadap.datacube import MaNGADataCube
+from mangadap.drpfits import DRPFitsBitMask
 from mangadap.tests.util import data_test_file
 
 import warnings
@@ -17,6 +18,6 @@ def test_drpfitsbitmask():
     specfile = data_test_file('MaNGA_test_spectra.fits.gz')
     hdu = fits.open(specfile)
     drpbm = DRPFitsBitMask()
-    assert numpy.sum(drpbm.flagged(hdu['MASK'].data, DRPFits.do_not_fit_flags())) == 4601, \
+    assert numpy.sum(drpbm.flagged(hdu['MASK'].data, MaNGADataCube.do_not_fit_flags())) == 4601, \
                 'Flags changed'
 

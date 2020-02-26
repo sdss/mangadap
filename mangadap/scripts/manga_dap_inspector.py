@@ -13,7 +13,6 @@ from mangadap.dapfits import DAPCubeBitMask
 from mangadap.par.obsinput import ObsInputPar
 from mangadap.par.analysisplan import AnalysisPlanSet
 from mangadap.util.bitmask import BitMask
-from mangadap.drpfits import DRPFits
 from mangadap.config import defaults
 from mangadap.proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
 from mangadap.proc.stellarcontinuummodel import StellarContinuumModel
