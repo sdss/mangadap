@@ -59,6 +59,8 @@ def main():
     plates = [f.split('-')[1] for f in files]
 
     local_root = remote_data_file()
+    if not os.path.isdir(local_root):
+        os.makedirs(local_root)
 
     # Get the spectral data
     for plate, f in zip(plates, files):
