@@ -207,7 +207,7 @@ def test_run():
 
 
 #if __name__ == '__main__':
-#    test_manga_dap()
+#    test_calculate_covariance()
 
 
 

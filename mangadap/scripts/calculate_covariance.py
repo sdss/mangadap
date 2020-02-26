@@ -9,7 +9,6 @@ import numpy
 from argparse import ArgumentParser
 
 from mangadap.spectra import MaNGARSS
-#from mangadap.drpfits import DRPFits
 
 def parse_args(options=None):
     parser = ArgumentParser()
@@ -55,8 +54,8 @@ def calculate_covariance_cube(plate, ifudesign, ofile, nc=1, wave=None, director
     print('     FOUND: {0}'.format(rss.file_path()))
 
     if wave is not None:
-        channel = numpy.argsort(numpy.absolute(drpf.wave - wave))[0]
-        print('Nearest wavelength channel has wavelength {0:.1f} ang.'.format(drpf.wave[channel]))
+        channel = numpy.argsort(numpy.absolute(rss.wave - wave))[0]
+        print('Nearest wavelength channel has wavelength {0:.1f} ang.'.format(rss.wave[channel]))
         C = rss.covariance_matrix(channel)
     else:
         if nc >= rss.nwave or nc == 0:
