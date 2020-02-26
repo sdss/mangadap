@@ -124,6 +124,7 @@ generally, beyond its application to MaNGA.
 
    parameters
    bitmasks
+   datacube
    covariance
    resampling
    resolution

@@ -71,12 +71,12 @@ class DataCube:
     :math:`i,j` is the correlation between pixels at 2D locations
     :math:`(i_x,i_y)` and :math:`(j_x,j_y)`, where
 
-    ..math::
+    .. math::
 
         \begin{array}{rcl}
         i_x & = & \lfloor i/N_y \rfloor, \\
         i_y & = & i - i_x N_y, \\
-        j_x & = & \lfloor j/N_y \rfloor, and \\
+        j_x & = & \lfloor j/N_y \rfloor, {\rm and} \\
         j_y & = & j - j_x N_y.
         \end{array}
 
