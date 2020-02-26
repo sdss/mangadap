@@ -41,7 +41,6 @@ TODO
  - Import clean-up, including removal of any `from __future__` imports.
  - Added `bin/dap_status` to check the status of a batch DAP run.
  - `__credits__` now include all authors of the DAP papers
-
  - Added new DataCube and RowStackedSpectra classes, beginning the
    generalization of the interface with the input data for use with
    non-MaNGA data.
