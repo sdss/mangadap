@@ -7,7 +7,7 @@ import numpy
 from astropy.io import fits
 from matplotlib import pyplot
 
-from mangadap.drpfits import DRPFits
+from mangadap.datacube import MaNGADataCube
 from mangadap.util.fitsutil import DAPFitsUtil
 from mangadap.util.resolution import SpectralResolution
 from mangadap.util.pixelmask import SpectralPixelMask
@@ -35,17 +35,16 @@ def get_redshift(plt, ifu, drpall_file=None):
 
 
 def get_spectrum(plt, ifu, x, y, directory_path=None):
-    drpf = DRPFits(plt, ifu, 'CUBE', read=True, directory_path=directory_path)
-    flat_indx = drpf.spatial_shape[1]*x+y
+    cube = MaNGADataCube.from_plateifu(plt, ifu, directory_path=directory_path)
+    flat_indx = cube.spatial_shape[1]*x+y
     # This function always returns as masked array
-    sres = drpf.spectral_resolution(toarray=True, fill=True, pre=True).data
-    flux = drpf.copy_to_masked_array(ext='FLUX', flag=drpf.do_not_fit_flags())
-    ivar = drpf.copy_to_masked_array(ext='IVAR', flag=drpf.do_not_fit_flags())
-    return drpf['WAVE'].data, flux[flat_indx,:], ivar[flat_indx,:], sres[flat_indx,:]
+    flux = cube.copy_to_masked_array(attr='flux', flag=cube.do_not_fit_flags())
+    ivar = cube.copy_to_masked_array(attr='ivar', flag=cube.do_not_fit_flags())
+    sres = cube.copy_to_array(attr='sres')
+    return cube.wave, flux[flat_indx,:], ivar[flat_indx,:], sres[flat_indx,:]
         
 
 #-----------------------------------------------------------------------------
-
 if __name__ == '__main__':
     t = time.perf_counter()
 
@@ -57,8 +56,8 @@ if __name__ == '__main__':
     y = 21
 
     # Show the ppxf plots
-    fit_plots = True
-#    fit_plots = False
+#    fit_plots = True
+    fit_plots = False
 
     # Show summary plots
     usr_plots = True
@@ -78,14 +77,16 @@ if __name__ == '__main__':
     velscale_ratio = 4
 
     # Get the redshift
-#    drpall_file = './data/drpall-v2_4_3.fits'
-    z = numpy.array([get_redshift(plt, ifu)]) #, drpall_file)])
+    drpver = 'v2_7_1'
+    directory_path = os.path.join(os.environ['MANGADAP_DIR'], 'mangadap', 'data', 'remote')
+    drpall_file = os.path.join(directory_path, 'drpall-{0}.fits'.format(drpver))
+    z = numpy.array([get_redshift(plt, ifu, drpall_file)])
     print('Redshift: {0}'.format(z[0]))
     dispersion = numpy.array([100.])
 
     # Read a spectrum
     print('reading spectrum')
-    wave, flux, ivar, sres = get_spectrum(plt, ifu, x, y) #, directory_path='./data')
+    wave, flux, ivar, sres = get_spectrum(plt, ifu, x, y, directory_path=directory_path)
 
 #    pyplot.plot(wave, flux)
 #    pyplot.show()
@@ -103,9 +104,8 @@ if __name__ == '__main__':
                                       emldb=EmissionLineDB.from_key('ELPFULL'))
 
     # Construct the template library
-    sc_tpl = TemplateLibrary(sc_tpl_key, match_to_drp_resolution=False,
-                             velscale_ratio=velscale_ratio, spectral_step=1e-4, log=True,
-                             hardcopy=False)
+    sc_tpl = TemplateLibrary(sc_tpl_key, match_resolution=False, velscale_ratio=velscale_ratio,
+                             spectral_step=1e-4, log=True, hardcopy=False)
     sc_tpl_sres = numpy.mean(sc_tpl['SPECRES'].data, axis=0).ravel()
 
     # Instantiate the fitting class

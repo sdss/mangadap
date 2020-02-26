@@ -2,6 +2,20 @@
 What's New in the DAP
 *********************
 
+MPL-10 (2.5.3dev)
+=================
+
+High-level changes
+------------------
+
+ * Incorporates the new LSF measurements from the DRP.
+
+User-level changes/bug fixes
+----------------------------
+
+ * Major revision of the front-end to ease incorporation of non-MaNGA
+   datacubes.
+
 MPL-9 (2.4.1)
 =============
 

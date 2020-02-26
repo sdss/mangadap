@@ -1,61 +1,61 @@
 #!/usr/bin/env python3
 
 import os
+import numpy
 
 import astropy.constants
 from astropy.io import fits
 
+from mangadap.datacube import MaNGADataCube
 from mangadap.survey.manga_dap import manga_dap
-from mangadap.par.obsinput import ObsInputPar
 from mangadap.par.analysisplan import AnalysisPlan, AnalysisPlanSet
 
-# It's possible to change the environmental variables here, e.g.:
-# os.environ['MANGA_SPECTRO_REDUX'] = '/path/to/drp/root/directory'
-# os.environ['MANGADRP_VER'] = 'v2_5_3'
-# os.environ['MANGA_SPECTRO_ANALYSIS'] = '/path/to/dap/root/output/directory'
-
 #-----------------------------------------------------------------------------
-def get_obsinput(plt, ifu, drpall_file=None):
-    """
-    Grab the input parameters the DAP requires for each observation to
-    fit a cube.  If the drpall file is None, use the default path.
-    """
-    hdu = fits.open(os.path.join(os.environ['MANGA_SPECTRO_REDUX'], os.environ['MANGADRP_VER'],
-                                 'drpall-{0}.fits'.format(os.environ['MANGADRP_VER']))) \
-                if drpall_file is None else fits.open(drpall_file)
-    indx = hdu[1].data['PLATEIFU'] == '{0}-{1}'.format(plt, ifu)
+def get_config(plt, ifu, config_file, drpall_file=None):
+    if drpall_file is None:
+        drpall_file = os.path.join(os.environ['MANGA_SPECTRO_REDUX'], os.environ['MANGADRP_VER'],
+                                   'drpall-{0}.fits'.format(os.environ['MANGADRP_VER']))
 
-    return ObsInputPar(plate=plt, ifudesign=ifu, mode='CUBE',
-                       vel=astropy.constants.c.to('km/s').value*hdu[1].data['NSA_Z'][indx][0],
-                       vdisp=100.,
-                       ell=1-hdu[1].data['NSA_ELPETRO_BA'][indx][0],
-                       pa=hdu[1].data['NSA_ELPETRO_PHI'][indx][0],
-                       reff=hdu[1].data['NSA_ELPETRO_TH50_R'][indx][0])
+    # Use the DRPall file
+    with fits.open(drpall_file) as hdu:
+        indx = numpy.where(hdu['MANGA'].data['PLATEIFU'] == '{0}-{1}'.format(plt, ifu))[0]
+        if len(indx) != 1:
+            raise ValueError('{0}-{1} either does not exist or has more than one match!'.format(
+                             plt, ifu))
+
+        MaNGADataCube.write_config(config_file, plt, ifu, z=hdu[1].data['z'][indx[0]],
+                                   ell=1-hdu[1].data['nsa_elpetro_ba'][indx[0]],
+                                   pa=hdu[1].data['nsa_elpetro_phi'][indx[0]],
+                                   reff=hdu[1].data['nsa_elpetro_th50_r'][indx[0]],
+                                   overwrite=True)
 
 
 def fit_one_cube(plt, ifu, drpall_file=None, directory_path=None, analysis_path=None):
     # Grab the required input parameters
-    obs = get_obsinput(plt, ifu, drpall_file=drpall_file)
+    config_file = '{0}-{1}.cfg'.format(plt, ifu)
+    get_config(plt, ifu, config_file, drpall_file=drpall_file)
+
+    # Read the datacube
+    cube = MaNGADataCube.from_config(config_file, directory_path=directory_path)
 
     # Define how you want to analyze the data
     plan = AnalysisPlanSet([ AnalysisPlan(drpqa_key='SNRG',
-                                          bin_key='HYB10',
+                                          bin_key='ALL', #'HYB10',
                                           continuum_key='MILESHCMPL9',
                                           elmom_key='EMOMMPL9',
-                                          elfit_key='EFITMPL9DB',
+                                          elfit_key='EFITMPL9', #'EFITMPL9DB',
                                           spindex_key='INDXEN') ])
 
     # Run it!
-    return manga_dap(obs, plan, verbose=2, directory_path=directory_path,
+    return manga_dap(cube, plan, verbose=2, directory_path=directory_path,
                      analysis_path=analysis_path)
-
-
 #-----------------------------------------------------------------------------
 
+
 if __name__ == '__main__':
-    # Define the output directories directly
-#    fit_one_cube(7815, 1902, drpall_file='./data/drpall-v2_5_3.fits', directory_path='./data',
-#                 analysis_path='./output')
-    # Or just use the defaults.
-    fit_one_cube(7815, 1902, analysis_path='./output')
+    drpver = 'v2_7_1'
+    directory_path = os.path.join(os.environ['MANGADAP_DIR'], 'mangadap', 'data', 'remote')
+    drpall_file = os.path.join(directory_path, 'drpall-{0}.fits'.format(drpver))
+    fit_one_cube(7815, 3702, drpall_file=drpall_file, directory_path=directory_path,
+                 analysis_path='./output')
 
