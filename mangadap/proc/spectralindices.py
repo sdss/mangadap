@@ -524,7 +524,7 @@ class SpectralIndices:
             Path to the directory with artifact parameter files.  If
             None, defined by
             :attr:`mangadap.par.artifactdb.ArtifactDB.default_data_dir`.
-        absorption_index_path (:obj:`str`, optional:
+        absorption_index_path (:obj:`str`, optional):
             Path to the directory with absorption-line index parameter
             files.  If None, defined by
             :attr:`mangadap.par.absorptionindexdb.AbsorptionIndexDB.default_data_dir`.
@@ -681,13 +681,13 @@ class SpectralIndices:
                             else self.emission_line_model.method['continuum_tpl_key']
         method = defaults.dap_method(self.binned_spectra.method['key'], continuum_templates,
                                      eml_templates)
-        self.analysis_path = defaults.dap_analysis_path(drpver=self.binned_spectra.drpf.drpver,
+        self.analysis_path = defaults.dap_analysis_path(drpver=self.binned_spectra.cube.drpver,
                                                         dapver=dapver) \
                                     if analysis_path is None else str(analysis_path)
         self.directory_path \
-                = defaults.dap_method_path(method, plate=self.binned_spectra.drpf.plate,
-                                           ifudesign=self.binned_spectra.drpf.ifudesign, ref=True,
-                                           drpver=self.binned_spectra.drpf.drpver, dapver=dapver,
+                = defaults.dap_method_path(method, plate=self.binned_spectra.cube.plate,
+                                           ifudesign=self.binned_spectra.cube.ifudesign, ref=True,
+                                           drpver=self.binned_spectra.cube.drpver, dapver=dapver,
                                            analysis_path=self.analysis_path) \
                                     if directory_path is None else str(directory_path)
 
@@ -700,22 +700,34 @@ class SpectralIndices:
             ref_method = '{0}-{1}'.format(ref_method, self.emission_line_model.method['key'])
         ref_method = '{0}-{1}'.format(ref_method, self.database['key'])
 
-        self.output_file = defaults.dap_file_name(self.binned_spectra.drpf.plate,
-                                                  self.binned_spectra.drpf.ifudesign, ref_method) \
+        self.output_file = defaults.dap_file_name(self.binned_spectra.cube.plate,
+                                                  self.binned_spectra.cube.ifudesign, ref_method) \
                                         if output_file is None else str(output_file)
 
 
     def _initialize_primary_header(self, hdr=None, measurements_binid=None):
         """
-        Initialize the header of :attr:`hdu`.
+        Construct the primary header for the reference file.
+
+        Args:
+            hdr (`astropy.io.fits.Header`_, optional):
+                Input base header for added keywords. If None, uses
+                the :attr:`cube` header (if there is one) and then
+                cleans the header using
+                :func:`mangadap.util.fitsutil.DAPFitsUtil.clean_dap_primary_header`.
+            measurements_binid (`numpy.ndarray`_, optional):
+                Bin IDs for spectral index measurements. Only use is
+                to check if this is None, and the boolean result is
+                saved to the header to indicate if the spectral
+                indices are disconnected from the stellar-continuum
+                measurements.
 
         Returns:
-            astropy.io.fits.Header : Edited header object.
-
+            `astropy.io.fits.Header`_: Initialized header object.
         """
         # Copy the from the DRP and clean it
         if hdr is None:
-            hdr = self.binned_spectra.drpf.hdu['PRIMARY'].header.copy()
+            hdr = self.binned_spectra.cube.prihdr.copy()
             hdr = DAPFitsUtil.clean_dap_primary_header(hdr)
         
         hdr['AUTHOR'] = 'Kyle B. Westfall <westfall@ucolick.org>'
@@ -734,36 +746,6 @@ class SpectralIndices:
         hdr['SICORR'] = (self.compute_corrections, 'Velocity dispersion corrections computed')
         hdr['SIREBIN'] = (measurements_binid is not None, 'Bin IDs disconnected from SC binning')
         return hdr
-
-
-#    def _initialize_mask(self, good_snr):
-#        """
-#
-#        Initialize the mask be setting the DIDNOTUSE, FORESTAR, and LOW_SNR masks
-#
-#        """
-#        # Initialize to all zeros
-#        mask = numpy.zeros(self.shape, dtype=self.bitmask.minimum_dtype())
-#
-#        # Turn on the flag stating that the pixel wasn't used
-##        print('Mask size:', self.binned_spectra['MASK'].data.size)
-#        indx = self.binned_spectra.bitmask.flagged(self.binned_spectra['MASK'].data,
-#                                                   flag=self.binned_spectra.do_not_fit_flags())
-##        print('Masked as DIDNOTUSE:', numpy.sum(indx))
-#        mask[indx] = self.bitmask.turn_on(mask[indx], 'DIDNOTUSE')
-#
-#        # Turn on the flag stating that the pixel has a foreground star
-#        indx = self.binned_spectra.bitmask.flagged(self.binned_spectra['MASK'].data,
-#                                                   flag='FORESTAR')
-##        print('Masked as FORESTAR: ', numpy.sum(indx))
-#        mask[indx] = self.bitmask.turn_on(mask[indx], 'FORESTAR')
-#
-#        # Turn on the flag stating that the S/N in the spectrum was
-#        # below the requested limit
-#        indx = numpy.array([numpy.invert(good_snr).reshape(self.spatial_shape).T]*self.nwave).T
-#        mask[indx] = self.bitmask.turn_on(mask[indx], flag='LOW_SNR')
-#
-#        return mask
 
 
     def _index_database_dtype(self, name_len):
@@ -886,7 +868,7 @@ class SpectralIndices:
             binid = numpy.full(self.binned_spectra.spatial_shape, -1, dtype=int)
             binid.ravel()[good_snr] = numpy.arange(self.nbins)
             missing = []
-            nspec = self.binned_spectra.drpf.nspec
+            nspec = self.binned_spectra.cube.nspec
         else:
             binid = self.binned_spectra['BINID'].data
             missing = self.binned_spectra.missing_bins
@@ -998,17 +980,14 @@ class SpectralIndices:
             # TODO: Should probably make this a function within
             # SpatiallyBinnedSpectra, particularly because of the
             # dereddening
-            flags = binned_spectra.drpf.do_not_fit_flags()
-            binid = numpy.arange(binned_spectra.drpf.nspec).reshape(
-                                                                binned_spectra.drpf.spatial_shape)
-            wave = binned_spectra.drpf['WAVE'].data
-            flux = binned_spectra.drpf.copy_to_masked_array(flag=flags)
-            ivar = binned_spectra.drpf.copy_to_masked_array(ext='IVAR', flag=flags)
+            flags = binned_spectra.cube.do_not_fit_flags()
+            binid = numpy.arange(binned_spectra.cube.nspec).reshape(binned_spectra.spatial_shape)
+            wave = binned_spectra['WAVE'].data
+            flux = binned_spectra.cube.copy_to_masked_array(flag=flags)
+            ivar = binned_spectra.cube.copy_to_masked_array(attr='ivar', flag=flags)
             flux, ivar = binned_spectra.galext.apply(flux, ivar=ivar, deredden=True)
             missing = None
-            sres = binned_spectra.drpf.spectral_resolution(
-                        ext= 'SPECRES' if binned_spectra.method['spec_res'] == 'cube' else None,
-                        toarray=True, pre=binned_spectra.method['prepixel_sres'], fill=True).data
+            sres = binned_spectra.cube.copy_to_array(attr='sres')
         else:
             flags = binned_spectra.do_not_fit_flags()
             binid = binned_spectra['BINID'].data
@@ -1844,7 +1823,7 @@ class SpectralIndices:
                 and self.emission_line_model.method['deconstruct_bins'] != 'ignore'
 
         self.spatial_shape =self.binned_spectra.spatial_shape
-        self.nspec = self.binned_spectra.drpf.nspec if measure_on_unbinned_spaxels \
+        self.nspec = self.binned_spectra.cube.nspec if measure_on_unbinned_spaxels \
                             else self.binned_spectra.nbins
         self.spatial_index = self.binned_spectra.spatial_index.copy()
         
@@ -1945,9 +1924,8 @@ class SpectralIndices:
             corrected_dispersion = self.database['fwhm'] > 0
 
             # Set the bin IDs to match the stellar continuum to:
-            binid = numpy.arange(binned_spectra.drpf.nspec).reshape(
-                            binned_spectra.drpf.spatial_shape) if measure_on_unbinned_spaxels \
-                                                               else binned_spectra['BINID'].data
+            binid = numpy.arange(binned_spectra.cube.nspec).reshape(binned_spectra.spatial_shape) \
+                        if measure_on_unbinned_spaxels else binned_spectra['BINID'].data
 
             # Get two versions of the best-fitting continuum:
             #   - exactly the best fitting, continuum-only model
@@ -2062,7 +2040,7 @@ class SpectralIndices:
         # Initialize the header keywords
         self.hardcopy = hardcopy
         pri_hdr = self._initialize_primary_header(measurements_binid=measurements_binid)
-        map_hdr = DAPFitsUtil.build_map_header(self.binned_spectra.drpf,
+        map_hdr = DAPFitsUtil.build_map_header(self.binned_spectra.cube.fluxhdr,
                                                'K Westfall <westfall@ucolick.org>')
         # Get the spatial map mask
         map_mask = numpy.zeros(self.spatial_shape, dtype=self.bitmask.minimum_dtype())

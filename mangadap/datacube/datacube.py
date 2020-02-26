@@ -24,6 +24,8 @@ import numpy
 
 from scipy import sparse, interpolate
 
+from astropy.io import fits
+
 from ..util.bitmask import BitMask
 from ..util.mapping import permute_wcs_axes
 from ..util.covariance import Covariance
@@ -69,12 +71,12 @@ class DataCube:
     :math:`i,j` is the correlation between pixels at 2D locations
     :math:`(i_x,i_y)` and :math:`(j_x,j_y)`, where
 
-    ..math::
+    .. math::
 
         \begin{array}{rcl}
         i_x & = & \lfloor i/N_y \rfloor, \\
         i_y & = & i - i_x N_y, \\
-        j_x & = & \lfloor j/N_y \rfloor, and \\
+        j_x & = & \lfloor j/N_y \rfloor, {\rm and} \\
         j_y & = & j - j_x N_y.
         \end{array}
 
@@ -151,6 +153,13 @@ class DataCube:
             the datacube. Metadata required by analysis modules are
             indicated where relevant. If None, :attr:`meta` is
             instantiated as an empty dictionary.
+        prihdr (`astropy.io.fits.Header`_, optional):
+            Primary header read from datacube fits file. If None,
+            instantiated as an empty `astropy.io.fits.Header`_.
+        fluxhdr (`astropy.io.fits.Header`_, optional):
+            Header specifically for the flux extension of the
+            datacube fits file. If None, set to be a copy of the
+            primary header.
 
     Raises:
         ValueError:
@@ -199,13 +208,20 @@ class DataCube:
             Datacube spectral resolution.  Can be None.
         covar (:class:`mangadap.util.covariance.Covariance`):
             Datacube spatial covariance.  Can be None.
+        prihdr (`astropy.io.fits.Header`_):
+            Primary header for the datacube. If not provided on
+            instantiation, set to an empty `astropy.io.fits.Header`_.
+        fluxhdr (`astropy.io.fits.Header`_):
+            Header specifically for the flux array. If not provided
+            on instantiation, set to be a copy of :attr:`prihdr`.
         rss (:class:`mangadap.spectra.rowstackedspectra.RowStackedSpectra`):
             The source row-stacked spectra used to build the
             datacube.
     """
     # TODO: Add reconstructed PSF?
     def __init__(self, flux, wave=None, ivar=None, mask=None, bitmask=None, sres=None, covar=None,
-                 axes=[0,1,2], wcs=None, pixelscale=None, log=True, meta=None):
+                 axes=[0,1,2], wcs=None, pixelscale=None, log=True, meta=None, prihdr=None,
+                 fluxhdr=None):
 
         if wcs is None and wave is None:
             raise ValueError('Must either provide a single wavelength vector or a WCS that can '
@@ -279,6 +295,10 @@ class DataCube:
                             else Covariance.from_array(covar, raw_shape=raw_shape)
             if spatial_transpose:
                 self.covar = self.covar.transpose_raw_shape()
+
+        # Allocate attributes for primary and flux array fits headers
+        self.prihdr = fits.Header() if prihdr is None else prihdr
+        self.fluxhdr = self.prihdr.deepcopy() if fluxhdr is None else fluxhdr
 
         # Allow for a RowStackedSpectrum counterpart
         self.rss = None
@@ -358,13 +378,63 @@ class DataCube:
         """Number of spectra in the datacube."""
         return numpy.prod(self.spatial_shape)
 
+    @staticmethod
+    def do_not_use_flags():
+        """
+        Return the maskbit names that should not be used.
+
+        The base class returns ``None``.
+        """
+        return None
+
+    @staticmethod
+    def do_not_fit_flags():
+        """
+        Return the maskbit names that should not be fit.
+
+        The base class returns ``None``.
+        """
+        return None
+
+    @staticmethod
+    def do_not_stack_flags():
+        """
+        Return the maskbit names that should not be stacked.
+        
+        The base class returns ``None``.
+        """
+        return None
+
     def metakeys(self):
         """Get a :obj:`list` of the keys in the datacube metadata."""
         return list(self.meta.keys())
 
     # TODO: Add a getitem method that returns the datacube flux?
 
-    def load_rss(self):
+    @property
+    def can_compute_covariance(self):
+        """
+        Determine if the object can be used to compute the spatial
+        covariance.
+
+        If :attr:`covar` is currently not defined, the method tries
+        to load the row-stacked spectra used to build the datacube;
+        see :func:`load_rss`. If that is successful or if
+        :attr:`covar` is already defined, the method returns True. If
+        :attr:`covar` is None and the row-stacked spectra cannot be
+        loaded, the method returns False.
+
+        Returns:
+            :obj:`bool`: Flag that the object can be used to
+            calculate the spatial covariance.
+        """
+        if self.covar is None:
+            self.load_rss()
+        if self.covar is None and self.rss is None:
+            return False
+        return True
+
+    def load_rss(self, **kwargs):
         """
         Try to load the source row-stacked spectra for this datacube.
 
@@ -499,6 +569,7 @@ class DataCube:
                     else self.bitmask.flagged(self.mask.reshape(nspec,-1), flag=flag)
 
         # Create the output MaskedArray
+        # TODO: Handle when attr is None
         a = numpy.ma.MaskedArray(getattr(self, attr.lower()).reshape(nspec,-1), mask=mask)
 
         # Apply any bin selection
@@ -632,6 +703,68 @@ class DataCube:
         unique_bins, bin_count = numpy.unique(bin_indx, return_counts=True)
         indx = unique_bins > -1
         return unique_bins[indx], (bin_count[indx]*numpy.square(self.pixelscale)).astype(float)
+
+    def central_wavelength(self, waverange=None, response_func=None, per_pixel=True, flag=None,
+                           fluxwgt=False):
+        """
+        Determine the mean central wavelength for all spectra under
+        various conditions.
+
+        The wavelength channel is set to be the center of the
+        bandpass selected by ``waverange``, weighted by the response
+        function and the flux (if requested/provided). The mask is
+        also incorporated in these calculations. By default (i.e., no
+        wavelength limits or weighting) the wavelength channel is
+        just the central wavelength of the full spectral range. (Note
+        that if the spectra are binned logarithmically, this isn't
+        necessarily the central wavelength *channel*.)
+
+        Args:
+            waverange (array-like, optional):
+                Starting and ending wavelength over which to
+                calculate the statistics. Default is to use the full
+                wavelength range.
+            response_func (array-like, optional):
+                A two-column array with the wavelength and
+                transmission of a broad-band response function to use
+                as a weighting function for the calculation.
+            per_pixel (:obj:`bool`, optional):
+                When providing a response function, base the
+                calculation on per pixel measurements, instead of per
+                angstrom. Set to False for a per-angstrom
+                calculation.
+            flag (:obj:`str`, :obj:`list`, optional):
+                One or more flag names that are considered when
+                deciding if a pixel should be masked. The names
+                *must* be a valid bit name as defined by
+                :attr:`bitmask`. If :attr:`bitmask` is None, these
+                are ignored.
+            fluxwgt (:obj:`bool`, optional):
+                Flag to weight by the flux when determining the mean
+                coordinates.
+
+        Returns:
+            :obj:`float`: The mean central wavelength of all spectra.
+        """
+        if waverange is None and response_func is None and not fluxwgt:
+            return (self.wave[0] + self.wave[-1])/2.
+
+        flux = self.copy_to_masked_array(waverange=waverange, flag=flag)
+        dw = numpy.ones(self.nwave, dtype=float) if per_pixel \
+                else angstroms_per_pixel(self.wave, log=self.log)
+        _response_func = self.interpolate_to_match(response_func)
+
+        if fluxwgt:
+            norm = numpy.ma.sum(flux*_response_func[None,:]*dw[None,:], axis=1)
+            cen_wave = numpy.ma.sum(flux*self.wave[None,:]*_response_func[None,:]*dw[None,:],
+                                    axis=1) / norm
+            return float(numpy.ma.mean(cen_wave))
+
+        norm = numpy.ma.sum(numpy.invert(numpy.ma.getmaskarray(flux))
+                            * _response_func[None,:] * dw[None,:], axis=1)
+        cen_wave = numpy.ma.sum(numpy.invert(numpy.ma.getmaskarray(flux)) * self.wave[None,:]
+                                * _response_func[None,:] * dw[None,:], axis=1) / norm
+        return float(numpy.ma.mean(cen_wave))
 
     def flux_stats(self, waverange=None, response_func=None, per_pixel=True, flag=None):
         r"""

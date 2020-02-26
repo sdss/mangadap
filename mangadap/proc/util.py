@@ -34,7 +34,7 @@ def HDUList_mask_wavelengths(hdu, bitmask, bitmask_flag, wave_limits, wave_ext='
     value in the specified extention in a provided HDUList object.
 
     Args:
-        hdu (`astropy.io.fits.hdu.hdulist.HDUList`_): HDUList to alter
+        hdu (`astropy.io.fits.HDUList`_): HDUList to alter
         bitmask (class:`BitMask`): Bit mask object used to turn on the
             named bit mask.
         bitmask_flag (str): Name of the bit to turn on.
@@ -48,8 +48,7 @@ def HDUList_mask_wavelengths(hdu, bitmask, bitmask_flag, wave_limits, wave_ext='
             all pixels *outside* it.
 
     Returns:
-        `astropy.io.fits.hdu.hdulist.HDUList`_: The modified HDUList
-        object.
+        `astropy.io.fits.HDUList`_: The modified HDUList object.
 
     Raises:
         Exception: Raised if *wave_limits* does not have a length of

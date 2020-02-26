@@ -127,7 +127,7 @@ Revision history
         `astropy.io.fits.BinTableHDU`_ object with the coordinate-format
         covariance data.
     | **06 Apr 2016**: (KBW) Allow :func:`Covariance.read` to read from
-        a file or an `astropy.io.fits.hdu.hdulist.HDUList`_ object, and
+        a file or an `astropy.io.fits.HDUList`_ object, and
         allow the specification of the extensions to read the header,
         covariance, and plane data.
     | **23 Feb 2017**: (KBW) Major revisions: Use DAPFitsUtil to
@@ -152,6 +152,8 @@ Revision history
 import os
 import numpy
 import warnings
+
+from IPython import embed
 
 from scipy import sparse
 from astropy.io import fits
@@ -488,10 +490,10 @@ class Covariance:
         ``transpose_ivar``.
 
         Args:
-            source (:obj:`str`, `astropy.io.fits.hdu.hdulist.HDUList`_):
+            source (:obj:`str`, `astropy.io.fits.HDUList`_):
                 Initialize the object using an
-                `astropy.io.fits.hdu.hdulist.HDUList`_ object or path
-                to a fits file.
+                `astropy.io.fits.HDUList`_ object or path to a fits
+                file.
             ivar_ext (:obj:`str`, optional):
                 If reading the data from ``source``, this is the name
                 of the extension with the inverse variance data.
@@ -1164,7 +1166,7 @@ class Covariance:
         # Returns seven arrays
         i_c1, i_c2 = numpy.unravel_index(i, new_shape)
         j_c1, j_c2 = numpy.unravel_index(j, new_shape)
-        return i_c1, i_c2, j_c1, j_c2, k, rhoij, self.var.reshape(new_shape, -1).copy()
+        return i_c1, i_c2, j_c1, j_c2, k, rhoij, self.var.reshape(*new_shape, -1).copy()
 
     def output_hdus(self, reshape=False, hdr=None):
         r"""

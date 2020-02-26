@@ -1,10 +1,3 @@
-#!/usr/bin/env python3
-
-from __future__ import print_function
-from __future__ import division
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
 import os
 import time
 import numpy
@@ -15,7 +8,7 @@ from matplotlib import pyplot, colors, rc, colorbar, ticker
 
 from astropy.io import fits
 
-from mangadap.drpfits import DRPFits
+from mangadap.datacube import MaNGADataCube
 from mangadap.par.analysisplan import AnalysisPlanSet
 from mangadap.proc.templatelibrary import TemplateLibrary
 from mangadap.proc.reductionassessments import ReductionAssessment
@@ -27,7 +20,7 @@ from mangadap.util.fitsutil import DAPFitsUtil
 from mangadap.util.mapping import map_extent, map_beam_patch
 from mangadap.config import defaults
 
-#-----------------------------------------------------------------------------
+
 def init_image_ax(fig, pos):
     ax = fig.add_axes(pos, facecolor='0.9')
     ax.minorticks_on()
@@ -131,8 +124,6 @@ def masked_imshow(fig, ax, cax, data, extent=None, norm=None, vmin=None, vmax=No
         _norm = colors.Normalize(vmin=vmin, vmax=vmax) if norm is None else norm
         cb = colorbar.ColorbarBase(cax, cmap=cmap, norm=norm)
 
-    
-    
 
 def stellar_continuum_maps(plt, ifu, daptype, snr, r68, r99, rchi2, signal, a, da, an, dan,
                            gmr, t, dt, tn, dtn, svel, ssigo, ssigcor, ssigc, extent=None,
@@ -463,19 +454,17 @@ def stellar_continuum_maps(plt, ifu, daptype, snr, r68, r99, rchi2, signal, a, d
 
 def gmr_data(plt, ifu, drpver, redux_path):
     # Get the g-r map from the data cube
-    drp_cube_file = os.path.join(*DRPFits.default_paths(plt, ifu, 'CUBE', drpver=drpver,
-                                                        redux_path=redux_path))
+
+    drp_cube_file = os.path.join(*MaNGADataCube.default_paths(plt, ifu, drpver=drpver,
+                                                              redux_path=redux_path))
     if not os.path.isfile(drp_cube_file):
         raise FileNotFoundError('{0} does not exist!'.format(drp_cube_file))
 
-    hdu = fits.open(drp_cube_file)
-    gmr_map = -2.5*numpy.ma.log10(numpy.ma.MaskedArray(hdu['GIMG'].data,
-                                                       mask=numpy.invert(hdu['GIMG'].data>0))
+    with fits.open(drp_cube_file) as hdu:
+        return -2.5*numpy.ma.log10(numpy.ma.MaskedArray(hdu['GIMG'].data,
+                                                        mask=numpy.invert(hdu['GIMG'].data>0))
                                     / numpy.ma.MaskedArray(hdu['RIMG'].data,
                                                            mask=numpy.invert(hdu['RIMG'].data>0)))
-    hdu.close()
-    del hdu
-    return gmr_map
 
 
 def rdxqa_data(plt, ifu, plan, drpver, dapver, analysis_path):
@@ -487,15 +476,13 @@ def rdxqa_data(plt, ifu, plan, drpver, dapver, analysis_path):
     if not os.path.isfile(rdxqa_file):
         raise FileNotFoundError('{0} does not exist!'.format(rdxqa_file))
 
-    hdu = fits.open(rdxqa_file)
-    spatial_shape = (int(numpy.sqrt(hdu['SPECTRUM'].data['SNR'].size)),)*2
-    fgood_map = hdu['SPECTRUM'].data['FGOODPIX'].reshape(spatial_shape).T
-    signal_map = numpy.ma.MaskedArray(hdu['SPECTRUM'].data['SIGNAL'].reshape(spatial_shape).T,
-                                      mask=numpy.invert(fgood_map > 0))
-    snr_map = numpy.ma.MaskedArray(hdu['SPECTRUM'].data['SNR'].reshape(spatial_shape).T,
-                                   mask=numpy.invert(fgood_map > 0))
-    hdu.close()
-    del hdu
+    with fits.open(rdxqa_file) as hdu:
+        spatial_shape = (int(numpy.sqrt(hdu['SPECTRUM'].data['SNR'].size)),)*2
+        fgood_map = hdu['SPECTRUM'].data['FGOODPIX'].reshape(spatial_shape).T
+        signal_map = numpy.ma.MaskedArray(hdu['SPECTRUM'].data['SIGNAL'].reshape(spatial_shape).T,
+                                          mask=numpy.invert(fgood_map > 0))
+        snr_map = numpy.ma.MaskedArray(hdu['SPECTRUM'].data['SNR'].reshape(spatial_shape).T,
+                                       mask=numpy.invert(fgood_map > 0))
     return signal_map, snr_map
 
     
@@ -568,21 +555,19 @@ def maps_data(plt, ifu, plan, drpver, dapver, analysis_path):
     directory_path = defaults.dap_method_path(method, plate=plt, ifudesign=ifu, drpver=drpver,
                                               dapver=dapver, analysis_path=analysis_path)
     maps_file = defaults.dap_file_name(plt, ifu, method, mode='MAPS')
-    
-    hdu = fits.open(os.path.join(directory_path, maps_file))
 
-    mask = hdu['BINID'].data[1,:,:] < 0
-    
-    r68_map = numpy.ma.MaskedArray(hdu['STELLAR_FOM'].data[3,:,:], mask=mask)
-    r99_map = numpy.ma.MaskedArray(hdu['STELLAR_FOM'].data[4,:,:], mask=mask)
-    rchi2_map = numpy.ma.MaskedArray(hdu['STELLAR_FOM'].data[2,:,:], mask=mask)
-    svel_map = numpy.ma.MaskedArray(hdu['STELLAR_VEL'].data[:,:], mask=mask)
-    ssigo_map = numpy.ma.MaskedArray(hdu['STELLAR_SIGMA'].data[:,:], mask=mask)
-    ssigcor_map = numpy.ma.MaskedArray(hdu['STELLAR_SIGMACORR'].data[1,:,:], mask=mask)
-#    ssigcor_map = numpy.ma.MaskedArray(hdu['STELLAR_SIGMACORR'].data, mask=mask)
-    ssigc_map = numpy.ma.sqrt( numpy.square(ssigo_map) - numpy.square(ssigcor_map) )
+    with fits.open(os.path.join(directory_path, maps_file)) as hdu:
 
-    extent = map_extent(hdu, 'SPX_MFLUX')
+        mask = hdu['BINID'].data[1,:,:] < 0
+        r68_map = numpy.ma.MaskedArray(hdu['STELLAR_FOM'].data[3,:,:], mask=mask)
+        r99_map = numpy.ma.MaskedArray(hdu['STELLAR_FOM'].data[4,:,:], mask=mask)
+        rchi2_map = numpy.ma.MaskedArray(hdu['STELLAR_FOM'].data[2,:,:], mask=mask)
+        svel_map = numpy.ma.MaskedArray(hdu['STELLAR_VEL'].data[:,:], mask=mask)
+        ssigo_map = numpy.ma.MaskedArray(hdu['STELLAR_SIGMA'].data[:,:], mask=mask)
+        ssigcor_map = numpy.ma.MaskedArray(hdu['STELLAR_SIGMACORR'].data[1,:,:], mask=mask)
+        ssigc_map = numpy.ma.sqrt( numpy.square(ssigo_map) - numpy.square(ssigcor_map) )
+
+        extent = map_extent(hdu, 'SPX_MFLUX')
 
     return r68_map, r99_map, rchi2_map, svel_map, ssigo_map, ssigcor_map, ssigc_map, extent
 
@@ -681,11 +666,7 @@ def ppxffit_qa_plot(plt, ifu, plan, drpver=None, redux_path=None, dapver=None, a
                            svel_map, ssigo_map, ssigcor_map, ssigc_map, extent=extent, ofile=ofile)
 
 
-#-----------------------------------------------------------------------------
-
-if __name__ == '__main__':
-    t = time.perf_counter()
-
+def parse_args(options=None):
     parser = ArgumentParser()
 
     parser.add_argument('plate', type=int, help='plate ID to process')
@@ -707,22 +688,27 @@ if __name__ == '__main__':
                         help='template renormalization flux file.  Will attempt to read default '
                              'if not provided.  If no file is provided and the default file does '
                              'not exist, no renormalization of the templates is performed.')
-    arg = parser.parse_args()
 
-    if arg.bgagg:
+    return parser.parse_args() if options is None else parser.parse_args(options)
+
+
+def main(args):
+    t = time.perf_counter()
+
+    if args.bgagg:
         pyplot.switch_backend('agg')
 
     # Get the DAP method types to plot
-    plan_file = defaults.dap_plan_file(drpver=arg.drpver, dapver=arg.dapver,
-                                       analysis_path=arg.analysis_path) \
-                            if arg.plan_file is None else arg.plan_file
+    plan_file = defaults.dap_plan_file(drpver=args.drpver, dapver=args.dapver,
+                                       analysis_path=args.analysis_path) \
+                            if args.plan_file is None else args.plan_file
     analysisplan = AnalysisPlanSet.from_par_file(plan_file)
 
     # Construct the plot for each analysis plan
     for plan in analysisplan:
 
         # Get the template library keyword
-        tpl_renorm_file = arg.template_flux_file
+        tpl_renorm_file = args.template_flux_file
         if tpl_renorm_file is None:
             sc_method = StellarContinuumModel.define_method(plan['continuum_key'])
             tpl_key = sc_method['fitpar']['template_library_key']
@@ -737,9 +723,9 @@ if __name__ == '__main__':
                             else numpy.genfromtxt(tpl_renorm_file, dtype=float)[:,2]
 
         # Construct the plot
-        ppxffit_qa_plot(arg.plate, arg.ifudesign, plan, drpver=arg.drpver,
-                        redux_path=arg.redux_path, dapver=arg.dapver,
-                        analysis_path=arg.analysis_path, tpl_flux_renorm=tpl_flux_renorm)
+        ppxffit_qa_plot(args.plate, args.ifudesign, plan, drpver=args.drpver,
+                        redux_path=args.redux_path, dapver=args.dapver,
+                        analysis_path=args.analysis_path, tpl_flux_renorm=tpl_flux_renorm)
 
     print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
 

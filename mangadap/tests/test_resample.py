@@ -8,7 +8,7 @@ from astropy.io import fits
 
 from mangadap.util.sampling import Resample, _pixel_borders
 from mangadap.proc.bandpassfilter import passband_integral
-from mangadap.tests.util import test_data_file
+from mangadap.tests.util import data_test_file
 
 import warnings
 warnings.simplefilter("ignore", UserWarning)
@@ -30,7 +30,7 @@ def test_resample():
                 'Flux conservation test failed'
 
 def test_against_brute_force():
-    specfile = test_data_file('MaNGA_test_spectra.fits.gz')
+    specfile = data_test_file('MaNGA_test_spectra.fits.gz')
     hdu = fits.open(specfile)
 
     # Just test on the first spectrum
@@ -55,7 +55,7 @@ def test_against_brute_force():
                 'Resampling and brute force calculation should be identical'
 
 def test_against_brute_force_twod():
-    specfile = test_data_file('MaNGA_test_spectra.fits.gz')
+    specfile = data_test_file('MaNGA_test_spectra.fits.gz')
     hdu = fits.open(specfile)
 
     # Just test on the first spectrum

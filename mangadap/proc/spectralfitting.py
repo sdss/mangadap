@@ -242,7 +242,7 @@ class EmissionLineFit(SpectralFitting):
                 Return :math:`1\sigma` errors instead of inverse
                 variance.
             original_spaxels (:obj:`bool`, optional):
-                Instead of the binned spectra, use the `drpf` attribute
+                Instead of the binned spectra, use the `cube` attribute
                 of the `binned_spectra` object to return the original
                 spaxels, corrected for Galactic extinction.
 
@@ -260,23 +260,11 @@ class EmissionLineFit(SpectralFitting):
         wave = binned_spectra['WAVE'].data.copy()
 
         if original_spaxels:
-            flags = binned_spectra.drpf.do_not_fit_flags()
-            flux = binned_spectra.drpf.copy_to_masked_array(flag=flags)
-            ivar = binned_spectra.drpf.copy_to_masked_array(ext='IVAR', flag=flags)
+            flags = binned_spectra.cube.do_not_fit_flags()
+            flux = binned_spectra.cube.copy_to_masked_array(flag=flags)
+            ivar = binned_spectra.cube.copy_to_masked_array(attr='ivar', flag=flags)
             flux, ivar = binned_spectra.galext.apply(flux, ivar=ivar, deredden=True)
-
-            # Get the spectral resolution:
-            # - stack_sres sets whether or not the spectral resolution
-            #   is determined on a per-spaxel basis or with a single
-            #   vector
-            stack_sres = binned_spectra.method['stackpar']['stack_sres']
-            # - prepixel_sres sets if the prepixelized version of the
-            #   LSF measurements were used
-            prepixel_sres = binned_spectra.method['prepixel_sres']
-            # This pulls out the appropiate spectral resolution
-            sres = binned_spectra.drpf.spectral_resolution(ext=None if stack_sres else 'SPECRES',
-                                                           toarray=True, fill=True,
-                                                           pre=prepixel_sres)
+            sres = binned_spectra.cube.copy_to_array(attr='sres')
         else:
             flags = binned_spectra.do_not_fit_flags()
             flux = binned_spectra.copy_to_masked_array(flag=flags)

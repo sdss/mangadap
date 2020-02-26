@@ -232,7 +232,7 @@ def map_extent(hdu, ext, offset=True):
     Get the on-sky extent of a map using the provided WCS coordinates.
 
     Args:
-        hdu (`astropy.io.fits.hdu.hdulist.HDUList`_): Fits HDU list.
+        hdu (`astropy.io.fits.HDUList`_): Fits HDU list.
         ext (str): Extension of the file with the map.
         offset (bool): (**Optional**)  Return the extent as the offset
             from the coordinates of the object in arcseconds.  The WCS
@@ -307,9 +307,9 @@ def map_center_pixel_offset(hdu_1, hdu_2, ext, quiet=False):
     maps of two fits files.
 
     Args:
-        hdu_1 (`astropy.io.fits.hdu.hdulist.HDUList`_): Fits HDU list
+        hdu_1 (`astropy.io.fits.HDUList`_): Fits HDU list
             for the reference map.
-        hdu_2 (`astropy.io.fits.hdu.hdulist.HDUList`_): Fits HDU list
+        hdu_2 (`astropy.io.fits.HDUList`_): Fits HDU list
             for the comparison map.
         ext (str): Extension *in both files* with the maps.
         quiet (bool): (**Optional**)  Suppress terminal output.

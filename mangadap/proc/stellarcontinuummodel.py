@@ -43,7 +43,6 @@ import numpy
 from astropy.io import fits
 import astropy.constants
 
-from ..drpfits import DRPFits
 from ..par.parset import KeywordParSet, ParSet
 from ..par.artifactdb import ArtifactDB
 from ..par.emissionlinedb import EmissionLineDB
@@ -63,8 +62,6 @@ from .ppxffit import PPXFFitPar, PPXFFit
 from .util import select_proc_method, replace_with_data_from_nearest_coo
 
 from matplotlib import pyplot
-#from memory_profiler import profile
-
 # Add strict versioning
 # from distutils.version import StrictVersion
 
@@ -123,15 +120,15 @@ def validate_stellar_continuum_modeling_method_config(cnfg):
     the stellar-continuum-modeling method parameters.
 
     Args:
-        cnfg (:class:`mangadap.util.parser.DefaultConfig`): Object with
-            the stellar-continuum-modeling method parameters to
-            validate.
+        cnfg (:class:`mangadap.util.parser.DefaultConfig`):
+            Object with the stellar-continuum-modeling method
+            parameters to validate.
 
     Raises:
-        KeyError: Raised if any required keywords do not exist.
-        ValueError: Raised if keys have unacceptable values.
-        FileNotFoundError: Raised if a file is specified but could not
-            be found.
+        KeyError:
+            Raised if any required keywords do not exist.
+        ValueError:
+            Raised if the fitting method is not recognized.
     """
     # Check for required keywords
     required_keywords = ['key', 'fit_type', 'fit_method' ]
@@ -153,26 +150,27 @@ def available_stellar_continuum_modeling_methods():
     pPXF methods:
 
     .. todo::
-        Fill in
+
+        - Fill in these docs more
+        - Somehow add a python call that reads the databases and
+          constructs the table for presentation in sphinx so that the
+          text above doesn't have to be edited with changes in the
+          available databases.
 
     Returns:
-        list: A list of
+        :obj:`list`: A list of
         :func:`mangadap.proc.stellarcontinuummodel.StellarContinuumModelDef`
         objects, each defining a stellar-continuum modeling approach.
 
     Raises:
         IOError:
-            Raised if no binning scheme configuration files could be
-            found.
+            Raised if no stellar-continuum fitting configuration
+            files could be found.
+        ValueError:
+            Raised if the fitting method is unrecognized.
         KeyError:
-            Raised if the binning method keywords are not all unique.
-
-    .. todo::
-        - Somehow add a python call that reads the databases and
-          constructs the table for presentation in sphinx so that the
-          text above doesn't have to be edited with changes in the
-          available databases.
-        
+            Raised if the continuum-fitting method keywords are not
+            all unique.
     """
     # Check the configuration files exist
     search_dir = os.path.join(defaults.dap_config_root(), 'stellar_continuum_modeling')
@@ -248,71 +246,83 @@ class StellarContinuumModel:
     r"""
     Class that holds the stellar-continuum model results.
 
+    .. todo::
+
+        - Update attributes
+
     Args:
-        method_key (str): The keyword that designates which method,
-            provided in *method_list*, to use for the continuum-fitting
-            procedure.  
-        binned_spectra
-            (:class:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra`):
-            The binned spectra to fit.
-        guess_vel (float, numpy.ndarray): A single or spectrum-dependent
-            initial estimate of the redshift in km/s (:math:`cz`).
-        guess_sig (float, numpy.ndarray): (**Optional**) A single or
-            spectrum-dependent initial estimate of the velocity
-            dispersion in km/s.  Default is 100 km/s.
-        method_list (list): (**Optional**) List of
-            :class:`StellarContinuumModelDef` objects that define one or
-            more methods to use for the stellar continuum binning.  The
-            default list is provided by the config files in the DAP
-            source directory and compiled into this list using
+        method_key (:obj:`str`):
+            The keyword that designates which method, provided in
+            ``method_list``, to use for the continuum-fitting
+            procedure.
+        binned_spectra (:class:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra`):
+            The binned spectra to fit. Must be able to access parent
+            :class:`mangadap.datacube.datacube.DataCube` attribute
+            (``cube``).
+        guess_vel (:obj:`float`, `numpy.ndarray`_):
+            A single or spectrum-dependent initial estimate of the
+            redshift in km/s (:math:`cz`).
+        guess_sig (:obj:`float`, `numpy.ndarray`_, optional):
+            A single or spectrum-dependent initial estimate of the
+            velocity dispersion in km/s. If None, default set to 100
+            km/s.
+        method_list (:obj:`list`, optional):
+            List of :class:`StellarContinuumModelDef` objects that
+            define one or more methods to use for the stellar
+            continuum fitting. The default list is provided by the
+            config files in the DAP source directory and compiled
+            into this list using
             :func:`available_stellar_continuum_modeling_methods`.
-        dapver (str): (**Optional**) The DAP version to use for the
-            analysis, used to override the default defined by
+        dapver (:obj:`str`, optional):
+            The DAP version to use for the analysis. Only used to
+            construct paths, and overrides the default defined by
             :func:`mangadap.config.defaults.dap_version`.
-        analysis_path (str): (**Optional**) The top-level path for the
-            DAP output files, used to override the default defined by
+        analysis_path (:obj:`str`, optional):
+            The top-level path for the DAP output files, used to
+            override the default defined by
             :func:`mangadap.config.defaults.dap_analysis_path`.
-        directory_path (str): The exact path to the directory with DAP
-            output that is common to number DAP "methods".  See
+        directory_path (:obj:`str`, optional):
+            The exact path to the directory with DAP output that is
+            common to number DAP "methods". See
             :attr:`directory_path`.
-        output_file (str): (**Optional**) Exact name for the output
-            file.  The default is to use
+        output_file (:obj:`str`, optional):
+            Exact name for the output file. The default is to use
             :func:`mangadap.config.defaults.dap_file_name`.
-        hardcopy (bool): (**Optional**) Flag to write the HDUList
-            attribute to disk.  Default is True; if False, the HDUList
-            is only kept in memory and would have to be reconstructed.
+        hardcopy (:obj:`bool`, optional):
+            Flag to write the HDUList attribute to disk. If False,
+            the core `astropy.io.fits.HDUList`_ attribute
+            (:attr:`hdu`) is only kept in memory and would have to be
+            reconstructed.
         symlink_dir (:obj:`str`, optional):
             Create a symbolic link to the created file in the supplied
-            directory.  Default is to produce no symbolic link. 
-        tpl_symlink_dir (str): (**Optional**) Create a symbolic link to
-            the created template library file in the supplied directory.
-            Default is to produce no symbolic link.
-        clobber (bool): (**Optional**) Overwrite any existing files.
-            Default is to use any existing file instead of redoing the
-            analysis and overwriting the existing output.
-        checksum (bool): (**Optional**) Use the checksum in the fits
-            header to confirm that the data has not been corrupted.  The
-            checksum is **always** written to the fits header when the
-            file is created; this argument does not toggle that
-            functionality.
-        loggers (list): (**Optional**) List of `logging.Logger`_ objects
-            to log progress; ignored if quiet=True.  Logging is done
-            using :func:`mangadap.util.log.log_output`.  Default is no
+            directory.  If None, no symbolic link is created.
+        tpl_symlink_dir (:obj:`str`, optional):
+            Create a symbolic link to the created template library
+            file in the supplied directory. If None, no symbolic link
+            is created.
+        clobber (:obj:`bool`, optional):
+            Overwrite any existing files. Default is to use any
+            existing file instead of redoing the analysis and
+            overwriting the existing output.
+        checksum (:obj:`bool`, optional):
+            Use the checksum in the fits header to confirm that the
+            data has not been corrupted. The checksum is **always**
+            written to the fits header when the file is created.
+        loggers (:obj:`list`, optional):
+            List of `logging.Logger`_ objects to log progress;
+            ignored if quiet=True. Logging is done using
+            :func:`mangadap.util.log.log_output`. Default is no
             logging.
-        quiet (bool): (**Optional**) Suppress all terminal and logging
-            output.  Default is False.
+        quiet (:obj:`bool`, optional):
+            Suppress all terminal and logging output.
 
     Attributes:
-        loggers (list): List of `logging.Logger`_ objects to log
-            progress; ignored if quiet=True.  Logging is done using
-            :func:`mangadap.util.log.log_output`.
-        quiet (bool): Suppress all terminal and logging output.
-
-    .. todo::
-        - Allow for a prior?
+        loggers (:obj:`list`):
+            List of `logging.Logger`_ objects to log progress.
+        quiet (:obj:`bool`):
+            Suppress all terminal and logging output.
 
     """
-#    @profile
     def __init__(self, method_key, binned_spectra, guess_vel, guess_sig=None,
                  method_list=None, dapver=None, analysis_path=None, directory_path=None,
                  output_file=None, hardcopy=True, symlink_dir=None, tpl_symlink_dir=None,
@@ -348,7 +358,6 @@ class StellarContinuumModel:
         self._assign_spectral_arrays()
         self.image_arrays = None
         self._assign_image_arrays()
-        self.dispaxis = None
         self.nwave = None
 
         self.nmodels = None
@@ -362,27 +371,25 @@ class StellarContinuumModel:
                  output_file=output_file, hardcopy=hardcopy, symlink_dir=symlink_dir,
                  tpl_symlink_dir=tpl_symlink_dir, clobber=clobber, loggers=loggers, quiet=quiet)
 
-
-
-#    def __del__(self):
-#        """
-#        Deconstruct the data object by ensuring that the fits file is
-#        properly closed.
-#        """
-#        if self.hdu is None:
-#            return
-#        self.hdu.close()
-#        self.hdu = None
-#
-
     def __getitem__(self, key):
         return self.hdu[key]
-
 
     @staticmethod
     def define_method(method_key, method_list=None):
         r"""
-        Select the method
+        Select the continuum-fitting method.
+
+        Args:
+            method_key (:obj:`str`):
+                Method keyword.
+            method_list (:obj:`list`, optional):
+                List of methods to choose from. If None, list is
+                provided by
+                :func:`available_stellar_continuum_modeling_methods`.
+
+        Returns:
+            :class:`StellarContinuumModelDef`: Object with the
+            fitting method parameters.
         """
         # Grab the specific method
         return select_proc_method(method_key, StellarContinuumModelDef, method_list=method_list,
@@ -393,15 +400,31 @@ class StellarContinuumModel:
         """
         Fill in any remaining modeling parameters.
 
-        This creates a full array for the guess redshifts and guess velocity dispersions.
+        This method:
 
-        It also creates/reads the template library.
+            - creates/reads the template library,
+            - populates the full arrays for the guess redshifts and
+              velocity dispersions.
 
         .. todo:
-            
-            HARDCODED now to NEVER save the processed template library.
-            Should add this as an option in StellarContinuumModelDef or PPXFFitPar.
 
+            - HARDCODED now to NEVER save the processed template
+              library. Should add this as an option in
+              StellarContinuumModelDef or PPXFFitPar.
+
+        Args:
+            dapver (:obj:`str`, optional):
+                The DAP version to use for the analysis. Only used to
+                construct paths, and overrides the default defined by
+                :func:`mangadap.config.defaults.dap_version`.
+            analysis_path (:obj:`str`, optional):
+                The top-level path for the DAP output files, used to
+                override the default defined by
+                :func:`mangadap.config.defaults.dap_analysis_path`.
+            tpl_symlink_dir (:obj:`str`, optional):
+                Create a symbolic link to the created template library
+                file in the supplied directory. If None, no symbolic link
+                is created.
         """
         # Report
         if not self.quiet:
@@ -412,23 +435,21 @@ class StellarContinuumModel:
         nbins = self.binned_spectra.nbins
         if isinstance(self.guess_vel, (list, numpy.ndarray)):
             if len(self.guess_vel) > 1 and len(self.guess_vel) != nbins:
-                raise ValueError('Incorrect number of guess velocities provided.  Expect one per ' \
-                                 'binned spectrum = {0}'.format(nbins))
-            self.method['fitpar']['guess_redshift'] = numpy.asarray(self.guess_vel/c).astype(
-                                                                                    numpy.float)
+                raise ValueError('Incorrect number of guess velocities provided.  Expect one ' \
+                                 'per binned spectrum = {0}'.format(nbins))
+            self.method['fitpar']['guess_redshift'] = numpy.asarray(self.guess_vel/c).astype(float)
         else:
-            self.method['fitpar']['guess_redshift'] = numpy.full(nbins, self.guess_vel/c,
-                                                                 dtype=numpy.float)
+            self.method['fitpar']['guess_redshift'] \
+                        = numpy.full(nbins, self.guess_vel/c, dtype=float)
 
         if isinstance(self.guess_sig, (list, numpy.ndarray)):
             if len(self.guess_sig) > 1 and len(self.guess_sig) != nbins:
                 raise ValueError('Incorrect number of guess velocity dispersions provided.  ' \
                                  'Expect one per binned spectrum = {0}'.format(nbins))
-            self.method['fitpar']['guess_dispersion'] = numpy.asarray(self.guess_sig).astype(
-                                                                                    numpy.float)
+            self.method['fitpar']['guess_dispersion'] = numpy.asarray(self.guess_sig).astype(float)
         else:
-            self.method['fitpar']['guess_dispersion'] = numpy.full(nbins, self.guess_sig,
-                                                                   dtype=numpy.float)
+            self.method['fitpar']['guess_dispersion'] \
+                        = numpy.full(nbins, self.guess_sig, dtype=float)
 
         if self.method['fitpar']['template_library_key'] is not None:
             if not self.quiet:
@@ -437,18 +458,67 @@ class StellarContinuumModel:
                     = self.get_template_library(dapver=dapver, analysis_path=analysis_path,
                                                 tpl_symlink_dir=tpl_symlink_dir,
                             velocity_offset=numpy.mean(c*self.method['fitpar']['guess_redshift']),
-                            match_to_drp_resolution=self.method['fitpar']['match_resolution'],
+                            match_resolution=self.method['fitpar']['match_resolution'],
                                                 hardcopy=False)
 
-
+    # TODO: Needs to be abstracted for non-DRP datacubes
     def get_template_library(self, dapver=None, analysis_path=None, tpl_symlink_dir=None,
-                             velocity_offset=None, match_to_drp_resolution=False,
+                             velocity_offset=None, match_resolution=False,
                              resolution_fwhm=None, hardcopy=False):
+        """
+        Construct the template library for the continuum fitting.
 
+        If the FWHM (in angstroms; see ``resolution_fwhm``) is not
+        provided, this method is a simple wrapper that returns a
+        :class:`mangadap.proc.templatelibrary.TemplateLibrary`.
+        Otherwise, the provided FWHM is used to construct the
+        spectral resolution for the template library.
+
+        In either case, the sampling is set to match the spectra in
+        :attr:`binned_spectra` (up to the velocity-scale ratio set by
+        :attr:`method`).
+
+        Args:
+            dapver (:obj:`str`, optional):
+                The DAP version to use for the analysis. Only used to
+                construct paths, and overrides the default defined by
+                :func:`mangadap.config.defaults.dap_version`.
+            analysis_path (:obj:`str`, optional):
+                The top-level path for the DAP output files, used to
+                override the default defined by
+                :func:`mangadap.config.defaults.dap_analysis_path`.
+            tpl_symlink_dir (:obj:`str`, optional):
+                Create a symbolic link to the created template library
+                file in the supplied directory. If None, no symbolic link
+                is created.
+            velocity_offset (:obj:`float`, optional):
+                Velocity offset to use when matching the spectral
+                resolution between the template library and the galaxy
+                spectra.
+            match_resolution (:obj:`bool`, optional):
+                Match the spectral resolution of the template library to
+                the resolution provided by the ``cube``; the latter must
+                be provided for this argument to have any use.
+            resolution_fwhm (:obj:`float`, optional):
+                The targe resolution for the template library set by
+                a constant FWHM of the resolution element in
+                angstroms over all wavelengths. If None, the
+                resolution is either matched to the binned spectra
+                (see ``match_resolution``) or kept at the native
+                resolution of the library.
+            hardcopy (:obj:`bool`, optional):
+                Flag to keep a hardcopy of the processed template
+                library.
+
+        Returns:
+            :class:`mangadap.proc.templatelibrary.TemplateLibrary`:
+            The template library prepared for fitting the binned
+            spectra.
+        """
         if resolution_fwhm is None:
             return TemplateLibrary(self.method['fitpar']['template_library_key'],
-                                   velocity_offset=velocity_offset, drpf=self.binned_spectra.drpf,
-                                   match_to_drp_resolution=match_to_drp_resolution,
+                                   velocity_offset=velocity_offset, cube=self.binned_spectra.cube,
+                                   match_resolution=match_resolution,
                                    velscale_ratio=self.method['fitpar']['velscale_ratio'],
                                    analysis_path=analysis_path, hardcopy=hardcopy,
                                    symlink_dir=tpl_symlink_dir, loggers=self.loggers,
@@ -463,13 +533,13 @@ class StellarContinuumModel:
             designation = '{0}-FWHM{1:.2f}'.format(self.method['fitpar']['template_library_key'],
                                                    resolution_fwhm)
             # Set the output file name
-            processed_file = defaults.dap_file_name(self.binned_spectra.drpf.plate,
-                                                    self.binned_spectra.drpf.ifudesign,
+            processed_file = defaults.dap_file_name(self.binned_spectra.cube.plate,
+                                                    self.binned_spectra.cube.ifudesign,
                                                     designation)
 
-            directory_path = defaults.dap_common_path(plate=self.binned_spectra.drpf.plate,
-                                                      ifudesign=self.binned_spectra.drpf.ifudesign,
-                                                      drpver=self.binned_spectra.drpf.drpver,
+            directory_path = defaults.dap_common_path(plate=self.binned_spectra.cube.plate,
+                                                      ifudesign=self.binned_spectra.cube.ifudesign,
+                                                      drpver=self.binned_spectra.cube.drpver,
                                                       dapver=dapver, analysis_path=analysis_path)
 
             velscale_ratio = 1 if self.method['fitpar']['velscale_ratio'] is None \
@@ -482,7 +552,7 @@ class StellarContinuumModel:
                                    symlink_dir=tpl_symlink_dir, processed_file=processed_file,
                                    loggers=self.loggers, quiet=self.quiet)
 
-
+    # TODO: Needs to be abstracted for non-DRP datacubes
     def _set_paths(self, directory_path, dapver, analysis_path, output_file):
         """
         Set the :attr:`directory_path` and :attr:`output_file`.  If not
@@ -491,19 +561,25 @@ class StellarContinuumModel:
         :func:`mangadap.config.defaults.dap_file_name`.
 
         Args:
-            directory_path (str): The exact path to the DAP reduction
-                assessments file.  See :attr:`directory_path`.
-            dapver (str): DAP version.
-            analysis_path (str): The path to the top-level directory
-                containing the DAP output files for a given DRP and DAP
-                version.
-            output_file (str): The name of the file with the reduction assessments.
-                See :func:`compute`.
-
+            directory_path (:obj:`str`, optional):
+                The exact path to the directory with DAP output that
+                is common to number DAP "methods". See
+                :attr:`directory_path`.
+            dapver (:obj:`str`, optional):
+                The DAP version to use for the analysis. Only used to
+                construct paths, and overrides the default defined by
+                :func:`mangadap.config.defaults.dap_version`.
+            analysis_path (:obj:`str`, optional):
+                The top-level path for the DAP output files, used to
+                override the default defined by
+                :func:`mangadap.config.defaults.dap_analysis_path`.
+            output_file (:obj:`str`, optional):
+                Exact name for the output file. The default is to use
+                :func:`mangadap.config.defaults.dap_file_name`.
         """
         self.directory_path, self.output_file \
-                = StellarContinuumModel.default_paths(self.binned_spectra.drpf.plate,
-                                                      self.binned_spectra.drpf.ifudesign,
+                = StellarContinuumModel.default_paths(self.binned_spectra.cube.plate,
+                                                      self.binned_spectra.cube.ifudesign,
                                                       self.binned_spectra.rdxqa.method['key'],
                                                       self.binned_spectra.method['key'],
                                                       self.method['key'],
@@ -511,18 +587,23 @@ class StellarContinuumModel:
                                                       analysis_path=analysis_path,
                                                       output_file=output_file)
 
-
     def _initialize_primary_header(self, hdr=None):
         """
-        Initialize the header of :attr:`hdu`.
+        Construct the primary header for the reference file.
+
+        Args:
+            hdr (`astropy.io.fits.Header`_, optional):
+                Input base header for added keywords. If None, uses
+                the datacube header from :attr:`binned_spectra` (if
+                there is one) and then cleans the header using
+                :func:`mangadap.util.fitsutil.DAPFitsUtil.clean_dap_primary_header`.
 
         Returns:
-            astropy.io.fits.Header : Edited header object.
-
+            `astropy.io.fits.Header`_: Initialized header object.
         """
         # Copy the from the DRP and clean it
         if hdr is None:
-            hdr = self.binned_spectra.drpf.hdu['PRIMARY'].header.copy()
+            hdr = self.binned_spectra.cube.prihdr.copy()
             hdr = DAPFitsUtil.clean_dap_primary_header(hdr)
         
         # Add keywords specific to this object
@@ -541,15 +622,25 @@ class StellarContinuumModel:
             hdr['SCINPSIG'] = (self.guess_sig, 'Initial guess velocity dispersion')
 
         # Include the number of models
-        # TODO: Is it a problem if missing_models is too long?
         hdr['NSCMOD'] = (self.nmodels, 'Number of unique stellar-continuum models')
-#        if len(self.missing_models) > 0:
-#            hdr['EMPTYSC'] = (str(self.missing_models), 'Bins w/o models')
         return hdr
 
-
     def _add_method_header(self, hdr):
-        """Add fitting method information to the header."""
+        """
+        Add method-specific metadata to the header.
+
+        Note that the header object is both edited in-place and
+        returned.
+
+        Args:
+            hdr (`astropy.io.fits.Header`_):
+                Input base header for added keywords. Expected to
+                have been initialized using
+                :func:`_initialize_primary_header`.
+
+        Returns:
+            `astropy.io.fits.Header`_: Edited header object.
+        """
         if self.method['fitclass'] is not None:
             try:
                 hdr['SCTYPE'] = self.method['fitclass'].fit_type
@@ -570,19 +661,34 @@ class StellarContinuumModel:
 
     def _finalize_cube_mask(self, mask):
         """
-        Finalize the mask by setting the DIDNOTUSE, FORESTAR, and LOW_SNR masks
+        Finalize the mask after the 2D mask has been reconstructed
+        into a 3D cube.
+
+        This mostly handles the masks for regions outside the
+        datacube field of view.
+
+        Note that the input mask is both edited in-place and
+        returned.
+
+        .. todo::
+
+            - This needs to be abstracted for non-DRP datacubes.
+            - Describe MAPMASK usage
+
+        Args:
+            mask (`numpy.ndarray`_):
+                3D array with the current bitmask data.
 
         Returns:
-            numpy.ndarray : Bitmask array.
+            `numpy.ndarray`_: Edited bitmask data.
         """
         # Turn on the flag stating that the pixel wasn't used
-        indx = self.binned_spectra.bitmask.flagged(self.binned_spectra.drpf['MASK'].data,
+        indx = self.binned_spectra.bitmask.flagged(self.binned_spectra.cube.mask,
                                                    flag=self.binned_spectra.do_not_fit_flags())
         mask[indx] = self.bitmask.turn_on(mask[indx], 'DIDNOTUSE')
 
         # Turn on the flag stating that the pixel has a foreground star
-        indx = self.binned_spectra.bitmask.flagged(self.binned_spectra.drpf['MASK'].data,
-                                                   flag='FORESTAR')
+        indx = self.binned_spectra.bitmask.flagged(self.binned_spectra.cube.mask, flag='FORESTAR')
         mask[indx] = self.bitmask.turn_on(mask[indx], 'FORESTAR')
 
         # Propagate the MAPMASK to the full cube
@@ -597,25 +703,50 @@ class StellarContinuumModel:
         Set :attr:`spectral_arrays`, which contains the list of
         extensions in :attr:`hdu` that contain spectral data.
         """
-        self.spectral_arrays = [ 'FLUX', 'MASK' ]
+        self.spectral_arrays = ['FLUX', 'MASK']
 
     def _assign_image_arrays(self):
         """
         Set :attr:`image_arrays`, which contains the list of extensions
         in :attr:`hdu` that are on-sky image data.
         """
-        self.image_arrays = [ 'BINID' ]
+        self.image_arrays = ['BINID']
 
     def _get_missing_models(self, debug=False):
+        """
+        Find the spectra with missing models, either because there is
+        no model or the bin is also missing.
+
+        Args:
+            debug (:obj:`bool`, optional):
+                When checking the S/N limits, run
+                :func:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra.above_snr_limit`
+                in debug mode.
+
+        Returns:
+            `numpy.ndarray`_: Sorted list of missing models.
+        """
         good_snr = self.binned_spectra.above_snr_limit(self.method['minimum_snr'], debug=debug)
         return numpy.sort(self.binned_spectra['BINS'].data['BINID'][numpy.invert(good_snr)].tolist()
                                 + self.binned_spectra.missing_bins) 
 
     def _construct_2d_hdu(self, good_snr, model_flux, model_mask, model_par):
-        """
-        Construct :attr:`hdu` that is held in memory for manipulation of
-        the object.  See :func:`construct_3d_hdu` if you want to convert
-        the object into a DRP-like datacube.
+        r"""
+        Construct :attr:`hdu` that is held in memory for manipulation
+        of the object. See :func:`construct_3d_hdu` to convert the
+        object into a datacube.
+
+        Args:
+            good_snr (`numpy.ndarray`_):
+                Boolean array selecting the bins with good S/N.
+            model_flux (`numpy.ndarray`_):
+                Best-fitting model spectra for each bin.
+            model_mask (`numpy.ndarray`_):
+                Bitmask flags for each model pixel.
+            model_par (`numpy.recarray`_):
+                Data table with the best-fitting model parameters.
+                See
+                :func:`mangadap.proc.spectralfitting.StellarKinematicsFit._per_stellar_kinematics_dtype`
         """
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, 'Constructing hdu ...')
@@ -623,7 +754,7 @@ class StellarContinuumModel:
         # Initialize the headers
         pri_hdr = self._initialize_primary_header()
         pri_hdr = self._add_method_header(pri_hdr)
-        map_hdr = DAPFitsUtil.build_map_header(self.binned_spectra.drpf,
+        map_hdr = DAPFitsUtil.build_map_header(self.binned_spectra.cube.fluxhdr,
                                                'K Westfall <westfall@ucolick.org>')
 
         # Get the spatial map mask
@@ -644,25 +775,17 @@ class StellarContinuumModel:
         # Get the bin ids with fitted models
         bin_indx = DAPFitsUtil.downselect_bins(self.binned_spectra['BINID'].data.ravel(),
                                                model_par['BINID']).reshape(self.spatial_shape)
-#        vmin = numpy.amin(self.binned_spectra['BINID'].data)
-#        vmax = numpy.amax(self.binned_spectra['BINID'].data)
-#        pyplot.imshow(self.binned_spectra['BINID'].data, origin='lower', interpolation='nearest',
-#                      vmin=vmin, vmax=vmax)
-#        pyplot.show()
-#        pyplot.imshow(bin_indx.reshape(self.spatial_shape), origin='lower', interpolation='nearest',
-#                      vmin=vmin, vmax=vmax)
-#        pyplot.show()
 
         # Save the data to the hdu attribute
-        self.hdu = fits.HDUList([ fits.PrimaryHDU(header=pri_hdr),
-                                  fits.ImageHDU(data=model_flux.data, name='FLUX'),
-                                  fits.ImageHDU(data=model_mask, name='MASK'),
-                                  self.binned_spectra['WAVE'].copy(),
-                                  fits.ImageHDU(data=bin_indx, header=map_hdr, name='BINID'),
-                                  fits.ImageHDU(data=map_mask, header=map_hdr, name='MAPMASK'),
-                                  fits.BinTableHDU.from_columns( [ fits.Column(name=n,
-                                                             format=rec_to_fits_type(model_par[n]),
-                                            array=model_par[n]) for n in model_par.dtype.names ],
+        self.hdu = fits.HDUList([fits.PrimaryHDU(header=pri_hdr),
+                                 fits.ImageHDU(data=model_flux.data, name='FLUX'),
+                                 fits.ImageHDU(data=model_mask, name='MASK'),
+                                 self.binned_spectra['WAVE'].copy(),
+                                 fits.ImageHDU(data=bin_indx, header=map_hdr, name='BINID'),
+                                 fits.ImageHDU(data=map_mask, header=map_hdr, name='MAPMASK'),
+                                 fits.BinTableHDU.from_columns([fits.Column(name=n,
+                                                            format=rec_to_fits_type(model_par[n]),
+                                           array=model_par[n]) for n in model_par.dtype.names],
                                                                name='PAR')
                                 ])
 
@@ -674,32 +797,42 @@ class StellarContinuumModel:
         Set the default directory and file name for the output file.
 
         Args:
-            plate (int): Plate number of the observation.
-            ifudesign (int): IFU design number of the observation.
-            rdxqa_method (str): Keyword designating the method used to
-                construct the reductions assessments.
-            bin_method (str): Keyword designating the method use for the
-                spatial binning.
-            method_key (str): Keyword designating the method used for
-                the stellar-continuum fitting.
-            directory_path (str): (**Optional**) The exact path to the
-                DAP stellar-continuum file.  Default set by
-                :func:`mangadap.config.defaults.dap_common_path`.
-            drpver (str): (**Optional**) DRP version.  Default set by
+            plate (:obj:`int`):
+                Plate number 
+            ifudesign (:obj:`int`):
+                IFU design number
+            rdxqa_method (:obj:`str`):
+                Keyword designating the method used to construct the
+                reductions assessments.
+            bin_method (:obj:`str`):
+                Keyword designating the method use for the spatial
+                binning.
+            method_key (:obj:`str`):
+                Keyword designating the method used for the
+                stellar-continuum fitting.
+            directory_path (:obj:`str`, optional):
+                The exact path to the directory with DAP output that
+                is common to number DAP "methods". See
+                :attr:`directory_path`.
+            drpver (:obj:`str`, optional):
+                The DRP version. Only used to construct paths, and
+                overrides the default defined by
                 :func:`mangadap.config.defaults.drp_version`.
-            dapver (str): (**Optional**) DAP version.  Default set by
+            dapver (:obj:`str`, optional):
+                The DAP version to use for the analysis. Only used to
+                construct paths, and overrides the default defined by
                 :func:`mangadap.config.defaults.dap_version`.
-            analysis_path (str): (**Optional**) The path to the
-                top-level directory containing the DAP output files for
-                a given DRP and DAP version. Default set by
+            analysis_path (:obj:`str`, optional):
+                The top-level path for the DAP output files, used to
+                override the default defined by
                 :func:`mangadap.config.defaults.dap_analysis_path`.
-            output_file (str): (**Optional**) The name of the file with
-                the reduction assessments.  Default set by
+            output_file (:obj:`str`, optional):
+                Exact name for the output file. The default is to use
                 :func:`mangadap.config.defaults.dap_file_name`.
 
         Returns:
-            str: Two strings with the path for the output file and the
-            name of the output file.
+            :obj:`tuple`: Two strings with the path for the output
+            file and the name of the output file.
         """
         # Set the output directory path
         directory_path = defaults.dap_common_path(plate=plate, ifudesign=ifudesign, drpver=drpver,
@@ -711,33 +844,27 @@ class StellarContinuumModel:
                                         if output_file is None else str(output_file)
         return directory_path, output_file
 
-
     def file_name(self):
         """Return the name of the output file."""
         return self.output_file
-
 
     def file_path(self):
         """Return the full path to the output file."""
         if self.directory_path is None or self.output_file is None:
             return None
         return os.path.join(self.directory_path, self.output_file)
-
     
     def info(self):
         return self.hdu.info()
 
-
     def all_spectrum_flags(self):
         return ['DIDNOTUSE', 'FORESTAR', 'LOW_SNR', 'ARTIFACT', 'OUTSIDE_RANGE', 'EML_REGION',
                 'TPL_PIXELS', 'TRUNCATED', 'PPXF_REJECT', 'INVALID_ERROR', 'FIT_FAILED',
-                'NEAR_BOUND' ]
-
+                'NEAR_BOUND']
 
     def all_except_emission_flags(self):
         return ['DIDNOTUSE', 'FORESTAR', 'LOW_SNR', 'ARTIFACT', 'OUTSIDE_RANGE', 'TPL_PIXELS',
-                'TRUNCATED', 'PPXF_REJECT', 'INVALID_ERROR', 'FIT_FAILED', 'NEAR_BOUND' ]
-
+                'TRUNCATED', 'PPXF_REJECT', 'INVALID_ERROR', 'FIT_FAILED', 'NEAR_BOUND']
 
     def fit(self, binned_spectra, guess_vel, guess_sig=None, dapver=None, analysis_path=None,
             directory_path=None, output_file=None, hardcopy=True, symlink_dir=None,
@@ -746,9 +873,10 @@ class StellarContinuumModel:
         Fit the binned spectra using the specified method.
 
         Args:
-            binned_spectra
-                (:class:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra`):
-                The binned spectra to fit.
+            binned_spectra (:class:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra`):
+                The binned spectra to fit. Must be able to access
+                parent :class:`mangadap.datacube.datacube.DataCube`
+                attribute (``cube``).
             guess_vel (:obj:`float`, `numpy.ndarray`):
                 A single or spectrum-dependent initial estimate of the
                 redshift in km/s (:math:`cz`).
@@ -814,7 +942,6 @@ class StellarContinuumModel:
         self.spatial_shape =self.binned_spectra.spatial_shape
         self.nspec = self.binned_spectra.nspec
         self.spatial_index = self.binned_spectra.spatial_index.copy()
-        self.dispaxis = self.binned_spectra.dispaxis
         self.nwave = self.binned_spectra.nwave
         
         # Get the guess kinematics
@@ -842,8 +969,6 @@ class StellarContinuumModel:
                                                             len(self.binned_spectra.missing_bins)))
             log_output(self.loggers, 1, logging.INFO, 'With good S/N and to fit: {0}'.format(
                                                             numpy.sum(good_snr)))
-#            log_output(self.loggers, 1, logging.INFO, 'Total to fit: {0}'.format(
-#                                                            numpy.sum(good_bins)))
 
         # TODO: Is there a better way to handle this?
         if numpy.sum(good_snr) == 0:
@@ -864,10 +989,10 @@ class StellarContinuumModel:
 
         # Report
         if not self.quiet:
-            log_output(self.loggers, 1, logging.INFO, 'Output path: {0}'.format(
-                                                                            self.directory_path))
-            log_output(self.loggers, 1, logging.INFO, 'Output file: {0}'.format(
-                                                                            self.output_file))
+            log_output(self.loggers, 1, logging.INFO,
+                       'Output path: {0}'.format(self.directory_path))
+            log_output(self.loggers, 1, logging.INFO,
+                       'Output file: {0}'.format(self.output_file))
         
         #---------------------------------------------------------------
         # If the file already exists, and not clobbering, just read the
@@ -909,8 +1034,8 @@ class StellarContinuumModel:
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, 'Fitted models: {0}'.format(self.nmodels))
             if len(self.missing_models) > 0:
-                log_output(self.loggers, 1, logging.INFO, 'Missing models: {0}'.format(
-                                                            len(self.missing_models)))
+                log_output(self.loggers, 1, logging.INFO,
+                           'Missing models: {0}'.format(len(self.missing_models)))
 
         # Construct the 2d hdu list that only contains the fitted models
         self.hardcopy = hardcopy
@@ -924,7 +1049,6 @@ class StellarContinuumModel:
             self.write(clobber=clobber)
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '-'*50)
-
 
     def construct_3d_hdu(self):
         """
@@ -947,7 +1071,7 @@ class StellarContinuumModel:
         # Primary header is identical regardless of the shape of the
         # extensions
         hdr = self.hdu['PRIMARY'].header.copy()
-        cube_hdr = DAPFitsUtil.build_cube_header(self.binned_spectra.drpf,
+        cube_hdr = DAPFitsUtil.build_cube_header(self.binned_spectra.cube,
                                                  'K Westfall <westfall@ucolick.org>')
 
         # Return the converted hdu without altering the internal hdu
@@ -959,15 +1083,22 @@ class StellarContinuumModel:
                               self.hdu['PAR'].copy()
                             ])
 
-
     # Exact same function as used by SpatiallyBinnedSpectra
-    def write(self, match_DRP=False, clobber=False):
+    def write(self, match_datacube=False, clobber=False):
         """
         Write the hdu object to the file.
+
+        Args:
+            match_datacube (:obj:`bool`, optional):
+                Match the shape of the data arrays to the input
+                datacube. I.e., convert them to 3D and replicate the
+                binned spectrum to each spaxel in the bin.
+            clobber (:obj:`bool`, optional):
+                Overwrite any existing file.
         """
         # Convert the spectral arrays in the HDU to a 3D cube and write
         # it
-        if match_DRP:
+        if match_datacube:
             hdu = self.construct_3d_hdu()
             DAPFitsUtil.write(hdu, self.file_path(), clobber=clobber, checksum=True,
                               symlink_dir=self.symlink_dir, loggers=self.loggers, quiet=self.quiet)
@@ -976,11 +1107,33 @@ class StellarContinuumModel:
         DAPFitsUtil.write(self.hdu, self.file_path(), clobber=clobber, checksum=True,
                           symlink_dir=self.symlink_dir, loggers=self.loggers, quiet=self.quiet) 
 
-
     def read(self, ifile=None, strict=True, checksum=False, debug=False):
         """
-        Read an existing file with an existing set of stellar-continuum
+        Read an existing file with a previously fit set of continuum
         models.
+
+        Args:
+            ifile (:obj:`str`, optional):
+                Name of the file with the data. Default is to use the
+                name provided by :func:`file_path`.
+            strict (:obj:`bool`, optional):
+                Force a strict reading of the file to make sure that
+                it adheres to the expected format. At the moment,
+                this only checks to make sure the method keyword
+                printed in the header matches the expected value in
+                :attr:`method`.
+            checksum (:obj:`bool`, optional):
+                Use the checksum in the header to check for
+                corruption of the data.
+            debug (:obj:`bool`, optional):
+                Run check for missing models in debugging mode.
+
+        Raises:
+            FileNotFoundError:
+                Raised if the file does not exist.
+            ValueError:
+                Raised if ``strict`` is true and the header keyword
+                ``SCKEY`` does not match the method keyword.
         """
         if ifile is None:
             ifile = self.file_path()
@@ -1004,11 +1157,6 @@ class StellarContinuumModel:
         # make sure that the details of the method are also the same,
         # not just the keyword
 
-#        if not self.quiet:
-#            log_output(self.loggers, 1, logging.INFO, 'Reverting to python-native structure.')
-#        DAPFitsUtil.restructure_rss(self.hdu, ext=self.spectral_arrays)
-#        DAPFitsUtil.restructure_map(self.hdu, ext=self.image_arrays)
-
         # Attempt to read the input guess velocity and sigma
         try:
             self.guess_vel = self.hdu['PRIMARY'].header['SCINPVEL']
@@ -1026,34 +1174,32 @@ class StellarContinuumModel:
         self.nmodels = self.hdu['FLUX'].shape[0]
         self.missing_models = self._get_missing_models(debug=debug)
 
-
     def copy_to_array(self, ext='FLUX', waverange=None, include_missing=False):
         r"""
-
         Wrapper for :func:`mangadap.util.fitsutil.DAPFitsUtil.copy_to_array`
         specific for :class:`StellarContinuumModel`.
 
-        Return a copy of the selected data array.  The array size is
-        always :math:`N_{\rm models} \times N_{\rm wavelength}`; i.e., the
-        data is always flattened to two dimensions and the unique
+        Return a copy of the selected data array. The array size is
+        always :math:`N_{\rm models} \times N_{\rm wavelength}`; i.e.,
+        the data is always flattened to two dimensions and the unique
         spectra are selected.
 
         Args:
-            ext (str) : (**Optional**) Name of the extension from which
-                to draw the data.  Must be allowed for the current
-                :attr:`mode`; see :attr:`data_arrays`.  Default is
-                ``'FLUX'``.
-            waverange (array-like) : (**Optional**) Two-element array
-                with the first and last wavelength to include in the
-                computation.  Default is to use the full wavelength
-                range.
-            include_missing (bool) : (**Optional**) Create an array with
-                a size that accommodates the missing models.
+            ext (:obj:`str`, optional):
+                Name of the extension from which to draw the data.
+                Must be allowed for the current :attr:`mode`; see
+                :attr:`data_arrays`.
+            waverange (array-like, optional):
+                Two-element array with the first and last wavelength
+                to include in the computation. If None, use the full
+                wavelength range.
+            include_missing (:obj:`bool`, optional):
+                Create an array with a size that accommodates the
+                missing models.
 
         Returns:
-            numpy.ndarray: A 2D array with a copy of the data from the
-            selected extension.
-
+            `numpy.ndarray`_: A 2D array with a copy of the data from
+            the selected extension.
         """
         return DAPFitsUtil.copy_to_array(self.hdu, ext=ext, allowed_ext=self.spectral_arrays,
                                          waverange=waverange,
@@ -1061,39 +1207,40 @@ class StellarContinuumModel:
                                          nbins=self.nbins,
                                     unique_bins=DAPFitsUtil.unique_bins(self.hdu['BINID'].data))
 
-
     def copy_to_masked_array(self, ext='FLUX', flag=None, waverange=None, include_missing=False):
-        r"""
+        """
         Wrapper for
         :func:`mangadap.util.fitsutil.DAPFitsUtil.copy_to_masked_array`
         specific for :class:`StellarContinuumModel`.
 
         Return a copy of the selected data array as a masked array.
         This is functionally identical to :func:`copy_to_array`,
-        except the output format is a `numpy.ma.MaskedArray`_.  The
-        pixels that are considered to be masked can be specified using
-        `flag`.
+        except the output format is a `numpy.ma.MaskedArray`_. The
+        pixels that are considered to be masked can be specified
+        using `flag`.
         
         Args:
-            ext (str) : (**Optional**) Name of the extension from which
-                to draw the data.  Must be allowed for the current
-                :attr:`mode`; see :attr:`data_arrays`.  Default is
-                `'FLUX'`.
-            flag (str or list): (**Optional**) (List of) Flag names that
-                are considered when deciding if a pixel should be
-                masked.  The names *must* be a valid bit name as defined
-                by :attr:`bitmask`.  If not provided, *ANY* non-zero
-                mask bit is omitted.
-            waverange (array-like) : (**Optional**) Two-element array
-                with the first and last wavelength to include in the
-                computation.  Default is to use the full wavelength
-                range.
-            include_missing (bool) : (**Optional**) Create an array with
-                a size that accommodates the missing models.
+            ext (:obj:`str`, optional):
+                Name of the extension from which to draw the data.
+                Must be allowed for the current :attr:`mode`; see
+                :attr:`data_arrays`.
+            flag (:obj:`str`, :obj:`list`, optional):
+                (List of) Flag names that are considered when
+                deciding if a pixel should be masked. The names
+                *must* be a valid bit name as defined by
+                :attr:`bitmask`. If not provided, *ANY* non-zero mask
+                bit is omitted.
+            waverange (array-like, optional):
+                Two-element array with the first and last wavelength
+                to include in the computation. If None, use the full
+                wavelength range.
+            include_missing (:obj:`bool`, optional):
+                Create an array with a size that accommodates the
+                missing models.
 
         Returns:
-            numpy.ndarray: A 2D array with a copy of the data from the
-            selected extension.
+            `numpy.ma.MaskedArray`_: A 2D array with a copy of the
+            data from the selected extension.
         """
         return DAPFitsUtil.copy_to_masked_array(self.hdu, ext=ext, mask_ext='MASK', flag=flag,
                                                 bitmask=self.bitmask,
@@ -1103,11 +1250,48 @@ class StellarContinuumModel:
                                                 nbins=self.nmodels,
                                         unique_bins=DAPFitsUtil.unique_bins(self.hdu['BINID'].data))
 
-
     def construct_models(self, replacement_templates=None, redshift_only=False,
                          deredshift=False, corrected_dispersion=False):
         """
         Reconstruct the best fitting models.
+
+        This is largely a wrapper for a :func:`construct_models`
+        method provided by the :attr:`method` fitting class. As such,
+        this method will raise an exception if the fitting class has
+        no such method.
+
+        Args:
+            replacement_templates (:class:`mangadap.proc.templatelibary.TemplateLibrary`, optional):
+                Instead of using the template library used to fit the
+                data, use this library instead. The number of spectra
+                in the replacement library **must** match the
+                original number of templates. This is only really
+                useful when replacing the original set of templates
+                with ones at a different spectral resolution.
+            redshift_only (:obj:`bool`, optional):
+                When constructing the models, only redshift the
+                spectra, effectively providing the best-fitting model
+                with a velocity dispersion of 0 km/s.
+            deredshift (:obj:`bool`, optional):
+                Return the best-fitting models in the rest frame.
+            corrected_dispersion (:obj:`bool`, optional):
+                Return the best-fitting models with a LOSVD that has
+                been corrected for any resolution difference between
+                the fitted templates and the binned spectra.
+
+        Returns:
+            `numpy.ndarray`_: The best-fitting models.
+
+        Raises:
+            ValueError: 
+                Raised if there is no defined fitting class.
+            AttributeError:
+                Raised if the fitting class has no method called
+                :func:`construct_models`.
+            TypeError:
+                Raised if the provided ``replacement_templates`` are
+                not an instance of
+                :class:`mangadap.proc.templatelibary.TemplateLibrary`.
         """
         if self.method['fitclass'] is None:
             raise ValueError('No class object available for constructing the model!')
@@ -1136,7 +1320,7 @@ class StellarContinuumModel:
                                                         corrected_dispersion=corrected_dispersion,
                                                         dvtol=1e-9)
 
-
+    # TODO: Get rid of dispaxis?
     @staticmethod
     def reset_continuum_mask_window(continuum, dispaxis=1, quiet=False):
         """
@@ -1147,6 +1331,18 @@ class StellarContinuumModel:
             - Allow continuum to be n-dimensional and use
               `numpy.apply_along_axis`.
 
+        Args:   
+            continuum (`numpy.ma.MaskedArray`_):
+                Stellar continuum models.
+            dispaxis (:obj:`int`, optional):
+                Wavelength axis in provided ``continuum`` object.
+            quiet (:obj:`bool`, optional):
+                Suppress terminal output.
+
+        Returns:
+            `numpy.ma.MaskedArray`_: Continuum object but unmasked
+            over the full continuous window between the minimum and
+            maximum valid wavelength.
         """
         spatial_shape = DAPFitsUtil.get_spatial_shape(continuum.shape, dispaxis)
         if len(spatial_shape) != 1:
@@ -1167,8 +1363,6 @@ class StellarContinuumModel:
         for c,s,e in zip(_continuum, min_good_pix,max_good_pix+1):
             if isinstance(s, numpy.ma.core.MaskedConstant) \
                     or isinstance(e, numpy.ma.core.MaskedConstant):
-#                if not quiet:
-#                    warnings.warn('Full continuum fit is masked.')
                 continue
             c.mask[s:e] = False
 
@@ -1179,10 +1373,35 @@ class StellarContinuumModel:
                                  deredshift=False, corrected_dispersion=False):
         """
         Return the stellar continuum unmasked over the full continuous
-        fitting region.  Models are reconstructed based on the model
-        parameters if new template fluxes are provided or if the
-        returned models should not include the LOSVD convolution
-        (redshift_only=True).
+        fitting region.
+
+        Models are reconstructed based on the model parameters if new
+        template fluxes are provided or if the returned models should
+        not include the LOSVD convolution (redshift_only=True). As
+        such, this is largely a wrapper for :func:`construct_models`
+        and :func:`reset_continuum_mask_window`.
+
+        Args:
+            replacement_templates (:class:`mangadap.proc.templatelibary.TemplateLibrary`, optional):
+                Instead of using the template library used to fit the
+                data, use this library instead. The number of spectra
+                in the replacement library **must** match the
+                original number of templates. This is only really
+                useful when replacing the original set of templates
+                with ones at a different spectral resolution.
+            redshift_only (:obj:`bool`, optional):
+                When constructing the models, only redshift the
+                spectra, effectively providing the best-fitting model
+                with a velocity dispersion of 0 km/s.
+            deredshift (:obj:`bool`, optional):
+                Return the best-fitting models in the rest frame.
+            corrected_dispersion (:obj:`bool`, optional):
+                Return the best-fitting models with a LOSVD that has
+                been corrected for any resolution difference between
+                the fitted templates and the binned spectra.
+
+        Returns:
+            `numpy.ndarray`_: The best-fitting models.
         """
         # Get the models for the binned spectra
         reconstruct = replacement_templates is not None or redshift_only or corrected_dispersion
@@ -1193,49 +1412,58 @@ class StellarContinuumModel:
                         else self.copy_to_masked_array(flag=self.all_spectrum_flags())
         return StellarContinuumModel.reset_continuum_mask_window(continuum, quiet=self.quiet)
 
-
-#    def fill_to_match(self, binned_spectra, replacement_templates=None, redshift_only=False):
-#        """
-#        Get the stellar continuum that matches the shape of the provided binned_spectra.
-#        """
-#        if binned_spectra is self.binned_spectra:
-#            continuum = self.unmasked_continuum_model(replacement_templates=replacement_templates,
-#                                                        redshift_only=redshift_only)
-#
-#            # Number of models matches the numbers of bins
-#            if binned_spectra.nbins == self.nmodels:
-#                return continuum
-#    
-#            # Fill in bins with no models with masked zeros
-#            _continuum = numpy.ma.zeros(binned_spectra['FLUX'].data.shape, dtype=float)
-#            _continuum[:,:] = numpy.ma.masked
-#            for i,j in enumerate(self.hdu['PAR'].data['BINID_INDEX']):
-#                _continuum[j,:] = continuum[i,:]
-#            return _continuum
-#
-#        raise NotImplementedError('Can only match to internal binned_spectra.')
-
     def fill_to_match(self, binid, replacement_templates=None, redshift_only=False,
                       deredshift=False, corrected_dispersion=False, missing=None):
         """
         Get the stellar-continuum model from this objects that matches
-        the input bin ID matrix.  The output is a 2D matrix ordered by
-        the bin ID; any skipped index numbers in the maximum of the
-        union of the unique numbers in the `binid` and `missing` input
-        are masked.
+        the input bin ID matrix.
 
-        All this does is find the stellar continuum from spaxels in this
-        model and match them to the input spaxels.  Depending on how
-        differently the data data sets have been binned, this says
-        nothing about whether or not the returned models are a good fit
-        to the data!
+        The output is a 2D matrix ordered by the bin ID; any skipped
+        index numbers in the maximum of the union of the unique
+        numbers in the ``binid`` and ``missing`` input are masked.
 
-        replacement_templates only works if the number of templates is
-        the same as those used during the actual fitting process.
+        All this does is find the stellar continuum from spaxels in
+        this model and match them to the input spaxels. Depending on
+        how differently the data sets have been binned, this says
+        nothing about whether or not the returned models are a good
+        fit to the data!
 
-        use redshift_only if you want to exclude the best-fitting
-        dispersion from the model.
+        Args:
+            binid (`numpy.ndarray`_):
+                A map of the bin IDs with shape that matches the
+                spatial shape of the parent datacube; see
+                :attr:`spatial_shape`. This provides the mapping
+                between the current stellar continuum models and the
+                output data array.
+            replacement_templates (:class:`mangadap.proc.templatelibary.TemplateLibrary`, optional):
+                Instead of using the template library used to fit the
+                data, use this library instead. The number of spectra
+                in the replacement library **must** match the
+                original number of templates. This is only really
+                useful when replacing the original set of templates
+                with ones at a different spectral resolution.
+            redshift_only (:obj:`bool`, optional):
+                When constructing the models, only redshift the
+                spectra, effectively providing the best-fitting model
+                with a velocity dispersion of 0 km/s.
+            deredshift (:obj:`bool`, optional):
+                Return the best-fitting models in the rest frame.
+            corrected_dispersion (:obj:`bool`, optional):
+                Return the best-fitting models with a LOSVD that has
+                been corrected for any resolution difference between
+                the fitted templates and the binned spectra.
+            missing (array-like, optional):
+                Include empty spectra for binids with these numbers.
+                Ignored if None or an empty array.
 
+        Returns:
+            `numpy.ndarray`_: The best-fitting models matched to the
+            input bin ID array.
+
+        Raises:
+            ValueError:
+                Raised if the shape of ``binid`` does not match
+                :attr:`spatial_shape`.
         """
         # The input bin id array must have the same shape as self
         if binid.shape != self.spatial_shape:
@@ -1268,53 +1496,67 @@ class StellarContinuumModel:
 
         return continuum
 
-
     def matched_kinematics(self, binid, redshift=None, dispersion=100.0, constant=False, cz=False,
                            corrected=False, min_dispersion=None, nearest=False, missing=None):
-        """
-        Return the guess redshift and velocity dispersion for all the
-        spectra based on the stellar kinematics.
+        r"""
+        Get the stellar kinematics from this objects that matches the
+        input bin ID matrix.
 
-        For spectra the were not fit, use the median (unmasked)
-        kinematic measurement if no default value is provided as an
-        argument.
+        This method has a similar intent to :func:`fill_to_match`,
+        but instead of matching the model spectra, its intent is to
+        match the stellar kinematics.
+
+        For spectra the were not fit but have a bin ID (see
+        ``binid``), the method uses the median (unmasked) kinematic
+        measurement if no default values are provided (see
+        ``redshift`` and ``dispersion``).
 
         Args:
-            binid (numpy.ndarray): 2D array with the bin ID associate
-                with each spaxel in the datacube.  Shape must be the
-                same as :attr:`spatial_shape`.
-            redshift (float): (**Optional**) The default redshift to use
-                for spectra without a stellar-continuum fit.  Default is
-                to use the median of the unmasked measurements
-            dispersion (float): (**Optional**) The default velocity
-                dispersion to use for spectra without a
-                stellar-continuum fit.  Default is 100 km/s.
-            constant (bool): (**Optional**) Force the function to return
-                a constant redshift and dispersion for each spectrum,
-                regardless of any fitted kinematics.
-            cz (bool): (**Optional**) Return the redshift as cz in km/s,
-                as opposed to unitless z.
-            corrected (bool): (**Optional**) By default, the returned
-                velocity dispersions are the measured values, which will
-                include any resolution difference between the templates
-                and the galaxy data.  Setting corrected to True will
-                return the corrected dispersions.
-            min_dispersion (float): (**Optional**) Impose a minimum
-                dispersion.
-            nearest (bool): (**Optional**) Instead of the median of the
-                results for the spectra that were not fit, use the value
-                from the nearest bin.
-            missing (list): (**Optional**) Any bin ID numbers missing
-                from the input `binid` image needed for constructing the
-                output matched data.
+            binid (`numpy.ndarray`_):
+                2D array with the bin ID associate with each spaxel
+                in the datacube. Shape must be the same as
+                :attr:`spatial_shape`.
+            redshift (:obj:`float`, optional):
+                The default redshift to use for spectra without a
+                stellar-continuum fit. Default is to use the median
+                of the unmasked measurements
+            dispersion (:obj:`float`, optional):
+                The default velocity dispersion to use for spectra
+                without a stellar-continuum fit. Default is 100 km/s.
+            constant (:obj:`bool`, optional):
+                Force the function to return a constant redshift and
+                dispersion for each spectrum, regardless of any
+                fitted kinematics.
+            cz (:obj:`bool`, optional):
+                Return the redshift as cz in km/s, as opposed to
+                unitless z.
+            corrected (:obj:`bool`, optional):
+                Return the velocity dispersions corrected for any
+                resolution difference between the templates and the
+                galaxy data. If False, return the uncorrected data.
+            min_dispersion (:obj:`float`, optional):
+                Impose a minimum dispersion.
+            nearest (:obj:`bool`, optional):
+                Instead of the median of the results for the spectra
+                that were not fit, use the value from the nearest
+                bin.
+            missing (array-like, optional):
+                Any bin ID numbers missing from the input ``binid``
+                image needed for constructing the output matched
+                data.
 
         Returns:
-            numpy.ndarray: Returns (unmasked!) arrays with a redshift
-            (or cz) and dispersion for each binned spectrum.
+            :obj:`tuple`: Returns `numpy.ndarray`_ objects with a
+            redshift (or cz) and dispersion for each binned spectrum.
+            Shape is :math:`(N_{\rm bin},)`.
 
         Raises:
-            TypeError: Raised if the input redshift or dispersion values
-                are not single numbers.
+            TypeError:
+                Raised if the input redshift or dispersion values are
+                not single numbers.
+            ValueError:
+                Raised if the shape of ``binid`` does not match
+                :attr:`spatial_shape`.
         """
         # Check input
         if redshift is not None and not isinstance(redshift, (float,int)):
@@ -1403,31 +1645,29 @@ class StellarContinuumModel:
             str_z *= astropy.constants.c.to('km/s').value
         return str_z, str_d
 
-
-    def matched_template_flags(self, binned_spectra):
-        """
-        TODO: Function out of date!
-
-        Return the templates used during the fit to each spectrum,
-        matched to the spectra in the binned_spectra object.  For
-        spectra with no models, the flags are all set to true.
-        """
-        if binned_spectra is self.binned_spectra:
-            usetpl = self.hdu['PAR'].data['TPLWGT'] > 0
-
-            # Number of models matches the numbers of bins
-            if binned_spectra.nbins == self.nmodels:
-#                print('returning usetpl')
-                return usetpl
-    
-            # Fill in bins with no models with masked zeros
-#            print('Fill in bins with no models with masked zeros')
-            ntpl = self.method['fitpar']['template_library'].ntpl
-            _usetpl = numpy.ones((binned_spectra.nbins,ntpl), dtype=bool)
-            for i,j in enumerate(self.hdu['PAR'].data['BINID_INDEX']):
-                _usetpl[j,:] = usetpl[i,:]
-            return _usetpl
-
-        raise NotImplementedError('Can only match to internal binned_spectra.')
+# TODO: Function out of date!  Keep it around for now though...
+#    def matched_template_flags(self, binned_spectra):
+#        """
+#        Return the templates used during the fit to each spectrum,
+#        matched to the spectra in the binned_spectra object.  For
+#        spectra with no models, the flags are all set to true.
+#        """
+#        if binned_spectra is self.binned_spectra:
+#            usetpl = self.hdu['PAR'].data['TPLWGT'] > 0
+#
+#            # Number of models matches the numbers of bins
+#            if binned_spectra.nbins == self.nmodels:
+##                print('returning usetpl')
+#                return usetpl
+#    
+#            # Fill in bins with no models with masked zeros
+##            print('Fill in bins with no models with masked zeros')
+#            ntpl = self.method['fitpar']['template_library'].ntpl
+#            _usetpl = numpy.ones((binned_spectra.nbins,ntpl), dtype=bool)
+#            for i,j in enumerate(self.hdu['PAR'].data['BINID_INDEX']):
+#                _usetpl[j,:] = usetpl[i,:]
+#            return _usetpl
+#
+#        raise NotImplementedError('Can only match to internal binned_spectra.')
 
 

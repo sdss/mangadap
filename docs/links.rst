@@ -8,6 +8,7 @@
 .. _PEP 257: https://www.python.org/dev/peps/pep-0257
 .. _argparse.Namespace: https://docs.python.org/3/library/argparse.html#argparse.Namespace
 .. _argparse.ArgumentParser: https://docs.python.org/3/library/argparse.html#argparse.ArgumentParser
+.. _configparser.ConfigParser: https://docs.python.org/3/library/configparser.html
 
 .. configobj
 .. _configobj.ConfigObj: https://pypi.org/project/configobj/
@@ -32,6 +33,7 @@
 .. _scipy.sparse.triu: http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.triu.html
 .. _scipy.linalg.lu_factor: http://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.lu_factor.html
 .. _scipy.linalg.lu_solve: https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.lu_solve.html
+.. _scipy.spatial.KDTree: https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.KDTree.html
 
 .. matplotlib
 .. _matplotlib.pyplot.imshow: http://matplotlib.org/api/pyplot_api.html#matplotlib.pyplot.imshow
@@ -39,7 +41,7 @@
 .. astropy
 .. _astropy.io.fits: http://docs.astropy.org/en/stable/io/fits/index.html
 .. _astropy.io.fits.open: http://docs.astropy.org/en/stable/io/fits/api/files.html#astropy.io.fits.open
-.. _astropy.io.fits.hdu.hdulist.HDUList: http://docs.astropy.org/en/stable/io/fits/api/hdulists.html
+.. _astropy.io.fits.HDUList: http://docs.astropy.org/en/stable/io/fits/api/hdulists.html
 .. _astropy.io.fits.Header: http://docs.astropy.org/en/stable/io/fits/api/headers.html#header
 .. _astropy.io.fits.BinTableHDU: http://docs.astropy.org/en/stable/io/fits/api/tables.html#astropy.io.fits.BinTableHDU
 .. _astropy.io.fits.ImageHDU: https://docs.astropy.org/en/stable/io/fits/api/images.html#astropy.io.fits.ImageHDU

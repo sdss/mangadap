@@ -10,7 +10,6 @@ def test_avail():
 
     for method in methods_list:
         if 'template_library' in method['fitpar'].keys():
-            tpl = TemplateLibrary(method['fitpar']['template_library_key'],
-                                  match_to_drp_resolution=False, velscale_ratio=1,
-                                  spectral_step=1e-4, log=True, hardcopy=False)
+            tpl = TemplateLibrary(method['fitpar']['template_library_key'], match_resolution=False,
+                                  velscale_ratio=1, spectral_step=1e-4, log=True, hardcopy=False)
 

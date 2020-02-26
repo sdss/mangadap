@@ -7,7 +7,8 @@ from scipy import interpolate
 from astropy.io import fits
 import astropy.constants
 
-from mangadap.drpfits import DRPFits, DRPFitsBitMask
+from mangadap.datacube import MaNGADataCube
+from mangadap.drpfits import DRPFitsBitMask
 
 from mangadap.par.artifactdb import ArtifactDB
 from mangadap.par.emissionlinedb import EmissionLineDB
@@ -18,7 +19,7 @@ from mangadap.proc.templatelibrary import TemplateLibrary
 from mangadap.proc.ppxffit import PPXFFit
 from mangadap.proc.stellarcontinuummodel import StellarContinuumModelBitMask
 
-from mangadap.tests.util import test_data_file
+from mangadap.tests.util import data_test_file
 
 import warnings
 warnings.simplefilter("ignore", UserWarning)
@@ -26,11 +27,11 @@ warnings.simplefilter("ignore", RuntimeWarning)
 
 def test_ppxffit():
     # Read the data
-    specfile = test_data_file('MaNGA_test_spectra.fits.gz')
+    specfile = data_test_file('MaNGA_test_spectra.fits.gz')
     hdu = fits.open(specfile)
     drpbm = DRPFitsBitMask()
-    flux = numpy.ma.MaskedArray(hdu['FLUX'].data,
-                                mask=drpbm.flagged(hdu['MASK'].data, DRPFits.do_not_fit_flags()))
+    flux = numpy.ma.MaskedArray(hdu['FLUX'].data, mask=drpbm.flagged(hdu['MASK'].data,
+                                                                MaNGADataCube.do_not_fit_flags()))
     ferr = numpy.ma.power(hdu['IVAR'].data, -0.5)
     flux[ferr.mask] = numpy.ma.masked
     ferr[flux.mask] = numpy.ma.masked
@@ -38,7 +39,7 @@ def test_ppxffit():
 
     # Instantiate the template libary
     velscale_ratio = 4
-    tpl = TemplateLibrary('MILESHC', match_to_drp_resolution=False, velscale_ratio=velscale_ratio,
+    tpl = TemplateLibrary('MILESHC', match_resolution=False, velscale_ratio=velscale_ratio,
                           spectral_step=1e-4, log=True, hardcopy=False)
     tpl_sres = numpy.mean(tpl['SPECRES'].data, axis=0)
 

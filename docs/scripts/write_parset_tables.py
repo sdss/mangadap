@@ -33,8 +33,6 @@ if __name__ == '__main__':
     #
     from mangadap.par.analysisplan import AnalysisPlan
     write_parset(AnalysisPlan, path, class_link=False)
-    from mangadap.par.obsinput import ObsInputPar
-    write_parset(ObsInputPar, path, class_link=False)
 
     from mangadap.par.artifactdb import ArtifactPar
     write_parset(ArtifactPar, path, class_link=False)

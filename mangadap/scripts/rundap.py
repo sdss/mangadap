@@ -25,7 +25,7 @@ Revision history
     | **27 Aug 2015**: (KBW) Sphinx documentation; prep for MPL-4;
         accommodate changes in drpcomplete; removed arg as an attribute
         because it was only used in
-        :func:`mangadap.survey.rundap._read_arg`; despite not doing
+        :func:`mangadap.scripts.rundap._read_arg`; despite not doing
         anything before, commented out _write_module_commands for the
         time-being; removed file_root() and parameter_file() functions
         in favor of adding/using functions from
@@ -86,20 +86,16 @@ except:
 import numpy
 
 from mangadap import __version__
-
-from .drpcomplete import DRPComplete
-from ..drpfits import DRPFits
-from ..config import defaults
-from ..util.exception_tools import print_frame
-from ..util.parser import arginp_to_list
-from ..util.fileio import create_symlink
-from .mangampl import MaNGAMPL
-from ..par.analysisplan import AnalysisPlanSet
-from ..proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
-from ..proc.stellarcontinuummodel import StellarContinuumModel
-from ..proc.emissionlinemodel import EmissionLineModel
-
-#from . import util
+from mangadap.config import defaults
+from mangadap.survey.drpcomplete import DRPComplete
+from mangadap.survey.mangampl import MaNGAMPL
+from mangadap.util.exception_tools import print_frame
+from mangadap.util.parser import arginp_to_list
+from mangadap.util.fileio import create_symlink
+from mangadap.par.analysisplan import AnalysisPlanSet
+from mangadap.proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
+from mangadap.proc.stellarcontinuummodel import StellarContinuumModel
+from mangadap.proc.emissionlinemodel import EmissionLineModel
 
 class rundap:
     r"""
@@ -119,6 +115,8 @@ class rundap:
 
         - Have :func:`_read_arg` return the boolean for :attr:`version`
           instead of keeping it as an attribute.
+        - Ditch ``console`` and :func:`_read_arg` in favor of the
+          more typical ``parser`` and ``main`` pairing.
 
     Args:
         clobber (:obj:`bool`, optional):
@@ -174,6 +172,20 @@ class rundap:
             plate/ifudesign/mode lists to create the full list of DRP
             files to analyze.  See
             :func:`mangadap.drpfits.drpfits_list`.
+        list_file (:obj:`str`, optional):
+            File with a list of plates and ifudesigns to analyze. The
+            file must have two columns, with one plate-ifu
+            combination per file row.
+        sres_ext (:obj:`str`, optional):
+            The extension to use when constructing the
+            spectral resolution vectors for the MaNGA datacubes. See
+            :func:`mangadap.datacube.manga.MaNGADataCube.spectral_resolution`.
+        sres_fill (:obj:`bool`, optional):
+            Fill masked spectral-resolution data by simple linear
+            interpolation.
+        covar_ext (:obj:`str`, optional):
+            Extension in the MaNGA DRP CUBE file to use as the single
+            spatial correlation matrix for all wavelength channels.
         use_platetargets (:obj:`bool`, optional): 
             Flag to use the plateTargets files, instead of the DRPall
             file, as the source of the input data need by the DAP.
@@ -295,8 +307,9 @@ class rundap:
     def __init__(self, clobber=None, console=None, quiet=False, print_version=False,
                  strictver=True, mplver=None, redux_path=None, dapver=None, analysis_path=None,
                  plan_file=None, platelist=None, ifudesignlist=None, combinatorics=False,
-                 list_file=None, use_platetargets=False, platetargets=None, on_disk=False,
-                 log=False, dapproc=True, pltifu_plots=True, post_process=False, post_plots=False,
+                 list_file=None, sres_ext=None, sres_fill=None, covar_ext=None,
+                 use_platetargets=False, platetargets=None, on_disk=False, log=False,
+                 dapproc=True, pltifu_plots=True, post_process=False, post_plots=False,
                  report_progress=False, verbose=0, label='mangadap', nodes=1, cpus=None, qos=None,
                  umask='0027', walltime='240:00:00', hard=True, create=False, submit=False,
                  queue=None):
@@ -325,6 +338,9 @@ class rundap:
                 warnings.warn('Provided file with list of files supercedes other input.')
             self.platelist, self.ifudesignlist = self._read_file_list(list_file)
         self.combinatorics = combinatorics
+        self.sres_ext = sres_ext
+        self.sres_fill = sres_fill
+        self.covar_ext = covar_ext
 
         # Select if plateTargets files should be used to generate the
         # DRPComplete database, and possibly provide them directly 
@@ -583,10 +599,21 @@ class rundap:
         parser.add_argument("--ifudesignlist", type=str, help="set list of ifus to reduce",
                             default=None)
         parser.add_argument("--list_file", type=str,
-                            help="a file with the list of plates, ifudesigns, and modes to analyze",
+                            help='A file with the list of plates and ifudesigns to analyze',
                             default=None)
         parser.add_argument("--combinatorics", help="force execution of all permutations of the "
                             "provided lists", action="store_true", default=False)
+
+        parser.add_argument('--sres_ext', type=str, default=None,
+                            help='Spectral resolution extension to use.  Default set by '
+                                 'MaNGADataCube class.')
+        parser.add_argument('--sres_fill', type=str, default=None,
+                            help='If present, use interpolation to fill any masked pixels in the '
+                                 'spectral resolution vectors. Default set by MaNGADataCube '
+                                 'class.')
+        parser.add_argument('--covar_ext', type=str, default=None,
+                            help='Use this extension to define the spatial correlation matrix.  '
+                                 'Default set by MaNGADataCube class.')
 
         parser.add_argument("--use_plttargets", action="store_true", default=False,
                             help="Use platetargets files instead of the DRPall file to "
@@ -686,6 +713,9 @@ class rundap:
             self.platelist, self.ifudesignlist = self._read_file_list(arg.list_file)
 
         self.combinatorics = arg.combinatorics
+        self.sres_ext = arg.sres_ext
+        self.sres_fill = arg.sres_fill
+        self.covar_ext = arg.covar_ext
    
         # Set the plateTargets and NSA catalog path
         if arg.plttargets is not None:
@@ -1014,8 +1044,7 @@ class rundap:
                               relative_symlink=True):
         """
         Write the MaNGA DAP script file that is sent to a single CPU to
-        analyze a single DRP file with a given plate, ifudesign, and
-        mode.
+        analyze a single DRP file with a given plate and ifudesign.
 
         Args:
             index (:obj:`int`, optional):
@@ -1033,12 +1062,9 @@ class rundap:
                 instead of the absolute path.
 
         Returns:
-            str: Three strings with the name of the written script file,
-            the file for the output sent to STDOUT, and the file for the
-            output sent to STDERR.
-
-        Raises:
-            Exception: Raised if DAP version is not correctly defined.
+            :obj:`str`: Three strings with the name of the written
+            script file, the file for the output sent to STDOUT, and the
+            file for the output sent to STDERR.
         """
         # Get the plate and IFU from the DRPComplete database; alway use
         # the CUBE file
@@ -1051,13 +1077,18 @@ class rundap:
         self._check_paths(plate, ifudesign)
 
         # Create the parameter file
-        parfile = defaults.dap_par_file(plate, ifudesign, mode, drpver=self.mpl.drpver,
-                                        dapver=self.dapver, analysis_path=self.analysis_path)
+#        parfile = defaults.dap_par_file(plate, ifudesign, mode, drpver=self.mpl.drpver,
+#                                        dapver=self.dapver, analysis_path=self.analysis_path)
+        cfgfile = defaults.dap_config(plate, ifudesign, drpver=self.mpl.drpver, dapver=self.dapver,
+                                      analysis_path=self.analysis_path)
 
         # Write the par file if it doesn't exist
-        if not os.path.isfile(parfile) or clobber:
+#        if not os.path.isfile(parfile) or clobber:
+        if not os.path.isfile(cfgfile) or clobber:
             # clobber defaults to True
-            self.drpc.write_par(parfile, mode, index=index)
+#            self.drpc.write_par(parfile, mode, index=index)
+            self.drpc.write_config(cfgfile, index=index, sres_ext=self.sres_ext,
+                                   sres_fill=self.sres_fill, covar_ext=self.covar_ext)
             # and create symlinks to it
             for daptype in self.daptypes:
                 # Generate the ref subdirectory for this plan
@@ -1065,7 +1096,9 @@ class rundap:
                                                 ref=True, drpver=self.mpl.drpver,
                                                 dapver=self.dapver,
                                                 analysis_path=self.analysis_path)
-                create_symlink(parfile, path, relative_symlink=relative_symlink, clobber=clobber,
+#                create_symlink(parfile, path, relative_symlink=relative_symlink, clobber=clobber,
+#                               quiet=True)
+                create_symlink(cfgfile, path, relative_symlink=relative_symlink, clobber=clobber,
                                quiet=True)
 
         # Set the root path for the scripts, inputs, outputs, and logs
@@ -1101,9 +1134,11 @@ class rundap:
         file.write('\n')
 
         # Command that runs the DAP
+        # TODO: Define a "default" plan?
         if dapproc:
-            command = 'manga_dap {0} {1} -r {2} -a {3}'.format(parfile, self.plan_file,
-                                                               self.redux_path, self.analysis_path)
+            command = 'manga_dap {0} -c {1} -r {2} -a {3}'.format(self.plan_file, cfgfile,
+                                                                  self.redux_path,
+                                                                  self.analysis_path)
             if self.log:
                 command += (' --log {0}.log'.format(scriptfile))
             if self.verbose > 0:
@@ -1113,7 +1148,7 @@ class rundap:
 
         # Plotting scripts
         if plots:
-            command = 'ppxffit_qa {0} {1} --analysis_path {2} --plan_file {3}'.format(
+            command = 'dap_ppxffit_qa {0} {1} --analysis_path {2} --plan_file {3}'.format(
                             plate, ifudesign, self.analysis_path, self.plan_file)
             file.write('{0}\n'.format(command))
             file.write('\n')
@@ -1145,18 +1180,15 @@ class rundap:
         associated quality assessment plots.
 
         Args:
-            plots (bool): (**Optional**) Create the QA plots. Default is
-                True.
-            clobber (bool): (**Optional**) Flag to clobber any existing
-                files.
+            plots (:obj:`bool`, optional):
+                Create the QA plots. Default is True.
+            clobber (:obj:`bool`, optional):
+                Flag to clobber any existing files.
 
         Returns:
-            str: Three strings with the name of the written script file,
-            the file for the output sent to STDOUT, and the file for the
-            output sent to STDERR.
-
-        Raises:
-            ValueError: Raised if DAP version is not correctly defined.
+            :obj:`str`: Three strings with the name of the written
+            script file, the file for the output sent to STDOUT, and the
+            file for the output sent to STDERR.
         """
         # Check that the path exists, creating it if not
         if not os.path.isdir(self.calling_path):
@@ -1223,9 +1255,9 @@ class rundap:
                 Flag to clobber any existing files.
 
         Returns:
-            str: Three strings with the name of the written script file,
-            the file for the output sent to STDOUT, and the file for the
-            output sent to STDERR.
+            :obj:`str`: Three strings with the name of the written
+            script file, the file for the output sent to STDOUT, and the
+            file for the output sent to STDERR.
         """
         # Check that the path exists, creating it if not
         path = os.path.join(self.calling_path, str(plate))

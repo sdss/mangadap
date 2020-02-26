@@ -28,7 +28,7 @@ def test_avail():
         if method['emission_lines'] is not None:
             emldb = EmissionLineDB.from_key(method['emission_lines'])
         if method['continuum_tpl_key'] is not None:
-            tpl = TemplateLibrary(method['continuum_tpl_key'], match_to_drp_resolution=False,
+            tpl = TemplateLibrary(method['continuum_tpl_key'], match_resolution=False,
                                   velscale_ratio=1, spectral_step=1e-4, log=True, hardcopy=False)
         if method['fitpar'] is None:
             continue
@@ -36,7 +36,5 @@ def test_avail():
         if 'continuum_templates' in method['fitpar'].keys() \
                 and method['fitpar']['continuum_templates'] is not None:
             tpl = TemplateLibrary(method['fitpar']['continuum_templates'],
-                                  match_to_drp_resolution=False, velscale_ratio=1,
+                                  match_resolution=False, velscale_ratio=1,
                                   spectral_step=1e-4, log=True, hardcopy=False)
-
-

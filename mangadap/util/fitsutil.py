@@ -93,9 +93,9 @@ class DAPFitsUtil:
 
 
     @staticmethod
-    def initialize_dap_primary_header(drpf, maskname=None):
+    def initialize_dap_primary_header(cube, maskname=None):
         # Copy the from the DRP and clean it
-        hdr = drpf.hdu['PRIMARY'].header.copy()
+        hdr = cube.prihdr.copy()
         hdr = DAPFitsUtil.clean_dap_primary_header(hdr)
 
         # Change MASKNAME
@@ -204,8 +204,8 @@ class DAPFitsUtil:
 
 
     @staticmethod
-    def build_map_header(drpf, author, multichannel=False, maskname=None):
-        hdr = drpf.hdu['FLUX'].header.copy()
+    def build_map_header(hdr, author, multichannel=False, maskname=None):
+        hdr = hdr.copy()
         hdr = DAPFitsUtil.clean_map_header(hdr, multichannel=multichannel)
         hdr['AUTHOR'] = author
         if maskname is not None:
@@ -248,9 +248,19 @@ class DAPFitsUtil:
         return hdr
 
 
+#    @staticmethod
+#    def build_cube_header(drpf, author, maskname=None):
+#        hdr = drpf.hdu['FLUX'].header.copy()
+#        hdr = DAPFitsUtil.clean_cube_header(hdr)
+#        hdr['AUTHOR'] = author
+#        if maskname is not None:
+#            hdr['MASKNAME'] = maskname
+#        return hdr
+
+
     @staticmethod
-    def build_cube_header(drpf, author, maskname=None):
-        hdr = drpf.hdu['FLUX'].header.copy()
+    def build_cube_header(cube, author, maskname=None):
+        hdr = cube.fluxhdr.copy()
         hdr = DAPFitsUtil.clean_cube_header(hdr)
         hdr['AUTHOR'] = author
         if maskname is not None:
@@ -563,6 +573,7 @@ class DAPFitsUtil:
                     if return_index else numpy.unique(bin_indx.ravel())[1:]
 
 
+    # TODO: Consolidate these with what's in datacube and rowstackedspectra.
     @staticmethod
     def copy_to_array(hdu, ext='FLUX', allowed_ext=None, waverange=None, select_bins=None,
                       missing_bins=None, nbins=None, unique_bins=None):

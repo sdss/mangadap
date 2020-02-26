@@ -261,8 +261,8 @@ class MaNGAMPL:
             idlver_env = None
         python_ver = '.'.join([ str(v) for v in sys.version_info[:3]])
 
-        return [ accessver_env, idlver_env, os.environ['MANGACORE_VER'],
-                 os.environ['MANGADRP_VER'], os.environ['MANGADAP_VER'],
+        return [ accessver_env, idlver_env, os.getenv('MANGACORE_VER'),
+                 os.getenv('MANGADRP_VER'), os.getenv('MANGADAP_VER'),
                 python_ver, numpy.__version__, scipy.__version__, matplotlib.__version__,
                 astropy.__version__, pydl.__version__]
 

@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import os
 import time
 import argparse
@@ -680,10 +678,7 @@ def redshift_distribution(dapall, daptype, ofile=None):
     pyplot.close(fig)
 
 
-#-----------------------------------------------------------------------------
-
-if __name__ == '__main__':
-    t = time.perf_counter()
+def parse_args(options=None):
 
     parser = argparse.ArgumentParser()
 
@@ -700,22 +695,26 @@ if __name__ == '__main__':
     parser.add_argument('--daptype', type=str, help='DAP processing type', default=None)
     parser.add_argument('--normal_backend', dest='bgagg', action='store_false', default=True)
 
-    arg = parser.parse_args()
+    return parser.parse_args() if options is None else parser.parse_args(options)
 
-    if arg.bgagg:
+
+def main(args):
+    t = time.perf_counter()
+
+    if args.bgagg:
         pyplot.switch_backend('agg')
 
     # Set the paths
-    redux_path = defaults.drp_redux_path(drpver=arg.drpver) \
-                        if arg.redux_path is None else arg.redux_path
-    analysis_path = defaults.dap_analysis_path(drpver=arg.drpver, dapver=arg.dapver) \
-                            if arg.analysis_path is None else arg.analysis_path
+    redux_path = defaults.drp_redux_path(drpver=args.drpver) \
+                        if args.redux_path is None else args.redux_path
+    analysis_path = defaults.dap_analysis_path(drpver=args.drpver, dapver=args.dapver) \
+                            if args.analysis_path is None else args.analysis_path
 
     daptypes = []
-    if arg.daptype is None:
-        plan_file = defaults.dap_plan_file(drpver=arg.drpver, dapver=arg.dapver,
-                                          analysis_path=arg.analysis_path) \
-                                            if arg.plan_file is None else arg.plan_file
+    if args.daptype is None:
+        plan_file = defaults.dap_plan_file(drpver=args.drpver, dapver=args.dapver,
+                                          analysis_path=args.analysis_path) \
+                                            if args.plan_file is None else args.plan_file
         analysisplan = AnalysisPlanSet.from_par_file(plan_file)
         for p in analysisplan:
             bin_method = SpatiallyBinnedSpectra.define_method(p['bin_key'])
@@ -725,10 +724,10 @@ if __name__ == '__main__':
                                              sc_method['fitpar']['template_library_key'],
                                              el_method['continuum_tpl_key'])]
     else:
-        daptypes = [arg.daptype]
+        daptypes = [args.daptype]
 
-    drpall_file = defaults.drpall_file(drpver=arg.drpver, redux_path=redux_path)
-    dapall_file = defaults.dapall_file(drpver=arg.drpver, dapver=arg.dapver,
+    drpall_file = defaults.drpall_file(drpver=args.drpver, redux_path=redux_path)
+    dapall_file = defaults.dapall_file(drpver=args.drpver, dapver=args.dapver,
                                        analysis_path=analysis_path)
 
     drpall_hdu = fits.open(drpall_file)

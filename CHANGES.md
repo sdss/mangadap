@@ -57,6 +57,30 @@ TODO
    Ensuring that the correlation matrices provided by the DRP can be
    read by `MaNGADataCube` and are effectively identical to the
    calculation performed by `MaNGARSS`.
+ - Moved all core script code from `bin` to `mangadap/scripts`.  Code in
+   `bin` now make simple calls to these scripts.  Moved `rundap.py` from
+   `mangadap.survey` to `mangadap.scripts`.
+ - General clean-up of the executables in `bin`.
+ - Integrated use of `MaNGADataCube` instead of `DRPFits` when executing
+   the pipeline.  Usage of `DRPFits` is now largely obsolete.  Not
+   removed yet.  Interface is still not abstracted enough for a general
+   `DataCube` (because of naming conventions), but getting there.
+ - Tests now include a nominal run of `manga_dap` using the `ALL`
+   binning scheme.
+ - Usage of `ObsInputPar` is now obsolete.
+ - Spectral resolution is no longer chosen by the spectral binning
+   module; instead the spectral resolution is selected when reading the
+   datacube (makes much more sense!).  Led to some clean-up of the
+   binning config files.
+ - To select different spectral resolution extensions, use command-line
+   arguments in `rundap` or `write_dap_config`.
+ - Started doc edits.
+ - Example scripts now use `MaNGADataCube` instead of `DRPFits`, but
+   further clean-up of the `examples` directory is needed.
+ - Include a default analysis plan, so that executions of `manga_dap`
+   don't require an analysis plan yanny parameter file.
+ - Docstring updates for modules up through `StellarContinuumModel`, but
+   still lots to do.
 
 
 2.5.2 (14 Feb 2020)

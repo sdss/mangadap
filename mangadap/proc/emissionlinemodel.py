@@ -46,7 +46,6 @@ from scipy import interpolate
 from astropy.io import fits
 import astropy.constants
 
-from ..drpfits import DRPFits
 from ..par.parset import KeywordParSet, ParSet
 from ..par.artifactdb import ArtifactDB
 from ..par.emissionlinedb import EmissionLineDB
@@ -324,7 +323,6 @@ class EmissionLineModel:
         self._assign_spectral_arrays()
         self.image_arrays = None
         self._assign_image_arrays()
-        self.dispaxis = None
         self.nwave = None
 
         self.nmodels = None
@@ -379,9 +377,9 @@ class EmissionLineModel:
         method = defaults.dap_method(self.binned_spectra.method['key'], continuum_templates,
                                      self.method['continuum_tpl_key'])
         self.directory_path \
-                = defaults.dap_method_path(method, plate=self.binned_spectra.drpf.plate,
-                                           ifudesign=self.binned_spectra.drpf.ifudesign, ref=True,
-                                           drpver=self.binned_spectra.drpf.drpver, dapver=dapver,
+                = defaults.dap_method_path(method, plate=self.binned_spectra.cube.plate,
+                                           ifudesign=self.binned_spectra.cube.ifudesign, ref=True,
+                                           drpver=self.binned_spectra.cube.drpver, dapver=dapver,
                                            analysis_path=analysis_path) \
                             if directory_path is None else str(directory_path)
 
@@ -391,17 +389,27 @@ class EmissionLineModel:
         if self.stellar_continuum is not None:
             ref_method = '{0}-{1}'.format(ref_method, self.stellar_continuum.method['key'])
         ref_method = '{0}-{1}'.format(ref_method, self.method['key'])
-        self.output_file = defaults.dap_file_name(self.binned_spectra.drpf.plate,
-                                                  self.binned_spectra.drpf.ifudesign, ref_method) \
+        self.output_file = defaults.dap_file_name(self.binned_spectra.cube.plate,
+                                                  self.binned_spectra.cube.ifudesign, ref_method) \
                                         if output_file is None else str(output_file)
 
     def _initialize_primary_header(self, hdr=None):
         """
-        Initialize the header.
+        Construct the primary header for the reference file.
+
+        Args:
+            hdr (`astropy.io.fits.Header`_, optional):
+                Input base header for added keywords. If None, uses
+                the datacube header from :attr:`binned_spectra` (if
+                there is one) and then cleans the header using
+                :func:`mangadap.util.fitsutil.DAPFitsUtil.clean_dap_primary_header`.
+
+        Returns:
+            `astropy.io.fits.Header`_: Initialized header object.
         """
         # Copy the from the DRP and clean it
         if hdr is None:
-            hdr = self.binned_spectra.drpf.hdu['PRIMARY'].header.copy()
+            hdr = self.binned_spectra.cube.prihdr.copy()
             hdr = DAPFitsUtil.clean_dap_primary_header(hdr)
         
         hdr['AUTHOR'] = 'Kyle B. Westfall <westfall@ucolick.org>'
@@ -653,19 +661,34 @@ class EmissionLineModel:
 
     def _finalize_cube_mask(self, mask):
         """
-        Finalize the mask by setting the DIDNOTUSE, FORESTAR, and LOW_SNR masks
+        Finalize the mask after the 2D mask has been reconstructed
+        into a 3D cube.
+
+        This mostly handles the masks for regions outside the
+        datacube field of view.
+
+        Note that the input mask is both edited in-place and
+        returned.
+
+        .. todo::
+
+            - This needs to be abstracted for non-DRP datacubes.
+            - Describe MAPMASK usage
+
+        Args:
+            mask (`numpy.ndarray`_):
+                3D array with the current bitmask data.
 
         Returns:
-            numpy.ndarray : Bitmask array.
+            `numpy.ndarray`_: Edited bitmask data.
         """
         # Turn on the flag stating that the pixel wasn't used
-        indx = self.binned_spectra.bitmask.flagged(self.binned_spectra.drpf['MASK'].data,
+        indx = self.binned_spectra.bitmask.flagged(self.binned_spectra.cube.mask,
                                                    flag=self.binned_spectra.do_not_fit_flags())
         mask[indx] = self.bitmask.turn_on(mask[indx], 'DIDNOTUSE')
 
         # Turn on the flag stating that the pixel has a foreground star
-        indx = self.binned_spectra.bitmask.flagged(self.binned_spectra.drpf['MASK'].data,
-                                                   flag='FORESTAR')
+        indx = self.binned_spectra.bitmask.flagged(self.binned_spectra.cube.mask, flag='FORESTAR')
         mask[indx] = self.bitmask.turn_on(mask[indx], 'FORESTAR')
 
         # Propagate the MAPMASK to the full cube
@@ -865,7 +888,7 @@ class EmissionLineModel:
         # Initialize the headers
         pri_hdr = self._initialize_primary_header()
         pri_hdr = self._add_method_header(pri_hdr, model_binid=model_binid)
-        map_hdr = DAPFitsUtil.build_map_header(self.binned_spectra.drpf,
+        map_hdr = DAPFitsUtil.build_map_header(self.binned_spectra.cube.fluxhdr,
                                                'K Westfall <westfall@ucolick.org>')
 
         # Get the spatial map mask
@@ -1008,7 +1031,6 @@ class EmissionLineModel:
         self.shape = self.binned_spectra.shape
         self.spatial_shape =self.binned_spectra.spatial_shape
         self.spatial_index = self.binned_spectra.spatial_index.copy()
-        self.dispaxis = self.binned_spectra.dispaxis
         self.nwave = self.binned_spectra.nwave
         
         # Get the guess kinematics
@@ -1174,7 +1196,7 @@ class EmissionLineModel:
         # Primary header is identical regardless of the shape of the
         # extensions
         hdr = self.hdu['PRIMARY'].header.copy()
-        cube_hdr = DAPFitsUtil.build_cube_header(self.binned_spectra.drpf,
+        cube_hdr = DAPFitsUtil.build_cube_header(self.binned_spectra.cube,
                                                  'K Westfall <westfall@ucolick.org>')
 
         par_hdu = self.hdu['PAR'].copy() if 'data' in self.hdu['PAR'].__dict__ \
@@ -1647,7 +1669,7 @@ class EmissionLineModel:
                                             stellar_continuum=self.stellar_continuum)
                 z = numpy.mean(self.method['fitpar']['guess_redshift'][bins_to_fit])
                 templates = self.method['fitclass'].get_stellar_templates(self.method['fitpar'],
-                                                                          self.binned_spectra.drpf,
+                                                                          self.binned_spectra.cube,
                                                                           z=z,
                                                                           loggers=self.loggers,
                                                                           quiet=self.quiet)[0]

@@ -150,4 +150,12 @@ class AnalysisPlanSet(ParDatabase):
                                        bool(par['DAPPLAN']['spindex_clobber'][i])) ]
         return cls(planlist)
 
+    @classmethod
+    def default(cls):
+        """
+        Return the default analysis plan set.
+        """
+        return cls([AnalysisPlan(drpqa_key='SNRG', bin_key='HYB10', continuum_key='MILESHCMPL9',
+                                 elmom_key='EMOMMPL9', elfit_key='EFITMPL9DB',
+                                 spindex_key='INDXEN')])
 
