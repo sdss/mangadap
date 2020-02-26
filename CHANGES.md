@@ -42,6 +42,13 @@ TODO
  - Added `bin/dap_status` to check the status of a batch DAP run.
  - `__credits__` now include all authors of the DAP papers
 
+ - 
+ - Included a script that will download data into a new
+   `mangadap/data/remote` directory for testing.  The directory is not
+   included in the repo and has been added to .gitignore to prevent it
+   from being accidentally added.
+
+
 2.5.2 (14 Feb 2020)
 -------------------
 
