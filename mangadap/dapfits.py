@@ -108,6 +108,7 @@ class DAPCubeBitMask(DAPBitMask):
 
 
 #-----------------------------------------------------------------------
+# TODO: This class is out of date!
 class DAPFits:
     """
     Object used to hold properties of and read data from a DAP-produced file.
@@ -290,28 +291,28 @@ class DAPFits:
             for i in range(1,len(self.mmap_ext)):
                 self.channel_dict[self.mmap_ext[i]] = channel_dictionary(self.hdu, self.mmap_ext[i])
 
-    def read_par(self, quiet=True):
-        """
-        Open the parameter file and save it to :attr:`par`; if
-        :attr:`par` is not None, the function returns without re-reading
-        the data.
-
-        Args:
-            quiet (:obj:`bool`, optional):
-                Suppress terminal output
-        """
-        if self.par is not None:
-            if not quiet:
-                print('Parameter file already read!')
-            return
-
-        if not os.path.exists(self.par_file):
-            warnings.warn('Input parameters unavailable; cannot open {0}'.format(self.par_file))
-            return
-            
-        # Set the input parameters
-        # TODO: Is all of this also in the file header?
-        self.par = ObsInputPar.from_par_file(self.par_file)
+#    def read_par(self, quiet=True):
+#        """
+#        Open the parameter file and save it to :attr:`par`; if
+#        :attr:`par` is not None, the function returns without re-reading
+#        the data.
+#
+#        Args:
+#            quiet (:obj:`bool`, optional):
+#                Suppress terminal output
+#        """
+#        if self.par is not None:
+#            if not quiet:
+#                print('Parameter file already read!')
+#            return
+#
+#        if not os.path.exists(self.par_file):
+#            warnings.warn('Input parameters unavailable; cannot open {0}'.format(self.par_file))
+#            return
+#            
+#        # Set the input parameters
+#        # TODO: Is all of this also in the file header?
+#        self.par = ObsInputPar.from_par_file(self.par_file)
 
     def file_name(self):
         """Return the name of the DAP file"""

@@ -4,7 +4,6 @@ import importlib
 
 from argparse import ArgumentParser
 
-#from mangadap.par.obsinput import ObsInputPar
 from mangadap.par.analysisplan import AnalysisPlanSet
 from mangadap.survey.manga_dap import manga_dap
 from mangadap.datacube import DataCube

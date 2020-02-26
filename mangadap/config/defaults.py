@@ -468,7 +468,7 @@ def dap_file_root(plate, ifudesign, mode=None):
     return 'mangadap-{0}-{1}'.format(plate, ifudesign) if mode is None else \
                     'mangadap-{0}-{1}-LOG{2}'.format(plate, ifudesign, mode)
 
-
+# TODO: This method should be obsolete now.
 def dap_par_file(plate, ifudesign, mode, partype='input', drpver=None, dapver=None,
                  analysis_path=None, directory_path=None):
     """
