@@ -1246,15 +1246,21 @@ class DRPComplete:
         """
         Determine the DAP can analyze a plate-ifu entry in the database.
 
+        The selection is currently:
+
+            - MaNGAID != 'NULL'
+            - MANGA_TARGET1 > 0 or MANGA_TARGET3 > 0
+            - VEL > -500
+
         Args:
             row (:obj:`int`, optional):
                 The specific row to test.  By default, return a boolean
                 vector for all the database rows.
 
         Returns:
-            Either a single boolean or boolean `numpy.ndarray` flagging
-            that DAP can (True) or cannot (False) analyze the data
-            associated with the database entry (or entries).
+            Either a single boolean or boolean `numpy.ndarray`_
+            flagging that DAP can (True) or cannot (False) analyze
+            the data associated with the database entry (or entries).
         """
         if row is None:
             return (self['MANGAID'] != 'NULL') \
