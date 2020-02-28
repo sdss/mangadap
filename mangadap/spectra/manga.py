@@ -26,7 +26,7 @@ from ..util.constants import DAPConstants
 from ..util.filter import interpolate_masked_vector
 from .rowstackedspectra import RowStackedSpectra
 
-class MaNGARSS(RowStackedSpectra, DRPFits):
+class MaNGARSS(DRPFits, RowStackedSpectra):
     r"""
     Container class for MaNGA row-stacked spectra.
 
@@ -58,8 +58,6 @@ class MaNGARSS(RowStackedSpectra, DRPFits):
         # Parse the relevant information from the filename
         directory_path = os.path.split(os.path.abspath(ifile))[0]
         plate, ifudesign, log = ifile.split('-')[1:4]
-        log = 'LOG' in log
-
         # Instantiate the DRPFits base
         DRPFits.__init__(self, int(plate), int(ifudesign), 'RSS', log='LOG' in log,
                          directory_path=directory_path)
@@ -87,11 +85,11 @@ class MaNGARSS(RowStackedSpectra, DRPFits):
             # RA. Opposite of the RowStackedSpectra convention. The
             # area of the fiber aperture is normalized to pi arcsec^2
             # by the DRP.
-            super(MaNGARSS, self).__init__(hdu['WAVE'].data, hdu['FLUX'].data,
-                                           ivar=hdu['IVAR'].data, mask=hdu['MASK'].data,
-                                           bitmask=bitmask, sres=sres,
-                                           xpos=-hdu['XPOS'].data, ypos=hdu['YPOS'].data,
-                                           area=numpy.pi, log=log, prihdr=prihdr, fluxhdr=fluxhdr)
+            RowStackedSpectra.__init__(self, hdu['WAVE'].data, hdu['FLUX'].data,
+                                       ivar=hdu['IVAR'].data, mask=hdu['MASK'].data,
+                                       bitmask=bitmask, sres=sres, xpos=-hdu['XPOS'].data,
+                                       ypos=hdu['YPOS'].data, area=numpy.pi,
+                                       log=self.samp == 'LOG', prihdr=prihdr, fluxhdr=fluxhdr)
         print('Reading MaNGA row-stacked spectra data ... DONE')
 
         # Try to use the header to set the DRP version

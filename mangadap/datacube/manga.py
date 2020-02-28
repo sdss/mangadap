@@ -15,8 +15,6 @@ import time
 import os
 import warnings
 
-from configparser import ConfigParser
-
 from IPython import embed
 
 import numpy
@@ -33,7 +31,7 @@ from ..util.filter import interpolate_masked_vector
 from ..spectra import MaNGARSS
 from .datacube import DataCube
 
-class MaNGADataCube(DataCube, DRPFits):
+class MaNGADataCube(DRPFits, DataCube):
     r"""
     Container class for a MaNGA datacube.
 
@@ -94,8 +92,6 @@ class MaNGADataCube(DataCube, DRPFits):
         # Parse the relevant information from the filename
         directory_path = os.path.split(os.path.abspath(ifile))[0]
         plate, ifudesign, log = ifile.split('-')[1:4]
-        log = 'LOG' in log
-
         # Instantiate the DRPFits base
         DRPFits.__init__(self, int(plate), int(ifudesign), 'CUBE', log='LOG' in log,
                          directory_path=directory_path)
@@ -142,11 +138,11 @@ class MaNGADataCube(DataCube, DRPFits):
             # is expected to be okay because numpy array flattening
             # always performs a C-like flattening, even if the memory
             # storage is Fortran contiguous.
-            super(MaNGADataCube, self).__init__(hdu['FLUX'].data.T, wave=hdu['WAVE'].data,
-                                                ivar=hdu['IVAR'].data.T, mask=hdu['MASK'].data.T,
-                                                bitmask=bitmask, sres=sres.T, covar=covar,
-                                                wcs=WCS(header=fluxhdr, fix=True), pixelscale=0.5,
-                                                log=log, meta=meta, prihdr=prihdr, fluxhdr=fluxhdr)
+            DataCube.__init__(self, hdu['FLUX'].data.T, wave=hdu['WAVE'].data,
+                              ivar=hdu['IVAR'].data.T, mask=hdu['MASK'].data.T, bitmask=bitmask,
+                              sres=sres.T, covar=covar, wcs=WCS(header=fluxhdr, fix=True),
+                              pixelscale=0.5, log=self.samp == 'LOG', meta=meta, prihdr=prihdr,
+                              fluxhdr=fluxhdr)
         print('Reading MaNGA datacube data ... DONE')
 
         # Try to use the header to set the DRP version
@@ -162,7 +158,7 @@ class MaNGADataCube(DataCube, DRPFits):
                           'find paired RSS file if requested.')
 
     # TODO: Include a class method that instantiates from (or wraps a Marvin Cube)
-
+    @staticmethod
     def build_file_name(plate, ifudesign, log=True):
         """
         Return the name of the DRP datacube file.

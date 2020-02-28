@@ -33,7 +33,7 @@ def test_sres_ext():
 def test_read():
     rss = MaNGARSS.from_plateifu(7815, 3702, directory_path=remote_data_file())
 
-    assert rss.file == MaNGARSS.build_file_name(rss.plate, rss.ifudesign, log=rss.log), \
+    assert rss.file_name == MaNGARSS.build_file_name(rss.plate, rss.ifudesign, log=rss.log), \
             'Name mismatch'
     assert rss.log, 'Should read the log-binned version by default.'
     assert len(rss.shape) == 2, 'Row-stacked spectra are 2D'

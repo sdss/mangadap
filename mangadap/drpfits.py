@@ -93,33 +93,16 @@ Revision history
 .. include:: ../links.rst
 """
 import time
-import os.path
-import warnings
-import shutil
+import os
+
+from configparser import ConfigParser
 
 import numpy
 
-from matplotlib import pyplot
-
-from scipy import sparse
-from scipy import interpolate
-from astropy.io import fits
-from astropy.wcs import WCS
-
-try:
-    from shapely.ops import cascaded_union
-    from shapely.geometry import Point
-except ImportError:
-    warnings.warn('Could not import shapely!', ImportWarning)
-
-from .util.fitsutil import DAPFitsUtil
+from .util.parser import DefaultConfig
 from .util.bitmask import BitMask
 from .util.constants import DAPConstants
-from .util.parser import arginp_to_list
-from .util.covariance import Covariance
-from .util.pixelmask import SpectralPixelMask
 from .util.filter import interpolate_masked_vector
-from .util.sampling import spectral_coordinate_step
 from .config import defaults
 
 
