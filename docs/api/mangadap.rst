@@ -21,7 +21,6 @@ Submodules
 .. toctree::
 
    mangadap.dapfits
-   mangadap.drpfits
 
 Module contents
 ---------------
