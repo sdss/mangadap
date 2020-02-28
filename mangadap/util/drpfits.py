@@ -99,16 +99,16 @@ from configparser import ConfigParser
 
 import numpy
 
-from .util.parser import DefaultConfig
-from .util.bitmask import BitMask
-from .util.constants import DAPConstants
-from .util.filter import interpolate_masked_vector
-from .config import defaults
+from .parser import DefaultConfig
+from .bitmask import BitMask
+from .constants import DAPConstants
+from .filter import interpolate_masked_vector
+from ..config import defaults
 
 
 class DRPFitsBitMask(BitMask):
     r"""
-    Structure with the DRP mask bits.A
+    Structure with the DRP mask bits.
 
     The defined bits are listed at :ref:`metadatamodel-drp3pixmask`.
     """

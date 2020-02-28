@@ -10,7 +10,6 @@ from matplotlib.ticker import NullFormatter
 from matplotlib.widgets import Button, RadioButtons, AxesWidget
 
 from mangadap.dapfits import DAPCubeBitMask
-from mangadap.par.obsinput import ObsInputPar
 from mangadap.par.analysisplan import AnalysisPlanSet
 from mangadap.util.bitmask import BitMask
 from mangadap.config import defaults
@@ -1015,31 +1014,13 @@ def parse_args(options=None):
 
     parser.add_argument('--maps_file', type=str, default=None, help='Output MAPS file')
     parser.add_argument('--model_file', type=str, default=None, help='Output LOGCUBE model file')
-    parser.add_argument('--drp_file', type=str, default=None, help='DRP LOGCUBE file')
-
-    parser.add_argument('--obs', type=str, default=None,
-                        help='SDSS parameter file with observational input')
-    parser.add_argument('--plan', type=str, default=None,
-                        help='SDSS parameter file with analysis plan')
-    parser.add_argument('--planid', type=int, default=None, help='index of plan to plot')
+#    parser.add_argument('--drp_file', type=str, default=None, help='DRP LOGCUBE file')
 
     parser.add_argument('--ext', type=str, nargs='*', help='List of map extensions to include',
                         default=None)
 
     parser.add_argument('--maskspec', action='store_true', default=False,
                         help='Use masks for spectra.')
-
-    parser.add_argument('-r', '--redux_path', type=str,
-                        help='Top-level directory with the DRP products; defaults to '
-                             '$MANGA_SPECTRO_REDUX/$MANGADRP_VER', default=None)
-    parser.add_argument('-d', '--directory_path', type=str,
-                        help='Path directly to directory with DRP file to analyze', default=None)
-    parser.add_argument('-a', '--analysis_path', type=str,
-                        help='Top-level output directory for the DAP results; defaults to '
-                             '$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER', default=None)
-    parser.add_argument('-s', '--dap_src', type=str,
-                        help='Top-level directory with the DAP source code; defaults to '
-                            '$MANGADAP_DIR', default=None)
 
     # - Add "from scratch" keyword that runs main DAP classes instead of
     # just reading MAPS and LOGCUBE files
@@ -1052,27 +1033,7 @@ def parse_args(options=None):
 def main(args):
 
     # Can it proceed?
-    if args.maps_file is None and args.model_file is None:
-        
-        if args.obs is None or args.plan is None:
-            raise ValueError('If not providing exact file names, must provide --obs and --plan.')
-        planid = 0 if args.planid is None else args.planid
-
-        obspar = ObsInputPar.from_par_file(args.obs)
-        analysisplan = AnalysisPlanSet.from_par_file(args.plan)
-
-        if planid > analysisplan.nplans:
-            raise ValueError('Number of plans is {0}; cannot select plan {1}!'.format(
-                                                                    analysisplan.nplans, planid))
-
-        maps_file, model_file = generate_file_paths(obspar, analysisplan[planid-1],
-                                                    redux_path=args.redux_path, 
-                                                    directory_path=args.directory_path,
-                                                    analysis_path=args.analysis_path)
-
-    else:
-        maps_file, model_file = args.maps_file, args.model_file
-
+    maps_file, model_file = args.maps_file, args.model_file
     if maps_file is None or model_file is None:
         raise ValueError('Must provide both a MAPS file and a model LOGCUBE file.')
 
