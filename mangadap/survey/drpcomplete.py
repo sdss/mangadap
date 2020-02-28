@@ -130,9 +130,10 @@ class DRPComplete:
             :func:`mangadap.config.defaults.drp_version`.
         redux_path (:obj:`str`, optional): 
             The path to the top level directory containing the DRP
-            output files; this is the same as the ``redux_path`` in the
-            :class:`mangadap.drpfits.DRPFits` class.  Default is defined
-            by :func:`mangadap.config.defaults.drp_redux_path`.
+            output files; this is the same as the ``redux_path`` in
+            the :class:`mangadap.util.drpfits.DRPFits` class. Default
+            is defined by
+            :func:`mangadap.config.defaults.drp_redux_path`.
         dapver (:obj:`str`, optional):
             DAP version, which is:
 

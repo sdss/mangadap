@@ -23,7 +23,7 @@ from astropy.io import fits
 from astropy.wcs import WCS
 
 from ..config import defaults
-from ..drpfits import DRPFits, DRPFitsBitMask
+from ..util.drpfits import DRPFits, DRPFitsBitMask
 from ..util.parser import DefaultConfig
 from ..util.constants import DAPConstants
 from ..util.covariance import Covariance
@@ -164,8 +164,8 @@ class MaNGADataCube(DRPFits, DataCube):
         Return the name of the DRP datacube file.
 
         This is a simple wrapper for
-        :func:`mangadap.drpfits.DRPFits.build_file_name`, specific to
-        the datacube.
+        :func:`mangadap.util.drpfits.DRPFits.build_file_name`,
+        specific to the datacube.
 
         Args:
             plate (:obj:`int`):
@@ -190,8 +190,8 @@ class MaNGADataCube(DRPFits, DataCube):
         datacube.
 
         This is a simple wrapper for
-        :func:`mangadap.drpfits.DRPFits.default_paths`, specific to
-        the datacube files.
+        :func:`mangadap.util.drpfits.DRPFits.default_paths`, specific
+        to the datacube files.
 
         Args:
             plate (:obj:`int`):

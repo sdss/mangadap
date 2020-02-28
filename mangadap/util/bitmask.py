@@ -195,16 +195,17 @@ class BitMask:
         Define the object using an `SDSS-style parameter file`_.  This
         has been tailored to work with the sdssMaskbits.par file in
         IDLUTILS; however, it can work with similar files.
-        
-        See :class:`mangadap.drpfits.DRPFitsBitMask` for an example that
-        uses this function.
+
+        See :class:`mangadap.util.drpfits.DRPFitsBitMask` for an
+        example that uses this function.
 
         Args:
-            f (str) : File name to use for defining the
-                :class:`BitMask`.
-            name (str) : The designation of the bits to assign.  For
-                example, in :class:`mangadap.drpfits.DRPFitsBitMask`
-                this is `'MANGA_DRP3PIXMASK'`.
+            f (:obj:`str`):
+                File name to use for defining the :class:`BitMask`.
+            name (:obj:`str`):
+                The designation of the bits to assign. For example,
+                in :class:`mangadap.util.drpfits.DRPFitsBitMask` this
+                is `'MANGA_DRP3PIXMASK'`.
         
         Returns:
             :class:`BitMask`: Object with bitmasks defined by the

@@ -42,8 +42,8 @@ import astropy.units
 from astropy.stats import sigma_clip
 
 from .drpcomplete import DRPComplete
-from ..drpfits import DRPQuality3DBitMask
 from ..dapfits import DAPMapsBitMask, DAPQualityBitMask
+from ..util.drpfits import DRPQuality3DBitMask
 from ..config import defaults
 from ..util.fileio import init_record_array, rec_to_fits_type, channel_dictionary, channel_units
 from ..util.fitsutil import DAPFitsUtil

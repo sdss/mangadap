@@ -21,7 +21,7 @@ import numpy
 from astropy.io import fits
 
 from ..config import defaults
-from ..drpfits import DRPFits, DRPFitsBitMask
+from ..util.drpfits import DRPFits, DRPFitsBitMask
 from ..util.constants import DAPConstants
 from ..util.filter import interpolate_masked_vector
 from .rowstackedspectra import RowStackedSpectra
@@ -110,8 +110,8 @@ class MaNGARSS(DRPFits, RowStackedSpectra):
         Return the name of the DRP file with the row-stacked spectra.
 
         This is a simple wrapper for
-        :func:`mangadap.drpfits.DRPFits.build_file_name`, specific to
-        the RSS.
+        :func:`mangadap.util.drpfits.DRPFits.build_file_name`,
+        specific to the RSS.
 
         Args:
             plate (:obj:`int`):
@@ -136,8 +136,8 @@ class MaNGARSS(DRPFits, RowStackedSpectra):
         row-stacked spectra.
 
         This is a simple wrapper for
-        :func:`mangadap.drpfits.DRPFits.default_paths`, specific to
-        the RSS files.
+        :func:`mangadap.util.drpfits.DRPFits.default_paths`, specific
+        to the RSS files.
 
         Args:
             plate (:obj:`int`):
