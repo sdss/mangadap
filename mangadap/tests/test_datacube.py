@@ -32,8 +32,8 @@ def test_sres_ext():
 def test_read():
     cube = MaNGADataCube.from_plateifu(7815, 3702, directory_path=remote_data_file())
 
-    assert cube.file == MaNGADataCube.build_file_name(cube.plate, cube.ifudesign, log=cube.log), \
-            'Name mismatch'
+    assert cube.file_name == MaNGADataCube.build_file_name(cube.plate, cube.ifudesign,
+                    log=cube.log), 'Name mismatch'
     assert cube.log, 'Should read the log-binned version by default.'
     assert cube.wcs is not None, 'WCS should be defined.'
     assert cube.shape[:2] == cube.spatial_shape, 'Spatial shape should be first two axes.'
@@ -235,3 +235,4 @@ def test_covariance():
 
     # Variance should be the same for direct and approximate calculations
     assert numpy.allclose(approxC.variance(), C.variance()), 'Variances should be the same.'
+

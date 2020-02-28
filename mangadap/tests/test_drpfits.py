@@ -6,7 +6,7 @@ from astropy.io import fits
 import astropy.constants
 
 from mangadap.datacube import MaNGADataCube
-from mangadap.drpfits import DRPFitsBitMask
+from mangadap.util.drpfits import DRPFitsBitMask
 from mangadap.tests.util import data_test_file
 
 import warnings

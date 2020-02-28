@@ -81,6 +81,8 @@ TODO
    don't require an analysis plan yanny parameter file.
  - Docstring updates for modules up through `StellarContinuumModel`, but
    still lots to do.
+ - Consolidates the common functionality in `MaNGADataCube` and
+   `MaNGARSS` into a new, repurposed `DRPFits` base class.
 
 
 2.5.2 (14 Feb 2020)

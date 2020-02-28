@@ -1,4 +1,4 @@
-Class Instantiation: :class:`mangadap.drpfits.DRPFitsBitMask`
+Class Instantiation: :class:`mangadap.util.drpfits.DRPFitsBitMask`
 
 =========  ===  ==================================
 Key        Bit  Description                       

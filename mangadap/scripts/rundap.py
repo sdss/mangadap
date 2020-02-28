@@ -170,8 +170,7 @@ class rundap:
         combinatorics (:obj:`bool`, optional): 
             Use all unique combinations of the entered
             plate/ifudesign/mode lists to create the full list of DRP
-            files to analyze.  See
-            :func:`mangadap.drpfits.drpfits_list`.
+            files to analyze.
         list_file (:obj:`str`, optional):
             File with a list of plates and ifudesigns to analyze. The
             file must have two columns, with one plate-ifu
