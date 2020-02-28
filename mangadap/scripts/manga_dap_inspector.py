@@ -21,7 +21,6 @@ from mangadap.proc.emissionlinemodel import EmissionLineModel
 # Slider class
 class Slider(AxesWidget):
     """
-
     Copied from matplotlib.  Just wanted no val to be plotted because I
     wanted to defined it explicitly.
 
