@@ -21,12 +21,12 @@ import numpy
 from astropy.io import fits
 
 from ..config import defaults
-from ..drpfits import DRPFitsBitMask
+from ..drpfits import DRPFits, DRPFitsBitMask
 from ..util.constants import DAPConstants
 from ..util.filter import interpolate_masked_vector
 from .rowstackedspectra import RowStackedSpectra
 
-class MaNGARSS(RowStackedSpectra):
+class MaNGARSS(RowStackedSpectra, DRPFits):
     r"""
     Container class for MaNGA row-stacked spectra.
 

@@ -25,7 +25,7 @@ from astropy.io import fits
 from astropy.wcs import WCS
 
 from ..config import defaults
-from ..drpfits import DRPFitsBitMask
+from ..drpfits import DRPFits, DRPFitsBitMask
 from ..util.parser import DefaultConfig
 from ..util.constants import DAPConstants
 from ..util.covariance import Covariance
@@ -33,7 +33,7 @@ from ..util.filter import interpolate_masked_vector
 from ..spectra import MaNGARSS
 from .datacube import DataCube
 
-class MaNGADataCube(DataCube):
+class MaNGADataCube(DataCube, DRPFits):
     r"""
     Container class for a MaNGA datacube.
 
