@@ -22,6 +22,8 @@ from IPython import embed
 import numpy
 from scipy import sparse, interpolate
 
+from astropy.io import fits
+
 try:
     from shapely.ops import cascaded_union
     from shapely.geometry import Point
@@ -121,6 +123,13 @@ class RowStackedSpectra:
         log (:obj:`bool`, optional):
             Flag that the datacube spectral pixels are binned
             logarithmically in wavelength.
+        prihdr (`astropy.io.fits.Header`_, optional):
+            Primary header read from source fits file. If None,
+            instantiated as an empty `astropy.io.fits.Header`_.
+        fluxhdr (`astropy.io.fits.Header`_, optional):
+            Header specifically for the flux extension of the source
+            fits file. If None, set to be a copy of the primary
+            header.
 
     Attributes:
         shape (:obj:`tuple`):
@@ -155,9 +164,16 @@ class RowStackedSpectra:
         area (`numpy.ndarray`_):
             The fiducial area subtended by each spectral aperture.
             The aperture is assumed to be circular.
+        prihdr (`astropy.io.fits.Header`_):
+            Primary header for the row-stacked spectra. If not
+            provided on instantiation, set to an empty
+            `astropy.io.fits.Header`_.
+        fluxhdr (`astropy.io.fits.Header`_):
+            Header specifically for the flux array. If not provided
+            on instantiation, set to be a copy of :attr:`prihdr`.
     """
     def __init__(self, wave, flux, ivar=None, mask=None, bitmask=None, sres=None, xpos=None,
-                 ypos=None, area=None, log=True):
+                 ypos=None, area=None, log=True, prihdr=None, fluxhdr=None):
 
         # Re-order so that axes are x, y, lambda
         self.wave = wave
@@ -217,6 +233,10 @@ class RowStackedSpectra:
         if self.area.size != self.nspec:
             raise ValueError('Could not construct area for each aperture; provide a single value '
                              'or one value per spectrum.')
+
+        # Allocate attributes for primary and flux array fits headers
+        self.prihdr = fits.Header() if prihdr is None else prihdr
+        self.fluxhdr = self.prihdr.deepcopy() if fluxhdr is None else fluxhdr
 
         # Datacube rectification parameters
         self.pixelscale = None

@@ -235,3 +235,6 @@ def test_covariance():
 
     # Variance should be the same for direct and approximate calculations
     assert numpy.allclose(approxC.variance(), C.variance()), 'Variances should be the same.'
+
+if __name__ == '__main__':
+    test_sres_ext()
