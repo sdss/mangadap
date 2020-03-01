@@ -680,7 +680,7 @@ def redshift_distribution(dapall, daptype, ofile=None):
 
 def parse_args(options=None):
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('--drpver', type=str, help='DRP version', default=None)
     parser.add_argument('--dapver', type=str, help='DAP version', default=None)
@@ -712,10 +712,8 @@ def main(args):
 
     daptypes = []
     if args.daptype is None:
-        plan_file = defaults.dap_plan_file(drpver=args.drpver, dapver=args.dapver,
-                                          analysis_path=args.analysis_path) \
-                                            if args.plan_file is None else args.plan_file
-        analysisplan = AnalysisPlanSet.from_par_file(plan_file)
+        analysisplan = AnalysisPlanSet.default() if args.plan_file is None \
+                            else AnalysisPlanSet.from_par_file(args.plan_file)
         for p in analysisplan:
             bin_method = SpatiallyBinnedSpectra.define_method(p['bin_key'])
             sc_method = StellarContinuumModel.define_method(p['continuum_key'])

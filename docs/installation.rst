@@ -20,6 +20,10 @@ we recommend using the most recent tag.  You can do so by executing:
         cd mangadap
         ./checkout_current_tag
 
+.. note::
+
+    There is a distribution of the DAP that can be installed via
+    `pip`, but we're still working out the bugs.
 
 Install Python 3
 ----------------
@@ -48,7 +52,7 @@ from within the top-level directory of the repo):
 
         CC=clang python3 setup.py install
 
- * To install the DAP in a way that changes you make to the repo are
+ * To install the DAP such that changes you make to the repo are
    immediately available in your environment, run:
 
     .. code-block:: bash
@@ -65,7 +69,7 @@ from within the top-level directory of the repo):
 
     .. code-block:: bash
 
-        pip3 install -r requirement.txt
+        pip3 install -r requirements.txt
 
 
 Test your installation
@@ -79,37 +83,50 @@ To test the installation, you can do one of the following:
 
         python3 setup.py test
 
- * Run the tests using pytest directly:
+ * Run the tests using `pytest` directly:
 
     .. code-block:: bash
 
-        cd python/mangdap/tests
+        cd mangadap/tests
+        python3 -m pytest .
+
+Some tests requires a set of "remote" data that are not located in
+the repo for space considerations. Downloading the data used by these
+tests currently requires `SDSS Collaboration Access
+<https://sdss-marvin.readthedocs.io/en/latest/installation.html#sdss-collaboration-access>`_.
+The link in the last sentence points to a description of how this
+access is granted for Marvin using a ``~\.netrc`` file. The DAP uses
+the same ``~\.netrc`` file to authenticate access to the
+``data.sdss.org`` host for downloading the test data. Once you have
+your ``~\.netrc`` file, you can download the necessary test data and
+rerun the tests to include usage of that data like this:
+
+    .. code-block:: bash
+
+        python3 download_test_data.py
+        cd mangadap/tests
         python3 -m pytest .
 
 
 Local Environment Setup
 -----------------------
 
-The DAP uses environmental variable to define the paths to specific data
-and other repositories.  If these are not defined, warnings will be
-issued everytime the DAP is installed or imported.  The relevant
+The DAP uses environmental variables to define the paths to specific
+data and other repositories. If these are not defined, warnings will
+be issued every time the DAP is installed or imported. The relevant
 environmental variables, their default, and their usage are provided
 below.
 
 +----------------------------+-------------------------------------+------------------------------------------------+
 |                   Variable |                             Default |                                       Comments |
 +============================+=====================================+================================================+
-| ``MANGADRP_VER``           | ``v2_4_3`` (i.e., DR15)             | Version of the DRP, used for path construction |
+| ``MANGADRP_VER``           | ``v2_7_1`` (i.e., MPL-9)            | Version of the DRP, used for path construction |
 +----------------------------+-------------------------------------+------------------------------------------------+
 | ``MANGA_SPECTRO_REDUX``    | ``$HOME/MaNGA/redux``               | Root path for the reduced data                 |
 +----------------------------+-------------------------------------+------------------------------------------------+
 | ``MANGADAP_VER``           | ``mangadap.__version__``            | Version of the DAP, used for path construction |
 +----------------------------+-------------------------------------+------------------------------------------------+
 | ``MANGA_SPECTRO_ANALYSIS`` | ``$HOME/MaNGA/analysis``            | Root path for the analysis data                |
-+----------------------------+-------------------------------------+------------------------------------------------+
-| ``MANGACORE_VER``          | ``v1_6_2``                          | Version of MaNGA core (survey-level meta data) |
-+----------------------------+-------------------------------------+------------------------------------------------+
-| ``MANGACORE_DIR``          | ``$HOME/MaNGA/core/$MANGACORE_VER`` | Root path with the MaNGA core repository       |
 +----------------------------+-------------------------------------+------------------------------------------------+
 
 These environmental variables can be added to, e.g., your
@@ -126,30 +143,32 @@ that is sourced when you want to run the DAP.  The lines added to your
 
     export MANGADAP_VER=2.2.1
 
-    export MANGACORE_VER=v1_6_2
-    export MANGACORE_DIR=$HOME/MaNGA/core/$MANGACORE_VER
+.. note::
 
-
-**Notes:**
- * Everytime the DAP is imported, the code checks that the
-   ``$MANGADRP_VER``, ``$MANGA_SPECTRO_REDUX``, ``$MANGADAP_VER``, and
-   ``$MANGA_SPECTRO_ANALYSIS`` variables are defined.  If they are not,
-   warnings are raised and the defaults are used.
+ * The DAP checks that these variable sare defined *every time it is
+   imported*. If they are not, warnings are raised and the defaults
+   are used.
  * Some of these same variables are defined by `Marvin
    <https://sdss-marvin.readthedocs.io/en/stable/installation.html>`_.
    It is possible to have both Marvin and the DAP point to the same
    directory, but beware that this may mean that some of the files get
    overwritten!
- * It is likely that you will never need to define ``$MANGACORE_VER``
-   and ``$MANGACORE_DIR``.  These are only used in a specific mode of
-   survey-level execution of the DAP.  See :ref:`execution-rundap`.
- * The DAP expects to find the DRP ``LOGCUBE`` and ``LOGRSS`` files in
-   the directory ``$MANGA_SPECTRO_REDUX/$MANGADRP_VER/[PLATE]/stack``,
-   where ``[PLATE]`` is the desired plate number.  The ``LOGRSS`` files
-   are required if you want to properly account for
-   :ref:`spatialcovariance`.
+ * Two additional variables (``$MANGACORE_VER`` and
+   ``$MANGACORE_DIR``) are used in a specific mode of survey-level
+   execution of the DAP. However, this is a niche usage mode and is
+   effectively never used. See :ref:`execution-rundap`.
+ * The DAP expects to find the DRP ``LOGCUBE`` and ``LOGRSS`` files
+   in the directory
+   ``$MANGA_SPECTRO_REDUX/$MANGADRP_VER/[PLATE]/stack``, where
+   ``[PLATE]`` is the desired plate number. The ``LOGRSS`` files are
+   required if you want to properly account for
+   :ref:`spatialcovariance`. This path can be altered when executing
+   the DAP.
  * The DAP expects to find/write data to
-   ``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER``.
+   ``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER``. This path
+   can be altered when executing the DAP, but the directory structure
+   below this used by the DAP to organize its outputs cannot be
+   changed.
  * ``$MANGADAP_VER`` is only used to set the path names, not to select
    the specific version of the DAP that should be used.  The version of
    the DAP used is always the one installed by your python environment.

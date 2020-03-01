@@ -2,8 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Defines a class used to produce and provide an interface for data
-required to create the input `SDSS-style parameter file`_ for the DAP,
-the :ref:`execution-obs-input` file.
+required to create :ref:`execution-config`.
 
 The drpcomplete file/data is primarily required for the survey-level
 :ref:`execution` of the DAP. However, it does provide useful information

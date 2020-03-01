@@ -5,12 +5,13 @@ import argparse
 import numpy
 
 from astropy.io import fits
+import astropy.constants
 
 from mangadap.datacube import MaNGADataCube
 from mangadap.survey.drpcomplete import DRPComplete
 
 def parse_args(options=None):
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('plate', type=int, help='Plate number')
     parser.add_argument('ifudesign', type=int, help='IFU design number')
     parser.add_argument('ofile', type=str, help='Output file name')
@@ -52,9 +53,15 @@ def main(args):
             root_dir = '.'
         drpver = args.drpcomplete[args.drpcomplete.find('_v')+1 : args.drpcomplete.find('.fits')]
         drpc = DRPComplete(drpver=drpver, directory_path=root_dir, readonly=True)
-        drpc.write_config(args.ofile, plate=args.plate, ifudesign=args.ifudesign,
-                          sres_ext=args.sres_ext, sres_fill=args.sres_fill,
-                          covar_ext=args.covar_ext, overwrite=args.overwrite)
+        index = drpc.entry_index(args.plate, args.ifudesign)
+        MaNGADataCube.write_config(args.ofile, drpc['PLATE'][index], drpc['IFUDESIGN'][index],
+                                   log=True,
+                                   z=drpc['VEL'][index]/astropy.constants.c.to('km/s').value,
+                                   vdisp=drpc['VDISP'][index], ell=drpc['ELL'][index],
+                                   pa=drpc['PA'][index], reff=drpc['REFF'][index],
+                                   sres_ext=args.sres_ext, sres_fill=args.sres_fill,
+                                   covar_ext=args.covar_ext, drpver=args.drpver,
+                                   redux_path=args.redux_path, overwrite=args.overwrite)
         return
 
     # Use the DRPall file

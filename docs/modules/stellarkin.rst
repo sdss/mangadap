@@ -40,7 +40,7 @@ Stellar Kinematics
      bias
 
 *Important class dependencies:*
- - :class:`mangadap.proc.spectralfitting.StellarKinematicsFit``:
+ - :class:`mangadap.proc.spectralfitting.StellarKinematicsFit`:
    Provides the abstracted base classes for stellar kinematics fits.
  - :class:`mangadap.util.pixelmask.SpectralPixelMask`: Used to mask the
    fitting regions for the fit.
@@ -74,7 +74,7 @@ Stellar Kinematics
    object, select all binned spectra with S/N greater than
    ``minimum_snr`` in config.
  - The DAP nominally provides the stellar-continuum fit with the
-   velocity and velocity dispersion from :ref:`execution-obs-input` as
+   velocity and velocity dispersion from :ref:`execution-config` as
    its initial guess redshift and velocity dispersion.
  - Instantiate the
    :class:`mangadap.proc.templatelibrary.TemplateLibrary` objects as

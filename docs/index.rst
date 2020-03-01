@@ -35,12 +35,12 @@ These quantities currently include:
  * Spectral indices: absorption-line (e.g., H-delta) and bandhead/color
    (e.g., TiO, D4000) measurements
 
-All survey-led properties are derived from the datacubes, specifically
-the LOGCUBE files.  However, the core functions are developed to
-consider each spectrum largely independently.  The DAP currently focuses
-on "model-independent" properties.  Higher-level, model-dependent
-properties, such as stellar-population parameters, will be included in
-future releases on a best-effort basis.
+All survey-led properties are derived from the datacubes,
+specifically the LOGCUBE files. However, the core functions are
+developed to consider each spectrum largely independently. The DAP
+currently focuses on "model-independent" properties. Higher-level,
+model-dependent properties, such as stellar-population parameters,
+are outside of the scope of the current pipeline.
 
 .. warning::
     
@@ -112,7 +112,7 @@ If you use the DAP software and/or its output products, please cite the followin
    fitonespec
    fitonecube
 
-The MaNGA DAP software was written to be more broadely useful.  The
+The MaNGA DAP software was written to be more broadly useful. The
 pages above provide some examples of how the code can be used more
 generally, beyond its application to MaNGA.
 

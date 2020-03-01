@@ -67,7 +67,7 @@ Spatial Binning
       ``$MANGADAP_DIR/python/mangadap/config/spatial_binning/nre.ini``
       for the ``NRE`` binning case.  If ``pa``, ``ell``, or
       ``radius_scale`` are -1, they are replaced by ``pa``, ``ell``, and
-      ``reff``, respectively, from the :ref:`execution-obs-input`.
+      ``reff``, respectively, from :ref:`execution-config`.
     - ``voronoi`` (e.g., ``VOR10`` binning type): Use the Voronoi
       tessellation binning algorithm (written by M. Cappellari; see
       `here <https://pypi.org/project/vorbin/>`__) to continually accrete

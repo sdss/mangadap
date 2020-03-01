@@ -1,9 +1,9 @@
 import os
 import glob
 import time
-import numpy
+import argparse
 
-from argparse import ArgumentParser
+import numpy
 
 from matplotlib import pyplot, rc, colors, colorbar, ticker
 
@@ -538,7 +538,7 @@ def spotcheck_images(analysis_path, daptype, plate, ifudesign, ofile=None, drpve
     
 
 def parse_args(options=None):
-    parser = ArgumentParser()
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('plate', type=int, help='plate ID to process')
     parser.add_argument('ifudesign', type=int, help='IFU design to process')
@@ -571,10 +571,8 @@ def main(args):
 
     daptypes = []
     if args.daptype is None:
-        plan_file = defaults.dap_plan_file(drpver=args.drpver, dapver=args.dapver,
-                                                   analysis_path=args.analysis_path) \
-                                            if args.plan_file is None else args.plan_file
-        analysisplan = AnalysisPlanSet.from_par_file(plan_file)
+        analysisplan = AnalysisPlanSet.default() if args.plan_file is None \
+                            else AnalysisPlanSet.from_par_file(args.plan_file)
         for p in analysisplan:
             bin_method = SpatiallyBinnedSpectra.define_method(p['bin_key'])
             sc_method = StellarContinuumModel.define_method(p['continuum_key'])

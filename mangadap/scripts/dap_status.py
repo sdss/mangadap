@@ -5,7 +5,7 @@ import glob
 import mmap
 import numpy
 
-from argparse import ArgumentParser
+import argparse
 
 from mangadap.config import defaults
 from mangadap.par.analysisplan import AnalysisPlanSet
@@ -186,7 +186,7 @@ def dap_status(analysis_path, daptypes, logdir=None):
 
 
 def parse_args(options=None):
-    parser = ArgumentParser()
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('plan_file', type=str, help='parameter file with the MaNGA DAP '
                         'execution plan to use instead of the default')
 

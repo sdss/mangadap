@@ -1,5 +1,5 @@
 
-.. _astropy.io.fits.HDUList: https://docs.astropy.org/en/stable/io/fits/api/hdulists.html#astropy.io.fits.HDUList
+.. include:: links.rst
 
 .. _development:
 
@@ -11,37 +11,44 @@ interaction with the software to make subtle changes to its execution
 parameters.  For help with the high-level interaction with the DAP
 parameters, see the description of its :ref:`execution`.
 
-However, we have also specifically constructed the low-level, core
-algorithms in a way that is largely agnostic to the data being analyzed.
-This should allow users to use DAP methods/classes in new scripts
-tailored to their own needs and analysis of non-MaNGA data.
+We have also recently abstracted the input to the DAP to allow for
+custom :class:`mangadap.datacube.datacube.DataCube` objects to be
+provided by the user, enabling the DAP to analyze non-MaNGA
+data; see :ref:`datacube`.
+
+Additionally, we have constructed the low-level, core algorithms in a
+way that is largely agnostic to the data being analyzed. This should
+allow users to use DAP methods/classes in new scripts tailored to
+their own needs and analysis of non-MaNGA data. For example, we
+demonstrate :ref:`fitonespec` using the DAP fitting modules.
 
 We are very interested in having the community building on the existing
 DAP algorithms.  As a means of introducing some of the nuances of its
 structure, the following is list of some of the guidelines we tried to
 follow in the development of the code:
 
- - Minimize code repetition by isolating repeated functionality into a
+ * Minimize code repetition by isolating repeated functionality into a
    flexible function or class.
- - Provide utility level classes that ease interaction with the input
+ * Provide utility level classes that ease interaction with the input
    and output data.
- - Provide utility level classes that ease inclusion of new spectral
+ * Provide utility level classes that ease inclusion of new spectral
    template libraries, emission-line parameters, and spectral-index
-   paraemters for use in the main analysis classes.
- - Compartmentalize analysis into low-level functions that are
+   parameters for use in the main analysis classes.
+ * Compartmentalize analysis into low-level functions that are
    independent of the specifics of the MaNGA data.
- - Generalize the interfaces of these low-level functions such that they
+ * Generalize the interfaces of these low-level functions such that they
    can be incorporated into user-level scripts.
- - Where possible and appropriate, ensure the low-level functions
+ * Where possible and appropriate, ensure the low-level functions
    operate on arrays of spectra that can effectively be considered
    independent of one another.
- - Minimize hardcoded behavior in favor of parameter files.
- - Provide an infrastructure that includes hooks for user-provided
+ * Minimize hard-coded behavior in favor of parameter or
+   configuration files.
+ * Provide an infrastructure that includes hooks for user-provided
    functions to override the base-level DAP analysis functions while
    still maintaining the output DAP datamodel.
- - Use an `astropy.io.fits.HDUList`_ object as the primary interface to
+ * Use an `astropy.io.fits.HDUList`_ object as the primary interface to
    the high-level classes to generalize interaction and allow them to be
-   directly written to their reference fits files with a well formed
+   directly written to their reference fits files with a well-formed
    datamodel.
 
 .. _templatelibrary-dev-example:
@@ -53,7 +60,17 @@ As an example of what some of this looks like in practice, consider the
 :ref:`templatelibrary-usage` for a
 :class:`mangadap.proc.templatelibrary.TemplateLibrary`.
 
-The :class:`mangadap.proc.templatelibrary.TemplateLibrary` object is setup to read and process the template library used to model the stellar continuum.  The survey-level execution of the DAP currently uses the ``MILESHC`` library for the stellar kinematics and the ``MASTARHC`` library for the stellar continuum model in the emission-line module.  The way that the DAP knows where to find the templates and how to process them is via the configuration files that live in ``$MANGADAP_DIR/python/mangadap/config/spectral_templates``.  The one specific to the ``MILESHC`` library is ``$MANGADAP_DIR/python/mangadap/config/spectral_templates/miles_hc.ini`` and looks like this:
+The :class:`mangadap.proc.templatelibrary.TemplateLibrary` object is
+setup to read and process the template library used to model the
+stellar continuum. The survey-level execution of the DAP currently
+uses the ``MILESHC`` library for the stellar kinematics and the
+``MASTARHC`` library to model the stellar continuum in the
+emission-line module. The way that the DAP knows where to find the
+templates and how to process them is via the configuration files
+located in ``$MANGADAP_DIR/mangadap/config/spectral_templates``. The
+one specific to the ``MILESHC`` library is
+``$MANGADAP_DIR/mangadap/config/spectral_templates/miles_hc.ini`` and
+looks like this:
 
 .. code-block:: ini
 
@@ -62,7 +79,7 @@ The :class:`mangadap.proc.templatelibrary.TemplateLibrary` object is setup to re
 
     [default]
      key              = MILESHC
-     file_search      = ${Path:dapsrc}/data/spectral_templates/miles_cluster/*.fits
+     file_search      = ${Path:dapsrc}/mangadap/data/spectral_templates/miles_cluster/*.fits
      fwhm             = 2.50
      sres_ext
      in_vacuum        = False
@@ -70,68 +87,68 @@ The :class:`mangadap.proc.templatelibrary.TemplateLibrary` object is setup to re
      lower_flux_limit = 0.0
      log10            = False
 
-This configuration (ini) file allows one to construct the ``MILESHC`` library as follows:
+This configuration (ini) file allows one to construct the ``MILESHC``
+library as follows:
 
 .. code-block:: python
 
     tpl = TemplateLibrary('MILESHC',
-                          match_to_drp_resolution=False,
                           velscale_ratio=4,     # Set the pixel size to 1/4 the MaNGA step
                           spectral_step=1e-4,   # The MaNGA step is dlogLambda = 1e-4
                           log=True,             # Sample the templates logarithmically
                           hardcopy=False)       # Don't save a hardcopy of the library to disk
 
 This is possible because the DAP reads all the ini files in the
-``$MANGADAP_DIR/python/mangadap/config/spectral_templates`` directory
-and selects the file where ``key = MILESHC``.  If you have a template
+``$MANGADAP_DIR/mangadap/config/spectral_templates`` directory
+and selects the file with ``key = MILESHC``.  If you have a template
 library that you want to use that's not provided by the DAP, you can
 write a configuration file and put it in the appropriate directory such
 that it can be selected by the key.
 
-The template library key for use with the stellar-continuum fitting is
-defined in a separate configuration file specific to the
+The template library key for use with the stellar-continuum fitting
+is defined in a separate configuration file specific to the
 stellar-continuum fitting class; these are kept in
-``$MANGADAP_DIR/python/mangadap/config/stellar_continuum_modeling``.
-For example, the ``GAU-MILESHC`` configuration file looks like this:
+``$MANGADAP_DIR/mangadap/config/stellar_continuum_modeling``. For
+example, the ``MILESHCMPL9`` configuration file looks like this:
 
 .. code-block:: ini
 
     [default]
-     key                    = GAU-MILESHC
-     fit_type               = stellar_kinematics
-     fit_method             = ppxf
-     fit_iter               = nonzero_templates
-     reject_boxcar          = 100
-     filter_boxcar
-     filter_op
-     filter_iter
-     filter_degree
-     filter_mdegree
-     minimum_snr            = 1.0
-     waverange
-     artifact_mask          = BADSKY
-     emission_line_mask     = ELPFULL
-     template_library       = MILESHC
-     match_resolution       = False
-     velscale_ratio         = 4
-     moments                = 2
-     degree                 = 8
-     mdegree                = -1
-     bias
+    key                    = MILESHCMPL9
+    fit_type               = stellar_kinematics
+    fit_method             = ppxf
+    fit_iter               = nonzero_templates
+    reject_boxcar          = 100
+    filter_boxcar
+    filter_op
+    filter_iter
+    filter_degree
+    filter_mdegree
+    minimum_snr            = 1.0
+    waverange
+    artifact_mask          = BADSKY
+    emission_line_mask     = ELPMPL8
+    template_library       = MILESHC
+    match_resolution       = False
+    velscale_ratio         = 4
+    moments                = 2
+    degree                 = 8
+    mdegree                = -1
+    bias
 
 You can see that the file defines ``template_library = MILESHC``.  To
 execute the full DAP using a new template library is a matter of setting
 up these configuration files.
 
 However, you can also write scripts that incorporate the DAP
-functionality without the need to add configuration files.  Assume you
+functionality without the need to add configuration files. Assume you
 have a script that uses a
 :class:`mangadap.proc.templatelibary.TemplateLibrary` object, you can
 define a new template library in the code itself using the
-:class:`mangadap.proc.templatelibrary.TemplateLibraryDef`` object.  The
-:class:`mangadap.proc.templatelibrary.TemplateLibraryDef`` object is
+:class:`mangadap.proc.templatelibrary.TemplateLibraryDef` object. The
+:class:`mangadap.proc.templatelibrary.TemplateLibraryDef` object is
 actually the product of the parsed configuration file within the main
-DAP code.  For example:
+DAP code. For example:
 
 .. code-block:: python
 
@@ -151,7 +168,8 @@ DAP code.  For example:
                                      lower_flux_limit=0.0,   # Lower limit for valid flux
                                      log10=False)            # Log binned?
 
-    # Or if you there is an extension SPECRES in *all* the files with the spectral resolution:
+    # Or if you there is an extension SPECRES in *all* the files with
+    # the spectral resolution:
     new_tpl_list = [new_tpl_list,
                     TemplateLibraryDef(key='MYLIB_SRES',       # Unique library keyword
                                        file_search=search_sres_str, # Search string
@@ -165,7 +183,6 @@ DAP code.  For example:
     # Read and process template library
     tpl = TemplateLibrary('MYLIB',
                           tpllib_list=new_tpl_lst,  # Available list of template libraries
-                          match_to_drp_resolution=False,    # Match the spectral resolution?
                           velscale_ratio=4,     # Set the pixel size to 1/4 the MaNGA step
                           spectral_step=1e-4,   # The MaNGA step is dlogLambda = 1e-4
                           log=True,             # Sample the templates logarithmically
@@ -175,25 +192,25 @@ DAP code.  For example:
 Adding new functionality
 ------------------------
 
-The pairing of the defining parameters of a specific analysis method and
-the instantiation of the method itself, like what I show above, is
-ubiquitous in the DAP, following from one of the main design principles.
-Apart from allowing one to alter the details of how the DAP proceeds via
-changing or adding configuration files (instead of changing the code
-itself), this also facilitates incorporating new algorithms within the
-existing infrastructure.
+The pairing of the defining parameters of a specific analysis method
+and the instantiation of the method itself, like what is shown above,
+is ubiquitous in the DAP, following from one of the main design
+principles. Apart from allowing one to alter the details of how the
+DAP proceeds via changing or adding configuration files (instead of
+changing the code itself), this also facilitates incorporating new
+algorithms within the existing infrastructure.
 
 The implementation of hooks for including new algorithms into the DAP
 infrastructure exists; however, it is minimal in some respects and
-hasn't been well tested.  That means that, for anyone that tries this,
+hasn't been well tested. That means that, for anyone that tries this,
 there are sure to be some growing pains in making sure it works
-properly.  At the moment, a primary limitation to incorporating new
-algorithms is that the procedure is not as simple as adding a new file
-with code in the ``$MANGADAP_DIR/python/mangadap/contrib`` directory and
-a new configuration file.  Instead, one has to alter a number of bits of
-code in the DAP.  There are a few ways to do this, but testing of these
-methods has been limited.  The following are two sketched out examples
-of including new functionality or algorithms.
+properly. At the moment, a primary limitation to incorporating new
+algorithms is that the procedure is not as simple as adding a new
+file with code in the ``$MANGADAP_DIR/mangadap/contrib`` directory
+and a new configuration file. Instead, one has to alter a number of
+bits of code in the DAP. There are a few ways to do this, but testing
+of these methods has been limited. The following are two sketched out
+examples of including new functionality or algorithms.
 
 1. Adding a new binning scheme
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -224,7 +241,7 @@ of this function must be:
         return bin_id
 
 That is, the function must take in the on-sky x and y positions of each
-spaxel, accept some set of parameters provided by the `par` dictionary
+spaxel, accept some set of parameters provided by the ``par`` dictionary
 and return a bin ID number associated with each x and y position.
  
 So let's say that you wanted to bin all spectra in a set of apertures.
@@ -242,7 +259,7 @@ follows (the code is untested!):
     import numpy
     import astropy.constants
 
-    from mangadap.drpfits import DRPFits
+    from mangadap.datacube import MaNGADataCube
     from mangadap.proc.reductionassessments import ReductionAssessment
     from mangadap.proc.spectralstack import SpectralStackPar, SpectralStack
     from mangadap.proc.spatiallybinnedspectra import SpatiallyBinnedSpectra, SpatiallyBinnedSpectraDef
@@ -321,10 +338,10 @@ follows (the code is untested!):
         nsa_redshift = vel/astropy.constants.c.to('km/s').value
 
         # Read the DRP LOGCUBE file
-        drpf = DRPFits(plate, ifu, 'CUBE', read=True)
+        cube = MaNGADataCube.from_plateifu(plate, ifu)
 
         # Calculate the S/N and coordinates
-        rdxqa = ReductionAssessment('SNRG', drpf)
+        rdxqa = ReductionAssessment('SNRG', cube)
 
         # Setup the aperture binning class
         ax = numpy.array([0.0, 3.0, 6.0])
@@ -336,8 +353,7 @@ follows (the code is untested!):
                                     False,          # Apply a velocity registration
                                     None,           # Velocity offsets for registration
                                     'channels',     # Covariance mode and parameters
-                                    SpectralStack.parse_covariance_parameters('channels', 11),
-                                    True)           # Propagate the LSF through the stacking
+                                    SpectralStack.parse_covariance_parameters('channels', 11))
         stacker = SpectralStack()
 
         # Create a new binning method
@@ -350,13 +366,11 @@ follows (the code is untested!):
                                                    apbin.bin_spaxels,   # Binning function
                                                    stackpar,        # Object with stacking pars
                                                    stacker,         # Stacking class instance
-                                                   stacker.stack_DRPFits,   # Stacking function
-                                                   'spaxel',        # LSF characterization to use
-                                                   True)            # Use the pre-pixelized LSF
+                                                   stacker.stack_datacube)   # Stacking function
 
         # Bin the spectra using the new binning method
         binned_spectra = SpatiallyBinnedSpectra('Aperture',     # Key for binning method
-                                                drpf,           # DRP data to bin
+                                                cube,           # DRP data to bin
                                                 rdxqa,          # Cube coordinates and S/N
                                                 method_list=binning_method) # Binning methods
 
@@ -379,13 +393,13 @@ follows (the code is untested!):
                                            stellar_continuum=stellar_continuum,
                                            emission_line_model=emission_line_model)
 
-        construct_maps_file(drpf, rdxqa=rdxqa, binned_spectra=binned_spectra,
+        construct_maps_file(cube, rdxqa=rdxqa, binned_spectra=binned_spectra,
                             stellar_continuum=stellar_continuum,
                             emission_line_moments=emission_line_moments,
                             emission_line_model=emission_line_model,
                             spectral_indices=spectral_indices, nsa_redshift=nsa_redshift)
 
-        construct_cube_file(drpf, binned_spectra=binned_spectra,
+        construct_cube_file(cube, binned_spectra=binned_spectra,
                             stellar_continuum=stellar_continuum,
                             emission_line_model=emission_line_model)
 
@@ -406,7 +420,7 @@ data model.  Still, it can be done, it's just that one has to follow
 more requirements that can be more stringent.
 
 Let's say you want to add a new emission-line fitter (as we did for
-MPL-6 in changing from :class:mangadap.proc.elric.Elric` to
+MPL-6 in changing from :class:`mangadap.proc.elric.Elric` to
 :class:`mangadap.proc.sasuke.Sasuke`).  The class that constructs the
 parameterized emission-line models is
 :class:`mangadap.proc.emissionlinemodel.EmissionLineModel`.  The method
@@ -497,7 +511,7 @@ same DAP output data model:
     import numpy
     import astropy.constants
 
-    from mangadap.drpfits import DRPFits
+    from mangadap.datacube import MaNGADataCube
     from mangadap.proc.reductionassessments import ReductionAssessment
     from mangadap.proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
     from mangadap.proc.stellarcontinuummodel import StellarContinuumModel
@@ -546,9 +560,9 @@ same DAP output data model:
             velscale = spectrum_velocity_scale(wave)
             # Flux and noise masked arrays; shape is (Nspaxels,Nwave)
             # where Nspaxels is Nx*Ny
-            flux = binned_spectra.drpf.copy_to_masked_array(flag=['DONOTUSE', 'FORESTAR'])
-            noise = numpy.ma.power(binned_spectra.drpf.copy_to_masked_array(
-                                        ext='IVAR', flag=['DONOTUSE', 'FORESTAR']), -0.5)
+            flux = binned_spectra.cube.copy_to_masked_array(flag=['DONOTUSE', 'FORESTAR'])
+            noise = numpy.ma.power(binned_spectra.cube.copy_to_masked_array(
+                                        attr='ivar', flag=['DONOTUSE', 'FORESTAR']), -0.5)
             # Spaxel coordinates; shape is (nspaxels,)
             x = binned_spectra.rdxqa['SPECTRUM'].data['SKY_COO'][:,0]
             y = binned_spectra.rdxqa['SPECTRUM'].data['SKY_COO'][:,1]
@@ -669,7 +683,7 @@ same DAP output data model:
                 # Construct the full 3D cube for the stellar continuum
                 # models
                 sc_model_flux, sc_model_mask \
-                        = DAPFitsUtil.reconstruct_cube(binned_spectra.drpf.shape,
+                        = DAPFitsUtil.reconstruct_cube(binned_spectra.shape,
                                                        self.par['stellar_continuum']['BINID'].data,
                                                    [ self.par['stellar_continuum']['FLUX'].data,
                                                      self.par['stellar_continuum']['MASK'].data ])
@@ -679,7 +693,7 @@ same DAP output data model:
                 # Construct the full 3D cube of the new stellar
                 # continuum from the combined stellar-continuum +
                 # emission-line fit
-                el_continuum = DAPFitsUtil.reconstruct_cube(binned_spectra.drpf.shape, model_binid,
+                el_continuum = DAPFitsUtil.reconstruct_cube(binned_spectra.shape, model_binid,
                                                             model_flux - model_eml_flux)
                 # Get the difference, restructure it to match the shape
                 # of the emission-line models, and zero any masked
@@ -725,13 +739,13 @@ same DAP output data model:
         nsa_redshift = vel/astropy.constants.c.to('km/s').value
 
         # Read the DRP LOGCUBE file
-        drpf = DRPFits(plate, ifu, 'CUBE', read=True)
+        cube = MaNGADataCube.from_plateifu(plate, ifu)
 
         # Calculate the S/N and coordinates
-        rdxqa = ReductionAssessment('SNRG', drpf)
+        rdxqa = ReductionAssessment('SNRG', cube)
 
         # Peform the Voronoi binning to S/N>~10
-        binned_spectra = SpatiallyBinnedSpectra('VOR10', drpf, rdxqa)
+        binned_spectra = SpatiallyBinnedSpectra('VOR10', cube, rdxqa)
 
         # Fit the stellar kinematics
         stellar_continuum = StellarContinuumModel('GAU-MILESHC', binned_spectra, guess_vel=vel,
@@ -788,13 +802,13 @@ same DAP output data model:
                                            stellar_continuum=stellar_continuum,
                                            emission_line_model=emission_line_model)
 
-        construct_maps_file(drpf, rdxqa=rdxqa, binned_spectra=binned_spectra,
+        construct_maps_file(cube, rdxqa=rdxqa, binned_spectra=binned_spectra,
                             stellar_continuum=stellar_continuum,
                             emission_line_moments=emission_line_moments,
                             emission_line_model=emission_line_model,
                             spectral_indices=spectral_indices, nsa_redshift=nsa_redshift)
 
-        construct_cube_file(drpf, binned_spectra=binned_spectra,
+        construct_cube_file(cube, binned_spectra=binned_spectra,
                             stellar_continuum=stellar_continuum,
                             emission_line_model=emission_line_model)
 

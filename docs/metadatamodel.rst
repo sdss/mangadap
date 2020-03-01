@@ -355,11 +355,10 @@ execute the DAP, as created by the ``rundap`` script
 
 See :ref:`execution-rundap`.
 
-Observational parameter file
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Datacube Configuration File
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-For a general description the ``ObsInputPar`` file, see
-:ref:`execution-obs-input`.
+For a general description, see :ref:`execution-config`.
 
 *File template*: ``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/common/[PLATE]/[IFUDESIGN]/mangadap-[PLATE]-[IFUDESIGN]-LOG[MODE].par``
 

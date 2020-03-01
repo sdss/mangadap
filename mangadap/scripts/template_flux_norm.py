@@ -2,7 +2,7 @@ import os
 import time
 import numpy
 
-from argparse import ArgumentParser
+import argparse
 
 from scipy import interpolate
 
@@ -13,7 +13,7 @@ from mangadap.util.sampling import spectral_coordinate_step
 
 def parse_args(options=None):
 
-    parser = ArgumentParser()
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('key', type=str, help='DAP template-library key')
     parser.add_argument('ofile', type=str, help='Output file name')

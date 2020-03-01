@@ -390,7 +390,9 @@ def manga_dap(cube, plan, dbg=False, log=None, verbose=0, drpver=None, redux_pat
                             analysis_path=_analysis_path, clobber=True, loggers=loggers,
                             single_precision=True)
 
-        # Force memory to be freed
+        # Mark for next garbage collection.
+        # TODO: Not sure this is useful because these variables may
+        # just get immediately defined again in the next iteration.
         del spectral_indices
         del emission_line_model
         del emission_line_moments
