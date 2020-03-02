@@ -292,23 +292,21 @@ the table extension has the following columns:
       of the IFU field of view.  The IFU center coordinates are provided
       in DRPall file (**link**) as ``IFURA`` and ``IFUDEC``.
     * The MaNGA ID is defined as ``[CATID]-[CATINDX]`` (**link**)
-    - For the main survey galaxies, ``TRG_VERSION`` and ``TRG_ID`` are
+    * For the main survey galaxies, ``TRG_VERSION`` and ``TRG_ID`` are
       drawn from the NASA-Sloan atlas and are identical to
       'nsa_nsa_version' and 'nsa_nsaid' in the DRPall file (**link**).
-    - The targeting bits are defined (**link**).
-    - The redshifts from the NSA and ancillary-program catalogs are
+    * The targeting bits are defined (**link**).
+    * The redshifts from the NSA and ancillary-program catalogs are
       consolidated into the 'z' column in the DRPall file.  See
       discussion of the "redshift fix file" below.
-    - The characteristic velocity dispersion is virtually always not
+    * The characteristic velocity dispersion is virtually always not
       available and set to -9999.  In this case, the DAP will default to
       a dispersion of 100 km/s.
-
-    - For main survey galaxies, photometric measurements are taken from
+    * For main survey galaxies, photometric measurements are taken from
       'nsa_ba', 'nsa_phi' and 'nsa_petro_th50_el' in the DRPall file.
       If any of these values do not exist or are 'nan', they are set to
       -9999.0.  **Importantly**, these placeholder values are replaced by
       ``ELL=0; PA=0; REFF=1`` when processed by the DAP.
-
 
 .. _metadatamodel-redshift-fix:
 

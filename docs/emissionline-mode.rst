@@ -10,13 +10,13 @@ The valid modes are:
       this line and the line with index ``N``.
     * ``xN``: Used by :class:`mangadap.proc.elric.Elric` only.  Fit the
       line with its flux tied to the line with index ``N``.
-    - ``vN``: Fit the line with the velocity tied to the line with index
+    * ``vN``: Fit the line with the velocity tied to the line with index
       ``N``.
-    - ``sN``: Fit the line with the velocity dispersion tied to the line
+    * ``sN``: Fit the line with the velocity dispersion tied to the line
       with index ``N``.
-    - ``kN``: Fit the line with the velocity and velocity dispersion
+    * ``kN``: Fit the line with the velocity and velocity dispersion
       tied to the line with index ``N``.
-    - ``aN``: Fit the line with the flux, velocity, and velocity
+    * ``aN``: Fit the line with the flux, velocity, and velocity
       dispersion tied to the line with index ``N``.
 
 As noted in the mode description, many of the modes are only

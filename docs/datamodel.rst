@@ -20,7 +20,7 @@ DAP Directory Structure
 
 The root output directory is codified in the environmental variable
 ``$MANGA_SPECTRO_ANALYSIS``.  On the (internal) SAS, the root directory
-is `here <https://data.sdss.org/sas/mangawork/manga/spectro/analysis/>`_.
+is `here <https://data.sdss.org/sas/mangawork/manga/spectro/analysis/>`__.
 
 The results of each run of the DAP are tied to the DRP version used
 to produce the analyzed datacubes and version of the DAP used to do
@@ -552,7 +552,7 @@ model spectrum for each spectrum that was successfully fit.  These files
 are useful for detailed assessments of the model parameters because they
 allow you to return to the spectra and compare the model against the
 data.  As described by the `DAP Overview paper
-<https://ui.adsabs.harvard.edu/abs/2019arXiv190100856W/abstract>`_, the
+<https://ui.adsabs.harvard.edu/abs/2019arXiv190100856W/abstract>`__, the
 DAP fits the spectra in two stages, one to get the stellar kinematics
 and the second to determine the emission-line properties.  The
 emission-line module (used for all binning schemes) fits both the
@@ -743,7 +743,7 @@ Measurement of stellar (and gas!) velocity dispersions in MaNGA is
 complicated by the spectral resolution, particularly at low S/N and low
 :math:`\sigma`.  Please tread carefully!  In particular, please consult
 Section 7.7 of the `DAP Overview paper
-<https://ui.adsabs.harvard.edu/abs/2019AJ....158..231W/abstract>`_ for a
+<https://ui.adsabs.harvard.edu/abs/2019AJ....158..231W/abstract>`__ for a
 detailed discussion of best practices for the stellar velocity
 dispersion data.
 

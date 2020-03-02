@@ -161,7 +161,7 @@ fit the emission lines.
     * All spectra with 80% valid pixels will have a combined
       emission-line+stellar-continuum model, where the stellar
       kinematics have been fixed by the fits to the binned spectra.
-    - This is the only file where the bin IDs are different for the
+    * This is the only file where the bin IDs are different for the
       emission-line properties and spectral indices.
 
 Output files
