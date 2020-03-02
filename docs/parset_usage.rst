@@ -1,15 +1,16 @@
 
 .. just to avoid warnings
+
 .. _astropy.io.fits.Header: http://docs.astropy.org/en/stable/io/fits/api/headers.html#header
 
 Parameter sets are used to control the behavior of internal methods from
-top-level input.  Paramater sets:
+top-level input.  Parameter sets:
 
-    - provide I/O methods for inspection, documentation, and logging
-    - force parameters to have specific data types, including if the
+    * provide I/O methods for inspection, documentation, and logging
+    * force parameters to have specific data types, including if the
       parameter should be callable
-    - specify allowed options for method keyords
-    - provide parameter descriptions
+    * specify allowed options for method keywords
+    * provide parameter descriptions
 
 Beyond this and once instantiated, though, they are similar to a normal
 python dictionary.
@@ -92,7 +93,7 @@ dictionary, with some convenience printing methods::
                    sphinx.
     
 Restrictions are placed on the allowed values and types for the
-parameters, and new keys cannot be added without doing so explicitly::
+parameters and new keys cannot be added without doing so explicitly::
 
     >>> p['test'] = 'the other'
     ...
@@ -202,10 +203,10 @@ The :class:`mangadap.par.parset.KeywordParSet` class is derived from
        :class:`mangadap.par.parset.KeywordParSet` has an ``__init__``
        method that takes a fixed set of keyword arguments.
 
-By overwriting the base class defition,
-:func:`mangadap.par.parset.KeywordParSet.from_dict` takes care of all of
-the other "from" methods because they in turn use this method to
-instantiate the object.
+By overwriting the base class definition,
+:func:`mangadap.par.parset.KeywordParSet.from_dict` takes care of all
+of the other "from" methods because they in turn use this "from_dict"
+method to instantiate the object.
 
 All of the parameter-set classes defined and used by the DAP use
 :class:`mangadap.par.parset.KeywordParSet` as their base.  We can

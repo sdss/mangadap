@@ -6,10 +6,13 @@
 MAPS Corrections
 ================
 
-The :ref:`datamodel-maps` provide values that *must be corrected by the
-user* using provided corrections.
+The :ref:`datamodel-maps` provide values that *must be corrected by
+the user* using provided corrections. It's recommended that you take
+advantage of the convenience methods in `Marvin
+<http://sdss-marvin.readthedocs.io/en/stable/>`_ to apply these
+corrections.
 
-Velocity Dispersion Measurements
+Velocity-Dispersion Measurements
 --------------------------------
 
 Note that the stellar and gas velocity dispersions *must be corrected
@@ -45,7 +48,7 @@ Overview Paper`_ for some usage guidelines and discussion.
 In particular, we have found that it is important to understand the
 error-convolved *distribution* of stellar-velocity-dispersion
 measurements when analyzing the data.  For example, ignoring anything
-that has a converged pPXF fit, even at low S/N and low disperison, will
+that has a converged pPXF fit, even at low S/N and low dispersion, will
 yield a biased determination of the mean (or median) dispersion as a
 function of radius.  Further assessments of the reliability of the data
 is an ongoing process:  Any additional assessments of the data along
@@ -54,7 +57,7 @@ these lines from the collaboration is more than welcome.
 Stellar velocity dispersions are currently provided for two approaches
 to the calculation:  A nominal correction is calculated using the
 quadrature difference between the instrumental dispersion of the
-template and galaxy spectra over the fitted wavelenghth range.  This is
+template and galaxy spectra over the fitted wavelength range.  This is
 the correction provided in MPL-5, MPL-7/DR15.  In MPL-8 and later, we
 also provide a correction based on a fit of the optimal template with
 and without the resolution matched to the MaNGA data.  **For now**, use

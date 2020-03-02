@@ -6,6 +6,13 @@ Defines the class that constructs the DAPall summary table.
 This is a post processing script that **must** be run after the DRPall
 file is created.
 
+.. todo::
+
+    - Include columns with just the absolute luminosity of the
+      H-alpha line as the intermediate step between the apparent
+      luminosity and the star-formation rate.
+    - Provide a rough Balmer decrement measurement?
+
 Revision history
 ----------------
 
