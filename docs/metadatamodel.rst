@@ -577,26 +577,26 @@ The binary table in the ``DAPALL`` extension has the following columns:
 |                   ``HA_Z`` |          double |                                                    | Flux-weighted mean redshift of the Hα line within a 2.5 arcsec aperture at    |
 |                            |                 |                                                    | the galaxy center.                                                            |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
-|             ``HA_GVEL_LO`` |          double |                                               km/s | Gaussian-fitted velocity of the H:math:`\alpha` line at 2.5% growth of all    |
-|                            |                 |                                                    | valid spaxels.                                                                |
+|             ``HA_GVEL_LO`` |          double |                                               km/s | Gaussian-fitted velocity of the :math:`{\rm H}\alpha` line at 2.5% growth     |
+|                            |                 |                                                    | of all valid spaxels.                                                         |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
-|             ``HA_GVEL_HI`` |          double |                                               km/s | Gaussian-fitted velocity of the H:math:`\alpha` line at 97.5% growth of all   |
-|                            |                 |                                                    | valid spaxels.                                                                |
+|             ``HA_GVEL_HI`` |          double |                                               km/s | Gaussian-fitted velocity of the :math:`{\rm H}\alpha` line at 97.5% growth    |
+|                            |                 |                                                    | of all valid spaxels.                                                         |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
-|        ``HA_GVEL_LO_CLIP`` |          double |                                               km/s | Gaussian-fitted velocity of the H:math:`\alpha` line at 2.5% growth after     |
+|        ``HA_GVEL_LO_CLIP`` |          double |                                               km/s | Gaussian-fitted velocity of the :math:`{\rm H}\alpha` line at 2.5% growth     |
+|                            |                 |                                                    | after iteratively clipping :math:`3\sigma` outliers.                          |
++----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
+|        ``HA_GVEL_HI_CLIP`` |          double |                                               km/s | Gaussian-fitted velocity of the :math:`{\rm H}\alpha` line at 97.5% growth    |
 |                            |                 |                                                    | iteratively clipping :math:`3\sigma` outliers.                                |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
-|        ``HA_GVEL_HI_CLIP`` |          double |                                               km/s | Gaussian-fitted velocity of the H:math:`\alpha` line at 97.5% growth after    |
-|                            |                 |                                                    | iteratively clipping :math:`3\sigma` outliers.                                |
+|          ``HA_GSIGMA_1RE`` |          double |                                               km/s | Flux-weighted :math:`{\rm H}\alpha` velocity dispersion (from Gaussian fit)   |
+|                            |                 |                                                    | of all spaxels within 1 :math:`R_e`.                                          |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
-|          ``HA_GSIGMA_1RE`` |          double |                                               km/s | Flux-weighted H:math:`\alpha` velocity dispersion (from Gaussian fit) of all  |
-|                            |                 |                                                    | spaxels within 1 :math:`R_e`.                                                 |
+|           ``HA_GSIGMA_HI`` |          double |                                               km/s | :math:`{\rm H}\alpha` velocity dispersion (from Gaussian fit) at 97.5% growth |
+|                            |                 |                                                    | of all valid spaxels.                                                         |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
-|           ``HA_GSIGMA_HI`` |          double |                                               km/s | H:math:`\alpha` velocity dispersion (from Gaussian fit) at 97.5% growth of    |
-|                            |                 |                                                    | all valid spaxels.                                                            |
-+----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
-|      ``HA_GSIGMA_HI_CLIP`` |          double |                                               km/s | H:math:`\alpha` velocity dispersion (from Gaussian fit) at 97.5% growth after |
-|                            |                 |                                                    | iteratively clipping :math:`3\sigma` outliers.                                |
+|      ``HA_GSIGMA_HI_CLIP`` |          double |                                               km/s | :math:`{\rm H}\alpha` velocity dispersion (from Gaussian fit) at 97.5% growth |
+|                            |                 |                                                    | after iteratively clipping :math:`3\sigma` outliers.                          |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
 |       ``EMLINE_RCHI2_1RE`` |          double |                                                    | Median reduced :math:`\chi^2` of the continuum+emission-line fit within 1     |
 |                            |                 |                                                    | :math:`R_e`.                                                                  |
@@ -604,7 +604,7 @@ The binary table in the ``DAPALL`` extension has the following columns:
 |       ``EMLINE_SFLUX_CEN`` | double (vector) |                  :math:`10^{-17} {\rm erg/s/cm}^2` | Summed emission-line flux integrated within a 2.5 arcsec aperture at the      |
 |                            |                 |                                                    | galaxy center.                                                                |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
-|       ``EMLINE_SFLUX_1RE`` | double (vector) |                  :math:`10^{-17} {\rm erg/s/cm}^2` | Summed emission-line flux integrated within a 1-:math:`R_e` aperture at the   |
+|       ``EMLINE_SFLUX_1RE`` | double (vector) |                  :math:`10^{-17} {\rm erg/s/cm}^2` | Summed emission-line flux integrated within a 1 :math:`R_e` aperture at the   |
 |                            |                 |                                                    | galaxy.                                                                       |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
 |       ``EMLINE_SFLUX_TOT`` | double (vector) |                  :math:`10^{-17} {\rm erg/s/cm}^2` | Total integrated flux of each summed emission measurement within the full     |
@@ -653,20 +653,20 @@ The binary table in the ``DAPALL`` extension has the following columns:
 |          ``SPECINDEX_1RE`` | double (vector) |                                            ang,mag | Median spectral index within 1 :math:`R_e`.                                   |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
 |                ``SFR_1RE`` |          double |                    :math:`h^{-2} {\rm M}_\odot/yr` | Simple estimate of the star-formation rate within 1 :math:`R_e` based on the  |
-|                            |                 |                                                    | Gaussian-fitted H:math:`\alpha` flux;                                         |
+|                            |                 |                                                    | Gaussian-fitted :math:`{\rm H}\alpha` flux;                                   |
 |                            |                 |                                                    | :math:`\log {\rm SFR} = \log L_{{\rm H}\alpha} - 41.27` (Kennicutt & Evans    |
 |                            |                 |                                                    | [2012, ARAA, 50, 531], citing Murphy et al. [2011, ApJ, 737, 67] and Hao et   |
-|                            |                 |                                                    | al. [2011, ApJ, 741, 124]; Kroupa IMF), where :math:`L_{{\rm H}\alpha}`       |
-|                            |                 |                                                    | = 4:math:`\pi` EML_FLUX_1RE (LDIST_Z):math:`^2` and *no* attenuation          |
-|                            |                 |                                                    | correction has been applied.                                                  |
+|                            |                 |                                                    | al. [2011, ApJ, 741, 124]; Kroupa IMF), where                                 |
+|                            |                 |                                                    | :math:`L_{{\rm H}\alpha} = 4\pi {\rm EML_FLUX_1RE} ({\rm LDIST_Z})^2` and     |
+|                            |                 |                                                    | *no* attenuation  correction has been applied.                                |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
 |                ``SFR_TOT`` |          double |                    :math:`h^{-2} {\rm M}_\odot/yr` | Simple estimate of the star-formation rate within the IFU field-of-view based |
 |                            |                 |                                                    | on the Gaussian-fitted H:math:`\alpha` flux;                                  |
 |                            |                 |                                                    | :math:`\log {\rm SFR} = \log L_{{\rm H}\alpha} - 41.27` (Kennicutt & Evans    |
 |                            |                 |                                                    | [2012, ARAA, 50, 531], citing Murphy et al. [2011, ApJ, 737, 67] and Hao et   |
-|                            |                 |                                                    | al. [2011, ApJ, 741, 124]; Kroupa IMF), where :math:`L_{{\rm H}\alpha}`       |
-|                            |                 |                                                    | = 4:math:`\pi` EML_FLUX_1RE (LDIST_Z):math:`^2` and *no* attenuation          |
-|                            |                 |                                                    | correction has been applied.                                                  |
+|                            |                 |                                                    | al. [2011, ApJ, 741, 124]; Kroupa IMF), where                                 |
+|                            |                 |                                                    | :math:`L_{{\rm H}\alpha} = 4\pi {\rm EML_FLUX_1RE} ({\rm LDIST_Z})^2` and     |
+|                            |                 |                                                    | *no* attenuation  correction has been applied.                                |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
 
 .. note::

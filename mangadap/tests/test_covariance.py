@@ -111,6 +111,18 @@ def test_var():
             'Result should be an identity matrix'
 
 
+def test_array():
+    # Construct the Covariance matrix from a pre-calculated array
+    c = numpy.diag(numpy.full(10-2, 0.2, dtype=float), k=-2) \
+            + numpy.diag(numpy.full(10-1, 0.5, dtype=float), k=-1) \
+            + numpy.diag(numpy.full(10, 1.0, dtype=float), k=0) \
+            + numpy.diag(numpy.full(10-1, 0.5, dtype=float), k=1) \
+            + numpy.diag(numpy.full(10-2, 0.2, dtype=float), k=2)
+    covar = Covariance.from_array(c)
+    # Should be the same as the identity matrix.
+    assert numpy.array_equal(covar.toarray(), c), 'Arrays should be identical'
+
+
 def test_io():
 
     # Clean up in case of a failure

@@ -1,5 +1,5 @@
 
-.. include:: links.rst
+.. include:: include/links.rst
 
 *********************
 What's New in the DAP

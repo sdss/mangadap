@@ -1,10 +1,4 @@
 
-.. just to avoid the warnings
-
-.. _numpy.ndarray: https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html
-.. _SDSS-style parameter file: http://www.sdss.org/dr15/software/par/
-.. _astropy.io.fits.Header: http://docs.astropy.org/en/stable/io/fits/api/headers.html#header
-
 Bitmasks allow you to define a set of bit values signified by strings,
 and then toggle and interpret bits held by a `numpy.ndarray`_.  For
 example, say you're processing an image and you want to set up a set of

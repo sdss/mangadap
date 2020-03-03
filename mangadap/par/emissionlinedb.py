@@ -48,12 +48,12 @@ Revision history
 ----
 
 .. include license and copyright
-.. include:: ../copy.rst
+.. include:: ../include/copy.rst
 
 ----
 
 .. include common links, assuming primary doc root is up one directory
-.. include:: ../links.rst
+.. include:: ../include/links.rst
 """
 
 import os
@@ -87,9 +87,9 @@ class EmissionLinePar(KeywordParSet):
 
     .. include:: ../tables/emissionlinepar.rst
 
-    .. include:: ../emissionline-action.rst
+    .. include:: ../include/emissionline-action.rst
 
-    .. include:: ../emissionline-mode.rst
+    .. include:: ../include/emissionline-mode.rst
 
     """
     def __init__(self, index=None, name=None, restwave=None, action=None, flux=None, mode=None,

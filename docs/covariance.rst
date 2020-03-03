@@ -4,5 +4,6 @@
 Covariance
 ==========
 
-We have implemented a generalized covariance class.
+.. include:: include/links.rst
+.. include:: include/covariance_usage.rst
 

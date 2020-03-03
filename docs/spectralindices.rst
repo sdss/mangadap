@@ -1,7 +1,7 @@
 
 .. |ang|   unicode:: U+212B
 
-.. include:: links.rst
+.. include:: include/links.rst
 
 .. _spectralindices:
 

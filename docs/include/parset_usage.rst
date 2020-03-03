@@ -1,8 +1,4 @@
 
-.. just to avoid warnings
-
-.. _astropy.io.fits.Header: http://docs.astropy.org/en/stable/io/fits/api/headers.html#header
-
 Parameter sets are used to control the behavior of internal methods from
 top-level input.  Parameter sets:
 

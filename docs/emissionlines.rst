@@ -1,7 +1,7 @@
 
 .. |ang|   unicode:: U+212B
 
-.. include:: links.rst
+.. include:: include/links.rst
 
 .. _emissionlines:
 
@@ -453,14 +453,14 @@ and an example file might look like this:
 Emission-Line "Actions"
 +++++++++++++++++++++++
 
-.. include:: emissionline-action.rst
+.. include:: include/emissionline-action.rst
 
 .. _emission-line-modeling-mode:
 
 Emission-Line "Modes"
 +++++++++++++++++++++
 
-.. include:: emissionline-mode.rst
+.. include:: include/emissionline-mode.rst
 
 Changing the modeling parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

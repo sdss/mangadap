@@ -1,4 +1,6 @@
 
+.. include:: include/links.rst
+
 .. _templatelibraries:
 
 Spectral Template Libraries
@@ -160,5 +162,4 @@ the TemplateLibrary :ref:`templatelibrary-usage` and the
 .. [8] `Vazdekis et al. (2012, MNRAS, 424, 157) <https://ui.adsabs.harvard.edu/abs/2012MNRAS.424..157V/abstract>`_
 .. [9] `Le Borgne et al. (2003, A&A, 402, 433) <https://ui.adsabs.harvard.edu/abs/2003A%26A...402..433L/abstract>`_
 
-.. include:: links.rst
 
