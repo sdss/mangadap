@@ -30,12 +30,12 @@ Revision history
 ----
 
 .. include license and copyright
-.. include:: ../copy.rst
+.. include:: ../include/copy.rst
 
 ----
 
 .. include common links, assuming primary doc root is up one directory
-.. include:: ../links.rst
+.. include:: ../include/links.rst
 """
 import logging
 import time
@@ -51,8 +51,8 @@ import astropy.constants
 import astropy.units
 from astropy.cosmology import FlatLambdaCDM
 
-from .drpfits import DRPQuality3DBitMask
 from .datacube import DataCube
+from .util.drpfits import DRPQuality3DBitMask
 from .util.fitsutil import DAPFitsUtil
 from .util.dapbitmask import DAPBitMask
 from .util.log import log_output

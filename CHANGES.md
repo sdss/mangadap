@@ -15,11 +15,6 @@ TODO
  - Define an emission-line FOM flag that identifies poorly fit lines
  - Documentation of config examples are out of date!
  - Get rid of the filter keyword from the output headers...
- - Abstract input datacube reading
- - Minimize the hurdles to running `manga_dap`; i.e., allow it to run
-   without the input and plan parameter files
- - Stop transposing the datacube data!
- - Get rid of optional `dapsrc` keyword; now defined by the package
  - Fix ELMREBIN in 2nd round of moment calculations (not sure this is
    still a problem...)
  - Keep all the reference files to the common directory?
@@ -81,6 +76,10 @@ TODO
    don't require an analysis plan yanny parameter file.
  - Docstring updates for modules up through `StellarContinuumModel`, but
    still lots to do.
+ - Consolidates the common functionality in `MaNGADataCube` and
+   `MaNGARSS` into a new, repurposed `DRPFits` base class.
+ - Global data from unique DAPTYPEs now put in separate extensions of
+   the DAPall file.
  - Incorporate change from 'PREDISP' to 'LSFPRE' and 'DISP' to 'LSFPOST'
    in the spectral resolution extensions produced by the DRP.
 

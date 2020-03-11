@@ -5,7 +5,7 @@ import os
 import warnings
 import time
 
-from argparse import ArgumentParser
+import argparse
 
 from astropy.io import fits
 
@@ -79,7 +79,7 @@ def find_repeat_observations(output_file, drpver, redux_path, dapver, analysis_p
             double_print(f, '')
 
 def parse_args(options=None):
-    parser = ArgumentParser()
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--drpver', type=str, help='DRP version', default=None)
     parser.add_argument('--redux_path', type=str, help='main DRP output path', default=None)
     parser.add_argument('--dapver', type=str, help='DAP version', default=None)

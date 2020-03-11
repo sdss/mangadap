@@ -14,12 +14,12 @@ Revision history
 ----
 
 .. include license and copyright
-.. include:: ../copy.rst
+.. include:: ../include/copy.rst
 
 ----
 
 .. include common links, assuming primary doc root is up one directory
-.. include:: ../links.rst
+.. include:: ../include/links.rst
 """
 import logging
 import resource
@@ -390,7 +390,9 @@ def manga_dap(cube, plan, dbg=False, log=None, verbose=0, drpver=None, redux_pat
                             analysis_path=_analysis_path, clobber=True, loggers=loggers,
                             single_precision=True)
 
-        # Force memory to be freed
+        # Mark for next garbage collection.
+        # TODO: Not sure this is useful because these variables may
+        # just get immediately defined again in the next iteration.
         del spectral_indices
         del emission_line_model
         del emission_line_moments

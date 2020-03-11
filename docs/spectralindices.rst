@@ -1,7 +1,7 @@
 
 .. |ang|   unicode:: U+212B
 
-.. include:: links.rst
+.. include:: include/links.rst
 
 .. _spectralindices:
 
@@ -117,11 +117,11 @@ measurements.
 Input Data Format
 ~~~~~~~~~~~~~~~~~
 
-The parameters that define the absorption-line index calculations are
+The parameters that define the absorption-line-index calculations are
 provided via the
-:class:`mangadap.par.absorptionindexdb.AbsorptionIndexDB` object, which
-is built using an `SDSS-style parameter file`_.  The core level class
-that calculates the raw absorption-line indices is
+:class:`mangadap.par.absorptionindexdb.AbsorptionIndexDB` object,
+which is built using an `SDSS-style parameter file`_. The core level
+class that calculates the raw absorption-line indices is
 :class:`mangadap.proc.spectralindices.AbsorptionLineIndices`.
 
 The columns of the parameter file are:
@@ -184,22 +184,22 @@ The absorption-line indices are measured by
 :ref:`spectral-index-measurements`.  A set of parameter files that
 define a list of absorption-line index sets are provided with the DAP
 source distribution and located at
-``$MANGADAP_DIR/data/absorption_indices``.  There are a few
+``$MANGADAP_DIR/mangadap/data/absorption_indices``.  There are a few
 methods that you can use to change the set of absorption-line index parameters
 used by :class:`mangadap.proc.spectralindices.SpectralIndices`:
 
     #. To use one of the existing parameter databases, you can change
        the ``absorption_indices`` keyword in the
        :class:`mangadap.proc.spectralindices.SpectralIndices`
-       configuration file.  The keyword should be the capitalized root
-       of the parameter filename.  E.g., to use
-       ``$MANGADAP_DIR/data/absorption_indices/lickindx.par``, set
-       the keyword to ``LICKINDX``.
+       configuration file. The keyword should be the capitalized root
+       of the parameter filename. E.g., to use
+       ``$MANGADAP_DIR/mangadap/data/absorption_indices/lickindx.par``,
+       set the keyword to ``LICKINDX``.
 
-    #. To use a *new* parameter database, write the file and save it in
-       the ``$MANGADAP_DIR/data/absorption_indices/`` directory,
-       and then change the relevant configuration file in the same way
-       as described above.
+    #. To use a *new* parameter database, write the file and save it
+       in the ``$MANGADAP_DIR/mangadap/data/absorption_indices/``
+       directory, and then change the relevant configuration file in
+       the same way as described above.
 
 .. _spectralindices-bandhead:
 
@@ -279,25 +279,26 @@ Changing the bandhead index parameters
 
 The bandhead and color indices are measured by
 :class:`mangadap.proc.spectralindices.SpectralIndices`; see
-:ref:`spectral-index-measurements`.  A set of parameter files that
-define a list of bandhead index sets are provided with the DAP
-source distribution and located at
-``$MANGADAP_DIR/data/bandhead_indices``.  There are a few
-methods that you can use to change the set of bandhead-index parameters
-used by :class:`mangadap.proc.spectralindices.SpectralIndices`:
+:ref:`spectral-index-measurements`. A set of parameter files that
+define a list of bandhead index sets are provided with the DAP source
+distribution and located at
+``$MANGADAP_DIR/mangadap/data/bandhead_indices``. There are a few
+methods that you can use to change the set of bandhead-index
+parameters used by
+:class:`mangadap.proc.spectralindices.SpectralIndices`:
 
     #. To use one of the existing parameter databases, you can change
        the ``bandhead_indices`` keyword in the
        :class:`mangadap.proc.spectralindices.SpectralIndices`
-       configuration file.  The keyword should be the capitalized root
-       of the parameter filename.  E.g., to use
-       ``$MANGADAP_DIR/data/bandhead_indices/bhbasic.par``, set the
-       keyword to ``BHBASIC``.
+       configuration file. The keyword should be the capitalized root
+       of the parameter filename. E.g., to use
+       ``$MANGADAP_DIR/mangadap/data/bandhead_indices/bhbasic.par``,
+       set the keyword to ``BHBASIC``.
 
-    #. To use a *new* parameter database, write the file and save it in
-       the ``$MANGADAP_DIR/data/bandhead_indices/`` directory, and then
-       change the relevant configuration file in the same way as
-       described above.
+    #. To use a *new* parameter database, write the file and save it
+       in the ``$MANGADAP_DIR/mangadap/data/bandhead_indices/``
+       directory, and then change the relevant configuration file in
+       the same way as described above.
 
 ----
 

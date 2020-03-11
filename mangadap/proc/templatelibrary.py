@@ -61,7 +61,7 @@ fitting the specified DRP file.  If the required processing has
 already been done, the instantiation of the :class:`TemplateLibrary`
 object simply reads the existing file.  If you do not have the
 default directory structure setup, you'll need to define the paths
-to, e.g., the DRP file; see :class:`mangadap.drpfits.DRPFits`.
+to, e.g., the DRP file; see :class:`mangadap.util.drpfits.DRPFits`.
 
 If you do not want to process the template (match the spectral
 resolution and sampling to that of the DRP data), you can force the
@@ -175,12 +175,12 @@ Revision history
 ----
 
 .. include license and copyright
-.. include:: ../copy.rst
+.. include:: ../include/copy.rst
 
 ----
 
 .. include common links, assuming primary doc root is up one directory
-.. include:: ../links.rst
+.. include:: ../include/links.rst
 """
 
 import os
@@ -1256,7 +1256,7 @@ class TemplateLibrary:
             - If a DRP file is provided, the processing to a logarithmic
               binning is done by default (log=True).  But linearly
               sampled DRP data are available, so need to have
-              :class:`mangadap.drpfits.DRPFits` return the spectral
+              :class:`mangadap.util.drpfits.DRPFits` return the spectral
               sampling type.
             - Documentation needs updating!
         

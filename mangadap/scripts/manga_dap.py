@@ -2,14 +2,14 @@ import os
 import time
 import importlib
 
-from argparse import ArgumentParser
+import argparse
 
 from mangadap.par.analysisplan import AnalysisPlanSet
 from mangadap.survey.manga_dap import manga_dap
 from mangadap.datacube import DataCube
 
 def parse_args(options=None):
-    parser = ArgumentParser()
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('-c', '--config', type=str, default=None,

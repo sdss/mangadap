@@ -1,7 +1,7 @@
 import os
 import time
 
-from argparse import ArgumentParser
+import argparse
 
 import numpy
 
@@ -10,10 +10,10 @@ from mangadap.par.analysisplan import AnalysisPlanSet
 from mangadap.survey.dapall import DAPall
 
 def parse_args(options=None):
-    parser = ArgumentParser()
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument('plan', type=str, help='SDSS parameter file with analysis plan')
-
+    parser.add_argument('--plan_file', type=str, help='parameter file with the MaNGA DAP '
+                        'execution plan to use instead of the default' , default=None)
     parser.add_argument('--drpver', type=str, help='DRP version', default=None)
     parser.add_argument('-r', '--redux_path', type=str,
                         help='Top-level directory with the DRP products; defaults to '
@@ -35,7 +35,8 @@ def parse_args(options=None):
 
 def main(args):
     t = time.perf_counter()
-    analysisplan = AnalysisPlanSet.from_par_file(args.plan)
+    analysisplan = AnalysisPlanSet.default() if args.plan_file is None \
+                        else AnalysisPlanSet.from_par_file(args.plan_file)
 
     # Initialize the logging objects and start the log
     init_DAP_logging(None)#, simple_warnings=False)

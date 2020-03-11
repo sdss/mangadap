@@ -4,12 +4,12 @@ Base class for row-stacked spectra
 ----
 
 .. include license and copyright
-.. include:: ../copy.rst
+.. include:: ../include/copy.rst
 
 ----
 
 .. include common links, assuming primary doc root is up one directory
-.. include:: ../links.rst
+.. include:: ../include/links.rst
 """
 
 # TODO: Pilfer the pypeit.DataContainer for this.
@@ -21,6 +21,8 @@ from IPython import embed
 
 import numpy
 from scipy import sparse, interpolate
+
+from astropy.io import fits
 
 try:
     from shapely.ops import cascaded_union
@@ -121,6 +123,13 @@ class RowStackedSpectra:
         log (:obj:`bool`, optional):
             Flag that the datacube spectral pixels are binned
             logarithmically in wavelength.
+        prihdr (`astropy.io.fits.Header`_, optional):
+            Primary header read from source fits file. If None,
+            instantiated as an empty `astropy.io.fits.Header`_.
+        fluxhdr (`astropy.io.fits.Header`_, optional):
+            Header specifically for the flux extension of the source
+            fits file. If None, set to be a copy of the primary
+            header.
 
     Attributes:
         shape (:obj:`tuple`):
@@ -155,9 +164,16 @@ class RowStackedSpectra:
         area (`numpy.ndarray`_):
             The fiducial area subtended by each spectral aperture.
             The aperture is assumed to be circular.
+        prihdr (`astropy.io.fits.Header`_):
+            Primary header for the row-stacked spectra. If not
+            provided on instantiation, set to an empty
+            `astropy.io.fits.Header`_.
+        fluxhdr (`astropy.io.fits.Header`_):
+            Header specifically for the flux array. If not provided
+            on instantiation, set to be a copy of :attr:`prihdr`.
     """
     def __init__(self, wave, flux, ivar=None, mask=None, bitmask=None, sres=None, xpos=None,
-                 ypos=None, area=None, log=True):
+                 ypos=None, area=None, log=True, prihdr=None, fluxhdr=None):
 
         # Re-order so that axes are x, y, lambda
         self.wave = wave
@@ -217,6 +233,10 @@ class RowStackedSpectra:
         if self.area.size != self.nspec:
             raise ValueError('Could not construct area for each aperture; provide a single value '
                              'or one value per spectrum.')
+
+        # Allocate attributes for primary and flux array fits headers
+        self.prihdr = fits.Header() if prihdr is None else prihdr
+        self.fluxhdr = self.prihdr.deepcopy() if fluxhdr is None else fluxhdr
 
         # Datacube rectification parameters
         self.pixelscale = None
@@ -1107,7 +1127,7 @@ class RowStackedSpectra:
                              'the rectification transfer matrix.')
         var = numpy.ma.power(self.ivar[:,self.rect_channel], -1.0).filled(0.0)
         covar = Covariance.from_matrix_multiplication(self.rect_T, var)
-        return covar.with_lower_triangle() if csr else covar
+        return covar.full() if csr else covar
 
     def covariance_matrix(self, channel, pixelscale=None, rlim=None, sigma=None, recenter=False,
                           width_buffer=10, csr=False, quiet=False, rej_flag=None):

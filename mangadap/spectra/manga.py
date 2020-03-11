@@ -4,12 +4,12 @@ Implement the derived class for MaNGA row-stacked spectra.
 ----
 
 .. include license and copyright
-.. include:: ../copy.rst
+.. include:: ../include/copy.rst
 
 ----
 
 .. include common links, assuming primary doc root is up one directory
-.. include:: ../links.rst
+.. include:: ../include/links.rst
 """
 import os
 import warnings
@@ -21,20 +21,21 @@ import numpy
 from astropy.io import fits
 
 from ..config import defaults
-from ..drpfits import DRPFitsBitMask
+from ..util.drpfits import DRPFits, DRPFitsBitMask
 from ..util.constants import DAPConstants
 from ..util.filter import interpolate_masked_vector
 from .rowstackedspectra import RowStackedSpectra
 
-class MaNGARSS(RowStackedSpectra):
+class MaNGARSS(DRPFits, RowStackedSpectra):
     r"""
     Container class for MaNGA row-stacked spectra.
 
-    For additional description and attributes, see
-    :class:`mangadap.rowstackedspectra.rowstackedspectra.RowStackedSpectra`.
+    For additional description and attributes, see the two base
+    classes.
 
     See :func:`from_plateifu` to instantiate using the plate and ifu
-    numbers.
+    numbers. See :func:`from_config` to instantiate from a
+    configuration file.
 
     Args:
         ifile (:obj:`str`):
@@ -55,11 +56,11 @@ class MaNGARSS(RowStackedSpectra):
             raise FileNotFoundError('File does not exist: {0}'.format(ifile))
 
         # Parse the relevant information from the filename
-        self.directory_path, self.file = os.path.split(os.path.abspath(ifile)) 
-        self.plate, self.ifudesign, log = self.file.split('-')[1:4]
-        self.plate = int(self.plate)
-        self.ifudesign = int(self.ifudesign)
-        log = 'LOG' in log
+        directory_path = os.path.split(os.path.abspath(ifile))[0]
+        plate, ifudesign, log = ifile.split('-')[1:4]
+        # Instantiate the DRPFits base
+        DRPFits.__init__(self, int(plate), int(ifudesign), 'RSS', log='LOG' in log,
+                         directory_path=directory_path)
 
         # Try to define the BitMask object
         try:
@@ -73,9 +74,9 @@ class MaNGARSS(RowStackedSpectra):
         # Open the file and initialize the base class
         with fits.open(ifile) as hdu:
             print('Reading MaNGA row-stacked spectra data ...', end='\r')
-            self.prihdr = hdu[0].header
-            self.fluxhdr = hdu['FLUX'].header
-            self.sres_ext, sres = MaNGARSS.spectral_resolution(hdu, ext=sres_ext, fill=sres_fill)
+            prihdr = hdu[0].header
+            fluxhdr = hdu['FLUX'].header
+            self.sres_ext, sres = DRPFits.spectral_resolution(hdu, ext=sres_ext, fill=sres_fill)
             self.sres_fill = sres_fill
             sres = sres.filled(0.0)
 
@@ -84,11 +85,11 @@ class MaNGARSS(RowStackedSpectra):
             # RA. Opposite of the RowStackedSpectra convention. The
             # area of the fiber aperture is normalized to pi arcsec^2
             # by the DRP.
-            super(MaNGARSS, self).__init__(hdu['WAVE'].data, hdu['FLUX'].data,
-                                           ivar=hdu['IVAR'].data, mask=hdu['MASK'].data,
-                                           bitmask=bitmask, sres=sres,
-                                           xpos=-hdu['XPOS'].data, ypos=hdu['YPOS'].data,
-                                           area=numpy.pi, log=log)
+            RowStackedSpectra.__init__(self, hdu['WAVE'].data, hdu['FLUX'].data,
+                                       ivar=hdu['IVAR'].data, mask=hdu['MASK'].data,
+                                       bitmask=bitmask, sres=sres, xpos=-hdu['XPOS'].data,
+                                       ypos=hdu['YPOS'].data, area=numpy.pi,
+                                       log=self.samp == 'LOG', prihdr=prihdr, fluxhdr=fluxhdr)
         print('Reading MaNGA row-stacked spectra data ... DONE')
 
         # Try to use the header to set the DRP version
@@ -104,119 +105,81 @@ class MaNGARSS(RowStackedSpectra):
                           'find paired RSS file if requested.')
 
     @staticmethod
-    def spectral_resolution_extension(hdu, ext=None):
+    def build_file_name(plate, ifudesign, log=True):
         """
-        Determine the spectral resolution channel to use.
+        Return the name of the DRP file with the row-stacked spectra.
 
-        Precedence follows this order: ``LSFPRE``, ``PRESPECRES``,
-        ``LSFPOST``, ``SPECRES``.
+        This is a simple wrapper for
+        :func:`mangadap.util.drpfits.DRPFits.build_file_name`,
+        specific to the RSS.
 
         Args:
-            hdu (`astropy.io.fits.HDUList`):
-                The opened MaNGA DRP file.
-            ext (:obj:`str`, optional):
-                Specify the extension with the spectral estimate to
-                use. Should be in None, ``LSFPRE``, ``PRESPECRES``,
-                ``LSFPOST``, or ``SPECRES``. The default is None,
-                which means it will return the extension found first
-                in the order above. None is returned if none of the
-                extensions are present.
+            plate (:obj:`int`):
+                Plate number
+            ifudesign (:obj:`int`):
+                IFU design
+            log (:obj:`bool`, optional):
+                Use the spectra that are logarithmically sampled in
+                wavelength. If False, sampling is linear in
+                wavelength.
 
         Returns:
-            :obj:`str`: The name of the preferred extension to use.
+            :obj:`str`: The relevant file name.
         """
-        available = [h.name for h in hdu 
-                        if h.name in ['LSFPRE', 'LSFPOST', 'PRESPECRES', 'SPECRES']]
-        _ext = ext
-        if ext is None:
-            _ext = 'LSFPRE'
-            if _ext not in available:
-                _ext = 'PRESPECRES'
-            if _ext not in available:
-                _ext = 'LSFPOST'
-            if _ext not in available:
-                _ext = 'SPECRES'
-        return None if _ext not in available else _ext
+        return DRPFits.build_file_name(plate, ifudesign, 'RSS', log=log)
 
     @staticmethod
-    def spectral_resolution(hdu, ext=None, fill=False, median=False):
+    def default_paths(plate, ifudesign, log=True, drpver=None, redux_path=None,
+                      directory_path=None):
         """
-        Return the spectral resolution for all spectra.
+        Construct the default path and file name with the MaNGA
+        row-stacked spectra.
 
-        See :func:`spectral_resolution_extension` for a description
-        of the precedence used when ``ext`` is None.
+        This is a simple wrapper for
+        :func:`mangadap.util.drpfits.DRPFits.default_paths`, specific
+        to the RSS files.
 
         Args:
-            hdu (`astropy.io.fits.HDUList`):
-                The opened MaNGA DRP file.
-            ext (:obj:`str`, optional):
-                Specify the extension with the spectral estimate to
-                use. See :func:`spectral_resolution_extension`.
-            fill (:obj:`bool`, optional):
-                Fill masked values by interpolation.  Default is to
-                leave masked pixels in returned array.
-            median (:obj:`bool`, optional):
-                Return a single vector with the median spectral
-                resolution instead of a per spectrum array. When
-                using the `SPECRES` extension, this just returns the
-                vector provided by the DRP file; when using either of
-                the `LSF` extensions, this performs a masked median
-                across the array and then interpolates any
-                wavelengths that were masked in all vectors.
+            plate (:obj:`int`):
+                Plate number
+            ifudesign (:obj:`int`):
+                IFU design
+            log (:obj:`bool`, optional):
+                Use the spectra that are logarithmically sampled in
+                wavelength. If False, sampling is linear in
+                wavelength.
+            drpver (:obj:`str`, optional):
+                DRP version, which is used to define the default DRP
+                redux path. Default is defined by
+                :func:`mangadap.config.defaults.drp_version`
+            redux_path (:obj:`str`, optional):
+                The path to the top level directory containing the
+                DRP output files for a given DRP version. Default is
+                defined by
+                :func:`mangadap.config.defaults.drp_redux_path`.
+            directory_path (:obj:`str`, optional):
+                The exact path to the DRP file. Default is defined by
+                :func:`mangadap.config.defaults.drp_directory_path`.
+                Providing this ignores anything provided for
+                ``drpver`` or ``redux_path``.
 
         Returns:
-            :obj:`tuple`: Returns a :obj:`str` with the name of the
-            extension used for the spectral resolution measurements
-            and a `numpy.ma.MaskedArray`_ with the spectral
-            resolution data. Even if interpolated such that there
-            should be no masked values, the function returns a masked
-            array. Array contains the spectral resolution (:math:`R =
-            \lambda/\Delta\lambda`) pulled from the DRP file.
+            :obj:`tuple`: Two strings with the default path to and
+            name of the DRP data file.
         """
-        # Determine which spectral resolution element to use
-        _ext = MaNGARSS.spectral_resolution_extension(hdu, ext=ext)
-        # If no valid extension, raise an exception
-        if ext is None and _ext is None:
-            raise ValueError('No valid spectral resolution extension.')
-        if ext is not None and _ext is None:
-            raise ValueError('No extension: {0}'.format(ext))
-            
-        # Build the spectral resolution vectors
-        if 'SPECRES' in _ext:
-            sres = numpy.ma.MaskedArray(hdu[_ext].data, mask=numpy.invert(hdu[_ext].data > 0))
-            if fill:
-                sres = numpy.ma.MaskedArray(interpolate_masked_vector(sres))
-            if not median:
-                nspec = hdu['FLUX'].data.shape[0]
-                sres = numpy.ma.tile(sres, (nspec,1))
-            return _ext, sres
-
-        # Otherwise dealing with the LSF cube
-        sres = numpy.ma.MaskedArray(hdu[_ext].data)
-        # Mask any non-positive value
-        sres[numpy.invert(sres > 0)] = numpy.ma.masked
-        # Convert from sigma in angstroms to spectral resolution
-        # (based on FWHM)
-        sres = numpy.ma.divide(hdu['WAVE'].data[None,:], sres) / DAPConstants.sig2fwhm
-        # Interpolate over any masked values
-        if fill:
-            sres = numpy.ma.MaskedArray(numpy.ma.apply_along_axis(interpolate_masked_vector, 1,
-                                                                  sres))
-        if median:
-            sres = numpy.ma.median(sres, axis=0)
-        return _ext, sres
+        return DRPFits.default_paths(plate, ifudesign, 'RSS', log=log, drpver=drpver,
+                                     redux_path=redux_path, directory_path=directory_path)
 
     @classmethod
     def from_plateifu(cls, plate, ifudesign, log=True, drpver=None, redux_path=None,
                       directory_path=None, **kwargs):
         """
-        Construct a MaNGA row-stacked spectra object based on its
-        plate-ifu designation.
+        Construct a :class:`mangadap.datacube.manga.MaNGARSS`
+        object based on its plate-ifu designation.
 
-        The provided plate, ifudesign, and boolean for the log
-        binning are used to construct the name of the file. The DRP
-        version and reduction and directory paths are used to
-        construct the directory with the file.
+        This is a simple wrapper function that calls
+        :func:`default_paths` to construct the file names, and then
+        calls the class instantiation method.
 
         Args:
             plate (:obj:`int`):
@@ -242,99 +205,12 @@ class MaNGARSS(RowStackedSpectra):
                 ``drpver`` or ``redux_path``.
             **kwargs:
                 Keyword arguments passed directly to the primary
-                instantiation method; see :class:`MaNGARSS`.
+                instantiation method; see
+                :class:`mangadap.spectra.manga.MaNGARSS`.
         """
-        # Set the attributes, forcing a known type
-        _plate = int(plate)
-        _ifudesign = int(ifudesign)
-
-        # Setup the directory path.
-        if directory_path is None:
-            directory_path = defaults.drp_directory_path(_plate, drpver=drpver,
-                                                         redux_path=redux_path)
-        return cls(os.path.join(directory_path, MaNGARSS.build_file_name(_plate, _ifudesign,
-                                                                         log=log)),
-                   **kwargs)
-
-    @staticmethod
-    def build_file_name(plate, ifudesign, log=True):
-        """
-        Return the name of the DRP row-stacked spectra file.
-
-        Args:
-            plate (:obj:`int`):
-                Plate number
-            ifudesign (:obj:`int`):
-                IFU design
-            log (:obj:`bool`, optional):
-                Use the spectra that are logarithmically binned in
-                wavelength.
-
-        Returns:
-            :obj:`str`: The relevant file name.
-        """
-        mode = '{0}RSS'.format('LOG' if log else 'LIN')
-        return '{0}.fits.gz'.format(defaults.manga_fits_root(plate, ifudesign, mode))
-
-    def file_path(self):
-        """Return the full path to the DRP datacube file."""
-        return os.path.join(self.directory_path,
-                            MaNGARSS.build_file_name(self.plate, self.ifudesign, log=self.log))
-
-    @staticmethod
-    def do_not_fit_flags():
-        """Return the maskbit names that should not be fit."""
-        return ['DONOTUSE', 'FORESTAR']
-
-
-    @staticmethod
-    def do_not_stack_flags():
-        """Return the maskbit names that should not be stacked."""
-        return ['DONOTUSE', 'FORESTAR']
-
-    @staticmethod
-    def default_paths(plate, ifudesign, log=True, drpver=None, redux_path=None,
-                      directory_path=None, output_file=None):
-        """
-        Return the primary directory and file name with the DRP fits
-        LOG-binned file.
-
-        Args:
-            plate (:obj:`int`):
-                Plate number
-            ifudesign (:obj:`int`):
-                IFU design
-            log (:obj:`bool`, optional):
-                Use the spectra that are logarithmically binned in
-                wavelength.
-            drpver (:obj:`str`, optional):
-                DRP version, which is used to define the default DRP
-                redux path. Default is defined by
-                :func:`mangadap.config.defaults.drp_version`
-            redux_path (:obj:`str`, optional):
-                The path to the top level directory containing the
-                DRP output files for a given DRP version. Default is
-                defined by
-                :func:`mangadap.config.defaults.drp_redux_path`.
-            directory_path (:obj:`str`, optional):
-                The exact path to the DRP file. Default is defined by
-                :func:`mangadap.config.defaults.drp_directory_path`.
-                Providing this ignores anything provided for
-                ``drpver`` or ``redux_path``.
-            output_file (:obj:`str`, optional):
-                The name of the file with the DRP data. Default set
-                by :func:`MaNGARSS.build_file_name`.
-
-        Returns:
-            :obj:`str`: Two strings with the path to and name of the DRP
-            data file.
-        """
-        _directory_path = defaults.drp_directory_path(plate, drpver=drpver,
-                                                      redux_path=redux_path) \
-                                if directory_path is None else directory_path
-        _output_file = MaNGARSS.build_file_name(plate, ifudesign, log=log) \
-                            if output_file is None else output_file
-        return _directory_path, _output_file
+        path, file_name = cls.default_paths(int(plate), int(ifudesign), log=log, drpver=drpver,
+                                            redux_path=redux_path, directory_path=directory_path)
+        return cls(os.path.join(directory_path, file_name), **kwargs)
 
     def pointing_offset(self):
         """

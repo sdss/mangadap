@@ -62,7 +62,7 @@ Analysis Modules
 
 The six main DAP modules and their purpose are:
 
- - :ref:`drp-redux-assessments`: Much of the DAP analysis is limited to
+ * :ref:`drp-redux-assessments`: Much of the DAP analysis is limited to
    spectra with sufficient S/N and spectral coverage.  This first step
    determines the S/N in each spectrum and the fraction of the spectrum
    with valid pixels.  The current approach used to measure a g-band
@@ -72,12 +72,12 @@ The six main DAP modules and their purpose are:
    on-sky Cartesian and elliptical coordinates relative to the galaxy
    center; the elliptical coordinates are based on values in the input
    parameter files.
- - :ref:`spatial-binning`: The binning algorithm both determines which
+ * :ref:`spatial-binning`: The binning algorithm both determines which
    spaxels fall in each bin and then stacks the spectra in each bin.
    The DAP performs all spectral fitting on the binned spectra (termed
    as such even if a bin only contains a single spaxel) ''after'' they
    have been corrected for Galactic extinction.
- - :ref:`stellar-kinematics`: Once the spectra are binned, the DAP
+ * :ref:`stellar-kinematics`: Once the spectra are binned, the DAP
    produces a model fit to the stellar continuum, primarily as a
    determination of the stellar kinamatics using `ppxf`_ (written by
    Michele Cappellari).  Currently, the DAP uses the ``MILESHC`` library
@@ -89,20 +89,20 @@ The six main DAP modules and their purpose are:
    between the templates and the MaNGA data.  Understanding these
    :ref:`corrections` and how to apply them are a critical part of using
    the stellar velocity dispersions.
- - *Emission-line Measurements*:  Once the stellar-continuum fit has
-   been performed, the DAP makes various measurments of the nebular
+ * *Emission-line Measurements*:  Once the stellar-continuum fit has
+   been performed, the DAP makes various measurements of the nebular
    emission lines.  Any region beyond the spectral range of the fitted
    templates will *not* include an analysis of the emission lines.  The
    DAP performs two sets of emission-line measurements, one based on
    simple moments of the line profile and a second based on a Gaussian
    fit:
 
-    - :ref:`emission-line-moments`: We provide total flux and
+    * :ref:`emission-line-moments`: We provide total flux and
       equivalent-width measurements based on direct summation of the
       flux over predescribed rest wavelength bands, accounting for any
       continuum found in sidebands to the blue and red of each emission
       line.
-    - :ref:`emission-line-modeling`:  We also simultaneously fit the
+    * :ref:`emission-line-modeling`:  We also simultaneously fit the
       stellar continuum and a set of emission lines, assuming a single
       Gaussian component for each line.  All line velocities are forced
       to be the same, we tie the velocity dispersions of neighboring
@@ -115,7 +115,7 @@ The six main DAP modules and their purpose are:
       the :ref:`corrections` and their application to the data are
       similar to the corrections for the stellar velocity dispersions.
 
- - :ref:`spectral-index-measurements`: Finally, spectral indices are
+ * :ref:`spectral-index-measurements`: Finally, spectral indices are
    measured after subtracting the best-fitting emission-line model from
    each spectrum.  Measurements include both absorption-line (equivalent
    widths compared to two sidebands) and bandhead (the color of the
@@ -146,11 +146,11 @@ The two primary output files, the :ref:`datamodel-maps` and the
 :ref:`datamodel-cube` are constructed using the reference files that are
 produced by each many analysis module.
 
- - :ref:`maps-construction`: The ``MAPS`` file provides 2D "maps" (i.e.,
+ * :ref:`maps-construction`: The ``MAPS`` file provides 2D "maps" (i.e.,
    images) of DAP measured properties. The shape and WCS of these images
    identically matches that of a single wavelength channel in the
    corresponding DRP ``LOGCUBE`` file.
- - :ref:`cube-construction`: The DAP model ``LOGCUBE`` files provide the
+ * :ref:`cube-construction`: The DAP model ``LOGCUBE`` files provide the
    binned/unbinned spectra and the best-fitting model spectra for all
    spectra that were successfully fit; again the shape of the cube
    identically matches the DRP ``LOGCUBE`` file.

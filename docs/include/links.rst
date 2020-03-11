@@ -1,5 +1,9 @@
+.. distribution
+
+.. _pypi: https://pypi.org/project/sdss-mangadap/
 
 .. core
+
 .. _glob.glob: https://docs.python.org/3/library/glob.html
 .. _isinstance: https://docs.python.org/3/library/functions.html#isinstance
 .. _logging.Logger: https://docs.python.org/3/library/logging.html
@@ -11,9 +15,11 @@
 .. _configparser.ConfigParser: https://docs.python.org/3/library/configparser.html
 
 .. configobj
+
 .. _configobj.ConfigObj: https://pypi.org/project/configobj/
 
 .. numpy
+
 .. _numpy.ndarray: https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html
 .. _numpy.ma.MaskedArray: http://docs.scipy.org/doc/numpy/reference/maskedarray.baseclass.html
 .. _numpy.recarray: https://docs.scipy.org/doc/numpy/reference/generated/numpy.recarray.html
@@ -24,6 +30,7 @@
 .. _numpy.unravel_index: https://docs.scipy.org/doc/numpy/reference/generated/numpy.unravel_index.html
 
 .. scipy
+
 .. _scipy.optimize.least_squares: http://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.least_squares.html
 .. _scipy.optimize.OptimizeResult: http://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.OptimizeResult.html
 .. _scipy.interpolate.interp1d: https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.interp1d.html
@@ -31,14 +38,17 @@
 .. _scipy.sparse.csr_matrix: http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html
 .. _scipy.sparse.coo_matrix: http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.coo_matrix.html
 .. _scipy.sparse.triu: http://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.triu.html
+.. _scipy.sparse.find: https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.find.html
 .. _scipy.linalg.lu_factor: http://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.lu_factor.html
 .. _scipy.linalg.lu_solve: https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.lu_solve.html
 .. _scipy.spatial.KDTree: https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.KDTree.html
 
 .. matplotlib
-.. _matplotlib.pyplot.imshow: http://matplotlib.org/api/pyplot_api.html#matplotlib.pyplot.imshow
+
+.. _pyplot.imshow: http://matplotlib.org/api/pyplot_api.html#matplotlib.pyplot.imshow
 
 .. astropy
+
 .. _astropy.io.fits: http://docs.astropy.org/en/stable/io/fits/index.html
 .. _astropy.io.fits.open: http://docs.astropy.org/en/stable/io/fits/api/files.html#astropy.io.fits.open
 .. _astropy.io.fits.HDUList: http://docs.astropy.org/en/stable/io/fits/api/hdulists.html
@@ -55,16 +65,26 @@
 .. _astropy.constants: http://docs.astropy.org/en/stable/constants/index.html
 
 .. pydl
+
 .. _pydl.goddard.astro.airtovac: http://pydl.readthedocs.io/en/stable/api/pydl.goddard.astro.airtovac.html#pydl.goddard.astro.airtovac
 .. _pydl.pydlutils.yanny: http://pydl.readthedocs.io/en/stable/api/pydl.pydlutils.yanny.yanny.html
 
 .. shapely
+
 .. _shapely: https://pypi.python.org/pypi/Shapely
 
 .. misc
+
 .. _ppxf: https://pypi.org/project/ppxf/
 .. _vorbin: https://pypi.org/project/vorbin/
 
 .. SDSS
+
 .. _SDSS-style parameter file: http://www.sdss.org/dr15/software/par/
+
+.. papers
+
+.. _Law et al. (2016, AJ, 152, 83): https://ui.adsabs.harvard.edu/abs/2016AJ....152...83L/abstract
+.. _Westfall et al. (2019, AJ, 158, 231): https://ui.adsabs.harvard.edu/abs/2019AJ....158..231W/abstract
+.. _Belfiore et al. (2019, AJ, 158, 160): https://ui.adsabs.harvard.edu/abs/2019AJ....158..160B/abstract
 

@@ -12,7 +12,6 @@ Submodules
    mangadap.par.bandheadindexdb
    mangadap.par.emissionlinedb
    mangadap.par.emissionmomentsdb
-   mangadap.par.obsinput
    mangadap.par.parset
    mangadap.par.spectralfeaturedb
    mangadap.par.util

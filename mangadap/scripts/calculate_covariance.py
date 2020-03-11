@@ -6,12 +6,12 @@ from IPython import embed
 
 import numpy
 
-from argparse import ArgumentParser
+import argparse
 
 from mangadap.spectra import MaNGARSS
 
 def parse_args(options=None):
-    parser = ArgumentParser()
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('plate', type=int, help='plate ID to process')
     parser.add_argument('ifudesign', type=int, help='IFU design to process')
