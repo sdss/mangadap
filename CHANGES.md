@@ -78,6 +78,8 @@ TODO
    still lots to do.
  - Consolidates the common functionality in `MaNGADataCube` and
    `MaNGARSS` into a new, repurposed `DRPFits` base class.
+ - Global data from unique DAPTYPEs now put in separate extensions of
+   the DAPall file.
 
 
 2.5.2 (14 Feb 2020)
