@@ -1355,7 +1355,7 @@ class SpatiallyBinnedSpectra:
             flux = self.cube.copy_to_masked_array(flag=flags)[good_spec,:]
             sdev = numpy.ma.zeros(flux.shape, dtype=float)
             ivar = self.cube.copy_to_masked_array(attr='ivar', flag=flags)[good_spec,:]
-            sres = self.cube.copy_to_array(attr='sres')
+            sres = self.cube.copy_to_array(attr='sres')[good_spec,:]
             npix = numpy.ones(flux.shape, dtype=numpy.int)
             npix[numpy.ma.getmaskarray(flux)] = 0
 
