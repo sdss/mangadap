@@ -229,6 +229,7 @@ class DRPFits:
                 _ext = 'LSFPOST'
             if _ext not in available:
                 _ext = 'SPECRES'
+        return _ext
 
     @staticmethod
     def spectral_resolution(hdu, ext=None, fill=False, median=False):
