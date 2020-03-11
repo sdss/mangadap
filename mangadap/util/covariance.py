@@ -328,31 +328,37 @@ class Covariance:
         if correlation:
             self.to_correlation()
     
-    def __getitem__(self, *args):
-        """
-        Return the covariance value at a provided 2D or 3D position.
-
-        Args:
-            *args (tuple):
-                2 or 3 integers designating the covariance value to
-                return. Number of values must match the
-                dimensionality of the object.
-
-        Returns:
-            :obj:`float`: The value of the covariance matrix at the
-            designated index.
-
-        Raises:
-            ValueError:
-                Raised if the number of arguments does not match the
-                dimensionality of the object.
-        """
-        indx = tuple(*args)
-        if len(indx) != self.dim:
-            raise ValueError('Incorrect number of dimensions!')
-        if self.dim == 2:
-            return self.cov[tuple(sorted(indx))]
-        return self.cov[self._grab_true_index(indx[2])][tuple(sorted(indx[:2]))]
+#    def __getitem__(self, *args):
+#        """
+#        Return the covariance value at a provided 2D or 3D position.
+#
+#        .. todo::
+#
+#            This method is dangerous because it only returns non-zero
+#            values for the data in the upper triangle of the matrix.
+#            Fix this!
+#
+#        Args:
+#            *args (tuple):
+#                2 or 3 integers designating the covariance value to
+#                return. Number of values must match the
+#                dimensionality of the object.
+#
+#        Returns:
+#            :obj:`float`: The value of the covariance matrix at the
+#            designated index.
+#
+#        Raises:
+#            ValueError:
+#                Raised if the number of arguments does not match the
+#                dimensionality of the object.
+#        """
+#        indx = tuple(*args)
+#        if len(indx) != self.dim:
+#            raise ValueError('Incorrect number of dimensions!')
+#        if self.dim == 2:
+#            return self.cov[tuple(sorted(indx))]
+#        return self.cov[self._grab_true_index(indx[2])][tuple(sorted(indx[:2]))]
 
     @classmethod
     def from_samples(cls, samples, cov_tol=None, rho_tol=None):
@@ -715,11 +721,15 @@ class Covariance:
             self.cov[i] = sparse.triu(self.cov[i]).tocsr()
             self.nnz += self.cov[i].nnz
 
-    def with_lower_triangle(self, channel=None):
+    def full(self, channel=None):
         r"""
         Return a `scipy.sparse.csr_matrix`_ object with both its
         upper and lower triangle filled, ensuring that they are
         symmetric.
+
+        This method is essentially equivalent to :func:`toarray`
+        except that it returns a sparse array and can only be used
+        for one channel at a time.
 
         Args:
             channel (:obj:`int`, optional):
@@ -902,20 +912,21 @@ class Covariance:
 
         Args:
             channel (:obj:`int`, optional):
-                The pseudo-index of the covariance matrix to plot.
-                Required if the covariance object is 3D.
+                The pseudo-index of the covariance matrix to plot. If
+                None and the object is 3D, the full 3D matrix is
+                returned.
 
         Returns:
             `numpy.ndarray`_: Dense array with the full covariance
             matrix.
         """
         if self.dim == 2 or channel is not None:
-            return (self.with_lower_triangle(channel=channel)).toarray()
+            return self.full(channel=channel).toarray()
         
         arr = numpy.empty(self.shape, dtype=numpy.float)
         for k in range(self.shape[-1]):
             indx = k if self.input_indx is None else self.input_indx[k]
-            arr[:,:,k] = (self.with_lower_triangle(channel=indx)).toarray()
+            arr[:,:,k] = self.full(channel=indx).toarray()
         return arr
 
     def show(self, channel=None, zoom=None, ofile=None, log10=False):
@@ -923,8 +934,8 @@ class Covariance:
         Show a covariance/correlation matrix data.
 
         This converts the (selected) covariance matrix to a filled
-        array and plots the array using `matplotlib.pyplot.imshow`_.
-        If an output file is provided, the image is redirected to the
+        array and plots the array using `pyplot.imshow`_. If an
+        output file is provided, the image is redirected to the
         designated output file; otherwise, the image is plotted to
         the screen.
 
@@ -975,6 +986,9 @@ class Covariance:
         Find the non-zero values in the **full** covariance matrix (not
         just the upper triangle).
 
+        This is a simple wrapper for :func:`full` and
+        `scipy.sparse.find`_.
+
         Args:
             channel (:obj:`int`, optional):
                 The pseudo-index of the covariance matrix to plot.
@@ -986,7 +1000,7 @@ class Covariance:
             the non-zero values, and ``c`` contains the values
             themselves.
         """
-        return sparse.find(self.with_lower_triangle(channel=channel))
+        return sparse.find(self.full(channel=channel))
 
 
 #    def issingular(self):

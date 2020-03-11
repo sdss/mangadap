@@ -146,10 +146,6 @@ def test_template_flux_norm():
 
 
 # TODO: Add a remote DRPComplete file!
-def test_write_dap_par():
-    assert script_help_okay('write_dap_par'), 'Basic help call failed'
-
-
 def test_write_dap_config_basic():
     assert script_help_okay('write_dap_config'), 'Basic help call failed'
 

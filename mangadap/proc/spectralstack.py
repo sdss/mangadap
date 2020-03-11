@@ -421,7 +421,7 @@ class SpectralStack:
         # Calculate the covariance in the stack
         for i in range(nchan):
             j = covar.input_indx[i]
-            cov_array = covar.with_lower_triangle(channel=j)
+            cov_array = covar.full(channel=j)
             self.covar[i] = sparse.triu(self.rebin_T.dot(cov_array.dot(self.rebin_T.T))).tocsr()
 
             # Get the variance ratio

@@ -55,10 +55,8 @@ Citation
 
 If you use the DAP software and/or its output products, please cite the following two papers:
 
- - *Overview*: `Westfall et al. (2019, AJ, 158, 231)
-   <https://ui.adsabs.harvard.edu/abs/2019AJ....158..231W/abstract>`_
- - *Emission-line Modeling*: `Belfiore et al. (2019, AJ, 158, 160)
-   <https://ui.adsabs.harvard.edu/abs/2019AJ....158..160B/abstract>`_
+ - *Overview*: `Westfall et al. (2019, AJ, 158, 231)`_
+ - *Emission-line Modeling*: `Belfiore et al. (2019, AJ, 158, 160)`_
 
 ----
 
@@ -148,3 +146,7 @@ Search
 * :ref:`modindex`
 * :ref:`search`
 
+
+.. include links
+
+.. include:: include/links.rst

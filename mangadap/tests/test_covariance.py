@@ -152,6 +152,24 @@ def test_io():
     # Clean-up 
     os.remove(ofile)
 
+@requires_remote
+def test_read_drp():
+    drpfile = os.path.join(remote_data_file(), MaNGADataCube.build_file_name(7815, 3702))
+    
+    assert os.path.isfile(drpfile), 'Did not find file'
+
+    with fits.open(drpfile) as hdu:
+        covar = Covariance.from_fits(hdu, ivar_ext=None, covar_ext='GCORREL', impose_triu=True,
+                                     correlation=True)
+        var = numpy.ma.power(hdu['IVAR'].data[hdu['GCORREL'].header['BBINDEX']].T.ravel(),
+                             -1).filled(0.0)
+        covar = covar.apply_new_variance(var)
+        covar.revert_correlation()
+
+        embed()
+        exit()
+
+
 
 @requires_remote
 def test_rectification_recovery():
@@ -210,4 +228,7 @@ def test_rectification_recovery():
 #                   interpolation='nearest', aspect='auto', cmap='inferno')
 #    pyplot.colorbar(cs, cax=cax)
 #    pyplot.show()
+
+if __name__ == '__main__':
+    test_read_drp()
 

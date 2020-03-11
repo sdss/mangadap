@@ -315,7 +315,7 @@ class BitMask:
             list: List of bit keywords.
         """
         k = numpy.array(list(self.bits.keys()))
-        return (k[numpy.invert(k == 'NULL')]).tolist()
+        return k[[_k != 'NULL' for _k in k]].tolist()
 
     def info(self):
         """
@@ -546,7 +546,6 @@ class BitMask:
             to each bit.
         """
         _flag = self._prep_flags(flag)
-        print(_flag)
         return tuple([self.flagged(value, flag=f) for f in _flag])
 
     def to_header(self, hdr, prefix=None, quiet=False):

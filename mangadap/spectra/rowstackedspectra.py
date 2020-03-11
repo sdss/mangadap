@@ -1127,7 +1127,7 @@ class RowStackedSpectra:
                              'the rectification transfer matrix.')
         var = numpy.ma.power(self.ivar[:,self.rect_channel], -1.0).filled(0.0)
         covar = Covariance.from_matrix_multiplication(self.rect_T, var)
-        return covar.with_lower_triangle() if csr else covar
+        return covar.full() if csr else covar
 
     def covariance_matrix(self, channel, pixelscale=None, rlim=None, sigma=None, recenter=False,
                           width_buffer=10, csr=False, quiet=False, rej_flag=None):
