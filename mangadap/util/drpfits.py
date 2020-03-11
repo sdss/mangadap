@@ -249,12 +249,12 @@ class DRPFits:
                 leave masked pixels in returned array.
             median (:obj:`bool`, optional):
                 Return a single vector with the median spectral
-                resolution instead of a per spectrum array. When
-                using the `SPECRES` extension, this just returns the
-                vector provided by the DRP file; when using either of
-                the `LSF` extensions, this performs a masked median
-                across the array and then interpolates any
-                wavelengths that were masked in all vectors.
+                resolution instead of a per spectrum array. When using
+                the ``SPECRES`` extension, this just returns the vector
+                provided by the DRP file; when using either of the
+                ``LSF`` extensions, this performs a masked median across
+                the array and then interpolates any wavelengths that
+                were masked in all vectors.
 
         Returns:
             :obj:`tuple`: Returns a :obj:`str` with the name of the
