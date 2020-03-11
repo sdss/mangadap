@@ -1,6 +1,0 @@
-#!/usr/bin/env python3
-
-from mangadap.scripts import write_dap_par
-
-if __name__ == '__main__':
-    write_dap_par.main(write_dap_par.parse_args())

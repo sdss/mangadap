@@ -6,12 +6,12 @@ emission-line modeling itself.
 
 The valid actions are:
 
-    - ``i``: ignore the line, as if the line were commented out.
-    - ``f``: fit the line and mask the line when fitting the stellar
+    * ``i``: ignore the line, as if the line were commented out.
+    * ``f``: fit the line and mask the line when fitting the stellar
       continuum.
-    - ``m``: mask the line when fitting the stellar continuum but do
+    * ``m``: mask the line when fitting the stellar continuum but do
       *not* fit the line itself
-    - ``s``: defines a sky line that should be masked.  When masked, the
+    * ``s``: defines a sky line that should be masked.  When masked, the
       wavelength of the line is *not* adjusted for the redshift of the
       object spectrum.
 

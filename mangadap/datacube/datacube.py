@@ -4,12 +4,12 @@ Base class for a datacube
 ----
 
 .. include license and copyright
-.. include:: ../copy.rst
+.. include:: ../include/copy.rst
 
 ----
 
 .. include common links, assuming primary doc root is up one directory
-.. include:: ../links.rst
+.. include:: ../include/links.rst
 """
 
 # TODO: Pilfer the pypeit.DataContainer for this.
@@ -1029,7 +1029,7 @@ class DataCube:
         var = numpy.ma.power(self.ivar[...,channel], -1).filled(0.0).ravel()
         covar = self.approx_correl.apply_new_variance(var)
         covar.revert_correlation()
-        return covar.with_lower_triangle() if csr else covar
+        return covar.full() if csr else covar
 
     def approximate_covariance_cube(self, channels=None, sigma_rho=None, rlim=None, csr=False,
                                     quiet=False):

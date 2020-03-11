@@ -6,6 +6,13 @@ Defines the class that constructs the DAPall summary table.
 This is a post processing script that **must** be run after the DRPall
 file is created.
 
+.. todo::
+
+    - Include columns with just the absolute luminosity of the
+      H-alpha line as the intermediate step between the apparent
+      luminosity and the star-formation rate.
+    - Provide a rough Balmer decrement measurement?
+
 Revision history
 ----------------
 
@@ -19,12 +26,12 @@ Revision history
 ----
 
 .. include license and copyright
-.. include:: ../copy.rst
+.. include:: ../include/copy.rst
 
 ----
 
 .. include common links, assuming primary doc root is up one directory
-.. include:: ../links.rst
+.. include:: ../include/links.rst
 """
 
 import logging
@@ -68,22 +75,24 @@ class DAPall:
     """
     Construct the summary table information for the DAP.
 
-    Any observation in the DRPComplete file with:
-
-        - MaNGAID != 'NULL'
-        - MANGA_TARGET1 > 0 or MANGA_TARGET3 > 0
-        - VEL > 0
-
-    are assumed to have been analyzed by the DAP.  The success flag only
-    checks that the appropriate maps file exists. 
+    Any observation in the
+    :class:`mangadap.survey.drpcomplete.DRPComplete` file that
+    satisfies the criteria set by
+    :func:`mangadap.survey.drpcomplete.DRPComplete.can_analyze` is
+    considered. If the expected output files exist, they are analyzed
+    and included in the DAPall database. If the expected files do not
+    exist, the construction of the DAPall (and the relevant flag)
+    assumes that the DAP analysis of this cube failed.
 
     Args:
         plan (:class:`mangadap.par.analysisplan.AnalysisPlanSet`):
             The plan object used by the DAP.
         methods (:obj:`str`, :obj:`list`, optional):
-            Specify a set of methods in the DAP plan file to include in
-            the DAPall file.  If not provided, all methods in the plan
-            file are included.
+            Specify a set of methods in the DAP plan file to include
+            in the DAPall file. If not provided, all methods in the
+            plan file are included. Each method produces an extension
+            in the DAPall file, where the order of the extensions is
+            alphanumeric.
         drpver (:obj:`str`, optional):
             DRP version.  Default determined by
             :func:`mangadap.config.defaults.drp_version`.
@@ -100,8 +109,9 @@ class DAPall:
             :func:`mangadap.config.defaults.dap_analysis_path`.
         readonly (:obj:`bool`, optional):
             If it exists, open any existing file and disallow any
-            modifications of the database.  Default is to automatically
-            check for any need to update the file.
+            modifications of the database. Default is to
+            automatically build the entire database if it doesn't
+            exist.
         loggers (:obj:`list`, optional):
             List of `logging.Logger`_ objects used to log progress.
         quiet (:obj:`bool`, optional):
@@ -114,37 +124,51 @@ class DAPall:
             are not available.
     
     Attributes:
-        drpver (str): DRP version
-        redux_path (str): Path to top-level redux directory
-        dapver (str): DAP version
-        analysis_path (str): Path to top-level analysis directory
-        drpall_file (str): Path to the DRPall file
-        h (float): The Hubble parameter (currently always set to unity)
-        H0 (float): Hubbles constant (km/s/Mpc)
-        cosmo (`astropy.cosmology.FlatLambdaCDM`_): Object used for
-            distance calculations
-        maps_bm (:class:`mangadap.dapfits.DAPMapsBitMask`): Bitmask used
-            to mask map pixels.
-        neml (int): Number of emission lines included in each method.
-        nindx (int): Number of spectral indices included in each method.
-        str_len (dict): Dictionary with the number of characters used
-            for each string entry in the database.
-        hdu (`astropy.io.fits.HDUList`_): Object with the table data.
-        ndap (int): Number of rows in the data table; equivalent to the
+        drpver (:obj:`str`):
+            DRP version
+        redux_path (:obj:`str`):
+            Path to top-level redux directory
+        dapver (:obj:`str`):
+            DAP version
+        analysis_path (:obj:`str`):
+            Path to top-level analysis directory
+        drpall_file (:obj:`str`):
+            Path to the DRPall file
+        h (:obj:`float`):
+            The Hubble parameter (currently always set to unity)
+        H0 (:obj:`float`):
+            Hubbles constant (km/s/Mpc)
+        cosmo (`astropy.cosmology.FlatLambdaCDM`_):
+            Object used for distance calculations.
+        maps_bm (:class:`mangadap.dapfits.DAPMapsBitMask`):
+            Bitmask used to mask map pixels.
+        neml (:obj:`int`):
+            Number of emission lines included in each method.
+        nindx (:obj:`int`):
+            Number of spectral indices included in each method.
+        str_len (:obj:`dict`):
+            Dictionary with the number of characters used for each
+            string entry in the database.
+        hdu (`astropy.io.fits.HDUList`_):
+            Object with the table data.
+        ndap (:obj:`int`):
+            Number of rows in the data table; equivalent to the
             number of processed MAPS files.
-        plate (numpy.ndarray): Array of the plate numbers
-        ifudesign (numpy.ndarray): Array of the ifudesigns
-        methods (numpy.ndarray): Array of the methods included in the
-            DAPall file.
-        readonly (bool): Object is prohibited from updating the
-            database.
-        loggers (list): List of `logging.Logger`_ objects
-            to log progress; ignored if quiet=True.  Logging is done
-            using :func:`mangadap.util.log.log_output`.  Default is no
-            logging.
-        quiet (bool): Suppress all terminal and logging output.
-        float_dtype (str): Sets precision for floating-point numbers.
-
+        plate (`numpy.ndarray`_):
+            Array of the plate numbers
+        ifudesign (`numpy.ndarray`_):
+            Array of the ifudesigns
+        methods (`numpy.ndarray`_):
+            Array of the methods included in the DAPall file.
+        readonly (:obj:`bool`):
+            Object is prohibited from updating the database.
+        loggers (:obj:`list`):
+            List of `logging.Logger`_ objects to log progress;
+            ignored if quiet=True.
+        quiet (:obj:`bool`):
+            Suppress all terminal and logging output.
+        float_dtype (:obj:`str`):
+            Sets precision for floating-point numbers.
     """
     def __init__(self, plan, methods=None, drpver=None, redux_path=None, dapver=None,
                  analysis_path=None, readonly=False, loggers=None, quiet=False,
@@ -258,6 +282,7 @@ class DAPall:
             raise ValueError('Spectral index channel names not unique!')
         return db['absindex'], db['bandhead'], channels, units
 
+    # TODO: Fix this!
     def _read(self):
         """
         Read the data in the existing file at :func:`file_path`.
@@ -449,32 +474,31 @@ class DAPall:
             raise FileNotFoundError('Could not access DRP complete file: {0}'.format(
                                                                                 drpc.file_path()))
     
-        # Find the list of file that should have been analyzed
+        # Find the list of files that should have been analyzed
         indx = drpc.can_analyze()
         return drpc['PLATE'][indx], drpc['IFUDESIGN'][indx]
 
-    def _combine_plateifu_methods(self, plt, ifu):
-        """
-        Run the combinatorics to create the full list of plates,
-        ifudesigns, and methods.
-        """
-        nmethods = len(self.methods)
-        ncomplete = len(plt)
-        methods = numpy.array([ numpy.array(self.methods) ]*ncomplete).T.ravel()
-        plates = numpy.array([ numpy.array(plt) ]*nmethods).ravel() #.astype(str)
-        ifudesigns = numpy.array([ numpy.array(ifu) ]*nmethods).ravel() #.astype(str)
+#    def _combine_plateifu_methods(self, plt, ifu):
+#        """
+#        Run the combinatorics to create the full list of plates,
+#        ifudesigns, and methods.
+#        """
+#        nmethods = len(self.methods)
+#        ncomplete = len(plt)
+#        methods = numpy.array([ numpy.array(self.methods) ]*ncomplete).T.ravel()
+#        plates = numpy.array([ numpy.array(plt) ]*nmethods).ravel() #.astype(str)
+#        ifudesigns = numpy.array([ numpy.array(ifu) ]*nmethods).ravel() #.astype(str)
+#        return methods, plates, ifudesigns
 
-        return methods, plates, ifudesigns
-
-    def _construct_maps_file_list(self, methodlist, platelist, ifulist): # plt, ifu):
+    def _construct_maps_file_list(self, method):
         """
         Construct the list of MAPS files that should be in/added to the
-        DAPall file.
+        DAPall file for a given method.
         """
         # Construct the file names
-        return numpy.array( ['{0}/{1}/{2}/{3}/manga-{2}-{3}-MAPS-{1}.fits.gz'.format(
-                                self.analysis_path, m, p, i) 
-                                    for m,p,i in zip(methodlist, platelist, ifulist) ])
+        return numpy.array(['{0}/{1}/{2}/{3}/manga-{2}-{3}-MAPS-{1}.fits.gz'.format(
+                                self.analysis_path, method, p, i) 
+                                    for p,i in zip(self.plate, self.ifudesign)])
     
     def _add_channels_to_header(self, hdr, channels, prefix, comment, units=None):
         """
@@ -844,183 +868,48 @@ class DAPall:
         return defaults.dapall_file(drpver=self.drpver, dapver=self.dapver,
                                     analysis_path=self.analysis_path)
 
-    def update(self, plan, methods=None):
+    def method_database(self, method, drpall):
         """
-        Update the DAPall file
-        
-        If clobber is True, the entire DAPall file is reconstructed from
-        scratch.  Otherwise, any additional data is appended to the end
-        of the file.
+        Construct the DAPall database for the provided DAP method.
 
         Args:
-            plan (:class:`mangadap.par.analysisplan.AnalysisPlanSet`):
-                The plan object used by the DAP.
-            methods (str,list): (**Optional**) Specify a set of methods
-                in the DAP plan file to include in the DAPall file.  If
-                not provided, all methods in the plan file are included.
+            method (:obj:`str`):
+                Name of the DAP method
+            drpall (`numpy.recarray`_):
+                Primary DRPall data table
 
-        Raises:
-            ValueError: Raised if a provided method is not in the provided
-                set of analysis plans, or if the methods do not all have
-                the same number of emission-line bandpasses,
-                emission-lines to fit, and number of spectral indices.
+        Returns:
+            `numpy.recarray`_: DAPall database.
         """
-        if self.readonly:
-            raise ValueError('Object is read-only.')
-
-        # Check the input type
-        # TODO: Plan isn't really needed.  Could just troll the
-        # analysis_path for the directory names...
-        if not isinstance(plan, AnalysisPlanSet):
-            raise TypeError('Input plan must have type AnalysisPlanSet.')
-
-        # Get the full list of available plan methods
-        plan_methods = []
-        for p in plan:
-            bin_method = SpatiallyBinnedSpectra.define_method(p['bin_key'])
-            sc_method = StellarContinuumModel.define_method(p['continuum_key'])
-            el_method = EmissionLineModel.define_method(p['elfit_key'])
-            plan_methods += [defaults.dap_method(bin_method['key'],
-                                                 sc_method['fitpar']['template_library_key'],
-                                                 el_method['continuum_tpl_key'])]
-        # Check that the plan methods are unique.  This should never be
-        # raised, unless it also causes problems in the DAP itself.
-        if len(numpy.unique(plan_methods)) != len(plan_methods):
-            raise ValueError('All of the plan methods must be unique!')
-
-        # Get the list of methods to look for
-        if methods is None:
-            self.methods = plan_methods
-            use_plans = numpy.ones(len(plan_methods), dtype=bool)
-        else:
-            self.methods = numpy.atleast_1d(methods)
-            # Make sure the provided list is unique
-            if len(numpy.unique(self.methods)) != len(self.methods):
-                raise ValueError('Must provide unique list of methods.')
-            # All the methods to use must be in the provided plan
-            if not numpy.all( [m in plan_methods for m in self.methods ]):
-                raise ValueError('All provided methods must be in provided plan file.')
-            # Find the index of the plans to use
-            use_plans = numpy.zeros(len(plan_methods), dtype=bool)
-            for i,p in enumerate(plan_methods):
-                if p in self.methods:
-                    use_plans[i] = True
-
-        # Check that all the plans to use have the same emission-line
-        # bandpass channels, ...
-        elmom_keys, elmom_channels \
-                    = numpy.array([DAPall._emission_line_moment_db_info(p['elmom_key'])
-                                        for p in plan[use_plans]], dtype=object).T
-        if numpy.any([ len(k) != len(elmom_channels[0]) or len(set(k)-set(elmom_channels[0])) > 0
-                        for k in elmom_channels]):
-            raise ValueError('All plans must provide the same emission-line bandpass channels.')
-        self.elmom_channels = elmom_channels[0].copy()
-        del elmom_channels
-        self.nmom = len(self.elmom_channels)
-
-        # ..., emission-line fit channels, and...
-        elfit_keys, elfit_channels \
-                    = numpy.array([DAPall._emission_line_db_info(p['elfit_key'])
-                                        for p in plan[use_plans]], dtype=object).T
-        if numpy.any([ len(k) != len(elfit_channels[0]) or len(set(k)-set(elfit_channels[0])) > 0
-                        for k in elfit_channels]):
-            raise ValueError('All plans must provide the same emission-line fit channels.')
-        self.elfit_channels = elfit_channels[0].copy()
-        del elfit_channels
-        self.neml = len(self.elfit_channels)
-
-        # ..., and spectral-index channels
-        abs_keys, bhd_keys, spindx_channels, spindx_units \
-                    = numpy.array([DAPall._spectral_index_db_info(p['spindex_key'])
-                                        for p in plan[use_plans]], dtype=object).T
-        if numpy.any([ len(k) != len(spindx_channels[0]) or len(set(k)-set(spindx_channels[0])) > 0
-                        for k in spindx_channels]):
-            raise ValueError('All plans must provide the same emission-line fit channels.')
-        self.spindx_channels = spindx_channels[0].copy()
-        self.spindx_units = spindx_units[0].copy()
-        del spindx_channels, spindx_units
-        self.nindx = len(self.spindx_channels)
-
-        # Report
-        if not self.quiet:
-            log_output(self.loggers, 1, logging.INFO, '-'*50)
-            log_output(self.loggers, 1, logging.INFO, '{0:^50}'.format('RUNNING DAPALL UPDATE'))
-            log_output(self.loggers, 1, logging.INFO, '-'*50)
-            log_output(self.loggers, 1, logging.INFO, 'Available methods: {0}'.format(plan_methods))
-            log_output(self.loggers, 1, logging.INFO,
-                       'Methods for output: {0}'.format(methods))
-            log_output(self.loggers, 1, logging.INFO,
-                       'Emission line moments: {0}'.format(self.nmom))
-            log_output(self.loggers, 1, logging.INFO,
-                       'Emission lines fit: {0}'.format(self.neml))
-            log_output(self.loggers, 1, logging.INFO,
-                       'Spectral indices: {0}'.format(self.nindx))
-
         # Construct the list of files to look for
-        self.plate, self.ifudesign = self._get_completed_observations()
-        methodlist, platelist, ifulist = self._combine_plateifu_methods(self.plate, self.ifudesign)
-        dapfiles = self._construct_maps_file_list(methodlist, platelist, ifulist)
-        self.ndap = len(dapfiles)
-
-        # Report
-        if not self.quiet:
-            log_output(self.loggers, 1, logging.INFO,
-                       'Completed observations: {0}'.format(len(self.plate)))
-            log_output(self.loggers, 1, logging.INFO,
-                       'Total number of expected DAP MAPS files: {0}'.format(self.ndap))
-
-#        # If the table already exists and not clobbering, remove any
-#        # successfully completed files from the list
-#        if not clobber and self.hdu is not None:
-#
-#            # Check that there's enough room for the emission lines
-#            self['EMLINE_NAME'].shape
-#
-#            existing_files = self._construct_maps_file_list(self['PLATE'][self['DAPDONE']],
-#                                                            self['IFUDESIGN'][self['DAPDONE']])
-#            dapfiles = list( set(dapfiles) - set(existing_files) )
-#            # TODO: Need to test this
-#            emptydb = init_record_array(len(dapfiles),
-#                                        self._table_dtype(max(self.neml), max(self.nindx)))
-
-        # If the HDUList is already initialized, close and reinitialize
-        # it
-        if self.hdu is not None:
-            self.hdu.close()
-            self.hdu = None
-
-        # Open the DRPall file
-        if not self.quiet:
-            log_output(self.loggers, 1, logging.INFO,
-                       'Reading DRPall: {0}'.format(self.drpall_file))
-        hdu_drpall = fits.open(self.drpall_file)
-        drpall = hdu_drpall[1].data
+        dapfiles = self._construct_maps_file_list(method)
 
         # Initialize the output database
         db = init_record_array(self.ndap, self._table_dtype(self.nmom, self.neml, self.nindx))
 
         # Add the basic information
-        db['PLATE'] = platelist
-        db['IFUDESIGN'] = ifulist
-        db['PLATEIFU'] = numpy.array([ '{0}-{1}'.format(p,i) for p,i in zip(platelist, ifulist) ])
+        db['PLATE'] = self.plate
+        db['IFUDESIGN'] = self.ifudesign
+        db['PLATEIFU'] = numpy.array(['{0}-{1}'.format(p,i) 
+                                            for p,i in zip(self.plate, self.ifudesign)])
         # For now only analyzing cubes!
         db['MODE'][:] = 'CUBE'
-        db['DAPTYPE'] = methodlist
+        db['DAPTYPE'][:] = method
 
         # Copy from DRPall
-        columns_from_drpall = [ 'MANGAID', 'OBJRA', 'OBJDEC', 'IFURA', 'IFUDEC', 'MNGTARG1',
-                                'MNGTARG2', 'MNGTARG3', 'NSA_Z', 'NSA_ZDIST',
-                                'NSA_ELPETRO_BA', 'NSA_ELPETRO_PHI', 'NSA_ELPETRO_TH50_R',
-                                'NSA_SERSIC_BA', 'NSA_SERSIC_PHI', 'NSA_SERSIC_TH50',
-                                'NSA_SERSIC_N', 'VERSDRP2', 'VERSDRP3', 'VERSCORE', 'VERSUTIL',
-                                'DRP3QUAL' ]
+        columns_from_drpall = ['MANGAID', 'OBJRA', 'OBJDEC', 'IFURA', 'IFUDEC', 'MNGTARG1',
+                               'MNGTARG2', 'MNGTARG3', 'NSA_Z', 'NSA_ZDIST',
+                               'NSA_ELPETRO_BA', 'NSA_ELPETRO_PHI', 'NSA_ELPETRO_TH50_R',
+                               'NSA_SERSIC_BA', 'NSA_SERSIC_PHI', 'NSA_SERSIC_TH50',
+                               'NSA_SERSIC_N', 'VERSDRP2', 'VERSDRP3', 'VERSCORE', 'VERSUTIL',
+                               'DRP3QUAL']
 
-        columns_from_maps_hdr = [ 'VERSDAP', 'DAPQUAL', 'RDXQAKEY', 'BINKEY', 'SCKEY', 'ELMKEY',
-                                  'ELFKEY', 'SIKEY', 'BINTYPE' ]
+        columns_from_maps_hdr = ['VERSDAP', 'DAPQUAL', 'RDXQAKEY', 'BINKEY', 'SCKEY', 'ELMKEY',
+                                 'ELFKEY', 'SIKEY', 'BINTYPE']
 
         # Itereate through each maps file
         for i in range(self.ndap):
-            print('Processing {0}/{1}'.format(i+1,self.ndap))#, end='\r')
+            print('Processing {0}; observation {1}/{2}'.format(method, i+1,self.ndap))#, end='\r')
 
             # Find the index in the drpall file
             indx = numpy.where(drpall['PLATEIFU'] == db['PLATEIFU'][i])[0]
@@ -1155,7 +1044,7 @@ class DAPall:
                         - 17 + 2*numpy.ma.log10(db['LDIST_Z'][i]) + 2*log_Mpc_in_cm
             db['SFR_TOT'][i] = numpy.ma.power(10, log_halpha_luminosity_tot - 41.27).filled(-999.)
 
-        print('Processing {0}/{0}'.format(self.ndap))
+        print('Processing {0}; observation {1}/{1}'.format(method, self.ndap))
 
         # Check that all the data is finite.
         found = False
@@ -1164,10 +1053,148 @@ class DAPall:
                         or numpy.issubdtype(db[name].dtype, numpy.float)):
                 continue
             if not numpy.all(numpy.isfinite(db[name])):
-                print('All values not finite in column {0}'.format(name))
+                print('All values not finite in column {0} for method {1}'.format(name, method))
                 found = True
         if found:
             raise ValueError('All values not finite in DAPall table.')
+
+        return db
+
+    def update(self, plan, methods=None):
+        """
+        Update the DAPall file.
+
+        Currently, this constructs the entire DAPall file from
+        scratch, regardless of whether or not some fraction of the
+        output files have already been analyzed.
+        
+        Args:
+            plan (:class:`mangadap.par.analysisplan.AnalysisPlanSet`):
+                The plan object used by the DAP.
+            methods (:obj:`str`, :obj:`list`, optional):
+                Specify a set of methods in the DAP plan file to
+                include in the DAPall file. If not provided, all
+                methods in the plan file are included.
+
+        Raises:
+            ValueError:
+                Raised if a provided method is not in the provided
+                set of analysis plans, or if the methods do not all
+                have the same number of emission-line bandpasses,
+                emission-lines to fit, and number of spectral
+                indices.
+        """
+        if self.readonly:
+            raise ValueError('Object is read-only.')
+
+        # Check the input type
+        # TODO: Plan isn't really needed.  Could just troll the
+        # analysis_path for the directory names...
+        if not isinstance(plan, AnalysisPlanSet):
+            raise TypeError('Input plan must have type AnalysisPlanSet.')
+
+        # Get the full list of available plan methods
+        plan_methods = []
+        for p in plan:
+            bin_method = SpatiallyBinnedSpectra.define_method(p['bin_key'])
+            sc_method = StellarContinuumModel.define_method(p['continuum_key'])
+            el_method = EmissionLineModel.define_method(p['elfit_key'])
+            plan_methods += [defaults.dap_method(bin_method['key'],
+                                                 sc_method['fitpar']['template_library_key'],
+                                                 el_method['continuum_tpl_key'])]
+        # Check that the plan methods are unique.  This should never be
+        # raised, unless it also causes problems in the DAP itself.
+        if len(numpy.unique(plan_methods)) != len(plan_methods):
+            raise ValueError('All of the plan methods must be unique!')
+
+        # Get the list of methods to look for
+        if methods is None:
+            self.methods = numpy.array(plan_methods)
+            use_plans = numpy.ones(len(plan_methods), dtype=bool)
+        else:
+            self.methods = numpy.atleast_1d(methods)
+            # Make sure the provided list is unique
+            if len(numpy.unique(self.methods)) != len(self.methods):
+                raise ValueError('Must provide unique list of methods.')
+            # All the methods to use must be in the provided plan
+            if not numpy.all( [m in plan_methods for m in self.methods ]):
+                raise ValueError('All provided methods must be in provided plan file.')
+            # Find the index of the plans to use
+            use_plans = numpy.zeros(len(plan_methods), dtype=bool)
+            for i,p in enumerate(plan_methods):
+                if p in self.methods:
+                    use_plans[i] = True
+
+        # Check that all the plans to use have the same emission-line
+        # bandpass channels, ...
+        elmom_keys, elmom_channels \
+                    = numpy.array([DAPall._emission_line_moment_db_info(p['elmom_key'])
+                                        for p in plan[use_plans]], dtype=object).T
+        if numpy.any([ len(k) != len(elmom_channels[0]) or len(set(k)-set(elmom_channels[0])) > 0
+                        for k in elmom_channels]):
+            raise ValueError('All plans must provide the same emission-line bandpass channels.')
+        self.elmom_channels = elmom_channels[0].copy()
+        del elmom_channels
+        self.nmom = len(self.elmom_channels)
+
+        # ..., emission-line fit channels, and...
+        elfit_keys, elfit_channels \
+                    = numpy.array([DAPall._emission_line_db_info(p['elfit_key'])
+                                        for p in plan[use_plans]], dtype=object).T
+        if numpy.any([ len(k) != len(elfit_channels[0]) or len(set(k)-set(elfit_channels[0])) > 0
+                        for k in elfit_channels]):
+            raise ValueError('All plans must provide the same emission-line fit channels.')
+        self.elfit_channels = elfit_channels[0].copy()
+        del elfit_channels
+        self.neml = len(self.elfit_channels)
+
+        # ..., and spectral-index channels
+        abs_keys, bhd_keys, spindx_channels, spindx_units \
+                    = numpy.array([DAPall._spectral_index_db_info(p['spindex_key'])
+                                        for p in plan[use_plans]], dtype=object).T
+        if numpy.any([ len(k) != len(spindx_channels[0]) or len(set(k)-set(spindx_channels[0])) > 0
+                        for k in spindx_channels]):
+            raise ValueError('All plans must provide the same emission-line fit channels.')
+        self.spindx_channels = spindx_channels[0].copy()
+        self.spindx_units = spindx_units[0].copy()
+        del spindx_channels, spindx_units
+        self.nindx = len(self.spindx_channels)
+
+        # PlateIFUs that should be analyzed per DAP method
+        self.plate, self.ifudesign = self._get_completed_observations()
+        # Number of completed observations per analysis method
+        self.ndap = len(self.plate)
+
+        # Report
+        if not self.quiet:
+            log_output(self.loggers, 1, logging.INFO, '-'*50)
+            log_output(self.loggers, 1, logging.INFO, '{0:^50}'.format('RUNNING DAPALL UPDATE'))
+            log_output(self.loggers, 1, logging.INFO, '-'*50)
+            log_output(self.loggers, 1, logging.INFO,
+                       'Completed observations: {0}'.format(self.ndap))
+            log_output(self.loggers, 1, logging.INFO,
+                       'Available methods: {0}'.format(plan_methods))
+            log_output(self.loggers, 1, logging.INFO,
+                       'Methods for output: {0}'.format(self.methods))
+            log_output(self.loggers, 1, logging.INFO,
+                       'Emission line moments: {0}'.format(self.nmom))
+            log_output(self.loggers, 1, logging.INFO,
+                       'Emission lines fit: {0}'.format(self.neml))
+            log_output(self.loggers, 1, logging.INFO,
+                       'Spectral indices: {0}'.format(self.nindx))
+
+        # If the HDUList is already initialized, close and reinitialize
+        # it
+        if self.hdu is not None:
+            self.hdu.close()
+            self.hdu = None
+
+        # Open the DRPall file
+        if not self.quiet:
+            log_output(self.loggers, 1, logging.INFO,
+                       'Reading DRPall: {0}'.format(self.drpall_file))
+        hdu_drpall = fits.open(self.drpall_file)
+        drpall = hdu_drpall[1].data
 
         # Create the primary header
         hdr = fits.Header()
@@ -1183,14 +1210,19 @@ class DAPall:
         hdr = self._add_channels_to_header(hdr, self.spindx_channels, 'SPI',
                                            'Spectral-indx element', units=self.spindx_units)
 
-        # Set the fits HDU list
-        self.hdu = fits.HDUList([ fits.PrimaryHDU(header=hdr),
-                                  fits.BinTableHDU.from_columns(
-                                    [ fits.Column(name=n, format=rec_to_fits_type(db[n]),
-                                      array=db[n]) for n in db.dtype.names ],
-                                    name='DAPALL') ])
+        # Instantiate the list of hdus:
+        self.hdu = fits.HDUList([fits.PrimaryHDU(header=hdr)])
 
-        # Write the file (this function is probably overkill)
+        # Construct a DAPall database for each analysis method and add
+        # it as a binary table to the list of HDUs.
+        for method in self.methods:
+            method_db = self.method_database(method, drpall)
+            self.hdu += [fits.BinTableHDU.from_columns(
+                                [fits.Column(name=n, format=rec_to_fits_type(method_db[n]),
+                                             array=method_db[n]) for n in method_db.dtype.names],
+                                                       name=method)]
+
+        # Write the file (use of this function is probably overkill)
         DAPFitsUtil.write(self.hdu, self.file_path(), clobber=True, checksum=True,
                           loggers=self.loggers)
         

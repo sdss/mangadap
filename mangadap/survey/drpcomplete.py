@@ -2,8 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Defines a class used to produce and provide an interface for data
-required to create the input `SDSS-style parameter file`_ for the DAP,
-the :ref:`execution-obs-input` file.
+required to create :ref:`execution-config`.
 
 The drpcomplete file/data is primarily required for the survey-level
 :ref:`execution` of the DAP. However, it does provide useful information
@@ -58,12 +57,12 @@ Revision history
 ----
 
 .. include license and copyright
-.. include:: ../copy.rst
+.. include:: ../include/copy.rst
 
 ----
 
 .. include common links, assuming primary doc root is up one directory
-.. include:: ../links.rst
+.. include:: ../include/links.rst
 """
 
 import os
@@ -1246,15 +1245,21 @@ class DRPComplete:
         """
         Determine the DAP can analyze a plate-ifu entry in the database.
 
+        The selection is currently:
+
+            - MaNGAID != 'NULL'
+            - MANGA_TARGET1 > 0 or MANGA_TARGET3 > 0
+            - VEL > -500
+
         Args:
             row (:obj:`int`, optional):
                 The specific row to test.  By default, return a boolean
                 vector for all the database rows.
 
         Returns:
-            Either a single boolean or boolean `numpy.ndarray` flagging
-            that DAP can (True) or cannot (False) analyze the data
-            associated with the database entry (or entries).
+            Either a single boolean or boolean `numpy.ndarray`_
+            flagging that DAP can (True) or cannot (False) analyze
+            the data associated with the database entry (or entries).
         """
         if row is None:
             return (self['MANGAID'] != 'NULL') \

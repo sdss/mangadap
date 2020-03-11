@@ -4,6 +4,6 @@
 Parameter Sets
 ==============
 
-.. include:: links.rst
-.. include:: parset_usage.rst
+.. include:: include/links.rst
+.. include:: include/parset_usage.rst
 

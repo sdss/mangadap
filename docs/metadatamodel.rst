@@ -4,12 +4,16 @@
 Metadata Model
 ==============
 
+.. todo::
+
+    - Links in the description of the DRPComplete file.
+
 .. _metadatamodel-maskbits:
 
 Maskbits
 --------
 
-The mask bits for the DAP output files are pulled from IDLUTILS. A
+The mask bits for the DAP output files are pulled from ``IDLUTILS``. A
 default file is provided with the ``mangadap`` distribution; however,
 the DAP ``setup.py`` file will also attempt to download the most
 relevant file from the public SDSS SVN repository using the python
@@ -32,11 +36,11 @@ See :ref:`gettingstarted-bitmasks` for examples of how to use the mask bits.
 
 The three bitmask groups for DAP output files are:
 
-    - :ref:`metadatamodel-dapqual`: Global quality bit
-    - :ref:`metadatamodel-dappixmask`: Spaxel-by-spaxel bits for the DAP
-      MAPS quantities
-    - :ref:`metadatamodel-dapspecmask`:Pixel-by-pixel bits for the DAP
-      model LOGCUBE data
+    * :ref:`metadatamodel-dapqual`: Global quality bit
+    * :ref:`metadatamodel-dappixmask`: Spaxel-by-spaxel bits for the DAP
+      ``MAPS`` quantities
+    * :ref:`metadatamodel-dapspecmask`:Pixel-by-pixel bits for the DAP
+      model ``LOGCUBE`` data
 
 These bitmask groups are further described and listed below.  For
 reference, we also list the two *DRP* bitmask groups that the DAP
@@ -53,8 +57,8 @@ are below.
 
 .. include:: tables/drpquality3dbitmask.rst
 
-The DAP essentially only uses the CRITICAL flag and only when
-constructing the MANGA_DAPQUAL flag value.
+The DAP essentially only uses the ``CRITICAL`` flag and only when
+constructing the ``MANGA_DAPQUAL`` flag value.
 
 .. _metadatamodel-drp3pixmask:
 
@@ -75,15 +79,14 @@ MANGA_DAPQUAL
 ~~~~~~~~~~~~~
 
 There is a single summary maskbit ``MANGA_DAPQUAL`` included in the
-headers of both the MAPS and LOGCUBE files describing the overall
-quality of the data.
-The DAP class used to handle these bits and the
-bit values are below.
+headers of both the ``MAPS`` and ``LOGCUBE`` files describing the
+overall quality of the data. The DAP class used to handle these bits
+and the bit values are below.
 
 .. include:: tables/dapqualitybitmask.rst
 
-Anything with the CRITICAL bit set in MANGA_DAPQUAL should generally not
-be used for scientific purposes.
+Anything with the ``CRITICAL`` bit set in ``MANGA_DAPQUAL`` should
+generally not be used for scientific purposes.
 
 .. _metadatamodel-dappixmask:
 
@@ -105,25 +108,25 @@ which indicates that a given pixel should not be used for science.
 The NEARBOUND flag
 ++++++++++++++++++
 
-The ``NEARBOUND`` flag is used to signify that a returned parameter is
-likely biased by an imposed boundary on the allowed parameter space.
-These are specifically relevant to the pPXF kinematics from
+The ``NEARBOUND`` flag is used to signify that a returned parameter
+is likely biased by an imposed boundary on the allowed parameter
+space. These are specifically relevant to the pPXF kinematics from
 :class:`mangadap.proc.ppxffit.PPXFFit` (stellar) and
-:class:`mangdap.proc.sasuke.Sasuke` (gas).  We use pPXF with a
-:math:`\pm 2000` km/s limit relative to the input guess velocity (set by
-:math:`cz` in ``SCINPVEL`` header keyword in the ``PRIMARY`` extension
-and most often identical to the NSA redshift) on the returned velocity
-and :math:`{\rm d}v/100 < \sigma < 1000` limit on the velocity
-dispersion, where :math:`{\rm d}v` is the size of the MaNGA LOGCUBE
-wavelength channel (:math:`\sim 70` km/s; given by the ``VSTEP`` header
-keyword in the ``PRIMARY`` extension.  The returned velocity is
-determined to be ``NEARBOUND`` if the "best-fit" value is within 1/100
-of the width of the allowed range of either boundary; i.e.,
-``NEARBOUND`` is triggered if the velocity is :math:`-2000<v<-1980` or
-:math:`1980<v<2000`.  For the velocity dispersion, ``NEARBOUND`` is
-triggered by the same criterion but geometrically; i.e., if the velocity
-dispersion is :math:`0.69 < \sigma < 0.74` or :math:`929.8 < \sigma <
-1000`.
+:class:`mangdap.proc.sasuke.Sasuke` (gas). We use pPXF with a
+:math:`\pm 2000` km/s limit relative to the input guess velocity (set
+by :math:`cz` in ``SCINPVEL`` header keyword in the ``PRIMARY``
+extension and most often identical to the NSA redshift) on the
+returned velocity and :math:`{\rm d}v/100 < \sigma < 1000` limit on
+the velocity dispersion, where :math:`{\rm d}v` is the size of the
+MaNGA ``LOGCUBE`` wavelength channel (:math:`\sim 70` km/s; given by
+the ``VSTEP`` header keyword in the ``PRIMARY`` extension. The
+returned velocity is determined to be ``NEARBOUND`` if the "best-fit"
+value is within 1/100 of the width of the allowed range of either
+boundary; i.e., ``NEARBOUND`` is triggered if the velocity is
+:math:`-2000<v<-1980` or :math:`1980<v<2000`. For the velocity
+dispersion, ``NEARBOUND`` is triggered by the same criterion but
+geometrically; i.e., if the velocity dispersion is :math:`0.69 <
+\sigma < 0.74` or :math:`929.8 < \sigma < 1000`.
 
 .. _metadatamodel-unreliable:
 
@@ -131,44 +134,45 @@ The UNRELIABLE flag
 +++++++++++++++++++
 
 The ``UNRELIABLE`` flag is *not* incorporated into the ``DONOTUSE``
-flag.  This flag is tripped based on various judgement calls made by the
-data products committee (DPC) and the pipeline development teams.  You
-are **strongly** encouraged to understand the implications of this flag
-on the data and how to properly make the distinction between the
-``DONOTUSE`` and ``UNRELIABLE`` flags for your science application.  The
-definition of the ``UNRELIABLE`` flag can change with time, in the hope
-that we eventually converge to a refined set of criteria that allow
-users to determine when measurements can be trusted carte blanche and
-when the data should be treated more skeptically.  Only spaxels where
-analysis has been attempted (with non-zero bin IDs) are flagged as
-``UNRELIABLE`` if they meet the necessary criteria.  *Please let us know
-if you find a set of automated criteria that would be useful to the
-development team in terms of what you would like to see marked as*
-``UNRELIABLE``.
+flag. This flag is tripped based on various judgement calls made by
+the MaNGA data products committee (DPC) and the pipeline development
+teams. You are **strongly** encouraged to understand the implications
+of this flag on the data and how to properly make the distinction
+between the ``DONOTUSE`` and ``UNRELIABLE`` flags for your science
+application. The definition of the ``UNRELIABLE`` flag can change
+with time, in the hope that we eventually converge to a refined set
+of criteria that allow users to determine when measurements can be
+trusted carte blanche and when the data should be treated more
+skeptically. Only spaxels where analysis has been attempted (with
+non-zero bin IDs) are flagged as ``UNRELIABLE`` if they meet the
+necessary criteria. *Please `let us know
+<https://github.com/sdss/mangadap/issues>`_ if you find a set of
+automated criteria that would be useful to the development team in
+terms of what you would like to see marked as* ``UNRELIABLE``.
 
-Currently, the use of the ``UNRELIABLE`` flag is still rather limited.
-This is not to say that all measurements are reliable, but reflects our
-hesitance to set (robust) criteria for isolating unreliable
-measurements, either because we don't think we're able to or because we
-haven't had sufficient time to do so.  Below, we list the condition
-under which ``UNRELIABLE`` flags are tripped, and the affected masks in
-the ``MAPS`` file.
+Currently, the use of the ``UNRELIABLE`` flag is still rather
+limited. This is not to say that all measurements are reliable, but
+reflects our hesitance to set (robust) criteria for isolating
+unreliable measurements, either because we don't think we're able or
+because we haven't had sufficient time to do so. Below, we list the
+condition under which ``UNRELIABLE`` flags are tripped, and the
+affected masks in the ``MAPS`` file.
 
-+-------------------+---------------------------------------------------+
-| Affected mask     | Criteria                                          |
-+===================+===================================================+
-| EMLINE_SFLUX_MASK | If there are '''any''' masked pixels in the three |
-|                   | passbands (blue, main, red) used to construct the |
-|                   | measurement.                                      |
-+-------------------+---------------------------------------------------+
-| EMLINE_SEW_MASK   | If there are '''any''' masked pixels in the three |
-|                   | passbands (blue, main, red) used to construct the |
-|                   | measurement.                                      |
-+-------------------+---------------------------------------------------+
-| SPECINDEX_MASK    | If there are '''any''' masked pixels in the three |
-|                   | passbands (blue, main, red) used to construct the |
-|                   | measurement.                                      |
-+-------------------+---------------------------------------------------+
++-----------------------+---------------------------------------------------+
+| Affected mask         | Criteria                                          |
++=======================+===================================================+
+| ``EMLINE_SFLUX_MASK`` | If there are **any** masked pixels in the three   |
+|                       | passbands (blue, main, red) used to construct the |
+|                       | measurement.                                      |
++-----------------------+---------------------------------------------------+
+| ``EMLINE_SEW_MASK``   | If there are **any** masked pixels in the three   |
+|                       | passbands (blue, main, red) used to construct the |
+|                       | measurement.                                      |
++-----------------------+---------------------------------------------------+
+| ``SPECINDEX_MASK``    | If there are **any** masked pixels in the three   |
+|                       | passbands (blue, main, red) used to construct the |
+|                       | measurement.                                      |
++-----------------------+---------------------------------------------------+
 
 .. _metadatamodel-dapspecmask:
 
@@ -189,19 +193,20 @@ Internally, the DAP uses separate bitmasks to flag data resulting from
 each of its main modules.  These bitmasks are written to the module
 reference files and then consolidated into the bits tabulated above for
 the main DAP output files (the ``MAPS`` and model ``LOGCUBE`` files).
-These bits are listed in the description of each module.
+These bits are listed in the description of each analysis module.
 
 ----
 
 DAP Execution Files
 -------------------
 
-The DAP is configured using an input execution plan file created by the
-user.  There are additional intermediary script files created by the DAP
-to allow for event handling and cluster coordination.
+The DAP is configured using an input execution plan file created by
+the user (when the default plan is not used). There are additional
+intermediary script files created by the DAP to allow for event
+handling and cluster coordination.
 
 See :ref:`execution` for more general information about execution of
-the DAP.  What follows is specifically for the survey level execution of
+the DAP.  What follows is specifically for the survey-level execution of
 the DAP.
 
 AnalysisPlan file
@@ -227,11 +232,11 @@ DRPComplete database
 *File template*:
 ``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/common/drpcomplete_$MANGADRP_VER.fits``
 
-The :class:`mangadap.survey.drpcomplete.DRPComplete` file is primarily
-created for the survey-level execution of the DAP.  It collates
-information used to create the input parameter files for each completed
-DRP file.  It is created/updated at the beginning of each
-:ref:`execution-rundap`.
+The :class:`mangadap.survey.drpcomplete.DRPComplete` file is
+primarily created for the survey-level execution of the DAP. It
+collates information used to create the input configuration files for
+each DRP-produced datacube. The ``DRPComplete`` database is
+created/updated at the beginning of each :ref:`execution-rundap`.
 
 The :class:`mangadap.survey.drpcomplete.DRPComplete` database is written
 to a fits file with a primary extension and a binary-table extension;
@@ -281,35 +286,27 @@ the table extension has the following columns:
 
 .. note::
 
-    - The DAP currently only works with the ``LOG`` format, and does not
+    * The DAP currently only works with the ``LOG`` format, and does not
       search for or analyze the ``LIN`` format.
-
-    - ``OBJRA`` and ``OBJDEC`` are not necessarily located at the center
+    * ``OBJRA`` and ``OBJDEC`` are not necessarily located at the center
       of the IFU field of view.  The IFU center coordinates are provided
       in DRPall file (**link**) as ``IFURA`` and ``IFUDEC``.
-
-    - The MaNGA ID is defined as ``[CATID]-[CATINDX]`` (**link**)
-
-    - For the main survey galaxies, ``TRG_VERSION`` and ``TRG_ID`` are
+    * The MaNGA ID is defined as ``[CATID]-[CATINDX]`` (**link**)
+    * For the main survey galaxies, ``TRG_VERSION`` and ``TRG_ID`` are
       drawn from the NASA-Sloan atlas and are identical to
       'nsa_nsa_version' and 'nsa_nsaid' in the DRPall file (**link**).
-
-    - The targeting bits are defined (**link**).
-
-    - The redshifts from the NSA and ancillary-program catalogs are
+    * The targeting bits are defined (**link**).
+    * The redshifts from the NSA and ancillary-program catalogs are
       consolidated into the 'z' column in the DRPall file.  See
       discussion of the "redshift fix file" below.
-
-    - The characteristic velocity dispersion is virtually always not
+    * The characteristic velocity dispersion is virtually always not
       available and set to -9999.  In this case, the DAP will default to
       a dispersion of 100 km/s.
-
-    - For main survey galaxies, photometric measurements are taken from
+    * For main survey galaxies, photometric measurements are taken from
       'nsa_ba', 'nsa_phi' and 'nsa_petro_th50_el' in the DRPall file.
       If any of these values do not exist or are 'nan', they are set to
-      -9999.0.  Importantly, *these placeholder values are replaced by
-      ``ELL=0; PA=0; REFF=1`` when processed by the DAP.*
-
+      -9999.0.  **Importantly**, these placeholder values are replaced by
+      ``ELL=0; PA=0; REFF=1`` when processed by the DAP.
 
 .. _metadatamodel-redshift-fix:
 
@@ -317,13 +314,13 @@ Redshift Fix File
 ~~~~~~~~~~~~~~~~~
 
 *File template*:
-``$MANGADAP_DIR/data/fix/redshift_fix.par``
+``$MANGADAP_DIR/mangadap/data/fix/redshift_fix.par``
 
 The redshift-fix file is an `SDSS parameter file
-<https://www.sdss.org/dr15/software/par/>`_ used to replace any redshift
-(:math:`cz`) read from the DRPall or plateTargets files.  It has a
-simple format that identifies the plate, ifudesign, and replacement
-redshift:
+<https://www.sdss.org/dr15/software/par/>`_ used to replace any
+redshift (:math:`z`) read from the DRPall or plateTargets files. It
+has a simple format that identifies the plate, ifudesign, and
+replacement redshift:
 
 .. code-block:: c
 
@@ -355,21 +352,20 @@ execute the DAP, as created by the ``rundap`` script
 
 See :ref:`execution-rundap`.
 
-Observational parameter file
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Datacube Configuration File
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-For a general description the ``ObsInputPar`` file, see
-:ref:`execution-obs-input`.
+For a general description, see :ref:`execution-config`.
 
-*File template*: ``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/common/[PLATE]/[IFUDESIGN]/mangadap-[PLATE]-[IFUDESIGN]-LOG[MODE].par``
+*File template*: ``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/common/[PLATE]/[IFUDESIGN]/mangadap-[PLATE]-[IFUDESIGN]-LOG[MODE].ini``
 
-*Symlink*: ``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/[DAPTYPE]/[PLATE]/[IFUDESIGN]/ref/mangadap-[PLATE]-[IFUDESIGN]-LOG[MODE].par``
+*Symlink*: ``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/[DAPTYPE]/[PLATE]/[IFUDESIGN]/ref/mangadap-[PLATE]-[IFUDESIGN]-LOG[MODE].ini``
 
-In the file templates, ``[PLATE]`` is the plate number, ``[IFUDESIGN]``
-is the IFU number, ``[MODE]`` is the data format (always ``CUBE`` for
-now), and ``[DAPTYPE]`` is the keyword for the analysis approach.  These
-files provide input observational parameters to the DAP, and are almost
-entirely from the NASA-Sloan Atlas.
+In the file templates, ``[PLATE]`` is the plate number,
+``[IFUDESIGN]`` is the IFU number, ``[MODE]`` is the data format
+(always ``CUBE``), and ``[DAPTYPE]`` is the keyword for the analysis
+approach. These files provide input observational parameters to the
+DAP and are almost entirely from the NASA-Sloan Atlas.
 
 ----
 
@@ -381,13 +377,10 @@ DAPall database
 *File template*:
 ``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/dapall-$MANGADRP_VER-$MANGADAP_VER.fits``
 
-The DAPall file has two extensions:
-    
-    1. ``PRIMARY``: Empty apart from the header information
-    2. ``DAPALL``: Binary table data
-
-The DAPall file contains one row per DAP ``MAPS`` file, such that the
-total number of rows is :math:`N_{\rm cube}*N_{\rm daptype}`.
+The DAPall file has an empty primary extension and then one extension
+for each ``DAPTYPE`` performed by a given analysis plan. The name of
+the extension is identically the ``DAPTYPE`` and it contains one row
+per analyzed datacube.
 
 Header data
 ~~~~~~~~~~~
@@ -584,26 +577,26 @@ The binary table in the ``DAPALL`` extension has the following columns:
 |                   ``HA_Z`` |          double |                                                    | Flux-weighted mean redshift of the Hα line within a 2.5 arcsec aperture at    |
 |                            |                 |                                                    | the galaxy center.                                                            |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
-|             ``HA_GVEL_LO`` |          double |                                               km/s | Gaussian-fitted velocity of the H:math:`\alpha` line at 2.5% growth of all    |
-|                            |                 |                                                    | valid spaxels.                                                                |
+|             ``HA_GVEL_LO`` |          double |                                               km/s | Gaussian-fitted velocity of the :math:`{\rm H}\alpha` line at 2.5% growth     |
+|                            |                 |                                                    | of all valid spaxels.                                                         |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
-|             ``HA_GVEL_HI`` |          double |                                               km/s | Gaussian-fitted velocity of the H:math:`\alpha` line at 97.5% growth of all   |
-|                            |                 |                                                    | valid spaxels.                                                                |
+|             ``HA_GVEL_HI`` |          double |                                               km/s | Gaussian-fitted velocity of the :math:`{\rm H}\alpha` line at 97.5% growth    |
+|                            |                 |                                                    | of all valid spaxels.                                                         |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
-|        ``HA_GVEL_LO_CLIP`` |          double |                                               km/s | Gaussian-fitted velocity of the H:math:`\alpha` line at 2.5% growth after     |
+|        ``HA_GVEL_LO_CLIP`` |          double |                                               km/s | Gaussian-fitted velocity of the :math:`{\rm H}\alpha` line at 2.5% growth     |
+|                            |                 |                                                    | after iteratively clipping :math:`3\sigma` outliers.                          |
++----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
+|        ``HA_GVEL_HI_CLIP`` |          double |                                               km/s | Gaussian-fitted velocity of the :math:`{\rm H}\alpha` line at 97.5% growth    |
 |                            |                 |                                                    | iteratively clipping :math:`3\sigma` outliers.                                |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
-|        ``HA_GVEL_HI_CLIP`` |          double |                                               km/s | Gaussian-fitted velocity of the H:math:`\alpha` line at 97.5% growth after    |
-|                            |                 |                                                    | iteratively clipping :math:`3\sigma` outliers.                                |
+|          ``HA_GSIGMA_1RE`` |          double |                                               km/s | Flux-weighted :math:`{\rm H}\alpha` velocity dispersion (from Gaussian fit)   |
+|                            |                 |                                                    | of all spaxels within 1 :math:`R_e`.                                          |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
-|          ``HA_GSIGMA_1RE`` |          double |                                               km/s | Flux-weighted H:math:`\alpha` velocity dispersion (from Gaussian fit) of all  |
-|                            |                 |                                                    | spaxels within 1 :math:`R_e`.                                                 |
+|           ``HA_GSIGMA_HI`` |          double |                                               km/s | :math:`{\rm H}\alpha` velocity dispersion (from Gaussian fit) at 97.5% growth |
+|                            |                 |                                                    | of all valid spaxels.                                                         |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
-|           ``HA_GSIGMA_HI`` |          double |                                               km/s | H:math:`\alpha` velocity dispersion (from Gaussian fit) at 97.5% growth of    |
-|                            |                 |                                                    | all valid spaxels.                                                            |
-+----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
-|      ``HA_GSIGMA_HI_CLIP`` |          double |                                               km/s | H:math:`\alpha` velocity dispersion (from Gaussian fit) at 97.5% growth after |
-|                            |                 |                                                    | iteratively clipping :math:`3\sigma` outliers.                                |
+|      ``HA_GSIGMA_HI_CLIP`` |          double |                                               km/s | :math:`{\rm H}\alpha` velocity dispersion (from Gaussian fit) at 97.5% growth |
+|                            |                 |                                                    | after iteratively clipping :math:`3\sigma` outliers.                          |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
 |       ``EMLINE_RCHI2_1RE`` |          double |                                                    | Median reduced :math:`\chi^2` of the continuum+emission-line fit within 1     |
 |                            |                 |                                                    | :math:`R_e`.                                                                  |
@@ -611,7 +604,7 @@ The binary table in the ``DAPALL`` extension has the following columns:
 |       ``EMLINE_SFLUX_CEN`` | double (vector) |                  :math:`10^{-17} {\rm erg/s/cm}^2` | Summed emission-line flux integrated within a 2.5 arcsec aperture at the      |
 |                            |                 |                                                    | galaxy center.                                                                |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
-|       ``EMLINE_SFLUX_1RE`` | double (vector) |                  :math:`10^{-17} {\rm erg/s/cm}^2` | Summed emission-line flux integrated within a 1-:math:`R_e` aperture at the   |
+|       ``EMLINE_SFLUX_1RE`` | double (vector) |                  :math:`10^{-17} {\rm erg/s/cm}^2` | Summed emission-line flux integrated within a 1 :math:`R_e` aperture at the   |
 |                            |                 |                                                    | galaxy.                                                                       |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
 |       ``EMLINE_SFLUX_TOT`` | double (vector) |                  :math:`10^{-17} {\rm erg/s/cm}^2` | Total integrated flux of each summed emission measurement within the full     |
@@ -660,20 +653,20 @@ The binary table in the ``DAPALL`` extension has the following columns:
 |          ``SPECINDEX_1RE`` | double (vector) |                                            ang,mag | Median spectral index within 1 :math:`R_e`.                                   |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
 |                ``SFR_1RE`` |          double |                    :math:`h^{-2} {\rm M}_\odot/yr` | Simple estimate of the star-formation rate within 1 :math:`R_e` based on the  |
-|                            |                 |                                                    | Gaussian-fitted H:math:`\alpha` flux;                                         |
+|                            |                 |                                                    | Gaussian-fitted :math:`{\rm H}\alpha` flux;                                   |
 |                            |                 |                                                    | :math:`\log {\rm SFR} = \log L_{{\rm H}\alpha} - 41.27` (Kennicutt & Evans    |
 |                            |                 |                                                    | [2012, ARAA, 50, 531], citing Murphy et al. [2011, ApJ, 737, 67] and Hao et   |
-|                            |                 |                                                    | al. [2011, ApJ, 741, 124]; Kroupa IMF), where :math:`L_{{\rm H}\alpha}`       |
-|                            |                 |                                                    | = 4:math:`\pi` EML_FLUX_1RE (LDIST_Z):math:`^2` and *no* attenuation          |
-|                            |                 |                                                    | correction has been applied.                                                  |
+|                            |                 |                                                    | al. [2011, ApJ, 741, 124]; Kroupa IMF), where                                 |
+|                            |                 |                                                    | :math:`L_{{\rm H}\alpha} = 4\pi {\rm EML_FLUX_1RE} ({\rm LDIST_Z})^2` and     |
+|                            |                 |                                                    | *no* attenuation  correction has been applied.                                |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
 |                ``SFR_TOT`` |          double |                    :math:`h^{-2} {\rm M}_\odot/yr` | Simple estimate of the star-formation rate within the IFU field-of-view based |
 |                            |                 |                                                    | on the Gaussian-fitted H:math:`\alpha` flux;                                  |
 |                            |                 |                                                    | :math:`\log {\rm SFR} = \log L_{{\rm H}\alpha} - 41.27` (Kennicutt & Evans    |
 |                            |                 |                                                    | [2012, ARAA, 50, 531], citing Murphy et al. [2011, ApJ, 737, 67] and Hao et   |
-|                            |                 |                                                    | al. [2011, ApJ, 741, 124]; Kroupa IMF), where :math:`L_{{\rm H}\alpha}`       |
-|                            |                 |                                                    | = 4:math:`\pi` EML_FLUX_1RE (LDIST_Z):math:`^2` and *no* attenuation          |
-|                            |                 |                                                    | correction has been applied.                                                  |
+|                            |                 |                                                    | al. [2011, ApJ, 741, 124]; Kroupa IMF), where                                 |
+|                            |                 |                                                    | :math:`L_{{\rm H}\alpha} = 4\pi {\rm EML_FLUX_1RE} ({\rm LDIST_Z})^2` and     |
+|                            |                 |                                                    | *no* attenuation  correction has been applied.                                |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
 
 .. note::

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 
-.. include:: ../parset_usage.rst
+.. include:: ../include/parset_usage.rst
 
 .. todo::
     - Add range and length parameters allowing one to define the range
@@ -33,12 +33,12 @@ Revision history
 ----
 
 .. include license and copyright
-.. include:: ../copy.rst
+.. include:: ../include/copy.rst
 
 ----
 
 .. include common links, assuming primary doc root is up one directory
-.. include:: ../links.rst
+.. include:: ../include/links.rst
 """
 
 import os

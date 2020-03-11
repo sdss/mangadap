@@ -2,7 +2,7 @@ import os
 import time
 import numpy
 
-from argparse import ArgumentParser
+import argparse
 
 from matplotlib import pyplot, colors, rc, colorbar, ticker
 
@@ -667,7 +667,7 @@ def ppxffit_qa_plot(plt, ifu, plan, drpver=None, redux_path=None, dapver=None, a
 
 
 def parse_args(options=None):
-    parser = ArgumentParser()
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('plate', type=int, help='plate ID to process')
     parser.add_argument('ifudesign', type=int, help='IFU design to process')
@@ -699,10 +699,8 @@ def main(args):
         pyplot.switch_backend('agg')
 
     # Get the DAP method types to plot
-    plan_file = defaults.dap_plan_file(drpver=args.drpver, dapver=args.dapver,
-                                       analysis_path=args.analysis_path) \
-                            if args.plan_file is None else args.plan_file
-    analysisplan = AnalysisPlanSet.from_par_file(plan_file)
+    analysisplan = AnalysisPlanSet.default() if args.plan_file is None \
+                        else AnalysisPlanSet.from_par_file(args.plan_file)
 
     # Construct the plot for each analysis plan
     for plan in analysisplan:

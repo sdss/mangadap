@@ -1,10 +1,11 @@
 import os
 import time
+import argparse
 
 import numpy
 
 from astropy.io import fits
-from argparse import ArgumentParser
+
 from matplotlib import pyplot
 from matplotlib.ticker import NullFormatter
 from matplotlib.widgets import Button, RadioButtons, AxesWidget
@@ -1009,7 +1010,7 @@ def manga_dap_inspector(maps_file, model_file, ext=None, masked_spectra=True):
     pyplot.show()
 
 def parse_args(options=None):
-    parser = ArgumentParser()
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('--maps_file', type=str, default=None, help='Output MAPS file')
     parser.add_argument('--model_file', type=str, default=None, help='Output LOGCUBE model file')

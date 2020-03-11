@@ -111,6 +111,18 @@ def test_var():
             'Result should be an identity matrix'
 
 
+def test_array():
+    # Construct the Covariance matrix from a pre-calculated array
+    c = numpy.diag(numpy.full(10-2, 0.2, dtype=float), k=-2) \
+            + numpy.diag(numpy.full(10-1, 0.5, dtype=float), k=-1) \
+            + numpy.diag(numpy.full(10, 1.0, dtype=float), k=0) \
+            + numpy.diag(numpy.full(10-1, 0.5, dtype=float), k=1) \
+            + numpy.diag(numpy.full(10-2, 0.2, dtype=float), k=2)
+    covar = Covariance.from_array(c)
+    # Should be the same as the identity matrix.
+    assert numpy.array_equal(covar.toarray(), c), 'Arrays should be identical'
+
+
 def test_io():
 
     # Clean up in case of a failure
@@ -139,6 +151,24 @@ def test_io():
     assert numpy.allclose(covar.toarray(), _covar.toarray()), 'Bad I/O'
     # Clean-up 
     os.remove(ofile)
+
+
+@requires_remote
+def test_read_drp():
+    drpfile = os.path.join(remote_data_file(), MaNGADataCube.build_file_name(7815, 3702))
+    
+    assert os.path.isfile(drpfile), 'Did not find file'
+
+    with fits.open(drpfile) as hdu:
+        covar = Covariance.from_fits(hdu, ivar_ext=None, covar_ext='GCORREL', impose_triu=True,
+                                     correlation=True)
+        var = numpy.ma.power(hdu['IVAR'].data[hdu['GCORREL'].header['BBINDEX']].T.ravel(),
+                             -1).filled(0.0)
+
+    covar = covar.apply_new_variance(var)
+    covar.revert_correlation()
+
+    assert numpy.array_equal(var, numpy.diag(covar.toarray())), 'New variance not applied'
 
 
 @requires_remote

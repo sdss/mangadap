@@ -63,12 +63,12 @@ Revision history
 ----
 
 .. include license and copyright
-.. include:: ../copy.rst
+.. include:: ../include/copy.rst
 
 ----
 
 .. include common links, assuming primary doc root is up one directory
-.. include:: ../links.rst
+.. include:: ../include/links.rst
 """
 import sys
 import time
@@ -76,7 +76,7 @@ import shutil
 import os
 import glob
 import warnings
-from argparse import ArgumentParser
+import argparse
 
 try:
     import pbs.queue
@@ -158,7 +158,7 @@ class rundap:
         plan_file (:obj:`str`, optional):
             Name of the plan file to use for *all* DRP data in this run,
             used to override the default defined by
-            :func:`mangadap.config.defaults.dap_plan_file`.
+            :func:`mangadap.par.analysisplan.AnalysisPlanSet.default`.
         platelist (:obj:`int`, :obj:`str`, optional):
             List of plates to analyze; default is to search the
             :attr:`redux_path` for any DRP files; see
@@ -258,7 +258,7 @@ class rundap:
         analysis_path (str): The top-level path for the DAP output
             files.
         plan_file (str): Name of the plan file to use for ALL DRP data
-            in this run.
+            in this run.  Will be None if using the default plan.
         plan (:class:`AnalysisPlanSet`): The set of analysis plans
         daptypes (:obj:`list`): This list of daptypes, one per plan
         platelist (list): List of plates to analyze.
@@ -436,28 +436,29 @@ class rundap:
         self.calling_path = os.path.join(self.analysis_path, 'log',
                                          time.strftime('%d%b%YT%H.%M.%SUTC',time.gmtime()))
 
-        # Make sure there is an analysis plan
-        if self.plan_file is None:
-            self.plan_file = defaults.dap_plan_file(drpver=self.mpl.drpver, dapver=self.dapver,
-                                                    analysis_path=self.analysis_path)
-        if not os.path.isfile(self.plan_file):
-            raise FileNotFoundError('No file: {0}'.format(self.plan_file))
-
-        # Create the calling path and copy the plan file into the top
-        # level of that directory; existence tests are run, even though
-        # time stamp should mean that calling_path never exists
+        # Create the calling path. The existence test is executed, even
+        # though time stamp should mean that calling_path never exists.
         # TODO: allow argument to set calling_path directly?
         if not os.path.isdir(self.calling_path):
             os.makedirs(self.calling_path)
-        _plan_file = self.plan_file
-        self.plan_file = os.path.join(self.calling_path, self.plan_file.split('/')[-1])
-        if not os.path.isfile(self.plan_file):
-            shutil.copy2(_plan_file, self.plan_file)
+
+        # Allow for the default plan.
+        if self.plan_file is None:
+            warnings.warn('No analysis plan was provided.  DAP executions will adopt the default '
+                          'plan.')
+        else:
+            if not os.path.isfile(self.plan_file):
+                raise FileNotFoundError('No file: {0}'.format(self.plan_file))
+            _plan_file = self.plan_file
+            self.plan_file = os.path.join(self.calling_path, os.path.split(self.plan_file)[1])
+            if not os.path.isfile(self.plan_file):
+                shutil.copy2(_plan_file, self.plan_file)
 
         # Construct the DAPTYPEs and check that the plans yeild a fully
         # unique list
         # TODO: This should probably be check done in AnalysisPlanSet
-        self.plan = AnalysisPlanSet.from_par_file(self.plan_file)
+        self.plan = AnalysisPlanSet.default() if self.plan_file is None \
+                        else AnalysisPlanSet.from_par_file(self.plan_file)
         self.daptypes = []
         for p in self.plan:
             bin_method = SpatiallyBinnedSpectra.define_method(p['bin_key'])
@@ -469,7 +470,9 @@ class rundap:
                                                   'None' if el_method is None else
                                                         el_method['continuum_tpl_key'])]
         if len(numpy.unique(self.daptypes)) != self.plan.nplans:
-            raise ValueError('Plans in {0} do not yield unique DAPTYPEs.'.format(self.plan_file))
+            raise ValueError('{0} do not yield unique DAPTYPEs.'.format(
+                                'Default plans' if self.plan_file is None 
+                                    else 'Plans in {0} '.format(self.plan_file)))
 
         # Alert the user of the versions to be used
         if self.q is not None:
@@ -481,7 +484,8 @@ class rundap:
         print('      REDUX: {0}'.format(self.redux_path))
         print('   ANALYSIS: {0}'.format(self.analysis_path))
         print('    CALLING: {0}'.format(self.calling_path))
-        print('  PLAN FILE: {0}'.format(self.plan_file))
+        if self.plan_file is not None:
+            print('  PLAN FILE: {0}'.format(self.plan_file))
         print('Processing steps added to scripts:')
         print('        {0}'.format(processes))
 
@@ -565,7 +569,7 @@ class rundap:
         required by the class constructor.
         """
         # Declare the ArgumentParser object
-        parser = ArgumentParser()
+        parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
         # Read the optional run-mode arguments
         parser.add_argument("--clobber",
@@ -1135,30 +1139,37 @@ class rundap:
         # Command that runs the DAP
         # TODO: Define a "default" plan?
         if dapproc:
-            command = 'manga_dap {0} -c {1} -r {2} -a {3}'.format(self.plan_file, cfgfile,
-                                                                  self.redux_path,
-                                                                  self.analysis_path)
+            command = 'manga_dap -c {0} -r {1} -a {2}'.format(cfgfile, self.redux_path,
+                                                              self.analysis_path)
+            if self.plan_file is not None:
+                command += ' -p {0}'.format(self.plan_file)
             if self.log:
-                command += (' --log {0}.log'.format(scriptfile))
+                command += ' --log {0}.log'.format(scriptfile)
             if self.verbose > 0:
-                command += (' -'+'v'*self.verbose )
+                command += (' -'+'v'*self.verbose)
             file.write('{0}\n'.format(command))
             file.write('\n')
 
         # Plotting scripts
         if plots:
-            command = 'dap_ppxffit_qa {0} {1} --analysis_path {2} --plan_file {3}'.format(
-                            plate, ifudesign, self.analysis_path, self.plan_file)
+            command = 'dap_ppxffit_qa {0} {1} --analysis_path {2}'.format(plate, ifudesign,
+                                                                          self.analysis_path)
+            if self.plan_file is not None:
+                command += ' --plan_file {0}'.format(self.plan_file)
             file.write('{0}\n'.format(command))
             file.write('\n')
 
-            command = 'spotcheck_dap_maps {0} {1} --analysis_path {2} --plan_file {3}'.format(
-                            plate, ifudesign, self.analysis_path, self.plan_file)
+            command = 'spotcheck_dap_maps {0} {1} --analysis_path {2}'.format(plate, ifudesign,
+                                                                              self.analysis_path)
+            if self.plan_file is not None:
+                command += ' --plan_file {0}'.format(self.plan_file)
             file.write('{0}\n'.format(command))
             file.write('\n')
 
-            command = 'dap_fit_residuals {0} {1} --analysis_path {2} --plan_file {3}'.format(
-                            plate, ifudesign, self.analysis_path, self.plan_file)
+            command = 'dap_fit_residuals {0} {1} --analysis_path {2}'.format(plate, ifudesign,
+                                                                             self.analysis_path)
+            if self.plan_file is not None:
+                command += ' --plan_file {0}'.format(self.plan_file)
             file.write('{0}\n'.format(command))
             file.write('\n')
 
@@ -1215,9 +1226,10 @@ class rundap:
         file.write('\n')
 
         # Command that constructs the DAPall file
-        command = 'construct_dapall {0} --drpver {1} -r {2} --dapver {3} -a {4}'.format(
-                            self.plan_file, self.mpl.drpver, self.redux_path, self.dapver,
-                            self.analysis_path)
+        command = 'construct_dapall --drpver {0} -r {1} --dapver {2} -a {3}'.format(
+                        self.mpl.drpver, self.redux_path, self.dapver, self.analysis_path)
+        if self.plan_file is not None:
+            command += ' --plan_file {0}'.format(self.plan_file)
         if self.verbose > 0:
             command += (' -'+'v'*self.verbose )
         file.write('{0}\n'.format(command))
@@ -1227,8 +1239,10 @@ class rundap:
         if plots:
             command = 'dap_dapall_qa --drpver {0} --redux_path {1}'.format(
                             self.mpl.drpver, self.redux_path) \
-                        + ' --dapver {0} --analysis_path {1} --plan_file {2}'.format(
-                            self.dapver, self.analysis_path, self.plan_file)
+                        + ' --dapver {0} --analysis_path {1}'.format(self.dapver,
+                                                                     self.analysis_path)
+            if self.plan_file is not None:
+                command += ' --plan_file {0}'.format(self.plan_file)
             file.write('{0}\n'.format(command))
             file.write('\n')
 
@@ -1285,8 +1299,9 @@ class rundap:
         file.write('\n')
 
         # Command that creates the plots
-        command = 'dap_plate_fit_qa {0} --analysis_path {1} --plan_file {2}'.format(plate,
-                                                            self.analysis_path, self.plan_file)
+        command = 'dap_plate_fit_qa {0} --analysis_path {1}'.format(plate, self.analysis_path)
+        if self.plan_file is not None:
+            command += ' --plan_file {0}'.format(self.plan_file)
         file.write('{0}\n'.format(command))
         file.write('\n')
 

@@ -13,12 +13,12 @@ Revision history
 ----
 
 .. include license and copyright
-.. include:: ../copy.rst
+.. include:: ../include/copy.rst
 
 ----
 
 .. include common links, assuming primary doc root is up one directory
-.. include:: ../links.rst
+.. include:: ../include/links.rst
 """
 import numpy
 from scipy import ndimage
@@ -54,7 +54,7 @@ def masked_pixelized_image(x, y, z, pixelscale=1.0, zmin=None, zmax=None, imshow
         zmax (float): (Optional) Maximum z value to include in the
             output image.  Default is to allow all pixel values.
         imshow_prep (bool): (Optional) Prepare the matrix for use with
-            `matplotlib.pyplot.imshow`_.  If *imshow_prep* is True, before output,
+            `pyplot.imshow`_.  If *imshow_prep* is True, before output,
             the matrix is reordered such that increasing :math:`x`
             values are along columns and increasing :math:`y` values are
             along rows; i.e., the output is the transpose of the default
@@ -66,7 +66,7 @@ def masked_pixelized_image(x, y, z, pixelscale=1.0, zmin=None, zmax=None, imshow
                 pyplot.imshow(img, interpolation='nearest', extent=ext, origin='lower')
 
             Note that origin **must** be "lower" when calling
-            `matplotlib.pyplot.imshow`_ on the array produced by this
+            `pyplot.imshow`_ on the array produced by this
             routine for the :math:`x,y` ordering to be as expected!
         fill_value (float): (Optional) The default value to use for
             pixels without any data.
@@ -114,7 +114,7 @@ def masked_pixelized_image(x, y, z, pixelscale=1.0, zmin=None, zmax=None, imshow
 #        ext[0], ext[1] = ext[1], ext[0]
 #        print('EXTENT: {0}'.format(ext))
 
-    # Prep the image for direct display using matplotlib.pyplot.imshow
+    # Prep the image for direct display using pyplot.imshow
     if imshow_prep:
         img = numpy.transpose(img)
         mask = numpy.transpose(mask)

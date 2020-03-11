@@ -1,9 +1,4 @@
 
-.. just to avoid the warnings
-.. _numpy.ndarray: https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html
-.. _SDSS-style parameter file: http://www.sdss.org/dr15/software/par/
-.. _astropy.io.fits.Header: http://docs.astropy.org/en/stable/io/fits/api/headers.html#header
-
 Bitmasks allow you to define a set of bit values signified by strings,
 and then toggle and interpret bits held by a `numpy.ndarray`_.  For
 example, say you're processing an image and you want to set up a set of
@@ -72,7 +67,7 @@ The form of these methods is such that the array passed to the method
 are not altered.  Instead the altered bits are returned, which is why
 the lines above have the form ``m = bm.turn_on(m, flag)``.
 
-Some other sort usage examples:
+Some other short usage examples:
 
     - To find which flags are set for a single value::
         
@@ -100,9 +95,10 @@ but they can also be defined by reading formatted files.  The current
 options are:
 
     #. `SDSS-style parameter file`_: This is largely used to make
-       :class:`mangadap.util.bitmask.BitMask` compatible with the SDSS
-       maskbits file (see ``$MANGADAP_DIR/data/sdss/sdssMaskbits.par``).
-       For the ``ImageBitMask`` example, the par file would look like
+       :class:`mangadap.util.bitmask.BitMask` compatible with the
+       SDSS maskbits file (see
+       ``$MANGADAP_DIR/mangadap/data/sdss/sdssMaskbits.par``). For
+       the ``ImageBitMask`` example, the par file would look like
        this::
 
             typedef struct {
