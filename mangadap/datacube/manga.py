@@ -27,7 +27,6 @@ from ..util.drpfits import DRPFits, DRPFitsBitMask
 from ..util.parser import DefaultConfig
 from ..util.constants import DAPConstants
 from ..util.covariance import Covariance
-from ..util.filter import interpolate_masked_vector
 from ..spectra import MaNGARSS
 from .datacube import DataCube
 

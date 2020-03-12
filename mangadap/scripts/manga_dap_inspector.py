@@ -428,7 +428,7 @@ class MaNGATargetBitMask(BitMask):
     Structure with the DRP mask bits.
     """
     def __init__(self, sdss_maskbits=None, trgt='MANGA_TARGET1'):
-        _sdss_maskbits = sdss_maskbits_file() if sdss_maskbits is None else sdss_maskbits
+        _sdss_maskbits = defaults.sdss_maskbits_file() if sdss_maskbits is None else sdss_maskbits
         tmp = BitMask.from_par_file(_sdss_maskbits, trgt)
         keys, descr = tmp._init_objs()
         super(MaNGATargetBitMask, self).__init__(keys, descr=descr)

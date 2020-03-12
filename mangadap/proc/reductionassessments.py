@@ -347,7 +347,7 @@ class ReductionAssessment:
             Suppress terminal and logging output.
 
     """
-    def __init__(self, method_key, cube, pa=0.0, ell=0.0, method_list=None, dapver=None,
+    def __init__(self, method_key, cube, pa=None, ell=None, method_list=None, dapver=None,
                  analysis_path=None, directory_path=None, output_file=None, hardcopy=True,
                  symlink_dir=None, clobber=False, checksum=False, loggers=None, quiet=False):
                  
@@ -470,8 +470,10 @@ class ReductionAssessment:
             hdr = DAPFitsUtil.clean_dap_primary_header(hdr)
         hdr['AUTHOR'] = 'Kyle B. Westfall <westfall@ucolick.org>'
         hdr['RDXQAKEY'] = (self.method['key'], 'Method keyword')
-        hdr['ECOOPA'] = (self.pa, 'Position angle for ellip. coo')
-        hdr['ECOOELL'] = (self.ell, 'Ellipticity (1-b/a) for ellip. coo')
+        if self.pa is not None:
+            hdr['ECOOPA'] = (self.pa, 'Position angle for ellip. coo')
+        if self.ell is not None:
+            hdr['ECOOELL'] = (self.ell, 'Ellipticity (1-b/a) for ellip. coo')
         if self.method['covariance']:
             hdr['BBWAVE'] = ('None' if self.covar_wave is None else self.covar_wave,
                              'Covariance channel wavelength')
@@ -690,14 +692,26 @@ class ReductionAssessment:
             self.hdu = DAPFitsUtil.read(ofile, checksum=self.checksum)
 
             # Read the header data
-            self.pa = self.hdu['PRIMARY'].header['ECOOPA']
+            try:
+                self.pa = self.hdu['PRIMARY'].header['ECOOPA']
+            except:
+                if not self.quiet:
+                    warnings.warn('Unable to read position angle from file header!')
+                self.pa = None
             if not self.quiet and pa is not None and self.pa != pa:
                 warnings.warn('Provided position angle different from available file; set ' \
                               'clobber=True to overwrite.')
-            self.ell = self.hdu['PRIMARY'].header['ECOOELL']
+
+            try:
+                self.ell = self.hdu['PRIMARY'].header['ECOOELL']
+            except:
+                if not self.quiet:
+                    warnings.warn('Unable to read ellipticity from file header!')
+                self.ell = None
             if not self.quiet and ell is not None and self.ell != ell:
                 warnings.warn('Provided ellipticity different from available file; set ' \
                               'clobber=True to overwrite.')
+
             if self.method['covariance']:
                 # Construct the correlation matrix with the appropriate
                 # variance

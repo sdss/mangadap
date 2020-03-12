@@ -1,8 +1,8 @@
 
 .. _gettingstarted:
 
-Getting started with DAP output data
-====================================
+Getting started
+===============
 
 This is your "Quick-Start" guide to working with the DAP output.  Even
 with this page, you are strongly encouraged to familiarize yourself with
