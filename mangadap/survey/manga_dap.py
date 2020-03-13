@@ -481,7 +481,7 @@ def manga_dap(cube, plan, dbg=False, log=None, verbose=0, drpver=None, redux_pat
         #-------------------------------------------------------------------
         # Construct the main output file(s)
         #-------------------------------------------------------------------
-        construct_maps_file(cube, rdxqa=rdxqa, binned_spectra=binned_spectra,
+        construct_maps_file(cube, metadata, rdxqa=rdxqa, binned_spectra=binned_spectra,
                             stellar_continuum=stellar_continuum,
                             emission_line_moments=emission_line_moments,
                             emission_line_model=emission_line_model,
@@ -489,7 +489,7 @@ def manga_dap(cube, plan, dbg=False, log=None, verbose=0, drpver=None, redux_pat
                             analysis_path=_analysis_path, clobber=True, loggers=loggers,
                             single_precision=True)
 
-        construct_cube_file(cube, binned_spectra=binned_spectra,
+        construct_cube_file(cube, metadata, binned_spectra=binned_spectra,
                             stellar_continuum=stellar_continuum,
                             emission_line_model=emission_line_model,
                             analysis_path=_analysis_path, clobber=True, loggers=loggers,
