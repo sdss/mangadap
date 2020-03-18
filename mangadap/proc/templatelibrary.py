@@ -1025,6 +1025,14 @@ class TemplateLibrary:
         self.hdu['MASK'].data[res_mask == 1] = \
             self.bitmask.turn_on(self.hdu['MASK'].data[res_mask == 1], 'SPECRES_LOW')
 
+        # Mask any pixels where the template flux is 0 or below
+        indx = numpy.invert(self.hdu['FLUX'].data > 0)
+        if numpy.any(indx):
+            self.hdu['MASK'].data[indx] = self.bitmask.turn_on(self.hdu['MASK'].data[indx],
+                                                               'SPECRES_NOFLUX')
+
+        # Function returns the redshift used for the spectral
+        # resolution matching. TODO: This should be input instead!
         return redshift
 
 
@@ -1103,7 +1111,8 @@ class TemplateLibrary:
         # differ.  First, determine the wavelength range that encloses
         # all spectra.  Only ignore pixels that were flagged as having
         # no data.
-        fullRange = self._wavelength_range(flag='NO_DATA') if wavelength_range is None \
+        no_data_flags = ['NO_DATA', 'SPECRES_NOFLUX']
+        fullRange = self._wavelength_range(flag=no_data_flags) if wavelength_range is None \
                             else numpy.array(wavelength_range).astype(float)
 
         # Get the spectral step if it hasn't been set yet
@@ -1176,6 +1185,10 @@ class TemplateLibrary:
             # match the galaxy resolution
             indx = self._rebin_masked(i, 'SPECRES_LOW', fullRange, rmsk_lim=0.1)
             mask[i,indx] = self.bitmask.turn_on(mask[i,indx], 'SPECRES_LOW')
+            # Pixels that no flux because of the wavelength limits set
+            # by the resolution matching.
+            indx = self._rebin_masked(i, 'SPECRES_NOFLUX', fullRange, rmsk_lim=0.1)
+            mask[i,indx] = self.bitmask.turn_on(mask[i,indx], 'SPECRES_NOFLUX')
             
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '... done')

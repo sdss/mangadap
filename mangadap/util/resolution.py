@@ -53,6 +53,9 @@ Revision history
 .. include:: ../include/links.rst
 """
 import warnings
+
+from IPython import embed
+
 import numpy
 
 from scipy import interpolate
@@ -163,7 +166,7 @@ class VariableGaussianKernel:
                 and *sigma* (and *ye* if provided) are different.
 
         Returns:
-            numpy.ndarray: The convovled vector.  If the errors are
+            `numpy.ndarray`_: The convolved vector. If the errors are
             provided, the function returns two vectors, the convolved
             vector and its error.
         """
@@ -180,7 +183,7 @@ class VariableGaussianKernel:
                     numpy.sqrt(numpy.sum(numpy.square(ae*self.kernel), axis=0))
 
 
-def convolution_variable_sigma(y, sigma, ye=None, integral=False):
+def convolution_variable_sigma(y, sigma, ye=None, integral=False, large_sigma=10.):
     r"""
     Convolve a discretely sampled function :math:`y(x)` with a Gaussian
     kernel, :math:`g`, where the standard deviation of the kernel is a
@@ -224,20 +227,34 @@ def convolution_variable_sigma(y, sigma, ye=None, integral=False):
         :class:`VariableGaussianKernel`.
 
     Args:
-        y (numpy.ndarray): A uniformly sampled function to convolve.
-        sigma (numpy.ndarray): The standard deviation of the Gaussian
-            kernel sampled at the same positions as *y*.  The units of
-            *sigma* **must** be in pixels.
-        ye (numpy.ndarray): (**Optional**) Errors in the function
-            :math:`y(x)`.
+        y (`numpy.ndarray`_):
+            A uniformly sampled function to convolve.
+        sigma (`numpy.ndarray`_):
+            The standard deviation of the Gaussian kernel sampled at
+            the same positions as ``y``. The units of ``sigma``
+            *must* be in pixels.
+        ye (`numpy.ndarray`_, optional):
+            Errors in the function :math:`y(x)`. Must be the same
+            shape as ``y``.
+        integral (:obj:`bool`, optional):
+            Construct the kernel based on the integral of the
+            Gaussian over the pixel width using the error function,
+            instead of just sampling the Gaussian function directly.
+            See :class:`VariableGaussianKernel`.
+        large_sigma (:obj:`float`, optional):
+            A convenience parameter that causes a warning to be
+            issued if any of the values in ``sigma`` are larger than
+            this threshold.
 
     Returns:
-        numpy.ndarray: Arrays with the convolved function :math:`(y\ast
-        g)(x)` sampled at the same positions as the input :math:`x`
-        vector and its error.  The second array will be returned as None
-        if the error vector is not provided.
+        `numpy.ndarray`_: Arrays with the convolved function
+        :math:`(y\ast g)(x)` sampled at the same positions as the
+        input :math:`x` vector and its error. The second array will
+        be returned as None if the error vector is not provided.
     """
-    return VariableGaussianKernel(sigma, integral=integral).convolve(y,ye=ye)
+    if numpy.any(sigma > large_sigma):
+        warnings.warn('Gaussian kernel dispersion larger than {0:.1f} pixels!'.format(large_sigma))
+    return VariableGaussianKernel(sigma, integral=integral).convolve(y, ye=ye)
 
 
 class SpectralResolution:
@@ -259,11 +276,15 @@ class SpectralResolution:
         log10 (:obj:`bool`, optional):
             Flag that the spectrum has been binned logarithmically (base
             10) in wavelength
-        interp_ext (:obj:`int`, :obj:`str`, optional):
-            The value to pass as *ext* to the interpolator, which
-            defines its behavior when attempting to sample the spectral
-            resolution beyond where it is defined.  See
-            `scipy.interpolate.interp1d`_. Default is to extrapolate.
+        interp_ext (:obj:`int`, :obj:`tuple`, :obj:`str`, optional):
+            The value to pass as ``fill_value`` to the interpolator,
+            which defines its behavior when attempting to sample the
+            spectral resolution beyond where it is defined. See
+            `scipy.interpolate.interp1d`_.
+        bounds_error (:obj:`bool`, optional):
+            Force `scipy.interpolate.interp1d`_ to raise an exception
+            if the interpolation is outside the bounds of the defined
+            spectral resolution function.
 
     Raises:
         ValueError: Raised if *wave* is not a 1D vector or if *wave* and
@@ -324,7 +345,7 @@ class SpectralResolution:
         this; see `scipy.interpolate.interp1d`_.
 
     """
-    def __init__(self, wave, sres, log10=False, interp_ext='extrapolate'):
+    def __init__(self, wave, sres, log10=False, interp_ext='extrapolate', bounds_error=False):
         # Check the sizes
         if len(wave.shape) != 1:
             raise ValueError('wave must be a 1D array!')
@@ -332,7 +353,8 @@ class SpectralResolution:
             raise ValueError('wave and sres must have the same shape!')
 
         # Use linear interpolation when sampling the spectral resolution
-        self.interpolator = interpolate.interp1d(wave, sres, fill_value=interp_ext)
+        self.interpolator = interpolate.interp1d(wave, sres, fill_value=interp_ext,
+                                                 bounds_error=bounds_error)
         self.log10 = log10
         self.c = astropy.constants.c.to('km/s').value
 
@@ -879,7 +901,8 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
     spec_dim = len(flux.shape)
     sres_dim = len(sres.shape)
     sigma_offset = numpy.zeros(nspec, dtype=numpy.float64)
-    new_res = SpectralResolution(new_sres_wave, new_sres, log10=new_log10)
+    new_res = SpectralResolution(new_sres_wave, new_sres, log10=new_log10,
+                                 interp_ext=(new_sres[0],new_sres[-1]))
 
 #    pyplot.plot(new_sres_wave, new_sres)
 #    pyplot.show()
@@ -890,7 +913,7 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
     # Get the kernel parameters necessary to match all spectra to the
     # new resolution
     if nsres == 1 and sres_dim == 1:
-        res[0] = SpectralResolution(wave, sres, log10=log10)
+        res[0] = SpectralResolution(wave, sres, log10=log10, interp_ext=(sres[0], sres[-1]))
         res[0].match(new_res, no_offset=no_offset, min_sig_pix=min_sig_pix)
         sigma_offset[0] = res[0].sig_vo
         for i in range(1,nspec):
@@ -901,7 +924,8 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
         for i in range(0,nsres):
             _wave = wave[i,:].ravel() if wave_matrix else wave
             _sres = sres[i,:].ravel() if sres_matrix else sres
-            res[i] = SpectralResolution(_wave, _sres, log10=log10)
+            res[i] = SpectralResolution(_wave, _sres, log10=log10,
+                                        interp_ext=(sres[i,0],sres[i,-1]))
             res[i].match(new_res, no_offset=no_offset, min_sig_pix=min_sig_pix)
             sigma_offset[i] = res[i].sig_vo
 #            pyplot.plot(_wave, res[i].sig_pd)

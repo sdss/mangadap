@@ -27,6 +27,7 @@ Revision history
 .. include common links, assuming primary doc root is up one directory
 .. include:: ../include/links.rst
 """
+import warnings
 
 import numpy
 from scipy.interpolate import interp1d
