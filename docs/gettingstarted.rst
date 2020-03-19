@@ -504,9 +504,9 @@ For example:
     print('This DRP file has {0}/{1} pixels flagged as either DONOTUSE or FORESTAR.'.format(
             numpy.sum(indx), numpy.prod(indx.shape)))
 
-See also the `Maskbits class
-<http://sdss-marvin.readthedocs.io/en/stable/utils/maskbit.html>`_ in
-Marvin!
+See also the `Maskbits utilities
+<https://sdss-marvin.readthedocs.io/en/latest/reference/utils.html#module-marvin.utils.general.maskbit>`_
+in Marvin!
 
 .. _gettingstarted-binid:
 

@@ -4,7 +4,7 @@
 DAP LOGCUBE File Construction
 =============================
 
-*Analysis class*: :class:`mangadap.dapfits.construct_cube_file`
+*Analysis class*: :class:`~mangadap.dapfits.construct_cube_file`
 
 *File Root*: ``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/[PLATE]/[IFUDESIGN]``
 
@@ -14,11 +14,11 @@ DAP LOGCUBE File Construction
 
  * Main full-spectrum modeling classes:
 
-    * :class:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra`
-    * :class:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel`
-    * :class:`mangadap.proc.emissionlinemodel.EmissionLineModel`
+    * :class:`~mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra`
+    * :class:`~mangadap.proc.stellarcontinuummodel.StellarContinuumModel`
+    * :class:`~mangadap.proc.emissionlinemodel.EmissionLineModel`
 
- * :class:`mangadap.util.fitsutil.DAPFitsUtil`: Contains many
+ * :class:`~mangadap.util.fitsutil.DAPFitsUtil`: Contains many
    convenience methods that, e.g., reconstruct a set of maps or
    datacubes based on input data sorted by bin ID and a map with the
    location of each bin ID.
@@ -37,22 +37,22 @@ DAP LOGCUBE File Construction
    adding the DAP version information.
  * Construct the ``FLUX``, ``IVAR``, ``MASK``, ``WAVE``, and
    ``REDCORR`` extensions using the 3D binned spectra cube and
-   :func:`mangadap.dapfits.construct_cube_file.binned_data_cube`. The
+   :func:`~mangadap.dapfits.construct_cube_file.binned_data_cube`. The
    reddening vector is used to *remove* the reddening correction,
    such that the returned spectra match the observed flux in the DRP
    files.
  * Construct the ``MODEL``, ``MODEL_MASK``, ``EMLINE``, ``STELLAR``,
    and ``STELLAR_MASK`` extensions using the model data and
-   :func:`mangadap.dapfits.construct_cube_file.model_cubes`.
+   :func:`~mangadap.dapfits.construct_cube_file.model_cubes`.
  * Combine the ``BINID`` extensions from the
-   :class:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra`,
-   :class:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel`,
-   and :class:`mangadap.proc.emissionlinemodel.EmissionLineModel`
-   objects and :func:`mangadap.dapfits.combine_binid_extensions`.
+   :class:`~mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra`,
+   :class:`~mangadap.proc.stellarcontinuummodel.StellarContinuumModel`,
+   and :class:`~mangadap.proc.emissionlinemodel.EmissionLineModel`
+   objects and :func:`~mangadap.dapfits.combine_binid_extensions`.
    This does *not* include the emission-line moment and
    spectral-index bin IDs; those channels in the ``BINID`` extension
    are blank unlike the ``MAPS`` file.
  * Finalize the DAP primary header, which primarily constructs the
    :ref:`metadatamodel-dapqual` bit using
-   :func:`mangadap.dapfits.finalize_dap_primary_header`.
+   :func:`~mangadap.dapfits.finalize_dap_primary_header`.
 

@@ -215,8 +215,9 @@ AnalysisPlan file
 For a general description the ``AnalysisPlan`` file, see
 :ref:`execution-analysis-plan`.
 
-*File template*:
-``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/log/[timestamp]/mpl[MPL]_plan.par``
+*File root*: ``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/log/[timestamp]``
+
+*File name*: ``mpl[MPL]_plan.par``
 
 In the file template, ``[timestamp]`` is the time when the ``rundap``
 script was executed in the format, e.g., ``01Nov2019T16.58.40UTC`` and
@@ -229,8 +230,9 @@ MPL.  This file is created once by the person executing the DAP.
 DRPComplete database
 ~~~~~~~~~~~~~~~~~~~~
 
-*File template*:
-``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/common/drpcomplete_$MANGADRP_VER.fits``
+*File root*: ``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/common``
+
+*File name*: ``drpcomplete_$MANGADRP_VER.fits``
 
 The :class:`mangadap.survey.drpcomplete.DRPComplete` file is
 primarily created for the survey-level execution of the DAP. It
@@ -313,8 +315,9 @@ the table extension has the following columns:
 Redshift Fix File
 ~~~~~~~~~~~~~~~~~
 
-*File template*:
-``$MANGADAP_DIR/mangadap/data/fix/redshift_fix.par``
+*File root*: ``$MANGADAP_DIR/mangadap/data/fix``
+
+*File name*: ``redshift_fix.par``
 
 The redshift-fix file is an `SDSS parameter file
 <https://www.sdss.org/dr15/software/par/>`_ used to replace any
@@ -341,8 +344,9 @@ The redshift-fix file is updated for each version of the DAP.
 Execution Script
 ~~~~~~~~~~~~~~~~
 
-*File template*:
-``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/log/[timestamp]/[PLATE]/[IFUDESIGN]/mangadap-[PLATE]-[IFUDESIGN]``
+*File root*: ``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/log/[timestamp]/[PLATE]/[IFUDESIGN]``
+
+*File name*: ``mangadap-[PLATE]-[IFUDESIGN]``
 
 In the file template, ``[timestamp]`` is the time when the ``rundap``
 script was executed in the format, e.g., ``01Nov2019T16.58.40UTC``,
@@ -357,9 +361,11 @@ Datacube Configuration File
 
 For a general description, see :ref:`execution-config`.
 
-*File template*: ``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/common/[PLATE]/[IFUDESIGN]/mangadap-[PLATE]-[IFUDESIGN]-LOG[MODE].ini``
+*File root*: ``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/common/[PLATE]/[IFUDESIGN]``
 
-*Symlink*: ``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/[DAPTYPE]/[PLATE]/[IFUDESIGN]/ref/mangadap-[PLATE]-[IFUDESIGN]-LOG[MODE].ini``
+*File name*: ``mangadap-[PLATE]-[IFUDESIGN]-LOG[MODE].ini``
+
+*Symlink root*: ``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/[DAPTYPE]/[PLATE]/[IFUDESIGN]/ref``
 
 In the file templates, ``[PLATE]`` is the plate number,
 ``[IFUDESIGN]`` is the IFU number, ``[MODE]`` is the data format
@@ -374,8 +380,9 @@ DAP and are almost entirely from the NASA-Sloan Atlas.
 DAPall database
 ---------------
 
-*File template*:
-``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/dapall-$MANGADRP_VER-$MANGADAP_VER.fits``
+*File root*: ``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER``
+
+*File name*: ``dapall-$MANGADRP_VER-$MANGADAP_VER.fits``
 
 The DAPall file has an empty primary extension and then one extension
 for each ``DAPTYPE`` performed by a given analysis plan. The name of
