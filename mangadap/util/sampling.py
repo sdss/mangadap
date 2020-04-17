@@ -26,23 +26,32 @@ import astropy.constants
 
 def spectral_coordinate_step(wave, log=False, base=10.0):
     """
-    Return the sampling step for the input wavelength vector.
+    Return the *uniform* sampling step for the input wavelength
+    vector.
 
-    If the sampling is logarithmic, return the change in the logarithm
-    of the wavelength; otherwise, return the linear step in angstroms.
+    If the sampling is logarithmic, return the change in the
+    logarithm of the wavelength; otherwise, return the linear step in
+    angstroms.
 
     Args: 
-        wave (numpy.ndarray): Wavelength coordinates of each spectral
-            channel in angstroms.
-        log (bool): (**Optional**) Input spectrum has been sampled
-            geometrically.
-        base (float): (**Optional**) If sampled geometrically, the
-            sampling is done using a logarithm with this base.  For
-            natural logarithm, use numpy.exp(1).
+        wave (`numpy.ndarray`_):
+            Wavelength coordinates of each spectral channel in
+            angstroms.
+        log (:obj:`bool`, optional):
+            Input spectrum has been sampled geometrically.
+        base (:obj:`float`, optional):
+            If sampled geometrically, the sampling is done using a
+            logarithm with this base. For natural logarithm, use
+            numpy.exp(1).
 
     Returns:
-        float: Spectral sampling step in either angstroms (log=False) or
-        the step in log(angstroms).
+        :obj:`float`: Spectral sampling step in either angstroms
+        (log=False) or the step in log(angstroms).
+
+    Raises:
+        ValueError:
+            Raised if the wavelength vector is not linearly or
+            log-linearly sampled.
     """
     dw = numpy.diff(numpy.log(wave))/numpy.log(base) if log else numpy.diff(wave)
     if numpy.any( numpy.absolute(numpy.diff(dw)) > 100*numpy.finfo(dw.dtype).eps):

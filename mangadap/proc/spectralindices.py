@@ -1401,12 +1401,10 @@ class SpectralIndices:
         Measure the spectral indices in a set of spectra.
 
         Args:
-            absdb
-                (:class:`mangadap.par.aborptionlinedb.AbsorptionIndexDB`):
+            absdb (:class:`mangadap.par.aborptionlinedb.AbsorptionIndexDB`):
                 Database with the absorption-line index definitions.
                 Can be None.
-            bhddb
-                (:class:`mangadap.par.bandheadindexdb.BandheadIndexDB`):
+            bhddb (:class:`mangadap.par.bandheadindexdb.BandheadIndexDB`):
                 Database with the bandhead index definitions.
             wave (array-like): 1D vector with the wavelength of each
                 pixel.  *Assumed to be logarithmically binned in

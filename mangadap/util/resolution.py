@@ -326,7 +326,7 @@ class SpectralResolution:
             by a different :class:`SpectralResolution` object.  See
             :func:`GaussianKernelDifference`.
         sig_vo (:obj:`float`):
-            A constant offset of the kernal standard deviation **in
+            A constant offset of the kernel standard deviation **in
             km/s** that has been applied to :attr:`sig_pd`.  See
             :func:`GaussianKernelDifference`.
         

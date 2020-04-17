@@ -75,17 +75,17 @@ looks like this:
 .. code-block:: ini
 
     [Path]
-     dapsrc           = ${MANGADAP_DIR}
+    dapsrc           = ${MANGADAP_DIR}
 
     [default]
-     key              = MILESHC
-     file_search      = ${Path:dapsrc}/mangadap/data/spectral_templates/miles_cluster/*.fits
-     fwhm             = 2.50
-     sres_ext
-     in_vacuum        = False
-     wave_limit       = 3575, 7400
-     lower_flux_limit = 0.0
-     log10            = False
+    key              = MILESHC
+    file_search      = ${Path:dapsrc}/mangadap/data/spectral_templates/miles_cluster/*.fits
+    fwhm             = 2.50
+    sres_ext
+    in_vacuum        = False
+    wave_limit       = 3575, 7400
+    lower_flux_limit = 0.0
+    log10            = False
 
 This configuration (ini) file allows one to construct the ``MILESHC``
 library as follows:
