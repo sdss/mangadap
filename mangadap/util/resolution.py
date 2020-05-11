@@ -965,7 +965,7 @@ def match_spectral_resolution(wave, flux, sres, new_sres_wave, new_sres, ivar=No
                 out_ivar[indx] = oivar[indx]
                 del oflux, oivar
             out_sres[indx] = res[0].adjusted_resolution(indx=indx)
-            out_mask = numpy.array((res[0].sig_mask == 1) | (mask == 1)).astype(numpy.uint)
+            out_mask = numpy.array((res[0].sig_mask == 1) | (_mask == 1)).astype(numpy.uint)
         except ValueError as e:
             warnings.warn('Encountered ValueError: {0} ; continuing but resolution is NOT '
                           'changed and mask is set.'.format(e))
