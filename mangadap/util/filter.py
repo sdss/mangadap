@@ -193,6 +193,8 @@ def build_smoothing_mask(x, pix_buffer, default=None, mask_x=None):
 
 
 class BoxcarFilter():
+    """
+    """
     def __init__(self, boxcar, lo=None, hi=None, niter=None, y=None, wgt=None, mask=None,
                  local_sigma=None):
 
