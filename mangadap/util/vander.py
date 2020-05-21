@@ -1,3 +1,17 @@
+"""
+Implements a base class that performs linear least-squares fitting of
+1D basis functions constructed via a pseudo-Vandermonde matrix.
+
+----
+
+.. include license and copyright
+.. include:: ../include/copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../include/links.rst
+"""
 import os
 import time
 

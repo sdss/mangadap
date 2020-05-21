@@ -20,14 +20,15 @@
 
 .. numpy
 
-.. _numpy.ndarray: https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html
-.. _numpy.ma.MaskedArray: http://docs.scipy.org/doc/numpy/reference/maskedarray.baseclass.html
-.. _numpy.recarray: https://docs.scipy.org/doc/numpy/reference/generated/numpy.recarray.html
-.. _numpy.meshgrid: http://docs.scipy.org/doc/numpy/reference/generated/numpy.meshgrid.html
-.. _numpy.where: http://docs.scipy.org/doc/numpy/reference/generated/numpy.where.html
-.. _numpy.cov: https://docs.scipy.org/doc/numpy/reference/generated/numpy.cov.html
-.. _numpy.ravel_multi_index: https://docs.scipy.org/doc/numpy/reference/generated/numpy.ravel_multi_index.html
-.. _numpy.unravel_index: https://docs.scipy.org/doc/numpy/reference/generated/numpy.unravel_index.html
+.. _numpy.ndarray: https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html
+.. _numpy.ma.MaskedArray: http://numpy.org/doc/stable/reference/maskedarray.baseclass.html
+.. _numpy.recarray: https://numpy.org/doc/stable/reference/generated/numpy.recarray.html
+.. _numpy.meshgrid: http://numpy.org/doc/stable/reference/generated/numpy.meshgrid.html
+.. _numpy.where: http://numpy.org/doc/stable/reference/generated/numpy.where.html
+.. _numpy.cov: https://numpy.org/doc/stable/reference/generated/numpy.cov.html
+.. _numpy.ravel_multi_index: https://numpy.org/doc/stable/reference/generated/numpy.ravel_multi_index.html
+.. _numpy.unravel_index: https://numpy.org/doc/stable/reference/generated/numpy.unravel_index.html
+.. _numpy.polynomial.legendre.legvander: https://numpy.org/doc/stable/reference/generated/numpy.polynomial.legendre.legvander.html
 
 .. scipy
 
