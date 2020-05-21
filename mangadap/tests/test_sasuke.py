@@ -95,8 +95,8 @@ def test_sasuke():
                 'Expected NO_FIT in 6th spectrum'
 
     # Number of used templates
-    assert numpy.array_equal(numpy.sum(el_fit['TPLWGT'] > 0, axis=1),
-                             [51, 50, 52, 48, 36,  0, 42, 48]), \
+    assert numpy.array_equal(numpy.sum(numpy.absolute(el_fit['TPLWGT']) > 1e-10, axis=1),
+                             [27, 26, 34, 32, 29,  0, 17, 25]), \
                 'Different number of templates with non-zero weights'
 
     # No additive coefficients
