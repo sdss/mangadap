@@ -2,6 +2,8 @@
 import pytest
 import os
 
+from IPython import embed
+
 import numpy
 from scipy import interpolate
 from astropy.io import fits
@@ -94,7 +96,7 @@ def test_sasuke():
 
     # Number of used templates
     assert numpy.array_equal(numpy.sum(el_fit['TPLWGT'] > 0, axis=1),
-                             [25, 24, 32, 32, 28,  0, 17, 22]), \
+                             [51, 50, 52, 48, 36,  0, 42, 48]), \
                 'Different number of templates with non-zero weights'
 
     # No additive coefficients
@@ -107,23 +109,23 @@ def test_sasuke():
 
     # Fit statistics
     assert numpy.allclose(el_fit['RCHI2'],
-                          numpy.array([2.32689404, 1.20425982, 1.56710595, 1.86633895,
-                                       3.18626651, 0.        , 1.04171535, 0.87643731]),
+                          numpy.array([ 2.34441982,  1.21510401,  1.57781064,  1.87956651,
+                                        3.19511594,  0.        ,  1.05074234,  0.88393101]),
                           rtol=0.0, atol=1e-4), 'Reduced chi-square different'
 
     assert numpy.allclose(el_fit['RMS'],
-                    numpy.array([0.03624053, 0.0191412 , 0.03661278, 0.02454041,
-                                 0.05073471, 0.        , 0.01283324, 0.01245004]),
+                    numpy.array([ 0.03621057,  0.01914189,  0.0366114 ,  0.02456429,
+                                  0.05073385,  0.        ,  0.01283324,  0.01243996]),
                           rtol=0.0, atol=1e-4), 'RMS different'
 
     assert numpy.allclose(el_fit['FRMS'],
-                    numpy.array([0.02098079, 0.02650329, 0.02718797, 0.03478277,
-                                 0.01857   , 0.        , 1.12984714, 0.10961989]),
+                    numpy.array([ 0.02097277,  0.02650269,  0.02718998,  0.03482793,
+                                  0.01856961,  0.        ,  1.12984714,  0.10905279]),
                           rtol=0.0, atol=1e-4), 'Fractional RMS different'
 
     assert numpy.allclose(el_fit['RMSGRW'][:,2],
-                          numpy.array([0.07088299, 0.03749948, 0.07063977, 0.04767839,
-                                       0.10092644, 0.        , 0.02707473, 0.02443383]),
+                          numpy.array([ 0.07079034,  0.03748393,  0.07066016,  0.04784343,
+                                        0.10093365,  0.        ,  0.02707473,  0.02441517]),
                           rtol=0.0, atol=1e-4), 'Median absolute residual different'
 
     # All lines should have the same velocity
@@ -132,14 +134,13 @@ def test_sasuke():
 
     # Test velocity values
     assert numpy.allclose(el_par['KIN'][:,0,0],
-                numpy.array([14694.03503013, 14882.17193222, 14767.1212133 ,  8159.47649202,
-                              9258.7217533 ,     0.        ,  5131.13183361,  5432.3821883 ]),
+                numpy.array([ 14708.51501137,  14885.9407429 ,  14767.12496209,   8159.45965603,
+                               9258.7021507 ,      0.        ,   5131.13183361,   5433.87569423]),
                           rtol=0.0, atol=1e-2), 'Velocities are different'
 
     # H-alpha dispsersions
     # TODO: Need some better examples!
     assert numpy.allclose(el_par['KIN'][:,18,1],
-                numpy.array([1000.47576421, 1000.47576421,  224.68070585,  114.02429333,
-                             170.88750393,    0.        ,   81.28290423,   50.12936608]),
+                numpy.array([ 1000.47576421,  1000.47576421,   224.65658093,   114.82127207,
+                               170.88868189,     0.        ,    81.28290423,    50.52682452]),
                           rtol=0.0, atol=1e-1), 'H-alpha dispersions are different'
-

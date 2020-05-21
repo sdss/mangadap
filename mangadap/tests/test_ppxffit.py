@@ -2,6 +2,8 @@
 import pytest
 import os
 
+from IPython import embed
+
 import numpy
 from scipy import interpolate
 from astropy.io import fits
@@ -70,7 +72,7 @@ def test_ppxffit():
 
     # Number of used templates
     assert numpy.array_equal(numpy.sum(fit_par['TPLWGT'] > 0, axis=1),
-                             [13, 16, 17, 14, 17,  0,  8, 12]), \
+                             [24, 21, 24, 31, 35,  0, 22, 24]), \
                 'Different number of templates with non-zero weights'
 
     # Number of additive coefficients

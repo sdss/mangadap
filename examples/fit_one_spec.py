@@ -50,6 +50,10 @@ def get_spectrum(plt, ifu, x, y, directory_path=None):
 if __name__ == '__main__':
     t = time.perf_counter()
 
+    # For testing
+    drpver = 'v3_0_1'
+    directory_path = os.path.join(os.environ['MANGADAP_DIR'], 'mangadap', 'data', 'remote')
+
     #-------------------------------------------------------------------
     # Read spectra to fit. The following reads a single MaNGA spectrum.
     # This is where you should read in your own spectrum to fit.
@@ -90,8 +94,6 @@ if __name__ == '__main__':
     # (within +/- 2000 km/s). In this example, I'm pulling the redshift
     # from the DRPall file. There must be one redshift estimate per
     # spectrum to fit.  Here that means it's a single element array
-    drpver = 'v2_7_1'
-    directory_path = os.path.join(os.environ['MANGADAP_DIR'], 'mangadap', 'data', 'remote')
     drpall_file = os.path.join(directory_path, 'drpall-{0}.fits'.format(drpver))
     z = numpy.array([get_redshift(plt, ifu, drpall_file)])
     print('Redshift: {0}'.format(z[0]))
@@ -110,7 +112,7 @@ if __name__ == '__main__':
     # Templates used in the stellar continuum fits
     sc_tpl_key = 'MILESHC'
     # Templates used in the emission-line modeling
-    el_tpl_key = 'MASTARHC'
+    el_tpl_key = 'MASTARHC2'
 
     # You also need to specify the sampling for the template spectra.
     # The templates must be sampled with the same pixel step as the

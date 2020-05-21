@@ -16,7 +16,7 @@ class Vander1D:
         vander (callable):
             Function used to generate the pseudo-Vandermonde matrix
             of the basis functions; e.g.,
-            `numpy.polynomial.legendre.legvander`_). Calling sequence
+            `numpy.polynomial.legendre.legvander`_. Calling sequence
             must be ``vander(x,order)``.
         x (array-like):
             Ordinate for fitting.
@@ -154,7 +154,8 @@ class Vander1D:
             if numpy.any(_w < 0):
                 raise ValueError('Weights must be positive!')
         if isinstance(_y, numpy.ma.MaskedArray):
-            _w = numpy.logical_not(_y.getmaskarray()).astype(float) * _w
+            _m = numpy.logical_not(numpy.ma.getmaskarray(_y)).astype(float)
+            _w = _m if _w is None else _m * _w
             _y = _y.filled(0.0)
         if mask is not None:
             _m = numpy.logical_not(numpy.atleast_1d(mask)).astype(float)
@@ -166,7 +167,8 @@ class Vander1D:
         if err is not None:
             # Below is faster than numpy.ma.power(err, -1).filled(0.0)
             # and avoids errors when err is 0.
-            _e = (err > 0)/(err + (err == 0.))
+            _e = err.filled(0.0) if isinstance(err, numpy.ma.MaskedArray) else err
+            _e = (_e > 0)/(_e + (_e == 0.))
             if _e.shape != _y.shape:
                 raise ValueError('Input errors must have the same shape as the data to fit.')
             _w = _e if _w is None else _e * _w

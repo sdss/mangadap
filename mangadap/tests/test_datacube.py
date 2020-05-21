@@ -20,7 +20,7 @@ warnings.simplefilter("ignore", RuntimeWarning)
 def test_sres_ext():
     file = remote_data_file(filename=MaNGADataCube.build_file_name(7815, 3702, log=True))
     hdu = fits.open(file)
-    assert MaNGADataCube.spectral_resolution_extension(hdu) == 'PREDISP', \
+    assert MaNGADataCube.spectral_resolution_extension(hdu) == 'LSFPRE', \
                 'Bad spectral resolution extension selection'
     assert MaNGADataCube.spectral_resolution_extension(hdu, ext='SPECRES') == 'SPECRES', \
                 'Bad spectral resolution extension selection'
@@ -39,7 +39,7 @@ def test_read():
     assert cube.shape[:2] == cube.spatial_shape, 'Spatial shape should be first two axes.'
     assert cube.nspec == numpy.prod(cube.spatial_shape), 'Definition of number of spectra changed.'
     assert cube.sres is not None, 'Spectral resolution data was not constructed.'
-    assert cube.sres_ext == 'PREDISP', 'Should default to PREDISP extension.'
+    assert cube.sres_ext == 'LSFPRE', 'Should default to LSFPRE extension.'
     assert abs(cube.pixelscale - cube._get_pixelscale()) < 1e-6, 'Bad match in pixel scale.'
     # NOTE: This is worse than it should be because of how the WCS in MaNGA is defined.
     assert numpy.all(numpy.absolute(cube.wave - cube._get_wavelength_vector(cube.nwave)) < 2e-4), \
@@ -147,15 +147,15 @@ def test_stats():
 
     cen_wave = cube.central_wavelength(response_func=methods[i[0]]['response_func'],
                                        flag=cube.do_not_use_flags())
-    assert cen_wave == 4637.773299952125, 'Central wavelength changed.'
+    assert numpy.isclose(cen_wave, 4639.5), 'Central wavelength changed.'
 
     cen_wave = cube.central_wavelength(waverange=[4000,8000], flag=cube.do_not_use_flags(),
                                        fluxwgt=True)
-    assert cen_wave == 5893.7380000557105, 'Central wavelength changed.'
+    assert numpy.isclose(cen_wave, 5898.9), 'Central wavelength changed.'
 
     cen_wave = cube.central_wavelength(waverange=[4000,8000], flag=cube.do_not_use_flags(),
                                        per_pixel=False)
-    assert cen_wave == 6045.295011956098, 'Central wavelength changed.'
+    assert numpy.isclose(cen_wave, 6047.2), 'Central wavelength changed.'
 
     sig, var, snr = cube.flux_stats(response_func=methods[i[0]]['response_func'])
     assert sig.shape == cube.spatial_shape, 'Should be shaped as a map.'

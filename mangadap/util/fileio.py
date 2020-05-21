@@ -177,13 +177,12 @@ def read_template_spectrum(filename, data_ext=0, ivar_ext=None, sres_ext=None, l
         spec = numpy.copy(hdu[data_ext].data).astype(numpy.float64)
         wave = wavelength_vector(spec.size, hdu[0].header, log10=log10)
 
+        # Collect objects to return
         ret = (wave, spec)
-
         if ivar_ext is not None:
             ret += (numpy.copy(hdu[ivar_ext].data).astype(numpy.float64), )
         if sres_ext is not None:
             ret += (numpy.copy(hdu[sres_ext].data).astype(numpy.float64), )
-
         return ret
     
 

@@ -94,6 +94,7 @@ Revision history
 """
 import time
 import os
+import warnings
 
 from configparser import ConfigParser
 
@@ -218,8 +219,11 @@ class DRPFits:
         Returns:
             :obj:`str`: The name of the preferred extension to use.
         """
-        available = [h.name for h in hdu 
-                        if h.name in ['LSFPRE', 'LSFPOST', 'PRESPECRES', 'SPECRES']]
+        allowed = ['LSFPRE', 'LSFPOST', 'PRESPECRES', 'SPECRES']
+        if ext is not None and ext not in allowed:
+            warnings.warn('{0} is not a viable spectral resolution extension.'.format(ext))
+            return None
+        available = [h.name for h in hdu if h.name in allowed]
         _ext = ext
         if ext is None:
             _ext = 'LSFPRE'
@@ -273,19 +277,20 @@ class DRPFits:
             raise ValueError('No valid spectral resolution extension.')
         if ext is not None and _ext is None:
             raise ValueError('No extension: {0}'.format(ext))
+        warnings.warn('Extension {0} used to define spectral resolution.'.format(_ext))
             
+        # Set the mode based on the shape of the flux extension
+        mode = 'CUBE' if hdu['FLUX'].data.ndim == 3 else 'RSS'
+
         # Build the spectral resolution vectors
         if 'SPECRES' in _ext:
             sres = numpy.ma.MaskedArray(hdu[_ext].data, mask=numpy.invert(hdu[_ext].data > 0))
             if fill:
                 sres = numpy.ma.MaskedArray(interpolate_masked_vector(sres))
             if not median:
-                nspec = hdu['FLUX'].data.shape[0]
-                sres = numpy.ma.tile(sres, (nspec,1))
+                sres = numpy.tile(sres, (hdu['FLUX'].data.shape[0],1)) if mode == 'RSS' \
+                         else numpy.tile(sres, (*hdu['FLUX'].data.shape[1:][::-1],1)).T
             return _ext, sres
-
-        # Set the mode based on the shape of the flux extension
-        mode = 'CUBE' if hdu['FLUX'].data.ndim == 3 else 'RSS'
 
         # Otherwise dealing with the DISP data
         sres = numpy.ma.MaskedArray(hdu[_ext].data)

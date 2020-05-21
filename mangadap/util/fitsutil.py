@@ -111,6 +111,13 @@ class DAPFitsUtil:
         hdr['VERSAST'] = (astropy.__version__, 'Astropy version')
         import pydl
         hdr['VERSPYDL'] = (pydl.__version__, 'pydl version')
+        import ppxf
+        hdr['VERSPPXF'] = (ppxf.__version__, 'pPXF version')
+        try:
+            import vorbin
+            hdr['VERSVBIN'] = (vorbin.__version__, 'VorBin version (if used)')
+        except:
+            pass
         hdr['VERSDAP'] = (__version__, 'MaNGA DAP version')
 
         return hdr

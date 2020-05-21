@@ -21,7 +21,7 @@ warnings.simplefilter("ignore", RuntimeWarning)
 def test_sres_ext():
     file = remote_data_file(filename=MaNGARSS.build_file_name(7815, 3702, log=True))
     hdu = fits.open(file)
-    assert MaNGARSS.spectral_resolution_extension(hdu) == 'PREDISP', \
+    assert MaNGARSS.spectral_resolution_extension(hdu) == 'LSFPRE', \
                 'Bad spectral resolution extension selection'
     assert MaNGARSS.spectral_resolution_extension(hdu, ext='SPECRES') == 'SPECRES', \
                 'Bad spectral resolution extension selection'
@@ -39,7 +39,7 @@ def test_read():
     assert len(rss.shape) == 2, 'Row-stacked spectra are 2D'
     assert rss.shape == (rss.nspec, rss.nwave), 'Shape mismatch'
     assert rss.sres is not None, 'Spectral resolution data was not constructed.'
-    assert rss.sres_ext == 'PREDISP', 'Should default to PREDISP extension.'
+    assert rss.sres_ext == 'LSFPRE', 'Should default to LSFPRE extension.'
     assert rss.xpos.shape == rss.shape, 'On-sky coordinates are wavelength-dependent'
     assert numpy.all(rss.area == numpy.pi), 'Area is pi square arcsec'
     assert rss.area.shape == (rss.nspec,), 'Area is wavelength-independent'
