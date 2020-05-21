@@ -24,7 +24,7 @@ TODO
     - Change `BASE` extension to `CONTINUUM` extension.
 
 
-2.5.3dev
+3.0.0dev
 --------
 
  - Directory restructuring:  Removed "python" top-level directory and
