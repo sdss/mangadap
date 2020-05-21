@@ -210,7 +210,7 @@ class MaNGARSS(DRPFits, RowStackedSpectra):
         """
         path, file_name = cls.default_paths(int(plate), int(ifudesign), log=log, drpver=drpver,
                                             redux_path=redux_path, directory_path=directory_path)
-        return cls(os.path.join(directory_path, file_name), **kwargs)
+        return cls(os.path.join(path, file_name), **kwargs)
 
     def pointing_offset(self):
         """

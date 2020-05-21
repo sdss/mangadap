@@ -74,6 +74,12 @@ def main():
                     HOST, drp_test_version, dap_test_version)
     download_file(url_root, usr, passwd, local_root, f)
 
+    # Get the v2_7_1 drpcomplete until a v3_0_1 version is ready!
+    f = 'drpcomplete_v2_7_1.fits'
+    url_root = 'https://{0}/sas/mangawork/manga/spectro/analysis/{1}/{2}/common/'.format(
+                    HOST, drp_test_version, dap_test_version)
+    download_file(url_root, usr, passwd, local_root, f)
+
     # Get the DRPall file
     f = 'drpall-{0}.fits'.format(drp_test_version)
     url_root = 'https://{0}/sas/mangawork/manga/spectro/redux/{1}/'.format(HOST, drp_test_version)

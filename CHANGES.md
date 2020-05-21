@@ -80,6 +80,12 @@ TODO
    `MaNGARSS` into a new, repurposed `DRPFits` base class.
  - Global data from unique DAPTYPEs now put in separate extensions of
    the DAPall file.
+ - Incorporate change from 'PREDISP' to 'LSFPRE' and 'DISP' to 'LSFPOST'
+   in the spectral resolution extensions produced by the DRP.
+ - Added DataCube metadata.
+ - Added Legendre polynomial fitter
+ - Added MaStar HC V2 library
+ - Updated versions of required packages
 
 
 2.5.2 (14 Feb 2020)

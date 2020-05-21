@@ -138,5 +138,53 @@ Calculating additional covariance matrices
 You can use the DAP to calculate the covariance matrix for any
 channel in the DRP-provided datacubes.
 
-TBW
+To calculate the **formal covariance matrix**, use
+:func:`~mangadap.datacube.datacube.DataCube.covariance_matrix` or
+:func:`~mangadap.datacube.datacube.DataCube.covariance_cube`:
+
+.. code-block:: python
+
+    # Read the datacube (assumes the default paths)
+    from mangadap.datacube import MaNGADataCube
+    cube = MaNGADataCube.from_plateifu(7815, 3702)
+
+    # Load the source row-stacked spectra
+    cube.load_rss()
+
+    # Construct a covariance matrix for the (single) wavelength channel
+    # with index 1000
+    C = cube.covariance_matrix(1000)
+
+    # Try multiple channels
+    C = cube.covariance_cube(channels=[1000,2000])
+    assert numpy.array_equal(C.input_indx, [1000,2000]), 'Bad matrix indices'
+    assert C.shape == (1764, 1764, 2), 'Bad covariance shape'
+
+Note that in the above, you can calculate the covariance matrices for
+*all* wavelength channels if you do not specify the channels in the
+call to :func:`~mangadap.datacube.datacube.DataCube.covariance_cube`.
+
+In addition to the formal covariance matrices, we found that the
+correlation matrix is well approximated by adopting a Gaussian in
+pixel separation for the form of the correlation coefficients
+(:math:`{\mathbf \rho}`; see
+:func:`~mangadap.datacube.manga.MaNGADataCube.approximate_covariance_matrix`).
+To calculate the **approximate correlation matrix**:
+
+.. code-block:: python
+
+    # Read the datacube (assumes the default paths)
+    from mangadap.datacube import MaNGADataCube
+    cube = MaNGADataCube.from_plateifu(7815, 3702)
+
+    # Try to generate an approximate correlation matrix
+    approxC = cube.approximate_correlation_matrix()
+
+    # To get the covariance matrix for a specific wavelength channel,
+    # renormalize the approximate correlation matrix by the variance in
+    # the desired channel.
+    var = numpy.ma.power(cube.ivar[:,:,1000].ravel(), -1).filled(0.0)
+    approxC = approxC.apply_new_variance(var)
+    approxC.revert_correlation()
+    approxC.show()
 

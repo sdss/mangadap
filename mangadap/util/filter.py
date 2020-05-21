@@ -23,6 +23,7 @@ Revision history
 .. include:: ../include/links.rst
 """
 import warnings
+from IPython import embed
 import numpy
 from scipy import interpolate, sparse
 
@@ -193,6 +194,8 @@ def build_smoothing_mask(x, pix_buffer, default=None, mask_x=None):
 
 
 class BoxcarFilter():
+    """
+    """
     def __init__(self, boxcar, lo=None, hi=None, niter=None, y=None, wgt=None, mask=None,
                  local_sigma=None):
 
@@ -322,6 +325,9 @@ class BoxcarFilter():
         interpolate both the smoothed data and the sigma
 
         """
+
+        # TODO: Put in a check here in case the full array is masked...
+
         # Boolean arrays with bad pixels (should be the same for both
         # smoothed_y and sigma_y)
         badpix = numpy.ma.getmaskarray(self.smoothed_y)

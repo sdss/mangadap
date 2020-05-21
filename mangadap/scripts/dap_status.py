@@ -202,7 +202,7 @@ def main(args):
     t = time.perf_counter()
 
     # Set the the analysis path and make sure it exists
-    analysis_path = defaults.default_analysis_path(drpver=args.drpver, dapver=args.dapver) \
+    analysis_path = defaults.dap_analysis_path(drpver=args.drpver, dapver=args.dapver) \
                             if args.analysis_path is None else args.analysis_path
 
     analysisplan = AnalysisPlanSet.from_par_file(args.plan_file)
@@ -211,9 +211,9 @@ def main(args):
         bin_method = SpatiallyBinnedSpectra.define_method(p['bin_key'])
         sc_method = StellarContinuumModel.define_method(p['continuum_key'])
         el_method = EmissionLineModel.define_method(p['elfit_key'])
-        daptypes += [defaults.default_dap_method(bin_method['key'],
-                                                 sc_method['fitpar']['template_library_key'],
-                                                 el_method['continuum_tpl_key'])]
+        daptypes += [defaults.dap_method(bin_method['key'],
+                                         sc_method['fitpar']['template_library_key'],
+                                         el_method['continuum_tpl_key'])]
 
     dap_status(analysis_path, daptypes, logdir=args.logdir)
 

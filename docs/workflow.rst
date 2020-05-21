@@ -66,7 +66,7 @@ The six main DAP modules and their purpose are:
    spectra with sufficient S/N and spectral coverage.  This first step
    determines the S/N in each spectrum and the fraction of the spectrum
    with valid pixels.  The current approach used to measure a g-band
-   weighted S/N.  Using the {{{DONOTUSE}}} and {{{FORESTAR}}} flags from
+   weighted S/N.  Using the ``DONOTUSE`` and ``FORESTAR`` flags from
    the DRP, the DAP does not analyze any spectrum where fewer than 80%
    of the spectral channels are valid.  This step also calculates the
    on-sky Cartesian and elliptical coordinates relative to the galaxy

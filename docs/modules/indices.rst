@@ -4,7 +4,9 @@
 Spectral-Index Measurements
 ===========================
 
-*Analysis class*: :class:`mangadap.proc.spectralindices.SpectralIndices`
+*Analysis class*: :class:`~mangadap.proc.spectralindices.SpectralIndices`
+
+*Method definition*: :class:`~mangadap.proc.spectralindices.SpectralIndicesDef`
 
 *Reference root*: ``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/[PLATE]/[IFUDESIGN]/ref``
 
@@ -17,20 +19,20 @@ Spectral-Index Measurements
 .. code-block:: ini
 
     [default]
-     key                      = INDXEN
-     minimum_snr              = 0.0
-     resolution_fwhm          = -1
-     compute_sigma_correction = True
-     artifact_mask            = BADSKY
-     absorption_indices       = EXTINDX
-     bandhead_indices         = BHBASIC
+    key                      = INDXEN
+    minimum_snr              = 0.0
+    resolution_fwhm          = -1
+    compute_sigma_correction = True
+    artifact_mask            = BADSKY
+    absorption_indices       = EXTINDX
+    bandhead_indices         = BHBASIC
 
 *Important class dependencies*:
 
- * :class:`mangadap.par.absorptionindexdb.AbsorptionIndexDB`:
+ * :class:`~mangadap.par.absorptionindexdb.AbsorptionIndexDB`:
    Generalized class that provides the detailed parameters for a set of
    absorption-line spectral indices.
- * :class:`mangadap.par.bandheadindexdb.BandheadIndexDB`: Generalized
+ * :class:`~mangadap.par.bandheadindexdb.BandheadIndexDB`: Generalized
    class that provides the detailed parameters for a set of bandhead (or
    "color") spectral indices.
  * :mod:`mangadap.proc.bandpassfilter`: Provides the core functions that
@@ -39,11 +41,11 @@ Spectral-Index Measurements
 *Algorithm*:
 
  * Read the artifact database to setup the
-   :class:`mangadap.util.pixelmask.SpectralPixelMask` object based on
+   :class:`~mangadap.util.pixelmask.SpectralPixelMask` object based on
    the ``artifact_mask`` config.
- * Setup the :class:`mangadap.par.absorptionindexdb.AbsorptionIndexDB`
+ * Setup the :class:`~mangadap.par.absorptionindexdb.AbsorptionIndexDB`
    (using ``absorption_indices`` config) and
-   :class:`mangadap.par.bandheadindexdb.BandheadIndexDB` (using
+   :class:`~mangadap.par.bandheadindexdb.BandheadIndexDB` (using
    ``bandhead_indices`` config) databases with the indices to measure.
  * Determine the binned spectra above the S/N limit set by the
    ``minimum_snr`` config.
@@ -51,11 +53,11 @@ Spectral-Index Measurements
    ``IGNORED``, ``FLUXINVALID``, or ``FORESTAR`` in DAP ``LOGCUBE``
    file.
  * Get the best-fitting emission-line models from the
-   :class:`mangadap.proc.emissionlinemodel.EmissionLineModel` object and
+   :class:`~mangadap.proc.emissionlinemodel.EmissionLineModel` object and
    subtract it from them from the data; keep track of where an
    emission-line model is and is not defined.
  * Measure the indices using
-   :func:`mangadap.proc.spectralindices.SpectralIndices.measure_indices`:
+   :func:`~mangadap.proc.spectralindices.SpectralIndices.measure_indices`:
 
     * Compute flux per frequency, needed for some indices; i.e.,
       convert spectra from :math:`F_\lambda` to :math:`F_\nu`.
@@ -64,11 +66,11 @@ Spectral-Index Measurements
     * Mask any "dummy" indices.
     * For each spectrum, redshift the band definition, measure the
       absorption-line indices using
-      :class:`mangadap.proc.spectralindices.AbsorptionLineIndices`, and
+      :class:`~mangadap.proc.spectralindices.AbsorptionLineIndices`, and
       the bandhead indices using
-      :class:`mangadap.proc.spectralindices.BandheadIndices`, and save
+      :class:`~mangadap.proc.spectralindices.BandheadIndices`, and save
       the results using
-      :func:`mangadap.proc.spectralindices.SpectralIndices.save_results`.
+      :func:`~mangadap.proc.spectralindices.SpectralIndices.save_results`.
 
         * Part of saving the results is to determine which indices
           were successfully measured. Only bands that are completely
@@ -79,15 +81,15 @@ Spectral-Index Measurements
  * Compute the velocity-dispersion corrections:
 
     * Get the best-fitting continuum model from the
-      :class:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel`,
+      :class:`~mangadap.proc.stellarcontinuummodel.StellarContinuumModel`,
       both with (``continuum``) and without (``continuum_dcnvlv``)
       the convolution with the best-fitting line-of-sight velocity
       distribution function (LOSVD) using
-      :func:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel.fill_to_match`.
+      :func:`~mangadap.proc.stellarcontinuummodel.StellarContinuumModel.fill_to_match`.
     * Remeasure the indices on these two models (``indx`` and
       ``dcnvlv_indx``, respectively) and the correction based on the
       result using
-      :func:`mangadap.proc.spectralindices.SpectralIndices.calculate_dispersion_corrections`
+      :func:`~mangadap.proc.spectralindices.SpectralIndices.calculate_dispersion_corrections`
 
         * For ``mag`` unit indices, the correction is
           ``dcnvlv_indx-indx``

@@ -1058,7 +1058,8 @@ class PPXFFit(StellarKinematicsFit):
                                       goodpixels=gpm, bias=self.bias, degree=degree,
                                       mdegree=mdegree, moments=moments, vsyst=-base_velocity[i],
                                       quiet=(not plot), plot=plot, linear=linear,
-                                      templates_rfft=tpl_rfft[tpl_to_use[i,:],:].T), ntpl,
+                                      templates_rfft=tpl_rfft[tpl_to_use[i,:],:].T,
+                                      linear_method='lsqlin'), ntpl,
                                       weight_errors=weight_errors)
 
             if result[i].kin[1] < 0:

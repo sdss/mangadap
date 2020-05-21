@@ -121,8 +121,9 @@ that you use these :ref:`metadatamodel-maskbits` when using the data.**
 DAP MAPS file
 -------------
 
-*File template*:
-``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/[DAPTYPE]/[PLATE]/[IFUDESIGN]/manga-[PLATE]-[IFUDESIGN]-MAPS-[DAPTYPE].fits.gz``
+*File root*: ``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/[DAPTYPE]/[PLATE]/[IFUDESIGN]``
+
+*File name*: ``manga-[PLATE]-[IFUDESIGN]-MAPS-[DAPTYPE].fits.gz``
 
 The ``MAPS`` files are the primary output file from the DAP and provide
 2D "maps" (i.e., images) of DAP measured properties.  The shape and WCS
@@ -544,8 +545,9 @@ units as included in the relevant extension header are:
 DAP Model LOGCUBE file
 ----------------------
 
-*File template*:
-``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/[DAPTYPE]/[PLATE]/[IFUDESIGN]/manga-[PLATE]-[IFUDESIGN]-LOGCUBE-[DAPTYPE].fits.gz``
+*File root*: ``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/[DAPTYPE]/[PLATE]/[IFUDESIGN]``
+
+*File name*: ``manga-[PLATE]-[IFUDESIGN]-LOGCUBE-[DAPTYPE].fits.gz``
 
 The ``LOGCUBE`` files provide the binned spectra and the best-fitting
 model spectrum for each spectrum that was successfully fit.  These files

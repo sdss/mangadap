@@ -1,12 +1,12 @@
 
-.. _astropy.cosmology.FlatLambdaCDM: http://docs.astropy.org/en/stable/api/astropy.cosmology.FlatLambdaCDM.html
+.. include:: ../include/links.rst
 
 .. _dapall-construction:
 
 DAPall File Construction
 ========================
 
-*Analysis class*: :class:`mangadap.survey.dapall.DAPall`
+*Analysis class*: :class:`~mangadap.survey.dapall.DAPall`
 
 *File Root*: ``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER``
 
@@ -14,12 +14,12 @@ DAPall File Construction
 
 *Important class dependencies*:
 
- * :class:`mangadap.survey.drpcomplete.DRPComplete`: Provides the
+ * :class:`~mangadap.survey.drpcomplete.DRPComplete`: Provides the
    database used to construct which ``PLATEIFU`` observations were
    analyzed.
- * :class:`mangadap.par.analysisplan.AnalysisPlan`: Identifies the
+ * :class:`~mangadap.par.analysisplan.AnalysisPlan`: Identifies the
    unique analysis approaches used to analyze each datacube.
- * :class:`mangadap.dapfits.DAPMapsBitMask`: Interprets the masks in
+ * :class:`~mangadap.dapfits.DAPMapsBitMask`: Interprets the masks in
    the ``MAPS`` files.
  * Many of the other core classes are needed but only to define the
    methods used by the analysis approaches selected.
@@ -28,7 +28,7 @@ DAPall File Construction
 
  * Instantiate the class used to perform cosmology calculations,
    `astropy.cosmology.FlatLambdaCDM`_, where we set :math:`h=1`,
-   :math:`\Omega_M_=0.3`, and :math:`\Omega_\Lambda = 0.7`.
+   :math:`\Omega_M = 0.3`, and :math:`\Omega_\Lambda = 0.7`.
  * Parse the plan file
  * Ensure that all plans to add compute the same emission-line
    moments, emission-line models, and spectral indices.
@@ -45,20 +45,20 @@ DAPall File Construction
    * Calculate the luminosity and angular diameter distance based on
      the input guess redshift (usually the same as the NSA redshift)
    * Calculate the radial coverage metric using
-     :func:`mangadap.survey.dapall.DAPall._radial_coverage_metric`.
+     :func:`~mangadap.survey.dapall.DAPall._radial_coverage_metric`.
    * Pull the S/N metrics from the ``MAPS`` header
    * Get the mean *g*-band surface brightness within 1 :math:`R_e`.
    * Get the binning metrics using
-     :func:`mangadap.survey.dapall.DAPall._binning_metrics`.
+     :func:`~mangadap.survey.dapall.DAPall._binning_metrics`.
    * Get the stellar kinematics metrics using
-     :func:`mangadap.survey.dapall.DAPall._stellar_kinematics_metrics`.
-   * Get the H-alpha kinematics metrics using
-     :func:`mangadap.survey.dapall.DAPall._halpha_kinematics_metrics`.
+     :func:`~mangadap.survey.dapall.DAPall._stellar_kinematics_metrics`.
+   * Get the :math:`{\rm H}\alpha` kinematics metrics using
+     :func:`~mangadap.survey.dapall.DAPall._halpha_kinematics_metrics`.
    * Get the emission-line metrics using
-     :func:`mangadap.survey.dapall.DAPall._emission_line_metrics`.
+     :func:`~mangadap.survey.dapall.DAPall._emission_line_metrics`.
    * Get the spectral-index metrics using
-     :func:`mangadap.survey.dapall.DAPall._spectral_index_metrics`.
-   * Calculate the star-formation rates based on the H:math:`\alpha`
+     :func:`~mangadap.survey.dapall.DAPall._spectral_index_metrics`.
+   * Calculate the star-formation rates based on the :math:`{\rm H}\alpha`
      flux within 1 :math:`R_e` and over the full FOV. E.g.,
 
      .. code-block:: python

@@ -157,6 +157,8 @@ def test_write_dap_config_drpcomplete():
         # Clean-up a previous failure
         os.remove(ofile)
 
+    # TODO: Temporarily override
+    drp_test_version = 'v2_7_1'
     drpc = remote_data_file('drpcomplete_{0}.fits'.format(drp_test_version))
     write_dap_config.main(write_dap_config.parse_args(['7815', '3702', ofile, '-c', drpc]))
 
@@ -200,10 +202,5 @@ def test_status():
 # TODO: Improve this!
 def test_run():
     assert script_help_okay('rundap'), 'Basic help call failed'
-
-
-#if __name__ == '__main__':
-#    test_calculate_covariance()
-
 
 

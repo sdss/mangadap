@@ -559,7 +559,7 @@ class construct_maps_file:
     Should force all intermediate objects to be provided.
 
     """
-    def __init__(self, cube, rdxqa=None, binned_spectra=None, stellar_continuum=None,
+    def __init__(self, cube, metadata, rdxqa=None, binned_spectra=None, stellar_continuum=None,
                  emission_line_moments=None, emission_line_model=None, spectral_indices=None,
                  redshift=None, dapver=None, analysis_path=None, directory_path=None,
                  output_file=None, clobber=True, loggers=None, quiet=False,
@@ -580,6 +580,7 @@ class construct_maps_file:
         #---------------------------------------------------------------
         # Set the output paths
         self.cube = cube
+        self.meta = metadata
         self.method = None
         self.directory_path = None
         self.output_file = None
@@ -670,8 +671,9 @@ class construct_maps_file:
         # Save the data to the hdu attribute
         prihdr = add_snr_metrics_to_header(prihdr, self.cube, rdxqalist[1].data[:,:,1].ravel())
         
-        prihdr = finalize_dap_primary_header(prihdr, self.cube, binned_spectra, stellar_continuum,
-                                             loggers=self.loggers, quiet=self.quiet)
+        prihdr = finalize_dap_primary_header(prihdr, self.cube, self.meta, binned_spectra,
+                                             stellar_continuum, loggers=self.loggers,
+                                             quiet=self.quiet)
         self.hdu = fits.HDUList([ fits.PrimaryHDU(header=prihdr),
                                   *rdxqalist,
                                   *binidlist,
@@ -1092,10 +1094,11 @@ class construct_maps_file:
         spx_ellcoo = numpy.repeat(spx_ellcoo, (3,1), axis=2)
 
         # Calculate the radius normalized by the effective radius
-        spx_ellcoo[:,:,1] /= self.cube.meta['reff']
+        if 'reff' in self.meta.keys() and self.meta['reff'] is not None:
+            spx_ellcoo[:,:,1] /= self.meta['reff']
 
         # Calculate the radius in units of h^-1 kpc
-        hkpc_per_arcsec = self.__class__._get_kpc_per_arcsec(self.cube.meta['z'])
+        hkpc_per_arcsec = self.__class__._get_kpc_per_arcsec(self.meta['z'])
         if hkpc_per_arcsec > 0:
             spx_ellcoo[:,:,2] *= hkpc_per_arcsec
         else:
@@ -1199,9 +1202,10 @@ class construct_maps_file:
         arr = list(DAPFitsUtil.reconstruct_map(self.spatial_shape, bin_indx, arr, dtype=dtypes))
 
         # Calculate the radius normalized by the effective radius
-        arr[3] = (arr[3]/self.cube.meta['reff']).astype(self.float_dtype)
+        if 'reff' in self.meta.keys() and self.meta['reff'] is not None:
+            arr[3] = (arr[3]/self.meta['reff']).astype(self.float_dtype)
         # Calculate the radius in units of h^-1 kpc
-        hkpc_per_arcsec = self.__class__._get_kpc_per_arcsec(self.cube.meta['z'])
+        hkpc_per_arcsec = self.__class__._get_kpc_per_arcsec(self.meta['z'])
         arr[4] = (arr[4]*hkpc_per_arcsec).astype(self.float_dtype) if hkpc_per_arcsec > 0 \
                         else (0*arr[4]-1).astype(self.float_dtype)
 
@@ -1732,9 +1736,10 @@ class construct_cube_file:
     Should force all intermediate objects to be provided.
 
     """
-    def __init__(self, cube, binned_spectra=None, stellar_continuum=None, emission_line_model=None,
-                 dapver=None, analysis_path=None, directory_path=None, output_file=None,
-                 clobber=True, loggers=None, quiet=False, single_precision=False):
+    def __init__(self, cube, metadata, binned_spectra=None, stellar_continuum=None,
+                 emission_line_model=None, dapver=None, analysis_path=None, directory_path=None,
+                 output_file=None, clobber=True, loggers=None, quiet=False,
+                 single_precision=False):
 
         #---------------------------------------------------------------
         # Initialize the reporting
@@ -1751,6 +1756,7 @@ class construct_cube_file:
         #---------------------------------------------------------------
         # Set the output paths
         self.cube = cube
+        self.meta = metadata
         self.method = None
         self.directory_path = None
         self.output_file = None
@@ -1829,8 +1835,9 @@ class construct_cube_file:
 
         #---------------------------------------------------------------
         # Save the data to the hdu attribute
-        prihdr = finalize_dap_primary_header(prihdr, self.cube, binned_spectra, stellar_continuum,
-                                             loggers=self.loggers, quiet=self.quiet)
+        prihdr = finalize_dap_primary_header(prihdr, self.cube, self.meta, binned_spectra,
+                                             stellar_continuum, loggers=self.loggers,
+                                             quiet=self.quiet)
 
         # Ensure extensions are in the correct order
         self.hdu = fits.HDUList([ fits.PrimaryHDU(header=prihdr),
@@ -2186,8 +2193,8 @@ def confirm_dap_types(cube, rdxqa, binned_spectra, stellar_continuum, emission_l
 
 
 # TODO: Need to abstract this for non-DRP datacubes.
-def finalize_dap_primary_header(prihdr, cube, binned_spectra, stellar_continuum, loggers=None,
-                                quiet=False):
+def finalize_dap_primary_header(prihdr, cube, metadata, binned_spectra, stellar_continuum,
+                                loggers=None, quiet=False):
 
     # Initialize the DAP quality flag
     dapqualbm = DAPQualityBitMask()
@@ -2216,7 +2223,9 @@ def finalize_dap_primary_header(prihdr, cube, binned_spectra, stellar_continuum,
         dapqual = dapqualbm.turn_on(dapqual, 'SINGLEBIN')
 
     # Input photometric geometry and scale were invalid
-    if not numpy.all(numpy.isin(['ell', 'pa', 'reff'], cube.metakeys())):
+    if 'ell' not in metadata.keys() or metadata['ell'] is None or \
+            'pa' not in metadata.keys() or metadata['pa'] is None or \
+            'reff' not in metadata.keys() or metadata['reff'] is None:
         dapqual = dapqualbm.turn_on(dapqual, 'BADGEOM')
 
     # Determine if there's a foreground star

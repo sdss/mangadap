@@ -241,8 +241,8 @@ class DataCube:
         self.nwave = self.shape[-1]
 
         # TODO: Not sure this is useful
-        self.spatial_index = [(i,j) for i,j in zip(*numpy.unravel_index(numpy.arange(self.nspec),
-                                                                        self.spatial_shape))]
+        self.spatial_index = numpy.array([(i,j) for i,j in zip(*numpy.unravel_index(
+                                                numpy.arange(self.nspec), self.spatial_shape))])
 
         self.meta = {} if meta is None else meta
         if not isinstance(self.meta, dict):

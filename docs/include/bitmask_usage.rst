@@ -132,16 +132,16 @@ options are:
        .. code-block:: ini
 
             [BPM]
-             value = 0
-             descr = Pixel is part of a bad-pixel mask
+            value = 0
+            descr = Pixel is part of a bad-pixel mask
 
             [COSMIC]
-             value = 1
-             descr = Pixel is contaminated by a cosmic ray
+            value = 1
+            descr = Pixel is contaminated by a cosmic ray
 
             [SATURATED]
-             value = 2
-             descr = Pixel is saturated
+            value = 2
+            descr = Pixel is saturated
 
        Assuming this is written to ``imagebitmask.ini``, you can
        instantiate the :class:`mangadap.util.bitmask.BitMask` like so::

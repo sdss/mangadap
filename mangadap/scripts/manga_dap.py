@@ -64,7 +64,9 @@ def main(args):
     #   - Instantiate using either the datacube file directly or a
     #     configuration file
     cube = UserDataCube(args.cubefile) if args.config is None \
-                else UserDataCube.from_config(args.config) 
+                else UserDataCube.from_config(args.config, drpver=args.drpver,
+                                              redux_path=args.redux_path,
+                                              directory_path=args.directory_path)
 
     # Read the analysis plan
     analysisplan = AnalysisPlanSet.default() if args.plan is None \
