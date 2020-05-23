@@ -5,6 +5,14 @@
 # See https://trac.sdss.org/wiki/MANGA/StellarLib/AndTheDAP/Clustering
 #
 #   Any star spectrum with a SUB cluster ID set to -1 was removed
+#
+# Compared to v1, this uses new spectra provided by Renbin Yan from
+# MPL-10.
+# Specific file used was:
+#   https://data.sdss.org/sas/mangawork/manga/spectro/mastar/v3_0_1/trunk/mastar-combspec-bestlsf-extcorr-noline-v3_0_1-trunk.fits
+#
+# TODO: ADD MANGAID TO THIS TABLE!!
+#
 #-----------------------------------------------------------------------
 #-----------------------------------------------------------------------
 # K.B. Westfall,  20 May 2020 - Beta version
@@ -53,6 +61,7 @@
 #             adjustment)
 #   3 - SUB: Fine cluster ID (based on fit with high-order
 #            multiplicative polynomial)
+#
 # ID BASE  SUB
    0    3   43
    1    3   44

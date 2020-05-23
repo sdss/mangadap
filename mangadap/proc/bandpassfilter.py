@@ -256,9 +256,9 @@ def passband_integral(x, y, passband=None, borders=False, log=False, base=10.0, 
 
         [\epsilon S(y)]^2 = \sum_i (\delta_i \epsilon_i {\rm d}x_i)^2, 
 
-    which can be calculated using the `quad` keyword.  For example,
-    given values to integrate, `y`, and errors, `e`, calculate the
-    passband integral and its error as follows::
+    which can be calculated using the ``quad`` keyword. For example,
+    given values to integrate, ``y``, and errors, ``e``, calculate
+    the passband integral and its error as follows::
 
         integral = passband_integral(x, y)
         integral_error = passband_integral(x, e, quad=True)
@@ -271,48 +271,58 @@ def passband_integral(x, y, passband=None, borders=False, log=False, base=10.0, 
         estimates of the latter.
 
     Args:
-        x (1D array-like):
-            The array of x coordinates for the integration.  If
+        x (array-like):
+            The 1D array of x coordinates for the integration. If
             borders=True, this array provides the borders of the
-            interval over which y is measured.  These can be
-            non-uniform.  In this case, the number of x values must be
-            :math:`N+1` for :math:`N` 1D `y` values (see below).
+            interval over which y is measured. These can be
+            non-uniform. In this case, the number of x values must be
+            :math:`N+1` for :math:`N` 1D ``y`` values (see below).
             Otherwise, the `x` values are expected to be uniformly
-            sampled either linearly or geometrically.  In this case, `x`
-            can be either a two element vector giving the (geometric)
-            centers of the first and last sample interval or a vector
-            with the :math:`N` samples.  In either case,
+            sampled either linearly or geometrically. In this case,
+            ``x`` can be either a two element vector giving the
+            (geometric) centers of the first and last sample interval
+            or a vector with the :math:`N` samples. In either case,
             :func:`mangadap.util.sampling._pixel_borders` is used to
             determine the borders of the sample intervals.
-        y (1D or 2D array-like):
-            The measured values to be integrated.  The first axis must
-            always provide the values to be integrated.  If those values
-            are specific to the passband, `y` should be 2D with shape
-            :math:`(N_y,N_{\rm passband})`.
-        passband (1D or 2D array-like, optional):
-            The list of passbands (in units of x) to integrate.  The
-            length of the last dimension must always be 2 for that
-            starting and ending x coordinate.  If 2D, the array must
-            have shape :math:`(N_{\rm passband},2)`.  If not provided,
-            the integral is just performed over the full :math:`y`
-            vector.  If `y` is 2D, the last axis of `y` and the first
-            axis here must match.
+        y (array-like):
+            The 1D or 2D array of measured values to be integrated.
+            The first axis must always provide the values to be
+            integrated. If those values are specific to the passband,
+            ``y`` should be 2D with shape :math:`(N_y,N_{\rm
+            passband})`.
+        passband (array-like, optional):
+            The 1D or 2D array with the set of passbands (in units of
+            x) to integrate. The length of the last dimension must
+            always be 2, providing the starting and ending x
+            coordinate. If 2D, the array must have shape
+            :math:`(N_{\rm passband},2)`. If not provided, the
+            integral is just performed over the full :math:`y`
+            vector. If ``y`` is 2D, the last axis of ``y`` and the
+            first axis here must match.
         borders (:obj:`bool`, optional):
             The :math:`x` values provided are the border coordinates
             over which the :math:`y` values have been determined.
         log (:obj:`bool`, optional):
-            The coordinates are logarithmically sampled.  Ignored if
-            `borders` is True.
+            The coordinates are logarithmically sampled. Ignored if
+            ``borders`` is True.
         base (:obj:`float`, optional):
-            The base of the logarithm used in the geometric sampling if
-            `log` is True.
+            The base of the logarithm used in the geometric sampling
+            if ``log`` is True.
         quad (:obj:`bool`, optional):
             Perform the quadrature sum instead of the direct sum.  This
             is used for error calculations.
         
     Returns:
-        float, numpy.ndarray: The passband integral for each passband.
+        float, `numpy.ndarray`_: The passband integral for each
+        passband.
 
+    Raises:
+        ValueError:
+            Raised if ``x`` is not a 1D array, if the shapes of ``x``
+            and ``y`` are not appropriately matched, if ``passbands``
+            has more than 2 dimensions, if the last axis of
+            ``passbands`` is not 2 elements long, or if the shapes of
+            ``passbands`` and ``y`` are not appropriately matched.
     """
     # Ensure that y is a numpy array, fill any masked values with 0s,
     # and check its shape
@@ -546,7 +556,7 @@ def passband_weighted_sdev(x, y, z, passband=None, borders=False, yerr=None, zer
     return sigma, sigma_error
 
 
-def pseudocontinuum(x, y, passband=None, err=None, log=True, weighted_center=True):
+def pseudocontinuum(x, y, passband=None, err=None, log=True, weighted_center=False):
     """
     Get the pseudocontinua in a set of passbands for a single vector (y)
 

@@ -81,6 +81,8 @@ import glob
 import os
 import logging
 
+from IPython import embed
+
 import numpy
 from astropy.io import fits
 import astropy.constants
@@ -107,7 +109,7 @@ from .bandpassfilter import passband_integral, passband_integrated_width, pseudo
 from .util import select_proc_method, flux_to_fnu
 
 from matplotlib import pyplot
-#from memory_profiler import profile
+
 
 class SpectralIndicesDef(KeywordParSet):
     """
@@ -142,12 +144,12 @@ class SpectralIndicesDef(KeywordParSet):
 
 def validate_spectral_indices_config(cnfg):
     """ 
-    Validate :class:`mangadap.util.parser.DefaultConfig` object with
+    Validate :class:`~mangadap.util.parser.DefaultConfig` object with
     spectral-index measurement parameters.
 
     Args:
-        cnfg (:class:`mangadap.util.parser.DefaultConfig`): Object with
-            parameters to validate.
+        cnfg (:class:`~mangadap.util.parser.DefaultConfig`):
+            Object with parameters to validate.
 
     Raises:
         KeyError: Raised if any required keywords do not exist.
@@ -236,17 +238,261 @@ class SpectralIndicesBitMask(DAPBitMask):
     cfg_root = 'spectral_indices_bits'
 
 
-# TODO: These two should have the same base class
-class AbsorptionLineIndices:
-    """
-    Measure a set of spectral indices in a single spectrum.
+# TODO: SpecralIndices.save_results requires that AbsorptionLineIndices
+# and BandheadIndices have the following attributes in common:
+#        blue_center
+#        blue_continuum
+#        blue_continuum_err
+#        blue_incomplete
+#        blue_empty
+#
+#        red_center
+#        red_continuum
+#        red_continuum_err
+#        red_incomplete
+#        red_empty
+#
+#        index
+#        index_err
+#
+#        main_incomplete
+#        main_empty
+#        divbyzero
+#
+# Put these in a common base class?
 
-    By default, the center of the two side-bands is the flux-weighted
-    center; set weighted_center=False to get use the unweighted center
-    of the band.
+
+class AbsorptionLineIndices:
+    r"""
+    Measure a set of absorption-line indices and metrics in a single
+    spectrum.
+
+    The calculations performed provide spectral index measurements as
+    defined/used by Worthey et al. (1994) and Trager et al. (1998)
+    (:math:`{\mathcal I}_{\rm WT}`, :attr:`index`), as well as
+    defined/used by Burstein et al. (1984) and Faber et al. (1985)
+    (:math:`{\mathcal I}_{\rm BF}`, :attr:`index_bf`).
+
+    Specifically, let
+    
+    .. math::
+
+        S(y) \equiv \int_{\lambda_1}^{\lambda_2} y\ d\lambda 
+                \approx \sum_i y_i\ {\rm d}p_i\ {\rm d}\lambda_i,
+
+    where :math:`{\rm d}p_i` is the fraction of pixel :math:`i` (with
+    width :math:`{\rm d}\lambda_i`) in the passband defined by
+    :math:`\lambda_1 < \lambda < \lambda_2`; the discrete sum is
+    performed by
+    :func:`mangadap.proc.bandpassfilter.passband_integral`. Also, let
+    :math:`f` be the spectrum flux density and define a linear
+    continuum using two sidebands ("blue" and "red"):
+
+    .. math::
+
+        C(\lambda) = (\langle f\rangle_{\rm red} - \langle f\rangle_{\rm blue})\
+            \frac{\lambda - \lambda_{\rm blue}}{\lambda_{\rm red}-\lambda_{\rm blue}}
+             + \langle f\rangle_{\rm blue},
+
+
+    where :math:`\lambda_{\rm blue}` and :math:`\lambda_{\rm red}`
+    are the wavelengths at the center of the two sidebands --- e.g.,
+    :math:`\lambda_{\rm red} = (\lambda_{1,{\rm red}} +
+    \lambda_{2,{\rm red}})/2` --- and
+
+    .. math::
+
+        \langle y\rangle = S(y)/S(1).
+
+    When **no pixels are masked** in the spectrum, :math:`S(1) =
+    (\lambda_2 - \lambda_1) \equiv \Delta\lambda`.
+
+    Following the Worthey et al. (1994) definition, we can then
+    calculate the absorption-line spectral indices as follows:
+
+    .. math::
+
+        {\mathcal I}_{\rm WT} = \left\{
+                \begin{array}{ll}
+                    S(1 - f/C), & \mbox{for angstrom units} \\[3pt]
+                    -2.5\log\left[\langle f/C\rangle\right], & \mbox{for magnitude units}
+                \end{array}\right..
+
+    The difficulty with the Worthey et al. definitions is that it
+    makes it difficult to construct an aggregate index measurement
+    based on individual index measurements from multiple spectra;
+    however, this is straight-forward under definitions closer to
+    those provided by Burstein et al. (1984) and Faber et al. (1985).
+
+    Instead define:
+
+    .. math::
+
+        {\mathcal I}_{\rm BF} = \left\{
+                \begin{array}{ll}
+                    S(1) - S(f)/C_0, & \mbox{for angstrom units} \\[3pt]
+                    -2.5\log\left[\langle f\rangle/C_0\right], & \mbox{for magnitude units}
+                \end{array}\right.,
+
+    where :math:`C_0` is the value of the linear continuum at the
+    center of the main passband. Given that the continuum is a linear
+    function, :math:`S(C) = C_0 \Delta\lambda`; i.e., the integral of
+    the continuum over the passband is mathematically identical to
+    the continuum sampled at the center of the bandpass times the
+    bandpass width.
+
+    Now, we can calculate a weighted sum of indices using the value
+    of :math:`C_0` for each index as the weight and assume that no
+    pixels are masked such that we can replace :math:`S(1)` with
+    :math:`\Delta\lambda` to find:
+
+    .. math::
+
+        \begin{eqnarray}
+        \frac{\sum_i C_{0,i} {\mathcal I}_{\rm BF}}{\sum_i C_{0,i}}
+            & = & \frac{\sum_i C_{0,i} (\Delta\lambda - S(f)_i / C_{0,i})}{\sum_i C_{0,i}} \\
+            & = & \Delta\lambda - \frac{\sum_i S(f)_i}{\sum_i C_{0,i}}
+        \end{eqnarray}.
+
+    That is, this weighted sum of the individual indices is
+    mathematically identical (to within the limits of how error
+    affects the construction of the linear continuum) to the index
+    measured for the sum (or mean) of the individual spectra.
+    Similarly for the indices in magnitude units:
+
+    .. math::
+
+        \begin{eqnarray}
+        -2.5\log\left[\frac{\sum_i C_{0,i} 10^{-0.4 {\mathcal I}_{\rm BF}}}{\sum_i C_{0,i}}\right]
+            & = & -2.5\log\left[\frac{\sum_i C_{0,i} (S(f)_i / C_{0,i})}
+                    {\Delta\lambda \sum_i C_{0,i}}\right] \\
+            & = & -2.5\log\left[\frac{\sum_i S(f)_i}{\Delta\lambda \sum_i C_{0,i}}\right]
+        \end{eqnarray}.
+
+    Given the ease with which one can combine indices in the latter
+    definition, we provide these measurements, as well.
+
+    .. note::
+
+        The calculations performed by this class are agnostic as to
+        the redshift of the spectrum provided. It is expected that
+        you will have either de-redshifted the spectrum or redshifted
+        the passband definitions appropriately to measure the index
+        in a redshifted spectrum. However, note that, for the latter
+        case, the calculated indices with angstrom units should be
+        divided by :math:`1+z` (where :math:`z` is the redshift) to
+        calculate the *rest-frame* spectral index; no factor is
+        needed for the indices in magnitude units.
+    
+    Args:
+        wave (`numpy.ndarray`_):
+            Wavelength vector.
+        flux (array-like):
+            Flux vector. Units must be appropriate to the definition
+            of the provided index passbands. Can be a
+            `numpy.ma.MaskedArray`_; masked pixels will be ignored in
+            the measurement.
+        bluebands (`numpy.ndarray`_):
+            Array with the definition of the blue sidebands. Shape
+            must be :math:`(N_{\rm index},2)`, where the second axis
+            provides the starting and ending wavelength of each band.
+        redbands (`numpy.ndarray`_):
+            Array with the definition of the red sidebands. Shape
+            must be :math:`(N_{\rm index},2)`, where the second axis
+            provides the starting and ending wavelength of each band.
+        mainbands (`numpy.ndarray`_):
+            Array with the definition of the primary passbands. Shape
+            must be :math:`(N_{\rm index},2)`, where the second axis
+            provides the starting and ending wavelength of each band.
+        err (`numpy.ndarray`_, optional):
+            Error in the flux, used for a nominal propagation of the
+            index error.
+        log (`numpy.ndarray`_, optional):
+            Flag that the provided flux vector is sampled
+            logarithmically in wavelength.
+        units (`numpy.ndarray`_, optional):
+            Array with the units for each index to compute. Elements
+            of the array must be either ``'ang'`` or ``'mag'``. If
+            ``units`` is None, ``'ang'`` is assumed for all indices.
+
+    Attributes:
+        nindx (:obj:`int`):
+            Number of indices
+        units (`numpy.ndarray`_):
+            String array with the units of each index (``'ang'`` or
+            ``'mag'``).
+        blue_center (`numpy.ndarray`_):
+            Center of the blue sideband.
+        blue_continuum (`numpy.ndarray`_):
+            Flux in the blue sideband.
+        blue_continuum_err (`numpy.ndarray`_):
+            Propagated error in the blue sideband flux.
+        blue_incomplete (`numpy.ndarray`_):
+            Boolean array flagging if the blue sideband contained
+            *any* masked pixels.
+        blue_empty (`numpy.ndarray`_):
+            Boolean array flagging if the blue sideband was
+            completely empty.
+        red_center (`numpy.ndarray`_):
+            Center of the red sideband.
+        red_continuum (`numpy.ndarray`_):
+            Flux in the red sideband.
+        red_continuum_err (`numpy.ndarray`_):
+            Propagated error in the red sideband flux.
+        red_incomplete (`numpy.ndarray`_):
+            Boolean array flagging if the red sideband contained
+            *any* masked pixels.
+        red_empty (`numpy.ndarray`_):
+            Boolean array flagging if the red sideband was completely
+            empty.
+        continuum_m (`numpy.ndarray`_):
+            Slope of the linear continuum defined by the two
+            sidebands.
+        continuum_b (`numpy.ndarray`_):
+            Intercept of the linear continuum defined by the two
+            sidebands.
+        main_continuum (`numpy.ndarray`_):
+            The continuum interpolated to the center of the main
+            passband based on the linear continuum constructed using
+            the blue and red sidebands.
+        main_continuum_err (`numpy.ndarray`_):
+            The propagated error in the continuum interpolated to the
+            center of the main passband.
+        main_flux (`numpy.ndarray`_):
+            The integral of the flux over the main passband.
+        main_flux_err (`numpy.ndarray`_):
+            Propagated error in the integral of the flux over the
+            main passband.
+        main_incomplete (`numpy.ndarray`_):
+            Boolean array flagging if the main passband contained
+            *any* masked pixels.
+        main_empty (`numpy.ndarray`_):
+            Boolean array flagging if the main passband was
+            completely empty.
+        index (`numpy.ndarray`_):
+            Computed index following the Worthey et al. definition.
+        index_err (`numpy.ndarray`_):
+            Error in the WT index from nominal error propagation.
+            Does *not* include error in the linear continuum.
+        index_bf (`numpy.ndarray`_):
+            Computed index following the Burstein et al. definition.
+        index_bf_err (`numpy.ndarray`_):
+            Error in the BF index from nominal error propagation.
+            Does *not* include error in the linear continuum.
+        divbyzero (`numpy.ndarray`_):
+            Boolean array flagging if the index computation
+            encountered a division by 0 error; only flagged for
+            indices with magnitude units.
     """
-    def __init__(self, wave, flux, bluebands, redbands, mainbands, err=None, log=True, units=None,
-                 weighted_center=True):
+    def __init__(self, wave, flux, bluebands, redbands, mainbands, err=None, log=True, units=None):
+
+#        weighted_center (:obj:`bool`, optional):
+#            For the construction of the linear continuum, compute the
+#            flux-weighted center of the two side bands. If False, the
+#            unweighted center is used (i.e., :math:`(\lambda_1 +
+#            \lambda_2)/2`, where :math:`\lambda_1, \lambda_2` define
+#            the edges of the sideband.)
+#                 weighted_center=True):
 
         # Check the shape of the input spectrum
         if len(flux.shape) != 1:
@@ -266,18 +512,17 @@ class AbsorptionLineIndices:
             self.units = numpy.full(self.nindx, 'ang', dtype=object)
         else:
             self.units = units
-        self.order = None
 
-        # Get the two pseudocontinua and the flux-weighted band centers
-        # pseudocontinuum returns center, continuum, and continuum_err
-        # as MaskedArrays; by default center is the flux-weighted center
+        # Get the two pseudocontinua and the bandpass centers.
+        # `pseudocontinuum` returns center, continuum, and
+        # continuum_err as MaskedArrays. The optional keyword for the
+        # center calculation defaults to False, meaning the band
+        # centers should just be the unweighted center.
         self.blue_center, self.blue_continuum, self.blue_continuum_err, self.blue_incomplete, \
-            self.blue_empty = pseudocontinuum(wave, flux, passband=bluebands, err=err, log=log,
-                                              weighted_center=weighted_center)
+                self.blue_empty = pseudocontinuum(wave, flux, passband=bluebands, err=err, log=log)
 
         self.red_center, self.red_continuum, self.red_continuum_err, self.red_incomplete, \
-            self.red_empty = pseudocontinuum(wave, flux, passband=redbands, err=err, log=log,
-                                             weighted_center=weighted_center)
+                self.red_empty = pseudocontinuum(wave, flux, passband=redbands, err=err, log=log)
 
         # Get the parameters for the linear continuum across the
         # primary passband
@@ -285,18 +530,34 @@ class AbsorptionLineIndices:
                                 / (self.red_center - self.blue_center)
         self.continuum_b = self.blue_continuum - self.blue_center * self.continuum_m
 
+        # Calculate the continuum at the center of the main band
+        self.main_center = numpy.mean(mainbands, axis=1)
+        dx = (self.main_center - self.blue_center) / (self.red_center - self.blue_center)
+        self.main_continuum = dx * self.red_continuum + (1-dx) * self.blue_continuum
+        # Above is the same as:
+        #   self.main_continuum = self.continuum_m * self.main_center + self.continuum_b
+        self.main_continuum_err = None if err is None else \
+                                    numpy.sqrt(numpy.square(dx * self.red_continuum_err) 
+                                               + numpy.square((1-dx) * self.blue_continuum_err))
+
 #        print('Number of non-finite continuum m,b: {0} {1}'.format(
 #                                numpy.sum(numpy.invert(numpy.isfinite(self.continuum_m))),
 #                                numpy.sum(numpy.invert(numpy.isfinite(self.continuum_b)))))
 
         # Compute the continuum normalized indices.  This has to be done
         # in a for loop because the continuum is index-dependent
-        self.index = numpy.zeros(self.nindx, dtype=numpy.float)
-        self.index_err = numpy.zeros(self.nindx, dtype=numpy.float)
-        self.main_incomplete = numpy.zeros(self.nindx, dtype=numpy.bool)
-        self.main_empty = numpy.zeros(self.nindx, dtype=numpy.bool)
-        self.divbyzero = numpy.zeros(self.nindx, dtype=numpy.bool)
+        self.main_flux = numpy.zeros(self.nindx, dtype=float)
+        self.main_flux_err = numpy.zeros(self.nindx, dtype=float)
+        self.main_incomplete = numpy.zeros(self.nindx, dtype=bool)
+        self.main_empty = numpy.zeros(self.nindx, dtype=bool)
+        self.index = numpy.zeros(self.nindx, dtype=float)
+        self.index_err = numpy.zeros(self.nindx, dtype=float)
+        self.index_bf = numpy.zeros(self.nindx, dtype=float)
+        self.index_bf_err = numpy.zeros(self.nindx, dtype=float)
+        # TODO: Need two of these? One for each of the index definitions?
+        self.divbyzero = numpy.zeros(self.nindx, dtype=bool)
 
+        # For convenience:
         lg10 = numpy.log(10.0)
 
         for i,m in enumerate(mainbands):
@@ -313,6 +574,12 @@ class AbsorptionLineIndices:
                 self.index_err[i] = passband_integral(wave, err/cont, passband=m, log=log,
                                                       quad=True)
 
+            # Calculate the integrated flux over passband
+            self.main_flux[i] = passband_integral(wave, flux, passband=m, log=log)
+            if err is not None:
+                self.main_flux_err[i] = passband_integral(wave, err, passband=m, log=log,
+                                                          quad=True)
+
             # Get the fraction of the band covered by the spectrum and
             # flag bands that are only partially covered or empty
             interval = passband_integrated_width(wave, flux, passband=m, log=log)
@@ -320,32 +587,115 @@ class AbsorptionLineIndices:
             self.main_incomplete[i] = interval_frac < 1.0
             self.main_empty[i] = numpy.invert(interval_frac > 0.0)
 
-#            # TEST: Change calculation
-#            cont = self.continuum_b[i] + self.continuum_m[i]*wave
-#            fint = passband_integral(wave, flux, passband=m, log=log)
-#            cint = passband_integral(wave, cont, passband=m, log=log)
-#
-##            print(interval*(1-fint/cint) - self.index[i])
-#            self.index[i] = interval*(1.0-fint/cint if self.units[i] == 'ang' else fint/cint)
-#            if err is not None:
-#                eint = numpy.sqrt(passband_integral(wave, numpy.square(err), passband=m, log=log))
-#                self.index_err[i] = abs(interval*eint/cint)
+            # Common to both calculations of the BF indices
+            bf = self.main_flux[i]/self.main_continuum[i]
+            bf_err = 0.0 if err is None else \
+                        numpy.sqrt(numpy.square(self.main_flux_err[i]/self.main_flux[i])
+                                + numpy.square(self.main_continuum_err[i]/self.main_continuum[i]))
 
-            # Convert the index to magnitudes using Worthey et al. 1994,
-            # eqn. 3: The passband interval cancels out of the error
-            # propagation.  The error calculation is done first so as to
-            # not replace the linear calculation of the index.
             if self.units[i] == 'mag':
+                # Calculation of the index in mag units requires
+                # division by the band interval. If the full interval
+                # is masked, this leads to a division by 0. This
+                # catches that issue.
                 self.divbyzero[i] = not ((numpy.absolute(interval) > 0) & (self.index[i] > 0))
                 if not self.divbyzero[i]:
-                    # If err is None, self.index_err=0
+
+                    # Convert the index to magnitudes using Worthey et
+                    # al. 1994, eqn. 3: The passband interval cancels
+                    # out of the error propagation. The error
+                    # calculation is done first so as to not replace
+                    # the linear calculation of the index. NOTE: If err
+                    # is None, self.index_err=0, so there's no need to
+                    # check index_err here.
                     self.index_err[i] = numpy.absolute(2.5*self.index_err[i]/self.index[i]/lg10)
                     self.index[i] = -2.5 * numpy.log10(self.index[i]/interval)
 
+                    # Similarly for the BF definition:
+                    self.index_bf[i] = -2.5 * numpy.log10(bf / interval)
+                    self.index_bf_err[i] = 2.5 * bf_err / lg10
+            else:
+                # Complete the BF definition:
+                self.index_bf[i] = interval - bf
+                self.index_bf_err[i] = numpy.absolute(bf*bf_err)
+
 
 class BandheadIndices:
-    """
-    Measure a set of bandhead indices in a single spectrum.
+    r"""
+    Measure a set of bandhead, or "color", indices in a single spectrum.
+
+    These indices simply measure the ratio between two sidebands.
+    Following the nomenclature for the
+    :class:`AbsorptionLineIndices`, a color index is:
+
+    .. math::
+
+        {\mathcal I} = \frac{\langle f\rangle_0}{\langle f\rangle_1},
+
+    where :math:`\langle y\rangle = S(y)/S(1)` and the two sidebands
+    are denoted with indices 0 and 1; ``order`` is used to select if
+    the index is calculated as the red-to-blue flux ratio or the
+    blue-to-red flux ratio.
+
+    Indices from multiple spectra can be combined to provide the
+    expected index for the summed (or mean) spectrum by
+    constructing the weighted-mean index, using the continuum in
+    the denominator as the weights:
+
+    .. math::
+
+        \frac{\sum_i \langle f_i\rangle_1 {\mathcal I}_i}{\sum_i  \langle f_i\rangle_1}
+            = \frac{\sum_i \langle f_i\rangle_0} {\sum_i \langle f_i\rangle_1}
+            = \frac{\langle\sum_i  f_i\rangle_0} {\langle\sum_i f_i\rangle_1}
+
+    .. note::
+
+        The calculations performed by this class are agnostic as to
+        the redshift of the spectrum provided. It is expected that
+        you will have either de-redshifted the spectrum or redshifted
+        the passband definitions appropriately to measure the index
+        in a redshifted spectrum. Because the indices are flux
+        ratios, indices calculated for a redshifted spectrum (with
+        appropriately defined passbands) are identical to those
+        calculated shifted to the rest frame.
+
+        Also, the integrand is always the provided flux vector,
+        meaning that its units should be appropriate to *all* of the
+        indices to be calculated. For example, the D4000 index uses
+        continua measured by the integral :math:`\int F_\nu {\rm
+        d}\lambda`, meaning the spectrum provided to this class
+        should be in per-frequency units.
+
+    Args:
+        wave (`numpy.ndarray`_):
+            Wavelength vector.
+        flux (array-like):
+            Flux vector. Units must be appropriate to the definition
+            of the provided index passbands. Can be a
+            `numpy.ma.MaskedArray`_; masked pixels will be ignored in
+            the measurement.
+        bluebands (`numpy.ndarray`_):
+            Array with the definition of the blue sidebands. Shape
+            must be :math:`(N_{\rm index},2)`, where the second axis
+            provides the starting and ending wavelength of each band.
+        redbands (`numpy.ndarray`_):
+            Array with the definition of the red sidebands. Shape
+            must be :math:`(N_{\rm index},2)`, where the second axis
+            provides the starting and ending wavelength of each band.
+        err (`numpy.ndarray`_, optional):
+            Error in the flux, used for a nominal propagation of the
+            index error.
+        log (`numpy.ndarray`_, optional):
+            Flag that the provided flux vector is sampled
+            logarithmically in wavelength.
+        order (`numpy.ndarray`_, optional):
+            String array signifying which band is in the numerator
+            and which in the denominator. The string must be
+            ``'r_b'`` --- signifying the index is calculated as the
+            red continuum divided by the blue continuum --- or
+            ``'b_r'``. If None, ``'r_b'`` is assumed for all
+            measurements.
+    
     """
     def __init__(self, wave, flux, bluebands, redbands, err=None, log=True, order=None):
 
@@ -368,6 +718,8 @@ class BandheadIndices:
             self.order = numpy.full(self.nindx, 'r_b', dtype=object)
         else:
             self.order = order
+        if len(self.order) != self.nindx:
+            raise ValueError('Must provide the order for each index.')
 
         # Get the two pseudocontinua and the flux-weighted band centers
         # pseudocontinuum returns center, continuum, and continuum_err
@@ -383,13 +735,11 @@ class BandheadIndices:
         self.main_incomplete = None
         self.main_empty = None
 
-#        self.divbyzero = numpy.invert(numpy.absolute(self.red_continuum.filled(0.0)) > 0) \
-#                            | numpy.invert(numpy.absolute(self.blue_continuum.filled(0.0)) > 0)
         self.divbyzero = numpy.zeros(self.nindx, dtype=bool)
 
         # Calculate the index in the correct order
         blue_n = order == 'b_r'
-        self.index = numpy.ma.zeros(self.nindx, dtype=numpy.float)
+        self.index = numpy.ma.zeros(self.nindx, dtype=float)
         self.index[blue_n] = numpy.ma.divide(self.blue_continuum[blue_n],
                                              self.red_continuum[blue_n]).filled(0.0)
         self.divbyzero[blue_n] = numpy.invert(numpy.absolute(self.red_continuum[blue_n])>0.0)
@@ -408,40 +758,6 @@ class BandheadIndices:
                             numpy.square(numpy.ma.divide(berr*self.index,self.blue_continuum)) +
                             numpy.square(numpy.ma.divide(rerr*self.index,self.red_continuum))
                                       ).filled(0.0)
-
-
-
-#        n = numpy.ma.zeros(self.nindx, dtype=numpy.float)
-#        d = numpy.ma.zeros(self.nindx, dtype=numpy.float)
-#        n[blue_n] = self.blue_continuum[blue_n]
-#        d[blue_n] = self.red_continuum[blue_n]
-#        n[~blue_n] = self.red_continuum[~blue_n]
-#        d[~blue_n] = self.blue_continuum[~blue_n]
-#
-#        nerr = numpy.ma.zeros(self.nindx)
-#        derr = numpy.ma.zeros(self.nindx)
-#        if self.blue_continuum_err is not None:
-#            nerr[blue_n] = self.blue_continuum_err[blue_n]
-#            derr[~blue_n] = self.blue_continuum_err[~blue_n]
-#        if self.red_continuum_err is not None:
-#            nerr[~blue_n] = self.red_continuum_err[~blue_n]
-#            derr[blue_n] = self.red_continuum_err[blue_n]
-#
-#        # Determine which indices have both a valid index and index
-#        # error calculation
-#        self.main_incomplete = None
-#        self.main_empty = None
-#        self.divbyzero = ~((numpy.absolute(d) > 0) & (numpy.absolute(n) > 0))
-#
-#        # Calculate the indices and their nominal errors
-#        self.index = numpy.zeros(self.nindx, dtype=numpy.float)
-#        self.index[~self.divbyzero] = n[~self.divbyzero]/d[~self.divbyzero]
-#        self.index_err = numpy.zeros(self.nindx, dtype=numpy.float)
-#        self.index_err[~self.divbyzero] = numpy.sqrt(
-#                            numpy.square(nerr[~self.divbyzero]*self.index[~self.divbyzero]
-#                                            / n[~self.divbyzero])
-#                          + numpy.square(derr[~self.divbyzero]*self.index[~self.divbyzero]
-#                                            / d[~self.divbyzero]) )
 
 
 class SpectralIndices:
@@ -625,10 +941,8 @@ class SpectralIndices:
                      output_file=output_file, hardcopy=hardcopy, tpl_symlink_dir=tpl_symlink_dir,
                      clobber=clobber, loggers=loggers, quiet=quiet)
 
-
     def __getitem__(self, key):
         return self.hdu[key]
-
 
     def _define_databases(self, database_key, database_list=None, artifact_path=None,
                           absorption_index_path=None, bandhead_index_path=None):
@@ -704,7 +1018,6 @@ class SpectralIndices:
                                                   self.binned_spectra.cube.ifudesign, ref_method) \
                                         if output_file is None else str(output_file)
 
-
     def _initialize_primary_header(self, hdr=None, measurements_binid=None):
         """
         Construct the primary header for the reference file.
@@ -747,7 +1060,6 @@ class SpectralIndices:
         hdr['SIREBIN'] = (measurements_binid is not None, 'Bin IDs disconnected from SC binning')
         return hdr
 
-
     def _index_database_dtype(self, name_len):
         r"""
         Construct the record array data type for the output fits
@@ -764,7 +1076,6 @@ class SpectralIndices:
                  ('INTEGRAND', '<U7'),
                  ('ORDER', '<U3')
                ]
-
     
     def _compile_database(self):
         """
@@ -799,7 +1110,6 @@ class SpectralIndices:
                 passband_database[_hk][t:] = self.bhddb[_ak]
         return passband_database
 
-
     def _assign_image_arrays(self):
         """
         Set :attr:`image_arrays`, which contains the list of extensions
@@ -807,14 +1117,12 @@ class SpectralIndices:
         """
         self.image_arrays = [ 'BINID' ]
 
-
     def _get_missing_bins(self, unique_bins=None):
         if unique_bins is None:
             good_snr = self.binned_spectra.above_snr_limit(self.database['minimum_snr'])
             return numpy.sort(self.binned_spectra.missing_bins + 
                         self.binned_spectra['BINS'].data['BINID'][numpy.invert(good_snr)].tolist())
         return SpatiallyBinnedSpectra._get_missing_bins(unique_bins)
-
 
     def _assign_redshifts(self, redshift, measure_on_unbinned_spaxels, good_snr,
                           default_redshift=None):
@@ -905,7 +1213,6 @@ class SpectralIndices:
 #                                > self.database['minimum_snr']
 #            return fgoodpix & good_snr
         return self.binned_spectra.above_snr_limit(self.database['minimum_snr'])
-
 
     @staticmethod
     def spectra_for_index_measurements(binned_spectra, measure_on_unbinned_spaxels=False,
@@ -1034,7 +1341,6 @@ class SpectralIndices:
 
         return wave, flux[select,:], ivar[select,:]
 
-
     @staticmethod
     def adjust_spectral_resolution(wave, flux, ivar, sres, resolution_fwhm):
         """
@@ -1094,7 +1400,6 @@ class SpectralIndices:
             mask[_mask > 0] = True
         return numpy.ma.MaskedArray(flux,mask=mask), numpy.ma.MaskedArray(ivar,mask=mask)
 
-
     @staticmethod
     def unit_selection(absdb, bhddb):
         """
@@ -1119,7 +1424,6 @@ class SpectralIndices:
 
         return ules, angu, magu
 
-
     def _resolution_matched_templates(self, dapver=None, analysis_path=None, tpl_symlink_dir=None):
         """
         Get a version of the template library that has had its
@@ -1131,31 +1435,110 @@ class SpectralIndices:
                                                            tpl_symlink_dir=tpl_symlink_dir,
                                                            velocity_offset=velocity_offset,
                                                            resolution_fwhm=self.database['fwhm'])
-    
 
     @staticmethod
     def calculate_dispersion_corrections(absdb, bhddb, wave, flux, continuum, continuum_dcnvlv,
                                          redshift=None, redshift_dcnvlv=None, bitmask=None):
-        """
-        Calculate the dispersion corrections using the best-fitting
-        template models.
+        r"""
+        Calculate the spectral-index velocity-dispersion corrections.
 
-        Allow the "deconvolved" continuum spectra to be at a different
-        redshift than the best-fitting continuum.
-        """
-#        pyplot.step(wave, flux[0,:], where='mid', linestyle='-', color='k', lw=0.5, zorder=1)
-#        pyplot.plot(wave, continuum[0,:], linestyle='-', color='g', lw=1.0, zorder=3, alpha=0.5)
-#        pyplot.plot(wave, continuum_dcnvlv[0,:], linestyle='-', color='b', lw=1.0, zorder=3,
-#                    alpha=0.5)
-#        pyplot.show()
+        The indices are measured twice, once on the best-fitting
+        model (``continuum``; produces :math:`{\mathcal I}_{\rm
+        mod}`), and once on the "deconvolved" best-fitting model
+        (``continuum_dcnvlv``); i.e., the best-fitting model but with
+        0 velocity dispersion, :math:`{\mathcal I}_{\sigma=0}`. The
+        corrections, :math:`\delta {\rm mathcal I}` are then
+        constructed as:
 
+        .. math::
+
+            \delta{\mathcal I} = \left\{
+                \begin{array}{ll}
+                    {\mathcal I}_{\sigma=0}\ /\ {\mathcal I}_{\rm mod}, & \mbox{for unitless indices} \\[3pt]
+                    {\mathcal I}_{\sigma=0}\ /\ {\mathcal I}_{\rm mod}, & \mbox{for angstrom units} \\[3pt]
+                    {\mathcal I}_{\sigma=0} - {\mathcal I}_{\rm mod}, & \mbox{for magnitude units}
+                \end{array}\right.,
+
+        where "bandhead" (color) indices are treated as unitless. The
+        construction of the two continuum spectra can be such that
+        they have different redshifts (see ``redshift`` and
+        ``redshift_dcnvlv``).  The corrected index values are then:
+
+        .. math::
+
+            {\mathcal I}^c = \left\{
+                \begin{array}{ll}
+                    {\mathcal I}\ \delta{\mathcal I}, & \mbox{for unitless indices} \\[3pt]
+                    {\mathcal I}\ \delta{\mathcal I}, & \mbox{for angstrom units} \\[3pt]
+                    {\mathcal I} + \delta{\mathcal I}, & \mbox{for magnitude units} \\[3pt]
+                \end{array}\right..
+
+        For absorption-line indices, the index corrections are
+        calculated for both the Worthey/Trager definition and the
+        Burstein/Faber definition.
+
+        Similar corrections are calculated for the continuum in the
+        main passband, as well as the two sidebands:
+
+        .. math::
+
+            \delta C = C_{\sigma=0} / C_{\rm mod},
+
+        where :math:`C` is used here as a generic continuum
+        measurement (cf. :class:`AbsorptionLineIndices` documentation
+        nomenclature).
+
+        Args:
+            absdb (:class:`~mangadap.par.aborptionlinedb.AbsorptionIndexDB`):
+                Database with the absorption-line index definitions.
+            bhddb (:class:`~mangadap.par.bandheadindexdb.BandheadIndexDB`):
+                Database with the bandhead index definitions.
+            wave (`numpy.ndarray`_):
+                1D vector with the wavelength of each pixel. *Assumed
+                to be logarithmically binned in radius.*
+            flux (`numpy.ndarray`_):
+                2D array with the flux, ordered as :math:`N_{\rm
+                spec}\times N_{\rm wave}`. Can be a
+                numpy.ma.MaskedArray; masked pixels will be ignored
+                in the measurement. This is only used to get the
+                masked pixels to ignore during the index computation
+                in the continuum model.s
+            continuum (`numpy.ndarray`_):
+                Best-fitting continuum-only models to the spectra.
+            continuum_dcnvlv (`numpy.ndarray`_):
+                Best-fitting continuum-only models to the spectra,
+                but with a velocity dispersion of 0 km/s.
+            redshift (array-like, optional):
+                Redshift to use for each spectrum when determining
+                the index. Must have the correct length compared to
+                the flux array. Default is to assume the spectra are
+                at rest wavelength.
+            bitmask (:class:`mangadap.util.bitmask.BitMask`, optional):
+                If an index is flagged for some reason (see
+                :func:`set_masks`), this object is used to set the
+                mask value; this should typically be
+                :class:`SpectralIndicesBitMask` object. If not
+                provided, the masked values are all set to True
+                (False otherwise).
+
+        Returns:
+            :obj:`tuple`: Returns 16 (!) `numpy.ndarray`_ objects:
+            The model blue pseudo-continua and corrections, the model
+            red pseudo-continua and corrections, the model main
+            passband continua and corrections, the model weights and
+            corrections, the model Worthey/Trager indices and
+            corrections, the model Burstein/Faber indices and
+            corrections, and boolean arrays selecting the good
+            unitless indices, angstrom-unit indices, and
+            magnitude-unit indices, and absorption-line indices.
+        """
         # Make sure continuum includes the flux masks
         nspec = flux.shape[0]
         _flux = numpy.ma.MaskedArray(flux)
         _continuum = numpy.ma.MaskedArray(continuum)
         _continuum_dcnvlv = numpy.ma.MaskedArray(continuum_dcnvlv)
-        _continuum[_flux.mask] = numpy.ma.masked
-        _continuum_dcnvlv[_flux.mask] = numpy.ma.masked
+        _continuum[numpy.ma.getmaskarray(_flux)] = numpy.ma.masked
+        _continuum_dcnvlv[numpy.ma.getmaskarray(_flux)] = numpy.ma.masked
 
         # Measure the indices for both sets of spectra
         indx = SpectralIndices.measure_indices(absdb, bhddb, wave, _continuum, redshift=redshift,
@@ -1163,21 +1546,11 @@ class SpectralIndices:
         dcnvlv_indx = SpectralIndices.measure_indices(absdb, bhddb, wave, _continuum_dcnvlv,
                                                       redshift=redshift_dcnvlv, bitmask=bitmask)
 
-#        print('Flagged D4000:')
-#        for bit in ['MAIN_EMPTY', 'BLUE_EMPTY', 'RED_EMPTY', 'DIVBYZERO' ]:
-#            print('indx {0}:        {1}/{2}'.format(bit,
-#                                            numpy.sum(bitmask.flagged(indx['MASK'][:,43],
-#                                            flag=bit)), indx['MASK'].shape[0]))
-#            print('dcnvlv_indx {0}: {1}/{2}'.format(bit,
-#                                            numpy.sum(bitmask.flagged(dcnvlv_indx['MASK'][:,43],
-#                                            flag=bit)), dcnvlv_indx['MASK'].shape[0]))
-
-        # Do not apply the correction if any of the bands were empty or
+        # Do not compute corrections if any of the bands were empty or
         # would have had to divide by zero
-        bad_indx = bitmask.flagged(indx['MASK'], flag=[ 'MAIN_EMPTY', 'BLUE_EMPTY', 'RED_EMPTY',
-                                                        'DIVBYZERO' ])
-        bad_indx |= bitmask.flagged(dcnvlv_indx['MASK'], flag=[ 'MAIN_EMPTY', 'BLUE_EMPTY',
-                                                                'RED_EMPTY', 'DIVBYZERO' ])
+        bad_flags = ['MAIN_EMPTY', 'BLUE_EMPTY', 'RED_EMPTY', 'DIVBYZERO']
+        bad_indx = bitmask.flagged(indx['MASK'], flag=bad_flags)
+        bad_indx |= bitmask.flagged(dcnvlv_indx['MASK'], flag=bad_flags)
 
         print('Number of indices: ', bad_indx.size)
         print('Bad indices: ', numpy.sum(bad_indx))
@@ -1194,20 +1567,79 @@ class SpectralIndices:
         print('Good angstrom indices: ', numpy.sum(good_ang))
         print('Good magnitude indices: ', numpy.sum(good_mag))
 
+        #---------------------------------------------------------------
+        # Sideband model values and corrections (same computation
+        # regardless of the units).
+
+        good = good_les | good_ang | good_mag
+        bcont_mod = numpy.zeros(indx['BCONT'].shape, dtype=float)
+        bcont_mod[good] = indx['BCONT'][good]
+        bcont_corr = numpy.zeros(indx['BCONT'].shape, dtype=float)
+        bcont_corr[good] = dcnvlv_indx['BCONT'][good] / indx['BCONT'][good]
+
+        rcont_mod = numpy.zeros(indx['RCONT'].shape, dtype=float)
+        rcont_mod[good] = indx['RCONT'][good]
+        rcont_corr = numpy.zeros(indx['RCONT'].shape, dtype=float)
+        rcont_corr[good] = dcnvlv_indx['RCONT'][good] / indx['RCONT'][good]
+
+        # The weights are just continuum values drawn from different
+        # sources, so the model and correction compuations are done in
+        # the same way.
+        awgt_mod = numpy.zeros(indx['AWGT'].shape, dtype=float)
+        awgt_mod[good] = indx['AWGT'][good]
+        awgt_corr = numpy.zeros(indx['AWGT'].shape, dtype=float)
+        awgt_corr[good] = dcnvlv_indx['AWGT'][good] / indx['AWGT'][good]
+
+        #---------------------------------------------------------------
+        # Continuum in the main passband (same computation regardless
+        # of the units).
+
+        # Only valid for the absorption-line indices
+        nabs, nbhd = SpectralIndices.count_indices(absdb, bhddb)
+        is_abs = numpy.ones(nabs+nbhd, dtype=bool)
+        is_abs[nabs:] = False
+        _good = good & is_abs[None,:]
+
         # Save the *good* indices for the best-fitting models
-        model_indices = numpy.zeros(indx['INDX'].shape, dtype=numpy.float)
-        model_indices[good_les | good_ang | good_mag] \
-                = indx['INDX'][good_les | good_ang | good_mag]
+        mcont_mod = numpy.zeros(indx['MCONT'].shape, dtype=float)
+        mcont_mod[_good] = indx['MCONT'][_good]
 
         # Determine the dispersion corrections
-        corrections = numpy.zeros(indx['INDX'].shape, dtype=numpy.float)
-        corrections[good_les] = dcnvlv_indx['INDX'][good_les] / indx['INDX'][good_les]
-        corrections[good_ang] = dcnvlv_indx['INDX'][good_ang] / indx['INDX'][good_ang]
-        corrections[good_mag] = dcnvlv_indx['INDX'][good_mag] - indx['INDX'][good_mag]
+        mcont_corr = numpy.zeros(indx['MCONT'].shape, dtype=float)
+        mcont_corr[_good] = dcnvlv_indx['MCONT'][_good] / indx['MCONT'][_good]
+
+        #---------------------------------------------------------------
+        # Worthey/Trager indices and bandhead indices
+        # Save the *good* indices for the best-fitting models
+        indx_mod = numpy.zeros(indx['INDX'].shape, dtype=float)
+        indx_mod[good] = indx['INDX'][good]
+
+        # Determine the dispersion corrections
+        indx_corr = numpy.zeros(indx['INDX'].shape, dtype=float)
+        indx_corr[good_les] = dcnvlv_indx['INDX'][good_les] / indx['INDX'][good_les]
+        indx_corr[good_ang] = dcnvlv_indx['INDX'][good_ang] / indx['INDX'][good_ang]
+        indx_corr[good_mag] = dcnvlv_indx['INDX'][good_mag] - indx['INDX'][good_mag]
+
+        #---------------------------------------------------------------
+        # Burstein/Faber indices. This will include the bandhead/color
+        # indices; however, data in INDX_BF is currently just a copy of
+        # what's in INDX.
+
+        # Save the *good* indices for the best-fitting models
+        indx_bf_mod = numpy.zeros(indx['INDX_BF'].shape, dtype=float)
+        indx_bf_mod[good_les | good_ang | good_mag] \
+                = indx['INDX_BF'][good_les | good_ang | good_mag]
+
+        # Determine the dispersion corrections
+        indx_bf_corr = numpy.zeros(indx['INDX_BF'].shape, dtype=float)
+        indx_bf_corr[good_les] = dcnvlv_indx['INDX_BF'][good_les] / indx['INDX_BF'][good_les]
+        indx_bf_corr[good_ang] = dcnvlv_indx['INDX_BF'][good_ang] / indx['INDX_BF'][good_ang]
+        indx_bf_corr[good_mag] = dcnvlv_indx['INDX_BF'][good_mag] - indx['INDX_BF'][good_mag]
 
         # Return the results
-        return model_indices, corrections, good_les, good_ang, good_mag
-
+        return bcont_mod, bcont_corr, rcont_mod, rcont_corr, mcont_mod, mcont_corr, \
+               awgt_mod, awgt_corr, indx_mod, indx_corr, indx_bf_mod, indx_bf_corr, \
+               good_les, good_ang, good_mag, is_abs
 
     @staticmethod
     def apply_dispersion_corrections(indx, indxcorr, err=None, unit=None):
@@ -1216,22 +1648,26 @@ class SpectralIndices:
         corrections are assumed to be negligible.
 
         Args:
-            indx (array-like): Indices to correct.
-            indxcorr (array-like): Index corrections.
-            err (array-like): (**Optional**) Error in the indices.
-            unit (str): (**Optional**) Unit of the index; must be either
-                magnitudes (mag) or angstroms (ang) or None.  Default is
-                None.  Unitless corrections and angstrom corrections are
-                treated identically.
+            indx (array-like):
+                Indices to correct.
+            indxcorr (array-like):
+                Index corrections.
+            err (array-like, optional):
+                Error in the indices.
+            unit (:obj:`str`, optional):
+                Unit of the index; must be either magnitudes
+                (``'mag'``) or angstroms (``'ang'``) or None. Default
+                is None. Unitless corrections and angstrom
+                corrections are treated identically.
     
         Returns:
-            numpy.ndarray: The corrected indices and errors are
-            returned.  If no errors are returned, the second returned
-            object is None.
+            :obj:`tuple`: Returns two objects with the corrected
+            indices and errors. If no errors are returned, the second
+            returned object is None.
 
         Raises:
-            ValueError: Raised if the unit is not ang or mag.
-
+            ValueError:
+                Raised if the unit is not ang or mag.
         """
         if unit not in [ None, 'ang', 'mag' ]:
             raise ValueError('Unit must be None, ang, or mag.')
@@ -1244,7 +1680,6 @@ class SpectralIndices:
             _err = None if err is None else err.copy()
         return _indx, _err
 
-
     @staticmethod
     def count_indices(absdb, bhddb):
         r"""
@@ -1252,29 +1687,43 @@ class SpectralIndices:
         """
         return 0 if absdb is None else absdb.size, 0 if bhddb is None else bhddb.size
 
-
     @staticmethod
     def output_dtype(nindx, bitmask=None):
         r"""
         Construct the record array data type for the output fits
         extension.
         """
-        return [ ('BINID',numpy.int),
+        return [ ('BINID', numpy.int),
                  ('BINID_INDEX',numpy.int),
                  ('REDSHIFT', numpy.float),
                  ('MASK', numpy.bool if bitmask is None else bitmask.minimum_dtype(), (nindx,)),
                  ('BCEN', numpy.float, (nindx,)), 
                  ('BCONT', numpy.float, (nindx,)), 
-                 ('BCONTERR', numpy.float, (nindx,)),
+                 ('BCONT_ERR', numpy.float, (nindx,)),
+                 ('BCONT_MOD', numpy.float, (nindx,)),
+                 ('BCONT_CORR', numpy.float, (nindx,)),
                  ('RCEN', numpy.float, (nindx,)), 
                  ('RCONT', numpy.float, (nindx,)), 
-                 ('RCONTERR', numpy.float, (nindx,)), 
+                 ('RCONT_ERR', numpy.float, (nindx,)),
+                 ('RCONT_MOD', numpy.float, (nindx,)),
+                 ('RCONT_CORR', numpy.float, (nindx,)),
+                 ('MCONT', numpy.float, (nindx,)), 
+                 ('MCONT_ERR', numpy.float, (nindx,)),
+                 ('MCONT_MOD', numpy.float, (nindx,)), 
+                 ('MCONT_CORR', numpy.float, (nindx,)),
+                 ('AWGT', numpy.float, (nindx,)), 
+                 ('AWGT_ERR', numpy.float, (nindx,)),
+                 ('AWGT_MOD', numpy.float, (nindx,)), 
+                 ('AWGT_CORR', numpy.float, (nindx,)),
                  ('INDX', numpy.float, (nindx,)), 
-                 ('INDXERR', numpy.float, (nindx,)),
-                 ('MODEL_INDX', numpy.float, (nindx,)), 
-                 ('INDX_DISPCORR', numpy.float, (nindx,))
+                 ('INDX_ERR', numpy.float, (nindx,)),
+                 ('INDX_MOD', numpy.float, (nindx,)), 
+                 ('INDX_CORR', numpy.float, (nindx,)),
+                 ('INDX_BF', numpy.float, (nindx,)), 
+                 ('INDX_BF_ERR', numpy.float, (nindx,)),
+                 ('INDX_BF_MOD', numpy.float, (nindx,)), 
+                 ('INDX_BF_CORR', numpy.float, (nindx,))
                ]
-
 
     @staticmethod
     def check_and_prep_input(wave, flux, ivar=None, mask=None, redshift=None, bitmask=None):
@@ -1295,7 +1744,7 @@ class SpectralIndices:
 
         # Check the input redshifts
         nspec = flux.shape[0]
-        _redshift = numpy.zeros(nspec, dtype=numpy.float) if redshift is None else redshift
+        _redshift = numpy.zeros(nspec, dtype=float) if redshift is None else redshift
         if len(_redshift) != nspec:
             raise ValueError('Must provide one redshift per input spectrum (flux.shape[0]).')
 
@@ -1314,7 +1763,6 @@ class SpectralIndices:
             noise = numpy.ma.sqrt(1.0 /_ivar)
 
         return _flux, noise, _redshift
-
 
     @staticmethod
     def set_masks(measurements, blue_incomplete, blue_empty, red_incomplete, red_empty, divbyzero,
@@ -1349,43 +1797,72 @@ class SpectralIndices:
                     bitmask.turn_on(measurements['MASK'][main_empty], 'MAIN_EMPTY')
         return measurements
 
-
     @staticmethod
     def save_results(results, measurements, good, err=False, bitmask=None):
-        if not isinstance(results, (AbsorptionLineIndices, BandheadIndices)):
+        """
+        Save the index measuremements to the measurement database.
+        """
+        is_abs = isinstance(results, AbsorptionLineIndices)
+        is_bhd = isinstance(results, BandheadIndices)
+        if not is_abs and not is_bhd:
             raise TypeError('Input must be of type AbsorptionLineIndices or BandheadIndices')
 
-        # Save the data
+        # Save the data, general to both absorption-line and bandhead
+        # indices
         measurements['BCEN'][good] = results.blue_center
         measurements['BCONT'][good] = results.blue_continuum
         if err:
-            measurements['BCONTERR'][good] = results.blue_continuum_err
+            measurements['BCONT_ERR'][good] = results.blue_continuum_err
+            
         measurements['RCEN'][good] = results.red_center
         measurements['RCONT'][good] = results.red_continuum
         if err:
-            measurements['RCONTERR'][good] = results.red_continuum_err
+            measurements['RCONT_ERR'][good] = results.red_continuum_err
+
         measurements['INDX'][good] = results.index
         if err:
-            measurements['INDXERR'][good] = results.index_err
+            measurements['INDX_ERR'][good] = results.index_err
+
+        # Type specific
+        if is_abs:
+            # Absorption-line indices also save the 2nd index
+            # definition and the continuum in the main band
+            measurements['INDX_BF'][good] = results.index_bf
+            measurements['MCONT'][good] = results.main_continuum
+            if err:
+                measurements['INDX_BF_ERR'][good] = results.index_bf_err
+                measurements['MCONT_ERR'][good] = results.main_continuum_err
+        else:
+            # Bandhead indices have 1 definition, but they're saved in
+            # both places.
+            measurements['INDX_BF'][good] = results.index
+            if err:
+                measurements['INDX_BF_ERR'][good] = results.index_err
 
         # Reshape the flags
-        blue_incomplete = numpy.zeros(len(good), dtype=numpy.bool)
+        blue_incomplete = numpy.zeros(len(good), dtype=bool)
         blue_incomplete[good] = results.blue_incomplete
-        blue_empty = numpy.zeros(len(good), dtype=numpy.bool)
+
+        blue_empty = numpy.zeros(len(good), dtype=bool)
         blue_empty[good] = results.blue_empty
-        red_incomplete = numpy.zeros(len(good), dtype=numpy.bool)
+        
+        red_incomplete = numpy.zeros(len(good), dtype=bool)
         red_incomplete[good] = results.red_incomplete
-        red_empty = numpy.zeros(len(good), dtype=numpy.bool)
+        
+        red_empty = numpy.zeros(len(good), dtype=bool)
         red_empty[good] = results.red_empty
+        
         main_incomplete = None
         if results.main_incomplete is not None:
-            main_incomplete = numpy.zeros(len(good), dtype=numpy.bool)
+            main_incomplete = numpy.zeros(len(good), dtype=bool)
             main_incomplete[good] = results.main_incomplete
+
         main_empty = None
         if results.main_empty is not None:
-            main_empty = numpy.zeros(len(good),dtype=numpy.bool)
+            main_empty = numpy.zeros(len(good), dtype=bool)
             main_empty[good] = results.main_empty
-        divbyzero = numpy.zeros(len(good), dtype=numpy.bool)
+            
+        divbyzero = numpy.zeros(len(good), dtype=bool)
         divbyzero[good] = results.divbyzero
 
         # Set the masks
@@ -1393,12 +1870,99 @@ class SpectralIndices:
                                          red_empty, divbyzero, main_incomplete=main_incomplete,
                                          main_empty=main_empty, bitmask=bitmask)
 
-
     @staticmethod
     def measure_indices(absdb, bhddb, wave, flux, ivar=None, mask=None, redshift=None,
                         bitmask=None):
         r"""
         Measure the spectral indices in a set of spectra.
+
+        The returned record array has the following elements:
+
+        +------------------+----------------------------------------------------------------------+
+        |      Column Name | Description                                                          |
+        +==================+======================================================================+
+        | ``BINID``        | Binned spectrum ID                                                   |
+        +------------------+----------------------------------------------------------------------+
+        | ``BINID_INDEX``  | Binned spectrum 0-indexed ID                                         |
+        +------------------+----------------------------------------------------------------------+
+        | ``REDSHIFT``     | Spectrum redshift                                                    |
+        +------------------+----------------------------------------------------------------------+
+        | ``MASK``         | Bitmask value for each index measurement                             |
+        +------------------+----------------------------------------------------------------------+
+        | ``BCEN``         | Unweighted center of the blue sideband                               |
+        +------------------+----------------------------------------------------------------------+
+        | ``BCONT``        | Continuum level of the blue sideband                                 |
+        +------------------+----------------------------------------------------------------------+
+        | ``BCONT_ERR``    | Error in the blue-sideband continuum                                 |
+        +------------------+----------------------------------------------------------------------+
+        | ``BCONT_MOD``    | Continuum level of the model spectrum in the blue sideband           |
+        +------------------+----------------------------------------------------------------------+
+        | ``BCONT_CORR``   | Zero-dispersion correction to the blue-sideband continuum            |
+        +------------------+----------------------------------------------------------------------+
+        | ``RCEN``         | Unweighted center of the red sideband                                |
+        +------------------+----------------------------------------------------------------------+
+        | ``RCONT``        | Continuum level of the red sideband                                  |
+        +------------------+----------------------------------------------------------------------+
+        | ``RCONT_ERR``    | Error in the red-sideband continuum                                  |
+        +------------------+----------------------------------------------------------------------+
+        | ``RCONT_MOD``    | Continuum level of the model spectrum in the red sideband            |
+        +------------------+----------------------------------------------------------------------+
+        | ``RCONT_CORR``   | Zero-dispersion correction to the red-sideband continuum             |
+        +------------------+----------------------------------------------------------------------+
+        | ``MCONT``        | Continuum level in the main passband                                 |
+        +------------------+----------------------------------------------------------------------+
+        | ``MCONT_ERR``    | Error in the main-passband continuum                                 |
+        +------------------+----------------------------------------------------------------------+
+        | ``MCONT_MOD``    | Continuum level of the model spectrum in the main passband           |
+        +------------------+----------------------------------------------------------------------+
+        | ``MCONT_CORR``   | Zero-dispersion correction to the main-passband continuum            |
+        +------------------+----------------------------------------------------------------------+
+        | ``AWGT``         | Appropriate weight to use when additively combining measurements.    |
+        +------------------+----------------------------------------------------------------------+
+        | ``AWGT_ERR``     | Error in weight.                                                     |
+        +------------------+----------------------------------------------------------------------+
+        | ``AWGT_MOD``     | Model weight to use when additively combining measurements.          |
+        +------------------+----------------------------------------------------------------------+
+        | ``AWGT_CORR``    | Zero-velocity dispersion correction to weight.                       |
+        +------------------+----------------------------------------------------------------------+
+        | ``INDX``         | Index measured using the Worthey/Trager definition                   |
+        +------------------+----------------------------------------------------------------------+
+        | ``INDX_ERR``     | Error in the above                                                   |
+        +------------------+----------------------------------------------------------------------+
+        | ``INDX_MOD``     | Value of the Worthey/Trager defined index in the model spectrum      |
+        +------------------+----------------------------------------------------------------------+
+        | ``INDX_CORR``    | Correction to the index measured using the Worthey/Trager definition |
+        +------------------+----------------------------------------------------------------------+
+        | ``INDX_BF``      | Index measured using the Burstein/Faber definition                   |
+        +------------------+----------------------------------------------------------------------+
+        | ``INDX_BF_ERR``  | Error in the above                                                   |
+        +------------------+----------------------------------------------------------------------+
+        | ``INDX_BF_MOD``  | Value of the Burstein/Faber defined index in the model spectrum      |
+        +------------------+----------------------------------------------------------------------+
+        | ``INDX_BF_CORR`` | Correction to the index measured using the Burstein/Faber definition |
+        +------------------+----------------------------------------------------------------------+
+
+        See the documentation of :class:`AbsorptionLineIndices` and
+        :class:`BandheadIndices` for the definitions of these
+        quantities. For the purpose of their storage here, ``INDX``
+        refers to :math:`{\mathcal I}_{\rm WT}` for the
+        absorption-line indices. There is only one definition for the
+        bandhead/color indices, and they are included in *both*
+        ``INDX`` and ``INDX_BF`` (see :func:`save_results`).
+
+        The weights to use when combining indices are simply copies
+        of the data in other columns, collected for convenience (and
+        to ease the construction of the main DAP output file). For
+        all absorption-line indices, ``AWGT`` is identically
+        ``MCONT``; for bandhead indices, ``AWGT`` is ``BCONT`` and
+        ``RCONT`` for indices with order ``'r_b'`` and ``'b_r'``
+        order, respectively.
+
+        This function does not add the ``BINID``, ``BINID_INDEX``,
+        ``*_MOD`` or ``*_CORR`` values. All except the first 3
+        columns vectors with a length of :math:`N_{\rm index}` ---
+        the total number of indices calculated (see
+        :func:`count_indices`).
 
         Args:
             absdb (:class:`mangadap.par.aborptionlinedb.AbsorptionIndexDB`):
@@ -1406,71 +1970,37 @@ class SpectralIndices:
                 Can be None.
             bhddb (:class:`mangadap.par.bandheadindexdb.BandheadIndexDB`):
                 Database with the bandhead index definitions.
-            wave (array-like): 1D vector with the wavelength of each
-                pixel.  *Assumed to be logarithmically binned in
-                radius.*
-            flux (array-like): 2D array with the flux, ordered as
-                :math:`N_{\rm spec}\times N_{\rm wave}`.  Can be a
-                numpy.ma.MaskedArray; masked pixels will be ignored in
-                the measurement.
-            ivar (array-like): (**Optional**) Inverse variance in the
-                flux.  Must match flux array shape.  Used to calculate
-                propagated errors in the index.  Default is that errors
-                are ignored.
-            mask (array-like): (**Optional**) Boolean array flagging to
-                ignore (mask=True) or include (mask=False) each flux
-                measurement in the index calculation.
-            redshift (array-like): (**Optional**) Redshift to use for
-                each spectrum when determining the index.  Must have the
-                correct length compared to the flux array.  Default is
-                to assume the spectra are at rest wavelength.
-            bitmask (:class:`mangadap.util.bitmask.BitMask`):
-                (**Optional**)  If an index is flagged for some reason
-                (see :func:`set_masks`), this object is used to set the
+            wave (array-like):
+                1D vector with the wavelength of each pixel. *Assumed
+                to be logarithmically binned in radius.*
+            flux (array-like):
+                2D array with the flux, ordered as :math:`N_{\rm
+                spec}\times N_{\rm wave}`. Can be a
+                numpy.ma.MaskedArray; masked pixels will be ignored
+                in the measurement.
+            ivar (array-like, optional):
+                Inverse variance in the flux. Must match flux array
+                shape. Used to calculate propagated errors in the
+                index. Default is that errors are ignored.
+            mask (array-like, optional):
+                Boolean array flagging to ignore (mask=True) or
+                include (mask=False) each flux measurement in the
+                index calculation.
+            redshift (array-like, optional):
+                Redshift to use for each spectrum when determining
+                the index. Must have the correct length compared to
+                the flux array. Default is to assume the spectra are
+                at rest wavelength.
+            bitmask (:class:`mangadap.util.bitmask.BitMask`, optional):
+                If an index is flagged for some reason (see
+                :func:`set_masks`), this object is used to set the
                 mask value; this should typically be
-                :class:`SpectralIndicesBitMask` object.  If not
-                provided, the masked values are all set to True (False
-                otherwise).
+                :class:`SpectralIndicesBitMask` object. If not
+                provided, the masked values are all set to True
+                (False otherwise).
 
         Returns:
-            `numpy.recarray`_: A record array with the following
-            columns, each with one element per spectrum:
-
-                 0. ``BINID``: Bin identifier
-
-                 1. ``BINID_INDEX``: Index of the bin identifier
-
-                 2. ``REDSHIFT``: Redshift used for measurement
-
-                 3. ``MASK``: Boolean or maskbit value for index
-
-                 4. ``BCEN``: Blue passband center
-
-                 5. ``BCONT``: Blue passband pseudo-continuum
-
-                 6. ``BCONTERR``: Error in the above
-
-                 7. ``RCEN``: Red passband center
-
-                 8. ``RCONT``: Red passband pseudo-continuum
-
-                 9. ``RCONTERR``: Error in the above
-
-                10. ``INDX``: Index value
-
-                11. ``INDXERR``: Error in the above
-
-                12. ``MODEL_INDX``: Index measured on the best-fitting
-                    stellar-continuum model
-
-                13. ``INDX_DISPCORR``: Index dispersion correction
-
-            This function does not add the ``BINID``, ``BINID_INDEX``,
-            or ``INDX_DISPCORR`` values.  Each element in columns 3-12
-            are vectors with a length of :math:`N_{\rm index}` --- the
-            total number of indices calcualte (see
-            :func:`count_indices`).
-
+            `numpy.recarray`_: A record array with the index measurements.
         """
         # Check the input databases
         if absdb is not None and not isinstance(absdb, AbsorptionIndexDB):
@@ -1490,47 +2020,38 @@ class SpectralIndices:
         _flux, noise, measurements['REDSHIFT'] \
                     = SpectralIndices.check_and_prep_input(wave, flux, ivar=ivar, mask=mask,
                                                            redshift=redshift, bitmask=bitmask)
-#        print(_flux.shape)
-#        print(None if noise is None else noise.shape)
-#        print(wave.shape)
-#        print((numpy.array([wave]*nspec)).shape)
 
-        # Create the f_nu spectra
-        # The conversion is multiplicative, meaning the calculation of
-        # the error calculation can use exactly the same function 
+        # Create the f_nu spectra. NOTE: The conversion is
+        # multiplicative, meaning the calculation of the errors can use
+        # exactly the same function
         flux_fnu = flux_to_fnu(numpy.array([wave]*nspec), _flux)
         noise_fnu = None if noise is None else flux_to_fnu(numpy.array([wave]*nspec), noise)
 
-#        nu = 1e-13*astropy.constants.c.to('nm/s').value/wave    # In THz
-#        pyplot.plot(wave, _flux[0,:]*wave, linestyle='-', color='r', lw=1, zorder=2)
-#        pyplot.plot(wave, flux_fnu[0,:]*nu, linestyle='-', color='0.5', lw=3, zorder=1)
-#        pyplot.show()
-
         # Get the list of good indices of each type
-        abs_fnu = numpy.zeros(nabs, dtype=numpy.bool) if absdb is None \
+        abs_fnu = numpy.zeros(nabs, dtype=bool) if absdb is None \
                         else numpy.invert(absdb.dummy) & (absdb['integrand'] == 'fnu')
-        good_abs_fnu = numpy.zeros(nindx, dtype=numpy.bool)
+        good_abs_fnu = numpy.zeros(nindx, dtype=bool)
         if nabs > 0:
             good_abs_fnu[:nabs][abs_fnu] = True
-        abs_flambda = numpy.zeros(nabs, dtype=numpy.bool) if absdb is None \
+        abs_flambda = numpy.zeros(nabs, dtype=bool) if absdb is None \
                         else numpy.invert(absdb.dummy) & (absdb['integrand'] == 'flambda')
-        good_abs_flambda = numpy.zeros(nindx, dtype=numpy.bool)
+        good_abs_flambda = numpy.zeros(nindx, dtype=bool)
         if nabs > 0:
             good_abs_flambda[:nabs][abs_flambda] = True
 
-        bhd_fnu = numpy.zeros(nbhd, dtype=numpy.bool) if bhddb is None \
+        bhd_fnu = numpy.zeros(nbhd, dtype=bool) if bhddb is None \
                         else numpy.invert(bhddb.dummy) & (bhddb['integrand'] == 'fnu')
-        good_bhd_fnu = numpy.zeros(nindx, dtype=numpy.bool)
+        good_bhd_fnu = numpy.zeros(nindx, dtype=bool)
         if nbhd > 0:
             good_bhd_fnu[nabs:][bhd_fnu] = True
-        bhd_flambda = numpy.zeros(nbhd, dtype=numpy.bool) if bhddb is None \
+        bhd_flambda = numpy.zeros(nbhd, dtype=bool) if bhddb is None \
                         else numpy.invert(bhddb.dummy) & (bhddb['integrand'] == 'flambda')
-        good_bhd_flambda = numpy.zeros(nindx, dtype=numpy.bool)
+        good_bhd_flambda = numpy.zeros(nindx, dtype=bool)
         if nbhd > 0:
             good_bhd_flambda[nabs:][bhd_flambda] = True
 
         # Mask any dummy indices
-        dummy = numpy.zeros(nindx, dtype=numpy.bool)
+        dummy = numpy.zeros(nindx, dtype=bool)
         if absdb is not None:
             dummy[:nabs] = absdb.dummy
         if bhddb is not None:
@@ -1559,6 +2080,9 @@ class SpectralIndices:
 
                 # Integrate over F_nu
                 if numpy.sum(good_abs_fnu) > 0:
+                    # NOTE: This basically should never happen so I throw a warning.
+                    warnings.warn('It is odd to construct an absorption-line index by '
+                                  'integrating F_nu over lambda; just sayin...')
                     # Make the measurements ...
                     _noise = None if noise_fnu is None else noise_fnu[i,:]
                     results = AbsorptionLineIndices(wave, flux_fnu[i,:], _bluebands[abs_fnu],
@@ -1569,6 +2093,18 @@ class SpectralIndices:
                                                                    good_abs_fnu,
                                                                    err=_noise is not None,
                                                                    bitmask=bitmask)
+
+                    # Observed wavelength converted to rest wavelength
+                    measurements['BCEN'][i,good_abs_fnu] /= (1+measurements['REDSHIFT'][i])
+                    measurements['RCEN'][i,good_abs_fnu] /= (1+measurements['REDSHIFT'][i])
+                    # Observed F_nu continuum should be divided by
+                    # (1+z) to convert to the rest-frame values
+                    measurements['BCONT'][i,good_abs_fnu] /= (1+measurements['REDSHIFT'][i])
+                    measurements['BCONT_ERR'][i,good_abs_fnu] /= (1+measurements['REDSHIFT'][i])
+                    measurements['RCONT'][i,good_abs_fnu] /= (1+measurements['REDSHIFT'][i])
+                    measurements['RCONT_ERR'][i,good_abs_fnu] /= (1+measurements['REDSHIFT'][i])
+                    measurements['MCONT'][i,good_abs_fnu] /= (1+measurements['REDSHIFT'][i])
+                    measurements['MCONT_ERR'][i,good_abs_fnu] /= (1+measurements['REDSHIFT'][i])
 
                 # Integrate over F_lambda
                 if numpy.sum(good_abs_flambda) > 0:
@@ -1582,6 +2118,18 @@ class SpectralIndices:
                                                                    good_abs_flambda,
                                                                    err=_noise is not None,
                                                                    bitmask=bitmask)
+
+                    # Observed wavelength converted to rest wavelength
+                    measurements['BCEN'][i,good_abs_flambda] /= (1+measurements['REDSHIFT'][i])
+                    measurements['RCEN'][i,good_abs_flambda] /= (1+measurements['REDSHIFT'][i])
+                    # Observed F_lambda continuum should be multiplied
+                    # by (1+z) to convert to the rest-frame values
+                    measurements['BCONT'][i,good_abs_flambda] *= (1+measurements['REDSHIFT'][i])
+                    measurements['BCONT_ERR'][i,good_abs_flambda] *= (1+measurements['REDSHIFT'][i])
+                    measurements['RCONT'][i,good_abs_flambda] *= (1+measurements['REDSHIFT'][i])
+                    measurements['RCONT_ERR'][i,good_abs_flambda] *= (1+measurements['REDSHIFT'][i])
+                    measurements['MCONT'][i,good_abs_flambda] *= (1+measurements['REDSHIFT'][i])
+                    measurements['MCONT_ERR'][i,good_abs_flambda] *= (1+measurements['REDSHIFT'][i])
 
             # -----------------------------------
             # Measure the bandhead indices
@@ -1604,6 +2152,16 @@ class SpectralIndices:
                                                                    err=_noise is not None,
                                                                    bitmask=bitmask)
 
+                    # Observed wavelength converted to rest wavelength
+                    measurements['BCEN'][i,good_bhd_fnu] /= (1+measurements['REDSHIFT'][i])
+                    measurements['RCEN'][i,good_bhd_fnu] /= (1+measurements['REDSHIFT'][i])
+                    # Observed F_nu continuum should be divided by
+                    # (1+z) to convert to the rest-frame values
+                    measurements['BCONT'][i,good_bhd_fnu] /= (1+measurements['REDSHIFT'][i])
+                    measurements['BCONT_ERR'][i,good_bhd_fnu] /= (1+measurements['REDSHIFT'][i])
+                    measurements['RCONT'][i,good_bhd_fnu] /= (1+measurements['REDSHIFT'][i])
+                    measurements['RCONT_ERR'][i,good_bhd_fnu] /= (1+measurements['REDSHIFT'][i])
+
                 # Integrate over F_lambda
                 if numpy.sum(good_bhd_flambda) > 0:
                     # Make the measurements ...
@@ -1617,22 +2175,43 @@ class SpectralIndices:
                                                                    err=_noise is not None,
                                                                    bitmask=bitmask)
 
-#            pyplot.scatter(_interval, interval/_interval, marker='.', color='k', s=50)
-#            pyplot.show()
-
-#            center = numpy.mean(_sidebands, axis=1).reshape(-1,self.nindx)
-#            pyplot.step(wave, flux[i,:], where='mid', color='k', lw=0.5, linestyle='-')
-#            pyplot.scatter(center[0,:], measurements['BCONT'][i,:], marker='.',
-#                           s=100, color='b', lw=0)
-#            pyplot.scatter(center[1,:], measurements['RCONT'][i,:], marker='.',
-#                           s=100, color='r', lw=0)
-#            pyplot.show()
+                    # Observed wavelength converted to rest wavelength
+                    measurements['BCEN'][i,good_bhd_flambda] /= (1+measurements['REDSHIFT'][i])
+                    measurements['RCEN'][i,good_bhd_flambda] /= (1+measurements['REDSHIFT'][i])
+                    # Observed F_lambda continuum should be multiplied
+                    # by (1+z) to convert to the rest-frame values
+                    measurements['BCONT'][i,good_bhd_flambda] *= (1+measurements['REDSHIFT'][i])
+                    measurements['BCONT_ERR'][i,good_bhd_flambda] *= (1+measurements['REDSHIFT'][i])
+                    measurements['RCONT'][i,good_bhd_flambda] *= (1+measurements['REDSHIFT'][i])
+                    measurements['RCONT_ERR'][i,good_bhd_flambda] *= (1+measurements['REDSHIFT'][i])
 
         print('Measuring spectral indices in spectrum: {0}/{0}'.format(nspec))
 
-        # Correct the indices with angstrom units to rest-frame
+        # Correct the indices (and their errors) with angstrom units to
+        # rest-frame
         _, angu, _ = SpectralIndices.unit_selection(absdb, bhddb)
         measurements['INDX'][:,angu] /= (1+measurements['REDSHIFT'][:,None])
+        measurements['INDX_ERR'][:,angu] /= (1+measurements['REDSHIFT'][:,None])
+        measurements['INDX_BF'][:,angu] /= (1+measurements['REDSHIFT'][:,None])
+        measurements['INDX_BF_ERR'][:,angu] /= (1+measurements['REDSHIFT'][:,None])
+
+        # Collect the weights. The weight is the same for both
+        # definitions of absorption-line indices, but should really
+        # only be applied to the 2nd definition (INDX_BF).
+        is_abs = numpy.ones(nindx, dtype=bool)
+        is_abs[nabs:] = False
+        if nabs > 0:
+            measurements['AWGT'][:,is_abs] = measurements['MCONT'][:,is_abs]
+            measurements['AWGT_ERR'][:,is_abs] = measurements['MCONT_ERR'][:,is_abs]
+        if nbhd > 0:
+            use = numpy.logical_not(is_abs)
+            use[nabs:] &= (bhddb['order'] == 'r_b')
+            measurements['AWGT'][:,use] = measurements['BCONT'][:,use]
+            measurements['AWGT_ERR'][:,use] = measurements['BCONT_ERR'][:,use]
+            use = numpy.logical_not(is_abs)
+            use[nabs:] &= (bhddb['order'] == 'b_r')
+            measurements['AWGT'][:,use] = measurements['RCONT'][:,use]
+            measurements['AWGT_ERR'][:,use] = measurements['RCONT_ERR'][:,use]
 
         # Return the data
         return measurements
@@ -1641,13 +2220,11 @@ class SpectralIndices:
         """Return the name of the output file."""
         return self.output_file
 
-
     def file_path(self):
         """Return the full path to the output file."""
         if self.directory_path is None or self.output_file is None:
             return None
         return os.path.join(self.directory_path, self.output_file)
-
 
     def measure(self, binned_spectra, redshift=None, stellar_continuum=None,
                 emission_line_model=None, dapver=None, analysis_path=None, directory_path=None,
@@ -1881,9 +2458,6 @@ class SpectralIndices:
                 log_output(self.loggers, 1, logging.INFO, '-'*50)
             return
 
-#        pyplot.scatter(numpy.arange(self.nbins), self.redshift, marker='.', s=50, color='k', lw=0)
-#        pyplot.show()
-
         #---------------------------------------------------------------
         # Get the spectra to use for the measurements
         wave, flux, ivar = SpectralIndices.spectra_for_index_measurements(self.binned_spectra,
@@ -1899,12 +2473,6 @@ class SpectralIndices:
                        'Measuring spectral indices in observed spectra...')
         measurements = self.measure_indices(self.absdb, self.bhddb, wave, flux, ivar=ivar,
                                             redshift=self.redshift[good_snr], bitmask=self.bitmask)
-
-#        print('Flagged D4000:')
-#        for bit in ['MAIN_EMPTY', 'BLUE_EMPTY', 'RED_EMPTY', 'DIVBYZERO' ]:
-#            print('measurements {0}: {1}/{2}'.format(bit,
-#                        numpy.sum(self.bitmask.flagged(measurements['MASK'][:,43], flag=bit)),
-#                        measurements['MASK'].shape[0]))
 
         #---------------------------------------------------------------
         # Determine the velocity dispersion corrections, if requested.
@@ -1972,8 +2540,13 @@ class SpectralIndices:
             if not self.quiet:
                 log_output(self.loggers, 1, logging.INFO,
                            'Calculating dispersion corrections using stellar continuum model...')
-            measurements['MODEL_INDX'], measurements['INDX_DISPCORR'], \
-                    good_les, good_ang, good_mag \
+
+            measurements['BCONT_MOD'], measurements['BCONT_CORR'], measurements['RCONT_MOD'], \
+                measurements['RCONT_CORR'], measurements['MCONT_MOD'], measurements['MCONT_CORR'], \
+                measurements['AWGT_MOD'], measurements['AWGT_CORR'], \
+                measurements['INDX_MOD'], measurements['INDX_CORR'], \
+                measurements['INDX_BF_MOD'], measurements['INDX_BF_CORR'], \
+                good_les, good_ang, good_mag, is_abs \
                         = SpectralIndices.calculate_dispersion_corrections(self.absdb, self.bhddb,
                                         wave, flux, continuum[good_snr,:],
                                         continuum_dcnvlv[good_snr,:],
@@ -1988,40 +2561,133 @@ class SpectralIndices:
                                                             measurements['MASK'][bad_correction],
                                                             'NO_DISPERSION_CORRECTION')
             # Apply the corrections
+            # TODO: Get rid of this? I.e., correct_indices is *always*
+            # False as currently coded...
             if self.correct_indices:
-                # Measured indices
-                measurements['INDX'][good_les], measurements['INDXERR'][good_les] \
+                #-------------------------------------------------------
+                # Continuum in the two sidebands and the weights
+                good = good_les | good_ang | good_mag
+                # Measured continuum
+                measurements['BCONT'][good], measurements['BCONT_ERR'][good], \
+                        = SpectralIndices.apply_dispersion_corrections(
+                                                    measurements['BCONT'][good],
+                                                    measurements['BCONT_CORR'][good],
+                                                    err=measurements['BCONT_ERR'][good])
+                measurements['RCONT'][good], measurements['RCONT_ERR'][good], \
+                        = SpectralIndices.apply_dispersion_corrections(
+                                                    measurements['RCONT'][good],
+                                                    measurements['RCONT_CORR'][good],
+                                                    err=measurements['RCONT_ERR'][good])
+                measurements['AWGT'][good], measurements['AWGT_ERR'][good], \
+                        = SpectralIndices.apply_dispersion_corrections(
+                                                    measurements['AWGT'][good],
+                                                    measurements['AWGT_CORR'][good],
+                                                    err=measurements['AWGT_ERR'][good])
+                # Model continuum
+                measurements['BCONT_MOD'][good], _ \
+                        = SpectralIndices.apply_dispersion_corrections(
+                                                    measurements['BCONT_MOD'][good],
+                                                    measurements['BCONT_CORR'][good])
+                measurements['RCONT_MOD'][good], _ \
+                        = SpectralIndices.apply_dispersion_corrections(
+                                                    measurements['RCONT_MOD'][good],
+                                                    measurements['RCONT_CORR'][good])
+                measurements['AWGT_MOD'][good], _ \
+                        = SpectralIndices.apply_dispersion_corrections(
+                                                    measurements['AWGT_MOD'][good],
+                                                    measurements['AWGT_CORR'][good])
+
+                #-------------------------------------------------------
+                # Worthey/Trager indices
+                # Model indices
+                measurements['INDX'][good_les], measurements['INDX_ERR'][good_les] \
                         = SpectralIndices.apply_dispersion_corrections(
                                                     measurements['INDX'][good_les],
-                                                    measurements['INDX_DISPCORR'][good_les],
-                                                    err=measurements['INDXERR'][good_les])
-                measurements['INDX'][good_ang], measurements['INDXERR'][good_ang] \
+                                                    measurements['INDX_CORR'][good_les],
+                                                    err=measurements['INDX_ERR'][good_les])
+                measurements['INDX'][good_ang], measurements['INDX_ERR'][good_ang] \
                         = SpectralIndices.apply_dispersion_corrections(
                                                     measurements['INDX'][good_ang],
-                                                    measurements['INDX_DISPCORR'][good_ang],
-                                                    err=measurements['INDXERR'][good_ang],
+                                                    measurements['INDX_CORR'][good_ang],
+                                                    err=measurements['INDX_ERR'][good_ang],
                                                     unit='ang')
-                measurements['INDX'][good_mag], measurements['INDXERR'][good_mag] \
+                measurements['INDX'][good_mag], measurements['INDX_ERR'][good_mag] \
                         = SpectralIndices.apply_dispersion_corrections(
                                                     measurements['INDX'][good_mag],
-                                                    measurements['INDX_DISPCORR'][good_mag],
-                                                    err=measurements['INDXERR'][good_mag],
+                                                    measurements['INDX_CORR'][good_mag],
+                                                    err=measurements['INDX_ERR'][good_mag],
                                                     unit='mag')
                 # Model indices
-                measurements['MODEL_INDX'][good_les], _ \
+                measurements['INDX_MOD'][good_les], _ \
                         = SpectralIndices.apply_dispersion_corrections(
-                                                    measurements['MODEL_INDX'][good_les],
-                                                    measurements['INDX_DISPCORR'][good_les])
-                measurements['MODEL_INDX'][good_ang], _ \
+                                                    measurements['INDX_MOD'][good_les],
+                                                    measurements['INDX_CORR'][good_les])
+                measurements['INDX_MOD'][good_ang], _ \
                         = SpectralIndices.apply_dispersion_corrections(
-                                                    measurements['MODEL_INDX'][good_ang],
-                                                    measurements['INDX_DISPCORR'][good_ang],
+                                                    measurements['INDX_MOD'][good_ang],
+                                                    measurements['INDX_CORR'][good_ang],
                                                     unit='ang')
-                measurements['MODEL_INDX'][good_mag], _ \
+                measurements['INDX_MOD'][good_mag], _ \
                         = SpectralIndices.apply_dispersion_corrections(
-                                                    measurements['MODEL_INDX'][good_mag],
-                                                    measurements['INDX_DISPCORR'][good_mag],
+                                                    measurements['INDX_MOD'][good_mag],
+                                                    measurements['INDX_CORR'][good_mag],
                                                     unit='mag')
+
+                #-------------------------------------------------------
+                # Burstein/Faber indices
+                # Model indices
+                measurements['INDX_BF'][good_les], measurements['INDX_BF_ERR'][good_les] \
+                        = SpectralIndices.apply_dispersion_corrections(
+                                                    measurements['INDX_BF'][good_les],
+                                                    measurements['INDX_BF_CORR'][good_les],
+                                                    err=measurements['INDX_BF_ERR'][good_les])
+                measurements['INDX_BF'][good_ang], measurements['INDX_BF_ERR'][good_ang] \
+                        = SpectralIndices.apply_dispersion_corrections(
+                                                    measurements['INDX_BF'][good_ang],
+                                                    measurements['INDX_BF_CORR'][good_ang],
+                                                    err=measurements['INDX_BF_ERR'][good_ang],
+                                                    unit='ang')
+                measurements['INDX_BF'][good_mag], measurements['INDX_BF_ERR'][good_mag] \
+                        = SpectralIndices.apply_dispersion_corrections(
+                                                    measurements['INDX_BF'][good_mag],
+                                                    measurements['INDX_BF_CORR'][good_mag],
+                                                    err=measurements['INDX_BF_ERR'][good_mag],
+                                                    unit='mag')
+                # Model indices
+                measurements['INDX_BF_MOD'][good_les], _ \
+                        = SpectralIndices.apply_dispersion_corrections(
+                                                    measurements['INDX_BF_MOD'][good_les],
+                                                    measurements['INDX_BF_CORR'][good_les])
+                measurements['INDX_BF_MOD'][good_ang], _ \
+                        = SpectralIndices.apply_dispersion_corrections(
+                                                    measurements['INDX_BF_MOD'][good_ang],
+                                                    measurements['INDX_BF_CORR'][good_ang],
+                                                    unit='ang')
+                measurements['INDX_BF_MOD'][good_mag], _ \
+                        = SpectralIndices.apply_dispersion_corrections(
+                                                    measurements['INDX_BF_MOD'][good_mag],
+                                                    measurements['INDX_BF_CORR'][good_mag],
+                                                    unit='mag')
+
+                #-------------------------------------------------------
+                # Continuum in the main passband; specific to the
+                # absorption-line indices
+                _good_les = good_les & is_abs[None,:]
+                _good_ang = good_ang & is_abs[None,:]
+                _good_mag = good_mag & is_abs[None,:]
+                good = _good_les | _good_ang | _good_mag
+                # Measured continuum
+                measurements['MCONT'][good], measurements['MCONT_ERR'][good], \
+                        = SpectralIndices.apply_dispersion_corrections(
+                                                    measurements['MCONT'][good],
+                                                    measurements['MCONT_CORR'][good],
+                                                    err=measurements['MCONT_ERR'][good])
+                # Model continuum
+                measurements['MCONT_MOD'][good], _ \
+                        = SpectralIndices.apply_dispersion_corrections(
+                                                    measurements['MCONT_MOD'][good],
+                                                    measurements['MCONT_CORR'][good])
+
 
         #---------------------------------------------------------------
         # Set the number of bins measured, missing bins, and bin IDs
@@ -2102,14 +2768,12 @@ class SpectralIndices:
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '-'*50)
 
-
     def write(self, clobber=False):
         """
         Write the hdu object to the file.
         """
         DAPFitsUtil.write(self.hdu, self.file_path(), clobber=clobber, checksum=True,
                           loggers=self.loggers, quiet=self.quiet)
-
 
     def read(self, ifile=None, strict=True, checksum=False):
         """
@@ -2122,8 +2786,6 @@ class SpectralIndices:
 
         if self.hdu is not None:
             self.hdu.close()
-
-#        self.hdu = fits.open(ifile, checksum=checksum)
         self.hdu = DAPFitsUtil.read(ifile, checksum=checksum)
 
         # Confirm that the internal method is the same as the method
@@ -2137,13 +2799,8 @@ class SpectralIndices:
         # make sure that the details of the method are also the same,
         # not just the keyword
 
-#        if not self.quiet:
-#            log_output(self.loggers, 1, logging.INFO, 'Reverting to python-native structure.')
-#        DAPFitsUtil.restructure_map(self.hdu, ext=self.image_arrays)
-
         self.nbins = self.hdu['PRIMARY'].header['NBINS']
         unique_bins = numpy.unique(self.hdu['BINID'].data.ravel()) \
                             if self.hdu['PRIMARY'].header['SIREBIN'] else None
         self.missing_bins = self._get_missing_bins(unique_bins=unique_bins)
-
 

@@ -86,15 +86,6 @@ def test_inspector():
     assert script_help_okay('manga_dap_inspector'), 'Basic help call failed'
 
 
-# TODO: Sort out an execution mode that can run in a few minutes.
-def test_manga_dap():
-    assert script_help_okay('manga_dap'), 'Basic help call failed'
-
-
-def test_manga_dap():
-    assert script_help_okay('manga_dap'), 'Basic help call failed'
-
-
 def test_manga_dap_import():
     with pytest.raises(ImportError):
         manga_dap.main(manga_dap.parse_args(['-c', data_test_file('datacube.ini'), '-m', 'junk']))
@@ -204,3 +195,5 @@ def test_run():
     assert script_help_okay('rundap'), 'Basic help call failed'
 
 
+if __name__ == '__main__':
+    test_manga_dap() #_import()

@@ -601,8 +601,7 @@ class EmissionLineMoments:
 
 
     @staticmethod
-    def sideband_pseudocontinua(wave, spec, sidebands, spec_n=None, err=None, log=True,
-                                weighted_center=True):
+    def sideband_pseudocontinua(wave, spec, sidebands, spec_n=None, err=None, log=True):
         """
         Get the side-band integrals.
 
@@ -618,8 +617,7 @@ class EmissionLineMoments:
         """
 
         if spec.ndim == 1:
-            return pseudocontinuum(wave, spec, passband=sidebands, err=err, log=log,
-                                   weighted_center=weighted_center)
+            return pseudocontinuum(wave, spec, passband=sidebands, err=err, log=log)
 
         # Calculate the pseudo-continua in the sidebands
         nspec = spec.shape[0]
@@ -652,8 +650,7 @@ class EmissionLineMoments:
                 continue
             band_center[indx], continuum[indx], _continuum_error, band_incomplete[indx], \
                     band_empty[indx] = pseudocontinuum(wave, spec[i,:], passband=sidebands[indx,:],
-                                                       err=err, log=log,
-                                                       weighted_center=weighted_center)
+                                                       err=err, log=log)
             if err is not None:
                 continuum_error[indx] = _continuum_error
         return band_center, continuum, continuum_error, band_incomplete, band_empty
@@ -949,7 +946,7 @@ class EmissionLineMoments:
                     = EmissionLineMoments.sideband_pseudocontinua(wave, spec, _bluebands,
                                                                   spec_n=None if spec_n is None
                                                             else spec_n[numpy.invert(momdb.dummy)],
-                                                                  err=__err, weighted_center=False)
+                                                                  err=__err)
             if __err is not None:
                 measurements['BCONTERR'][i,numpy.invert(momdb.dummy)] = conterr
             if numpy.sum(incomplete) > 0:
@@ -966,7 +963,7 @@ class EmissionLineMoments:
                     = EmissionLineMoments.sideband_pseudocontinua(wave, spec, _redbands,
                                                                   spec_n=None if spec_n is None
                                                             else spec_n[numpy.invert(momdb.dummy)],
-                                                                  err=__err, weighted_center=False)
+                                                                  err=__err)
             if __err is not None:
                 measurements['RCONTERR'][i,numpy.invert(momdb.dummy)] = conterr
             if numpy.sum(incomplete) > 0:

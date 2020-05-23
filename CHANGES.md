@@ -22,7 +22,12 @@ TODO
  - Change format of emission-line module reference file?
     - Make more independent of stellar-continnuum module reference file
     - Change `BASE` extension to `CONTINUUM` extension.
-
+ - Enable composite indices
+ - Allow construction of DAP MAPS headers to indicate masks that don't
+   have the same prepended extenstion name... (e.g., quality mask of
+   `SPECINDEX_CORR` should be `SPECINDEX_MASK`).
+ - Differentiate between mask provided for BF index and mask for main
+   continuum value? (e.g., latter only cares about the side bands)
 
 3.0.0dev
 --------

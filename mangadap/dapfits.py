@@ -661,10 +661,6 @@ class construct_maps_file:
         # Emission-line models:
         elmodlist = self.emission_line_model_maps(prihdr, emission_line_model)
 
-#        print(elmodlist[10].name)
-#        print(elmodlist[10].data.shape)
-#        print(numpy.sum(numpy.invert(numpy.isfinite(elmodlist[10].data))))
-
         # Spectral indices:
         sindxlist = self.spectral_index_maps(prihdr, spectral_indices)
 
@@ -1030,6 +1026,13 @@ class construct_maps_file:
         # Consolidate to MATHERROR
         flgd = spectral_indices.bitmask.flagged(si_mask, flag=['DIVBYZERO'])
         mask[flgd] = self.bitmask.turn_on(mask[flgd], 'MATHERROR')
+
+#        if abs_only:
+#            # Get the number of absorption-line indices. Indices *must*
+#            # be ordered as [0:nabs], [nabs:nabs+nbhd]
+#            nabs, nbhd = SpectralIndices.count_indices(spectral_indices.absdb,
+#                                                       spectral_indices.bhddb)
+#            mask[:,:,nabs:] = self.bitmask.turn_on(mask[:,:,nabs:], 'NOVALUE')
 
         return self._consolidate_donotuse(mask)
 
@@ -1625,9 +1628,13 @@ class construct_maps_file:
         and 'SPECINDEX_CORR'.
         """
         #---------------------------------------------------------------
+#        ext = [ 'SPECINDEX', 'SPECINDEX_IVAR', 'SPECINDEX_MASK', 'SPECINDEX_CORR',
+#                'SPECINDEX_BCEN', 'SPECINDEX_BCNT', 'SPECINDEX_RCEN', 'SPECINDEX_RCNT',
+#                'SPECINDEX_MODEL' ]
         ext = [ 'SPECINDEX', 'SPECINDEX_IVAR', 'SPECINDEX_MASK', 'SPECINDEX_CORR',
-                'SPECINDEX_BCEN', 'SPECINDEX_BCNT', 'SPECINDEX_RCEN', 'SPECINDEX_RCNT',
-                'SPECINDEX_MODEL' ]
+                'SPECINDEX_MODEL', 'SPECINDEX_BF', 'SPECINDEX_BF_IVAR', 'SPECINDEX_BF_MASK',
+                'SPECINDEX_BF_CORR', 'SPECINDEX_BF_MODEL', 'SPECINDEX_WGT', 'SPECINDEX_WGT_IVAR',
+                'SPECINDEX_WGT_MASK', 'SPECINDEX_WGT_CORR', 'SPECINDEX_WGT_MODEL']
 
         if spectral_indices is None:
             # Construct and return the empty hdus
@@ -1648,35 +1655,62 @@ class construct_maps_file:
         errunits = [ '({0})'.format(u)+'^{-2}' if len(u) > 0 else ''
                             for u in spectral_indices['SIPAR'].data['UNIT'] ]
 
-        hdr = [ DAPFitsUtil.finalize_dap_header(base_hdr, 'SPECINDEX', err=True, qual=True,
-                                                multichannel=multichannel,
+        hdr = [# Worthey/Trager indices
+               DAPFitsUtil.finalize_dap_header(base_hdr, 'SPECINDEX', err=True, qual=True,
+                                               multichannel=multichannel,
                                               channel_names=spectral_indices['SIPAR'].data['NAME'],
                                               channel_units=spectral_indices['SIPAR'].data['UNIT']),
-                DAPFitsUtil.finalize_dap_header(base_hdr, 'SPECINDEX', hduclas2='ERROR', qual=True,
-                                                multichannel=multichannel,
+               DAPFitsUtil.finalize_dap_header(base_hdr, 'SPECINDEX', hduclas2='ERROR', qual=True,
+                                               multichannel=multichannel,
                                               channel_names=spectral_indices['SIPAR'].data['NAME'],
-                                                channel_units=errunits),
-                DAPFitsUtil.finalize_dap_header(base_hdr, 'SPECINDEX', hduclas2='QUALITY', err=True,
-                                                bit_type=self.bitmask.minimum_dtype(),
-                                                multichannel=multichannel,
+                                               channel_units=errunits),
+               DAPFitsUtil.finalize_dap_header(base_hdr, 'SPECINDEX', hduclas2='QUALITY', err=True,
+                                               bit_type=self.bitmask.minimum_dtype(),
+                                               multichannel=multichannel,
                                               channel_names=spectral_indices['SIPAR'].data['NAME']),
-                DAPFitsUtil.finalize_dap_header(base_hdr, 'SPECINDEX_CORR',
-                                                multichannel=multichannel,
+               DAPFitsUtil.finalize_dap_header(base_hdr, 'SPECINDEX_CORR',
+                                               multichannel=multichannel,
                                               channel_names=spectral_indices['SIPAR'].data['NAME']),
-                DAPFitsUtil.finalize_dap_header(base_hdr, 'SPECINDEX_BCEN',
-                                                multichannel=multichannel,
+               DAPFitsUtil.finalize_dap_header(base_hdr, 'SPECINDEX_MODEL',
+                                               multichannel=multichannel,
                                               channel_names=spectral_indices['SIPAR'].data['NAME']),
-                DAPFitsUtil.finalize_dap_header(base_hdr, 'SPECINDEX_BCNT',
-                                                multichannel=multichannel,
+               # Burstein/Faber indices
+               DAPFitsUtil.finalize_dap_header(base_hdr, 'SPECINDEX_BF', err=True, qual=True,
+                                               multichannel=multichannel,
+                                              channel_names=spectral_indices['SIPAR'].data['NAME'],
+                                              channel_units=spectral_indices['SIPAR'].data['UNIT']),
+               DAPFitsUtil.finalize_dap_header(base_hdr, 'SPECINDEX_BF', hduclas2='ERROR', qual=True,
+                                               multichannel=multichannel,
+                                              channel_names=spectral_indices['SIPAR'].data['NAME'],
+                                               channel_units=errunits),
+               DAPFitsUtil.finalize_dap_header(base_hdr, 'SPECINDEX_BF', hduclas2='QUALITY', err=True,
+                                               bit_type=self.bitmask.minimum_dtype(),
+                                               multichannel=multichannel,
                                               channel_names=spectral_indices['SIPAR'].data['NAME']),
-                DAPFitsUtil.finalize_dap_header(base_hdr, 'SPECINDEX_RCEN',
-                                                multichannel=multichannel,
+               DAPFitsUtil.finalize_dap_header(base_hdr, 'SPECINDEX_BF_CORR',
+                                               multichannel=multichannel,
                                               channel_names=spectral_indices['SIPAR'].data['NAME']),
-                DAPFitsUtil.finalize_dap_header(base_hdr, 'SPECINDEX_RCNT',
-                                                multichannel=multichannel,
+               DAPFitsUtil.finalize_dap_header(base_hdr, 'SPECINDEX_BF_MODEL',
+                                               multichannel=multichannel,
                                               channel_names=spectral_indices['SIPAR'].data['NAME']),
-                DAPFitsUtil.finalize_dap_header(base_hdr, 'SPECINDEX_MODEL',
-                                                multichannel=multichannel,
+               # Continuum in the main passband
+               DAPFitsUtil.finalize_dap_header(base_hdr, 'SPECINDEX_WGT', err=True, qual=True,
+                                               multichannel=multichannel,
+                                              channel_names=spectral_indices['SIPAR'].data['NAME'],
+                                              channel_units=spectral_indices['SIPAR'].data['UNIT']),
+               DAPFitsUtil.finalize_dap_header(base_hdr, 'SPECINDEX_WGT', hduclas2='ERROR', qual=True,
+                                               multichannel=multichannel,
+                                              channel_names=spectral_indices['SIPAR'].data['NAME'],
+                                               channel_units=errunits),
+               DAPFitsUtil.finalize_dap_header(base_hdr, 'SPECINDEX_WGT', hduclas2='QUALITY', err=True,
+                                               bit_type=self.bitmask.minimum_dtype(),
+                                               multichannel=multichannel,
+                                              channel_names=spectral_indices['SIPAR'].data['NAME']),
+               DAPFitsUtil.finalize_dap_header(base_hdr, 'SPECINDEX_WGT_CORR',
+                                               multichannel=multichannel,
+                                              channel_names=spectral_indices['SIPAR'].data['NAME']),
+               DAPFitsUtil.finalize_dap_header(base_hdr, 'SPECINDEX_WGT_MODEL',
+                                               multichannel=multichannel,
                                               channel_names=spectral_indices['SIPAR'].data['NAME'])
               ]
 
@@ -1684,20 +1718,31 @@ class construct_maps_file:
         # Get the data arrays
         arr = [ spectral_indices['SINDX'].data['INDX'][:,m]
                     for m in range(spectral_indices.nindx) ]
-        arr += [ numpy.ma.power(spectral_indices['SINDX'].data['INDXERR'][:,m], -2.).filled(0.0)
+        arr += [ numpy.ma.power(spectral_indices['SINDX'].data['INDX_ERR'][:,m], -2.).filled(0.0)
                     for m in range(spectral_indices.nindx) ]
-        arr += [ spectral_indices['SINDX'].data['INDX_DISPCORR'][:,m]
+        arr += [ spectral_indices['SINDX'].data['INDX_CORR'][:,m]
                     for m in range(spectral_indices.nindx) ]
-        arr += [ spectral_indices['SINDX'].data['BCEN'][:,m]
+        arr += [ spectral_indices['SINDX'].data['INDX_MOD'][:,m]
                     for m in range(spectral_indices.nindx) ]
-        arr += [ spectral_indices['SINDX'].data['BCONT'][:,m]
+
+        arr += [ spectral_indices['SINDX'].data['INDX_BF'][:,m]
                     for m in range(spectral_indices.nindx) ]
-        arr += [ spectral_indices['SINDX'].data['RCEN'][:,m]
+        arr += [ numpy.ma.power(spectral_indices['SINDX'].data['INDX_BF_ERR'][:,m], -2.).filled(0.0)
                     for m in range(spectral_indices.nindx) ]
-        arr += [ spectral_indices['SINDX'].data['RCONT'][:,m]
+        arr += [ spectral_indices['SINDX'].data['INDX_BF_CORR'][:,m]
                     for m in range(spectral_indices.nindx) ]
-        arr += [ spectral_indices['SINDX'].data['MODEL_INDX'][:,m]
+        arr += [ spectral_indices['SINDX'].data['INDX_BF_MOD'][:,m]
                     for m in range(spectral_indices.nindx) ]
+
+        arr += [ spectral_indices['SINDX'].data['AWGT'][:,m]
+                    for m in range(spectral_indices.nindx) ]
+        arr += [ numpy.ma.power(spectral_indices['SINDX'].data['AWGT_ERR'][:,m], -2.).filled(0.0)
+                    for m in range(spectral_indices.nindx) ]
+        arr += [ spectral_indices['SINDX'].data['AWGT_CORR'][:,m]
+                    for m in range(spectral_indices.nindx) ]
+        arr += [ spectral_indices['SINDX'].data['AWGT_MOD'][:,m]
+                    for m in range(spectral_indices.nindx) ]
+
         arr += [ spectral_indices['SINDX'].data['MASK'][:,m]
                     for m in range(spectral_indices.nindx) ]
 
@@ -1712,13 +1757,15 @@ class construct_maps_file:
 
         data = [ numpy.array(arr[spectral_indices.nindx*i:
                                  spectral_indices.nindx*(i+1)]).transpose(1,2,0) \
-                        for i in range(9) ]
+                        for i in range(13) ]
 
         # Get the mask
         si_mask = self._spectral_index_mask_to_map_mask(spectral_indices, data[-1].copy())
+#        bf_si_mask = self._spectral_index_mask_to_map_mask(spectral_indices, data[-1].copy(),
+#                                                           abs_only=True)
 
         # Organize the extension data
-        data = data[:2] + [si_mask] + data[2:-1]
+        data = data[:2] + [si_mask] + data[2:6] + [si_mask] + data[6:10] + [si_mask] + data[10:-1]
 
         #---------------------------------------------------------------
         # Return the map hdus
