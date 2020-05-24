@@ -144,3 +144,6 @@ def test_sasuke():
                 numpy.array([ 1000.47576421,  1000.47576421,   224.65658093,   114.82127207,
                                170.88868189,     0.        ,    81.28290423,    50.52682452]),
                           rtol=0.0, atol=1e-1), 'H-alpha dispersions are different'
+
+# if __name__ == '__main__':
+#     test_sasuke()

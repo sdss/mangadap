@@ -672,8 +672,8 @@ def _fit_iteration(templates, wave, flux, noise, velscale, start, moments, compo
                        velscale_ratio=velscale_ratio, plot=plot, moments=_moments, degree=degree,
                        mdegree=mdegree, lam=wave, reddening=reddening, tied=tied,
                        mask=model_mask[i,:], vsyst=vsyst, component=_component,
-                       gas_component=_gas_template, quiet=quiet, linear=linear,
-                       linear_method='lsqlin')
+                       gas_component=_gas_template, quiet=quiet, linear=linear)
+                       #, linear_method='lsqlin')
         if plot:
             plt.show()
 
@@ -716,8 +716,8 @@ def _fit_iteration(templates, wave, flux, noise, velscale, start, moments, compo
                            velscale_ratio=velscale_ratio, plot=plot, moments=_moments,
                            degree=degree, mdegree=mdegree, lam=wave, reddening=reddening,
                            tied=tied, mask=model_mask[i,:], vsyst=vsyst, component=_component,
-                           gas_component=_gas_template, quiet=quiet, linear=linear,
-                           linear_method='lsqlin')
+                           gas_component=_gas_template, quiet=quiet, linear=linear)
+                           #, linear_method='lsqlin')
             if plot:
                 plt.show()
 

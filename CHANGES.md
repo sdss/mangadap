@@ -91,6 +91,8 @@ TODO
  - Added Legendre polynomial fitter
  - Added MaStar HC V2 library
  - Updated versions of required packages
+ - Include additional spectral index measurements and weights to use
+   when combining indices.
 
 
 2.5.2 (14 Feb 2020)
