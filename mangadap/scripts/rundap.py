@@ -1139,8 +1139,8 @@ class rundap:
         # Command that runs the DAP
         # TODO: Define a "default" plan?
         if dapproc:
-            command = 'manga_dap -c {0} -r {1} -a {2}'.format(cfgfile, self.redux_path,
-                                                              self.analysis_path)
+            command = 'OMP_NUM_THREADS=1 manga_dap -c {0} -r {1} -a {2}'.format(cfgfile,
+                                self.redux_path, self.analysis_path)
             if self.plan_file is not None:
                 command += ' -p {0}'.format(self.plan_file)
             if self.log:
