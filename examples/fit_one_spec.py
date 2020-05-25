@@ -46,8 +46,8 @@ def get_spectrum(plt, ifu, x, y, directory_path=None):
     flux = cube.copy_to_masked_array(attr='flux', flag=cube.do_not_fit_flags())
     ivar = cube.copy_to_masked_array(attr='ivar', flag=cube.do_not_fit_flags())
 
-    embed()
-    exit()
+#    embed()
+#    exit()
 
     sres = cube.copy_to_array(attr='sres')
     return cube.wave, flux[flat_indx,:], ivar[flat_indx,:], sres[flat_indx,:]
@@ -66,10 +66,10 @@ if __name__ == '__main__':
     # This is where you should read in your own spectrum to fit.
     # Plate-IFU to use
     plt = 7815
-    ifu = 3702
+    ifu = 6101
     # Spaxel coordinates
-    x = 21
-    y = 21
+    x = 30
+    y = 37
     # Read a spectrum
     print('reading spectrum')
     wave, flux, ivar, sres = get_spectrum(plt, ifu, x, y, directory_path=directory_path)
@@ -119,7 +119,7 @@ if __name__ == '__main__':
     # Templates used in the stellar continuum fits
     sc_tpl_key = 'MILESHC'
     # Templates used in the emission-line modeling
-    el_tpl_key = 'MASTARHC'
+    el_tpl_key = 'MASTARHC2'
 
     # You also need to specify the sampling for the template spectra.
     # The templates must be sampled with the same pixel step as the
