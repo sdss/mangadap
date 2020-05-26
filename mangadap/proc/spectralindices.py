@@ -2074,7 +2074,7 @@ class SpectralIndices:
         if numpy.all(dummy):
             return measurements
 
-        warnings.simplefilter("error", RuntimeWarning)
+#        warnings.simplefilter("error", RuntimeWarning)
 
         # Perform the measurements on each spectrum
         for i in range(nspec):
