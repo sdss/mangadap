@@ -830,9 +830,10 @@ class DAPall:
                             dapmaps['SPECINDEX_CORR'].data.copy().reshape(nindx,-1)[:,unique_indx],
                                               mask=specindex.mask.copy())
 
-        # Get the corrected indices
-        ang = specindex_units == 'ang'
-        mag = numpy.invert(ang)
+        # Get the corrected indices; Unitless and ang units are treated
+        # the same.
+        mag = specindex_units == 'mag'
+        ang = numpy.invert(mag)
         specindex_corr[ang] = specindex[ang]*specindex_corr[ang]
         specindex_corr[mag] = specindex[mag]+specindex_corr[mag]
 

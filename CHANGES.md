@@ -28,6 +28,7 @@ TODO
    `SPECINDEX_CORR` should be `SPECINDEX_MASK`).
  - Differentiate between mask provided for BF index and mask for main
    continuum value? (e.g., latter only cares about the side bands)
+ - Deprecate `mangadap.survey.mangampl`
 
 3.0.0dev
 --------
@@ -90,9 +91,16 @@ TODO
  - Added DataCube metadata.
  - Added Legendre polynomial fitter
  - Added MaStar HC V2 library
- - Updated versions of required packages
  - Include additional spectral index measurements and weights to use
-   when combining indices.
+   when combining indices; leads to changes in MAPS data model.
+ - Updated versions of required packages, including incrementing version
+   dependency to ppxf==7.2.0; code still uses default `linear_method`
+   pending testing of `linear_method='lsqlin'`.
+ - Added photometry fix file; only adjusts 8083-12702 pending further
+   assessments.
+ - Added redshift fixes for IC342, Coma, and globular cluster cubes.
+ - Fixed minor bug in coordinates used in HYB binning cases for some
+   DAPall calculations.
 
 
 2.5.2 (14 Feb 2020)
