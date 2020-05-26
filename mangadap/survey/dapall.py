@@ -1099,7 +1099,7 @@ class DAPall:
             plan_methods += [defaults.dap_method(bin_method['key'],
                                                  sc_method['fitpar']['template_library_key'],
                                                  el_method['continuum_tpl_key'])]
-            deconstruct += [el_method['deconstruct'] != 'ignore']
+            deconstruct += [el_method['deconstruct_bins'] != 'ignore']
 
         # Check that the plan methods are unique.  This should never be
         # raised, unless it also causes problems in the DAP itself.
