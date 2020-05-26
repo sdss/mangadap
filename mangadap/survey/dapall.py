@@ -1091,7 +1091,7 @@ class DAPall:
 
         # Get the full list of available plan methods
         plan_methods = []
-        deconstruct_bins = []
+        deconstruct = []
         for p in plan:
             bin_method = SpatiallyBinnedSpectra.define_method(p['bin_key'])
             sc_method = StellarContinuumModel.define_method(p['continuum_key'])
@@ -1099,7 +1099,7 @@ class DAPall:
             plan_methods += [defaults.dap_method(bin_method['key'],
                                                  sc_method['fitpar']['template_library_key'],
                                                  el_method['continuum_tpl_key'])]
-            deconstruct_bins += [el_method['deconstruct_bins'] != 'ignore']
+            deconstruct += [el_method['deconstruct'] != 'ignore']
 
         # Check that the plan methods are unique.  This should never be
         # raised, unless it also causes problems in the DAP itself.
@@ -1109,7 +1109,7 @@ class DAPall:
         # Get the list of methods to look for
         if methods is None:
             self.methods = numpy.array(plan_methods)
-            self.deconstruct_bins = numpy.array(deconstruct_bins)
+            self.deconstruct = numpy.array(deconstruct)
             use_plans = numpy.ones(len(plan_methods), dtype=bool)
         else:
             # Make sure the provided list is unique
@@ -1122,15 +1122,15 @@ class DAPall:
             # Find the index of the plans to use
             # TODO: Re-write this as a list compression
             self.methods = []
-            self.deconstruct_bins = []
+            self.deconstruct = []
             use_plans = numpy.zeros(len(plan_methods), dtype=bool)
             for i in range(len(plan_methods)):
                 if plan_method[i] in methods:
                     use_plans[i] = True
                     self.methods += [plan_method[i]]
-                    self.deconstruct_bins += [deconstruct_bins[i]]
+                    self.deconstruct += [deconstruct[i]]
             self.methods = numpy.array(self.methods)
-            self.deconstruct_bins = numpy.array(self.deconstruct_bins)
+            self.deconstruct = numpy.array(self.deconstruct)
 
         # Check that all the plans to use have the same emission-line
         # bandpass channels, ...
