@@ -1046,7 +1046,7 @@ class DAPall:
         found = False
         for name in db.dtype.names:
             if not (numpy.issubdtype(db[name].dtype, numpy.integer) \
-                        or numpy.issubdtype(db[name].dtype, numpy.float)):
+                        or numpy.issubdtype(db[name].dtype, numpy.floating)):
                 continue
             if not numpy.all(numpy.isfinite(db[name])):
                 print('All values not finite in column {0} for method {1}'.format(name, method))
@@ -1218,7 +1218,7 @@ class DAPall:
                                            'Spectral-indx element', units=self.spindx_units)
 
         # Instantiate the list of hdus:
-        self.hdu = fits.HDUList([fits.PrimaryHDU(header=hdr)])
+        self.hdu = [fits.PrimaryHDU(header=hdr)]
 
         # Construct a DAPall database for each analysis method and add
         # it as a binary table to the list of HDUs.
@@ -1228,6 +1228,8 @@ class DAPall:
                                 [fits.Column(name=n, format=rec_to_fits_type(method_db[n]),
                                              array=method_db[n]) for n in method_db.dtype.names],
                                                        name=method)]
+
+        self.hdu = fits.HDUList(self.hdu)
 
         # Write the file (use of this function is probably overkill)
         DAPFitsUtil.write(self.hdu, self.file_path(), clobber=True, checksum=True,
