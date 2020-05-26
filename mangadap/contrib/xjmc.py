@@ -27,6 +27,9 @@ Revision history
 """
 
 import warnings
+
+from IPython import embed
+
 import numpy as np
 
 from scipy import fftpack
@@ -309,6 +312,63 @@ def _reset_components(c, valid):
     return np.arange(len(c_map))[inv], c_map
 
 
+def _good_templates(templates, gas_template, mask, start, velscale, velscale_ratio, vsyst):
+    """
+    Determine which of the templates to use during the fit.
+
+    Good template are *any* stellar-continuum template and any gas
+    template that is non-zero over the expected fitting range.
+
+    The details of this code should be pulled directly from ppxf for
+    consistency.
+
+    Args:
+        templates (numpy.ndarray):
+            Templates library to use for fitting.  Shape is
+            (NTPLPIX,NTPL).
+        gas_template (numpy.ndarray):
+            Boolean vector that selects the gas templates.  Shape is
+            (NTPL,).
+        mask (numpy.ndarray):
+            Boolean vector that selects the pixels in the object
+            spectrum to fit (i.e., mask=True for pixels to fit and
+            mask=False for pixels to ignore).  As in pPXF, the length is
+            expected to be less than or equal to NTPLPIX in the template
+            spectra.
+        start (list):
+            The starting kinematics for each kinematic component.
+            Length is NCOMP.
+        velscale (float):
+            The pixel scale of the object spectrum to fit in km/s.
+        velscale_ratio (:obj:`int`, optional):
+            The ratio between the object and template pixel scale.
+        vsyst (:obj:`float`, optional): 
+            The pseudo velocity shift between the template and object
+            spectra just due to the difference in the starting
+            wavelength.
+
+    Returns:
+        `numpy.ndarray`_: Boolean array flagging good templates,
+        which means anything that is not a gas template and any gas
+        template that has non-zero values in the fitting region.
+
+    """
+    valid = np.ones(templates.shape[0], dtype=bool)
+    if not np.any(gas_template):
+        # No gas templates
+        return valid
+
+    vmed = np.median([a[0] for a in start])
+    dx = int(np.round((vsyst + vmed)/velscale))  # Approximate velocity shift
+    gtpl = templates[gas_template,:].T
+    tmp = ppxf.rebin(gtpl, velscale_ratio)
+    gas_peak = np.max(np.abs(tmp), axis=0)
+    tmp = np.roll(tmp, dx, axis=0)
+    good_peak = np.max(np.abs(tmp[np.where(mask)[0],:]), axis=0)
+    valid[gas_template] = np.logical_not(good_peak <= gas_peak/1e3)
+    return valid
+
+
 def _validate_templates_components(templates, gas_template, component, vgrp, sgrp, moments, mask,
                                    start, tpl_to_use, velscale, velscale_ratio=None, vsyst=0):
     r"""
@@ -416,17 +476,18 @@ def _validate_templates_components(templates, gas_template, component, vgrp, sgr
 #                     color='k', alpha=0.3, zorder=0, lw=0)
 #    plt.show()
 
-    # Pulled from the pPXF test for consistency
-    npix_tpl = templates.shape[1]
-    vmed = np.median([a[0] for a in start])
-    dx = int((vsyst + vmed)/velscale)  # Approximate velocity shift
-    c = templates if velscale_ratio is None else \
-            np.mean(templates.reshape(-1, npix_tpl//velscale_ratio, velscale_ratio), axis=2)
-    c = c[:,:len(mask)]
-    m1 = np.max(np.abs(c), axis=1)
-    c = np.roll(c, dx, axis=1)
-    m2 = np.max(np.abs(c * mask.astype(float)[None,:]), axis=1)
-    valid = m2 > m1/1e3
+#    npix_tpl = templates.shape[1]
+#    vmed = np.median([a[0] for a in start])
+#    dx = int((vsyst + vmed)/velscale)  # Approximate velocity shift
+#    c = templates if velscale_ratio is None else \
+#            np.mean(templates.reshape(-1, npix_tpl//velscale_ratio, velscale_ratio), axis=2)
+#    c = c[:,:len(mask)]
+#    m1 = np.max(np.abs(c), axis=1)
+#    c = np.roll(c, dx, axis=1)
+#    m2 = np.max(np.abs(c * mask.astype(float)[None,:]), axis=1)
+#    valid = m2 > m1/1e3
+
+    valid = _good_templates(templates, gas_template, mask, start, velscale, velscale_ratio, vsyst)
     valid &= tpl_to_use
     ncomp = np.max(component)+1
 
@@ -672,8 +733,8 @@ def _fit_iteration(templates, wave, flux, noise, velscale, start, moments, compo
                        velscale_ratio=velscale_ratio, plot=plot, moments=_moments, degree=degree,
                        mdegree=mdegree, lam=wave, reddening=reddening, tied=tied,
                        mask=model_mask[i,:], vsyst=vsyst, component=_component,
-                       gas_component=_gas_template, quiet=quiet, linear=linear,
-                       linear_method='lsqlin')
+                       gas_component=_gas_template, quiet=quiet, linear=linear)
+                       #, linear_method='lsqlin')
         if plot:
             plt.show()
 
@@ -716,8 +777,8 @@ def _fit_iteration(templates, wave, flux, noise, velscale, start, moments, compo
                            velscale_ratio=velscale_ratio, plot=plot, moments=_moments,
                            degree=degree, mdegree=mdegree, lam=wave, reddening=reddening,
                            tied=tied, mask=model_mask[i,:], vsyst=vsyst, component=_component,
-                           gas_component=_gas_template, quiet=quiet, linear=linear,
-                           linear_method='lsqlin')
+                           gas_component=_gas_template, quiet=quiet, linear=linear)
+                           #, linear_method='lsqlin')
             if plot:
                 plt.show()
 
@@ -940,6 +1001,8 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
 
         - Allow mask(s) to be optional
         - Update the docs
+        - Skip the last step if the gas are already part of the same
+          kinematic component as dictated by the input tying data.
 
     Args:
         templates (numpy.ndarray):

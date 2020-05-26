@@ -285,20 +285,38 @@ class DRPComplete:
 
         return plttrg_data
 
-    def _read_redshift_fix(self):
+    def _read_fix_data(self, fix_file):
         """
-        Read data from the $MANGADAP_DIR/data/fix/redshift_fix.par file,
-        if it exists.
+        Read fix data from the provided file.
+
+        Args:
+            fix_file (:obj:`str`):
+                SDSS parameter file with the fix data.
 
         Returns:
-            yanny: A yanny structure with the redshift fixes.  Returns
+            yanny: A yanny structure with the data fixes.  Returns
             None and raises a warning if the file does not exist.
         """
-        fix_file = defaults.redshift_fix_file()
         if not os.path.isfile(fix_file):
             warnings.warn('No redshift fix file available.')
             return None
         return yanny(filename=fix_file)
+
+    def _read_redshift_fix(self):
+        """
+        Wrapper for :func:`_read_fix_data` and
+        :func:`~mangadap.config.defaults.redshift_fix_file` that
+        returns the redshift fix data.
+        """
+        return self._read_fix_data(defaults.redshift_fix_file())
+
+    def _read_photometry_fix(self):
+        """
+        Wrapper for :func:`_read_fix_data` and
+        :func:`~mangadap.config.defaults.photometry_fix_file` that
+        returns the photometry fix data.
+        """
+        return self._read_fix_data(defaults.photometry_fix_file())
 
     def _match_platetargets(self, quiet=True):
         """
@@ -893,6 +911,21 @@ class DRPComplete:
             rows = rows[indx]
             vel[indx] = redshift_fix_data['DAPZCORR']['z'][rows] \
                             * astropy.constants.c.to('km/s').value
+
+        photometry_fix_data = self._read_photometry_fix()
+        if photometry_fix_data is not None:
+            fix_pltifu = numpy.array(['{0}-{1}'.format(p,i) 
+                                    for p,i in zip(photometry_fix_data['DAPPHOTCORR']['plate'],
+                                                   photometry_fix_data['DAPPHOTCORR']['ifudesign'])])
+            this_pltifu = numpy.array(['{0}-{1}'.format(p,i) 
+                                       for p,i in zip(self.platelist,self.ifudesignlist)])
+            rows = numpy.array([numpy.where(fix_pltifu == pi)[0][0] if pi in fix_pltifu else -1 \
+                                for pi in this_pltifu])
+            indx = rows > -1
+            rows = rows[indx]
+            ell[indx] = photometry_fix_data['DAPPHOTCORR']['ell'][rows]
+            pa[indx] = photometry_fix_data['DAPPHOTCORR']['pa'][rows]
+            Reff[indx] = photometry_fix_data['DAPPHOTCORR']['reff'][rows]
 
         # Write the data to disk
         self.write(self.platelist, self.ifudesignlist, modes, mangaid, objra, objdec, catid,

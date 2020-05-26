@@ -71,8 +71,8 @@ def test_ppxffit():
                 'Expected NO_FIT in 6th spectrum'
 
     # Number of used templates
-    assert numpy.array_equal(numpy.sum(fit_par['TPLWGT'] > 0, axis=1),
-                             [24, 21, 24, 31, 35,  0, 22, 24]), \
+    assert numpy.array_equal(numpy.sum(numpy.absolute(fit_par['TPLWGT']) > 1e-10, axis=1),
+                             [13, 16, 17, 14, 17,  0,  8, 12]), \
                 'Different number of templates with non-zero weights'
 
     # Number of additive coefficients
@@ -133,4 +133,3 @@ def test_ppxffit():
                           numpy.array([0.06759905, 0.03682847, 0.0696026 , 0.04725984,
                                        0.09604793, 0.        , 0.03093494, 0.02879866]),
                           rtol=0.0, atol=1e-4), 'Median absolute residual different'
-

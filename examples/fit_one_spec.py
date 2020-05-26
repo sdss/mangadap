@@ -2,6 +2,9 @@
 
 import os
 import time
+
+from IPython import embed
+
 import numpy
 
 from astropy.io import fits
@@ -42,6 +45,10 @@ def get_spectrum(plt, ifu, x, y, directory_path=None):
     # This function always returns as masked array
     flux = cube.copy_to_masked_array(attr='flux', flag=cube.do_not_fit_flags())
     ivar = cube.copy_to_masked_array(attr='ivar', flag=cube.do_not_fit_flags())
+
+#    embed()
+#    exit()
+
     sres = cube.copy_to_array(attr='sres')
     return cube.wave, flux[flat_indx,:], ivar[flat_indx,:], sres[flat_indx,:]
         
@@ -59,10 +66,10 @@ if __name__ == '__main__':
     # This is where you should read in your own spectrum to fit.
     # Plate-IFU to use
     plt = 7815
-    ifu = 3702
+    ifu = 6101
     # Spaxel coordinates
-    x = 21
-    y = 21
+    x = 30
+    y = 37
     # Read a spectrum
     print('reading spectrum')
     wave, flux, ivar, sres = get_spectrum(plt, ifu, x, y, directory_path=directory_path)
@@ -247,6 +254,7 @@ if __name__ == '__main__':
     emlfit = Sasuke(EmissionLineModelBitMask())
 
     # Perform the fit
+    efit_t = time.perf_counter()
     eml_wave, model_flux, eml_flux, eml_mask, eml_fit_par, eml_eml_par \
             = emlfit.fit(emldb, wave, flux, obj_ferr=ferr, obj_mask=el_pixel_mask, obj_sres=sres,
                          guess_redshift=z, guess_dispersion=dispersion, reject_boxcar=101,
@@ -255,6 +263,7 @@ if __name__ == '__main__':
                          etpl_sinst_mode='offset', etpl_sinst_min=10.,
                          velscale_ratio=el_velscale_ratio, matched_resolution=False, mdegree=8,
                          plot=fit_plots)
+    print('TIME: ', time.perf_counter() - efit_t)
 
     # Line-fit metrics
     eml_eml_par = EmissionLineFit.line_metrics(emldb, wave, flux, ferr, model_flux, eml_eml_par,

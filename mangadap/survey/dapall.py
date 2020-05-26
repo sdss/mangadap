@@ -649,7 +649,7 @@ class DAPall:
                         stellar_vel_lo_clip, stellar_vel_hi_clip, stellar_sigma_1re, \
                         stellar_rchi2_1re
 
-    def _halpha_kinematics_metrics(self, dapmaps, redshift, spx_coo=False):
+    def _halpha_kinematics_metrics(self, dapmaps, deconstruct, redshift):
 
         # Unique bins
         # TODO: Select the BINID channel using the channel dictionary
@@ -661,7 +661,7 @@ class DAPall:
         emline = channel_dictionary(dapmaps, 'EMLINE_GFLUX')
 
         # Pull the data from the maps file
-        cooext = 'SPX_ELLCOO' if spx_coo else 'BIN_LWELLCOO'
+        cooext = 'SPX_ELLCOO' if deconstruct else 'BIN_LWELLCOO'
         r_re = dapmaps[cooext].data.copy()[1,:,:].ravel()[unique_indx]
 
         try:
@@ -694,7 +694,7 @@ class DAPall:
                                     / astropy.constants.c.to('km/s').value
 
         # Get the bins within an on-sky circular aperture of 2.5 arcsec
-        cooext = 'SPX_SKYCOO' if spx_coo else 'BIN_LWSKYCOO'
+        cooext = 'SPX_SKYCOO' if deconstruct else 'BIN_LWSKYCOO'
         d2 = numpy.sum(numpy.square(dapmaps[cooext].data), axis=0).ravel()[unique_indx]
         center = d2 < 1.25*1.25
 
@@ -752,7 +752,7 @@ class DAPall:
                         halpha_gsigma_1re, halpha_gsigma_hi, halpha_gsigma_hi_clip, \
                         emline_rchi2_1re
 
-    def _emission_line_metrics(self, dapmaps, moment0=False, spx_coo=False):
+    def _emission_line_metrics(self, dapmaps, deconstruct, moment0=False):
 
         # Unique bins
         # TODO: Select the BINID channel using the channel dictionary
@@ -764,7 +764,7 @@ class DAPall:
         neml = dapmaps[flux_ext].shape[0]
 
         # Pull the data from the maps file
-        cooext = 'SPX_ELLCOO' if spx_coo else 'BIN_LWELLCOO'
+        cooext = 'SPX_ELLCOO' if deconstruct else 'BIN_LWELLCOO'
         r_re = dapmaps[cooext].data.copy()[1,:,:].ravel()[unique_indx]
 
         flux = numpy.ma.MaskedArray(dapmaps[flux_ext].data.copy(),
@@ -777,7 +777,7 @@ class DAPall:
                                                     'DONOTUSE')).reshape(neml,-1)[:,unique_indx]
 
         # Get the total flux at the center
-        cooext = 'SPX_SKYCOO' if spx_coo else 'BIN_LWSKYCOO'
+        cooext = 'SPX_SKYCOO' if deconstruct else 'BIN_LWSKYCOO'
         d2 = numpy.sum(numpy.square(dapmaps[cooext].data), axis=0).ravel()[unique_indx]
         center = d2 < 1.25*1.25
         if numpy.sum(center) == 0:
@@ -810,7 +810,7 @@ class DAPall:
         return emline_flux_cen, emline_flux_1re, emline_flux_tot, emline_sb_1re, \
                         emline_sb_peak, emline_ew_1re, emline_ew_peak
 
-    def _spectral_index_metrics(self, dapmaps, specindex_units):
+    def _spectral_index_metrics(self, dapmaps, deconstruct, specindex_units):
 
         # Unique bins
         # TODO: Select the BINID channel using the channel dictionary
@@ -821,7 +821,8 @@ class DAPall:
         nindx = dapmaps['SPECINDEX'].shape[0]
 
         # Pull the data from the maps file
-        r_re = dapmaps['BIN_LWELLCOO'].data.copy()[1,:,:].ravel()[unique_indx]
+        cooext = 'SPX_ELLCOO' if deconstruct else 'BIN_LWELLCOO'
+        r_re = dapmaps[cooext].data.copy()[1,:,:].ravel()[unique_indx]
         specindex = numpy.ma.MaskedArray(dapmaps['SPECINDEX'].data.copy(),
                                          mask=self.maps_bm.flagged(dapmaps['SPECINDEX_MASK'].data,
                                                     'DONOTUSE')).reshape(nindx,-1)[:,unique_indx]
@@ -829,9 +830,10 @@ class DAPall:
                             dapmaps['SPECINDEX_CORR'].data.copy().reshape(nindx,-1)[:,unique_indx],
                                               mask=specindex.mask.copy())
 
-        # Get the corrected indices
-        ang = specindex_units == 'ang'
-        mag = numpy.invert(ang)
+        # Get the corrected indices; Unitless and ang units are treated
+        # the same.
+        mag = specindex_units == 'mag'
+        ang = numpy.invert(mag)
         specindex_corr[ang] = specindex[ang]*specindex_corr[ang]
         specindex_corr[mag] = specindex[mag]+specindex_corr[mag]
 
@@ -868,13 +870,16 @@ class DAPall:
         return defaults.dapall_file(drpver=self.drpver, dapver=self.dapver,
                                     analysis_path=self.analysis_path)
 
-    def method_database(self, method, drpall):
+    def method_database(self, method, deconstruct, drpall):
         """
         Construct the DAPall database for the provided DAP method.
 
         Args:
             method (:obj:`str`):
                 Name of the DAP method
+            deconstruct (:obj:`bool`):
+                Flag that the method deconstructs the bins during the
+                emission-line fitting module.
             drpall (`numpy.recarray`_):
                 Primary DRPall data table
 
@@ -1004,34 +1009,26 @@ class DAPall:
                             = self._stellar_kinematics_metrics(dapmaps, db['Z'][i])
 
             # Get the metrics for the emission-line kinematics
-            # TODO: Check for hybrid binning method, then use
-            # spx_coo=True if emission lines measured on individual
-            # spaxels
             db['HA_Z'][i], db['HA_GVEL_LO'][i], db['HA_GVEL_HI'][i], db['HA_GVEL_LO_CLIP'][i], \
                     db['HA_GVEL_HI_CLIP'][i], db['HA_GSIGMA_1RE'][i], db['HA_GSIGMA_HI'][i], \
                     db['HA_GSIGMA_HI_CLIP'][i], db['EMLINE_RCHI2_1RE'][i] \
-                            = self._halpha_kinematics_metrics(dapmaps, db['Z'][i])
+                            = self._halpha_kinematics_metrics(dapmaps, deconstruct, db['Z'][i])
 
             # Get the moment-based emission-line metrics
-            # TODO: Check for hybrid binning method, then use
-            # spx_coo=True if emission lines measured on individual
-            # spaxels
             db['EMLINE_SFLUX_CEN'][i], db['EMLINE_SFLUX_1RE'][i], db['EMLINE_SFLUX_TOT'][i], \
                     db['EMLINE_SSB_1RE'][i], db['EMLINE_SSB_PEAK'][i], db['EMLINE_SEW_1RE'][i], \
-                    db['EMLINE_SEW_PEAK'][i] = self._emission_line_metrics(dapmaps, moment0=True)
+                    db['EMLINE_SEW_PEAK'][i] \
+                            = self._emission_line_metrics(dapmaps, deconstruct, moment0=True)
 
             # Get the Gaussian-based emission-line metrics
-            # TODO: Check for hybrid binning method, then use
-            # spx_coo=True if emission lines measured on individual
-            # spaxels
             db['EMLINE_GFLUX_CEN'][i], db['EMLINE_GFLUX_1RE'][i], db['EMLINE_GFLUX_TOT'][i], \
                     db['EMLINE_GSB_1RE'][i], db['EMLINE_GSB_PEAK'][i], db['EMLINE_GEW_1RE'][i], \
-                    db['EMLINE_GEW_PEAK'][i] = self._emission_line_metrics(dapmaps)
+                    db['EMLINE_GEW_PEAK'][i] = self._emission_line_metrics(dapmaps, deconstruct)
 
             # Get the spectral-index metrics
             db['SPECINDEX_LO'][i], db['SPECINDEX_HI'][i], db['SPECINDEX_LO_CLIP'][i], \
                     db['SPECINDEX_HI_CLIP'][i], db['SPECINDEX_1RE'][i] \
-                            = self._spectral_index_metrics(dapmaps, self.spindx_units)
+                            = self._spectral_index_metrics(dapmaps, deconstruct, self.spindx_units)
 
             # Estimate the star-formation rate
             log_Mpc_in_cm = numpy.log10(astropy.constants.pc.to('cm').value) + 6
@@ -1050,7 +1047,7 @@ class DAPall:
         found = False
         for name in db.dtype.names:
             if not (numpy.issubdtype(db[name].dtype, numpy.integer) \
-                        or numpy.issubdtype(db[name].dtype, numpy.float)):
+                        or numpy.issubdtype(db[name].dtype, numpy.floating)):
                 continue
             if not numpy.all(numpy.isfinite(db[name])):
                 print('All values not finite in column {0} for method {1}'.format(name, method))
@@ -1095,6 +1092,7 @@ class DAPall:
 
         # Get the full list of available plan methods
         plan_methods = []
+        deconstruct = []
         for p in plan:
             bin_method = SpatiallyBinnedSpectra.define_method(p['bin_key'])
             sc_method = StellarContinuumModel.define_method(p['continuum_key'])
@@ -1102,6 +1100,8 @@ class DAPall:
             plan_methods += [defaults.dap_method(bin_method['key'],
                                                  sc_method['fitpar']['template_library_key'],
                                                  el_method['continuum_tpl_key'])]
+            deconstruct += [el_method['deconstruct_bins'] != 'ignore']
+
         # Check that the plan methods are unique.  This should never be
         # raised, unless it also causes problems in the DAP itself.
         if len(numpy.unique(plan_methods)) != len(plan_methods):
@@ -1110,20 +1110,28 @@ class DAPall:
         # Get the list of methods to look for
         if methods is None:
             self.methods = numpy.array(plan_methods)
+            self.deconstruct = numpy.array(deconstruct)
             use_plans = numpy.ones(len(plan_methods), dtype=bool)
         else:
-            self.methods = numpy.atleast_1d(methods)
             # Make sure the provided list is unique
-            if len(numpy.unique(self.methods)) != len(self.methods):
+            if len(numpy.unique(methods)) != len(methods):
                 raise ValueError('Must provide unique list of methods.')
             # All the methods to use must be in the provided plan
-            if not numpy.all( [m in plan_methods for m in self.methods ]):
+            if not numpy.all( [m in plan_methods for m in methods ]):
                 raise ValueError('All provided methods must be in provided plan file.')
+
             # Find the index of the plans to use
+            # TODO: Re-write this as a list compression
+            self.methods = []
+            self.deconstruct = []
             use_plans = numpy.zeros(len(plan_methods), dtype=bool)
-            for i,p in enumerate(plan_methods):
-                if p in self.methods:
+            for i in range(len(plan_methods)):
+                if plan_method[i] in methods:
                     use_plans[i] = True
+                    self.methods += [plan_method[i]]
+                    self.deconstruct += [deconstruct[i]]
+            self.methods = numpy.array(self.methods)
+            self.deconstruct = numpy.array(self.deconstruct)
 
         # Check that all the plans to use have the same emission-line
         # bandpass channels, ...
@@ -1161,6 +1169,7 @@ class DAPall:
         self.nindx = len(self.spindx_channels)
 
         # PlateIFUs that should be analyzed per DAP method
+        # TODO: Somehow sort these?
         self.plate, self.ifudesign = self._get_completed_observations()
         # Number of completed observations per analysis method
         self.ndap = len(self.plate)
@@ -1210,17 +1219,16 @@ class DAPall:
         hdr = self._add_channels_to_header(hdr, self.spindx_channels, 'SPI',
                                            'Spectral-indx element', units=self.spindx_units)
 
-        # Instantiate the list of hdus:
-        self.hdu = fits.HDUList([fits.PrimaryHDU(header=hdr)])
-
         # Construct a DAPall database for each analysis method and add
         # it as a binary table to the list of HDUs.
-        for method in self.methods:
-            method_db = self.method_database(method, drpall)
+        self.hdu = [fits.PrimaryHDU(header=hdr)]
+        for method, deconstruct in zip(self.methods, self.deconstruct):
+            method_db = self.method_database(method, deconstruct, drpall)
             self.hdu += [fits.BinTableHDU.from_columns(
                                 [fits.Column(name=n, format=rec_to_fits_type(method_db[n]),
                                              array=method_db[n]) for n in method_db.dtype.names],
                                                        name=method)]
+        self.hdu = fits.HDUList(self.hdu)
 
         # Write the file (use of this function is probably overkill)
         DAPFitsUtil.write(self.hdu, self.file_path(), clobber=True, checksum=True,

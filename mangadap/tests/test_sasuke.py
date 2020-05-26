@@ -95,8 +95,8 @@ def test_sasuke():
                 'Expected NO_FIT in 6th spectrum'
 
     # Number of used templates
-    assert numpy.array_equal(numpy.sum(el_fit['TPLWGT'] > 0, axis=1),
-                             [51, 50, 52, 48, 36,  0, 42, 48]), \
+    assert numpy.array_equal(numpy.sum(numpy.absolute(el_fit['TPLWGT']) > 1e-10, axis=1),
+                             [25, 24, 32, 32, 28,  0, 17, 22]), \
                 'Different number of templates with non-zero weights'
 
     # No additive coefficients
@@ -108,39 +108,40 @@ def test_sasuke():
                 'No multiplicative coefficients should exist'
 
     # Fit statistics
-    assert numpy.allclose(el_fit['RCHI2'],
-                          numpy.array([ 2.34441982,  1.21510401,  1.57781064,  1.87956651,
-                                        3.19511594,  0.        ,  1.05074234,  0.88393101]),
-                          rtol=0.0, atol=1e-4), 'Reduced chi-square different'
+    assert numpy.all(numpy.absolute(el_fit['RCHI2'] - 
+                                    numpy.array([2.34, 1.22, 1.58, 1.88, 3.20, 0., 1.05, 0.88]))
+                     < 0.02), 'Reduced chi-square are too different'
 
-    assert numpy.allclose(el_fit['RMS'],
-                    numpy.array([ 0.03621057,  0.01914189,  0.0366114 ,  0.02456429,
-                                  0.05073385,  0.        ,  0.01283324,  0.01243996]),
-                          rtol=0.0, atol=1e-4), 'RMS different'
+    assert numpy.all(numpy.absolute(el_fit['RMS'] -
+                                    numpy.array([0.0362, 0.0191, 0.0366, 0.0246, 0.0507, 0.,
+                                                 0.0128, 0.0124])) < 1e-4), 'RMS too different'
 
-    assert numpy.allclose(el_fit['FRMS'],
-                    numpy.array([ 0.02097277,  0.02650269,  0.02718998,  0.03482793,
-                                  0.01856961,  0.        ,  1.12984714,  0.10905279]),
-                          rtol=0.0, atol=1e-4), 'Fractional RMS different'
+    assert numpy.all(numpy.absolute(el_fit['FRMS'] -
+                                    numpy.array([0.0210, 0.0265, 0.0272, 0.0348, 0.0186, 0.,
+                                                 1.1298, 0.1096])) < 1e-4), \
+            'Fractional RMS too different'
 
-    assert numpy.allclose(el_fit['RMSGRW'][:,2],
-                          numpy.array([ 0.07079034,  0.03748393,  0.07066016,  0.04784343,
-                                        0.10093365,  0.        ,  0.02707473,  0.02441517]),
-                          rtol=0.0, atol=1e-4), 'Median absolute residual different'
+    assert numpy.all(numpy.absolute(el_fit['RMSGRW'][:,2] -
+                                    numpy.array([0.0708, 0.0375, 0.0707, 0.0477, 0.1009, 0.,
+                                                 0.0271, 0.0244])) < 1e-4), \
+            'Median absolute residual too different'
 
     # All lines should have the same velocity
     assert numpy.all(numpy.all(el_par['KIN'][:,:,0] == el_par['KIN'][:,None,0,0], axis=1)), \
                 'All velocities should be the same'
 
     # Test velocity values
-    assert numpy.allclose(el_par['KIN'][:,0,0],
-                numpy.array([ 14708.51501137,  14885.9407429 ,  14767.12496209,   8159.45965603,
-                               9258.7021507 ,      0.        ,   5131.13183361,   5433.87569423]),
-                          rtol=0.0, atol=1e-2), 'Velocities are different'
-
-    # H-alpha dispsersions
     # TODO: Need some better examples!
-    assert numpy.allclose(el_par['KIN'][:,18,1],
-                numpy.array([ 1000.47576421,  1000.47576421,   224.65658093,   114.82127207,
-                               170.88868189,     0.        ,    81.28290423,    50.52682452]),
-                          rtol=0.0, atol=1e-1), 'H-alpha dispersions are different'
+    assert numpy.all(numpy.absolute(el_par['KIN'][:,0,0] -
+                                    numpy.array([14694.0, 14882.2, 14767.1, 8159.5, 9258.7, 0.,
+                                                 5131.1, 5432.4])) < 1e-1), \
+                'Velocities are too different'
+
+    # H-alpha dispersions
+    assert numpy.all(numpy.absolute(el_par['KIN'][:,18,1] - 
+                                    numpy.array([1000.5, 1000.5, 224.7, 114.0, 170.9, 0., 81.3,
+                                                 50.1])) < 1e-1), \
+            'H-alpha dispersions are too different'
+
+if __name__ == '__main__':
+    test_sasuke()

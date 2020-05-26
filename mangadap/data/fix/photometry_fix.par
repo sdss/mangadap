@@ -1,0 +1,22 @@
+#------------------------------------------------------------------------
+# Created by: Kyle Westfall (KBW)
+# Date: 25 May 2020
+#
+# Hard-coded corrections to the photometry data from the
+# DRPall/plateTargets files.
+#
+# Revisions:
+#   25 May 2020: (KBW) First created.  8083-12702 uses the Sersic data
+#   instead of the elliptical Petrosian results.
+#------------------------------------------------------------------------
+
+typedef struct {
+    int plate;
+    int ifudesign;
+    double ell;
+    double pa;
+    double reff;
+} DAPPHOTCORR;
+
+DAPPHOTCORR   8083 12702 0.265 7.57 28.3
+

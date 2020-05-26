@@ -40,10 +40,10 @@ def fit_one_cube(plt, ifu, drpall_file=None, directory_path=None, analysis_path=
 
     # Define how you want to analyze the data
     plan = AnalysisPlanSet([ AnalysisPlan(drpqa_key='SNRG',
-                                          bin_key='ALL', #'HYB10',
-                                          continuum_key='MILESHCMPL9',
-                                          elmom_key='EMOMMPL9',
-                                          elfit_key='EFITMPL9', #'EFITMPL9DB',
+                                          bin_key='VOR10', #'HYB10',
+                                          continuum_key='MILESHCMPL10',
+                                          elmom_key='EMOMMPL10',
+                                          elfit_key='EFITMPL10', #'EFITMPL9DB',
                                           spindex_key='INDXEN') ])
 
     # Run it!
@@ -53,7 +53,7 @@ def fit_one_cube(plt, ifu, drpall_file=None, directory_path=None, analysis_path=
 
 
 if __name__ == '__main__':
-    drpver = 'v2_7_1'
+    drpver = 'v3_0_1'
     directory_path = os.path.join(os.environ['MANGADAP_DIR'], 'mangadap', 'data', 'remote')
     drpall_file = os.path.join(directory_path, 'drpall-{0}.fits'.format(drpver))
     fit_one_cube(7815, 3702, drpall_file=drpall_file, directory_path=directory_path,

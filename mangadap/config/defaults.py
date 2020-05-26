@@ -636,3 +636,13 @@ def redshift_fix_file():
     """
     return os.path.join(dap_data_root(), 'fix', 'redshift_fix.par')
 
+
+def photometry_fix_file():
+    """
+    Return the path to the default photometry fix file.
+
+    Returns:
+        :obj:`str`: Expected path to the photometry-fix parameter file.
+    """
+    return os.path.join(dap_data_root(), 'fix', 'photometry_fix.par')
+
