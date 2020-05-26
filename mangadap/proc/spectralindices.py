@@ -80,6 +80,7 @@ Revision history
 import glob
 import os
 import logging
+import warnings
 
 from IPython import embed
 
@@ -582,23 +583,32 @@ class AbsorptionLineIndices:
 
             # Get the fraction of the band covered by the spectrum and
             # flag bands that are only partially covered or empty
+            # TODO: Can interval ever be negative?
             interval = passband_integrated_width(wave, flux, passband=m, log=log)
             interval_frac = interval / numpy.diff(m)[0]
             self.main_incomplete[i] = interval_frac < 1.0
             self.main_empty[i] = numpy.invert(interval_frac > 0.0)
 
             # Common to both calculations of the BF indices
-            bf = self.main_flux[i]/self.main_continuum[i]
+            bf = numpy.ma.divide(self.main_flux[i], self.main_continuum[i]).filled(0.0)
             bf_err = 0.0 if err is None else \
-                        numpy.sqrt(numpy.square(self.main_flux_err[i]/self.main_flux[i])
-                                + numpy.square(self.main_continuum_err[i]/self.main_continuum[i]))
+                        numpy.ma.sqrt(numpy.square(numpy.ma.divide(self.main_flux_err[i],
+                                                                   self.main_flux[i]))
+                                      + numpy.square(numpy.ma.divide(self.main_continuum_err[i],
+                                                                     self.main_continuum[i]))
+                                     ).filled(0.0)
 
             if self.units[i] == 'mag':
                 # Calculation of the index in mag units requires
                 # division by the band interval. If the full interval
                 # is masked, this leads to a division by 0. This
                 # catches that issue.
-                self.divbyzero[i] = not ((numpy.absolute(interval) > 0) & (self.index[i] > 0))
+                # TODO: This is more general than a division by zero.
+                # It should catch any computation that would result in
+                # a NaN or Inf. ``index`` and ``bf`` need to be larger
+                # than 0 for the log computation to work.
+                self.divbyzero[i] = not (numpy.absolute(interval) > 0 and self.index[i] > 0 
+                                            and bf > 0)
                 if not self.divbyzero[i]:
 
                     # Convert the index to magnitudes using Worthey et
@@ -2063,6 +2073,8 @@ class SpectralIndices:
         # No valid indices
         if numpy.all(dummy):
             return measurements
+
+        warnings.simplefilter("error", RuntimeWarning)
 
         # Perform the measurements on each spectrum
         for i in range(nspec):

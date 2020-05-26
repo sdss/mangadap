@@ -435,7 +435,7 @@ class DAPFitsUtil:
                 print('inp: ', _arr[i][unique_bins[reconstruct[indx]]][nf])
                 print('out: ', new_arr[i].ravel()[indx][nf])
                 new_arr[i].ravel()[indx][nf] = 0.0
-                raise ValueError('fubar')
+                raise ValueError('NaNs in data!')
                 
         return tuple([ a for a in new_arr]) if narr > 1 else new_arr[0]
 
