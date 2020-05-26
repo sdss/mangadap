@@ -1139,8 +1139,8 @@ class rundap:
         # Command that runs the DAP
         # TODO: Define a "default" plan?
         if dapproc:
-            command = 'OMP_NUM_THREADS=1 manga_dap -c {0} -r {1} -a {2}'.format(cfgfile,
-                                self.redux_path, self.analysis_path)
+            command = 'OMP_NUM_THREADS=1 manga_dap -c {0} -r {1} -a {2}'.format(
+                            cfgfile, self.redux_path, self.analysis_path)
             if self.plan_file is not None:
                 command += ' -p {0}'.format(self.plan_file)
             if self.log:
@@ -1152,22 +1152,22 @@ class rundap:
 
         # Plotting scripts
         if plots:
-            command = 'dap_ppxffit_qa {0} {1} --analysis_path {2}'.format(plate, ifudesign,
-                                                                          self.analysis_path)
+            command = 'OMP_NUM_THREADS=1 dap_ppxffit_qa {0} {1} --analysis_path {2}'.format(
+                            plate, ifudesign, self.analysis_path)
             if self.plan_file is not None:
                 command += ' --plan_file {0}'.format(self.plan_file)
             file.write('{0}\n'.format(command))
             file.write('\n')
 
-            command = 'spotcheck_dap_maps {0} {1} --analysis_path {2}'.format(plate, ifudesign,
-                                                                              self.analysis_path)
+            command = 'OMP_NUM_THREADS=1 spotcheck_dap_maps {0} {1} --analysis_path {2}'.format(
+                            plate, ifudesign, self.analysis_path)
             if self.plan_file is not None:
                 command += ' --plan_file {0}'.format(self.plan_file)
             file.write('{0}\n'.format(command))
             file.write('\n')
 
-            command = 'dap_fit_residuals {0} {1} --analysis_path {2}'.format(plate, ifudesign,
-                                                                             self.analysis_path)
+            command = 'OMP_NUM_THREADS=1 dap_fit_residuals {0} {1} --analysis_path {2}'.format(
+                            plate, ifudesign, self.analysis_path)
             if self.plan_file is not None:
                 command += ' --plan_file {0}'.format(self.plan_file)
             file.write('{0}\n'.format(command))
@@ -1226,7 +1226,8 @@ class rundap:
         file.write('\n')
 
         # Command that constructs the DAPall file
-        command = 'construct_dapall --drpver {0} -r {1} --dapver {2} -a {3}'.format(
+        command = 'OMP_NUM_THREADS=1 '
+        command += 'construct_dapall --drpver {0} -r {1} --dapver {2} -a {3}'.format(
                         self.mpl.drpver, self.redux_path, self.dapver, self.analysis_path)
         if self.plan_file is not None:
             command += ' --plan_file {0}'.format(self.plan_file)
@@ -1237,7 +1238,7 @@ class rundap:
 
         # Add the plotting commands
         if plots:
-            command = 'dap_dapall_qa --drpver {0} --redux_path {1}'.format(
+            command = 'OMP_NUM_THREADS=1 dap_dapall_qa --drpver {0} --redux_path {1}'.format(
                             self.mpl.drpver, self.redux_path) \
                         + ' --dapver {0} --analysis_path {1}'.format(self.dapver,
                                                                      self.analysis_path)
@@ -1299,7 +1300,8 @@ class rundap:
         file.write('\n')
 
         # Command that creates the plots
-        command = 'dap_plate_fit_qa {0} --analysis_path {1}'.format(plate, self.analysis_path)
+        command = 'OMP_NUM_THREADS=1 dap_plate_fit_qa {0} --analysis_path {1}'.format(
+                        plate, self.analysis_path)
         if self.plan_file is not None:
             command += ' --plan_file {0}'.format(self.plan_file)
         file.write('{0}\n'.format(command))
