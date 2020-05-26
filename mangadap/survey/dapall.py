@@ -1168,6 +1168,7 @@ class DAPall:
         self.nindx = len(self.spindx_channels)
 
         # PlateIFUs that should be analyzed per DAP method
+        # TODO: Somehow sort these?
         self.plate, self.ifudesign = self._get_completed_observations()
         # Number of completed observations per analysis method
         self.ndap = len(self.plate)
@@ -1217,18 +1218,15 @@ class DAPall:
         hdr = self._add_channels_to_header(hdr, self.spindx_channels, 'SPI',
                                            'Spectral-indx element', units=self.spindx_units)
 
-        # Instantiate the list of hdus:
-        self.hdu = [fits.PrimaryHDU(header=hdr)]
-
         # Construct a DAPall database for each analysis method and add
         # it as a binary table to the list of HDUs.
+        self.hdu = [fits.PrimaryHDU(header=hdr)]
         for method, deconstruct in zip(self.methods, self.deconstruct):
             method_db = self.method_database(method, deconstruct, drpall)
             self.hdu += [fits.BinTableHDU.from_columns(
                                 [fits.Column(name=n, format=rec_to_fits_type(method_db[n]),
                                              array=method_db[n]) for n in method_db.dtype.names],
                                                        name=method)]
-
         self.hdu = fits.HDUList(self.hdu)
 
         # Write the file (use of this function is probably overkill)
