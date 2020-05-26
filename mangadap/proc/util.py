@@ -446,3 +446,20 @@ def replace_with_data_from_nearest_coo(coo, data, replace):
     return new_data
 
 
+def inverse(d):
+    """
+    Return 1/d, where any division by 0 returns 0 instead of NaN or Inf.
+
+    Args:
+        d (scalar-like, array-like):
+            Data values.
+
+    Returns:
+        float, `numpy.ndarray`_: Returns 1/d where values with d ==
+        0. are replaced by 0. Return type matches input type: float
+        for scalar, `numpy.ndarray`_ for array-like.
+    """
+    _d = float(d) if isinstance(d, (float, int)) else numpy.atleast_1d(d).astype(float)
+    m = _d != 0.0
+    return m/(_d + numpy.logical_not(m))
+

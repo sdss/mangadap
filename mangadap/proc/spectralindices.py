@@ -107,7 +107,7 @@ from .templatelibrary import TemplateLibrary
 from .stellarcontinuummodel import StellarContinuumModel
 from .emissionlinemodel import EmissionLineModel
 from .bandpassfilter import passband_integral, passband_integrated_width, pseudocontinuum
-from .util import select_proc_method, flux_to_fnu
+from . import util
 
 from matplotlib import pyplot
 
@@ -590,13 +590,13 @@ class AbsorptionLineIndices:
             self.main_empty[i] = numpy.invert(interval_frac > 0.0)
 
             # Common to both calculations of the BF indices
-            bf = numpy.ma.divide(self.main_flux[i], self.main_continuum[i]).filled(0.0)
+            # TODO: Need to catch divbyzero here, as well!
+            bf = self.main_flux[i] * util.inverse(self.main_continuum[i])
             bf_err = 0.0 if err is None else \
-                        numpy.ma.sqrt(numpy.square(numpy.ma.divide(self.main_flux_err[i],
-                                                                   self.main_flux[i]))
-                                      + numpy.square(numpy.ma.divide(self.main_continuum_err[i],
-                                                                     self.main_continuum[i]))
-                                     ).filled(0.0)
+                        numpy.sqrt(numpy.square(self.main_flux_err[i] 
+                                                * util.inverse(self.main_flux[i]))
+                                      + numpy.square(self.main_continuum_err[i]
+                                                * util.inverse(self.main_continuum[i])))
 
             if self.units[i] == 'mag':
                 # Calculation of the index in mag units requires
@@ -962,9 +962,9 @@ class SpectralIndices:
 
         """
         # Grab the specific database
-        self.database = select_proc_method(database_key, SpectralIndicesDef,
-                                           method_list=database_list,
-                                           available_func=available_spectral_index_databases)
+        self.database = util.select_proc_method(database_key, SpectralIndicesDef,
+                                                method_list=database_list,
+                                                available_func=available_spectral_index_databases)
 
         # Instantiate the artifact, absorption-index, and bandhead-index
         # databases
@@ -2034,8 +2034,8 @@ class SpectralIndices:
         # Create the f_nu spectra. NOTE: The conversion is
         # multiplicative, meaning the calculation of the errors can use
         # exactly the same function
-        flux_fnu = flux_to_fnu(numpy.array([wave]*nspec), _flux)
-        noise_fnu = None if noise is None else flux_to_fnu(numpy.array([wave]*nspec), noise)
+        flux_fnu = util.flux_to_fnu(numpy.array([wave]*nspec), _flux)
+        noise_fnu = None if noise is None else util.flux_to_fnu(numpy.array([wave]*nspec), noise)
 
         # Get the list of good indices of each type
         abs_fnu = numpy.zeros(nabs, dtype=bool) if absdb is None \
