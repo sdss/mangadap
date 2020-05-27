@@ -1,4 +1,6 @@
 
+.. include:: include/links.rst
+
 .. _templatelibraries:
 
 Spectral Template Libraries
@@ -64,15 +66,15 @@ The primary constraint on the format of the spectra to be used as
 templates is that they are read using
 :func:`mangadap.util.fileio.read_template_spectrum`.  That is:
 
-    - Each spectrum must be in its own fits file.
-    - The flux data must be in the first extension.
-    - The wavelength vector is constructed from the header WCS (see
-      :func:`mangadap.util.fileio.wavelength_vector`).  The wavelength
+    * Each spectrum must be in its own fits file.
+    * The flux data must be in the first extension.
+    * The wavelength vector is constructed from the header WCS (see
+      :func:`mangadap.util.fileio.wavelength_vector`). The wavelength
       range of each spectrum need not be the same.
-    - The inverse variance or wavelength dependent spectral resolution
-      (:math:R=\lambda/\delta\lambda`) can be optionally provided.  If
-      the spectral resolution is not provided, it should be defined by
-      the :ref:`templatelibraries-definition`.
+    * The inverse variance or wavelength dependent spectral
+      resolution (:math:`R=\lambda/\delta\lambda`) can be optionally
+      provided. If the spectral resolution is not provided, it should
+      be defined by the :ref:`templatelibraries-definition`.
 
 .. _templatelibraries-definition:
 
@@ -81,30 +83,31 @@ Template Library Definition
 
 Template libraries are defined for use in the DAP using the
 configuration files in
-``$MANGADAP_DIR/python/mangadap/config/spectral_templates``.  These
+``$MANGADAP_DIR/mangadap/config/spectral_templates``. These
 configuration files are parsed by
 :func:`mangadap.proc.templatelibrary.available_template_libraries`,
 which provides a list of
-:func:`mangadap.proc.templatelibrary.TemplateLibraryDef` instances that
-can be selected using a keyword.
+:func:`mangadap.proc.templatelibrary.TemplateLibraryDef` instances
+that can be selected using a keyword.
 
 The critical components to the definition of the template library are:
 
-    - ``file_search``: the search string used by `glob.glob`_ to find
+    * ``file_search``: the search string used by `glob.glob`_ to find
       the fits files with the template library spectra and
-    - ``fwhm`` or ``sres_ext``: the FWHM of the (Gaussian) line-spread
-      function in angstroms or the name of the extension in each
-      template fits file with the spectral resolution,
-      :math:R=\lambda/\delta\lambda`.
+    * ``fwhm`` or ``sres_ext``: the FWHM of the (Gaussian)
+      line-spread function in angstroms or the name of the extension
+      in each template fits file with the spectral resolution,
+      :math:`R=\lambda/\delta\lambda`.
 
 Output
 ~~~~~~
 
 When instantiating a template library, the processed library will be
-written to disk, depending on the ``hardcopy`` argument; by default this
-argument is True.  If the template library has already been processed
-and written to disk, the instantation of the object will skip processing
-the library and just read the result of the previous instantiation.
+written to disk, depending on the ``hardcopy`` argument; by default
+this argument is True. If the template library has already been
+processed and written to disk, the instantiation of the object will
+skip processing the library and just read the result of the previous
+instantiation.
 
 The path (``directory_path``) and name of the file (``processed_file``)
 can be defined upon instantiating the object.  If not provided, the
@@ -115,35 +118,35 @@ file name is set by
 
 The format of the output file is:
 
-+-----+---------+---------------------------------------------------------------+
-| HDU | Name    | Description                                                   |
-+=====+=========+===============================================================+
-|   0 | PRIMARY | Empty                                                         |
-+-----+---------+---------------------------------------------------------------+
-|   1 | WAVE    | Wavelength vector                                             |
-+-----+---------+---------------------------------------------------------------+
-|   2 | FLUX    | Flux array                                                    |
-+-----+---------+---------------------------------------------------------------+
-|   3 | MASK    | Bitmask values; see                                           |
-|     |         | :class:`mangadap.proc.templatelibrary.TemplateLibraryBitMask` |
-+-----+---------+---------------------------------------------------------------+
-|   4 | SPECRES | Spectral resolution                                           |
-+-----+---------+---------------------------------------------------------------+
-|   5 | SIGOFF  | If needed, the offset in km/s between the target              |
-|     |         | resolution of the spectra and the actual resolution           |
-|     |         | acheived.  See                                                |
-|     |         | :func:`mangadap.util.resolution.match_spectral_resolution`.   |
-+-----+---------+---------------------------------------------------------------+
++-----+-------------+---------------------------------------------------------------+
+| HDU | Name        | Description                                                   |
++=====+=============+===============================================================+
+|   0 | ``PRIMARY`` | Empty                                                         |
++-----+-------------+---------------------------------------------------------------+
+|   1 | ``WAVE``    | Wavelength vector                                             |
++-----+-------------+---------------------------------------------------------------+
+|   2 | ``FLUX``    | Flux array                                                    |
++-----+-------------+---------------------------------------------------------------+
+|   3 | ``MASK``    | Bitmask values; see                                           |
+|     |             | :class:`mangadap.proc.templatelibrary.TemplateLibraryBitMask` |
++-----+-------------+---------------------------------------------------------------+
+|   4 | ``SPECRES`` | Spectral resolution                                           |
++-----+-------------+---------------------------------------------------------------+
+|   5 | ``SIGOFF``  | If needed, the offset in km/s between the target              |
+|     |             | resolution of the spectra and the actual resolution           |
+|     |             | acheived.  See                                                |
+|     |             | :func:`mangadap.util.resolution.match_spectral_resolution`.   |
++-----+-------------+---------------------------------------------------------------+
 
 Adding new template libraries
 -----------------------------
 
-Adding new template libraries is relatively straight-forward.  First,
+Adding new template libraries is relatively straight-forward. First,
 make sure the templates adhere to the :ref:`templatelibraries-input`.
-Then, you can either use the library by defining it programmatically, or
-by adding a new configuration file to the
-``$MANGADAP_DIR/python/mangadap/config/spectral_templates`` directory.
-See the TemplateLibrary :ref:`templatelibrary-usage` and the
+Then, you can either use the library by defining it programmatically,
+or by adding a new configuration file to the
+``$MANGADAP_DIR/mangadap/config/spectral_templates`` directory. See
+the TemplateLibrary :ref:`templatelibrary-usage` and the
 :ref:`templatelibrary-dev-example` provided by the DAP
 :ref:`development`.
 
@@ -159,6 +162,4 @@ See the TemplateLibrary :ref:`templatelibrary-usage` and the
 .. [8] `Vazdekis et al. (2012, MNRAS, 424, 157) <https://ui.adsabs.harvard.edu/abs/2012MNRAS.424..157V/abstract>`_
 .. [9] `Le Borgne et al. (2003, A&A, 402, 433) <https://ui.adsabs.harvard.edu/abs/2003A%26A...402..433L/abstract>`_
 
-.. include common links
-.. include:: links.rst
 

@@ -15,11 +15,6 @@ TODO
  - Define an emission-line FOM flag that identifies poorly fit lines
  - Documentation of config examples are out of date!
  - Get rid of the filter keyword from the output headers...
- - Abstract input datacube reading
- - Minimize the hurdles to running `manga_dap`; i.e., allow it to run
-   without the input and plan parameter files
- - Stop transposing the datacube data!
- - Get rid of optional `dapsrc` keyword; now defined by the package
  - Fix ELMREBIN in 2nd round of moment calculations (not sure this is
    still a problem...)
  - Keep all the reference files to the common directory?
@@ -27,10 +22,86 @@ TODO
  - Change format of emission-line module reference file?
     - Make more independent of stellar-continnuum module reference file
     - Change `BASE` extension to `CONTINUUM` extension.
+ - Enable composite indices
+ - Allow construction of DAP MAPS headers to indicate masks that don't
+   have the same prepended extenstion name... (e.g., quality mask of
+   `SPECINDEX_CORR` should be `SPECINDEX_MASK`).
+ - Differentiate between mask provided for BF index and mask for main
+   continuum value? (e.g., latter only cares about the side bands)
+ - Deprecate `mangadap.survey.mangampl`
 
+3.0.0 (27 May 2020)
+-------------------
 
-2.5.3dev
---------
+ - Directory restructuring:  Removed "python" top-level directory and
+   moved "data" into "mangadap".  This should make package distribution
+   via pip easier.
+ - Remove "default" prefix from methods in `mangadap.config.defaults`.
+ - Remove obsolete `dapsrc` keyword arguments
+ - Some general clean-up of commented code and docs.
+ - Import clean-up, including removal of any `from __future__` imports.
+ - Added `bin/dap_status` to check the status of a batch DAP run.
+ - `__credits__` now include all authors of the DAP papers
+ - Added new DataCube and RowStackedSpectra classes, beginning the
+   generalization of the interface with the input data for use with
+   non-MaNGA data.
+ - For instantiating a MaNGADataCube, changed from using a yanny par
+   file to a configuration (ini) file.  Included code that can write
+   these files using data from the DRPall or DRPComplete files.
+ - Included a script that will download data into a new
+   `mangadap/data/remote` directory for testing.  The directory is not
+   included in the repo and has been added to .gitignore to prevent it
+   from being accidentally added.
+ - Included a number of tests that use the new remote data.  These will
+   be skipped if the remote data is not available.
+ - Significant improvements and testing of `mangadap.util.covariance`.
+   Ensuring that the correlation matrices provided by the DRP can be
+   read by `MaNGADataCube` and are effectively identical to the
+   calculation performed by `MaNGARSS`.
+ - Moved all core script code from `bin` to `mangadap/scripts`.  Code in
+   `bin` now make simple calls to these scripts.  Moved `rundap.py` from
+   `mangadap.survey` to `mangadap.scripts`.
+ - General clean-up of the executables in `bin`.
+ - Integrated use of `MaNGADataCube` instead of `DRPFits` when executing
+   the pipeline.  Usage of `DRPFits` is now largely obsolete.  Not
+   removed yet.  Interface is still not abstracted enough for a general
+   `DataCube` (because of naming conventions), but getting there.
+ - Tests now include a nominal run of `manga_dap` using the `ALL`
+   binning scheme.
+ - Usage of `ObsInputPar` is now obsolete.
+ - Spectral resolution is no longer chosen by the spectral binning
+   module; instead the spectral resolution is selected when reading the
+   datacube (makes much more sense!).  Led to some clean-up of the
+   binning config files.
+ - To select different spectral resolution extensions, use command-line
+   arguments in `rundap` or `write_dap_config`.
+ - Started doc edits.
+ - Example scripts now use `MaNGADataCube` instead of `DRPFits`, but
+   further clean-up of the `examples` directory is needed.
+ - Include a default analysis plan, so that executions of `manga_dap`
+   don't require an analysis plan yanny parameter file.
+ - Docstring updates for modules up through `StellarContinuumModel`, but
+   still lots to do.
+ - Consolidates the common functionality in `MaNGADataCube` and
+   `MaNGARSS` into a new, repurposed `DRPFits` base class.
+ - Global data from unique DAPTYPEs now put in separate extensions of
+   the DAPall file.
+ - Incorporate change from 'PREDISP' to 'LSFPRE' and 'DISP' to 'LSFPOST'
+   in the spectral resolution extensions produced by the DRP.
+ - Added DataCube metadata.
+ - Added Legendre polynomial fitter
+ - Added MaStar HC V2 library
+ - Include additional spectral index measurements and weights to use
+   when combining indices; leads to changes in MAPS data model.
+ - Updated versions of required packages, including incrementing version
+   dependency to ppxf==7.2.0; code still uses default `linear_method`
+   pending testing of `linear_method='lsqlin'`.
+ - Added photometry fix file; only adjusts 8083-12702 pending further
+   assessments.
+ - Added redshift fixes for IC342, Coma, and globular cluster cubes.
+ - Fixed minor bug in coordinates used in HYB binning cases for some
+   DAPall calculations.
+
 
 2.5.2 (14 Feb 2020)
 -------------------

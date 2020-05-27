@@ -10,7 +10,6 @@ Submodules
    mangadap.survey.drpcomplete
    mangadap.survey.manga_dap
    mangadap.survey.mangampl
-   mangadap.survey.rundap
    mangadap.survey.util
 
 Module contents

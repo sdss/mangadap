@@ -4,10 +4,15 @@
 How to Fit One Spectrum
 =======================
 
-This script demonstrates how the DAP models a spectrum given a
-spectral template library and list of emission lines.  We encourage
-the user to refer to this code if they are interested in fitting and
-testing modeling with a new template library.
+The low-level functions in the DAP treat each spectrum independently.
+As such, it's possible to use these low-level DAP functions to
+effectively fit any spectrum you like, with the caveat that you'll
+need to vet the results. Here, we guide you through the example
+script ``$MANGADAP_DIR/examples/fit_one_spec.py``. It is not
+sufficiently abstracted to be an executable (included in
+``$MANGADAP_DIR/bin``); however, we may eventually provide such an
+executable. For now, the script is meant to provide a worked example
+for generating your own script.
 
 Overall Workflow
 ----------------

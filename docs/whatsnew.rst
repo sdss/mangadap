@@ -1,6 +1,79 @@
+
+.. include:: include/links.rst
+
 *********************
 What's New in the DAP
 *********************
+
+MPL-10 (2.5.3dev)
+=================
+
+High-level changes
+------------------
+
+ * Incorporates the new LSF measurements from the DRP.
+ * DAPall file is now divided into one extension for each analysis method.
+ * New set of MaSTAR HC spectra
+
+User-level changes/bug fixes
+----------------------------
+
+ * Major revision of the front-end to ease incorporation of non-MaNGA
+   datacubes.
+ * Major restructuring of directories to ease `pypi`_ distribution and
+   provide a more formal structure of the executables in ``bin`` and
+   their associated scripts.
+ * Added ``bin/dap_status`` to check the status of a batch DAP run.
+ * For instantiating a MaNGADataCube, changed from using a yanny par
+   file to a configuration (ini) file.  Included code that can write
+   these files using data from the DRPall or DRPComplete files.
+ * Spectral resolution is no longer chosen by the spectral binning
+   module; instead the spectral resolution is selected when reading the
+   datacube (makes much more sense!).  Led to some clean-up of the
+   binning config files.
+ * To select different spectral resolution extensions, use command-line
+   arguments in ``rundap`` or ``write_dap_config``.
+ * Include a default analysis plan, so that executions of ``manga_dap``
+   don't require an analysis plan yanny parameter file.
+
+Under-the-hood changes/bug fixes
+--------------------------------
+
+ * Remove "default" prefix from methods in
+   :mod:`mangadap.config.defaults`.
+ * Remove obsolete ``dapsrc`` keyword arguments
+ * Some general clean-up of commented code and docs.
+ * Import clean-up, including removal of any ``from __future__``
+   imports.
+ * ``__credits__`` now include all authors of the DAP papers
+ * Added new DataCube and RowStackedSpectra classes, beginning the
+   generalization of the interface with the input data for use with
+   non-MaNGA data.
+ * Integrated use of :class:`~mangadap.datacube.manga.MaNGADataCube`
+   instead of :class:`~mangadap.util.drpfits.DRPFits` when executing the
+   pipeline. Old :class:`DRPFits` is now deprecated; :class:`DRPFits`
+   now repurposed to provide functionality common to both
+   :class:`MaNGADataCube` and :class:`~mangadap.spectra.manga.MaNGARSS`.
+ * Included a script that will download data into a new
+   ``mangadap/data/remote`` directory for testing.  The directory is not
+   included in the repo and has been added to ``.gitignore`` to prevent
+   it from being accidentally added.
+ * Included a number of tests that use the new remote data.  These will
+   be skipped if the remote data is not available.
+ * Significant improvements and testing of
+   :mod:`mangadap.util.covariance`.  Ensuring that the correlation
+   matrices provided by the DRP can be read by :class:`MaNGADataCube`
+   and are effectively identical to the calculation performed by
+   :class:`MaNGARSS`.
+ * Moved all core script code from ``bin`` to ``mangadap/scripts``.
+   Code in ``bin`` now make simple calls to these scripts.  Moved
+   ``rundap.py`` from :mod:`mangadap.survey` to :mod:`mangadap.scripts`.
+ * Tests now include a nominal run of ``manga_dap`` using the ``ALL``
+   binning scheme.
+ * Usage of :class:`ObsInputPar` is now obsolete and deprecated.
+ * Docstring updates for modules up through
+   :class:`StellarContinuumModel`, but still lots to do.
+
 
 MPL-9 (2.4.1)
 =============

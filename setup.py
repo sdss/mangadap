@@ -8,6 +8,8 @@ import os
 import glob
 from setuptools import setup, find_packages
 
+from IPython import embed
+
 import requests
 import warnings
 
@@ -15,37 +17,33 @@ _IDLUTILS_VER = 'v5_5_34'
 _MANGADRP_VER = 'v2_7_1'
 _MANGACORE_VER = 'v1_8_0'
 
-_VERSION = '2.5.3dev'
+_VERSION = '3.0.0'
 _RELEASE = 'dev' not in _VERSION
 _MINIMUM_PYTHON_VERSION = '3.5'
 
-def get_package_data(root='python'):
+def get_package_data(root='mangadap'):
     """Generate the list of package data."""
     return [os.path.relpath(f, root) 
-                    for f in glob.glob(os.path.join(root, 'mangadap/config/*/*.ini'))] \
-            + [os.path.relpath(f, root) 
-                    for f in glob.glob(os.path.join(root, 'mangadap/tests/data/*'))]
-
-def get_data_files(root=['data'], ext=['par', 'fits', 'fits.gz'], depth=2):
-    """Generate the list of data files."""
-    data_files = []
-    for r in root:
-        _data_files = []
-        for d in range(depth):
-            _d = '/'.join(['*']*(d+1))
-            for e in ext:
-                _data_files += glob.glob(os.path.join(r, _d, '*.{0}'.format(e)))
-        data_files += [(r, _data_files)]
-    return data_files
+                    for f in glob.glob(os.path.join(root, 'config/*/*.ini'))] \
+           + [os.path.relpath(f, root) 
+                    for f in glob.glob(os.path.join(root, 'data/*/*.ini'))] \
+           + [os.path.relpath(f, root) 
+                    for f in glob.glob(os.path.join(root, 'data/*/*.par'))] \
+           + [os.path.relpath(f, root) 
+                    for f in glob.glob(os.path.join(root, 'data/*/*/README'))] \
+           + [os.path.relpath(f, root) 
+                    for f in glob.glob(os.path.join(root, 'data/*/*/*.fits'))] \
+           + [os.path.relpath(f, root) 
+                    for f in glob.glob(os.path.join(root, 'data/*/*/*.fits.gz'))] \
 
 def get_scripts():
     """ Grab all the scripts in the bin directory.  """
-    scripts = []
-    if os.path.isdir('bin'):
-        scripts = [ fname for fname in glob.glob(os.path.join('bin', '*'))
+    if not os.path.isdir('bin'):
+        return []
+
+    return [fname for fname in glob.glob(os.path.join('bin', '*'))
                                 if not os.path.basename(fname).endswith('.rst') and
-                                   not os.path.basename(fname).endswith('.bash') ]
-    return scripts
+                                   not os.path.basename(fname).endswith('.bash')]
 
 
 def get_requirements():
@@ -58,7 +56,7 @@ def get_requirements():
     return install_requires
 
 
-def run_setup(package_data, data_files, scripts, packages, install_requires):
+def run_setup(package_data, scripts, packages, install_requires):
 
     setup(name='sdss-mangadap',
           version=_VERSION,
@@ -72,10 +70,9 @@ def run_setup(package_data, data_files, scripts, packages, install_requires):
           url='https://github.com/sdss/mangadap',
           python_requires='>='+_MINIMUM_PYTHON_VERSION,
           packages=packages,
-          package_dir={'': 'python'},
-          package_data={'': package_data},
+          package_dir={'mangadap': 'mangadap'},
+          package_data={'mangadap': package_data},
           include_package_data=True,
-          data_files=data_files,
           install_requires=install_requires,
           scripts=scripts,
           setup_requires=[ 'pytest-runner' ],
@@ -128,7 +125,7 @@ if __name__ == '__main__':
 
     # Pull over the maskbits file
     idlpath = 'https://svn.sdss.org/public/repo/sdss/idlutils'
-    ofile = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'sdss',
+    ofile = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'mangadap', 'data', 'sdss',
                          'sdssMaskbits.par')
     try:
         idldir = 'tags/{0}'.format(_IDLUTILS_VER)
@@ -146,21 +143,17 @@ if __name__ == '__main__':
     # Get the package data (data inside the main product root)
     package_data = get_package_data()
 
-    # Compile the additional data files to include (data outside the
-    # main product root)
-    data_files = get_data_files()
-
     # Compile the scripts in the bin/ directory
     scripts = get_scripts()
 
     # Get the packages to include
-    packages = find_packages(where='python')
+    packages = find_packages()
 
     # Collate the dependencies based on the system text file
     install_requires = get_requirements()
 
     # Run setup from setuptools
-    run_setup(package_data, data_files, scripts, packages, install_requires)
+    run_setup(package_data, scripts, packages, install_requires)
 
     # Check if the environmental variables are found and warn the user
     # of their defaults

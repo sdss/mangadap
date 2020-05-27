@@ -1,0 +1,7 @@
+#!/usr/bin/env python3
+
+from mangadap.scripts import template_flux_norm
+
+if __name__ == '__main__':
+    template_flux_norm.main(template_flux_norm.parse_args())
+

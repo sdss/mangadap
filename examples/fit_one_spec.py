@@ -2,12 +2,17 @@
 
 import os
 import time
+
+from IPython import embed
+
 import numpy
 
 from astropy.io import fits
 from matplotlib import pyplot
 
-from mangadap.drpfits import DRPFits
+from mangadap.datacube import MaNGADataCube
+from mangadap.util.sampling import spectral_coordinate_step
+
 from mangadap.util.fitsutil import DAPFitsUtil
 from mangadap.util.resolution import SpectralResolution
 from mangadap.util.pixelmask import SpectralPixelMask
@@ -35,65 +40,129 @@ def get_redshift(plt, ifu, drpall_file=None):
 
 
 def get_spectrum(plt, ifu, x, y, directory_path=None):
-    drpf = DRPFits(plt, ifu, 'CUBE', read=True, directory_path=directory_path)
-    flat_indx = drpf.spatial_shape[1]*x+y
+    cube = MaNGADataCube.from_plateifu(plt, ifu, directory_path=directory_path)
+    flat_indx = cube.spatial_shape[1]*x+y
     # This function always returns as masked array
-    sres = drpf.spectral_resolution(toarray=True, fill=True, pre=True).data
-    flux = drpf.copy_to_masked_array(ext='FLUX', flag=drpf.do_not_fit_flags())
-    ivar = drpf.copy_to_masked_array(ext='IVAR', flag=drpf.do_not_fit_flags())
-    return drpf['WAVE'].data, flux[flat_indx,:], ivar[flat_indx,:], sres[flat_indx,:]
+    flux = cube.copy_to_masked_array(attr='flux', flag=cube.do_not_fit_flags())
+    ivar = cube.copy_to_masked_array(attr='ivar', flag=cube.do_not_fit_flags())
+
+#    embed()
+#    exit()
+
+    sres = cube.copy_to_array(attr='sres')
+    return cube.wave, flux[flat_indx,:], ivar[flat_indx,:], sres[flat_indx,:]
         
 
 #-----------------------------------------------------------------------------
-
 if __name__ == '__main__':
     t = time.perf_counter()
 
+    # For testing
+    drpver = 'v3_0_1'
+    directory_path = os.path.join(os.environ['MANGADAP_DIR'], 'mangadap', 'data', 'remote')
+
+    #-------------------------------------------------------------------
+    # Read spectra to fit. The following reads a single MaNGA spectrum.
+    # This is where you should read in your own spectrum to fit.
     # Plate-IFU to use
     plt = 7815
-    ifu = 3702
+    ifu = 6101
     # Spaxel coordinates
-    x = 21
-    y = 21
-
-    # Show the ppxf plots
-    fit_plots = True
-#    fit_plots = False
-
-    # Show summary plots
-    usr_plots = True
-
-    # Template keywords
-    sc_tpl_key = 'MILESHC'
-    el_tpl_key = 'MASTARHC'
-#    el_tpl_key = 'BC03'
-
-    # Emission-line database keywords
-    elmom_key = 'ELBMPL9'
-    elfit_key = 'ELPMPL9'
-#    elmom_key = 'ELBTT'
-#    elfit_key = 'ELPT4'
-
-    # Template pixel scale a factor of 4 smaller than galaxy data
-    velscale_ratio = 4
-
-    # Get the redshift
-#    drpall_file = './data/drpall-v2_4_3.fits'
-    z = numpy.array([get_redshift(plt, ifu)]) #, drpall_file)])
-    print('Redshift: {0}'.format(z[0]))
-    dispersion = numpy.array([100.])
-
+    x = 30
+    y = 37
     # Read a spectrum
     print('reading spectrum')
-    wave, flux, ivar, sres = get_spectrum(plt, ifu, x, y) #, directory_path='./data')
-
-#    pyplot.plot(wave, flux)
-#    pyplot.show()
-    
-    # Fitting functions expect data to be in 2D arrays (for now):
+    wave, flux, ivar, sres = get_spectrum(plt, ifu, x, y, directory_path=directory_path)
+    # In general, the DAP fitting functions expect data to be in 2D
+    # arrays with shape (N-spectra,N-wave). So if you only have one
+    # spectrum, you need to expand the dimensions:
     flux = flux.reshape(1,-1)
     ferr = numpy.ma.power(ivar, -0.5).reshape(1,-1)
     sres = sres.reshape(1,-1)
+
+    # The majority (if not all) of the DAP methods expect that your
+    # spectra are binned logarithmically in wavelength (primarily
+    # because this is what pPXF expects). You can either have the DAP
+    # function determine this value (commented line below) or set it
+    # directly. The value is used to resample the template spectra to
+    # match the sampling of the spectra to fit (up to some integer; see
+    # velscale_ratio).
+#    spectral_step = spectral_coordinate_step(wave, log=True)
+    spectral_step = 1e-4
+
+    # Hereafter, the methods expect a wavelength vector, a flux array
+    # with the spectra to fit, an ferr array with the 1-sigma errors in
+    # the flux, and sres with the wavelength-dependent spectral
+    # resolution, R = lambda / Dlambda
+    #-------------------------------------------------------------------
+
+    #-------------------------------------------------------------------
+    # The DAP needs a reasonable guess of the redshift of the spectrum
+    # (within +/- 2000 km/s). In this example, I'm pulling the redshift
+    # from the DRPall file. There must be one redshift estimate per
+    # spectrum to fit.  Here that means it's a single element array
+    drpall_file = os.path.join(directory_path, 'drpall-{0}.fits'.format(drpver))
+    z = numpy.array([get_redshift(plt, ifu, drpall_file)])
+    print('Redshift: {0}'.format(z[0]))
+    # The DAP also requires an initial guess for the velocity
+    # dispersion. A guess of 100 km/s is usually robust, but this may
+    # depend on your spectral resolution.
+    dispersion = numpy.array([100.])
+    #-------------------------------------------------------------------
+
+    #-------------------------------------------------------------------
+    # The following sets the keyword for the template spectra to use
+    # during the fit. You can specify different template sets to use
+    # during the stellar-continuum (stellar kinematics) fit and the
+    # emission-line modeling.
+
+    # Templates used in the stellar continuum fits
+    sc_tpl_key = 'MILESHC'
+    # Templates used in the emission-line modeling
+    el_tpl_key = 'MASTARHC2'
+
+    # You also need to specify the sampling for the template spectra.
+    # The templates must be sampled with the same pixel step as the
+    # spectra to be fit, up to an integer factor. The critical thing
+    # for the sampling is that you do not want to undersample the
+    # spectral resolution element of the template spectra. Here, I set
+    # the sampling for the MILES templates to be a factor of 4 smaller
+    # than the MaNGA spectrum to be fit (which is a bit of overkill
+    # given the resolution difference). I set the sampling of the
+    # MaStar templates to be the same as the galaxy data.
+
+    # Template pixel scale a factor of 4 smaller than galaxy data
+    sc_velscale_ratio = 4
+    # Template sampling is the same as the galaxy data
+    el_velscale_ratio = 1
+
+    # You then need to identify the database that defines the
+    # emission-line passbands (elmom_key) for the non-parametric
+    # emission-line moment calculations, and the emission-line
+    # parameters (elfit_key) for the Gaussian emission-line modeling.
+    # See
+    # https://sdss-mangadap.readthedocs.io/en/latest/emissionlines.html.
+    elmom_key = 'ELBMPL9'
+    elfit_key = 'ELPMPL9'
+
+    # If you want to also calculate the spectral indices, you can
+    # provide a keyword that indicates the database with the passband
+    # definitions for both the absorption-line and bandhead/color
+    # indices to measure. The script allows these to be None, if you
+    # don't want to calculate the spectral indices. See
+    # https://sdss-mangadap.readthedocs.io/en/latest/spectralindices.html
+    absindx_key = ''
+    bhdindx_key = ''
+
+    # Finally, you can set whether or not to show a set of plots.
+    #
+    # Show the ppxf-generated plots for each fit stage.
+    fit_plots = False
+    # Show summary plots
+    usr_plots = True
+    #-------------------------------------------------------------------
+
+
 
     #-------------------------------------------------------------------
     # Fit the stellar continuum
@@ -103,9 +172,8 @@ if __name__ == '__main__':
                                       emldb=EmissionLineDB.from_key('ELPFULL'))
 
     # Construct the template library
-    sc_tpl = TemplateLibrary(sc_tpl_key, match_to_drp_resolution=False,
-                             velscale_ratio=velscale_ratio, spectral_step=1e-4, log=True,
-                             hardcopy=False)
+    sc_tpl = TemplateLibrary(sc_tpl_key, match_resolution=False, velscale_ratio=sc_velscale_ratio,
+                             spectral_step=spectral_step, log=True, hardcopy=False)
     sc_tpl_sres = numpy.mean(sc_tpl['SPECRES'].data, axis=0).ravel()
 
     # Instantiate the fitting class
@@ -115,7 +183,7 @@ if __name__ == '__main__':
     cont_wave, cont_flux, cont_mask, cont_par \
         = ppxf.fit(sc_tpl['WAVE'].data.copy(), sc_tpl['FLUX'].data.copy(), wave, flux, ferr,
                    z, dispersion, iteration_mode='no_global_wrej', reject_boxcar=100,
-                   ensemble=False, velscale_ratio=velscale_ratio, mask=sc_pixel_mask,
+                   ensemble=False, velscale_ratio=sc_velscale_ratio, mask=sc_pixel_mask,
                    matched_resolution=False, tpl_sres=sc_tpl_sres, obj_sres=sres, degree=8,
                    moments=2, plot=fit_plots)
 
@@ -168,8 +236,8 @@ if __name__ == '__main__':
         # If the template sets are different, we need to match the
         # spectral resolution to the galaxy data ...
         _sres = SpectralResolution(wave, sres[0,:], log10=True)
-        el_tpl = TemplateLibrary(el_tpl_key, sres=_sres, velscale_ratio=velscale_ratio,
-                                 spectral_step=1e-4, log=True, hardcopy=False)
+        el_tpl = TemplateLibrary(el_tpl_key, sres=_sres, velscale_ratio=el_velscale_ratio,
+                                 spectral_step=spectral_step, log=True, hardcopy=False)
         el_tpl_sres = numpy.mean(el_tpl['SPECRES'].data, axis=0).ravel()
         # ... and use the corrected velocity dispersions.
         stellar_kinematics = cont_par['KIN']
@@ -186,14 +254,16 @@ if __name__ == '__main__':
     emlfit = Sasuke(EmissionLineModelBitMask())
 
     # Perform the fit
+    efit_t = time.perf_counter()
     eml_wave, model_flux, eml_flux, eml_mask, eml_fit_par, eml_eml_par \
             = emlfit.fit(emldb, wave, flux, obj_ferr=ferr, obj_mask=el_pixel_mask, obj_sres=sres,
                          guess_redshift=z, guess_dispersion=dispersion, reject_boxcar=101,
                          stpl_wave=el_tpl['WAVE'].data, stpl_flux=el_tpl['FLUX'].data,
                          stpl_sres=el_tpl_sres, stellar_kinematics=stellar_kinematics,
                          etpl_sinst_mode='offset', etpl_sinst_min=10.,
-                         velscale_ratio=velscale_ratio, matched_resolution=False, mdegree=8,
+                         velscale_ratio=el_velscale_ratio, matched_resolution=False, mdegree=8,
                          plot=fit_plots)
+    print('TIME: ', time.perf_counter() - efit_t)
 
     # Line-fit metrics
     eml_eml_par = EmissionLineFit.line_metrics(emldb, wave, flux, ferr, model_flux, eml_eml_par,

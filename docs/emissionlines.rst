@@ -1,7 +1,7 @@
 
 .. |ang|   unicode:: U+212B
 
-.. include:: links.rst
+.. include:: include/links.rst
 
 .. _emissionlines:
 
@@ -11,8 +11,8 @@ Emission-Line Measurements
 Emission-Line Parameters
 ------------------------
 
-The table below provides a compilation of emission line parameters 
-gathered through the development of the DAP.  Many of them have not
+The table below provides a compilation of emission-line parameters
+gathered through the development of the DAP. Many of them have not
 actually been fit by the DAP in any survey-level runs of the software
 and are simply collected here for reference.
 
@@ -22,7 +22,7 @@ Rest wavelengths are `Ritz wavelengths
 <https://physics.nist.gov/PhysRefData/ASD/lines_form.html>`_.
 
 The "M1" and "E2" values are the Einstein :math:`A_{ki}` coefficients
-for the magnetic dipole and electric quadrapole transitions,
+for the magnetic dipole and electric quadrupole transitions,
 respectively.  These are collected to fix the expected flux ratio
 between specific line doublets.  The expected flux ratio is:
 
@@ -274,46 +274,48 @@ and an example file might look like this:
     DAPELB   2  OIId    3728.4835  vac  { 3716.3  3738.3 } { 3706.3  3716.3 } { 3738.6  3748.6 }
     DAPELB   3  OII     3729.875   vac  {   -1      -1   } {   -1      -1   } {   -1      -1   }
 
-Note in the above example that the second set of parameters set the
-passbands to have nonsensical limits of ``{-1 -1}``.  This is used to
+Note in the above example that the second set of parameters define
+nonsensical passbands with limits of ``{-1 -1}``. This is used to
 signify that the moment parameters are "dummy" or placeholder
-parameters.  This is used to create an empty channel in the output MAPS
-file and is used just to synchronize the channel indices between the
-non-parametric and Gaussian-fit results.  That is, it's used to ensure
-that, e.g., the :math:`{\rm H}\alpha` measurements are in the same
-channel for both the ``EMLINE_SFLUX`` and ``EMLINE_GFLUX`` extensions.
+parameters. This is used to create an empty channel in the output
+``MAPS`` file and is used just to synchronize the channel indices
+between the non-parametric and Gaussian-fit results. That is, it's
+used to ensure that, e.g., the :math:`{\rm H}\alpha` measurements are
+in the same channel for both the ``EMLINE_SFLUX`` and
+``EMLINE_GFLUX`` extensions.
 
 Changing the moment parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The moment measurements are performed by
 :class:`mangadap.proc.emissionlinemoments.EmissionLineMoments`; see
-:ref:`emission-line-moments`.  A set of parameter files that define a
+:ref:`emission-line-moments`. A set of parameter files that define a
 list of emission-line moment sets are provided with the DAP source
 distribution and located at
-``$MANGADAP_DIR/data/emission_bandpass_filters``.  There are a few
-methods that you can use to change the set of emission-line parameters
-used by :class:`mangadap.proc.emissionlinemoments.EmissionLineMoments`:
+``$MANGADAP_DIR/mangadap/data/emission_bandpass_filters``. There are
+a few methods that you can use to change the set of emission-line
+parameters used by
+:class:`mangadap.proc.emissionlinemoments.EmissionLineMoments`:
 
     #. To use one of the existing parameter databases, you can change
        the ``emission_passbands`` keyword in the
        :class:`mangadap.proc.emissionlinemoments.EmissionLineMoments`
-       configuration file.  The keyword should be the capitalized root
-       of the parameter filename.  E.g., to use
-       ``$MANGADAP_DIR/data/emission_bandpass_filters/elbmpl9.par``, set
-       the keyword to ``ELBMPL9``.
+       configuration file. The keyword should be the capitalized root
+       of the parameter filename. E.g., to use
+       ``$MANGADAP_DIR/mangadap/data/emission_bandpass_filters/elbmpl9.par``,
+       set the keyword to ``ELBMPL9``.
 
     #. To use a *new* parameter database, write the file and save it in
-       the ``$MANGADAP_DIR/data/emission_bandpass_filters/`` directory,
-       and then change the relevant configuration file in the same way
-       as described above.
+       the ``$MANGADAP_DIR/mangadap/data/emission_bandpass_filters/``
+       directory, and then change the relevant configuration file in
+       the same way as described above.
 
 .. _emissionlines-modeling:
 
 Gaussian Emission-Line Modeling
 -------------------------------
 
-The DAP models the emission lines using single component Gaussian
+The DAP models the emission lines using single-component Gaussian
 functions.  See :mod:`mangadap.proc.emissionlinemoments` and
 :ref:`emission-line-modeling`.  In survey-level runs of the DAP, we have
 typically paired the set of moment measurements and Gaussian models;
@@ -434,57 +436,57 @@ and an example file might look like this:
 
 .. note::
 
-    - Both the emission-line moments database and the emission-line
+    * Both the emission-line moments database and the emission-line
       modeling database define the sidebands used for the equivalent
       width calculations.  Nominally, these should be the same, but it's
       up to the person that writes the two parameter files to make sure
       that's true.
-
-    - Many of the current parameters in the emission line modeling
+    * Many of the current parameters in the emission-line modeling
       parameter file are hold-overs from when
-      :class:`mangadap.proc.elric.Elric` was the standard class used for
-      the emission-line fitting.  Anything marked as "NOT TYPICALLY
-      USED" hasn't been adapted for use with the currently preferred
-      module, :class:`mangadap.proc.sasuke.Sasuke`.
+      :class:`mangadap.proc.elric.Elric` was the standard class used
+      for the emission-line fitting. Anything marked as "NOT
+      TYPICALLY USED" hasn't been adapted for use with the currently
+      preferred module, :class:`mangadap.proc.sasuke.Sasuke`.
 
 .. _emission-line-modeling-action:
 
 Emission-Line "Actions"
 +++++++++++++++++++++++
 
-.. include:: emissionline-action.rst
+.. include:: include/emissionline-action.rst
 
 .. _emission-line-modeling-mode:
 
 Emission-Line "Modes"
 +++++++++++++++++++++
 
-.. include:: emissionline-mode.rst
+.. include:: include/emissionline-mode.rst
 
 Changing the modeling parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The emission-line modeling is performed by
 :class:`mangadap.proc.emissionlinemodel.EmissionLineModel`; see
-:ref:`emission-line-modeling`.  A set of files that define a list of
+:ref:`emission-line-modeling`. A set of files that define a list of
 emission-line model parameter sets are provided with the DAP source
-distribution and located at ``$MANGADAP_DIR/data/emission_lines``.
-There are a few methods that you can use to change the set of
-emission-line parameters used by
+distribution and located at
+``$MANGADAP_DIR/mangadap/data/emission_lines``. There are a few
+methods that you can use to change the set of emission-line
+parameters used by
 :class:`mangadap.proc.emissionlinemodel.EmissionLineModel`:
 
     #. To use one of the existing parameter databases, you can change
        the ``emission_lines`` keyword in the
        :class:`mangadap.proc.emissionlinemodel.EmissionLineModel`
-       configuration file.  The keyword should be the capitalized root
-       of the parameter filename.  E.g., to use
-       ``$MANGADAP_DIR/data/emission_lines/elpmpl9.par``, set the
-       keyword to ``ELPMPL9``.
+       configuration file. The keyword should be the capitalized root
+       of the parameter filename. E.g., to use
+       ``$MANGADAP_DIR/mangadap/data/emission_lines/elpmpl9.par``,
+       set the keyword to ``ELPMPL9``.
 
-    #. To use a *new* parameter database, write the file and save it in
-       the ``$MANGADAP_DIR/data/emission_lines/`` directory, and then
-       change the relevant configuration file in the same way as
-       described above.
+    #. To use a *new* parameter database, write the file and save it
+       in the ``$MANGADAP_DIR/mangadap/data/emission_lines/``
+       directory, and then change the relevant configuration file in
+       the same way as described above.
 
 ----
 

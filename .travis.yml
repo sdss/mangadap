@@ -7,11 +7,9 @@ cache:
   pip: true
   timeout: 1000
 
-sudo: false
-
 python:
-    - '3.6'
     - '3.7'
+    - '3.8'
 
 os:
     - linux
@@ -44,7 +42,7 @@ install:
     - python setup.py install
 
 script:
-    - pytest python/mangadap/tests --cov python/mangadap --cov-report html
+    - pytest mangadap/tests --cov mangadap --cov-report html
 
 after_success:
     - coveralls
