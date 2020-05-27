@@ -38,12 +38,12 @@ def get_package_data(root='mangadap'):
 
 def get_scripts():
     """ Grab all the scripts in the bin directory.  """
-    scripts = []
-    if os.path.isdir('bin'):
-        scripts = [ fname for fname in glob.glob(os.path.join('bin', '*'))
+    if not os.path.isdir('bin'):
+        return []
+
+    return [fname for fname in glob.glob(os.path.join('bin', '*'))
                                 if not os.path.basename(fname).endswith('.rst') and
-                                   not os.path.basename(fname).endswith('.bash') ]
-    return scripts
+                                   not os.path.basename(fname).endswith('.bash')]
 
 
 def get_requirements():
