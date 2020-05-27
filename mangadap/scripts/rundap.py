@@ -1238,7 +1238,7 @@ class rundap:
 
         # Add the plotting commands
         if plots:
-            command = 'OMP_NUM_THREADS=1 dap_dapall_qa --drpver {0} --redux_path {1}'.format(
+            command = 'OMP_NUM_THREADS=1 dapall_qa --drpver {0} --redux_path {1}'.format(
                             self.mpl.drpver, self.redux_path) \
                         + ' --dapver {0} --analysis_path {1}'.format(self.dapver,
                                                                      self.analysis_path)
