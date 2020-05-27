@@ -26,6 +26,8 @@ def script_help_okay(executable):
     with open(logfile, 'w') as f:
         retval = subprocess.call([executable, '-h'], stdout=f, stderr=f)
     os.remove(logfile)
+    if retval != 0:
+        raise ValueError('Did not return 0! retval = {0}'.format(retval))
     return retval == 0
 
 
