@@ -7,8 +7,6 @@ cache:
   pip: true
   timeout: 1000
 
-sudo: false
-
 python:
     - '3.7'
     - '3.8'
@@ -42,6 +40,9 @@ install:
     - pip install --upgrade setuptools --quiet
     - pip install -r requirements_dev.txt --quiet
     - python setup.py install
+
+before_script:
+    - which construct_dapall
 
 script:
     - pytest mangadap/tests --cov mangadap --cov-report html
