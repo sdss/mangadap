@@ -20,12 +20,8 @@ warnings.simplefilter("ignore", RuntimeWarning)
 
 def script_help_okay(executable):
     # Basic help call
-    retval = subprocess.call([executable, '-h'], stdout=subprocess.DEVNULL,
-                             stderr=subprocess.DEVNULL)
-    if retval != 0:
-        raise ValueError('Did not return 0! retval = {0}'.format(retval))
-    return retval == 0
-
+    return subprocess.call([executable, '-h'], stdout=subprocess.DEVNULL,
+                           stderr=subprocess.DEVNULL) == 0
 
 @requires_remote
 def test_calculate_covariance():

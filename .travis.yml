@@ -41,10 +41,6 @@ install:
     - pip install -r requirements_dev.txt --quiet
     - python setup.py install
 
-before_script:
-    - which construct_dapall
-    - construct_dapall -h
-
 script:
     - pytest mangadap/tests --cov mangadap --cov-report html
 
