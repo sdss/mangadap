@@ -361,7 +361,7 @@ The ``MAPS`` files contain the following extensions:
 |  53 | SPECINDEX_MODEL    |       46 |                                              ang,mag | Spectral-index measurements for the best-fitting model spectrum.   |
 |     |                    |          |                                                      | Note the extension number is different from MPL-9.                 |
 +-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  53 | SPECINDEX_BF       |       46 |                                             angstrom | **New in MPL-10**: Luminosity-weighted center of the blue sideband  |
+|  53 | SPECINDEX_BF       |       46 |                                             angstrom | **New in MPL-10**: Luminosity-weighted center of the blue sideband |
 |     |                    |          |                                                      | used during the absorption-line index measurment.                  |
 +-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
 |  54 | SPECINDEX_BCNT     |       46 |   :math:`10^{-17} {\rm erg/s/cm}^2{\rm /ang/spaxel}` | **New in MPL-9**: Continuum in the blue sideband used to compute   |
