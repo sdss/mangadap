@@ -30,8 +30,8 @@ TODO
    continuum value? (e.g., latter only cares about the side bands)
  - Deprecate `mangadap.survey.mangampl`
 
-3.0.0dev
---------
+3.0.0 (27 May 2020)
+-------------------
 
  - Directory restructuring:  Removed "python" top-level directory and
    moved "data" into "mangadap".  This should make package distribution
