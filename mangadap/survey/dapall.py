@@ -247,8 +247,8 @@ class DAPall:
         if self.hdu is None or not self.readonly:
             self.update(plan, methods=methods)
 
-    def __getitem__(self, key):
-        return self.hdu['DAPALL'].data[key]
+#    def __getitem__(self, key):
+#        return self.hdu['DAPALL'].data[key]
 
     @staticmethod
     def _emission_line_moment_db_info(key):
@@ -297,26 +297,27 @@ class DAPall:
             log_output(self.loggers, 1, logging.INFO, 'Reading exiting file')
         self.hdu = fits.open(self.file_path())
 
-        self.ndap = self.hdu['DAPALL'].header['NAXIS2']
+        # Methods are the extension names
+        self.methods = [h.name for h in self.hdu][1:]
 
-        # Find the methods in the file
-        self.methods = numpy.unique(self.hdu['DAPALL'].data['DAPTYPE'])
+        # Number of cubes analyzed by the DAP
+        self.ndap = self.hdu[self.methods[0]].header['NAXIS2']
 
         # Find the plate-IFU combinations in the file
-        pltifu = numpy.unique(self.hdu['DAPALL'].data['PLATEIFU'])
+        pltifu = numpy.unique(self.hdu[self.methods[0]].data['PLATEIFU'])
         self.plate, self.ifudesign = map(lambda x: numpy.array(x),
                                          numpy.array([ [int(p),int(f)] 
                                                         for p,f in pltifu.split('-')]).T.tolist())
 
         # Set the number of emission lines and spectral indices
         # TODO: Get this from the number of header keywords?
-        self.nmom = self.hdu['DAPALL'].data['EMLINE_SFLUX_1RE'].shape[1]
-        self.neml = self.hdu['DAPALL'].data['EMLINE_GFLUX_1RE'].shape[1]
-        self.nindx = self.hdu['DAPALL'].data['SPECINDEX_1RE'].shape[1]
+        self.nmom = self.hdu[self.methods[0]].data['EMLINE_SFLUX_1RE'].shape[1]
+        self.neml = self.hdu[self.methods[0]].data['EMLINE_GFLUX_1RE'].shape[1]
+        self.nindx = self.hdu[self.methods[0]].data['SPECINDEX_1RE'].shape[1]
 
         # Report
         if not self.quiet:
-            log_output(self.loggers, 1, logging.INFO, 'Rows: {0}'.format(self.ndap))
+            log_output(self.loggers, 1, logging.INFO, 'Rows per method: {0}'.format(self.ndap))
             log_output(self.loggers, 1, logging.INFO, 'Methods: {0}'.format(self.methods))
             log_output(self.loggers, 1, logging.INFO,
                        'Number of observations: {0}'.format(len(self.plate)))
