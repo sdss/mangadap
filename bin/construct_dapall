@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
+import sys
 from mangadap.scripts import construct_dapall
 
 if __name__ == '__main__':
-    construct_dapall.main(construct_dapall.parse_args())
+    sys.exit(construct_dapall.main(construct_dapall.parse_args()))
+
