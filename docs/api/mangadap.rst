@@ -5,6 +5,7 @@ Subpackages
 -----------
 
 .. toctree::
+   :maxdepth: 4
 
    mangadap.config
    mangadap.contrib
@@ -19,6 +20,7 @@ Submodules
 ----------
 
 .. toctree::
+   :maxdepth: 4
 
    mangadap.dapfits
 

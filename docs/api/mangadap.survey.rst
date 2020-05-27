@@ -5,6 +5,7 @@ Submodules
 ----------
 
 .. toctree::
+   :maxdepth: 4
 
    mangadap.survey.dapall
    mangadap.survey.drpcomplete

@@ -37,25 +37,27 @@ class DAPConstants:
     +-----------------------------+-------------------------------+
     | :attr:`sidereal_year`       | :math:`31558175.779`          |
     +-----------------------------+-------------------------------+
-
-    Attributes:
-        sig2fwhm (float): Conversion factor from the standard deviation,
-            :math:`\sigma`, of a Gaussian to its full-width at half
-            maximum (FWHM).
-        rad2arcs (float): Conversion factor from radians to to
-            arcseconds 
-        sidereal_year (float): Length of a sidereal year (1.0000385
-            Gregorian years) in seconds.
-
     """
+
     # Convert from sigma to FWHM: FWHM = sig2fwhm * sig
     sig2fwhm = numpy.sqrt(8.0 * numpy.log(2.0))
+    r"""
+    Conversion factor from the standard deviation, :math:`\sigma`, of
+    a Gaussian to its full-width at half maximum (FWHM).
+    """
 
     # Convert from radians to arcseconds: arcsec = rad2arcs * radians
     rad2arcs = 60*60*180/numpy.pi
+    """
+    Conversion factor from radians to to arcseconds.
+    """
+
 
     # Length of one sidereal year in seconds ()
     sidereal_year = 31558175.779
+    """
+    Length of a sidereal year (1.0000385 Gregorian years) in seconds.
+    """
 
     def __init__(self):
         self.sig2fwhm = constants.sig2fwhm

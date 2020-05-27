@@ -5,6 +5,7 @@ Submodules
 ----------
 
 .. toctree::
+   :maxdepth: 4
 
    mangadap.contrib.LambdaR_2D_forMaNGA
    mangadap.contrib.xjmc
