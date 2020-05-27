@@ -5,6 +5,7 @@ Submodules
 ----------
 
 .. toctree::
+   :maxdepth: 4
 
    mangadap.datacube.datacube
    mangadap.datacube.manga

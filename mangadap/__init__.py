@@ -1,5 +1,5 @@
 
-__version__ = '3.0.0'
+__version__ = '3.0.1dev'
 __license__ = 'BSD3'
 __author__ = 'Kyle B. Westfall'
 __maintainer__ = 'Kyle B. Westfall'
@@ -23,8 +23,8 @@ def short_warning(message, category, filename, lineno, file=None, line=None):
 import warnings
 warnings.formatwarning = short_warning
 
-_MANGADRP_VER = 'v2_7_1'
-_MANGACORE_VER = 'v1_8_0'
+_MANGADRP_VER = 'v3_0_1'
+_MANGACORE_VER = 'v1_8_1'
 
 # WARNING: This has to be kept in sync with setup.py
 # TODO: Put these in a config file

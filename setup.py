@@ -13,13 +13,13 @@ from IPython import embed
 import requests
 import warnings
 
-_IDLUTILS_VER = 'v5_5_34'
-_MANGADRP_VER = 'v2_7_1'
-_MANGACORE_VER = 'v1_8_0'
+_IDLUTILS_VER = 'v5_5_35'
+_MANGADRP_VER = 'v3_0_1'
+_MANGACORE_VER = 'v1_8_1'
 
-_VERSION = '3.0.0'
+_VERSION = '3.0.1dev'
 _RELEASE = 'dev' not in _VERSION
-_MINIMUM_PYTHON_VERSION = '3.5'
+_MINIMUM_PYTHON_VERSION = '3.7'
 
 def get_package_data(root='mangadap'):
     """Generate the list of package data."""
@@ -84,7 +84,6 @@ def run_setup(package_data, scripts, packages, install_requires):
               'Natural Language :: English',
               'Operating System :: OS Independent',
               'Programming Language :: Python',
-              'Programming Language :: Python :: 3.6',
               'Programming Language :: Python :: 3.7',
               'Programming Language :: Python :: 3 :: Only',
               'Topic :: Documentation :: Sphinx',
