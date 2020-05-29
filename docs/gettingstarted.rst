@@ -76,16 +76,16 @@ For DR15, the relevant DAPTYPEs are:
    performed on the individual spaxels.  See a description of the hybrid
    binning scheme **here** and **here**.
 
-For MPL-9, the relevant DAPTYPEs are:
+For MPL-10, the relevant DAPTYPEs are:
 
- * ``SPX-MILESHC-MASTARHC``: Analysis of each individual spaxel; spaxels
+ * ``SPX-MILESHC-MASTARHC2``: Analysis of each individual spaxel; spaxels
    must have a valid continuum fit for an emission-line model to be fit
 
- * ``VOR10-MILESHC-MASTARHC``: Analysis of spectra binned to :math:`{\rm
+ * ``VOR10-MILESHC-MASTARHC2``: Analysis of spectra binned to :math:`{\rm
    S/N}\sim10` using the Voronoi binning algorithm (Cappellari & Copin
    2003) 
 
- * ``HYB10-MILESHC-MASTARHC``: Stellar-continuum analysis of spectra
+ * ``HYB10-MILESHC-MASTARHC2``: Stellar-continuum analysis of spectra
    binned to :math:`{\rm S/N}\sim10` for the stellar kinematics (same as
    the ``VOR10`` approach); however, the emission-line measurements are
    performed on the individual spaxels.  See a description of the hybrid
@@ -98,8 +98,8 @@ application.  In all cases, please consult the DAP `Overview
 <https://ui.adsabs.harvard.edu/abs/2019AJ....158..160B/abstract>`_
 papers for usage guidelines and limitations of the data.
 
-SPX-MILESHC-MASTARHC (MPL-9 only)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+SPX-MILESHC-MASTARHC2 (MPL-10 only)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 These are useful for most science applications that can push to very
 low S/N. They are also useful for characterizing the performance of
@@ -110,8 +110,8 @@ the measurements toward the low S/N limit of the data.
     Spectra with :math:`g`-band :math:`{\rm S/N} < 1` will not have a
     stellar-continuum model or Gaussian emission-line models.
 
-VOR10-GAU-MILESHC (DR15), VOR10-MILESHC-MASTARHC (MPL-9)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+VOR10-GAU-MILESHC (DR15), VOR10-MILESHC-MASTARHC2 (MPL-10)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 These data are geared toward stellar kinematics, where the data are
 Voronoi binned to a :math:`g`-band :math:`{\rm S/N}\sim 10`.
@@ -127,7 +127,7 @@ Voronoi binned to a :math:`g`-band :math:`{\rm S/N}\sim 10`.
     * The spectral resolution in each binned spectra is propagated to
       the expected spectral resolution in the stacked spectrum,
       similar to the formalism used by
-      :func:`mangadap.spectra.rowstackedspectra.RowStackedSpectra.instrumental_dispersion_plane`.
+      :func:`~mangadap.spectra.rowstackedspectra.RowStackedSpectra.instrumental_dispersion_plane`.
     * (Binned) Spectra with :math:`g`-band :math:`{\rm S/N} < 1` will
       not have a stellar-continuum model or Gaussian emission-line
       model.
@@ -135,8 +135,8 @@ Voronoi binned to a :math:`g`-band :math:`{\rm S/N}\sim 10`.
       limits the emission-line science that can be done at low continuum
       S/N.
 
-HYB10-GAU-MILESHC (DR15), HYB10-MILESHC-MASTARHC (MPL-9)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+HYB10-GAU-MILESHC (DR15), HYB10-MILESHC-MASTARHC2 (MPL-10)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 These are the default files that most users will want to use.  We first
 Voronoi-binned the spectra to a :math:`g`-band :math:`{\rm S/N}\sim 10`
@@ -154,7 +154,7 @@ fit the emission lines.
     * The spectral resolution in each binned spectra is propagated to
       the expected spectral resolution in the stacked spectrum,
       similar to the formalism used by
-      :func:`mangadap.spectra.rowstackedspectra.RowStackedSpectra.instrumental_dispersion_plane`.
+      :func:`~mangadap.spectra.rowstackedspectra.RowStackedSpectra.instrumental_dispersion_plane`.
     * (Binned) Spectra with :math:`g`-band :math:`{\rm S/N} < 1` will
       not have a stellar-continuum model or Gaussian emission-line
       model.
@@ -169,20 +169,20 @@ Output files
 
 The primary output files are located at:
 
-+-------------------------------------------------------------------------------+
-| SAS Directory                                                                 |
-+===============================================================================+
-| `DR15 <https://dr15.sdss.org/sas/dr15/manga/spectro/analysis/v2_4_3/2.2.1/>`_ |
-+-------------------------------------------------------------------------------+
-| `MPL-9 <https://data.sdss.org/sas/mangawork/manga/spectro/analysis/>`_        |
-+-------------------------------------------------------------------------------+
++-------------------------------------------------------------------------------------+
+| SAS Directory                                                                       |
++=====================================================================================+
+|       `DR15 <https://dr15.sdss.org/sas/dr15/manga/spectro/analysis/v2_4_3/2.2.1/>`_ |
++-------------------------------------------------------------------------------------+
+| `MPL-10 <https://data.sdss.org/sas/mangawork/manga/spectro/analysis/v3_0_1/3.0.0>`_ |
++-------------------------------------------------------------------------------------+
 
 There are two main output files for each observation (plate-ifudesign combination):
 
-    - ``manga-[PLATE]-[IFUDESIGN]-MAPS-[DAPTYPE].fits.gz``, see
+    * ``manga-[PLATE]-[IFUDESIGN]-MAPS-[DAPTYPE].fits.gz``, see
       :ref:`datamodel-maps`: 2D "maps" (i.e., images) of DAP
       measured properties
-    - ``manga-[PLATE]-[IFUDESIGN]-LOGCUBE-[type].fits.gz``, see
+    * ``manga-[PLATE]-[IFUDESIGN]-LOGCUBE-[type].fits.gz``, see
       :ref:`datamodel-cube`: 3D data cubes with the binned and
       best-fitting-model spectra
 
@@ -238,14 +238,14 @@ follows:
         return channel_dict
 
 which is a method in the DAP code base (see
-:func:`mangadap.util.fileio.channel_dictionary`) such that:
+:func:`~mangadap.util.fileio.channel_dictionary`) such that:
 
 .. code-block:: python
 
     from mangadap.util.fileio import channel_dictionary
     from astropy.io import fits
 
-    hdu = fits.open('mangadap-7495-12704-MAPS-SPX-MILESHC-MASTARHC.fits.gz')
+    hdu = fits.open('mangadap-7495-12704-MAPS-SPX-MILESHC-MASTARHC2.fits.gz')
     emlc = channel_dictionary(hdu, 'EMLINE_GFLUX')
 
 It's best to select the extension and channel based on its *name*,
@@ -272,8 +272,8 @@ For example, here is a python code snippet that will plot the
 :math:`{\rm H}\alpha` flux map, stellar velocity field, the corrected
 stellar velocity dispersion field, and the corrected :math:`{\rm
 H}\beta` index map for
-`manga-8138-12704-MAPS-HYB10-MILESHC-MASTARHC.fits.gz
-<https://data.sdss.org/sas/mangawork/manga/spectro/analysis/MPL-9/HYB10-MILESHC-MASTARHC/8138/12704/manga-8138-12704-MAPS-HYB10-MILESHC-MASTARHC.fits.gz>`_
+`manga-8138-12704-MAPS-HYB10-MILESHC-MASTARHC2.fits.gz
+<https://data.sdss.org/sas/mangawork/manga/spectro/analysis/MPL-10/HYB10-MILESHC-MASTARHC2/8138/12704/manga-8138-12704-MAPS-HYB10-MILESHC-MASTARHC2.fits.gz>`_
 
 .. code-block:: python
 
@@ -292,7 +292,7 @@ H}\beta` index map for
         return indx * indxcorr if unit == 'ang' else indx + indxcorr
 
     # Open the fits file
-    hdu = fits.open('manga-8138-12704-MAPS-HYB10-MILESHC-MASTARHC.fits.gz')
+    hdu = fits.open('manga-8138-12704-MAPS-HYB10-MILESHC-MASTARHC2.fits.gz')
 
     # Build a dictionary with the emission-line and spectral-index
     # channel names to ease selection and get the spectral-index units
@@ -392,8 +392,8 @@ problems!**
 For example, here is a python code snippet that plots the highest S/N
 spectrum, the full model, the residuals, the model stellar continuum,
 and the model emission-line spectrum using
-`manga-8138-12704-LOGCUBE-HYB10-MILESHC-MASTARHC.fits.gz
-<https://data.sdss.org/sas/mangawork/manga/spectro/analysis/MPL-9/HYB10-MILESHC-MASTARHC/8138/12704/manga-8138-12704-LOGCUBE-HYB10-MILESHC-MASTARHC.fits.gz>`_
+`manga-8138-12704-LOGCUBE-HYB10-MILESHC-MASTARHC2.fits.gz
+<https://data.sdss.org/sas/mangawork/manga/spectro/analysis/MPL-10/HYB10-MILESHC-MASTARHC2/8138/12704/manga-8138-12704-LOGCUBE-HYB10-MILESHC-MASTARHC2.fits.gz>`_
 
 .. code-block:: python
 
@@ -406,8 +406,8 @@ and the model emission-line spectrum using
     from mangadap.dapfits import DAPCubeBitMask
 
     # Open the fits file
-    hdu_maps = fits.open('manga-8138-12704-MAPS-SPX-MILESHC-MASTARHC.fits.gz')
-    hdu_cube = fits.open('manga-8138-12704-LOGCUBE-SPX-MILESHC-MASTARHC.fits.gz')
+    hdu_maps = fits.open('manga-8138-12704-MAPS-SPX-MILESHC-MASTARHC2.fits.gz')
+    hdu_cube = fits.open('manga-8138-12704-LOGCUBE-SPX-MILESHC-MASTARHC2.fits.gz')
 
     # Get the S/N per bin from the MAPS file
     snr = numpy.ma.MaskedArray(hdu_maps['BIN_SNR'].data, mask=hdu_maps['BINID'].data[0,:,:] < 0)
@@ -475,7 +475,7 @@ For example:
     bm = BitMask.from_par_file(sdssMaskbits, 'MANGA_DAPQUAL')
 
     # Read a DAP file
-    hdu = fits.open('manga-8138-12704-MAPS-SPX-MILESHC-MASTARHC.fits.gz')
+    hdu = fits.open('manga-8138-12704-MAPS-SPX-MILESHC-MASTARHC2.fits.gz')
 
     # Check if the file is critical and print the result
     dap_file_is_critical = bm.flagged(hdu['PRIMARY'].header['DAPQUAL'], flag='CRITICAL')
@@ -483,7 +483,7 @@ For example:
                                                           else 'is not'))
 
 There are also a predefined set of derived
-:class:`mangadap.util.bitmask.BitMask` classes that the DAP provides.
+:class:`~mangadap.util.bitmask.BitMask` classes that the DAP provides.
 For example:
 
 .. code-block:: python
@@ -537,7 +537,7 @@ do that by finding the indices of the unique bins, like this:
                                                                            return_index=True)))
 
 Here's a worked example where I use
-:func:`mangadap.util.fitsutil.DAPFitsUtil.unique_bins` to pull out the
+:func:`~mangadap.util.fitsutil.DAPFitsUtil.unique_bins` to pull out the
 unique stellar velocities and produce a scatter plot of the x and y
 positions of the luminosity-weighted bin centers and color them by the
 measure stellar velocity.
@@ -552,7 +552,7 @@ measure stellar velocity.
     from mangadap.util.fitsutil import DAPFitsUtil
 
     # Read a DAP MAPS file
-    hdu = fits.open('manga-8138-12704-MAPS-HYB10-MILESHC-MASTARHC.fits.gz')
+    hdu = fits.open('manga-8138-12704-MAPS-HYB10-MILESHC-MASTARHC2.fits.gz')
 
     # Get the unique indices of the stellar-kinematics bins
     ubins, uindx = DAPFitsUtil.unique_bins(hdu['BINID'].data[1,:,:], return_index=True)

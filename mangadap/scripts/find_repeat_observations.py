@@ -78,7 +78,7 @@ def find_repeat_observations(output_file, drpver, redux_path, dapver, analysis_p
                     double_print(f, ' {0:>4} {1:>5}'.format(-1, -1), end='')
             double_print(f, '')
 
-def parse_args(options=None):
+def parse_args(options=None, return_parser=False):
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--drpver', type=str, help='DRP version', default=None)
     parser.add_argument('--redux_path', type=str, help='main DRP output path', default=None)
@@ -88,6 +88,8 @@ def parse_args(options=None):
                         default=None)
     parser.add_argument('--output_file', type=str, help='output file name, including path',
                         default=None)
+    if return_parser:
+        return parser
     return parser.parse_args() if options is None else parser.parse_args(options)
 
 def main(args):

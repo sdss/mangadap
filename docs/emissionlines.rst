@@ -230,8 +230,8 @@ Input Data Format
 
 The parameters that define the emission-line moments to calculate are
 provided via the
-:class:`mangadap.par.emissionmomentsdb.EmissionMomentsDB` object, which
-is built using an `SDSS-style parameter file`_.
+:class:`~mangadap.par.emissionmomentsdb.EmissionMomentsDB` object,
+which is built using an `SDSS-style parameter file`_.
 
 The columns of the parameter file are:
 
@@ -282,24 +282,24 @@ parameters. This is used to create an empty channel in the output
 between the non-parametric and Gaussian-fit results. That is, it's
 used to ensure that, e.g., the :math:`{\rm H}\alpha` measurements are
 in the same channel for both the ``EMLINE_SFLUX`` and
-``EMLINE_GFLUX`` extensions.
+``EMLINE_GFLUX`` extensions in the :ref:`datamodel-maps`.
 
 Changing the moment parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The moment measurements are performed by
-:class:`mangadap.proc.emissionlinemoments.EmissionLineMoments`; see
+:class:`~mangadap.proc.emissionlinemoments.EmissionLineMoments`; see
 :ref:`emission-line-moments`. A set of parameter files that define a
 list of emission-line moment sets are provided with the DAP source
 distribution and located at
 ``$MANGADAP_DIR/mangadap/data/emission_bandpass_filters``. There are
 a few methods that you can use to change the set of emission-line
 parameters used by
-:class:`mangadap.proc.emissionlinemoments.EmissionLineMoments`:
+:class:`~mangadap.proc.emissionlinemoments.EmissionLineMoments`:
 
     #. To use one of the existing parameter databases, you can change
        the ``emission_passbands`` keyword in the
-       :class:`mangadap.proc.emissionlinemoments.EmissionLineMoments`
+       :class:`~mangadap.proc.emissionlinemoments.EmissionLineMoments`
        configuration file. The keyword should be the capitalized root
        of the parameter filename. E.g., to use
        ``$MANGADAP_DIR/mangadap/data/emission_bandpass_filters/elbmpl9.par``,
@@ -328,7 +328,7 @@ Input Data Format
 ~~~~~~~~~~~~~~~~~
 
 The parameters that define the emission-line models to fit are provided
-via the :class:`mangadap.par.emissionlinedb.EmissionLineDB` object,
+via the :class:`~mangadap.par.emissionlinedb.EmissionLineDB` object,
 which is built using an `SDSS-style parameter file`_.
 
 The columns of the parameter file are:
@@ -359,7 +359,7 @@ The columns of the parameter file are:
 |                   |           | available options are any of the classes in                           |
 |                   |           | :mod:`mangadap.util.lineprofiles`.  This functionality will likely be |
 |                   |           | deprecated because the lineprofile should essentially always be       |
-|                   |           | :class:`mangadap.util.lineprofiles.FFTGaussianLSF`; selected by       |
+|                   |           | :class:`~mangadap.util.lineprofiles.FFTGaussianLSF`; selected by      |
 |                   |           | setting this parameter to "FFTGaussianLSF".                           |
 +-------------------+-----------+-----------------------------------------------------------------------+
 | ``ncomp``         | int       | The number of components to fit.  **NOT TYPICALLY USED!**             |
@@ -440,13 +440,13 @@ and an example file might look like this:
       modeling database define the sidebands used for the equivalent
       width calculations.  Nominally, these should be the same, but it's
       up to the person that writes the two parameter files to make sure
-      that's true.
+      that is true.
     * Many of the current parameters in the emission-line modeling
       parameter file are hold-overs from when
-      :class:`mangadap.proc.elric.Elric` was the standard class used
+      :class:`~mangadap.proc.elric.Elric` was the standard class used
       for the emission-line fitting. Anything marked as "NOT
       TYPICALLY USED" hasn't been adapted for use with the currently
-      preferred module, :class:`mangadap.proc.sasuke.Sasuke`.
+      preferred module, :class:`~mangadap.proc.sasuke.Sasuke`.
 
 .. _emission-line-modeling-action:
 
@@ -466,18 +466,18 @@ Changing the modeling parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The emission-line modeling is performed by
-:class:`mangadap.proc.emissionlinemodel.EmissionLineModel`; see
+:class:`~mangadap.proc.emissionlinemodel.EmissionLineModel`; see
 :ref:`emission-line-modeling`. A set of files that define a list of
 emission-line model parameter sets are provided with the DAP source
 distribution and located at
 ``$MANGADAP_DIR/mangadap/data/emission_lines``. There are a few
 methods that you can use to change the set of emission-line
 parameters used by
-:class:`mangadap.proc.emissionlinemodel.EmissionLineModel`:
+:class:`~mangadap.proc.emissionlinemodel.EmissionLineModel`:
 
     #. To use one of the existing parameter databases, you can change
        the ``emission_lines`` keyword in the
-       :class:`mangadap.proc.emissionlinemodel.EmissionLineModel`
+       :class:`~mangadap.proc.emissionlinemodel.EmissionLineModel`
        configuration file. The keyword should be the capitalized root
        of the parameter filename. E.g., to use
        ``$MANGADAP_DIR/mangadap/data/emission_lines/elpmpl9.par``,

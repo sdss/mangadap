@@ -1,3 +1,4 @@
+.. |ang|   unicode:: U+212B
 
 .. include:: include/ang.rst
 
@@ -40,15 +41,15 @@ The top level within a given DAP version contains the following subdirectories:
    multiple ``DAPTYPE`` methods.
 
 Most users will only interact with the ``[DAPTYPE]`` directories.  For
-the MPL-9, these are:
+the MPL-10, these are:
 
- * ``SPX-MILESHC-MASTARHC/``: Analysis of each individual spaxel;
+ * ``SPX-MILESHC-MASTARHC2/``: Analysis of each individual spaxel;
    spaxels must have a valid continuum fit for an emission-line model to
    be fit
- * ``VOR10-MILESHC-MASTARHC/``: Analysis of spectra binned to
+ * ``VOR10-MILESHC-MASTARHC2/``: Analysis of spectra binned to
    :math:`{\rm S/N}\sim 10` using the Voronoi binning algorithm
    (Cappellari & Copin 2003).
- * ``HYB10-MILESHC-MASTARHC/``: Stellar-continuum analysis of spectra
+ * ``HYB10-MILESHC-MASTARHC2/``: Stellar-continuum analysis of spectra
    binned to :math:`{\rm S/N}\sim 10` for the stellar kinematics (same
    as ``VOR10`` approach); however, the emission-line measurements are
    performed on the individual spaxels.  See a description of the
@@ -182,7 +183,7 @@ The ``MAPS`` files contain the following extensions:
 |     |                    |          |                                                      | the limit of tilted thin disk, these are the in-plane disk radius  |
 |     |                    |          |                                                      | and azimuth.                                                       |
 +-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|   3 | SPX_MFLUX          |        1 |   :math:`10^{-17} {\rm erg/s/cm}^2{\rm /ang/spaxel}` | g-band-weighted mean flux, *not* corrected for Galactic extinction |
+|   3 | SPX_MFLUX          |        1 |       :math:`10^{-17} {\rm erg/s/cm}^2`/|ang|/spaxel | g-band-weighted mean flux, *not* corrected for Galactic extinction |
 |     |                    |          |                                                      | or internal attenuation.                                           |
 +-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
 |   4 | SPX_MFLUX_IVAR     |        1 |                                                      | Inverse variance of g-band-weighted mean flux.                     |
@@ -208,7 +209,7 @@ The ``MAPS`` files contain the following extensions:
 |  10 | BIN_FAREA          |        1 |                                                      | Fractional area that the bin covers for the expected bin shape     |
 |     |                    |          |                                                      | (only relevant for radial binning).                                |
 +-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  11 | BIN_MFLUX          |        1 |   :math:`10^{-17} {\rm erg/s/cm}^2{\rm /ang/spaxel}` | g-band-weighted mean flux for the binned spectra, *not* corrected  |
+|  11 | BIN_MFLUX          |        1 |       :math:`10^{-17} {\rm erg/s/cm}^2`/|ang|/spaxel | g-band-weighted mean flux for the binned spectra, *not* corrected  |
 |     |                    |          |                                                      | for Galactic extinction or internal attenuation.                   |
 +-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
 |  12 | BIN_MFLUX_IVAR     |        1 |                                                      | Inverse variance of g-band-weighted mean flux for the binned       |
@@ -245,7 +246,7 @@ The ``MAPS`` files contain the following extensions:
 +-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
 |  22 | STELLAR_FOM        |        9 |                                                      | Figures-of-merit for the stellar-continuum fit in 9 channels: (1)  |
 |     |                    |          |                                                      | RMS of residuals (in                                               |
-|     |                    |          |                                                      | :math:`10^{-17} {\rm erg/s/cm}^2{\rm /ang/spaxel}`), (2) RMS of    |
+|     |                    |          |                                                      | :math:`10^{-17} {\rm erg/s/cm}^2`/|ang|/spaxel), (2) RMS of        |
 |     |                    |          |                                                      | fractional residuals, (3) reduced :math:`\chi^2`, (4-6) 68th and   |
 |     |                    |          |                                                      | 99th percentile and maximum value of fractional residuals, and     |
 |     |                    |          |                                                      | (7-9) 68th and 99th percentile and maximum value of                |
@@ -265,11 +266,10 @@ The ``MAPS`` files contain the following extensions:
 +-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
 |  25 | EMLINE_SFLUX_MASK  |       35 |                                                      | Data quality mask for summed flux measurements.                    |
 +-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  26 | EMLINE_SEW         |       35 |                                             angstrom | Non-parametric equivalent widths measurements (based on            |
+|  26 | EMLINE_SEW         |       35 |                                                |ang| | Non-parametric equivalent widths measurements (based on            |
 |     |                    |          |                                                      | the non-parametric fluxes in ``EMLINE_SFLUX``).                    |
 +-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  27 | EMLINE_SEW_CNT     |       35 |   :math:`10^{-17} {\rm erg/s/cm}^2{\rm /ang/spaxel}` | **New in MPL-9**: Continuum value used to compute the              |
-|     |                    |          |                                                      | emission-line equivalent width                                     |
+|  27 | EMLINE_SEW_CNT     |       35 |       :math:`10^{-17} {\rm erg/s/cm}^2`/|ang|/spaxel | Continuum value used to compute the emission-line equivalent width |
 +-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
 |  28 | EMLINE_SEW_IVAR    |       35 |                                                      | Inverse variance for non-parametric equivalent width measurements. |
 +-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
@@ -289,11 +289,10 @@ The ``MAPS`` files contain the following extensions:
 +-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
 |  32 | EMLINE_GFLUX_MASK  |       35 |                                                      | Data quality mask for Gaussian flux measurements                   |
 +-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  33 | EMLINE_GEW         |       35 |                                             angstrom | Gaussian-fitted equivalent widths measurements (based on the       |
+|  33 | EMLINE_GEW         |       35 |                                                |ang| | Gaussian-fitted equivalent widths measurements (based on the       |
 |     |                    |          |                                                      | parametric fluxes in ``EMLINE_GFLUX``).                            |
 +-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  34 | EMLINE_GEW_CNT     |       35 |   :math:`10^{-17} {\rm erg/s/cm}^2{\rm /ang/spaxel}` | **New in MPL-9**: Continuum value used to compute the              |
-|     |                    |          |                                                      | emission-line equivalent width                                     |
+|  34 | EMLINE_GEW_CNT     |       35 |       :math:`10^{-17} {\rm erg/s/cm}^2`/|ang|/spaxel | Continuum value used to compute the emission-line equivalent width |
 +-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
 |  35 | EMLINE_GEW_IVAR    |       35 |                                                      | Inverse variance of the above.                                     |
 +-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
@@ -329,7 +328,7 @@ The ``MAPS`` files contain the following extensions:
 |  44 | EMLINE_TPLSIGMA    |       35 |                                                 km/s | The dispersion of each emission line used in the template spectra; |
 |     |                    |          |                                                      | see :ref:`datamodel-eml-tpl-resolution`.                           |
 +-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  45 | EMLINE_GA          |       35 |   :math:`10^{-17} {\rm erg/s/cm}^2{\rm /ang/spaxel}` | The amplitude of the model Gaussian fit to each emission line.     |
+|  45 | EMLINE_GA          |       35 |       :math:`10^{-17} {\rm erg/s/cm}^2`/|ang|/spaxel | The amplitude of the model Gaussian fit to each emission line.     |
 +-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
 |  46 | EMLINE_GANR        |       35 |                                                      | The amplitude of the model Gaussian fit relative to the median     |
 |     |                    |          |                                                      | noise in two sidebands near the line; the sidebands are identical  |
@@ -337,7 +336,7 @@ The ``MAPS`` files contain the following extensions:
 +-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
 |  47 | EMLINE_FOM         |        9 |                                                      | Figures-of-merit for the continuum+emission-line model fit in 9    |
 |     |                    |          |                                                      | channels: (1) RMS of residuals (in                                 |
-|     |                    |          |                                                      | :math:`10^{-17} {\rm erg/s/cm}^2{\rm /ang/spaxel}`), (2) RMS of    |
+|     |                    |          |                                                      | :math:`10^{-17} {\rm erg/s/cm}^2`/|ang|/spaxel), (2) RMS of        |
 |     |                    |          |                                                      | fractional residuals, (3) reduced :math:`\chi^2`, (4-6) 68th and   |
 |     |                    |          |                                                      | 99th percentile and maximum value of fractional residuals, and     |
 |     |                    |          |                                                      | (7-9) 68th and 99th percentile and maximum value of                |
@@ -348,7 +347,7 @@ The ``MAPS`` files contain the following extensions:
 +-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
 | **Spectral index measurements**                                                                                                                                 |
 +-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  49 | SPECINDEX          |       46 |                                              ang,mag | Spectral-index measurements.                                       |
+|  49 | SPECINDEX          |       46 |                                           |ang| ,mag | Spectral-index measurements.                                       |
 +-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
 |  50 | SPECINDEX_IVAR     |       46 |                                                      | Inverse variance for spectral index maps.                          |
 +-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
@@ -358,25 +357,16 @@ The ``MAPS`` files contain the following extensions:
 |     |                    |          |                                                      | effectively determine the index without Doppler broadening;        |
 |     |                    |          |                                                      | see :ref:`corrections`.                                            | 
 +-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  53 | SPECINDEX_MODEL    |       46 |                                              ang,mag | Spectral-index measurements for the best-fitting model spectrum.   |
+|  53 | SPECINDEX_MODEL    |       46 |                                           |ang| ,mag | Spectral-index measurements for the best-fitting model spectrum.   |
 |     |                    |          |                                                      | Note the extension number is different from MPL-9.                 |
 +-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  53 | SPECINDEX_BF       |       46 |                                             angstrom | **New in MPL-10**: Luminosity-weighted center of the blue sideband |
+|  53 | SPECINDEX_BF       |       46 |                                                |ang| | **New in MPL-10**: Luminosity-weighted center of the blue sideband |
 |     |                    |          |                                                      | used during the absorption-line index measurment.                  |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  54 | SPECINDEX_BCNT     |       46 |   :math:`10^{-17} {\rm erg/s/cm}^2{\rm /ang/spaxel}` | **New in MPL-9**: Continuum in the blue sideband used to compute   |
-|     |                    |          |                                                      | linear continuum in the absorption-line index measurment.          |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  55 | SPECINDEX_RCEN     |       46 |                                             angstrom | **New in MPL-9**: Luminosity-weighted center of the red sideband   |
-|     |                    |          |                                                      | used during the absorption-line index measurment.                  |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  56 | SPECINDEX_RCNT     |       46 |   :math:`10^{-17} {\rm erg/s/cm}^2{\rm /ang/spaxel}` | **New in MPL-9**: Continuum in the red sideband used to compute    |
-|     |                    |          |                                                      | linear continuum in the absorption-line index measurment.          |
 +-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
 
 .. _datamodel-emission-line-channels:
 
-The emission-line measurements for MPL-9 are:
+The emission-line measurements for MPL-10 are:
 
 .. code-block:: fortran
 
@@ -439,7 +429,7 @@ The emission-line measurements for MPL-9 are:
 
 .. _datamodel-spectral-index-channels:
 
-The spectral-index measurements for MPL-9 are below. Because the
+The spectral-index measurements for MPL-10 are below. Because the
 spectral-index measurements can be either angstroms, magnitudes, or
 unitless, the header of the spectral-index extensions also include
 the units using header keywords ``U[n]``. The indices and relevant
@@ -814,7 +804,7 @@ The first extension of each of the main DAP output files (the
 ``MAPS`` and model ``LOGCUBE``) is empty apart from the header data.
 The header data is an exact copy of the primary header for the `DRP
 LOGCUBE files (internal)
-<https://trac.sdss.org/wiki/MANGA/TRM/TRM_MPL-9/datamodel#manga-PLATE-IFUDESIGN-LOGCUBE.fits.gz>`_
+<https://trac.sdss.org/wiki/MANGA/TRM/TRM_MPL-10/datamodel#manga-PLATE-IFUDESIGN-LOGCUBE.fits.gz>`_
 file except that the ``BSCALE``, ``BZERO``, and ``BUNIT`` keywords
 are removed and the ``AUTHOR`` and ``MASKNAME`` keywords are changed.
 

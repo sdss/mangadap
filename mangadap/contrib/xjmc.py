@@ -583,7 +583,7 @@ def _reorder_solution(ppsol, pperr, component_map, moments, start=None, fill_val
 def _fit_iteration(templates, wave, flux, noise, velscale, start, moments, component, gas_template,
                    tpl_to_use=None, reject_boxcar=101, velscale_ratio=None, degree=-1, mdegree=0,
                    reddening=None, vgrp=None, sgrp=None, mask=None, vsyst=0, plot=False, quiet=True,
-                   sigma_rej=3.):
+                   sigma_rej=3., starting_spectrum=None):
     r"""
     Run a single fit+rejection iteration of the pPXF fit for all input
     spectra with the provided set of constraints/options.
@@ -706,9 +706,11 @@ def _fit_iteration(templates, wave, flux, noise, velscale, start, moments, compo
 #    linear=True
 #    reject_boxcar=None
 #    mdegree=0
+    if starting_spectrum is None:
+        starting_spectrum = 0
 
     # Fit each spectrum individually
-    for i in range(nspec):
+    for i in range(starting_spectrum, nspec):
 
         # Report progress
         print('Fitting spectrum: {0}/{1}'.format(i+1,nspec), end='\r')
@@ -729,12 +731,18 @@ def _fit_iteration(templates, wave, flux, noise, velscale, start, moments, compo
         # Run the first fit
         if plot:
             plt.clf()
-        pp = ppxf.ppxf(_templates.T, flux[i,:], noise[i,:], velscale, _start,
-                       velscale_ratio=velscale_ratio, plot=plot, moments=_moments, degree=degree,
-                       mdegree=mdegree, lam=wave, reddening=reddening, tied=tied,
-                       mask=model_mask[i,:], vsyst=vsyst, component=_component,
-                       gas_component=_gas_template, quiet=quiet, linear=linear)
-                       #, linear_method='lsqlin')
+        try:
+            pp = ppxf.ppxf(_templates.T, flux[i,:], noise[i,:], velscale, _start,
+                           velscale_ratio=velscale_ratio, plot=plot, moments=_moments,
+                           degree=degree, mdegree=mdegree, lam=wave, reddening=reddening,
+                           tied=tied, mask=model_mask[i,:], vsyst=vsyst, component=_component,
+                           gas_component=_gas_template, quiet=quiet, linear=linear)
+                           #, linear_method='lsqlin')
+        except Exception as e:
+            print(str(e))
+            embed(header='line 742 of xjmc.py (original fit)')
+            exit()
+
         if plot:
             plt.show()
 
@@ -773,12 +781,17 @@ def _fit_iteration(templates, wave, flux, noise, velscale, start, moments, compo
             # initial guesses
             if plot:
                 plt.clf()
-            pp = ppxf.ppxf(_templates.T, flux[i,:], noise[i,:], velscale, _start,
-                           velscale_ratio=velscale_ratio, plot=plot, moments=_moments,
-                           degree=degree, mdegree=mdegree, lam=wave, reddening=reddening,
-                           tied=tied, mask=model_mask[i,:], vsyst=vsyst, component=_component,
-                           gas_component=_gas_template, quiet=quiet, linear=linear)
-                           #, linear_method='lsqlin')
+            try:
+                pp = ppxf.ppxf(_templates.T, flux[i,:], noise[i,:], velscale, _start,
+                               velscale_ratio=velscale_ratio, plot=plot, moments=_moments,
+                               degree=degree, mdegree=mdegree, lam=wave, reddening=reddening,
+                               tied=tied, mask=model_mask[i,:], vsyst=vsyst, component=_component,
+                               gas_component=_gas_template, quiet=quiet, linear=linear)
+                               #, linear_method='lsqlin')
+            except:
+                embed(header='line 791 of xjmc.py (after rejection)')
+                exit()
+
             if plot:
                 plt.show()
 
@@ -1229,6 +1242,8 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
         return model_flux, model_eml_flux, model_mask, tpl_wgt, tpl_wgt_err, addcoef, multcoef, \
                     ebv, kininp, kin, kin_err, _binid #nearest_bin
 
+    embed(header='line 1244 of xjmc.py; just before first fit')
+
     # Fit the binned data
     if mode == 'fitBins':
 
@@ -1266,6 +1281,8 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
                     = _combine_stellar_templates(templates, gas_template,
 #                                                 binned_tpl_wgts[valid_bin_str_fit,:],
                                                  binned_tpl_wgts, inp_component, vgrp, sgrp)
+
+        embed(header='line 1284 of xjmc.py; after combining optimal templates')
 
 #        # - Get the index of the nearest bin for every spaxel
 #        nearest_bin = np.argmin(np.square(x[:, None] - x_binned[valid_bin_str_fit]) 
@@ -1337,7 +1354,11 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
                                      reject_boxcar=reject_boxcar, velscale_ratio=velscale_ratio,
                                      degree=degree, mdegree=mdegree, reddening=reddening,
                                      mask=model_mask[component_of_bin,:], vsyst=vsyst, plot=plot,
-                                     quiet=quiet, sigma_rej=sigma_rej)
+                                     quiet=quiet, sigma_rej=sigma_rej) #, starting_spectrum=1133)
+
+    # 1134
+    embed(header='after 2nd fit')
+    exit()
 
     if mode == 'noBins':
         # If binned spectra were not provided, the fit above is the

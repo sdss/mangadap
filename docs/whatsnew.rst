@@ -5,15 +5,51 @@
 What's New in the DAP
 *********************
 
-MPL-10 (2.5.3dev)
-=================
+MPL-10 (3.0.0)
+==============
 
 High-level changes
 ------------------
 
  * Incorporates the new LSF measurements from the DRP.
- * DAPall file is now divided into one extension for each analysis method.
- * New set of MaSTAR HC spectra
+ * DAPall file is now divided into one extension for each analysis
+   method; see the desciption of the :ref:`metadatamodel-dapall`.
+ * The emission-line module now uses a new set of hierarchically
+   cluster MaStar spectra to model the stellar continuum; the library
+   is called ``MASTARHC2`` (for now) to distinguish it from the
+   templates used in MPL-9.
+ * Significant additions to the spectral index calculations. See
+   :class:`~mangadap.proc.spectralindices.AbsorptionLineIndices`,
+   :class:`~mangadap.proc.spectralindices.BandheadIndices`, and
+   changes to the :ref:`datamodel-maps`. Specifically, with respect
+   to the change in the data model, the following channels were
+   **removed**: ``SPECINDEX_BCEN``, ``SPECINDEX_BCNT``,
+   ``SPECINDEX_RCEN``, and ``SPECINDEX_RCNT``. The following channels
+   were **added**:
+
+   * ``SPECINDEX_BF``: A calculation of the index with a modified
+     definition from Burstein et al. (1984) and Faber et al. (1985),
+     instead of the more typical definitions of Worthey et al. (1994)
+     and Trager et al. (1998). See
+     :class:`~mangadap.proc.spectralindices.AbsorptionLineIndices`.
+     The bandhead or color indices in this extension are identical to
+     the values in the ``SPECINDEX`` extension.
+   * ``SPECINDEX_BF_IVAR``, ``SPECINDEX_BF_MASK``: Inverse variance and
+     mask for the "BF" spectral indices.
+   * ``SPECINDEX_BF_CORR``: Stellar velocity dispersion corrections for
+     the "BF" indices.
+   * ``SPECINDEX_BF_MODEL``: BF indices measured using the best-fitting
+     model spectrum.
+   * ``SPECINDEX_WGT``: Weights to use when calculating an index by
+     aggregating index measurements from many spaxels/bins. See
+     :class:`~mangadap.proc.spectralindices.AbsorptionLineIndices`
+     and :class:`~mangadap.proc.spectralindices.BandheadIndices`.
+   * ``SPECINDEX_WGT_IVAR``, ``SPECINDEX_WGT_MASK``: Inverse variance
+     and mask for index weights.
+   * ``SPECINDEX_WGT_CORR``: Stellar velocity dispersion corrections
+     for the index weights.
+   * ``SPECINDEX_WGT_MODEL``: Index weight based on the best-fitting
+     model spectrum.
 
 User-level changes/bug fixes
 ----------------------------
@@ -24,17 +60,25 @@ User-level changes/bug fixes
    provide a more formal structure of the executables in ``bin`` and
    their associated scripts.
  * Added ``bin/dap_status`` to check the status of a batch DAP run.
- * For instantiating a MaNGADataCube, changed from using a yanny par
-   file to a configuration (ini) file.  Included code that can write
-   these files using data from the DRPall or DRPComplete files.
+ * For instantiating a :class:`~mangadap.datacube.manga.MaNGADataCube`,
+   changed from using a yanny par file to a configuration (ini) file.
+   Included code that can write these files using data from the
+   DRPall or DRPComplete files.
  * Spectral resolution is no longer chosen by the spectral binning
-   module; instead the spectral resolution is selected when reading the
-   datacube (makes much more sense!).  Led to some clean-up of the
-   binning config files.
- * To select different spectral resolution extensions, use command-line
-   arguments in ``rundap`` or ``write_dap_config``.
+   module; instead the spectral resolution is selected when reading
+   the datacube (makes much more sense!). Led to some clean-up of the
+   binning config files. To select different spectral resolution
+   extensions, use command-line arguments in ``rundap`` or
+   ``write_dap_config``.
  * Include a default analysis plan, so that executions of ``manga_dap``
    don't require an analysis plan yanny parameter file.
+
+Under-the-hood algorithmic changes
+----------------------------------
+
+ * The effective wavelength used for the two sidebands when calculating
+   absorption-line indices now uses the center of the band, instead
+   of the flux-weighted center of the band.
 
 Under-the-hood changes/bug fixes
 --------------------------------
@@ -46,33 +90,42 @@ Under-the-hood changes/bug fixes
  * Import clean-up, including removal of any ``from __future__``
    imports.
  * ``__credits__`` now include all authors of the DAP papers
- * Added new DataCube and RowStackedSpectra classes, beginning the
-   generalization of the interface with the input data for use with
-   non-MaNGA data.
+ * Added new :class:`~mangadap.datacube.datacube.DataCube` and
+   :class:`~mangadap.spectra.rowstackedspectra.RowStackedSpectra`
+   classes, beginning the generalization of the interface with the
+   input data for use with non-MaNGA data.
  * Integrated use of :class:`~mangadap.datacube.manga.MaNGADataCube`
-   instead of :class:`~mangadap.util.drpfits.DRPFits` when executing the
-   pipeline. Old :class:`DRPFits` is now deprecated; :class:`DRPFits`
-   now repurposed to provide functionality common to both
-   :class:`MaNGADataCube` and :class:`~mangadap.spectra.manga.MaNGARSS`.
+   instead of :class:`~mangadap.util.drpfits.DRPFits` when executing
+   the pipeline. Old :class:`~mangadap.util.drpfits.DRPFits` is now
+   deprecated; :class:`~mangadap.util.drpfits.DRPFits` now repurposed
+   to provide functionality common to both :class:`MaNGADataCube` and
+   :class:`~mangadap.spectra.manga.MaNGARSS`.
  * Included a script that will download data into a new
    ``mangadap/data/remote`` directory for testing.  The directory is not
    included in the repo and has been added to ``.gitignore`` to prevent
    it from being accidentally added.
- * Included a number of tests that use the new remote data.  These will
-   be skipped if the remote data is not available.
+ * Added a number of tests that use the new remote data,
+   including a nominal run of ``manga_dap`` using the ``ALL`` binning
+   scheme. These will be skipped if the remote data is not available.
  * Significant improvements and testing of
-   :mod:`mangadap.util.covariance`.  Ensuring that the correlation
-   matrices provided by the DRP can be read by :class:`MaNGADataCube`
-   and are effectively identical to the calculation performed by
-   :class:`MaNGARSS`.
+   :mod:`mangadap.util.covariance`. Ensuring that the correlation
+   matrices provided by the DRP can be read by
+   :class:`~mangadap.datacube.manga.MaNGADataCube` and are
+   effectively identical to the calculation performed by
+   :class:`~mangadap.spectra.manga.MaNGARSS`.
  * Moved all core script code from ``bin`` to ``mangadap/scripts``.
    Code in ``bin`` now make simple calls to these scripts.  Moved
    ``rundap.py`` from :mod:`mangadap.survey` to :mod:`mangadap.scripts`.
- * Tests now include a nominal run of ``manga_dap`` using the ``ALL``
-   binning scheme.
  * Usage of :class:`ObsInputPar` is now obsolete and deprecated.
  * Docstring updates for modules up through
-   :class:`StellarContinuumModel`, but still lots to do.
+   :class:`~mangadap.proc.stellarcontinuummodel.StellarContinuumModel`,
+   but still lots to do.
+ * Fixed a :math:`(1+z)` bug in the calculation of the spectral index
+   errors.
+ * Package version requirements were updated in general.
+ * Now uses ``ppxf`` version 7.2.0, but still uses the default
+   ``linear_method``. Use of ``linear_method='lsqlin'`` requires more
+   testing.
 
 
 MPL-9 (2.4.1)

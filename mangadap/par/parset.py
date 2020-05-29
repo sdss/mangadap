@@ -322,10 +322,10 @@ class ParSet:
         return '\n'.join(output)
 
     @staticmethod
-    def _data_table_string(data_table, delimeter='print'):
+    def _data_table_string(data_table, delimiter='print'):
         """
         Provided the array of data, format it with equally spaced
-        columns and add a header (first row) and contents delimeter.
+        columns and add a header (first row) and contents delimiter.
 
         Args:
             data_table (`numpy.ndarray`_):
@@ -336,12 +336,12 @@ class ParSet:
         """
         nrows, ncols = data_table.shape
         col_width = [ numpy.amax([ len(dij) for dij in dj]) for dj in data_table.T ]
-        row_string = ['']*(nrows+1) if delimeter == 'print' else ['']*(nrows+3)
-        start = 2 if delimeter == 'print' else 3
+        row_string = ['']*(nrows+1) if delimiter == 'print' else ['']*(nrows+3)
+        start = 2 if delimiter == 'print' else 3
         for i in range(start,nrows+start-1):
             row_string[i] = '  '.join([ data_table[1+i-start,j].ljust(col_width[j]) 
                                                                         for j in range(ncols)])
-        if delimeter == 'print':
+        if delimiter == 'print':
             # Heading row
             row_string[0] = '  '.join([ data_table[0,j].ljust(col_width[j]) for j in range(ncols)])
             # Delimiter
@@ -803,7 +803,7 @@ class ParSet:
         if class_link:
             output += ['Class Instantiation: ' + ParSet._rst_class_name(self)]
             output += ['']
-        output += [ParSet._data_table_string(data_table, delimeter='rst')]
+        output += [ParSet._data_table_string(data_table, delimiter='rst')]
         output += ['']
         for k in new_parsets:
             output += ['----']

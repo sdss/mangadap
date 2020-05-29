@@ -537,7 +537,7 @@ def spotcheck_images(analysis_path, daptype, plate, ifudesign, ofile=None, drpve
     pyplot.close(fig)
     
 
-def parse_args(options=None):
+def parse_args(options=None, return_parser=False):
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('plate', type=int, help='plate ID to process')
@@ -554,6 +554,9 @@ def parse_args(options=None):
 
     parser.add_argument('--daptype', type=str, help='DAP processing type', default=None)
     parser.add_argument('--normal_backend', dest='bgagg', action='store_false', default=True)
+
+    if return_parser:
+        return parser
 
     return parser.parse_args() if options is None else parser.parse_args(options)
 

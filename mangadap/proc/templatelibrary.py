@@ -550,8 +550,8 @@ class TemplateLibrary:
     """
     # Class attribute
     supported_libraries = ['BC03', 'BPASS', 'M11ELODIE', 'M11MARCS', 'M11MILES', 'M11STELIB',   
-                           'M11STELIBZSOL', 'MASTARHC', 'MILES', 'MILESAVG', 'MILESHC',
-                           'MILESTHIN', 'MIUSCAT', 'MIUSCATTHIN', 'STELIB']
+                           'M11STELIBZSOL', 'MASTARHC', 'MASTARHC2', 'MILES', 'MILESAVG',
+                           'MILESHC', 'MILESTHIN', 'MIUSCAT', 'MIUSCATTHIN', 'STELIB']
     """Provides the keywords of the supported libraries."""
 
     def __init__(self, library_key, tpllib_list=None, cube=None, match_resolution=True,
@@ -1010,6 +1010,9 @@ class TemplateLibrary:
         # match_spectral_resolution
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, 'Modifying spectral resolution ... ')
+
+#        flux_inp = self.hdu['FLUX'].data.copy()
+
         self.hdu['FLUX'].data, self.hdu['SPECRES'].data, self.hdu['SIGOFF'].data, res_mask, \
                 ivar = match_spectral_resolution(self.hdu['WAVE'].data, self.hdu['FLUX'].data,
                                                  self.hdu['SPECRES'].data, sres_wave/(1.+redshift),
@@ -1107,6 +1110,9 @@ class TemplateLibrary:
         pix_per_fwhm = numpy.ma.divide(self.hdu['WAVE'].data,
                                        self.hdu['SPECRES'].data * ang_per_pix)
 
+        # TODO: Put in a check of whether or not it needs to do the
+        # resampling!
+
         # The raw spectra are allowed to have wavelength ranges that
         # differ.  First, determine the wavelength range that encloses
         # all spectra.  Only ignore pixels that were flagged as having
@@ -1197,6 +1203,19 @@ class TemplateLibrary:
             log_output(self.loggers, 1, logging.INFO,
                        'After resampling (calculated): {0}'.format(spectral_coordinate_step(wave,
                                                                                         log=True)))
+
+        # Finally, we need to (again) trim the wavelength range to
+        # exclude pixels with invalid or empty flux.
+        edges = numpy.ma.notmasked_edges(numpy.ma.MaskedArray(numpy.ones(mask.shape),
+                            mask=self.bitmask.flagged(mask,
+                            flag=['NO_DATA', 'WAVE_INVALID', 'FLUX_INVALID', 'SPECRES_NOFLUX'])),
+                                         axis=1)
+        s = numpy.amax(edges[0][1])
+        e = numpy.amin(edges[1][1])+1
+        wave = wave[s:e]
+        flux = flux[:,s:e]
+        mask = mask[:,s:e]
+        sres = sres[:,s:e]
 
         # Normalize the templates to the mean flux value after excluding
         # any flagged pixels.
@@ -1485,8 +1504,13 @@ class TemplateLibrary:
 
         # Read the raw data
         self._read_raw()
+
+#        wave_inp = self.hdu['WAVE'].data.copy()
+#        flux_inp = self.hdu['FLUX'].data.copy()
+
         # Process the library
         self._process_library(wavelength_range=wavelength_range, renormalize=renormalize)
+
         # Write the fits file
         if self.hardcopy:
             DAPFitsUtil.write(self.hdu, self.file_path(), clobber=clobber, checksum=True,

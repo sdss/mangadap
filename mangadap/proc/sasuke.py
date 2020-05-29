@@ -1345,6 +1345,7 @@ class Sasuke(EmissionLineFit):
                 = self.get_stellar_templates(par, binned_spectra.cube,
                                              z=numpy.mean(par['guess_redshift'][bins_to_fit]),
                                              loggers=loggers, quiet=quiet)
+
         stpl_wave = None if stellar_templates is None else stellar_templates['WAVE'].data
         stpl_flux = None if stellar_templates is None else stellar_templates['FLUX'].data
         if not quiet:

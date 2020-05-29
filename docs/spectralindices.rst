@@ -9,10 +9,11 @@ Spectral-Index Parameters
 =========================
 
 The spectral indices to be measured by the DAP are divided into two
-groups: (1) absorption-line indices that measure the equivalent width of
-an absorption feature and (2) bandhead or color indices that measure the
-ratio of fluxes is in two passbands.  Both sets of indices are measured
-using :class:`mangadap.proc.spectralindices.SpectralIndices`; see
+groups: (1) absorption-line indices that measure the equivalent width
+of an absorption feature and (2) bandhead or color indices that
+measure the ratio of fluxes is in two passbands. Both sets of indices
+are measured using
+:class:`~mangadap.proc.spectralindices.SpectralIndices`; see
 :ref:`spectral-index-measurements`.
 
 .. _spectralindices-absorption:
@@ -119,10 +120,10 @@ Input Data Format
 
 The parameters that define the absorption-line-index calculations are
 provided via the
-:class:`mangadap.par.absorptionindexdb.AbsorptionIndexDB` object,
+:class:`~mangadap.par.absorptionindexdb.AbsorptionIndexDB` object,
 which is built using an `SDSS-style parameter file`_. The core level
 class that calculates the raw absorption-line indices is
-:class:`mangadap.proc.spectralindices.AbsorptionLineIndices`.
+:class:`~mangadap.proc.spectralindices.AbsorptionLineIndices`.
 
 The columns of the parameter file are:
 
@@ -180,17 +181,17 @@ Changing the absorption-line index parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The absorption-line indices are measured by
-:class:`mangadap.proc.spectralindices.SpectralIndices`; see
+:class:`~mangadap.proc.spectralindices.SpectralIndices`; see
 :ref:`spectral-index-measurements`.  A set of parameter files that
 define a list of absorption-line index sets are provided with the DAP
 source distribution and located at
 ``$MANGADAP_DIR/mangadap/data/absorption_indices``.  There are a few
 methods that you can use to change the set of absorption-line index parameters
-used by :class:`mangadap.proc.spectralindices.SpectralIndices`:
+used by :class:`~mangadap.proc.spectralindices.SpectralIndices`:
 
     #. To use one of the existing parameter databases, you can change
        the ``absorption_indices`` keyword in the
-       :class:`mangadap.proc.spectralindices.SpectralIndices`
+       :class:`~mangadap.proc.spectralindices.SpectralIndices`
        configuration file. The keyword should be the capitalized root
        of the parameter filename. E.g., to use
        ``$MANGADAP_DIR/mangadap/data/absorption_indices/lickindx.par``,
@@ -224,10 +225,10 @@ Input Data Format
 ~~~~~~~~~~~~~~~~~
 
 The parameters that define the bandhead index calculations are provided
-via the :class:`mangadap.par.bandheadindexdb.BandheadIndexDB` object,
+via the :class:`~mangadap.par.bandheadindexdb.BandheadIndexDB` object,
 which is built using an `SDSS-style parameter file`_.  The core level
 class that calculates the raw bandhead indices is
-:class:`mangadap.proc.spectralindices.BandheadIndices`.
+:class:`~mangadap.proc.spectralindices.BandheadIndices`.
 
 The columns of the parameter file are:
 
@@ -278,18 +279,18 @@ Changing the bandhead index parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The bandhead and color indices are measured by
-:class:`mangadap.proc.spectralindices.SpectralIndices`; see
+:class:`~mangadap.proc.spectralindices.SpectralIndices`; see
 :ref:`spectral-index-measurements`. A set of parameter files that
 define a list of bandhead index sets are provided with the DAP source
 distribution and located at
 ``$MANGADAP_DIR/mangadap/data/bandhead_indices``. There are a few
 methods that you can use to change the set of bandhead-index
 parameters used by
-:class:`mangadap.proc.spectralindices.SpectralIndices`:
+:class:`~mangadap.proc.spectralindices.SpectralIndices`:
 
     #. To use one of the existing parameter databases, you can change
        the ``bandhead_indices`` keyword in the
-       :class:`mangadap.proc.spectralindices.SpectralIndices`
+       :class:`~mangadap.proc.spectralindices.SpectralIndices`
        configuration file. The keyword should be the capitalized root
        of the parameter filename. E.g., to use
        ``$MANGADAP_DIR/mangadap/data/bandhead_indices/bhbasic.par``,
