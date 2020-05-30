@@ -795,7 +795,7 @@ def _fit_iteration(templates, wave, flux, noise, velscale, start, moments, compo
                                gas_component=_gas_template, quiet=quiet, linear=linear)
                                #, linear_method='lsqlin')
             except Exception as e:
-                warnings.warn('pPXF faulted: {0}.  Logging fault and continuing.'.format(str(e)))
+                warnings.warn('pPXF fault: "{0}".  Logging fault and continuing.'.format(str(e)))
                 fault[i] = True
                 continue
             if plot:
