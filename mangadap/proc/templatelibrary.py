@@ -1171,7 +1171,7 @@ class TemplateLibrary:
 
             indx = _pix_per_fwhm < 2
             if numpy.sum(indx) > 0:
-                warnings.warn('Resampling has cause resolution below the two pixel limit!')
+                warnings.warn('Resampling results in resolution below the two pixel limit!')
                 sres[i,indx] = wave[indx]/2./_ang_per_pix[indx]
                 mask[i,indx] = self.bitmask.turn_on(mask[i,indx], 'SPECRES_2PIXEL')
             #-----------------------------------------------------------

@@ -1378,7 +1378,7 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
     # - Refit without rejection but with the tying in place
     kin = np.zeros((nspec,nkin), dtype=float)
     indx = np.logical_not(fault)
-    model_flux[indx,:], model_eml_flux[indx,:], model_mask[indx,:], tpl_wgts[indx,:], \
+    model_flux[indx,:], model_eml_flux[indx,:], model_mask[indx,:], tpl_wgts, \
         tpl_wgts_err, _addcoef, _multcoef, _ebv, kininp[indx,:], kin[indx,:], \
         kin_err[indx,:], fault[indx] \
                 = _fit_iteration(_templates, wave, flux[indx,:], noise[indx,:], velscale,

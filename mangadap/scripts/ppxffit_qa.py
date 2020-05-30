@@ -1,10 +1,13 @@
 import os
 import time
+
+from IPython import embed
+
 import numpy
 
 import argparse
 
-from matplotlib import pyplot, colors, rc, colorbar, ticker
+from matplotlib import pyplot, colors, rc, colorbar, ticker, cm
 
 from astropy.io import fits
 
@@ -122,7 +125,7 @@ def masked_imshow(fig, ax, cax, data, extent=None, norm=None, vmin=None, vmax=No
             cb.update_ticks()
     else:
         _norm = colors.Normalize(vmin=vmin, vmax=vmax) if norm is None else norm
-        cb = colorbar.ColorbarBase(cax, cmap=cmap, norm=norm)
+        cb = colorbar.ColorbarBase(cax, cmap=cm.get_cmap(cmap), norm=_norm)
 
 
 def stellar_continuum_maps(plt, ifu, daptype, snr, r68, r99, rchi2, signal, a, da, an, dan,

@@ -5,7 +5,7 @@ import argparse
 
 import numpy
 
-from matplotlib import pyplot, rc, colors, colorbar, ticker
+from matplotlib import pyplot, rc, colors, colorbar, ticker, cm
 
 from astropy.io import fits
 
@@ -54,7 +54,7 @@ def masked_imshow(fig, ax, cax, data, extent=None, norm=None, vmin=None, vmax=No
             cb.update_ticks()
     else:
         _norm = colors.Normalize(vmin=vmin, vmax=vmax) if norm is None else norm
-        cb = colorbar.ColorbarBase(cax, cmap=cmap, norm=norm)
+        cb = colorbar.ColorbarBase(cax, cmap=cm.get_cmap(cmap), norm=_norm)
 
     if contour_data is not None and levels is not None \
             and numpy.sum(contour_data.mask) != numpy.prod(contour_data.shape):

@@ -2330,7 +2330,7 @@ class Sasuke(EmissionLineFit):
             model_mask[indx,:] = self.bitmask.turn_on(model_mask[indx,:], 'DIDNOTUSE')
 
         # Flag failed fits
-        _fault = np.zeros(output_shape[0], dtype=bool)
+        _fault = numpy.zeros(output_shape[0], dtype=bool)
         _fault[spec_to_fit] = fault
         if numpy.any(_fault):
             model_fit_par['MASK'][_fault] = self.bitmask.turn_on(model_fit_par['MASK'][_fault],

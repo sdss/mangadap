@@ -1034,7 +1034,7 @@ class EmissionLineModel:
         self.spatial_shape =self.binned_spectra.spatial_shape
         self.spatial_index = self.binned_spectra.spatial_index.copy()
         self.nwave = self.binned_spectra.nwave
-        
+
         # Get the guess kinematics
         self._assign_input_kinematics(emission_line_moments, redshift, dispersion)
 
