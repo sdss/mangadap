@@ -1615,16 +1615,16 @@ class StellarContinuumModel:
         # Fill masked values with the nearest datum
         if nearest:
             # Fill masked values with the nearest datum
-            best_fit_kinematics = numpy.ma.append([str_z], [str_d], axis=0).T
-            valid_bins = numpy.unique(self['BINID'].data)[1:]
-            coo = self.binned_spectra['BINS'].data['SKY_COO'][valid_bins,:]
-            replace = str_z.mask | str_d.mask
+            replace = numpy.ma.getmaskarray(str_z) | numpy.ma.getmaskarray(str_d)
 
             if numpy.all(replace):
                 # All are bad so replace with _redshift and _dispersion
                 str_z = numpy.full(str_z.shape, _redshift, dtype=float)
                 str_d = numpy.full(str_d.shape, _dispersion, dtype=float)
-            else:
+            elif numpy.any(replace):
+                best_fit_kinematics = numpy.ma.append([str_z], [str_d], axis=0).T
+                valid_bins = numpy.unique(self['BINID'].data)[1:]
+                coo = self.binned_spectra['BINS'].data['SKY_COO'][valid_bins,:]
                 kinematics = replace_with_data_from_nearest_coo(coo, best_fit_kinematics, replace)
                 str_z = kinematics[:,0]
                 str_d = kinematics[:,1]

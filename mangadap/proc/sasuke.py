@@ -2300,8 +2300,6 @@ class Sasuke(EmissionLineFit):
             log_output(self.loggers, 1, logging.INFO, 'Fits completed in {0:.4e} min.'.format(
                        (time.perf_counter() - t)/60))
 
-        embed(header='2303 sasuke')
-
         # When remapid is provided, the binid subset should be identical to
         # nearest_bin!
 
@@ -2352,9 +2350,6 @@ class Sasuke(EmissionLineFit):
                                      model_eml_flux, model_wgts, model_wgts_err, model_addcoef,
                                      model_multcoef, model_reddening, model_kin_inp, model_kin,
                                      model_kin_err, model_mask, model_fit_par, model_eml_par)
-
-        if numpy.any(_fault):
-            embed(header='2357 sasuke: with faults')
 
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, 'Sasuke finished')

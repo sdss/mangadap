@@ -1524,6 +1524,8 @@ class EmissionLineModel:
         # Set the default values to use when necessary
         _redshift = numpy.ma.median(eml_z) if redshift is None else redshift
         _dispersion = numpy.ma.median(eml_d) if dispersion is None else dispersion
+        if _dispersion is numpy.ma.masked:
+            _dispersion = 100.0
         if min_dispersion is not None and _dispersion < min_dispersion:
             _dispersion = min_dispersion
 
@@ -1535,18 +1537,24 @@ class EmissionLineModel:
             return eml_z, eml_d
 
         if nearest:
-            # Fill masked values with the nearest datum
-            best_fit_kinematics = numpy.ma.append([eml_z], [eml_d], axis=0).T
-            if self.method['deconstruct_bins'] != 'ignore':
-                indx = self['BINID'].data.ravel() > -1
-                coo = self.binned_spectra.rdxqa['SPECTRUM'].data['SKY_COO'][indx,:]
-            else:
-                valid_bins = numpy.unique(self['BINID'].data)[1:]
-                coo = self.binned_spectra['BINS'].data['SKY_COO'][valid_bins,:]
-            replace = eml_z.mask | eml_d.mask
-            kinematics = replace_with_data_from_nearest_coo(coo, best_fit_kinematics, replace)
-            eml_z = kinematics[:,0]
-            eml_d = kinematics[:,1]
+            replace = numpy.ma.getmaskarray(eml_z) | numpy.ma.getmaskarray(eml_d)
+            if numpy.all(replace):
+                # All are bad so replace with _redshift and _dispersion
+                eml_z = numpy.full(eml_z.shape, _redshift, dtype=float)
+                eml_d = numpy.full(eml_d.shape, _dispersion, dtype=float)
+            elif numpy.any(replace):
+                # Fill masked values with the nearest datum
+                best_fit_kinematics = numpy.ma.append([eml_z], [eml_d], axis=0).T
+                if self.method['deconstruct_bins'] != 'ignore':
+                    indx = self['BINID'].data.ravel() > -1
+                    coo = self.binned_spectra.rdxqa['SPECTRUM'].data['SKY_COO'][indx,:]
+                else:
+                    valid_bins = numpy.unique(self['BINID'].data)[1:]
+                    coo = self.binned_spectra['BINS'].data['SKY_COO'][valid_bins,:]
+                replace = eml_z.mask | eml_d.mask
+                kinematics = replace_with_data_from_nearest_coo(coo, best_fit_kinematics, replace)
+                eml_z = kinematics[:,0]
+                eml_d = kinematics[:,1]
         else:
             # Fill any masked values with the single estimate
             eml_z = eml_z.filled(_redshift)

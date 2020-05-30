@@ -39,8 +39,8 @@ TODO
  - 7443-3703 redshift fix
  - Added LSF extension with LSF of binned spectra to output model cube
    file
- - Fixed corner case in `StellarContinuumModel.matched_kinematics` where
-   all bins are masked.
+ - Fixed corner cases in `StellarContinuumModel.matched_kinematics` and
+   `EmissionLineModel.matched_kinematics` where all bins are masked.
  - Fixed bug in use of `ColorbarBase` in some plotting scripts.
 
 
