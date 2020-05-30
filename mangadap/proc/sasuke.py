@@ -139,7 +139,7 @@ class SasukePar(KeywordParSet):
                     'half as wide as the galaxy pixels.',
                  'Single or per-spectrum redshift to use as the initial velocity guess.',
                  'Single or per-spectrum velocity dispersion to use as the initial guess.',
-                 'Minimum S/N of spectrum to fit.',
+                 'Minimum S/N of spectrum to fit (ignored when deconstructing bins).',
                  'Method to use for deconstructing binned spectra into individual spaxels ' \
                     'for emission-line fitting.  See :func:`Sasuke.deconstruct_bin_options`.',
                  'Mask to apply to all spectra being fit.',
@@ -1339,11 +1339,20 @@ class Sasuke(EmissionLineFit):
                                                                    minimum_snr=par['minimum_snr'],
                                                         stellar_continuum=par['stellar_continuum'],
                                                                    debug=debug)
+        if numpy.sum(bins_to_fit) == 0:
+            raise ValueError('No good spectra to fit!')
+
+        good_bins = binned_spectra['BINS'].data['BINID'][bins_to_fit]
+        flux = flux[bins_to_fit,:]
+        ferr = ferr[bins_to_fit,:]
+        sres = sres[bins_to_fit,:]
+        guess_redshift = par['guess_redshift'][bins_to_fit]
+        guess_dispersion = par['guess_dispersion'][bins_to_fit]
 
         # Get the stellar templates
         stellar_templates, matched_resolution, velscale_ratio \
                 = self.get_stellar_templates(par, binned_spectra.cube,
-                                             z=numpy.mean(par['guess_redshift'][bins_to_fit]),
+                                             z=numpy.mean(guess_redshift),
                                              loggers=loggers, quiet=quiet)
 
         stpl_wave = None if stellar_templates is None else stellar_templates['WAVE'].data
@@ -1369,7 +1378,14 @@ class Sasuke(EmissionLineFit):
         #   - optimal template from each bin
 #        stpl_to_use = None if par['stellar_continuum'] is None \
 #                        else par['stellar_continuum'].matched_template_flags(binned_spectra)
+        # TODO: !!HARDCODED!!
         stpl_to_use = None                  # Use all templates
+
+        # Down-select to the bins to fit
+        if stpl_to_use is not None:
+            stpl_to_use = stpl_to_use[bins_to_fit,:]
+        if stellar_kinematics is not None:
+            stellar_kinematics = stellar_kinematics[bins_to_fit,:]
 
         # TODO: For now can only fit two moments
         if par['moments'] != 2:
@@ -1389,69 +1405,80 @@ class Sasuke(EmissionLineFit):
             # if debug is True.
             # TODO: set minimum_fraction as a keyword.  Set to 0.8 by
             # default
+            # TODO: THIS IGNORES THE MINIMUM S/N!
             spaxel_to_fit = EmissionLineFit.select_spaxels_to_fit(binned_spectra,
                                                                   bins_to_fit=bins_to_fit,
                                                                   debug=debug)
 
-            # Get the spaxel spatial coordinates; shape is (Nspaxel,)
+            if numpy.sum(spaxel_to_fit) == 0:
+                raise ValueError('No good spectra to fit!')
+
+            spaxel_flux = spaxel_flux[spaxel_to_fit,:]
+            spaxel_ferr = spaxel_ferr[spaxel_to_fit,:]
+            spaxel_sres = spaxel_sres[spaxel_to_fit,:]
+
+            # Get the spaxel spatial coordinates; shape is (Nspaxel,).
+            # All coordinates are needed here and downselected below to
+            # only the coordinate of the fitted spaxels.
             spaxel_x = binned_spectra.rdxqa['SPECTRUM'].data['SKY_COO'][:,0]
             spaxel_y = binned_spectra.rdxqa['SPECTRUM'].data['SKY_COO'][:,1]
-            # Get the binned spatial coordinates; shape is (Nbin,)
-            bin_x = binned_spectra['BINS'].data['SKY_COO'][:,0]
-            bin_y = binned_spectra['BINS'].data['SKY_COO'][:,1]
+            # Get the binned spatial coordinates
+            bin_x = binned_spectra['BINS'].data['SKY_COO'][bins_to_fit,0]
+            bin_y = binned_spectra['BINS'].data['SKY_COO'][bins_to_fit,1]
 
             # Depending on the deconstruction method, get the bin ID
             if par['deconstruct_bins'] == 'nearest':
                 binid = None
+                spaxel_x = spaxel_x[spaxel_to_fit]
+                spaxel_y = spaxel_y[spaxel_to_fit]
             elif par['deconstruct_bins'] == 'binid':
-                # Only grab the bin IDs for the bins to be fit
+                # Remap to all spaxels
                 binid = DAPFitsUtil.downselect_bins(binned_spectra['BINID'].data.ravel(),
-                                                    bins_to_fit)
+                                                    good_bins)
                 if numpy.any(binid[spaxel_to_fit] == -1):
                     # Some spaxels may have been excluded from any bin
                     # used to fit the stellar kinematics.  In this case,
                     # the spaxel *must* be associated by on-sky location
                     # to the nearest bin.
                     indx = spaxel_to_fit & (binid == -1)
-                    binid[indx] = numpy.argmin(numpy.square(spaxel_x[indx,None]-bin_x) 
-                                                + numpy.square(spaxel_y[indx,None]-bin_y), axis=1)
+                    binid[indx] = good_bins[numpy.argmin(numpy.square(spaxel_x[indx,None]-bin_x) 
+                                                         + numpy.square(spaxel_y[indx,None]-bin_y),
+                                                         axis=1)]
                 assert not numpy.any(binid[spaxel_to_fit] == -1), \
                                 'CODING ERROR: did not catch all the bad bin IDs.'
+
+                # Remap the binid to the index of the spectrum in the down-selected bins
+                remap = numpy.empty(numpy.amax(good_bins)+1, dtype=int)
+                remap[good_bins] = numpy.arange(len(good_bins))
+                binid = remap[binid]
+                # Downselect to the spaxels to fit
+                binid = binid[spaxel_to_fit]
+                spaxel_x = spaxel_x[spaxel_to_fit]
+                spaxel_y = spaxel_y[spaxel_to_fit]
             else:
                 raise ValueError('Unknown bin deconstruction method.')
 
             # Return the fits to the individual spaxel data
             model_wave, model_flux, model_eml_flux, model_mask, model_fit_par, model_eml_par \
-                    = self.fit(par['emission_lines'], wave, flux[bins_to_fit,:],
-                               obj_ferr=ferr[bins_to_fit,:],
-                               obj_mask=par['pixelmask'],
-                               obj_sres=sres[bins_to_fit,:],
-                               guess_redshift=par['guess_redshift'][bins_to_fit],
-                               guess_dispersion=par['guess_dispersion'][bins_to_fit],
+                    = self.fit(par['emission_lines'], wave, flux, obj_ferr=ferr,
+                               obj_mask=par['pixelmask'], obj_sres=sres,
+                               guess_redshift=guess_redshift, guess_dispersion=guess_dispersion,
                                reject_boxcar=par['reject_boxcar'], stpl_wave=stpl_wave,
-                               stpl_flux=stpl_flux, stpl_sres=stpl_sres,
-                               stpl_to_use=None if stpl_to_use is None \
-                                                else stpl_to_use[bins_to_fit,:],
-                               stellar_kinematics=None if stellar_kinematics is None \
-                                                       else stellar_kinematics[bins_to_fit,:],
+                               stpl_flux=stpl_flux, stpl_sres=stpl_sres, stpl_to_use=stpl_to_use,
+                               stellar_kinematics=stellar_kinematics,
                                etpl_sinst_mode=par['etpl_line_sigma_mode'],
                                etpl_sinst_min=par['etpl_line_sigma_min'],
-                               remapid = None if binid is None else binid[spaxel_to_fit],
-                               remap_flux=spaxel_flux[spaxel_to_fit,:],
-                               remap_ferr=spaxel_ferr[spaxel_to_fit,:],
-                               remap_mask=par['pixelmask'],
-                               remap_sres=spaxel_sres[spaxel_to_fit,:],
-                               remap_skyx=spaxel_x[spaxel_to_fit],
-                               remap_skyy=spaxel_y[spaxel_to_fit], obj_skyx=bin_x[bins_to_fit],
-                               obj_skyy=bin_y[bins_to_fit], velscale_ratio=velscale_ratio,
+                               remapid=binid, remap_flux=spaxel_flux, remap_ferr=spaxel_ferr,
+                               remap_mask=par['pixelmask'], remap_sres=spaxel_sres,
+                               remap_skyx=spaxel_x, remap_skyy=spaxel_y, obj_skyx=bin_x,
+                               obj_skyy=bin_y, velscale_ratio=velscale_ratio,
                                matched_resolution=matched_resolution, bias=par['bias'],
                                degree=par['degree'], mdegree=par['mdegree'],
                                reddening=par['reddening'], loggers=loggers, quiet=quiet, plot=plot)
 
             # Convert the index number of the nearest bin to the BIN ID
             # number
-            model_fit_par['NEAREST_BIN'] \
-                = binned_spectra['BINS'].data['BINID'][bins_to_fit][model_fit_par['NEAREST_BIN']]
+            model_fit_par['NEAREST_BIN'] = good_bins[model_fit_par['NEAREST_BIN']]
 
             model_binid = numpy.full(binned_spectra.spatial_shape, -1, dtype=int)
             model_binid.ravel()[spaxel_to_fit] = numpy.arange(numpy.sum(spaxel_to_fit))
@@ -1460,23 +1487,18 @@ class Sasuke(EmissionLineFit):
             # from the emission-line parameters object.
             # TODO: Emission-line equivalent-width measurements should
             # be put in EmissionLineModel...
-            EmissionLineFit.measure_equivalent_width(wave, spaxel_flux[spaxel_to_fit,:],
-                                                     par['emission_lines'], model_eml_par,
-                                                     bitmask=self.bitmask, checkdb=False)
+            EmissionLineFit.measure_equivalent_width(wave, spaxel_flux, par['emission_lines'],
+                                                     model_eml_par, bitmask=self.bitmask,
+                                                     checkdb=False)
         else:
             # Return the fits to the binned data
             model_wave, model_flux, model_eml_flux, model_mask, model_fit_par, model_eml_par \
-                    = self.fit(par['emission_lines'], wave, flux[bins_to_fit,:],
-                               obj_ferr=ferr[bins_to_fit,:], obj_mask=par['pixelmask'],
-                               obj_sres=sres[bins_to_fit,:],
-                               guess_redshift=par['guess_redshift'][bins_to_fit],
-                               guess_dispersion=par['guess_dispersion'][bins_to_fit],
+                    = self.fit(par['emission_lines'], wave, flux, obj_ferr=ferr,
+                               obj_mask=par['pixelmask'], obj_sres=sres,
+                               guess_redshift=guess_redshift, guess_dispersion=guess_dispersion,
                                reject_boxcar=par['reject_boxcar'], stpl_wave=stpl_wave,
-                               stpl_flux=stpl_flux, stpl_sres=stpl_sres,
-                               stpl_to_use=None if stpl_to_use is None \
-                                                else stpl_to_use[bins_to_fit,:],
-                               stellar_kinematics=None if stellar_kinematics is None \
-                                                       else stellar_kinematics[bins_to_fit,:],
+                               stpl_flux=stpl_flux, stpl_sres=stpl_sres, stpl_to_use=stpl_to_use,
+                               stellar_kinematics=stellar_kinematics,
                                etpl_sinst_mode=par['etpl_line_sigma_mode'],
                                etpl_sinst_min=par['etpl_line_sigma_min'],
                                velscale_ratio=velscale_ratio,
@@ -1486,12 +1508,12 @@ class Sasuke(EmissionLineFit):
 
             # Save the the bin ID numbers indices based on the spectra
             # selected to be fit
-            model_fit_par['BINID'] = binned_spectra['BINS'].data['BINID'][bins_to_fit]
+            model_fit_par['BINID'] = good_bins
             model_fit_par['BINID_INDEX'] = numpy.arange(binned_spectra.nbins)[bins_to_fit]
-            model_fit_par['NEAREST_BIN'] = binned_spectra['BINS'].data['BINID'][bins_to_fit]
+            model_fit_par['NEAREST_BIN'] = good_bins
 
-            model_eml_par['BINID'] = binned_spectra['BINS'].data['BINID'][bins_to_fit]
-            model_eml_par['BINID_INDEX'] = numpy.arange(binned_spectra.nbins)[bins_to_fit]
+            model_eml_par['BINID'] = model_fit_par['BINID']
+            model_eml_par['BINID_INDEX'] = model_fit_par['BINID_INDEX']
 
             # Bin IDs are the same as on input
             model_binid = None
@@ -1500,9 +1522,9 @@ class Sasuke(EmissionLineFit):
             # from the emission-line parameters object.
             # TODO: Emission-line equivalent-width measurements should
             # be put in EmissionLineModel...
-            EmissionLineFit.measure_equivalent_width(wave, flux[bins_to_fit,:],
-                                                     par['emission_lines'], model_eml_par,
-                                                     bitmask=self.bitmask, checkdb=False)
+            EmissionLineFit.measure_equivalent_width(wave, flux, par['emission_lines'],
+                                                     model_eml_par, bitmask=self.bitmask,
+                                                     checkdb=False)
 
         # Reset the equivalent widths to the fill value.  The error
         # values are currently reset to 0. by EmissionLineModel.
@@ -2256,7 +2278,7 @@ class Sasuke(EmissionLineFit):
         # Run the fitter
         model_flux[spec_to_fit,start:end], model_eml_flux[spec_to_fit,start:end], _model_mask, \
                 model_wgts, model_wgts_err, model_addcoef, model_multcoef, model_reddening, \
-                model_kin_inp, model_kin, model_kin_err, nearest_bin \
+                model_kin_inp, model_kin, model_kin_err, nearest_bin, fault \
                             = emline_fitter_with_ppxf(self.tpl_flux, wave, flux, ferr, mask,
                                                       self.velscale, self.velscale_ratio,
                                                       self.tpl_comp, self.gas_tpl,
@@ -2274,6 +2296,12 @@ class Sasuke(EmissionLineFit):
                                                       x=skyx, y=skyy, plot=plot, quiet=not plot,
                                                       sigma_rej=sigma_rej)
 
+        if not self.quiet:
+            log_output(self.loggers, 1, logging.INFO, 'Fits completed in {0:.4e} min.'.format(
+                       (time.perf_counter() - t)/60))
+
+        embed(header='2303 sasuke')
+
         # When remapid is provided, the binid subset should be identical to
         # nearest_bin!
 
@@ -2284,10 +2312,6 @@ class Sasuke(EmissionLineFit):
 
         model_eml_par['BINID'] = numpy.arange(output_shape[0])
         model_eml_par['BINID_INDEX'] = numpy.arange(output_shape[0])
-
-        if not self.quiet:
-            log_output(self.loggers, 1, logging.INFO, 'Fits completed in {0:.4e} min.'.format(
-                       (time.perf_counter() - t)/60))
 
         # Flag pixels as rejected during fitting; _model_mask is True
         # where the pixels were fit
@@ -2305,6 +2329,16 @@ class Sasuke(EmissionLineFit):
             indx = numpy.invert(spec_to_fit)
             model_mask[indx,:] = self.bitmask.turn_on(model_mask[indx,:], 'DIDNOTUSE')
 
+        # Flag failed fits
+        _fault = np.zeros(output_shape[0], dtype=bool)
+        _fault[spec_to_fit] = fault
+        if numpy.any(_fault):
+            model_fit_par['MASK'][_fault] = self.bitmask.turn_on(model_fit_par['MASK'][_fault],
+                                                                 'FIT_FAILED')
+            model_eml_par['MASK'][_fault] = self.bitmask.turn_on(model_eml_par['MASK'][_fault],
+                                                                 'FIT_FAILED')
+            model_mask[_fault,:] = self.bitmask.turn_on(model_mask[_fault,:], 'FIT_FAILED')
+
         #---------------------------------------------------------------
         # Save the results
         if self.nremap == 0:
@@ -2318,6 +2352,9 @@ class Sasuke(EmissionLineFit):
                                      model_eml_flux, model_wgts, model_wgts_err, model_addcoef,
                                      model_multcoef, model_reddening, model_kin_inp, model_kin,
                                      model_kin_err, model_mask, model_fit_par, model_eml_par)
+
+        if numpy.any(_fault):
+            embed(header='2357 sasuke: with faults')
 
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, 'Sasuke finished')

@@ -700,7 +700,9 @@ def _fit_iteration(templates, wave, flux, noise, velscale, start, moments, compo
     kininp = np.zeros((nspec,nkin), dtype=float)
     kin = np.zeros((nspec,nkin), dtype=float)
     kin_err = np.zeros((nspec,nkin), dtype=float)
+    fault = np.zeros(nspec, dtype=bool)
 
+    #-------------------------------------------------------------------
     # For debugging
     linear=False
 #    linear=True
@@ -708,7 +710,11 @@ def _fit_iteration(templates, wave, flux, noise, velscale, start, moments, compo
 #    mdegree=0
     if starting_spectrum is None:
         starting_spectrum = 0
+    else:
+        fault[:starting_spectrum] = True
+    #-------------------------------------------------------------------
 
+    #-------------------------------------------------------------------
     # Fit each spectrum individually
     for i in range(starting_spectrum, nspec):
 
@@ -739,9 +745,9 @@ def _fit_iteration(templates, wave, flux, noise, velscale, start, moments, compo
                            gas_component=_gas_template, quiet=quiet, linear=linear)
                            #, linear_method='lsqlin')
         except Exception as e:
-            print(str(e))
-            embed(header='line 742 of xjmc.py (original fit)')
-            exit()
+            warnings.warn('pPXF fault: "{0}".  Logging fault and continuing.'.format(str(e)))
+            fault[i] = True
+            continue
 
         if plot:
             plt.show()
@@ -788,10 +794,10 @@ def _fit_iteration(templates, wave, flux, noise, velscale, start, moments, compo
                                tied=tied, mask=model_mask[i,:], vsyst=vsyst, component=_component,
                                gas_component=_gas_template, quiet=quiet, linear=linear)
                                #, linear_method='lsqlin')
-            except:
-                embed(header='line 791 of xjmc.py (after rejection)')
-                exit()
-
+            except Exception as e:
+                warnings.warn('pPXF faulted: {0}.  Logging fault and continuing.'.format(str(e)))
+                fault[i] = True
+                continue
             if plot:
                 plt.show()
 
@@ -824,7 +830,7 @@ def _fit_iteration(templates, wave, flux, noise, velscale, start, moments, compo
     print('Fitting spectrum: {0}/{0}'.format(nspec))
 
     return model, eml_model, model_mask, tpl_wgts, tpl_wgts_err, addcoef, multcoef, ebv, \
-                    kininp, kin, kin_err
+                    kininp, kin, kin_err, fault
 
 
 def _set_to_using_optimal_templates(nspec, ntpl, wgts, component, vgrp=None, sgrp=None):
@@ -1242,8 +1248,6 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
         return model_flux, model_eml_flux, model_mask, tpl_wgt, tpl_wgt_err, addcoef, multcoef, \
                     ebv, kininp, kin, kin_err, _binid #nearest_bin
 
-    embed(header='line 1244 of xjmc.py; just before first fit')
-
     # Fit the binned data
     if mode == 'fitBins':
 
@@ -1260,13 +1264,13 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
         # - All gas templates in a single component (no parameter tying)
         component, moments, start = _ppxf_component_setup(inp_component, gas_template, inp_start,
                                                           single_gas_component=True)
-        _, _, _mask, binned_tpl_wgts, _, _, _, _, _, binned_kin, _ \
+        _, _, _mask, binned_tpl_wgts, _, _, _, _, _, binned_kin, _, fault \
                     = _fit_iteration(templates, wave, flux_binned, noise_binned, velscale, start,
                                      moments, component, gas_template, tpl_to_use=tpl_to_use,
                                      reject_boxcar=reject_boxcar, velscale_ratio=velscale_ratio,
                                      degree=degree, mdegree=mdegree, reddening=reddening,
                                      mask=mask_binned, vsyst=vsyst, plot=plot, quiet=quiet,
-                                     sigma_rej=sigma_rej)
+                                     sigma_rej=sigma_rej) 
 
 #        # - Determine which bins have applied non-zero weights to any
 #        #   stellar template
@@ -1282,8 +1286,6 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
 #                                                 binned_tpl_wgts[valid_bin_str_fit,:],
                                                  binned_tpl_wgts, inp_component, vgrp, sgrp)
 
-        embed(header='line 1284 of xjmc.py; after combining optimal templates')
-
 #        # - Get the index of the nearest bin for every spaxel
 #        nearest_bin = np.argmin(np.square(x[:, None] - x_binned[valid_bin_str_fit]) 
 #                                    + np.square(y[:, None] - y_binned[valid_bin_str_fit]), axis=1)
@@ -1296,6 +1298,7 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
         # - Restructure the relevant arrays to prepare for the fits to
         #   the *individual* spectra.  Propagate the changes to the
         #   components and groups.
+        fault = fault[_binid]
         stellar_wgts = stellar_wgts[_binid,:]
         _templates = np.append(_templates[:nbin,:][_binid,:], _templates[nbin:,:], axis=0)
         _gas_template, _tpl_to_use, _component, _vgrp, _sgrp \
@@ -1320,6 +1323,7 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
         # Binned spectra were not provided, prepare to fit the
         # individual spectra by just pointing to the input
         _binid = np.arange(nspec)
+        fault = np.zeros(nspec, dtype=bool)
         component_of_bin = np.ones(nspec, dtype=bool)
         stellar_wgts = None
         _templates = templates
@@ -1345,20 +1349,14 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
     kin = start.copy()
     kin = np.array([ k for k in kin ]).reshape(nspec,-1)
 
-    _, _, model_mask[component_of_bin,:], tpl_wgts[component_of_bin,:], _, _, _, _, _, \
-            kin[component_of_bin,:], _ \
-                    = _fit_iteration(_templates, wave, flux[component_of_bin,:],
-                                     noise[component_of_bin,:], velscale, start[component_of_bin],
-                                     moments, component, _gas_template,
-                                     tpl_to_use=_tpl_to_use[component_of_bin,:],
-                                     reject_boxcar=reject_boxcar, velscale_ratio=velscale_ratio,
-                                     degree=degree, mdegree=mdegree, reddening=reddening,
-                                     mask=model_mask[component_of_bin,:], vsyst=vsyst, plot=plot,
-                                     quiet=quiet, sigma_rej=sigma_rej) #, starting_spectrum=1133)
-
-    # 1134
-    embed(header='after 2nd fit')
-    exit()
+    indx = component_of_bin & np.logical_not(fault)
+    _, _, model_mask[indx,:], tpl_wgts[indx,:], _, _, _, _, _, kin[indx,:], _, fault[indx] \
+            = _fit_iteration(_templates, wave, flux[indx,:], noise[indx,:], velscale, start[indx],
+                             moments, component, _gas_template, tpl_to_use=_tpl_to_use[indx,:],
+                             reject_boxcar=reject_boxcar, velscale_ratio=velscale_ratio,
+                             degree=degree, mdegree=mdegree, reddening=reddening,
+                             mask=model_mask[indx,:], vsyst=vsyst, plot=plot, quiet=quiet,
+                             sigma_rej=sigma_rej) #, starting_spectrum=1133)
 
     if mode == 'noBins':
         # If binned spectra were not provided, the fit above is the
@@ -1378,25 +1376,39 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
                                                       gas_start=gas_start)
 
     # - Refit without rejection but with the tying in place
-    model_flux, model_eml_flux, model_mask, tpl_wgts, tpl_wgts_err, addcoef, multcoef, ebv, \
-            kininp, kin, kin_err = _fit_iteration(_templates, wave, flux, noise, velscale, start,
-                                                  moments, component, _gas_template,
-                                                  tpl_to_use=_tpl_to_use, reject_boxcar=None,
-                                                  velscale_ratio=velscale_ratio, degree=degree,
-                                                  mdegree=mdegree, reddening=reddening,
-                                                  vgrp=_vgrp, sgrp=_sgrp, mask=model_mask,
-                                                  vsyst=vsyst, plot=plot, quiet=quiet,
-                                                  sigma_rej=sigma_rej)
+    kin = np.zeros((nspec,nkin), dtype=float)
+    indx = np.logical_not(fault)
+    model_flux[indx,:], model_eml_flux[indx,:], model_mask[indx,:], tpl_wgts[indx,:], \
+        tpl_wgts_err, _addcoef, _multcoef, _ebv, kininp[indx,:], kin[indx,:], \
+        kin_err[indx,:], fault[indx] \
+                = _fit_iteration(_templates, wave, flux[indx,:], noise[indx,:], velscale,
+                                 start[indx], moments, component, _gas_template,
+                                 tpl_to_use=_tpl_to_use[indx,:], reject_boxcar=None,
+                                 velscale_ratio=velscale_ratio, degree=degree, mdegree=mdegree,
+                                 reddening=reddening, vgrp=_vgrp, sgrp=_sgrp,
+                                 mask=model_mask[indx,:], vsyst=vsyst, plot=plot, quiet=quiet,
+                                 sigma_rej=sigma_rej)
+
+    # Save the low-order continuum coefficients
+    if degree > -1:
+        addcoef[indx,:] = _addcoef
+    if mdegree > 0:
+        multcoef[indx,:] = _multcoef
+    if reddening is not None:
+        ebv[indx] = _ebv
 
     # - Use the single output weight to renormalize the individual
     #   stellar template weights (only one of the weights for the
-    #   non-gas templates should be non-zero); stellar-weight errors are
-    #   always returned as 0.
+    #   non-gas templates should be non-zero). Stellar-template
+    #   weight errors are always returned as 0; all weights for
+    #   failed fits are set to 0.
     _tpl_wgts = stellar_wgts * np.sum(tpl_wgts[:,np.invert(_gas_template)], axis=1)[:,None]
-    _tpl_wgts[:,gas_template] = tpl_wgts[:,_gas_template]
+    _tpl_wgts[np.logical_not(indx),:] = 0.
+    _indx = np.ix_(indx,gas_template)
+    _tpl_wgts[_indx] = tpl_wgts[np.ix_(indx,_gas_template)]
     _tpl_wgts_err = np.zeros((nspec,ntpl), dtype=float)
-    _tpl_wgts_err[:,gas_template] = tpl_wgts_err[:,_gas_template]
+    _tpl_wgts_err[_indx] = tpl_wgts_err[:,_gas_template]
 
     return model_flux, model_eml_flux, model_mask, _tpl_wgts, _tpl_wgts_err, addcoef, multcoef, \
-                    ebv, kininp, kin, kin_err, _binid
+                    ebv, kininp, kin, kin_err, _binid, fault
 
