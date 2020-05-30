@@ -1367,6 +1367,7 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
         stellar_wgts, _templates, _gas_template, _tpl_to_use, _component, _vgrp, _sgrp \
                     = _combine_stellar_templates(_templates, _gas_template, tpl_wgts, _component,
                                                  _vgrp, _sgrp)
+        tpl_wgts = np.ones((nspec, nspec+np.sum(_gas_template)), dtype=float)
 
     # Second fit to the individual spectra
     # - Use first fit to to reset the starting estimates for the gas kinematics
@@ -1378,7 +1379,7 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
     # - Refit without rejection but with the tying in place
     kin = np.zeros((nspec,nkin), dtype=float)
     indx = np.logical_not(fault)
-    model_flux[indx,:], model_eml_flux[indx,:], model_mask[indx,:], tpl_wgts, \
+    model_flux[indx,:], model_eml_flux[indx,:], model_mask[indx,:], tpl_wgts[indx,:], \
         tpl_wgts_err, _addcoef, _multcoef, _ebv, kininp[indx,:], kin[indx,:], \
         kin_err[indx,:], fault[indx] \
                 = _fit_iteration(_templates, wave, flux[indx,:], noise[indx,:], velscale,
@@ -1402,6 +1403,7 @@ def emline_fitter_with_ppxf(templates, wave, flux, noise, mask, velscale, velsca
     #   non-gas templates should be non-zero). Stellar-template
     #   weight errors are always returned as 0; all weights for
     #   failed fits are set to 0.
+
     _tpl_wgts = stellar_wgts * np.sum(tpl_wgts[:,np.invert(_gas_template)], axis=1)[:,None]
     _tpl_wgts[np.logical_not(indx),:] = 0.
     _indx = np.ix_(indx,gas_template)
