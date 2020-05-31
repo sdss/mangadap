@@ -30,6 +30,11 @@ TODO
    continuum value? (e.g., latter only cares about the side bands)
  - Deprecate `mangadap.survey.mangampl`
 
+3.0.2dev
+--------
+
+
+
 3.0.1 (31 May 2020)
 -------------------
 
