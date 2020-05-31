@@ -22,6 +22,7 @@ apirst:
 	python3 ./scripts/write_bitmask_tables.py
 	python3 ./scripts/write_parset_tables.py
 	python3 ./scripts/write_defaultplan.py
+	python3 ./scripts/write_script_help.py
 
 html:
 	make apirst
