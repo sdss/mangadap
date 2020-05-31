@@ -63,7 +63,7 @@ def test_ppxffit():
     # Test the results
 
     # Rejected pixels
-    assert numpy.sum(ppxf.bitmask.flagged(fit_mask, flag='PPXF_REJECT')) == 124, \
+    assert numpy.sum(ppxf.bitmask.flagged(fit_mask, flag='PPXF_REJECT')) == 119, \
                 'Different number of rejected pixels'
 
     # Unable to fit
@@ -72,7 +72,7 @@ def test_ppxffit():
 
     # Number of used templates
     assert numpy.array_equal(numpy.sum(numpy.absolute(fit_par['TPLWGT']) > 1e-10, axis=1),
-                             [13, 16, 17, 14, 17,  0,  8, 12]), \
+                             [11, 14, 17, 16, 16,  0,  7, 13]), \
                 'Different number of templates with non-zero weights'
 
     # Number of additive coefficients
@@ -83,53 +83,40 @@ def test_ppxffit():
                 'No multiplicative coefficients should exist'
 
     # Kinematics and errors
-    assert numpy.allclose(fit_par['KIN'], numpy.array([[14881.7722996 ,   291.85468616],
-                                                       [15053.5428018 ,   123.07989289],
-                                                       [14788.28367965,   235.8053923 ],
-                                                       [ 8293.07541034,   170.86985816],
-                                                       [ 9261.89551736,   201.84993174],
-                                                       [    0.        ,     0.        ],
-                                                       [ 5126.52362297,    66.93778845],
-                                                       [ 5458.11430831,    51.92792211]]),
-                          rtol=0.0, atol=1e-2), 'Kinematics are different'
-    assert numpy.allclose(fit_par['KINERR'], numpy.array([[ 1.9709821 ,  1.85886101],
-                                                          [ 1.44396882,  1.65099111],
-                                                          [ 2.39500413,  2.34584906],
-                                                          [ 2.13102942,  2.26898814],
-                                                          [ 1.10522357,  1.11307583],
-                                                          [ 0.        ,  0.        ],
-                                                          [25.50804271, 30.41783466],
-                                                          [ 4.46678658,  7.40489565]]),
-                          rtol=0.0, atol=1e-2), 'Kinematic errors are different'
+    assert numpy.all(numpy.absolute(fit_par['KIN'] -
+                        numpy.array([[ 14881.7, 292.4], [ 15053.8, 123.4],
+                                     [ 14789.1, 235.3], [  8293.0, 170.8],
+                                     [  9262.1, 201.7], [     0.0,   0.0],
+                                     [  5123.1,  60.0], [  5458.1,  51.8]])) < 0.1), \
+                'Kinematics are too different'
+
+    assert numpy.all(numpy.absolute(fit_par['KINERR'] -
+                        numpy.array([[2.0,1.8], [1.4,1.7], [ 2.4, 2.3], [2.1,2.3],
+                                     [1.1,1.1], [0.0,0.0], [26.1,31.2], [4.5,7.4]])) < 0.1), \
+                'Kinematic errors are too different'
 
     # Velocity dispersion corrections
-    assert numpy.allclose(fit_par['SIGMACORR_SRES'],
-                          numpy.array([24.03388208, 11.76975482, 27.80845511, 38.76085538,
-                                       23.00081717,  0.        , 63.36255328, 24.45657423]),
-                          rtol=0.0, atol=1e-2), 'SRES corrections are different'
-    assert numpy.allclose(fit_par['SIGMACORR_EMP'],
-                          numpy.array([22.45805838,  0.        , 25.8235458 , 38.03511325,
-                                       18.04372944,  0.        , 69.11989189,  0.        ]),
-                          rtol=0.0, atol=1e-2), 'EMP corrections are different'
+    assert numpy.all(numpy.absolute(fit_par['SIGMACORR_SRES'] -
+                        numpy.array([23.7, 10.8, 27.5, 38.7, 22.5,  0.0, 63.7, 24.0])) < 0.1), \
+                'SRES corrections are too different'
+
+    assert numpy.all(numpy.absolute(fit_par['SIGMACORR_EMP'] -
+                        numpy.array([22.6,  0.0, 25.9, 38.1, 17.9,  0.0, 70.2,  0.0])) < 0.1), \
+                'EMP corrections are too different'
 
     # Figures of merit
-    assert numpy.allclose(fit_par['RCHI2'],
-                          numpy.array([ 1.95946775,  1.16851502,  1.48772154,  1.55023733,
-                                        2.5465503 ,  0.        ,  1.06056225,  0.87039315]),
-                          rtol=0.0, atol=1e-4), 'Reduced chi-square different'
+    assert numpy.all(numpy.absolute(fit_par['RCHI2'] -
+                        numpy.array([ 1.95, 1.18, 1.43, 1.56, 2.53, 0.00, 1.06, 0.87])) < 0.01), \
+                'Reduced chi-square too different'
 
-    assert numpy.allclose(fit_par['RMS'],
-                          numpy.array([0.0337455 , 0.0189093 , 0.03541922, 0.02358469,
-                                       0.04709133, 0.        , 0.01608275, 0.01622584]),
-                          rtol=0.0, atol=1e-4), 'RMS different'
+    assert numpy.all(numpy.absolute(fit_par['RMS'] -
+                        numpy.array([0.034, 0.019, 0.035, 0.023, 0.047, 0.000, 0.015, 0.015]))
+                     < 0.001), 'RMS too different'
 
-    assert numpy.allclose(fit_par['FRMS'],
-                          numpy.array([0.01892738, 0.02500785, 0.02596966, 0.03601668,
-                                       0.01834503, 0.        , 8.59674419, 0.18296954]),
-                          rtol=0.0, atol=1e-4), 'Fractional RMS different'
+    assert numpy.all(numpy.absolute(fit_par['FRMS'] -
+                        numpy.array([0.018, 0.023, 0.023, 0.032, 0.017, 0.000, 23.336, 0.147]))
+                     < 0.001), 'Fractional RMS too different'
 
-    assert numpy.allclose(fit_par['RMSGRW'][:,2],
-
-                          numpy.array([0.06759905, 0.03682847, 0.0696026 , 0.04725984,
-                                       0.09604793, 0.        , 0.03093494, 0.02879866]),
-                          rtol=0.0, atol=1e-4), 'Median absolute residual different'
+    assert numpy.all(numpy.absolute(fit_par['RMSGRW'][:,2] -
+                        numpy.array([0.067, 0.037, 0.069, 0.046, 0.095, 0.000, 0.029, 0.027]))
+                     < 0.001), 'Median absolute residual too different'

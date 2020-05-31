@@ -680,7 +680,7 @@ class BitMask:
         if class_link:
             output += ['Class Instantiation: ' + ParSet._rst_class_name(self)]
             output += ['']
-        output += [ParSet._data_table_string(data_table, delimeter='rst')]
+        output += [ParSet._data_table_string(data_table, delimiter='rst')]
         output += ['']
         return output
 

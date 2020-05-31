@@ -6,10 +6,6 @@ Dynamically build the rst documentation of the bitmasks.
 
 import os
 import time
-import textwrap
-import numpy
-
-from pkg_resources import resource_filename
 
 #-----------------------------------------------------------------------------
 

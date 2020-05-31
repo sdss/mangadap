@@ -1,3 +1,4 @@
+.. |ang|   unicode:: U+212B
 
 .. _metadatamodel:
 
@@ -622,10 +623,10 @@ The binary table in the ``DAPALL`` extension has the following columns:
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
 |        ``EMLINE_SSB_PEAK`` | double (vector) |     :math:`10^{-17} {\rm erg/s/cm}^2{\rm /spaxel}` | Peak summed-flux emission-line surface brightness.                            |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
-|         ``EMLINE_SEW_1RE`` | double (vector) |                                                ang | Mean emission-line equivalent width from the summed flux measurements within  |
+|         ``EMLINE_SEW_1RE`` | double (vector) |                                              |ang| | Mean emission-line equivalent width from the summed flux measurements within  |
 |                            |                 |                                                    | 1 :math:`R_e`.                                                                |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
-|        ``EMLINE_SEW_PEAK`` | double (vector) |                                                ang | Peak emission-line equivalent width from the summed flux measurements.        |
+|        ``EMLINE_SEW_PEAK`` | double (vector) |                                              |ang| | Peak emission-line equivalent width from the summed flux measurements.        |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
 |       ``EMLINE_GFLUX_CEN`` | double (vector) |                  :math:`10^{-17} {\rm erg/s/cm}^2` | Gaussian-fitted emission-line flux integrated within a 2.5 arcsec aperture    |
 |                            |                 |                                                    | at the galaxy center.                                                         |
@@ -641,23 +642,23 @@ The binary table in the ``DAPALL`` extension has the following columns:
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
 |        ``EMLINE_GSB_PEAK`` | double (vector) |     :math:`10^{-17} {\rm erg/s/cm}^2{\rm /spaxel}` | Peak Gaussian-fitted emission-line surface brightness.                        |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
-|         ``EMLINE_GEW_1RE`` | double (vector) |                                                ang | Mean emission-line equivalent width from the Gaussian-fitted flux             |
+|         ``EMLINE_GEW_1RE`` | double (vector) |                                              |ang| | Mean emission-line equivalent width from the Gaussian-fitted flux             |
 |                            |                 |                                                    | measurements within 1 :math:`R_e`.                                            |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
-|        ``EMLINE_GEW_PEAK`` | double (vector) |                                                ang | Peak emission-line equivalent width from the Gaussian-fitted flux             |
+|        ``EMLINE_GEW_PEAK`` | double (vector) |                                              |ang| | Peak emission-line equivalent width from the Gaussian-fitted flux             |
 |                            |                 |                                                    | measurements.                                                                 |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
-|           ``SPECINDEX_LO`` | double (vector) |                                            ang,mag | Spectral index at 2.5% growth of all valid spaxels.                           |
+|           ``SPECINDEX_LO`` | double (vector) |                                         |ang|, mag | Spectral index at 2.5% growth of all valid spaxels.                           |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
-|           ``SPECINDEX_HI`` | double (vector) |                                            ang,mag | Spectral index at 97.5% growth of all valid spaxels.                          |
+|           ``SPECINDEX_HI`` | double (vector) |                                         |ang|, mag | Spectral index at 97.5% growth of all valid spaxels.                          |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
-|      ``SPECINDEX_LO_CLIP`` | double (vector) |                                            ang,mag | Spectral index at 2.5% growth after iteratively clipping :math:`3\sigma`      |
+|      ``SPECINDEX_LO_CLIP`` | double (vector) |                                         |ang|, mag | Spectral index at 2.5% growth after iteratively clipping :math:`3\sigma`      |
 |                            |                 |                                                    | outliers.                                                                     |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
-|      ``SPECINDEX_HI_CLIP`` | double (vector) |                                            ang,mag | Spectral index at 97.5% growth after iteratively clipping :math:`3\sigma`     |
+|      ``SPECINDEX_HI_CLIP`` | double (vector) |                                         |ang|, mag | Spectral index at 97.5% growth after iteratively clipping :math:`3\sigma`     |
 |                            |                 |                                                    | outliers.                                                                     |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
-|          ``SPECINDEX_1RE`` | double (vector) |                                            ang,mag | Median spectral index within 1 :math:`R_e`.                                   |
+|          ``SPECINDEX_1RE`` | double (vector) |                                         |ang|, mag | Median spectral index within 1 :math:`R_e`.                                   |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
 |                ``SFR_1RE`` |          double |                    :math:`h^{-2} {\rm M}_\odot/yr` | Simple estimate of the star-formation rate within 1 :math:`R_e` based on the  |
 |                            |                 |                                                    | Gaussian-fitted :math:`{\rm H}\alpha` flux;                                   |

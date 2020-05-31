@@ -38,6 +38,9 @@ import warnings
 import os
 import glob
 import logging
+
+from IPython import embed
+
 import numpy
 
 from astropy.io import fits
@@ -1597,6 +1600,8 @@ class StellarContinuumModel:
         # Set the default values to use when necessary
         _redshift = numpy.ma.median(str_z) if redshift is None else redshift
         _dispersion = numpy.ma.median(str_d) if dispersion is None else dispersion
+        if _dispersion is numpy.ma.masked:
+            _dispersion = numpy.median(self.method['fitpar']['guess_dispersion'])
         if min_dispersion is not None and _dispersion < min_dispersion:
             _dispersion = min_dispersion
 
@@ -1610,13 +1615,19 @@ class StellarContinuumModel:
         # Fill masked values with the nearest datum
         if nearest:
             # Fill masked values with the nearest datum
-            best_fit_kinematics = numpy.ma.append([str_z], [str_d], axis=0).T
-            valid_bins = numpy.unique(self['BINID'].data)[1:]
-            coo = self.binned_spectra['BINS'].data['SKY_COO'][valid_bins,:]
-            replace = str_z.mask | str_d.mask
-            kinematics = replace_with_data_from_nearest_coo(coo, best_fit_kinematics, replace)
-            str_z = kinematics[:,0]
-            str_d = kinematics[:,1]
+            replace = numpy.ma.getmaskarray(str_z) | numpy.ma.getmaskarray(str_d)
+
+            if numpy.all(replace):
+                # All are bad so replace with _redshift and _dispersion
+                str_z = numpy.full(str_z.shape, _redshift, dtype=float)
+                str_d = numpy.full(str_d.shape, _dispersion, dtype=float)
+            elif numpy.any(replace):
+                best_fit_kinematics = numpy.ma.append([str_z], [str_d], axis=0).T
+                valid_bins = numpy.unique(self['BINID'].data)[1:]
+                coo = self.binned_spectra['BINS'].data['SKY_COO'][valid_bins,:]
+                kinematics = replace_with_data_from_nearest_coo(coo, best_fit_kinematics, replace)
+                str_z = kinematics[:,0]
+                str_d = kinematics[:,1]
         else:
             # Fill any masked values with the single estimate
             str_z = str_z.filled(_redshift)

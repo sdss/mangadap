@@ -1009,7 +1009,7 @@ def manga_dap_inspector(maps_file, model_file, ext=None, masked_spectra=True):
 
     pyplot.show()
 
-def parse_args(options=None):
+def parse_args(options=None, return_parser=False):
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('--maps_file', type=str, default=None, help='Output MAPS file')
@@ -1027,6 +1027,10 @@ def parse_args(options=None):
 
     # - Use Marvin instead of just reading fits files; specify auto
     # mode...
+
+    if return_parser:
+        return parser
+
     return parser.parse_args() if options is None else parser.parse_args(options)
 
 

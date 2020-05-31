@@ -1,10 +1,13 @@
 import os
 import time
+
+from IPython import embed
+
 import numpy
 
 import argparse
 
-from matplotlib import pyplot, colors, rc, colorbar, ticker
+from matplotlib import pyplot, colors, rc, colorbar, ticker, cm
 
 from astropy.io import fits
 
@@ -122,7 +125,7 @@ def masked_imshow(fig, ax, cax, data, extent=None, norm=None, vmin=None, vmax=No
             cb.update_ticks()
     else:
         _norm = colors.Normalize(vmin=vmin, vmax=vmax) if norm is None else norm
-        cb = colorbar.ColorbarBase(cax, cmap=cmap, norm=norm)
+        cb = colorbar.ColorbarBase(cax, cmap=cm.get_cmap(cmap), norm=_norm)
 
 
 def stellar_continuum_maps(plt, ifu, daptype, snr, r68, r99, rchi2, signal, a, da, an, dan,
@@ -666,7 +669,7 @@ def ppxffit_qa_plot(plt, ifu, plan, drpver=None, redux_path=None, dapver=None, a
                            svel_map, ssigo_map, ssigcor_map, ssigc_map, extent=extent, ofile=ofile)
 
 
-def parse_args(options=None):
+def parse_args(options=None, return_parser=False):
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('plate', type=int, help='plate ID to process')
@@ -688,6 +691,9 @@ def parse_args(options=None):
                         help='template renormalization flux file.  Will attempt to read default '
                              'if not provided.  If no file is provided and the default file does '
                              'not exist, no renormalization of the templates is performed.')
+
+    if return_parser:
+        return parser
 
     return parser.parse_args() if options is None else parser.parse_args(options)
 

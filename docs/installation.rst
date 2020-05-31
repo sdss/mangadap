@@ -7,7 +7,7 @@ Clone the repo
 To download the DAP software and associated data, clone the `GitHub repo
 <https://github.com/sdss/mangadap>`_ by executing:
 
-    .. code-block:: bash
+    .. code-block:: console
 
         git clone https://github.com/sdss/mangadap.git
 
@@ -15,7 +15,7 @@ This will create a ``mangadap`` directory in the current directory.
 Although we try to keep the ``master`` branch of the repository stable,
 we recommend using the most recent tag.  You can do so by executing:
 
-    .. code-block:: bash
+    .. code-block:: console
 
         cd mangadap
         ./checkout_current_tag
@@ -37,39 +37,32 @@ directly from `python.org <https://www.python.org/>`_.
 Install the DAP code
 --------------------
 
-To install the DAP software, do one or more of the following (always
-from within the top-level directory of the repo):
+To install the DAP and ensure its dependencies are met, ensure your
+at in the top-level ``mangadap`` directory and run (preferred):
 
- * To perform an environment-level installation, run:
+.. code-block:: console
 
-    .. code-block:: bash
+    pip3 install -e .
 
-        python3 setup.py install
+This approach is preferred because it eases uninstalling the code:
 
- * On MacOSX, you may need to run:
+.. code-block:: console
+    
+    pip3 uninstall sdss-mangadap
 
-    .. code-block:: bash
+Alternatively, if you anticipate making changes to the DAP code, run:
 
-        CC=clang python3 setup.py install
+.. code-block:: console
 
- * To install the DAP such that changes you make to the repo are
-   immediately available in your environment, run:
+    python3 setup.py develop
 
-    .. code-block:: bash
+----
 
-        python3 setup.py develop
+To install only the DAP dependencies, run:
 
- * To install the DAP and ensure its dependencies are met, you can run:
+.. code-block:: console
 
-    .. code-block:: bash
-
-        pip3 install -e .
-
- * To install only the DAP dependencies, run:
-
-    .. code-block:: bash
-
-        pip3 install -r requirements.txt
+    pip3 install -r requirements.txt
 
 
 Test your installation
@@ -79,13 +72,13 @@ To test the installation, you can do one of the following:
 
  * Run the tests via the setup script:
 
-    .. code-block:: bash
+    .. code-block:: console
 
         python3 setup.py test
 
  * Run the tests using `pytest` directly:
 
-    .. code-block:: bash
+    .. code-block:: console
 
         cd mangadap/tests
         python3 -m pytest .
@@ -101,7 +94,7 @@ the same ``~\.netrc`` file to authenticate access to the
 your ``~\.netrc`` file, you can download the necessary test data and
 rerun the tests to include usage of that data like this:
 
-    .. code-block:: bash
+    .. code-block:: console
 
         python3 download_test_data.py
         cd mangadap/tests
@@ -120,7 +113,7 @@ below.
 +----------------------------+-------------------------------------+------------------------------------------------+
 |                   Variable |                             Default |                                       Comments |
 +============================+=====================================+================================================+
-| ``MANGADRP_VER``           | ``v2_7_1`` (i.e., MPL-9)            | Version of the DRP, used for path construction |
+| ``MANGADRP_VER``           | ``v3_0_1`` (i.e., MPL-10)           | Version of the DRP, used for path construction |
 +----------------------------+-------------------------------------+------------------------------------------------+
 | ``MANGA_SPECTRO_REDUX``    | ``$HOME/MaNGA/redux``               | Root path for the reduced data                 |
 +----------------------------+-------------------------------------+------------------------------------------------+
@@ -139,13 +132,13 @@ that is sourced when you want to run the DAP.  The lines added to your
     export MANGA_SPECTRO_REDUX=/Volumes/MaNGA/redux
     export MANGA_SPECTRO_ANALYSIS=/Volumes/MaNGA/analysis
 
-    export MANGADRP_VER=v2_4_3
+    export MANGADRP_VER=v3_0_1
 
-    export MANGADAP_VER=2.2.1
+    export MANGADAP_VER=3.0.0
 
 .. note::
 
- * The DAP checks that these variable sare defined *every time it is
+ * The DAP checks that these variables are defined *every time it is
    imported*. If they are not, warnings are raised and the defaults
    are used.
  * Some of these same variables are defined by `Marvin
@@ -157,7 +150,7 @@ that is sourced when you want to run the DAP.  The lines added to your
    ``$MANGACORE_DIR``) are used in a specific mode of survey-level
    execution of the DAP. However, this is a niche usage mode and is
    effectively never used. See :ref:`execution-rundap`.
- * The DAP expects to find the DRP ``LOGCUBE`` and ``LOGRSS`` files
+ * The DAP expects to find the DRP ``LOGCUBE`` *and* ``LOGRSS`` files
    in the directory
    ``$MANGA_SPECTRO_REDUX/$MANGADRP_VER/[PLATE]/stack``, where
    ``[PLATE]`` is the desired plate number. The ``LOGRSS`` files are

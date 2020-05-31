@@ -8,7 +8,7 @@ from mangadap.par.analysisplan import AnalysisPlanSet
 from mangadap.survey.manga_dap import manga_dap
 from mangadap.datacube import DataCube
 
-def parse_args(options=None):
+def parse_args(options=None, return_parser=False):
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     group = parser.add_mutually_exclusive_group(required=True)
@@ -47,6 +47,10 @@ def parse_args(options=None):
     parser.add_argument('-a', '--analysis_path', type=str,
                         help='Top-level output directory for the DAP results; defaults to '
                              '$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER', default=None)
+
+    if return_parser:
+        return parser
+
     return parser.parse_args() if options is None else parser.parse_args(options)
 
 def main(args):

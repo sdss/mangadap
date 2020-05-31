@@ -10,7 +10,7 @@ import argparse
 
 from mangadap.spectra import MaNGARSS
 
-def parse_args(options=None):
+def parse_args(options=None, return_parser=False):
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('plate', type=int, help='plate ID to process')
@@ -31,6 +31,10 @@ def parse_args(options=None):
     parser.add_argument('-d', '--directory_path', type=str,
                         help='Directory with the DRP produced RSS file; default uses environmental '
                              'variables to define the default MaNGA DRP redux path', default=None)
+
+    if return_parser:
+        return parser
+
     return parser.parse_args() if options is None else parser.parse_args(options)
 
 

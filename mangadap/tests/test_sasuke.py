@@ -87,16 +87,20 @@ def test_sasuke():
     # Test the results
 
     # Rejected pixels
-    assert numpy.sum(emlfit.bitmask.flagged(el_mask, flag='PPXF_REJECT')) == 277, \
+    assert numpy.sum(emlfit.bitmask.flagged(el_mask, flag='PPXF_REJECT')) == 265, \
                 'Different number of rejected pixels'
 
     # Unable to fit
     assert numpy.array_equal(emlfit.bitmask.flagged_bits(el_fit['MASK'][5]), ['NO_FIT']), \
                 'Expected NO_FIT in 6th spectrum'
 
+    # No *attempted* fits should fail
+    assert numpy.sum(emlfit.bitmask.flagged(el_fit['MASK'], flag='FIT_FAILED')) == 0, \
+                'Fits should not fail'
+
     # Number of used templates
     assert numpy.array_equal(numpy.sum(numpy.absolute(el_fit['TPLWGT']) > 1e-10, axis=1),
-                             [25, 24, 32, 32, 28,  0, 17, 22]), \
+                             [25, 22, 34, 32, 27,  0, 16, 20]), \
                 'Different number of templates with non-zero weights'
 
     # No additive coefficients
@@ -113,17 +117,17 @@ def test_sasuke():
                      < 0.02), 'Reduced chi-square are too different'
 
     assert numpy.all(numpy.absolute(el_fit['RMS'] -
-                                    numpy.array([0.0362, 0.0191, 0.0366, 0.0246, 0.0507, 0.,
-                                                 0.0128, 0.0124])) < 1e-4), 'RMS too different'
+                                    numpy.array([0.036, 0.019, 0.036, 0.024, 0.051, 0.000,
+                                                 0.012, 0.012])) < 0.001), 'RMS too different'
 
     assert numpy.all(numpy.absolute(el_fit['FRMS'] -
-                                    numpy.array([0.0210, 0.0265, 0.0272, 0.0348, 0.0186, 0.,
-                                                 1.1298, 0.1096])) < 1e-4), \
+                                    numpy.array([0.021, 0.025, 0.025, 0.033, 0.018, 0.000,
+                                                 1.052, 0.101])) < 0.001), \
             'Fractional RMS too different'
 
     assert numpy.all(numpy.absolute(el_fit['RMSGRW'][:,2] -
-                                    numpy.array([0.0708, 0.0375, 0.0707, 0.0477, 0.1009, 0.,
-                                                 0.0271, 0.0244])) < 1e-4), \
+                                    numpy.array([0.072, 0.038, 0.071, 0.047, 0.101, 0.000,
+                                                 0.026, 0.024])) < 0.001), \
             'Median absolute residual too different'
 
     # All lines should have the same velocity
@@ -133,15 +137,12 @@ def test_sasuke():
     # Test velocity values
     # TODO: Need some better examples!
     assert numpy.all(numpy.absolute(el_par['KIN'][:,0,0] -
-                                    numpy.array([14694.0, 14882.2, 14767.1, 8159.5, 9258.7, 0.,
-                                                 5131.1, 5432.4])) < 1e-1), \
+                                    numpy.array([14704.9, 14868.4, 14767.3, 8162.7, 9258.8, 0.0,
+                                                  5130.9,  5431.9])) < 0.1), \
                 'Velocities are too different'
 
     # H-alpha dispersions
     assert numpy.all(numpy.absolute(el_par['KIN'][:,18,1] - 
-                                    numpy.array([1000.5, 1000.5, 224.7, 114.0, 170.9, 0., 81.3,
-                                                 50.1])) < 1e-1), \
+                                    numpy.array([1000.5, 1000.5, 224.5, 127.0, 171.0, 0.0,
+                                                 81.0, 49.7])) < 1e-1), \
             'H-alpha dispersions are too different'
-
-if __name__ == '__main__':
-    test_sasuke()

@@ -185,7 +185,7 @@ def dap_status(analysis_path, daptypes, logdir=None):
                 f.write('{0:>5} {1:>5}\n'.format(*err.split('-')))
 
 
-def parse_args(options=None):
+def parse_args(options=None, return_parser=False):
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('plan_file', type=str, help='parameter file with the MaNGA DAP '
                         'execution plan to use instead of the default')
@@ -195,6 +195,10 @@ def parse_args(options=None):
     parser.add_argument('--drpver', type=str, help='DRP version', default=None)
     parser.add_argument('--dapver', type=str, help='DAP version', default=None)
     parser.add_argument('--analysis_path', type=str, help='main DAP output path', default=None)
+
+    if return_parser:
+        return parser
+
     return parser.parse_args() if options is None else parser.parse_args(options)
 
 
