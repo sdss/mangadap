@@ -12,7 +12,7 @@ parameters.  For help with the high-level interaction with the DAP
 parameters, see the description of its :ref:`execution`.
 
 We have also recently abstracted the input to the DAP to allow for
-custom :class:`mangadap.datacube.datacube.DataCube` objects to be
+custom :class:`~mangadap.datacube.datacube.DataCube` objects to be
 provided by the user, enabling the DAP to analyze non-MaNGA
 data; see :ref:`datacube`.
 
@@ -58,9 +58,9 @@ TemplateLibrary example
 
 As an example of what some of this looks like in practice, consider the
 :ref:`templatelibrary-usage` for a
-:class:`mangadap.proc.templatelibrary.TemplateLibrary`.
+:class:`~mangadap.proc.templatelibrary.TemplateLibrary`.
 
-The :class:`mangadap.proc.templatelibrary.TemplateLibrary` object is
+The :class:`~mangadap.proc.templatelibrary.TemplateLibrary` object is
 setup to read and process the template library used to model the
 stellar continuum. The survey-level execution of the DAP currently
 uses the ``MILESHC`` library for the stellar kinematics and the
@@ -143,10 +143,10 @@ up these configuration files.
 However, you can also write scripts that incorporate the DAP
 functionality without the need to add configuration files. Assume you
 have a script that uses a
-:class:`mangadap.proc.templatelibary.TemplateLibrary` object, you can
+:class:`~mangadap.proc.templatelibary.TemplateLibrary` object, you can
 define a new template library in the code itself using the
-:class:`mangadap.proc.templatelibrary.TemplateLibraryDef` object. The
-:class:`mangadap.proc.templatelibrary.TemplateLibraryDef` object is
+:class:`~mangadap.proc.templatelibrary.TemplateLibraryDef` object. The
+:class:`~mangadap.proc.templatelibrary.TemplateLibraryDef` object is
 actually the product of the parsed configuration file within the main
 DAP code. For example:
 
@@ -216,20 +216,20 @@ examples of including new functionality or algorithms.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The class that constructs the spatially binned spectra is
-:class:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra`.
+:class:`~mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra`.
 The method used to construct a class instance is defined using
-:class:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectraDef`,
+:class:`~mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectraDef`,
 which has components that define a set of binning parameters, a binning
 class instance, and/or a binning function.  The existing binning schemes
 are:
 
- * :class:`mangadap.proc.spatialbinning.GlobalBinning`
- * :class:`mangadap.proc.spatialbinning.RadialBinning`
- * :class:`mangadap.proc.spatialbinning.VoronoiBinning`
- * :class:`mangadap.proc.spatialbinning.SquareBinning`
+ * :class:`~mangadap.proc.spatialbinning.GlobalBinning`
+ * :class:`~mangadap.proc.spatialbinning.RadialBinning`
+ * :class:`~mangadap.proc.spatialbinning.VoronoiBinning`
+ * :class:`~mangadap.proc.spatialbinning.SquareBinning`
 
 All of these classes provide a common interface that
-:class:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra`
+:class:`~mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra`
 calls to determine which spaxels are assigned to each bin.  The format
 of this function must be:
 
@@ -247,7 +247,7 @@ and return a bin ID number associated with each x and y position.
 So let's say that you wanted to bin all spectra in a set of apertures.
 You could define and implement a function that performs this binning,
 and then execute this binning approach within
-:class:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra` as
+:class:`~mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra` as
 follows (the code is untested!):
 
 .. code-block:: python
@@ -420,12 +420,12 @@ data model.  Still, it can be done, it's just that one has to follow
 more requirements that can be more stringent.
 
 Let's say you want to add a new emission-line fitter (as we did for
-MPL-6 in changing from :class:`mangadap.proc.elric.Elric` to
-:class:`mangadap.proc.sasuke.Sasuke`).  The class that constructs the
+MPL-6 in changing from :class:`~mangadap.proc.elric.Elric` to
+:class:`~mangadap.proc.sasuke.Sasuke`).  The class that constructs the
 parameterized emission-line models is
-:class:`mangadap.proc.emissionlinemodel.EmissionLineModel`.  The method
+:class:`~mangadap.proc.emissionlinemodel.EmissionLineModel`.  The method
 used to construct a class instance is defined using
-:class:`mangadap.proc.emissionlinemodel.EmissionLineModelDef`, which has
+:class:`~mangadap.proc.emissionlinemodel.EmissionLineModelDef`, which has
 components that define a set of model-fitting parameters, a
 model-fitting class instance, and/or a model-fitting function.  The
 common function call that any emission-line fitter must provide looks
@@ -440,7 +440,7 @@ like:
                 model_eml_par, model_binid
 
 where ``binned_spectra`` is a
-:class:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra`
+:class:`~mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra`
 object and the returned arrays are:
 
  - ``model_eml_flux``: Model emission-line flux only; shape is
@@ -476,14 +476,14 @@ object and the returned arrays are:
    object.
 
 In addition to the high-level data model interfaces, like
-:class:`mangadap.proc.emissionlinemodel.EmissionLineModel`, the DAP
+:class:`~mangadap.proc.emissionlinemodel.EmissionLineModel`, the DAP
 attempts to provide a set of base classes that provided functionality
 common to a set of abstracted spectral-fitting routines.  For the
 emission-line fitting, this is the
-:class:`mangadap.proc.spectralfitting.EmissionLineFit` class.  This
+:class:`~mangadap.proc.spectralfitting.EmissionLineFit` class.  This
 object provides the data table description that should be common to all
 emission-line model output for the construction of the output data model
-by :class:`mangadap.proc.emissionlinemodel.EmissionLineModel` (see
+by :class:`~mangadap.proc.emissionlinemodel.EmissionLineModel` (see
 ``model_eml_par`` above).
 
 .. warning::
@@ -492,7 +492,7 @@ by :class:`mangadap.proc.emissionlinemodel.EmissionLineModel` (see
     the code for the emission-line module used in MPL-6.  The code will
     not work out of the box and is meant to illustrate the solution to
     the problem.  For the actual solution, see the main DAP interface
-    class :class:`mangadap.proc.sasuke.Sasuke` and the primary fitting
+    class :class:`~mangadap.proc.sasuke.Sasuke` and the primary fitting
     function written by Xihan Ji and Michele Cappellari (with some
     significant edits by Kyle Westfall), :mod:`mangadap.contrib.xjmc`.
 

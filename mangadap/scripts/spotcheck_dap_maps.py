@@ -5,7 +5,7 @@ import argparse
 
 import numpy
 
-from matplotlib import pyplot, rc, colors, colorbar, ticker
+from matplotlib import pyplot, rc, colors, colorbar, ticker, cm
 
 from astropy.io import fits
 
@@ -54,7 +54,7 @@ def masked_imshow(fig, ax, cax, data, extent=None, norm=None, vmin=None, vmax=No
             cb.update_ticks()
     else:
         _norm = colors.Normalize(vmin=vmin, vmax=vmax) if norm is None else norm
-        cb = colorbar.ColorbarBase(cax, cmap=cmap, norm=norm)
+        cb = colorbar.ColorbarBase(cax, cmap=cm.get_cmap(cmap), norm=_norm)
 
     if contour_data is not None and levels is not None \
             and numpy.sum(contour_data.mask) != numpy.prod(contour_data.shape):
@@ -537,7 +537,7 @@ def spotcheck_images(analysis_path, daptype, plate, ifudesign, ofile=None, drpve
     pyplot.close(fig)
     
 
-def parse_args(options=None):
+def parse_args(options=None, return_parser=False):
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('plate', type=int, help='plate ID to process')
@@ -554,6 +554,9 @@ def parse_args(options=None):
 
     parser.add_argument('--daptype', type=str, help='DAP processing type', default=None)
     parser.add_argument('--normal_backend', dest='bgagg', action='store_false', default=True)
+
+    if return_parser:
+        return parser
 
     return parser.parse_args() if options is None else parser.parse_args(options)
 

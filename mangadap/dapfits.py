@@ -52,6 +52,7 @@ import astropy.units
 from astropy.cosmology import FlatLambdaCDM
 
 from .datacube import DataCube
+from .util.constants import DAPConstants
 from .util.drpfits import DRPQuality3DBitMask
 from .util.fitsutil import DAPFitsUtil
 from .util.dapbitmask import DAPBitMask
@@ -1888,7 +1889,7 @@ class construct_cube_file:
 
         # Ensure extensions are in the correct order
         self.hdu = fits.HDUList([ fits.PrimaryHDU(header=prihdr),
-                                  *binlist,   # FLUX, IVAR, MASK, WAVE, REDCORR
+                                  *binlist,   # FLUX, IVAR, MASK, LSF, WAVE, REDCORR
                                   *modlist,   # MODEL, MODEL_MASK, EMLINE, STELLAR, STELLAR_MASK
                                   *binidlist  # BINID
                                 ])
@@ -2048,15 +2049,15 @@ class construct_cube_file:
 
     def binned_data_cube(self, prihdr, binned_spectra, binned_spectra_3d_hdu):
         """
-        Constructs the 'FLUX', 'IVAR', 'MASK', 'WAVE', and 'REDCORR'
-        model cube extensions, and begins the construction of the
-        'MASK'.
+        Constructs the 'FLUX', 'IVAR', 'MASK', 'LSF', 'WAVE', and
+        'REDCORR' model cube extensions, and begins the construction
+        of the 'MASK'.
 
         Returns the primary header, a list of ImageHDUs, and the mask
         array.
         """
         #---------------------------------------------------------------
-        ext = ['FLUX', 'IVAR', 'MASK', 'WAVE', 'REDCORR']
+        ext = ['FLUX', 'IVAR', 'MASK', 'LSF', 'WAVE', 'REDCORR']
 
         if binned_spectra is None:
             # Construct and return the empty hdus
@@ -2070,20 +2071,25 @@ class construct_cube_file:
         prihdr = binned_spectra._add_method_header(prihdr)
         prihdr = binned_spectra._add_reddening_header(prihdr)
 
+        # Save the original extension from the DRP file used to
+        # construct the datacube spectral resolution data.
+        lsfhdr = self.base_cubehdr.copy()
+        lsfhdr['DRPEXT'] = (binned_spectra.cube.sres_ext, 'Source ext from DRP file')
+
         #---------------------------------------------------------------
         # Get the extension headers; The WAVE and REDCORR extensions
         # have no header.
-        hdr = [ DAPFitsUtil.finalize_dap_header(self.base_cubehdr, 'FLUX',
-                                                bunit='1E-17 erg/s/cm^2/ang/spaxel', err=True,
-                                                qual=True),
-                DAPFitsUtil.finalize_dap_header(self.base_cubehdr, 'FLUX', hduclas2='ERROR',
-                                                bunit='(1E-17 erg/s/cm^2/ang/spaxel)^{-2}',
-                                                qual=True, prepend=False),
-                DAPFitsUtil.finalize_dap_header(self.base_cubehdr, 'FLUX', hduclas2='QUALITY',
-                                                err=True, bit_type=self.bitmask.minimum_dtype(),
-                                                prepend=False),
-                None, None
-              ]
+        hdr = [DAPFitsUtil.finalize_dap_header(self.base_cubehdr, 'FLUX',
+                                               bunit='1E-17 erg/s/cm^2/ang/spaxel', err=True,
+                                               qual=True),
+               DAPFitsUtil.finalize_dap_header(self.base_cubehdr, 'FLUX', hduclas2='ERROR',
+                                               bunit='(1E-17 erg/s/cm^2/ang/spaxel)^{-2}',
+                                               qual=True, prepend=False),
+               DAPFitsUtil.finalize_dap_header(self.base_cubehdr, 'FLUX', hduclas2='QUALITY',
+                                               err=True, bit_type=self.bitmask.minimum_dtype(),
+                                               prepend=False),
+               DAPFitsUtil.finalize_dap_header(lsfhdr, 'LSF', bunit='angstrom'),
+               None, None]
 
         #---------------------------------------------------------------
         # Get the data arrays
@@ -2092,11 +2098,18 @@ class construct_cube_file:
                                                  deredden=False,
                                                  ivar=binned_spectra_3d_hdu['IVAR'].data)
 
+        # Convert spectral resolution to dispersion of line-spread
+        # function in angstroms
+        lsf = numpy.ma.divide(binned_spectra['WAVE'].data[None,None,:],
+                              binned_spectra_3d_hdu['SPECRES'].data).filled(0.0) \
+                                / DAPConstants.sig2fwhm
+
         # Return the primary header, the list of ImageHDUs, and the mask
-        data = [ flux.astype(self.float_dtype), ivar.astype(self.float_dtype),
-                 self._get_data_mask(binned_spectra, binned_spectra_3d_hdu),
-                 binned_spectra['WAVE'].data.copy().astype(self.float_dtype),
-                 binned_spectra['REDCORR'].data.copy().astype(self.float_dtype) ]
+        data = [flux.astype(self.float_dtype), ivar.astype(self.float_dtype),
+                self._get_data_mask(binned_spectra, binned_spectra_3d_hdu),
+                lsf.astype(self.float_dtype),
+                binned_spectra['WAVE'].data.copy().astype(self.float_dtype),
+                binned_spectra['REDCORR'].data.copy().astype(self.float_dtype)]
         return prihdr, DAPFitsUtil.list_of_image_hdus(data, hdr, ext)
 
     def model_cubes(self, prihdr, binned_spectra, stellar_continuum, stellar_continuum_3d_hdu,

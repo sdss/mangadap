@@ -9,7 +9,7 @@ from mangadap.util.log import init_DAP_logging, module_logging
 from mangadap.par.analysisplan import AnalysisPlanSet
 from mangadap.survey.dapall import DAPall
 
-def parse_args(options=None):
+def parse_args(options=None, return_parser=False):
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('--plan_file', type=str, help='parameter file with the MaNGA DAP '
@@ -31,6 +31,9 @@ def parse_args(options=None):
     parser.add_argument('--double', dest='single_precision', action='store_false', default=True,
                         help='Output the floating-point data in double precision '
                              '(default is single precision)')
+    if return_parser:
+        return parser
+
     return parser.parse_args() if options is None else parse.parse_args(options)
 
 def main(args):

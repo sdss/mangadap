@@ -11,7 +11,7 @@ from mangadap.proc.templatelibrary import TemplateLibrary
 from mangadap.util.sampling import spectral_coordinate_step
 
 
-def parse_args(options=None):
+def parse_args(options=None, return_parser=False):
 
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
@@ -24,6 +24,9 @@ def parse_args(options=None):
                         help='linear or log-linear spectral pixel width')
     parser.add_argument('-l', '--linear', action='store_true', default=False,
                         help='pixel sampling should be linear (default is log)')
+
+    if return_parser:
+        return parser
 
     return parser.parse_args() if options is None else parser.parse_args(options)
 

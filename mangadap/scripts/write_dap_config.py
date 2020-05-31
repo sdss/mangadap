@@ -10,7 +10,7 @@ import astropy.constants
 from mangadap.datacube import MaNGADataCube
 from mangadap.survey.drpcomplete import DRPComplete
 
-def parse_args(options=None):
+def parse_args(options=None, return_parser=False):
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('plate', type=int, help='Plate number')
     parser.add_argument('ifudesign', type=int, help='IFU design number')
@@ -40,6 +40,9 @@ def parse_args(options=None):
                              'convention.  Default set by MaNGADataCube class.')
     parser.add_argument('-o', '--overwrite', default=False, action='store_true',
                         help='Overwrite any existing files.')
+
+    if return_parser:
+        return parser
 
     return parser.parse_args() if options is None else parser.parse_args(options)
 

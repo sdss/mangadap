@@ -15,6 +15,7 @@ BADFLUX      8    Bad flux calibration
 BADPSF       9    PSF estimate may be bad                          
 MANYDEAD     10   Many dead fibers                                 
 RETIRED2     11   Bit retired, moved into MASTAR_QUAL instead      
+BLOWTORCH    12   Blowtorch artifact in one or more frames         
 CRITICAL     30   Critical failure in one or more frames           
 ===========  ===  =================================================
 

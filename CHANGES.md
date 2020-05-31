@@ -30,9 +30,18 @@ TODO
    continuum value? (e.g., latter only cares about the side bands)
  - Deprecate `mangadap.survey.mangampl`
 
-3.0.1dev
---------
+3.0.1 (31 May 2020)
+-------------------
 
+ - Fixed bug in association of spaxels with bins in emission-line module
+ - Catch failures in pPXF in emission-line module, spaxel/bin flagged as
+   `FIT_FAILED`, execution keeps going.
+ - 7443-3703 redshift fix
+ - Added LSF extension with LSF of binned spectra to output model cube
+   file
+ - Fixed corner cases in `StellarContinuumModel.matched_kinematics` and
+   `EmissionLineModel.matched_kinematics` where all bins are masked.
+ - Fixed bug in use of `ColorbarBase` in some plotting scripts.
 
 3.0.0 (27 May 2020)
 -------------------
