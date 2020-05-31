@@ -28,9 +28,10 @@ def test_read():
 def test_mileshc():
     tpl = TemplateLibrary('MILESHC', match_resolution=False, velscale_ratio=4, spectral_step=1e-4,
                           log=True, hardcopy=False)
+
     # Shape
     assert tpl.ntpl == 42, 'Incorrect number of templates'
-    assert tpl['FLUX'].data.shape == (42, 12830), 'Incorrect shape of the flux array'
+    assert tpl['FLUX'].data.shape == (42, 12634), 'Incorrect shape of the flux array'
 
     # Wavelength and velocity coordinates
     assert numpy.isclose(spectral_coordinate_step(tpl['WAVE'].data, log=True), 1e-4/4), \
@@ -43,7 +44,8 @@ def test_mileshc():
     nmasked = {}
     for k in tpl.bitmask.keys():
         nmasked[k] = numpy.sum(tpl.bitmask.flagged(tpl['MASK'].data, flag=k))
-    assert numpy.sum(list(nmasked.values())) == 8278, 'Masking has changed'
+
+    assert numpy.sum(list(nmasked.values())) == 192, 'Masking has changed'
     assert nmasked['NO_DATA'] == 0, 'There should be no NO_DATA flags'
 
     # Flux values
@@ -61,4 +63,3 @@ def test_match_resolution():
     indx = tpl['MASK'].data == 0
     assert numpy.std(tpl.sres(tpl['WAVE'].data[indx[0]]) - tpl['SPECRES'].data[0,indx[0]]) < 0.1, \
                 'Spectral resolution difference is above tolerance.'
-
