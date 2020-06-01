@@ -20,10 +20,11 @@ we recommend using the most recent tag.  You can do so by executing:
         cd mangadap
         ./checkout_current_tag
 
-.. note::
+.. warning::
 
     There is a distribution of the DAP that can be installed via
-    `pip`, but we're still working out the bugs.
+    `pip`, but the installation will be unsuccessful. We're still
+    working out the bugs...
 
 Install Python 3
 ----------------
@@ -37,8 +38,8 @@ directly from `python.org <https://www.python.org/>`_.
 Install the DAP code
 --------------------
 
-To install the DAP and ensure its dependencies are met, ensure your
-at in the top-level ``mangadap`` directory and run (preferred):
+The preferred method to install the DAP and ensure its dependencies
+are met is to, from the top-level, ``mangadap`` directory, run:
 
 .. code-block:: console
 
@@ -125,19 +126,22 @@ below.
 These environmental variables can be added to, e.g., your
 ``.bash_profile`` file in your home directory or be included in a script
 that is sourced when you want to run the DAP.  The lines added to your
-`.bash_profile` file could look something like this:
+``.bash_profile`` file could look something like this:
 
 .. code-block:: bash
 
     export MANGA_SPECTRO_REDUX=/Volumes/MaNGA/redux
-    export MANGA_SPECTRO_ANALYSIS=/Volumes/MaNGA/analysis
-
     export MANGADRP_VER=v3_0_1
 
-    export MANGADAP_VER=3.0.0
+    export MANGA_SPECTRO_ANALYSIS=/Volumes/MaNGA/analysis
+    export MANGADAP_VER=3.0.1
 
 .. note::
 
+ * Importantly, note that ``$MANGADAP_VER`` is **only** used to set the
+   path names, not to select the specific version of the DAP that
+   should be used. The version of the DAP used is always the one
+   installed by your python environment.
  * The DAP checks that these variables are defined *every time it is
    imported*. If they are not, warnings are raised and the defaults
    are used.
@@ -159,12 +163,9 @@ that is sourced when you want to run the DAP.  The lines added to your
    the DAP.
  * The DAP expects to find/write data to
    ``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER``. This path
-   can be altered when executing the DAP, but the directory structure
-   below this used by the DAP to organize its outputs cannot be
-   changed.
- * ``$MANGADAP_VER`` is only used to set the path names, not to select
-   the specific version of the DAP that should be used.  The version of
-   the DAP used is always the one installed by your python environment.
+   can be altered when executing the DAP, but the subdirectory
+   structure used by the DAP to organize its outputs within this root
+   directory cannot currently be changed.
 
 Problems?
 ---------

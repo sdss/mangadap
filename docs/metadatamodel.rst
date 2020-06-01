@@ -214,7 +214,7 @@ AnalysisPlan file
 ~~~~~~~~~~~~~~~~~
 
 For a general description the ``AnalysisPlan`` file, see
-:ref:`execution-analysis-plan`.
+the :ref:`execution-analysis-plan`.
 
 *File root*: ``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/log/[timestamp]``
 

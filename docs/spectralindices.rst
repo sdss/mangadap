@@ -5,8 +5,8 @@
 
 .. _spectralindices:
 
-Spectral-Index Parameters
-=========================
+Spectral Indices
+================
 
 The spectral indices to be measured by the DAP are divided into two
 groups: (1) absorption-line indices that measure the equivalent width

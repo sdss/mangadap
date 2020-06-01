@@ -13,9 +13,9 @@ analysis of a single MaNGA datacube.  This workflow is also described in
 Section 4 of the `DAP Overview paper
 <https://ui.adsabs.harvard.edu/abs/2019AJ....158..231W/abstract>`_.
 
-*Each* line in :ref:`execution-analysis-plan` (i.e., each DAPTYPE)
-defines how each of the six DAP modules is to analyze the datacube.
-Figure 3 from the `DAP Overview paper
+*Each* line in the :ref:`execution-analysis-plan` (i.e., each
+``DAPTYPE``) defines how each of the six DAP modules is to analyze
+the datacube. Figure 3 from the `DAP Overview paper
 <https://ui.adsabs.harvard.edu/abs/2019AJ....158..231W/abstract>`_
 provides a schematic of the diagram of the workflow, including the
 primary python classes:
@@ -23,9 +23,8 @@ primary python classes:
 .. figure:: figures/dap_workflow.png
    :scale: 50 %
 
-   Reproduction of Figure 3 from `Westfall et al. (2019)
-   <https://ui.adsabs.harvard.edu/abs/2019AJ....158..231W/abstract>`_:
-
+   Updated version of Figure 3 from `Westfall et al. (2019)
+   <https://ui.adsabs.harvard.edu/abs/2019AJ....158..231W/abstract>`_: 
    Schematic diagram of the DAP workflow. From left-to-right, the
    schematic provides the relevant python modules, the analysis
    objectives of each module, and the associated ``MAPS`` and model

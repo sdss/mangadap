@@ -1276,7 +1276,8 @@ class DRPComplete:
 
     def can_analyze(self, row=None):
         """
-        Determine the DAP can analyze a plate-ifu entry in the database.
+        Determine if the DAP can analyze a plate-ifu entry in the
+        database.
 
         The selection is currently:
 

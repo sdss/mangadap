@@ -310,31 +310,7 @@ def dap_method(binning_method, stellar_continuum_templates, emission_line_model_
     """
     Construct the ``DAPTYPE`` based on the analysis plan.
 
-    The construction is based on directly provided strings for
-    ``binning_method``, ``stellar_continuum_templates``, and
-    ``emission_line_model_templates``. The ``DAPTYPE`` is constructed
-    as these three strings separated by dashes. E.g., ``DAPTYPE =
-    'HYB10-MILESHC-MILESHC'`` when the binning method is ``HYB10``
-    and the ``MILESHC`` library is used as templates for both the
-    stellar and emission-line fitting.
-
-    With a analysis plan file, run the following to get the list of
-    daptypes::
-
-        from mangadap.par.analysisplan import AnalysisPlanSet
-        from mangadap.proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
-        from mangadap.proc.stellarcontinuummodel import StellarContinuumModel
-        from mangadap.proc.emissionlinemodel import EmissionLineModel
-        from mangadap.config.defaults import dap_method
-
-        plans = AnalysisPlanSet.from_par_file(plan_file)
-        daptypes = []
-        for plan in plans:
-            bin_method = SpatiallyBinnedSpectra.define_method(plan['bin_key'])
-            sc_method = StellarContinuumModel.define_method(plan['continuum_key'])
-            el_method = EmissionLineModel.define_method(plan['elfit_key'])
-            daptypes += [dap_method(bin_method['key'], sc_method['template_library'],
-                                    el_method['continuum_templates'])]
+    .. include:: ../include/daptype.rst
 
     Args:
         binning_method (:obj:`str`):

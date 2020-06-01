@@ -5,15 +5,13 @@
 What's New in the DAP
 *********************
 
-MPL-10 (3.0.0)
+MPL-10 (3.0.1)
 ==============
 
 High-level changes
 ------------------
 
  * Incorporates the new LSF measurements from the DRP.
- * DAPall file is now divided into one extension for each analysis
-   method; see the desciption of the :ref:`metadatamodel-dapall`.
  * The emission-line module now uses a new set of hierarchically
    cluster MaStar spectra to model the stellar continuum; the library
    is called ``MASTARHC2`` (for now) to distinguish it from the
@@ -50,6 +48,13 @@ High-level changes
      for the index weights.
    * ``SPECINDEX_WGT_MODEL``: Index weight based on the best-fitting
      model spectrum.
+
+ * The estimated dispersion in the line-spread function of the binned
+   spectra is now included in the :ref:`datamodel-cube` in the new
+   ``LSF`` extension. In MPL-10, the ``LSFPRE`` extension from the
+   DRP LOGCUBE is used for the spectral resolution of each spaxel.
+ * DAPall file is now divided into one extension for each analysis
+   method; see the desciption of the :ref:`metadatamodel-dapall`.
 
 User-level changes/bug fixes
 ----------------------------
