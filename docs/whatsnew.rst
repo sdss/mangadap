@@ -103,7 +103,8 @@ Under-the-hood changes/bug fixes
    instead of :class:`~mangadap.util.drpfits.DRPFits` when executing
    the pipeline. Old :class:`~mangadap.util.drpfits.DRPFits` is now
    deprecated; :class:`~mangadap.util.drpfits.DRPFits` now repurposed
-   to provide functionality common to both :class:`MaNGADataCube` and
+   to provide functionality common to both
+   :class:`~mangadap.datacube.manga.MaNGADataCube` and
    :class:`~mangadap.spectra.manga.MaNGARSS`.
  * Included a script that will download data into a new
    ``mangadap/data/remote`` directory for testing.  The directory is not
@@ -330,9 +331,10 @@ Under-the-hood algorithmic changes
    that are components of binned spectra and does not refit spectra that
    constitute an entire bin themselves. I.e. this removes some largely
    redundant fitting. 
- * :class:`mangadap.proc.ppxffit.PPXFFit` and :class:`mangadap.proc.sasuke.Sasuke`
-   include calculations of the chi-square growth; and changed the names
-   of the growth columns in the reference files.
+ * :class:`~mangadap.proc.ppxffit.PPXFFit` and
+   :class:`~mangadap.proc.sasuke.Sasuke` include calculations of the
+   chi-square growth; and changed the names of the growth columns in
+   the reference files.
  * Changed definitions of :math:`A` to be the model amplitude;
    :math:`A/N` is the model amplitude divided by the median noise in the
    two sidebands defined for the emission-line EW calculation.

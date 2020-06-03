@@ -1,3 +1,4 @@
+.. |ang|   unicode:: U+212B
 
 .. include:: include/links.rst
 
@@ -312,7 +313,7 @@ Aggregated per DAPTYPE
 
    NSA stellar mass versus the absolute luminosity in :math:`{\rm
    H}\alpha`. Points with :math:`{\rm H}\alpha` EW greater than 2
-   :math:`\A` are colored by the :math:`{\rm H}\alpha`-to-:math:`{\rm
+   |ang| are colored by the :math:`{\rm H}\alpha`-to-:math:`{\rm
    H}\beta` luminosity ratio; others are set to gray. Compare to
    Figure 33 from `Westfall et al. (2019, AJ, 158, 231)`_.
 

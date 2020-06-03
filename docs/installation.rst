@@ -1,11 +1,14 @@
+
+.. include:: include/links.rst
+
 Installation
 ============
 
 Clone the repo
 --------------
 
-To download the DAP software and associated data, clone the `GitHub repo
-<https://github.com/sdss/mangadap>`_ by executing:
+To download the DAP software and associated data, clone the `mangadap
+GitHub repo`_ by executing:
 
     .. code-block:: console
 
@@ -29,10 +32,9 @@ we recommend using the most recent tag.  You can do so by executing:
 Install Python 3
 ----------------
 
-The DAP is supported for Python 3 only.  To install Python, you can do
-so along with a full package manager, like `Anaconda
-<https://www.continuum.io/DOWNLOADS>`_, or you can install python 3
-directly from `python.org <https://www.python.org/>`_.
+The DAP is supported for Python 3 only. To install Python, you can do
+so along with a full package manager, like `Anaconda`_, or you can
+install python 3 directly from `python.org`_.
 
 
 Install the DAP code
@@ -86,14 +88,13 @@ To test the installation, you can do one of the following:
 
 Some tests requires a set of "remote" data that are not located in
 the repo for space considerations. Downloading the data used by these
-tests currently requires `SDSS Collaboration Access
-<https://sdss-marvin.readthedocs.io/en/latest/installation.html#sdss-collaboration-access>`_.
-The link in the last sentence points to a description of how this
-access is granted for Marvin using a ``~\.netrc`` file. The DAP uses
-the same ``~\.netrc`` file to authenticate access to the
-``data.sdss.org`` host for downloading the test data. Once you have
-your ``~\.netrc`` file, you can download the necessary test data and
-rerun the tests to include usage of that data like this:
+tests currently requires `SDSS Collaboration Access`_. The link in
+the last sentence points to a description of how this access is
+granted for Marvin using a ``~\.netrc`` file. The DAP uses the same
+``~\.netrc`` file to authenticate access to the ``data.sdss.org``
+host for downloading the test data. Once you have your ``~\.netrc``
+file, you can download the necessary test data and rerun the tests to
+include usage of that data like this:
 
     .. code-block:: console
 
@@ -145,11 +146,10 @@ that is sourced when you want to run the DAP.  The lines added to your
  * The DAP checks that these variables are defined *every time it is
    imported*. If they are not, warnings are raised and the defaults
    are used.
- * Some of these same variables are defined by `Marvin
-   <https://sdss-marvin.readthedocs.io/en/stable/installation.html>`_.
-   It is possible to have both Marvin and the DAP point to the same
-   directory, but beware that this may mean that some of the files get
-   overwritten!
+ * Some of these same variables are defined by `Marvin`_. It is
+   possible to have both Marvin and the DAP point to the same
+   directory, but beware that this may mean that some of the files
+   get overwritten!
  * Two additional variables (``$MANGACORE_VER`` and
    ``$MANGACORE_DIR``) are used in a specific mode of survey-level
    execution of the DAP. However, this is a niche usage mode and is
@@ -170,8 +170,7 @@ that is sourced when you want to run the DAP.  The lines added to your
 Problems?
 ---------
 
-We have limited support to offer installation help.  However, if you
-have problems, particularly those that you think may be a more general
-problem, please `submit an issue
-<https://github.com/sdss/mangadap/issues>`_.
+We have limited support to offer installation help. However, if you
+have problems, particularly those that you think may be a more
+general problem, please `Submit an issue`_.
 

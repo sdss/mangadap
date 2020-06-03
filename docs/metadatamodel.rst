@@ -1,3 +1,6 @@
+
+.. include:: include/links.rst
+
 .. |ang|   unicode:: U+212B
 
 .. _metadatamodel:
@@ -14,14 +17,14 @@ Metadata Model
 Maskbits
 --------
 
-The mask bits for the DAP output files are pulled from ``IDLUTILS``. A
-default file is provided with the ``mangadap`` distribution; however,
-the DAP ``setup.py`` file will also attempt to download the most
-relevant file from the public SDSS SVN repository using the python
-`requests library <https://pypi.org/project/requests/>`_.
+The mask bits for the DAP output files are pulled from ``IDLUTILS``.
+A default file is provided with the ``mangadap`` distribution;
+however, the DAP ``setup.py`` file will also attempt to download the
+most relevant file from the public SDSS SVN repository using
+`requests`_.
 
-If you're unfamiliar with maskbits, see the `SDSS Primer
-<http://www.sdss.org/dr15/algorithms/bitmasks/>`_
+If you're unfamiliar with maskbits, see the description of `SDSS
+Bitmasks`_.
 
 See :ref:`gettingstarted-bitmasks` for examples of how to use the mask bits.
 
@@ -44,7 +47,7 @@ The three bitmask groups for DAP output files are:
       model ``LOGCUBE`` data
 
 These bitmask groups are further described and listed below.  For
-reference, we also list the two *DRP* bitmask groups that the DAP
+reference, we also list the two DRP bitmask groups that the DAP
 uses to flag the data it analyzes.
 
 .. _metadatamodel-drp3qual:
@@ -94,7 +97,7 @@ generally not be used for scientific purposes.
 MANGA_DAPPIXMASK
 ~~~~~~~~~~~~~~~~
 
-``MANGA_DAPPIXMASK`` is the 2D image bitmap used to describe the quality
+``MANGA_DAPPIXMASK`` is the 2D image bitmask used to describe the quality
 of individual pixel measurements in the DAP ``MAPS`` file.
 The DAP class used to handle these bits and the
 bit values are below.
@@ -112,15 +115,15 @@ The NEARBOUND flag
 The ``NEARBOUND`` flag is used to signify that a returned parameter
 is likely biased by an imposed boundary on the allowed parameter
 space. These are specifically relevant to the pPXF kinematics from
-:class:`mangadap.proc.ppxffit.PPXFFit` (stellar) and
-:class:`mangdap.proc.sasuke.Sasuke` (gas). We use pPXF with a
+:class:`~mangadap.proc.ppxffit.PPXFFit` (stellar) and
+:class:`~mangdap.proc.sasuke.Sasuke` (gas). We use pPXF with a
 :math:`\pm 2000` km/s limit relative to the input guess velocity (set
 by :math:`cz` in ``SCINPVEL`` header keyword in the ``PRIMARY``
 extension and most often identical to the NSA redshift) on the
 returned velocity and :math:`{\rm d}v/100 < \sigma < 1000` limit on
 the velocity dispersion, where :math:`{\rm d}v` is the size of the
 MaNGA ``LOGCUBE`` wavelength channel (:math:`\sim 70` km/s; given by
-the ``VSTEP`` header keyword in the ``PRIMARY`` extension. The
+the ``VSTEP`` header keyword in the ``PRIMARY`` extension). The
 returned velocity is determined to be ``NEARBOUND`` if the "best-fit"
 value is within 1/100 of the width of the allowed range of either
 boundary; i.e., ``NEARBOUND`` is triggered if the velocity is
@@ -146,10 +149,9 @@ of criteria that allow users to determine when measurements can be
 trusted carte blanche and when the data should be treated more
 skeptically. Only spaxels where analysis has been attempted (with
 non-zero bin IDs) are flagged as ``UNRELIABLE`` if they meet the
-necessary criteria. *Please `let us know
-<https://github.com/sdss/mangadap/issues>`_ if you find a set of
+necessary criteria. *Please* `Submit an issue`_ if you find a set of
 automated criteria that would be useful to the development team in
-terms of what you would like to see marked as* ``UNRELIABLE``.
+terms of what you would like to see marked as ``UNRELIABLE``.
 
 Currently, the use of the ``UNRELIABLE`` flag is still rather
 limited. This is not to say that all measurements are reliable, but
@@ -159,21 +161,21 @@ because we haven't had sufficient time to do so. Below, we list the
 condition under which ``UNRELIABLE`` flags are tripped, and the
 affected masks in the ``MAPS`` file.
 
-+-----------------------+---------------------------------------------------+
-| Affected mask         | Criteria                                          |
-+=======================+===================================================+
-| ``EMLINE_SFLUX_MASK`` | If there are **any** masked pixels in the three   |
-|                       | passbands (blue, main, red) used to construct the |
-|                       | measurement.                                      |
-+-----------------------+---------------------------------------------------+
-| ``EMLINE_SEW_MASK``   | If there are **any** masked pixels in the three   |
-|                       | passbands (blue, main, red) used to construct the |
-|                       | measurement.                                      |
-+-----------------------+---------------------------------------------------+
-| ``SPECINDEX_MASK``    | If there are **any** masked pixels in the three   |
-|                       | passbands (blue, main, red) used to construct the |
-|                       | measurement.                                      |
-+-----------------------+---------------------------------------------------+
++------------------------+---------------------------------------------------+
+| Affected mask          | Criteria                                          |
++========================+===================================================+
+| ``EMLINE_SFLUX_MASK``  | If there are **any** masked pixels in the three   |
+|                        | passbands (blue, main, red) used to construct the |
+|                        | measurement.                                      |
++------------------------+---------------------------------------------------+
+| ``EMLINE_SEW_MASK``    | If there are **any** masked pixels in the three   |
+|                        | passbands (blue, main, red) used to construct the |
+|                        | measurement.                                      |
++------------------------+---------------------------------------------------+
+| ``SPECINDEX_MASK``,    | If there are **any** masked pixels in the three   |
+| ``SPECINDEX_BF_MASK``, | passbands (blue, main, red) used to construct the |
+| ``SPECINDEX_WGT_MASK`` | measurement.                                      |
++------------------------+---------------------------------------------------+
 
 .. _metadatamodel-dapspecmask:
 
@@ -190,11 +192,13 @@ bit values are below.
 Reference Files
 ~~~~~~~~~~~~~~~
 
-Internally, the DAP uses separate bitmasks to flag data resulting from
-each of its main modules.  These bitmasks are written to the module
-reference files and then consolidated into the bits tabulated above for
-the main DAP output files (the ``MAPS`` and model ``LOGCUBE`` files).
-These bits are listed in the description of each analysis module.
+Internally, the DAP uses separate bitmasks to flag data resulting
+from each of its main modules. These bitmasks are written to the
+module reference files and then consolidated into the bits tabulated
+above for the main DAP output files (the ``MAPS`` and model
+``LOGCUBE`` files). These bits are listed in the description of each
+analysis module; e.g.,
+:class:`~mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectraBitMask`.
 
 ----
 
@@ -207,8 +211,7 @@ intermediary script files created by the DAP to allow for event
 handling and cluster coordination.
 
 See :ref:`execution` for more general information about execution of
-the DAP.  What follows is specifically for the survey-level execution of
-the DAP.
+the DAP; the following is for its survey-level execution.
 
 AnalysisPlan file
 ~~~~~~~~~~~~~~~~~
@@ -235,13 +238,14 @@ DRPComplete database
 
 *File name*: ``drpcomplete_$MANGADRP_VER.fits``
 
-The :class:`mangadap.survey.drpcomplete.DRPComplete` file is
+The :class:`~mangadap.survey.drpcomplete.DRPComplete` file is
 primarily created for the survey-level execution of the DAP. It
 collates information used to create the input configuration files for
-each DRP-produced datacube. The ``DRPComplete`` database is
+each DRP-produced datacube. The
+:class:`~mangadap.survey.drpcomplete.DRPComplete` database is
 created/updated at the beginning of each :ref:`execution-rundap`.
 
-The :class:`mangadap.survey.drpcomplete.DRPComplete` database is written
+The :class:`~mangadap.survey.drpcomplete.DRPComplete` database is written
 to a fits file with a primary extension and a binary-table extension;
 the table extension has the following columns:
 
@@ -293,7 +297,7 @@ the table extension has the following columns:
       search for or analyze the ``LIN`` format.
     * ``OBJRA`` and ``OBJDEC`` are not necessarily located at the center
       of the IFU field of view.  The IFU center coordinates are provided
-      in DRPall file (**link**) as ``IFURA`` and ``IFUDEC``.
+      in the `DRPall`_ file as ``IFURA`` and ``IFUDEC``.
     * The MaNGA ID is defined as ``[CATID]-[CATINDX]`` (**link**)
     * For the main survey galaxies, ``TRG_VERSION`` and ``TRG_ID`` are
       drawn from the NASA-Sloan atlas and are identical to
@@ -320,11 +324,10 @@ Redshift Fix File
 
 *File name*: ``redshift_fix.par``
 
-The redshift-fix file is an `SDSS parameter file
-<https://www.sdss.org/dr15/software/par/>`_ used to replace any
-redshift (:math:`z`) read from the DRPall or plateTargets files. It
-has a simple format that identifies the plate, ifudesign, and
-replacement redshift:
+The redshift-fix file is an `SDSS-style parameter file`_ used to
+replace any redshift (:math:`z`) read from the DRPall or plateTargets
+files. It has a simple format that identifies the plate, ifudesign,
+and replacement redshift:
 
 .. code-block:: c
 

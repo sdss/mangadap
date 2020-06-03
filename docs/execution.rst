@@ -1,4 +1,6 @@
 
+.. include:: include/links.rst
+
 .. _execution:
 
 Execution
@@ -26,8 +28,7 @@ Input files
 DAP AnalysisPlan
 ~~~~~~~~~~~~~~~~
 
-The DAP uses an `SDSS parameter file
-<https://www.sdss.org/dr15/software/par/>`_ to define one or more
+The DAP uses an `SDSS-style parameter file`_ to define one or more
 methods to use when analyzing any given MaNGA datacube. Each method,
 or "analysis plan", is defined by a set of six keywords that identify
 the method to use for each of the DAP's six main
@@ -36,8 +37,8 @@ allows you to analyze the same datacube multiple ways in a single
 execution of the DAP; however, note that this is no different than
 executing the DAP once per analysis method. The ``AnalysisPlan`` is
 required to execute the DAP; however, the DAP provides a
-:ref:`execution-analysis-plan-default` that will be used if no file is
-provided.
+:ref:`execution-analysis-plan-default` that will be used if no file
+is provided.
 
 An example ``AnalysisPlan`` parameter file looks like this (this is
 exactly the file used for MPL-10):

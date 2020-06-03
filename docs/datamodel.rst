@@ -1,3 +1,6 @@
+
+.. include:: include/links.rst
+
 .. |ang|   unicode:: U+212B
 
 .. _datamodel:
@@ -41,8 +44,7 @@ DAP Directory Structure
 -----------------------
 
 The root output directory is codified in the environmental variable
-``$MANGA_SPECTRO_ANALYSIS``.  On the (internal) SAS, the root directory
-is `here <https://data.sdss.org/sas/mangawork/manga/spectro/analysis/>`__.
+``$MANGA_SPECTRO_ANALYSIS`` (`MANGA_SPECTRO_ANALYSIS`_; internal).
 
 The results of each run of the DAP are tied to the DRP version used
 to produce the analyzed datacubes and the version of the DAP used to
@@ -110,10 +112,8 @@ Within each ``[IFUDESIGN]`` directory, you'll find the following subdirectories:
 HDUCLASS
 --------
 
-As with the DRP output data (internal; see `here
-<https://trac.sdss.org/wiki/MANGA/TRM/TRM_MPL-8/datamodel#HDUCLASS>`__)
-the DAP output files follow the ``HDUCLASS`` header group convention;
-see also `here
+As with the `DRP HDUCLASS`_, the DAP output files follow the
+``HDUCLASS`` header group convention; see also `here
 <ftp://ftp.eso.org/pub/dfs/pipelines/doc/VLT-SPE-ESO-19500-5667_DataFormat.pdf>`_.
 
 All headers specify ``HDUCLASS=SDSS``.  The ``HDUCLASS`` header block
@@ -592,22 +592,21 @@ DAP Model LOGCUBE file
 *File name*: ``manga-[PLATE]-[IFUDESIGN]-LOGCUBE-[DAPTYPE].fits.gz``
 
 The ``LOGCUBE`` files provide the binned spectra and the best-fitting
-model spectrum for each spectrum that was successfully fit.  These files
-are useful for detailed assessments of the model parameters because they
-allow you to return to the spectra and compare the model against the
-data.  As described by the `DAP Overview paper
-<https://ui.adsabs.harvard.edu/abs/2019arXiv190100856W/abstract>`__, the
-DAP fits the spectra in two stages, one to get the stellar kinematics
-and the second to determine the emission-line properties.  The
-emission-line module (used for all binning schemes) fits both the
-stellar continuum and the emission lines at the same time, where the
-stellar kinematics are fixed by the first fit.  The stellar-continuum
-models from the first fit are provided in the ``STELLAR`` extension; to
-get the stellar continuum determined during the emission-line modeling,
-you have to subtract the emission-line model (in the ``EMLINE``
-extension) from the full model (in the ``MODEL`` extension).  Our
-:ref:`gettingstarted-cube-example` shows how to plot the model
-LOGCUBE data.
+model spectrum for each spectrum that was successfully fit. These
+files are useful for detailed assessments of the model parameters
+because they allow you to return to the spectra and compare the model
+against the data. As described by `Westfall et al. (2019, AJ, 158,
+231)`_, the DAP fits the spectra in two stages, one to get the
+stellar kinematics and the second to determine the emission-line
+properties. The emission-line module (used for all binning schemes)
+fits both the stellar continuum and the emission lines at the same
+time, where the stellar kinematics are fixed by the first fit. The
+stellar-continuum models from the first fit are provided in the
+``STELLAR`` extension; to get the stellar continuum determined during
+the emission-line modeling, you have to subtract the emission-line
+model (in the ``EMLINE`` extension) from the full model (in the
+``MODEL`` extension). Our :ref:`gettingstarted-cube-example` shows
+how to plot the model LOGCUBE data.
 
 .. warning::
 
@@ -788,10 +787,9 @@ Usage Guidlines: Stellar velocity dispersions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Measurement of stellar (and gas!) velocity dispersions in MaNGA is
-complicated by the spectral resolution, particularly at low S/N and low
-:math:`\sigma`.  Please tread carefully!  In particular, please consult
-Section 7.7 of the `DAP Overview paper
-<https://ui.adsabs.harvard.edu/abs/2019AJ....158..231W/abstract>`__ for a
+complicated by the spectral resolution, particularly at low S/N and
+low :math:`\sigma`. Please tread carefully! In particular, please
+consult Section 7.7 of `Westfall et al. (2019, AJ, 158, 231)`_ for a
 detailed discussion of best practices for the stellar velocity
 dispersion data.
 
@@ -859,10 +857,9 @@ DAP global header data
 The first extension of each of the main DAP output files (the
 ``MAPS`` and model ``LOGCUBE``) is empty apart from the header data.
 The header data is an exact copy of the primary header for the `DRP
-LOGCUBE files (internal)
-<https://trac.sdss.org/wiki/MANGA/TRM/TRM_MPL-10/datamodel#manga-PLATE-IFUDESIGN-LOGCUBE.fits.gz>`_
-file except that the ``BSCALE``, ``BZERO``, and ``BUNIT`` keywords
-are removed and the ``AUTHOR`` and ``MASKNAME`` keywords are changed.
+LOGCUBE`_ file except that the ``BSCALE``, ``BZERO``, and ``BUNIT``
+keywords are removed and the ``AUTHOR`` and ``MASKNAME`` keywords are
+changed.
 
 The following keywords are also added, any keyword enclose in
 () are only written under certain conditions:
@@ -872,13 +869,13 @@ The following keywords are also added, any keyword enclose in
 +============+======================================================================================+
 | VERSPY     | `Python <https://www.python.org/>`_ version                                          |
 +------------+--------------------------------------------------------------------------------------+
-| VERSNP     | `Numpy <http://www.numpy.org/>`_  version                                            |
+| VERSNP     | `Numpy <https://www.numpy.org/>`_  version                                           |
 +------------+--------------------------------------------------------------------------------------+
 | VERSSCI    | `Scipy <https://www.scipy.org/>`_ version                                            |
 +------------+--------------------------------------------------------------------------------------+
-| VERSAST    | `Astropy <http://www.astropy.org/>`_ version                                         |
+| VERSAST    | `Astropy <https://www.astropy.org/>`_ version                                        |
 +------------+--------------------------------------------------------------------------------------+
-| VERSPYDL   | `pydl <http://pydl.readthedocs.io/en/stable/>`_ version                              |
+| VERSPYDL   | `pydl <https://pydl.readthedocs.io/>`_ version                                       |
 +------------+--------------------------------------------------------------------------------------+
 | VERSDAP    | MaNGA DAP version                                                                    |
 +------------+--------------------------------------------------------------------------------------+
@@ -1064,6 +1061,5 @@ These are identically the keys used in the
 The reference files are primarily for developer use, but may contain
 information that you want.  A bare-bones description of the content of
 these files is forthcoming.  If you're interested in using something in
-these files, it's probably best to `Submit an issue
-<https://github.com/sdss/mangadap/issues/new>`_.
+these files, it's probably best to `Submit an issue`_.
 

@@ -1,4 +1,6 @@
 
+.. include:: ../include/links.rst
+
 .. _spatial-binning:
 
 Spatial Binning
@@ -72,10 +74,10 @@ Spatial Binning
       ``reff``, respectively, from :ref:`execution-config`.
     * ``voronoi`` (e.g., ``VOR10`` binning type): Use the Voronoi
       tessellation binning algorithm (written by M. Cappellari; see
-      `here <https://pypi.org/project/vorbin/>`__) to continually accrete
-      adjacent spaxels to reach a minimum S/N (set by ``target_snr`` in
-      config), accounting for covariance if available, using the signal
-      and noise measurements from the
+      `vorbin`_) to continually accrete adjacent spaxels to reach a
+      minimum S/N (set by ``target_snr`` in config), accounting for
+      covariance if available, using the signal and noise
+      measurements from the
       :class:`~mangadap.proc.reductionassessments.ReductionAssessment`
       object.
 

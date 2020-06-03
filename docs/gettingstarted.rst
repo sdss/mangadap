@@ -1,4 +1,6 @@
 
+.. include:: include/links.rst
+
 .. _gettingstarted:
 
 Getting started
@@ -22,11 +24,8 @@ The DAP provides:
 It is important that you understand the procedures and algorithms used
 by the DAP to provide the data you're interested in if you are to trust
 their scientific usage.  In addition to the information herein, please
-refer to the DAP `Overview
-<https://ui.adsabs.harvard.edu/abs/2019arXiv190100856W/abstract>`_ and
-`Emission-Line Modeling
-<https://ui.adsabs.harvard.edu/abs/2019AJ....158..160B/abstract>`_
-papers.
+refer to the DAP Overview paper, `Westfall et al. (2019, AJ, 158, 231)`_, 
+and Emission-Line Modeling paper, `Belfiore et al. (2019, AJ, 158, 160)`_.
 
 .. note::
 
@@ -34,8 +33,7 @@ papers.
     with the DAP output data.  *If anything is unclear to you then this
     page is not doing its job!*
 
-    Please `submit an issue <https://github.com/sdss/mangadap/issues>`_
-    if you have any questions.
+    Please `Submit an issue`_ if you have any questions.
 
     Also, if you have helpful code snippets that you'd like to share,
     please do! The best way to do so would be via a pull request.
@@ -92,11 +90,10 @@ For MPL-10, the relevant DAPTYPEs are:
    binning scheme **here** and **here**.
 
 The type of analysis that you should use will depend on your science
-application.  In all cases, please consult the DAP `Overview
-<https://ui.adsabs.harvard.edu/abs/2019arXiv190100856W/abstract>`_ and
-`Emission-Line Modeling
-<https://ui.adsabs.harvard.edu/abs/2019AJ....158..160B/abstract>`_
-papers for usage guidelines and limitations of the data.
+application. In all cases, please consult the DAP Overview paper,
+`Westfall et al. (2019, AJ, 158, 231)`_, and Emission-Line Modeling
+paper, `Belfiore et al. (2019, AJ, 158, 160)`_ for usage guidelines
+and limitations of the data.
 
 SPX-MILESHC-MASTARHC2 (MPL-10 only)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -169,13 +166,13 @@ Output files
 
 The primary output files are located at:
 
-+-------------------------------------------------------------------------------------+
-| SAS Directory                                                                       |
-+=====================================================================================+
-|       `DR15 <https://dr15.sdss.org/sas/dr15/manga/spectro/analysis/v2_4_3/2.2.1/>`_ |
-+-------------------------------------------------------------------------------------+
-| `MPL-10 <https://data.sdss.org/sas/mangawork/manga/spectro/analysis/v3_0_1/3.0.0>`_ |
-+-------------------------------------------------------------------------------------+
++---------------+
+| SAS Directory |
++===============+
+|   `DR15 SAS`_ |
++---------------+
+| `MPL-10 SAS`_ |
++---------------+
 
 There are two main output files for each observation (plate-ifudesign combination):
 
@@ -192,10 +189,8 @@ wavelength channel in the DRP datacubes.  This is meant to ease
 associating the DRP input and DAP output products.
 
 Examples are given below for how to interact with the two main output
-files using python.  However, you are **strongly encouraged** to
-`install Marvin
-<http://sdss-marvin.readthedocs.io/en/stable/installation.html>`_ and
-use it to interact with the data.
+files using python. However, you are **strongly encouraged** to
+`install Marvin`_ and use it to interact with the data.
 
 Output MAPS files
 ~~~~~~~~~~~~~~~~~
@@ -264,16 +259,14 @@ Usage example
 +++++++++++++
 
 With the ``MAPS`` fits file, you should be able to extract DAP maps
-output using any fits reader. **Please `submit an issue
-<https://github.com/sdss/mangadap/issues>`_ if you run into any
-problems!**
+output using any fits reader. **Please `Submit an issue`_ if you run
+into any problems!**
 
 For example, here is a python code snippet that will plot the
 :math:`{\rm H}\alpha` flux map, stellar velocity field, the corrected
 stellar velocity dispersion field, and the corrected :math:`{\rm
 H}\beta` index map for
-`manga-8138-12704-MAPS-HYB10-MILESHC-MASTARHC2.fits.gz
-<https://data.sdss.org/sas/mangawork/manga/spectro/analysis/MPL-10/HYB10-MILESHC-MASTARHC2/8138/12704/manga-8138-12704-MAPS-HYB10-MILESHC-MASTARHC2.fits.gz>`_
+`manga-8138-12704-MAPS-HYB10-MILESHC-MASTARHC2.fits.gz`_:
 
 .. code-block:: python
 
@@ -351,19 +344,18 @@ successfully fit.
 
 These files are useful for detailed assessments of the model
 parameters because they allow you to return to the spectra and
-compare the model against the data. As described by the `DAP Overview
-paper
-<https://ui.adsabs.harvard.edu/abs/2019arXiv190100856W/abstract>`_,
-the DAP fits the spectra in two stages, one to get the stellar
-kinematics and the second to determine the emission-line properties.
-The emission-line module (used for all binning schemes) fits both the
-stellar continuum and the emission lines at the same time, where the
-stellar kinematics are fixed by the first fit. The stellar-continuum
-models from the first fit are provided in the ``STELLAR`` extension;
-to get the stellar continuum determined during the emission-line
-modeling, you have to subtract the emission-line model (in the
-``EMLINE`` extension) from the full model (in the ``MODEL``
-extension); see our :ref:`gettingstarted-cube-example`.
+compare the model against the data. As described by `Westfall et al.
+(2019, AJ, 158, 231)`_, the DAP fits the spectra in two stages, one
+to get the stellar kinematics and the second to determine the
+emission-line properties. The emission-line module (used for all
+binning schemes) fits both the stellar continuum and the emission
+lines at the same time, where the stellar kinematics are fixed by the
+first fit. The stellar-continuum models from the first fit are
+provided in the ``STELLAR`` extension; to get the stellar continuum
+determined during the emission-line modeling, you have to subtract
+the emission-line model (in the ``EMLINE`` extension) from the full
+model (in the ``MODEL`` extension); see our
+:ref:`gettingstarted-cube-example`.
 
 .. warning::
 
@@ -385,15 +377,13 @@ Usage example
 
 With the ``LOGCUBE`` fits file, you should be able to extract the
 binned spectra and best-fitting models produced by the DAP using any
-fits reading software. **Please `submit an issue
-<https://github.com/sdss/mangadap/issues>`_ if you run into any
-problems!**
+fits reading software. **Please `Submit an issue`_ if you run into
+any problems!**
 
 For example, here is a python code snippet that plots the highest S/N
 spectrum, the full model, the residuals, the model stellar continuum,
 and the model emission-line spectrum using
-`manga-8138-12704-LOGCUBE-HYB10-MILESHC-MASTARHC2.fits.gz
-<https://data.sdss.org/sas/mangawork/manga/spectro/analysis/MPL-10/HYB10-MILESHC-MASTARHC2/8138/12704/manga-8138-12704-LOGCUBE-HYB10-MILESHC-MASTARHC2.fits.gz>`_
+`manga-8138-12704-MAPS-HYB10-MILESHC-MASTARHC2.fits.gz`_:
 
 .. code-block:: python
 
@@ -504,9 +494,7 @@ For example:
     print('This DRP file has {0}/{1} pixels flagged as either DONOTUSE or FORESTAR.'.format(
             numpy.sum(indx), numpy.prod(indx.shape)))
 
-See also the `Maskbits utilities
-<https://sdss-marvin.readthedocs.io/en/latest/reference/utils.html#module-marvin.utils.general.maskbit>`_
-in Marvin!
+See also the `Marvin Maskbits utility`_.
 
 .. _gettingstarted-binid:
 

@@ -1,4 +1,6 @@
 
+.. include:: include/links.rst
+
 ****************
 DAP Known Issues
 ****************
@@ -57,25 +59,26 @@ etc).
 Uncertainties
 -------------
 
-Errors are generally "formal" errors determined either by the covariance
-(inverse Hessian) matrix provided by the optimization algorithm (stellar
-and emission-line kinematics) or a direct propagation of the error based
-on the inverse variances provided by the DRP (as for the emission-line
-moments and spectral indices).  Idealized experiments and analysis of
-repeat observations have shown that the formal errors are within a
-factor of two of the statistical error.  See the detailed assessments of
-the DAP uncertainties in the two main DAP papers: `Westfall et al.
-(2019, AJ, 158, 231)
-<https://ui.adsabs.harvard.edu/abs/2019AJ....158..231W/abstract>`_ and
-`Belfiore et al. (2019, AJ, 158, 160)
-<https://ui.adsabs.harvard.edu/abs/2019AJ....158..160B/abstract>`_.
-
+Errors are generally "formal" errors determined either by the
+covariance (inverse Hessian) matrix provided by the optimization
+algorithm (stellar and emission-line kinematics) or a direct
+propagation of the error based on the inverse variances provided by
+the DRP (as for the emission-line moments and spectral indices).
+Idealized experiments and analysis of repeat observations have shown
+that the formal errors are within a factor of two of the statistical
+error. See the detailed assessments of the DAP uncertainties in the
+two main DAP papers: `Westfall et al. (2019, AJ, 158, 231)`_ and
+`Belfiore et al. (2019, AJ, 158, 160)`_.
 
 MPL-10 (3.0.1)
 ==============
 
 Faults
 ------
+
+The full report of the observations that faulted and the consolidated
+list of error messages can be found in the `MPL-10 error report`_
+(internal).
 
 TBD
 
@@ -86,8 +89,7 @@ Faults
 ------
 
 The full report of the observations that faulted and the consolidated
-list of error messages can be found `here
-<https://data.sdss.org/sas/mangawork/manga/spectro/analysis/v2_7_1/2.4.1/log/error_report.txt>`_
+list of error messages can be found in the `MPL-9 error report`_
 (internal).
 
 Of the 8130 attempted analyses, 73 did not successfully finish all three

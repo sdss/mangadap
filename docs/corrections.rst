@@ -1,5 +1,5 @@
 
-.. _DAP Overview Paper: <https://ui.adsabs.harvard.edu/abs/2019AJ....158..231W/abstract>
+.. include:: include/links.rst
 
 .. _corrections:
 
@@ -8,8 +8,7 @@ MAPS Corrections
 
 The :ref:`datamodel-maps` provide values that *must be corrected by
 the user* using provided corrections. It's recommended that you take
-advantage of the convenience methods in `Marvin
-<http://sdss-marvin.readthedocs.io/en/stable/>`_ to apply these
+advantage of the convenience methods in `Marvin`_ to apply these
 corrections.
 
 Velocity-Dispersion Measurements
@@ -39,11 +38,12 @@ where :math:`\sigma_{\rm obs}` and :math:`\delta\sigma_{\rm inst}` are
 provided in, respectively, the ``STELLAR_SIGMA`` and
 ``STELLAR_SIGMACORR`` extensions of the :ref:`datamodel-maps`.
 
-**In both cases**, beware of imaginary numbers.  That is, when the
-correction is larger than the provided value, the above equations result
-in taking the sqrt of a negative number.  Specifically for the stellar
-velocity dispersions, we recommend you consult Section 7.7 of the `DAP
-Overview Paper`_ for some usage guidelines and discussion.
+**In both cases**, beware of imaginary numbers. That is, when the
+correction is larger than the provided value, the above equations
+result in taking the sqrt of a negative number. Specifically for the
+stellar velocity dispersions, we recommend you consult Section 7.7 of
+`Westfall et al. (2019, AJ, 158, 231)`_ for some usage guidelines and
+discussion.
 
 In particular, we have found that it is important to understand the
 error-convolved *distribution* of stellar-velocity-dispersion
@@ -68,10 +68,11 @@ Spectral-Index Measurements
 ---------------------------
 
 Corrections that account for the effect of the velocity dispersion on
-the spectral indices are provided, as discussed in Section 10.1 of the
-`DAP Overview Paper`_.  Unlike the Firefly VAC, these corrections *must
-be applied by the user*.  To apply the corrections, you have to know the
-unit of each index.  For angstrom units:
+the spectral indices are provided, as discussed in Section 10.1 of
+the `Westfall et al. (2019, AJ, 158, 231)`_. Unlike the Firefly VAC,
+these corrections *must be applied by the user*. To apply the
+corrections, you have to know the unit of each index. For angstrom
+units:
 
 .. math::
 
