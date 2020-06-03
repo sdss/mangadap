@@ -8,10 +8,6 @@
 Metadata Model
 ==============
 
-.. todo::
-
-    - Links in the description of the DRPComplete file.
-
 .. _metadatamodel-maskbits:
 
 Maskbits
@@ -23,10 +19,10 @@ however, the DAP ``setup.py`` file will also attempt to download the
 most relevant file from the public SDSS SVN repository using
 `requests`_.
 
-If you're unfamiliar with maskbits, see the description of `SDSS
-Bitmasks`_.
-
-See :ref:`gettingstarted-bitmasks` for examples of how to use the mask bits.
+ * If you're unfamiliar with maskbits, see the description of `SDSS
+   Bitmasks`_.
+ * For examples of how to use the mask bits, see
+   :ref:`gettingstarted-bitmasks`.
 
 .. note::
 
@@ -341,9 +337,43 @@ and replacement redshift:
     DAPZCORR  9677  6103 0.0
     ...
 
-This files serves to both provide redshifts for objects that don't have
-them and replace incorrect redshifts from, e.g., the NASA-Sloan Atlas.
-The redshift-fix file is updated for each version of the DAP.
+This files serves to both provide redshifts for objects that don't
+have them and replace incorrect redshifts from, e.g., the NASA-Sloan
+Atlas. The redshift-fix file is updated for each version of the DAP.
+This file is *only* used when constructing the
+:ref:`metadatamodel-drpcomplete`, which then propagates to the
+:ref:`execution-config` and then to the :ref:`execution-mangadap`.
+
+Photometry Fix File
+~~~~~~~~~~~~~~~~~~~
+
+*File root*: ``$MANGADAP_DIR/mangadap/data/fix``
+
+*File name*: ``photometry_fix.par``
+
+The photometry-fix file is an `SDSS-style parameter file`_ used to
+replace photometric properties from the DRPall or plateTargets files.
+These properties are the isophotal ellipticity, :math:`\epsilon \equiv
+1-b/a`, the major-axis position angle, :math:`\phi_0`, and the
+effective radius, :math:`R_{\rm eff}`. It has a simple format that
+identifies the plate, ifudesign, and replacement data:
+
+.. code-block:: c
+
+    typedef struct {
+        int plate;
+        int ifudesign;
+        double ell;
+        double pa;
+        double reff;
+    } DAPPHOTCORR;
+
+    DAPPHOTCORR   8083 12702 0.265 7.57 28.3
+
+The photometry-fix file is updated for each version of the DAP. This
+file is *only* used when constructing the
+:ref:`metadatamodel-drpcomplete`, which then propagates to the
+:ref:`execution-config` and then to the :ref:`execution-mangadap`.
 
 Execution Script
 ~~~~~~~~~~~~~~~~
@@ -373,9 +403,10 @@ For a general description, see :ref:`execution-config`.
 
 In the file templates, ``[PLATE]`` is the plate number,
 ``[IFUDESIGN]`` is the IFU number, ``[MODE]`` is the data format
-(always ``CUBE``), and ``[DAPTYPE]`` is the keyword for the analysis
-approach. These files provide input observational parameters to the
-DAP and are almost entirely from the NASA-Sloan Atlas.
+(always ``CUBE``), and ``[DAPTYPE]`` is the keyword for the
+:ref:`datamodel-daptype`. These files provide input observational
+parameters to the DAP and are almost entirely from the NASA-Sloan
+Atlas.
 
 ----
 
@@ -391,7 +422,20 @@ DAPall database
 The DAPall file has an empty primary extension and then one extension
 for each ``DAPTYPE`` performed by a given analysis plan. The name of
 the extension is identically the ``DAPTYPE`` and it contains one row
-per analyzed datacube.
+per analyzed datacube. For example, in MPL-10, the list of extensions
+in the DAPall file are:
+
++-----------+-----------------------------+
+| Extension | Extension Name              |
++===========+=============================+
+|         0 | ``PRIMARY``                 |
++-----------+-----------------------------+
+|         1 | ``SPX-MILESHC-MASTARHC2``   |
++-----------+-----------------------------+
+|         2 | ``VOR10-MILESHC-MASTARHC2`` |
++-----------+-----------------------------+
+|         3 | ``HYB10-MILESHC-MASTARHC2`` |
++-----------+-----------------------------+
 
 Header data
 ~~~~~~~~~~~
@@ -425,10 +469,11 @@ keywords:
 |  ``DATASUM`` | Used for checking data fidelity                       |
 +--------------+-------------------------------------------------------+
 
-Binary table data
-~~~~~~~~~~~~~~~~~
+DAPTYPE table data
+~~~~~~~~~~~~~~~~~~
 
-The binary table in the ``DAPALL`` extension has the following columns:
+Each subsequent extension, named after the :ref:`datamodel-daptype`
+(DAPTYPE), includes a binary table with the following columns:
 
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
 |                        Key |            Type |                                              Units | Comment                                                                       |
@@ -447,7 +492,7 @@ The binary table in the ``DAPALL`` extension has the following columns:
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
 |                   ``MODE`` |             str |                                                    | 3D mode of the DRP file (``CUBE`` or ``RSS``)                                 |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
-|                ``DAPTYPE`` |             str |                                                    | Keyword of the analysis approach used (e.g., ``SPX-MILESHC-MASTARHC``)        |
+|                ``DAPTYPE`` |             str |                                                    | Keyword of the analysis approach used (e.g., ``SPX-MILESHC-MASTARHC2``)       |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
 |                ``DAPDONE`` |            bool |                                                    | Flag that MAPS file successfully produced                                     |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
@@ -554,7 +599,7 @@ The binary table in the ``DAPALL`` extension has the following columns:
 |               ``SNR_RING`` | double (vector) |                                                    | S/N in the ''griz'' bands when binning all spaxels within 1.0-1.5             |
 |                            |                 |                                                    | :math:`R_e`.  This should be independent of the ``DAPTYPE``.                  |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
-|                 ``SB_1RE`` |          double | :math:`10^{-17} {\rm erg/s/cm}^2{\rm /\AA/spaxel}` | Mean g-band surface brightness of valid spaxels within 1 :math:`R_e`.  This   |
+|                 ``SB_1RE`` |          double |     :math:`10^{-17} {\rm erg/s/cm}^2`/|ang|/spaxel | Mean g-band surface brightness of valid spaxels within 1 :math:`R_e`.  This   |
 |                            |                 |                                                    | should be independent of the ``DAPTYPE``.                                     |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
 |               ``BIN_RMAX`` |          double |                                        :math:`R_e` | Maximum g-band luminosity-weighted semi-major radius of any "valid" binned    |
@@ -691,8 +736,12 @@ The binary table in the ``DAPALL`` extension has the following columns:
  * All radially averaged or summed properties are calculated within
    ''elliptical'' apertures defined using the NSA ellipticity and
    position angle.
- * Possible Future developments: (1) Provide default set of cross
-   matching: SDSS I/II, Galaxy Zoo? (2) Include initial radial profiles
-   of the emission-line, spectral-index, and other derived properties?
+ * Possible future additions:
+
+   #. Add ``nsa_sersic_mass`` from the DRPall file.
+   #. Balmer decrement extinction corrections for SFR
+   #. Provide default set of cross matching: SDSS I/II, Galaxy Zoo?
+   #. Include initial radial profiles of the emission-line,
+      spectral-index, and other derived properties?
 
 

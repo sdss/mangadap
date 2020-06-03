@@ -18,8 +18,8 @@ spectra.
 
 .. _datamodel-daptype:
 
-DAP Analysis Approach (DAPTYPE)
--------------------------------
+DAP Analysis Approach
+---------------------
 
 Each analysis approach used by the DAP is signified by a unique
 string called the ``DAPTYPE``, constructed by
@@ -93,8 +93,10 @@ Within each ``[DAPTYPE]`` directory, you'll find the following:
 Within each ``[PLATE]`` directory, you'll find the following:
 
  * ``[IFUDESIGN]``: Subdirectory with the main analysis products for
-   each ``PLATEIFU`` combination for the relevant ``[DAPTYPE]``.  **The
-   DAP ``MAPS`` and model ``LOGCUBE`` output files are here.**
+   each ``PLATEIFU`` combination for the relevant ``[DAPTYPE]``.
+   **This is the directory that contains** the DAP ``MAPS`` and model
+   ``LOGCUBE`` output files.
+
  * ``qa``: Quality assessment plots consolidated for all the
    observations on this plate.
 
@@ -456,8 +458,7 @@ The emission-line measurements for MPL-10 are (identical to MPL-9):
 
 .. note::
 
-    * The order of the emission-line channels has changed since MPL-8!
-    * For the emission-line moments (``SFLUX``, ``SEW``):
+    For the emission-line moments (``SFLUX``, ``SEW``):
 
       * Channels 2 ('OII-3729'), 8 ('HeI-3889'), 10 ('NeIII-3968'),
         and 19 ('NI-5201') are empty because the line falls in the
@@ -879,7 +880,8 @@ The following keywords are also added, any keyword enclose in
 +------------+--------------------------------------------------------------------------------------+
 | VERSDAP    | MaNGA DAP version                                                                    |
 +------------+--------------------------------------------------------------------------------------+
-| DAPTYPE    | The analysis method identifier for the DAP analysis (``HYB10-MILESHC-MASTARHC``)     |
+| DAPTYPE    | The analysis method identifier for the DAP analysis                                  |
+|            | (e.g., ``HYB10-MILESHC-MASTARHC2``)                                                  |
 +------------+--------------------------------------------------------------------------------------+
 | DAPFRMT    | The format of this output file, either ``MAPS`` or ``LOGCUBE``                       |
 +------------+--------------------------------------------------------------------------------------+

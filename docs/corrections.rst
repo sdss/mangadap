@@ -11,6 +11,8 @@ the user* using provided corrections. It's recommended that you take
 advantage of the convenience methods in `Marvin`_ to apply these
 corrections.
 
+----
+
 Velocity-Dispersion Measurements
 --------------------------------
 
@@ -64,31 +66,50 @@ and without the resolution matched to the MaNGA data.  **For now**, use
 the correction in the first channel of the ``STELLAR_SIGMACORR``
 extension until the data in the second channel can be vetted.
 
+The `Marvin`_ method that applies these corrections is
+`marvin.tools.quantities.map.Map.inst_sigma_correction
+<https://sdss-marvin.readthedocs.io/en/latest/reference/quantities.html#marvin.tools.quantities.map.Map.inst_sigma_correction>`_.
+
+----
+
 Spectral-Index Measurements
 ---------------------------
 
 Corrections that account for the effect of the velocity dispersion on
 the spectral indices are provided, as discussed in Section 10.1 of
-the `Westfall et al. (2019, AJ, 158, 231)`_. Unlike the Firefly VAC,
-these corrections *must be applied by the user*. To apply the
-corrections, you have to know the unit of each index. For angstrom
-units:
+the `Westfall et al. (2019, AJ, 158, 231)`_. Unlike, e.g., the
+`Firefly VAC`_, these corrections *must be applied by the user*. To
+apply the corrections, you have to know the unit of each index. For
+angstrom units (or for unitless bandhead/color indices):
 
 .. math::
 
-    \mathcal{I}^c_a k= \mathcal{I}_a \delta\mathcal{I}_a
+    \mathcal{I}^c = \mathcal{I}\ \delta\mathcal{I}
 
 and for magnitude units:
 
 .. math::
 
-    \mathcal{I}^c_a k= \mathcal{I}_a + \delta\mathcal{I}_a
+    \mathcal{I}^c = \mathcal{I} + \delta\mathcal{I}
 
-where the raw index measurements, :math:`\mathcal{I}_a`, and the
-correction, :math:`\delta\mathcal{I}_a` are provided in, respectively,
+where the raw index measurements, :math:`\mathcal{I}`, and the
+correction, :math:`\delta\mathcal{I}` are provided in, respectively,
 the ``SPECINDEX`` and ``SPECINDEX_CORR`` extensions of the
-:ref:`datamodel-maps`.
+:ref:`datamodel-maps`. Correction are identical for both index
+definitions, :math:`{\mathcal I}_{\rm WT}` and :math:`{\mathcal
+I}_{\rm BF}`; see :ref:`spectralindices`. Corrections for the weights
+should only be applied when aggregating *corrected* indices, and the
+weight corrections are multiplicative:
 
+.. math::
+
+    w^c = w\ \delta w .
+
+The `Marvin`_ method that applies these corrections is
+`marvin.tools.quantities.map.Map.specindex_correction
+<https://sdss-marvin.readthedocs.io/en/latest/reference/quantities.html#marvin.tools.quantities.map.Map.specindex_correction>`_.
+
+----
 
 Usage Example
 -------------

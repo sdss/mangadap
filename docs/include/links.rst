@@ -84,8 +84,10 @@
 
 .. SDSS
 
-.. _SDSS-style parameter file: http://www.sdss.org/dr15/software/par/
-.. _SDSS Bitmasks: http://www.sdss.org/dr15/algorithms/bitmasks/
+.. _SDSS-style parameter file: http://www.sdss.org/dr16/software/par/
+.. _SDSS Bitmasks: http://www.sdss.org/dr16/algorithms/bitmasks/
+.. _Firefly VAC: https://www.sdss.org/dr16/manga/manga-data/manga-firefly-value-added-catalog/
+.. _Pipe3D VAC: https://www.sdss.org/dr16/manga/manga-data/manga-pipe3d-value-added-catalog/
 
 .. papers
 
