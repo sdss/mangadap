@@ -16,10 +16,22 @@ are measured using
 :class:`~mangadap.proc.spectralindices.SpectralIndices`; see
 :ref:`spectral-index-measurements`.
 
+----
+
 .. _spectralindices-absorption:
 
-Absorption-line Index Parameters
---------------------------------
+Absorption-line Indices
+-----------------------
+
+Calculation
+~~~~~~~~~~~
+
+.. include:: include/absindices.rst
+
+See :class:`~mangadap.proc.spectralindices.AbsorptionLineIndices`.
+
+Index Parameters
+~~~~~~~~~~~~~~~~
 
 The table below provides a compilation of absorption-line indices.
 Recent survey-level runs of the DAP have included all of these
@@ -202,10 +214,22 @@ used by :class:`~mangadap.proc.spectralindices.SpectralIndices`:
        directory, and then change the relevant configuration file in
        the same way as described above.
 
+----
+
 .. _spectralindices-bandhead:
 
-Bandhead or Color Index Parameters
-----------------------------------
+Bandhead or Color Indices
+-------------------------
+
+Calculation
+~~~~~~~~~~~
+
+.. include:: include/bhdindices.rst
+
+See :class:`~mangadap.proc.spectralindices.BandheadIndices`.
+
+Index Parameters
+~~~~~~~~~~~~~~~~
 
 The table below provides a compilation of bandhead and color indices.
 Recent survey-level runs of the DAP have included all of these

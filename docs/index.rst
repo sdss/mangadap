@@ -98,8 +98,9 @@ If you use the DAP software and/or its output products, please cite the followin
    gettingstarted
    metadatamodel
    datamodel
-   corrections
    qualityassessment
+   corrections
+   aggregation
 
 ----
 
