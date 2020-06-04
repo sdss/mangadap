@@ -741,8 +741,8 @@ and :math:`{\rm H}\alpha` surface-brightness profiles.
 
 .. _datamodel-hybrid-binning:
 
-HYB binning scheme
-~~~~~~~~~~~~~~~~~~
+Hybrid (HYB) binning scheme
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In all cases except the ``HYB`` binning approach, each analysis
 module only works with the "binned" spectra after the binning is

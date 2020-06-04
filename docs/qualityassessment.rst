@@ -2,6 +2,8 @@
 
 .. include:: include/links.rst
 
+.. _qualityassessment:
+
 Quality Assessment Plots
 ========================
 
