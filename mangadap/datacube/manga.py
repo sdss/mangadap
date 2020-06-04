@@ -342,7 +342,7 @@ class MaNGADataCube(DRPFits, DataCube):
                            if center_coo is None and offset is not None else center_coo
         return super(MaNGADataCube, self).mean_sky_coordinates(center_coo=_center_coo)
 
-    def approximate_correlation_matrix(self, sigma_rho=1.92, rlim=None, redo=False):
+    def approximate_correlation_matrix(self, sigma_rho=1.92, rlim=None, rho_tol=None, redo=False):
         """
         Construct an approximate correlation matrix for the datacube.
 
@@ -356,10 +356,11 @@ class MaNGADataCube(DRPFits, DataCube):
         """
         _rlim = defaults.regrid_rlim() if rlim is None else rlim
         return super(MaNGADataCube, self).approximate_correlation_matrix(sigma_rho, _rlim,
+                                                                         rho_tol=rho_tol,
                                                                          redo=redo)
 
-    def approximate_covariance_matrix(self, channel, sigma_rho=1.92, rlim=None, csr=False,
-                                      quiet=False):
+    def approximate_covariance_matrix(self, channel, sigma_rho=1.92, rlim=None, rho_tol=None,
+                                      csr=False, quiet=False):
         """
         Construct an approximate covariance matrix.
         
@@ -374,10 +375,10 @@ class MaNGADataCube(DRPFits, DataCube):
         _rlim = defaults.regrid_rlim() if rlim is None else rlim
         return super(MaNGADataCube, 
                     self).approximate_covariance_matrix(channel, sigma_rho=sigma_rho, rlim=_rlim,
-                                                        csr=csr, quiet=quiet)
+                                                        rho_tol=rho_tol, csr=csr, quiet=quiet)
 
-    def approximate_covariance_cube(self, channels=None, sigma_rho=1.92, rlim=None, csr=False,
-                                    quiet=False):
+    def approximate_covariance_cube(self, channels=None, sigma_rho=1.92, rlim=None, rho_tol=None,
+                                    csr=False, quiet=False):
         """
         Construct approximate covariance matrices for multiple channels.
         
@@ -392,5 +393,6 @@ class MaNGADataCube(DRPFits, DataCube):
         _rlim = defaults.regrid_rlim() if rlim is None else rlim
         return super(MaNGADataCube, 
                     self).approximate_covariance_cube(channels=channels, sigma_rho=sigma_rho,
-                                                      rlim=_rlim, csr=csr, quiet=quiet)
+                                                      rlim=_rlim, rho_tol=rho_tols, csr=csr,
+                                                      quiet=quiet)
 
