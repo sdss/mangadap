@@ -199,10 +199,11 @@ def init_record_array(shape, dtype):
     `numpy.recarray`_.
     
     Args:
-        shape (int or tuple) : Shape of the output array.
-
-        dtype (list of tuples) : List of the tuples that define each
-            element in the record array.
+        shape (:obj:`int`, :obj:`tuple`):
+            Shape of the output array.
+        dtype (:obj:`list`):
+            List of the tuples that define each element in the record
+            array.
 
     Returns:
         `numpy.recarray`_: Zeroed record array

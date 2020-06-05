@@ -31,6 +31,7 @@
 .. _numpy.ravel_multi_index: https://numpy.org/doc/stable/reference/generated/numpy.ravel_multi_index.html
 .. _numpy.unravel_index: https://numpy.org/doc/stable/reference/generated/numpy.unravel_index.html
 .. _numpy.polynomial.legendre.legvander: https://numpy.org/doc/stable/reference/generated/numpy.polynomial.legendre.legvander.html
+.. _numpy.dtype: https://numpy.org/doc/stable/reference/generated/numpy.dtype.html
 
 .. scipy
 

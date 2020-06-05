@@ -81,7 +81,7 @@ class BitMask:
             List of keys (or single key) to use as the bit name.  Each
             key is given a bit number ranging from 0..N-1.
         descr (:obj:`str`, :obj:`list`, optional):
-            List of descriptions (or single discription) provided by
+            List of descriptions (or single description) provided by
             :func:`info` for each bit.  No descriptions by default.
 
     Raises:

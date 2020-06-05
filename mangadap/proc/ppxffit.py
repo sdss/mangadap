@@ -250,7 +250,7 @@ class PPXFFitPar(KeywordParSet):
         
 
 
-class PPXFFitResult(object):
+class PPXFFitResult:
     """
     A basic utility to save the critical parts of the pPXF model.
     """
@@ -326,7 +326,7 @@ class PPXFFitResult(object):
         return self.empty_fit() or self.status <= 0
 
 
-class PPXFModel():
+class PPXFModel:
     """
     Class that reconstructs a pPXF model given a set of templates and
     the model parameters.
@@ -667,17 +667,15 @@ class PPXFFit(StellarKinematicsFit):
 
         self.fix_kinematics = None
 
-
     @staticmethod
     def iteration_modes():
         r"""
-        
         Possible iteration methods:
 
-            ``none``: Fit all bins with all templates with a single call
+          * ``none``: Fit all bins with all templates with a single call
             to pPXF.
 
-            ``fit_reject_filter``: Perform the following procedure:
+          * ``fit_reject_filter``: Perform the following procedure:
                 - Fit each spectrum
                 - for n iterations:
                     - Reject outliers
@@ -686,25 +684,25 @@ class PPXFFit(StellarKinematicsFit):
                 - Fit the unfiltered spectra with the kinematics fixed
                   to result of the final filtered fit
 
-            ``no_global_wrej``: Do not fit the global spectrum
+          * ``no_global_wrej``: Do not fit the global spectrum
             first, but include a rejection iteration.  All templates are
             fit in each step.
 
-            ``global_template``:  Fit the global spectrum with all
+          * ``global_template``:  Fit the global spectrum with all
             templates and include a single rejection iteration.  The
             pixel mask for this fit is the base mask for all fits to the
             individual bins.  A single rejection iteration is done for
             each bin.  **Only the global template is used when fitting
             each bin.**
 
-            ``nonzero_templates``:  Fit the global spectrum with
+          * ``nonzero_templates``:  Fit the global spectrum with
             all templates and include a single rejection iteration.  The
             pixel mask for this fit is the base mask for all fits to the
             individual bins.  A single rejection iteration is done for
             each bin.  **Only the templates with non-zero weights are
             used when fitting each bin.**
 
-            ``all_templates``:  Fit the global spectrum with all
+          * ``all_templates``:  Fit the global spectrum with all
             templates and include a single rejection iteration.  The
             pixel mask for this fit is the base mask for all fits to the
             individual bins.  A single rejection iteration is done for
@@ -718,33 +716,28 @@ class PPXFFit(StellarKinematicsFit):
                  'no_global_wrej',
                  'global_template',
                  'nonzero_templates',
-                 'all_templates'
-               ]
-
+                 'all_templates']
 
     def _mode_uses_global_spectrum(self):
-        return self.iteration_mode in [ 'global_template',
-                                        'nonzero_templates',
-                                        'all_templates' ]
+        return self.iteration_mode in ['global_template', 'nonzero_templates', 'all_templates']
 
     def _mode_uses_global_template(self):
-        return self.iteration_mode in [ 'global_template' ]
+        return self.iteration_mode in ['global_template']
 
             
     def _mode_uses_nonzero_templates(self):
-        return self.iteration_mode in [ 'nonzero_templates' ]
+        return self.iteration_mode in ['nonzero_templates']
 
 
     def _mode_uses_all_templates(self):
-        return self.iteration_mode in [ 'none', 'fit_reject_filter', 'no_global_wrej',
-                                        'all_templates' ]
+        return self.iteration_mode in ['none', 'fit_reject_filter', 'no_global_wrej',
+                                       'all_templates']
 
     def _mode_includes_rejection(self):
         return self.iteration_mode != 'none'
 
     def _mode_uses_filter(self):
         return self.iteration_mode == 'fit_reject_filter'
-
 
     def _check_mode(self, iteration_mode, reject_boxcar, filter_boxcar, filter_operation,
                     filter_iterations, mdegree):
@@ -766,7 +759,6 @@ class PPXFFit(StellarKinematicsFit):
                 self.filter_operation = 'divide'
             else:
                 self.filter_operation = filter_operation
-
 
     @staticmethod
     def check_template_usage_flags(nobj, ntpl, usetpl):
