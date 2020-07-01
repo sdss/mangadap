@@ -424,28 +424,28 @@ class EmissionLineModel:
         hdr['NELMOD'] = (self.nmodels, 'Number of unique emission-line models')
         return hdr
 
-    def _emission_line_database_dtype(self, name_len, mode_len, prof_len):
-        r"""
-        Construct the record array data type for the output fits
-        extension.
-        """
-        return [ ('ID', int),
-                 ('NAME','<U{0:d}'.format(name_len)),
-                 ('RESTWAVE', float),
-                 ('ACTION', '<U1'),
-                 ('FLUXRATIO', float),
-                 ('MODE','<U{0:d}'.format(mode_len)),
-                 ('PROFILE', '<U{0:d}'.format(prof_len)),
-                 ('NCOMP', int)
-               ]
-
-    def _compile_database(self, quiet=False):
-        """
-        Compile the database with the specifications of each index.
-        """
-        if self.emldb is None:
-            raise NotImplementedError('EmissionLineModel must be able to construct an '
-                                      'EmissionLineDB objects for the lines to fit.')
+#    def _emission_line_database_dtype(self, name_len, mode_len, prof_len):
+#        r"""
+#        Construct the record array data type for the output fits
+#        extension.
+#        """
+#        return [ ('ID', int),
+#                 ('NAME','<U{0:d}'.format(name_len)),
+#                 ('RESTWAVE', float),
+#                 ('ACTION', '<U1'),
+#                 ('FLUXRATIO', float),
+#                 ('MODE','<U{0:d}'.format(mode_len)),
+#                 ('PROFILE', '<U{0:d}'.format(prof_len)),
+#                 ('NCOMP', int)
+#               ]
+#
+#    def _compile_database(self, quiet=False):
+#        """
+#        Compile the database with the specifications of each index.
+#        """
+#        if self.emldb is None:
+#            raise NotImplementedError('EmissionLineModel must be able to construct an '
+#                                      'EmissionLineDB objects for the lines to fit.')
 #            try:
 #                # Try to use member functions of the fitting class to
 #                # set at least the NAME and RESTWAVE of the line for use
@@ -459,21 +459,21 @@ class EmissionLineModel:
 #                line_database = None
 #            return line_database
 
-        name_len = numpy.amax([ len(n) for n in self.emldb['name'] ])
-        mode_len = numpy.amax([ len(m) for m in self.emldb['mode'] ])
-        prof_len = numpy.amax([ len(p) for p in self.emldb['profile'] ])
-
-        # Instatiate the table data that will be saved defining the set
-        # of emission-line moments measured
-        line_database = init_record_array(self.emldb.size,
-                                self._emission_line_database_dtype(name_len, mode_len, prof_len))
-
-        hk = [ 'ID', 'NAME', 'RESTWAVE', 'ACTION', 'FLUXRATIO', 'MODE', 'PROFILE', 'NCOMP' ]
-        mk = [ 'index', 'name', 'restwave', 'action', 'flux', 'mode', 'profile', 'ncomp' ]
-        for _hk, _mk in zip(hk,mk):
-            line_database[_hk] = self.emldb[_mk]
-
-        return line_database
+#        name_len = numpy.amax([ len(n) for n in self.emldb['name'] ])
+#        mode_len = numpy.amax([ len(m) for m in self.emldb['mode'] ])
+#        prof_len = numpy.amax([ len(p) for p in self.emldb['profile'] ])
+#
+#        # Instatiate the table data that will be saved defining the set
+#        # of emission-line moments measured
+#        line_database = init_record_array(self.emldb.size,
+#                                self._emission_line_database_dtype(name_len, mode_len, prof_len))
+#
+#        hk = [ 'ID', 'NAME', 'RESTWAVE', 'ACTION', 'FLUXRATIO', 'MODE', 'PROFILE', 'NCOMP' ]
+#        mk = [ 'index', 'name', 'restwave', 'action', 'flux', 'mode', 'profile', 'ncomp' ]
+#        for _hk, _mk in zip(hk,mk):
+#            line_database[_hk] = self.emldb[_mk]
+#
+#        return line_database
 
 
     def _assign_input_kinematics(self, emission_line_moments, redshift, dispersion,
@@ -735,7 +735,7 @@ class EmissionLineModel:
             model_mask (`numpy.ndarray`):
                 A boolean or integer (bitmask) array with the mask for
                 the model data.
-            model_eml_par (`numpy.recarray`):
+            model_eml_par (:class:`~mangadap.proc.spectralfitting.EmissionLineFitDataTable`):
                 A record array with the best-fitting results and
                 parameters for each emission line.  The format is
                 expected to be given by
@@ -939,45 +939,26 @@ class EmissionLineModel:
         else:
             _model_mask = model_mask
 
-        # Compile the information on the suite of measured indices
-        line_database = self._compile_database()
-
         # Save the data to the hdu attribute
-        par_hdu = fits.BinTableHDU(data=None, name='PAR') if line_database is None else \
-                        fits.BinTableHDU.from_columns([ fits.Column(name=n,
-                                                        format=rec_to_fits_type(line_database[n]),
-                                                        array=line_database[n])
-                                                            for n in line_database.dtype.names],
-                                                      name='PAR')
-
+        par_hdu = fits.BinTableHDU(data=None, name='PAR') if self.emldb is None else \
+                        self.emldb.to_datatable().to_hdu(name='PAR')
         fit_hdu = fits.BinTableHDU(data=None, name='FIT') if model_fit_par is None else \
-                        fits.BinTableHDU.from_columns([fits.Column(name=n,
-                                                        format=rec_to_fits_type(model_fit_par[n]),
-                                                        dim=rec_to_fits_col_dim(model_fit_par[n]),
-                                                        array=model_fit_par[n])
-                                                            for n in model_fit_par.dtype.names],
-                                                      name='FIT')
+                        model_fit_par.to_hdu(name='FIT', add_dim=True)
 
-        self.hdu = fits.HDUList([ fits.PrimaryHDU(header=pri_hdr),
-                                  fits.ImageHDU(data=model_flux.data, name='FLUX'),
-                                  fits.ImageHDU(data=model_base.data, name='BASE'),
-                                  fits.ImageHDU(data=_model_mask, name='MASK'),
-                                  self.binned_spectra['WAVE'].copy(),
-                                  fits.ImageHDU(data=bin_indx, header=map_hdr, name='BINID'),
-                                  fits.ImageHDU(data=map_mask, header=map_hdr, name='MAPMASK'),
-                                  par_hdu, fit_hdu,
-                                  fits.BinTableHDU.from_columns([fits.Column(name=n,
-                                                        format=rec_to_fits_type(model_eml_par[n]),
-                                                        dim=rec_to_fits_col_dim(model_eml_par[n]),
-                                        array=model_eml_par[n]) for n in model_eml_par.dtype.names],
-                                                                    name='EMLDATA')
+        self.hdu = fits.HDUList([fits.PrimaryHDU(header=pri_hdr),
+                                 fits.ImageHDU(data=model_flux.data, name='FLUX'),
+                                 fits.ImageHDU(data=model_base.data, name='BASE'),
+                                 fits.ImageHDU(data=_model_mask, name='MASK'),
+                                 self.binned_spectra['WAVE'].copy(),
+                                 fits.ImageHDU(data=bin_indx, header=map_hdr, name='BINID'),
+                                 fits.ImageHDU(data=map_mask, header=map_hdr, name='MAPMASK'),
+                                 par_hdu, fit_hdu,
+                                 model_eml_par.to_hdu(name='EMLDATA', add_dim=True)
                                 ])
-
 
     def file_name(self):
         """Return the name of the output file."""
         return self.output_file
-
 
     def file_path(self):
         """Return the full path to the output file."""

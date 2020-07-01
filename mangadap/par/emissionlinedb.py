@@ -66,6 +66,7 @@ from pydl.pydlutils.yanny import yanny
 from .parset import KeywordParSet
 from .spectralfeaturedb import SpectralFeatureDB
 from ..proc import util
+from ..util.datatable import DataTable
 
 class EmissionLinePar(KeywordParSet):
     r"""
@@ -202,6 +203,60 @@ class EmissionLinePar(KeywordParSet):
             raise ValueError('Bandpasses must be two-element vectors!')
 
 
+class EmissionLineDefinitionTable(DataTable):
+    """
+    Wrapper for an :class:`EmissionLineDB`, primarily for output
+    to an `astropy.io.fits.BinTableHDU`_.
+
+    Table includes:
+
+    .. include:: ../tables/emissionlinedefinitiontable.rst
+    
+    Args:
+        name_len (:obj:`int`):
+            The maximum length of any of the emission line names.
+        mode_len (:obj:`int`):
+            The maximum length of any mode signature for the emission
+            line.
+        prof_len (:obj:`int`):
+            The maximum length of the profile signature for the
+            emission line.
+        shape (:obj:`int`, :obj:`tuple`, optional):
+            The shape of the initial array. If None, the data array
+            will not be instantiated; use :func:`init` to initialize
+            the data array after instantiation.
+    """
+    def __init__(self, name_len=1, mode_len=1, prof_len=1, shape=None):
+        # NOTE: This should require python 3.7 to make sure that this
+        # is an "ordered" dictionary.
+        datamodel = dict(ID=dict(typ=int, shape=None, descr='Emission line ID number'),
+                         NAME=dict(typ='<U{0:d}'.format(name_len), shape=None,
+                                   descr='Name of the emission line'),
+                         RESTWAVE=dict(typ=float, shape=None,
+                                       descr='Rest wavelength of the emission line'),
+                         ACTION=dict(typ='<U1', shape=None,
+                                     descr='Action to take for this emission line; see '
+                                           ':ref:`emission-line-modeling-action`'),
+                         FLUXRATIO=dict(typ=float, shape=None,
+                                        descr='Fixed flux ratio compared to reference line; '
+                                              'see MODE'),
+                         MODE=dict(typ='<U{0:d}'.format(mode_len), shape=None,
+                                   descr='Modeling mode to adopt for this line; see '
+                                         ':ref:`emission-line-modeling-mode`'),
+                         PROFILE=dict(typ='<U{0:d}'.format(prof_len), shape=None,
+                                      descr='Name of the parameterization used for the instrinsic '
+                                            'line profile'),
+                         NCOMP=dict(type=int, shape=None,
+                                    descr='Number of components; never used!'))
+
+        keys = list(datamodel.keys())
+        super(EmissionLineDefinitionTable,
+                self).__init__(keys, [datamodel[k]['typ'] for k in keys],
+                               element_shapes=[datamodel[k]['shape'] for k in keys],
+                               descr=[datamodel[k]['descr'] for k in keys],
+                               shape=shape)
+
+
 class EmissionLineDB(SpectralFeatureDB):
     r"""
     Basic container class for the database of emission-line parameters.
@@ -283,4 +338,20 @@ class EmissionLineDB(SpectralFeatureDB):
         channels = [ '{0}-{1}'.format(self.data['name'][i], int(self.data['restwave'][i])) 
                             for i in range(self.size) ]
         return { n:i for i,n in enumerate(channels) } if dicttype else channels
+
+    def to_datatable(self, quiet=False):
+        name_len = numpy.amax([len(n) for n in self.data['name']])
+        mode_len = numpy.amax([len(m) for m in self.data['mode']])
+        prof_len = numpy.amax([len(p) for p in self.data['profile']])
+
+        # Instatiate the table data that will be saved defining the set
+        # of emission-line moments measured
+        db = EmissionLineDefinitionTable(name_len=name_len, mode_len=mode_len, prof_len=prof_len,
+                                         shape=self.size)
+        hk = [ 'ID', 'NAME', 'RESTWAVE', 'ACTION', 'FLUXRATIO', 'MODE', 'PROFILE', 'NCOMP' ]
+        mk = [ 'index', 'name', 'restwave', 'action', 'flux', 'mode', 'profile', 'ncomp' ]
+        for _hk, _mk in zip(hk,mk):
+            db[_hk] = self.data[_mk]
+        return db
+
 

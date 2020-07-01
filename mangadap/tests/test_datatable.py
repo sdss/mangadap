@@ -7,6 +7,8 @@ import numpy
 from astropy.io import fits
 
 from mangadap.util.datatable import DataTable
+from mangadap.proc.spectralfitting import StellarKinematicsFitDataTable
+from mangadap.proc.spectralfitting import EmissionLineFitDataTable
 
 def test_empty():
     keys = ['TEST', 'THIS']
@@ -78,3 +80,22 @@ def test_torst():
     db = DataTable(keys, types, descr=descr, shape=10)
     # Just test for success of the method
     lines = db.to_rst_table()
+
+def test_stellarkin_dt():
+    db = StellarKinematicsFitDataTable(ntpl=20, nadd=8, nmult=8, nkin=2, mask_dtype=numpy.int16,
+                                       shape=10)
+    assert db.shape == (10,), 'Shape is wrong.'
+    assert db['TPLWGT'].shape == (10,20), 'Number of template weights is wrong.'
+    assert db['ADDCOEF'].shape == (10,8), 'Number of additive polynomial coefficients is wrong'
+    assert db['KIN'][0].shape == (2,), 'Number of kinematic moments is wrong.'
+
+def test_emission_dt():
+    db = EmissionLineFitDataTable(20, 2, numpy.int16, shape=10)
+    assert db.shape == (10,), 'Shape is wrong.'
+    assert db.size == 10, 'Size is wrong'
+    assert db['BINID'].shape == (10,), 'Number of bin IDs is wrong.'
+    assert db['MASK'][0].shape == (20,), 'Number of maskbits is wrong'
+    assert db['KIN'].shape == (10,20,2), 'Number of kinematic moments is wrong.'
+
+if __name__ == '__main__':
+    test_emission_dt()

@@ -51,7 +51,7 @@ from ..par.artifactdb import ArtifactDB
 from ..par.emissionlinedb import EmissionLineDB
 from ..util.log import log_output
 from ..util.fitsutil import DAPFitsUtil
-from ..util.fileio import rec_to_fits_type, create_symlink
+from ..util.fileio import create_symlink
 from ..util.sampling import spectral_coordinate_step, spectrum_velocity_scale
 from ..util.resolution import SpectralResolution
 from ..util.bitmask import BitMask
@@ -65,8 +65,6 @@ from .ppxffit import PPXFFitPar, PPXFFit
 from .util import select_proc_method, replace_with_data_from_nearest_coo
 
 from matplotlib import pyplot
-# Add strict versioning
-# from distutils.version import StrictVersion
 
 
 class StellarContinuumModelDef(KeywordParSet):
@@ -106,7 +104,7 @@ class StellarContinuumModelDef(KeywordParSet):
                     'measurements, or emission line fits; see ' \
                     ':mod:`mangadap.proc.spectralfitting`.  The purpose for this type is to ' \
                     'isolate the expected format of the binary table data; see, e.g., ' \
-                    ':func:`mangadap.proc.spectralfitting._per_stellar_kinematics_dtype`.',
+                    ':class:`~mangadap.proc.spectralfitting.StellarKinematicsFitDataTable`.',
                  'Any additional parameters, aside from the spectra themselves, required by ' \
                     'the fitting function.',
                  'Instance of class object to use for the model fitting.  Needed in case ' \
@@ -746,10 +744,8 @@ class StellarContinuumModel:
                 Best-fitting model spectra for each bin.
             model_mask (`numpy.ndarray`_):
                 Bitmask flags for each model pixel.
-            model_par (`numpy.recarray`_):
+            model_par (:class`~mangadap.proc.spectralfitting.StellarKinematicsFitDataTable`):
                 Data table with the best-fitting model parameters.
-                See
-                :func:`mangadap.proc.spectralfitting.StellarKinematicsFit._per_stellar_kinematics_dtype`
         """
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, 'Constructing hdu ...')
@@ -786,11 +782,7 @@ class StellarContinuumModel:
                                  self.binned_spectra['WAVE'].copy(),
                                  fits.ImageHDU(data=bin_indx, header=map_hdr, name='BINID'),
                                  fits.ImageHDU(data=map_mask, header=map_hdr, name='MAPMASK'),
-                                 fits.BinTableHDU.from_columns([fits.Column(name=n,
-                                                            format=rec_to_fits_type(model_par[n]),
-                                           array=model_par[n]) for n in model_par.dtype.names],
-                                                               name='PAR')
-                                ])
+                                 model_par.to_hdu(name='PAR')])
 
     @staticmethod
     def default_paths(plate, ifudesign, rdxqa_method, binning_method, method_key,

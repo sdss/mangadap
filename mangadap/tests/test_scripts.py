@@ -102,6 +102,9 @@ def test_manga_dap():
     manga_dap.main(manga_dap.parse_args(['-c', data_test_file('datacube.ini'),
                                          '-p', data_test_file('plan.par'), '-a', odir]))
 
+    embed()
+    exit()
+
     # Re-run to use existing files.  Takes about 40s.
     manga_dap.main(manga_dap.parse_args(['-c', data_test_file('datacube.ini'),
                                          '-p', data_test_file('plan.par'), '-a', odir]))
@@ -188,3 +191,5 @@ def test_status():
 def test_run():
     assert script_help_okay('rundap'), 'Basic help call failed'
 
+if __name__ == '__main__':
+    test_manga_dap()

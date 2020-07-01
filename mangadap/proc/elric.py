@@ -622,6 +622,7 @@ class Elric(EmissionLineFit):
                  guess_dispersion=guess_dispersion, loggers=loggers, quiet=quiet)
 
 
+    # TODO: Convert this to a DataTable
     @staticmethod
     def _per_fitting_window_dtype(nwin, max_npar, mask_dtype):
         r"""
@@ -1396,9 +1397,11 @@ class Elric(EmissionLineFit):
         model_fit_par['BINID_INDEX'] = numpy.arange(self.nspec)
 
         # Emission-line parameters
-        model_eml_par = init_record_array(self.nspec,
-                                          self._per_emission_line_dtype(self.neml, 2,
-                                                                self.bitmask.minimum_dtype()))
+        model_eml_par = self.emission_line_datatable(self.neml, 2, self.bitmask.minimum_dtype(),
+                                                     shape=self.nspec)
+#        model_eml_par = init_record_array(self.nspec,
+#                                          self._per_emission_line_dtype(self.neml, 2,
+#                                                                self.bitmask.minimum_dtype()))
         model_eml_par['CONTMPLY'] = numpy.ones(model_eml_par['CONTMPLY'].shape, dtype=float)
         model_eml_par['BINID'] = numpy.arange(self.nspec)
         model_eml_par['BINID_INDEX'] = numpy.arange(self.nspec)

@@ -29,11 +29,14 @@ Revision history
 """
 import warnings
 
+from IPython import embed
+
 import numpy
 from scipy.interpolate import interp1d
 import astropy.constants
 
 from ..util.bitmask import BitMask
+from ..util.datatable import DataTable
 from ..util.constants import DAPConstants
 from ..util import lineprofiles
 from ..util.filter import interpolate_masked_vector
@@ -57,6 +60,109 @@ class SpectralFitting():
 
 
 # ----------------------------------------------------------------------
+# TODO: Minimize this to what any kinematics fit should *absolutely*
+# provide. All the rest should go into separate DataTables specific to
+# the fitting class.
+class StellarKinematicsFitDataTable(DataTable):
+    """
+    Class defining the data table to hold the stellar kinematics fit.
+
+    Table includes:
+
+    .. include:: ../tables/stellarkinematicsfitdatatable.rst
+
+    Args:
+        ntpl (:obj:`int`):
+            Number of templates used to model the stellar continuum.
+        nadd (:obj:`int`):
+            Number of coefficients in any additive polynomial
+            included in the fit. Can be 0.
+        nmult (:obj:`int`):
+            Number of coefficients in any multiplicative polynomial
+            included in the fit. Can be 0.
+        nkin (:obj:`int`):
+            Number of kinematic moments included in the fit. Note
+            that the number of moments used as input guesses is
+            *always* assumed to be 2.
+        mask_dtype (:obj:`type`):
+            The data type used for the maskbits (e.g., numpy.int16).
+            Typically this would be set by
+            :func:`mangadap.util.bitmask.BitMask.minimum_dtype`.
+        shape (:obj:`int`, :obj:`tuple`, optional):
+            The shape of the initial array. If None, the data array
+            will not be instantiated; use :func:`init` to initialize
+            the data array after instantiation.
+    """
+    def __init__(self, ntpl=1, nadd=0, nmult=0, nkin=2, mask_dtype=numpy.int16, shape=None):
+        # NOTE: This should require python 3.7 to make sure that this
+        # is an "ordered" dictionary.
+        datamodel = dict(BINID=dict(typ=int, shape=None, descr='Bin ID number'),
+                         BINID_INDEX=dict(typ=int, shape=None, descr='0-indexed number of bin'),
+                         MASK=dict(typ=mask_dtype, shape=None, descr='Maskbit value'),
+                         BEGPIX=dict(typ=int, shape=None,
+                                     descr='Index of the first pixel included in the fit'),
+                         ENDPIX=dict(typ=int, shape=None,
+                                     descr='Index of the pixel just beyond the last pixel '
+                                           'included in fit'),
+                         NPIXTOT=dict(typ=int, shape=None, 
+                                      descr='Total number of pixels in the spectrum to be fit.'),
+                         NPIXFIT=dict(typ=int, shape=None,
+                                      descr='Number of pixels used by the fit.'),
+                         TPLWGT=dict(typ=float, shape=(ntpl,),
+                                     descr='Optimal weight of each template.'),
+                         TPLWGTERR=dict(typ=float, shape=(ntpl,),
+                                        descr='Nominal error in the weight of each template.'),
+                         USETPL=dict(typ=bool, shape=(ntpl,),
+                                     descr='Flag that each template was included in the fit.'),
+                         ADDCOEF=dict(typ=float, shape=(nadd,) if nadd > 1 else None,
+                                      descr='Coefficients of the additive polynomial, if '
+                                            'included.'),
+                         MULTCOEF=dict(typ=float, shape=(nmult,) if nmult > 1 else None,
+                                       descr='Coefficients of the multiplicative polynomial, if '
+                                             'included.'),
+                         KININP=dict(typ=float, shape=(2,),
+                                     descr='Input guesses for the kinematics'),
+                         KIN=dict(typ=float, shape=(nkin,),
+                                     descr='Best-fitting stellar kinematics'),
+                         KINERR=dict(typ=float, shape=(nkin,),
+                                     descr='Errors in the best-fitting stellar kinematics'),
+                         CHI2=dict(typ=float, shape=None,
+                                   descr='Chi-square figure-of-merit for the fit'),
+                         RCHI2=dict(typ=float, shape=None,
+                                    descr='Reduced chi-square figure-of-merit for the fit'),
+                         CHIGRW=dict(typ=float, shape=(5,),
+                                    descr='Value of the error-normalized residuals at 0, 68%, '
+                                          '95%, 99%, and 100% growth'),
+                         RMS=dict(typ=float, shape=None,
+                                  descr='Root-mean-square of the fit residuals.'),
+                         RMSGRW=dict(typ=float, shape=(5,),
+                                    descr='Value of absolute value of the fit residuals at 0, '
+                                          '68%, 95%, 99%, and 100% growth'),
+                         FRMS=dict(typ=float, shape=None,
+                                   descr='Root-mean-square of the fractional residuals '
+                                         '(i.e., residuals/model).'),
+                         FRMSGRW=dict(typ=float, shape=(5,),
+                                      descr='Value of absolute value of the fractional residuals '
+                                            'at 0, 68%, 95%, 99%, 100% growth'),
+                         SIGMACORR_SRES=dict(typ=float, shape=None,
+                                             descr='Quadrature correction for the stellar '
+                                                   'velocity dispersion determined by the mean '
+                                                   'difference in spectral resolution between '
+                                                   'galaxy and template data.'),
+                         SIGMACORR_EMP=dict(typ=float, shape=None,
+                                            descr='Quadrature correciton for the stellar '
+                                                  'velocity dispersion determined by fitting the '
+                                                  'optimal template to one resolution matched to '
+                                                  'the galaxy data.'))
+
+        keys = list(datamodel.keys())
+        super(StellarKinematicsFitDataTable,
+                self).__init__(keys, [datamodel[k]['typ'] for k in keys],
+                               element_shapes=[datamodel[k]['shape'] for k in keys],
+                               descr=[datamodel[k]['descr'] for k in keys],
+                               shape=shape)
+
+
 class StellarKinematicsFit(SpectralFitting):
     """
     Base class for fitting stellar kinematics.
@@ -66,36 +172,10 @@ class StellarKinematicsFit(SpectralFitting):
         self.fit_method = fit_method
 
     @staticmethod
-    def _per_stellar_kinematics_dtype(ntpl, nadd, nmult, nkin, mask_dtype):
-        r"""
-        Construct the record array data type for the output fits
-        extension.
-        """
-        return [ ('BINID',numpy.int),
-                 ('BINID_INDEX',numpy.int),
-                 ('MASK',mask_dtype),
-                 ('BEGPIX', numpy.int),
-                 ('ENDPIX', numpy.int),
-                 ('NPIXTOT',numpy.int),
-                 ('NPIXFIT',numpy.int),
-                 ('TPLWGT',numpy.float,(ntpl,)),
-                 ('TPLWGTERR',numpy.float,(ntpl,)),
-                 ('USETPL',numpy.bool,(ntpl,)),
-                 ('ADDCOEF',numpy.float,(nadd,)) if nadd > 1 else ('ADDCOEF',numpy.float),
-                 ('MULTCOEF',numpy.float,(nmult,)) if nmult > 1 else ('MULTCOEF',numpy.float),
-                 ('KININP',numpy.float,(2,)),
-                 ('KIN',numpy.float,(nkin,)),
-                 ('KINERR',numpy.float,(nkin,)),
-                 ('CHI2',numpy.float),
-                 ('RCHI2',numpy.float),
-                 ('CHIGRW',numpy.float,(5,)),
-                 ('RMS',numpy.float),
-                 ('RMSGRW',numpy.float,(5,)),
-                 ('FRMS',numpy.float),
-                 ('FRMSGRW',numpy.float,(5,)),
-                 ('SIGMACORR_SRES',numpy.float),
-                 ('SIGMACORR_EMP',numpy.float)
-               ]
+    def init_datatable(ntpl, nadd, nmult, nkin, mask_dtype, shape=None):
+        return StellarKinematicsFitDataTable(ntpl=ntpl, nadd=nadd, nmult=nmult, nkin=nkin,
+                                             mask_dtype=mask_dtype, shape=shape)
+
 
 # ----------------------------------------------------------------------
 class CompositionFit(SpectralFitting):
@@ -108,6 +188,111 @@ class CompositionFit(SpectralFitting):
 
 
 # ----------------------------------------------------------------------
+class EmissionLineFitDataTable(DataTable):
+    """
+    Primary data table with the results of the parameterized emission-line fit.
+
+    Table includes:
+
+    .. include:: ../tables/emissionlinefitdatatable.rst
+
+    Args:
+        neml (:obj:`int`):
+            Number of emission lines being fit
+        nkin (:obj:`int`):
+            Number of kinematic parameters (e.g., 2 for V and sigma)
+        mask_dtype (:obj:`type`):
+            The data type used for the maskbits (e.g., numpy.int16).
+            Typically this would be set by
+            :func:`mangadap.util.bitmask.BitMask.minimum_dtype`.
+        shape (:obj:`int`, :obj:`tuple`, optional):
+            The shape of the initial array. If None, the data array
+            will not be instantiated; use :func:`init` to initialize
+            the data array after instantiation.
+    """
+    def __init__(self, neml=1, nkin=2, mask_dtype=numpy.int16, shape=None):
+        # NOTE: This should require python 3.7 to make sure that this
+        # is an "ordered" dictionary.
+        datamodel = dict(BINID=dict(typ=int, shape=None, descr='Bin ID number'),
+                         BINID_INDEX=dict(typ=int, shape=None, descr='0-indexed number of bin'),
+                         FIT_INDEX=dict(typ=int, shape=(neml,),
+                                        descr='The index in the fit database associated with '
+                                              'each emission line.'),
+                         MASK=dict(typ=mask_dtype, shape=(neml,),
+                                   descr='Maskbit value for each emission line.'),
+                         FLUX=dict(typ=float, shape=(neml,),
+                                   descr='The best-fitting flux of the emission line.'),
+                         FLUXERR=dict(typ=float, shape=(neml,),
+                                      descr='The error in the best-fitting emission-line flux'),
+                         KIN=dict(typ=float, shape=(neml,nkin),
+                                  descr='The best-fitting kinematics in each emission line'),
+                         KINERR=dict(typ=float, shape=(neml,nkin),
+                                     descr='The error in the best-fitting emission-line '
+                                           'kinematics'),
+                         SIGMACORR=dict(typ=float, shape=(neml,),
+                                        descr='Quadrature correction in the emission-line '
+                                              'velocity dispersion'),
+                         SIGMAINST=dict(typ=float, shape=(neml,),
+                                        descr='Dispersion of the instrumental line-spread '
+                                              'function at the location of each emission line.'),
+                         SIGMATPL=dict(typ=float, shape=(neml,),
+                                       descr='Dispersion of the instrumental line-spread function '
+                                             'of the emission-line templates.'),
+                         CONTAPLY=dict(typ=float, shape=(neml,),
+                                       descr='The value of any additive polynomial included in '
+                                             'the fit at the location of each emission line'),
+                         CONTMPLY=dict(typ=float, shape=(neml,),
+                                       descr='The value of any multiplicative polynomial included '
+                                             'in the fit at the location of each emission line'),
+                         CONTRFIT=dict(typ=float, shape=(neml,),
+                                       descr='The value of any extinction curve included in the '
+                                             'fit at the location of each emission line'),
+                         LINE_PIXC=dict(typ=int, shape=(neml,),
+                                        descr='The integer pixel nearest the center of each '
+                                              'emission line.'),
+                         AMP=dict(typ=float, shape=(neml,),
+                                  descr='The best-fitting amplitude of the emission line.'),
+                         ANR=dict(typ=float, shape=(neml,),
+                                  descr='The amplitude-to-noise ratio defined as the model '
+                                        'amplitude divided by the median noise in the two (blue '
+                                        'and red) sidebands defined for the emission line.'),
+                         LINE_NSTAT=dict(typ=int, shape=(neml,),
+                                         descr='The number of pixels included in the fit metric '
+                                               'calculations (LINE_RMS, LINE_FRMS, LINE_CHI2) '
+                                               'near each emission line.'),
+                         LINE_RMS=dict(typ=float, shape=(neml,),
+                                       descr='The root-mean-square residual of the model fit '
+                                             'near each emission line.'),
+                         LINE_FRMS=dict(typ=float, shape=(neml,),
+                                       descr='The root-mean-square of the fractional residuals '
+                                             'of the model fit near each emission line.'),
+                         LINE_CHI2=dict(typ=float, shape=(neml,),
+                                       descr='The chi-square of the model fit near each emission '
+                                             'line.'),
+                         BMED=dict(typ=float, shape=(neml,),
+                                   descr='The median flux in the blue sideband of each emission '
+                                         'line'),
+                         RMED=dict(typ=float, shape=(neml,),
+                                   descr='The median flux in the red sideband of each emission '
+                                         'line'),
+                         EWCONT=dict(typ=float, shape=(neml,),
+                                     descr='The continuum value interpolated at the '
+                                           'emission-line center (in the observed frame) used for '
+                                           'the equivalent width measurement.'),
+                         EW=dict(typ=float, shape=(neml,),
+                                 descr='The equivalent width of each emission line'),
+                         EWERR=dict(typ=float, shape=(neml,),
+                                    descr='The error in the equivalent width of each emission '
+                                          'line'))
+
+        keys = list(datamodel.keys())
+        super(EmissionLineFitDataTable,
+                self).__init__(keys, [datamodel[k]['typ'] for k in keys],
+                               element_shapes=[datamodel[k]['shape'] for k in keys],
+                               descr=[datamodel[k]['descr'] for k in keys],
+                               shape=shape)
+
+
 class EmissionLineFit(SpectralFitting):
     """
     Base class for fitting emission lines.
@@ -117,38 +302,8 @@ class EmissionLineFit(SpectralFitting):
         self.fit_method = fit_method
 
     @staticmethod
-    def _per_emission_line_dtype(neml, nkin, mask_dtype):
-        r"""
-        Construct the record array data type for the output fits
-        extension.
-        """
-        return [ ('BINID', numpy.int),
-                 ('BINID_INDEX', numpy.int),
-                 ('FIT_INDEX', numpy.int, (neml,)),
-                 ('MASK', mask_dtype, (neml,)),
-                 ('FLUX', numpy.float, (neml,)),
-                 ('FLUXERR', numpy.float, (neml,)),
-                 ('KIN', numpy.float, (neml,nkin)),
-                 ('KINERR', numpy.float, (neml,nkin)),
-                 ('SIGMACORR', numpy.float, (neml,)),
-                 ('SIGMAINST', numpy.float, (neml,)),
-                 ('SIGMATPL', numpy.float, (neml,)),
-                 ('CONTAPLY', numpy.float, (neml,)),
-                 ('CONTMPLY', numpy.float, (neml,)),
-                 ('CONTRFIT', numpy.float, (neml,)),
-                 ('LINE_PIXC', numpy.int, (neml,)),
-                 ('AMP', numpy.float, (neml,)),
-                 ('ANR', numpy.float, (neml,)),
-                 ('LINE_NSTAT', numpy.int, (neml,)),
-                 ('LINE_RMS', numpy.float, (neml,)),
-                 ('LINE_FRMS', numpy.float, (neml,)),
-                 ('LINE_CHI2', numpy.float, (neml,)),
-                 ('BMED', numpy.float, (neml,)),
-                 ('RMED', numpy.float, (neml,)),
-                 ('EWCONT', numpy.float, (neml,)),
-                 ('EW', numpy.float, (neml,)),
-                 ('EWERR', numpy.float, (neml,))
-               ]
+    def init_datatable(neml, nkin, mask_dtype, shape=None):
+        return EmissionLineFitDataTable(neml=neml, nkin=nkin, mask_dtype=mask_dtype, shape=shape)
 
     @staticmethod
     def select_binned_spectra_to_fit(binned_spectra, minimum_snr=0.0, stellar_continuum=None,
@@ -636,7 +791,7 @@ class EmissionLineFit(SpectralFitting):
                 Best-fitting model spectra. Can be provided as a
                 `numpy.ma.MaskedArray`_.  Shape is (:math:`N_{\rm
                 spec},N_{\rm pix}`).
-            model_eml_par (`numpy.recarray`):
+            model_eml_par (:class:`EmissionLineFitDataTable`):
                 A numpy record array with data type given by
                 :func:`_per_emission_line_dtype`.  Uses ``FLUX``,
                 ``KIN``, and ``MASK``; and assigns results to ``LINE_*``
@@ -738,7 +893,7 @@ class EmissionLineFit(SpectralFitting):
                                     / numpy.sqrt(2*numpy.pi)
 
         # Shift the bands to the appropriate redshift
-        nspec = len(model_eml_par)
+        nspec = model_eml_par.size
         if numpy.any(z.mask) and fill_redshift:
             z_per_spec = numpy.ma.median(z, axis=1)
             for i in range(nspec):

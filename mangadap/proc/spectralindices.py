@@ -93,6 +93,7 @@ from ..par.artifactdb import ArtifactDB
 from ..par.absorptionindexdb import AbsorptionIndexDB
 from ..par.bandheadindexdb import BandheadIndexDB
 from ..config import defaults
+from ..util.datatable import DataTable
 from ..util.resolution import SpectralResolution, match_spectral_resolution
 from ..util.sampling import spectral_coordinate_step, spectrum_velocity_scale
 from ..util.fitsutil import DAPFitsUtil
@@ -237,6 +238,170 @@ class SpectralIndicesBitMask(DAPBitMask):
     .. include:: ../tables/spectralindicesbitmask.rst
     """
     cfg_root = 'spectral_indices_bits'
+
+
+class SpectralIndicesDefinitionTable(DataTable):
+    """
+    Table with the definitions of the spectral indices.
+
+    Table includes:
+
+    .. include:: ../tables/spectralindicesdefinitiontable.rst
+
+    Args:
+        name_len (:obj:`int`):
+            The maximum length of any of the spectral index names.
+        shape (:obj:`int`, :obj:`tuple`, optional):
+            The shape of the initial array. If None, the data array
+            will not be instantiated; use :func:`init` to initialize
+            the data array after instantiation.
+    """
+    def __init__(self, name_len=1, shape=None):
+        # NOTE: This should require python 3.7 to make sure that this
+        # is an "ordered" dictionary.
+        datamodel = dict(TYPE=dict(typ='<U10', shape=None,
+                                   descr='Type of spectral index, either absorption or bandhead.'),
+                         ID=dict(typ=int, shape=None, descr='ID number for the spectral index'),
+                         NAME=dict(typ='<U{0:d}'.format(name_len), shape=None,
+                                   descr='Unique name for the spectral index'),
+                         PASSBAND=dict(typ=float, shape=(2,),
+                                       descr='Lower and upper rest wavelength of the main index '
+                                             'passband (absorption-line indices only)'),
+                         BLUEBAND=dict(typ=float, shape=(2,),
+                                       descr='Lower and upper rest wavelength of the blue '
+                                             'sideband used to define the linear continuum'),
+                         REDBAND=dict(typ=float, shape=(2,),
+                                       descr='Lower and upper rest wavelength of the red '
+                                             'sideband used to define the linear continuum'),
+                         UNIT=dict(typ='<U3', shape=None, descr='Index units'),
+                         COMPONENT=dict(typ=bool, shape=None,
+                                        descr='Flag if the index is a component of a '
+                                              'multi-component index (ignored)'),
+                         INTEGRAND=dict(typ='<U7', shape=None,
+                                        descr='The flux integrand for the index.'),
+                         ORDER=dict(typ='<U3', shape=None,
+                                    descr='The numerator-denominator order of the index '
+                                          '(bandhead/color indices only)'))
+    
+
+
+class SpectralIndicesDataTable(DataTable):
+    """
+    Primary data table with the results of the spectral-index
+    measurements.
+
+    Table includes:
+
+    .. include:: ../tables/spectralindicesdatatable.rst
+
+    Args:
+        nindx (:obj:`int`):
+            Number of spectral indices to measure.
+        bitmask (:class:`~mangadap.util.bitmask.BitMask`, optional):
+            Object used to flag mask bits. If None, flags are simply
+            boolean.
+        shape (:obj:`int`, :obj:`tuple`, optional):
+            The shape of the initial array. If None, the data array
+            will not be instantiated; use :func:`init` to initialize
+            the data array after instantiation.
+    """
+    def __init__(self, nindx=1, bitmask=None, shape=None):
+        # NOTE: This should require python 3.7 to make sure that this
+        # is an "ordered" dictionary.
+        datamodel = dict(BINID=dict(typ=int, shape=None, descr='Spectrum/Bin ID number'),
+                         BINID_INDEX=dict(typ=int, shape=None,
+                                          descr='Index of the spectrum in the list of '
+                                                'provided spectra.'),
+                         REDSHIFT=dict(typ=float, shape=None,
+                                       descr='Redshift used for shifting the passbands'),
+                         MASK=dict(typ=bool if bitmask is None else bitmask.minimum_dtype(),
+                                   shape=(nindx,),
+                                   descr='Bad-value boolean or bit mask value for the moments'),
+                         BCEN=dict(typ=float, shape=(nindx,), descr='Center of the blue sideband'),
+                         BCONT=dict(typ=float, shape=(nindx,),
+                                    descr='Pseudo-continuum in the blue sideband'),
+                         BCONT_ERR=dict(typ=float, shape=(nindx,),
+                                        descr='Error in the blue-sideband pseudo-continuum'),
+                         BCONT_MOD=dict(typ=float, shape=(nindx,),
+                                        descr='Pseudo-continuum in the blue sideband of the '
+                                              'best-fitting model spectrum'),
+                         BCONT_CORR=dict(typ=float, shape=(nindx,),
+                                         descr='Multiplicative correction to apply to the '
+                                               'pseudo-continuum in the blue sideband to match '
+                                               'the measurement for a spectrum with no Doppler '
+                                               'broadening'),
+                         RCEN=dict(typ=float, shape=(nindx,), descr='Center of the red sideband'),
+                         RCONT=dict(typ=float, shape=(nindx,),
+                                    descr='Pseudo-continuum in the red sideband'),
+                         RCONT_ERR=dict(typ=float, shape=(nindx,),
+                                        descr='Error in the red-sideband pseudo-continuum'),
+                         RCONT_MOD=dict(typ=float, shape=(nindx,),
+                                        descr='Pseudo-continuum in the red sideband of the '
+                                              'best-fitting model spectrum'),
+                         RCONT_CORR=dict(typ=float, shape=(nindx,),
+                                         descr='Multiplicative correction to apply to the '
+                                               'pseudo-continuum in the red sideband to match '
+                                               'the measurement for a spectrum with no Doppler '
+                                               'broadening'),
+                         MCONT=dict(typ=float, shape=(nindx,),
+                                    descr='Interpolated continuum at the center of the main index '
+                                          'passband (absorption-line indices only)'),
+                         MCONT_ERR=dict(typ=float, shape=(nindx,),
+                                        descr='Error in the continuum of the main passband'),
+                         MCONT_MOD=dict(typ=float, shape=(nindx,),
+                                        descr='Continuum in the main passband of the best-fitting '
+                                              'model spectrum'),
+                         MCONT_CORR=dict(typ=float, shape=(nindx,),
+                                         descr='Multiplicative correction to apply to the '
+                                               'continuum in the main passband to match the '
+                                               'measurement for a spectrum with no Doppler '
+                                               'broadening'),
+                         AWGT=dict(typ=float, shape=(nindx,),
+                                   descr='Weight needed to construct an index measured for the '
+                                         'sum (or mean) of a set of spectra.  This identical to '
+                                         'data pulled from either BCONT, RCONT, or MCONT, as '
+                                         'appropriate to the calculation.'),
+                         AWGT_ERR=dict(typ=float, shape=(nindx,),
+                                        descr='Error in the aggregation weight'),
+                         AWGT_MOD=dict(typ=float, shape=(nindx,),
+                                        descr='Weight as measured using the best-fitting '
+                                              'model spectrum'),
+                         AWGT_CORR=dict(typ=float, shape=(nindx,),
+                                         descr='Multiplicative correction to apply to the '
+                                               'weight needed to match the measurement for a '
+                                               'spectrum with no Doppler broadening'),
+                         INDX=dict(typ=float, shape=(nindx,),
+                                   descr='Index measurement for the observed spectrum.  '
+                                         'Absorption lines are measured using the definition in '
+                                         'Worthey et al. (1994)'),
+                         INDX_ERR=dict(typ=float, shape=(nindx,),
+                                        descr='Error in the spectral index'),
+                         INDX_MOD=dict(typ=float, shape=(nindx,),
+                                        descr='Spectral index as measured using the best-fitting '
+                                              'model spectrum'),
+                         INDX_CORR=dict(typ=float, shape=(nindx,),
+                                         descr='Index correction needed to match the measurement '
+                                               'for a spectrum with no Doppler broadening'),
+                         INDX_BF=dict(typ=float, shape=(nindx,),
+                                      descr='Index measurement for the observed spectrum.  '
+                                            'Absorption lines are measured using the definition '
+                                            'used by Burstein et al. (1984) and Faber et al. '
+                                            '(1985); see also Faber et al. (1977)'),
+                         INDX_BF_ERR=dict(typ=float, shape=(nindx,),
+                                        descr='Error in the spectral index'),
+                         INDX_BF_MOD=dict(typ=float, shape=(nindx,),
+                                        descr='Spectral index as measured using the best-fitting '
+                                              'model spectrum'),
+                         INDX_BF_CORR=dict(typ=float, shape=(nindx,),
+                                         descr='Index correction needed to match the measurement '
+                                               'for a spectrum with no Doppler broadening'))
+
+        keys = list(datamodel.keys())
+        super(SpectralIndicesDataTable,
+                self).__init__(keys, [datamodel[k]['typ'] for k in keys],
+                               element_shapes=[datamodel[k]['shape'] for k in keys],
+                               descr=[datamodel[k]['descr'] for k in keys],
+                               shape=shape)
 
 
 # TODO: SpecralIndices.save_results requires that AbsorptionLineIndices
@@ -1047,10 +1212,9 @@ class SpectralIndices:
                 Boolean array setting which spectra have sufficient S/N
                 for the measurements.
             default_redshift (:obj:`float`, optional):
-
                 Only used if there are stellar kinematics available.
-                Provides the default redshift to use for spectra without
-                stellar measurements; see ``redshift`` in
+                Provides the default redshift to use for spectra
+                without stellar measurements; see ``redshift`` in
                 :func:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel.matched_kinematics`.
                 If None (default), the median of the unmasked stellar
                 velocities will be used.
@@ -1573,43 +1737,43 @@ class SpectralIndices:
         """
         return 0 if absdb is None else absdb.size, 0 if bhddb is None else bhddb.size
 
-    @staticmethod
-    def output_dtype(nindx, bitmask=None):
-        r"""
-        Construct the record array data type for the output fits
-        extension.
-        """
-        return [ ('BINID', numpy.int),
-                 ('BINID_INDEX',numpy.int),
-                 ('REDSHIFT', numpy.float),
-                 ('MASK', numpy.bool if bitmask is None else bitmask.minimum_dtype(), (nindx,)),
-                 ('BCEN', numpy.float, (nindx,)), 
-                 ('BCONT', numpy.float, (nindx,)), 
-                 ('BCONT_ERR', numpy.float, (nindx,)),
-                 ('BCONT_MOD', numpy.float, (nindx,)),
-                 ('BCONT_CORR', numpy.float, (nindx,)),
-                 ('RCEN', numpy.float, (nindx,)), 
-                 ('RCONT', numpy.float, (nindx,)), 
-                 ('RCONT_ERR', numpy.float, (nindx,)),
-                 ('RCONT_MOD', numpy.float, (nindx,)),
-                 ('RCONT_CORR', numpy.float, (nindx,)),
-                 ('MCONT', numpy.float, (nindx,)), 
-                 ('MCONT_ERR', numpy.float, (nindx,)),
-                 ('MCONT_MOD', numpy.float, (nindx,)), 
-                 ('MCONT_CORR', numpy.float, (nindx,)),
-                 ('AWGT', numpy.float, (nindx,)), 
-                 ('AWGT_ERR', numpy.float, (nindx,)),
-                 ('AWGT_MOD', numpy.float, (nindx,)), 
-                 ('AWGT_CORR', numpy.float, (nindx,)),
-                 ('INDX', numpy.float, (nindx,)), 
-                 ('INDX_ERR', numpy.float, (nindx,)),
-                 ('INDX_MOD', numpy.float, (nindx,)), 
-                 ('INDX_CORR', numpy.float, (nindx,)),
-                 ('INDX_BF', numpy.float, (nindx,)), 
-                 ('INDX_BF_ERR', numpy.float, (nindx,)),
-                 ('INDX_BF_MOD', numpy.float, (nindx,)), 
-                 ('INDX_BF_CORR', numpy.float, (nindx,))
-               ]
+#    @staticmethod
+#    def output_dtype(nindx, bitmask=None):
+#        r"""
+#        Construct the record array data type for the output fits
+#        extension.
+#        """
+#        return [ ('BINID', numpy.int),
+#                 ('BINID_INDEX',numpy.int),
+#                 ('REDSHIFT', numpy.float),
+#                 ('MASK', numpy.bool if bitmask is None else bitmask.minimum_dtype(), (nindx,)),
+#                 ('BCEN', numpy.float, (nindx,)), 
+#                 ('BCONT', numpy.float, (nindx,)), 
+#                 ('BCONT_ERR', numpy.float, (nindx,)),
+#                 ('BCONT_MOD', numpy.float, (nindx,)),
+#                 ('BCONT_CORR', numpy.float, (nindx,)),
+#                 ('RCEN', numpy.float, (nindx,)), 
+#                 ('RCONT', numpy.float, (nindx,)), 
+#                 ('RCONT_ERR', numpy.float, (nindx,)),
+#                 ('RCONT_MOD', numpy.float, (nindx,)),
+#                 ('RCONT_CORR', numpy.float, (nindx,)),
+#                 ('MCONT', numpy.float, (nindx,)), 
+#                 ('MCONT_ERR', numpy.float, (nindx,)),
+#                 ('MCONT_MOD', numpy.float, (nindx,)), 
+#                 ('MCONT_CORR', numpy.float, (nindx,)),
+#                 ('AWGT', numpy.float, (nindx,)), 
+#                 ('AWGT_ERR', numpy.float, (nindx,)),
+#                 ('AWGT_MOD', numpy.float, (nindx,)), 
+#                 ('AWGT_CORR', numpy.float, (nindx,)),
+#                 ('INDX', numpy.float, (nindx,)), 
+#                 ('INDX_ERR', numpy.float, (nindx,)),
+#                 ('INDX_MOD', numpy.float, (nindx,)), 
+#                 ('INDX_CORR', numpy.float, (nindx,)),
+#                 ('INDX_BF', numpy.float, (nindx,)), 
+#                 ('INDX_BF_ERR', numpy.float, (nindx,)),
+#                 ('INDX_BF_MOD', numpy.float, (nindx,)), 
+#                 ('INDX_BF_CORR', numpy.float, (nindx,))
+#               ]
 
     @staticmethod
     def check_and_prep_input(wave, flux, ivar=None, mask=None, redshift=None, bitmask=None):
@@ -1762,75 +1926,13 @@ class SpectralIndices:
         r"""
         Measure the spectral indices in a set of spectra.
 
-        The returned record array has the following elements:
-
-        +------------------+----------------------------------------------------------------------+
-        |      Column Name | Description                                                          |
-        +==================+======================================================================+
-        | ``BINID``        | Binned spectrum ID                                                   |
-        +------------------+----------------------------------------------------------------------+
-        | ``BINID_INDEX``  | Binned spectrum 0-indexed ID                                         |
-        +------------------+----------------------------------------------------------------------+
-        | ``REDSHIFT``     | Spectrum redshift                                                    |
-        +------------------+----------------------------------------------------------------------+
-        | ``MASK``         | Bitmask value for each index measurement                             |
-        +------------------+----------------------------------------------------------------------+
-        | ``BCEN``         | Unweighted center of the blue sideband                               |
-        +------------------+----------------------------------------------------------------------+
-        | ``BCONT``        | Continuum level of the blue sideband                                 |
-        +------------------+----------------------------------------------------------------------+
-        | ``BCONT_ERR``    | Error in the blue-sideband continuum                                 |
-        +------------------+----------------------------------------------------------------------+
-        | ``BCONT_MOD``    | Continuum level of the model spectrum in the blue sideband           |
-        +------------------+----------------------------------------------------------------------+
-        | ``BCONT_CORR``   | Zero-dispersion correction to the blue-sideband continuum            |
-        +------------------+----------------------------------------------------------------------+
-        | ``RCEN``         | Unweighted center of the red sideband                                |
-        +------------------+----------------------------------------------------------------------+
-        | ``RCONT``        | Continuum level of the red sideband                                  |
-        +------------------+----------------------------------------------------------------------+
-        | ``RCONT_ERR``    | Error in the red-sideband continuum                                  |
-        +------------------+----------------------------------------------------------------------+
-        | ``RCONT_MOD``    | Continuum level of the model spectrum in the red sideband            |
-        +------------------+----------------------------------------------------------------------+
-        | ``RCONT_CORR``   | Zero-dispersion correction to the red-sideband continuum             |
-        +------------------+----------------------------------------------------------------------+
-        | ``MCONT``        | Continuum level in the main passband                                 |
-        +------------------+----------------------------------------------------------------------+
-        | ``MCONT_ERR``    | Error in the main-passband continuum                                 |
-        +------------------+----------------------------------------------------------------------+
-        | ``MCONT_MOD``    | Continuum level of the model spectrum in the main passband           |
-        +------------------+----------------------------------------------------------------------+
-        | ``MCONT_CORR``   | Zero-dispersion correction to the main-passband continuum            |
-        +------------------+----------------------------------------------------------------------+
-        | ``AWGT``         | Appropriate weight to use when additively combining measurements.    |
-        +------------------+----------------------------------------------------------------------+
-        | ``AWGT_ERR``     | Error in weight.                                                     |
-        +------------------+----------------------------------------------------------------------+
-        | ``AWGT_MOD``     | Model weight to use when additively combining measurements.          |
-        +------------------+----------------------------------------------------------------------+
-        | ``AWGT_CORR``    | Zero-velocity dispersion correction to weight.                       |
-        +------------------+----------------------------------------------------------------------+
-        | ``INDX``         | Index measured using the Worthey/Trager definition                   |
-        +------------------+----------------------------------------------------------------------+
-        | ``INDX_ERR``     | Error in the above                                                   |
-        +------------------+----------------------------------------------------------------------+
-        | ``INDX_MOD``     | Value of the Worthey/Trager defined index in the model spectrum      |
-        +------------------+----------------------------------------------------------------------+
-        | ``INDX_CORR``    | Correction to the index measured using the Worthey/Trager definition |
-        +------------------+----------------------------------------------------------------------+
-        | ``INDX_BF``      | Index measured using the Burstein/Faber definition                   |
-        +------------------+----------------------------------------------------------------------+
-        | ``INDX_BF_ERR``  | Error in the above                                                   |
-        +------------------+----------------------------------------------------------------------+
-        | ``INDX_BF_MOD``  | Value of the Burstein/Faber defined index in the model spectrum      |
-        +------------------+----------------------------------------------------------------------+
-        | ``INDX_BF_CORR`` | Correction to the index measured using the Burstein/Faber definition |
-        +------------------+----------------------------------------------------------------------+
+        The returned object is :class:`SpectralIndicesDataTable`; see
+        the documentation of this object for the list of returned
+        quantities.
 
         See the documentation of :class:`AbsorptionLineIndices` and
-        :class:`BandheadIndices` for the definitions of these
-        quantities. For the purpose of their storage here, ``INDX``
+        :class:`BandheadIndices` for the definitions of the index
+        measurements. For the purpose of their storage here, ``INDX``
         refers to :math:`{\mathcal I}_{\rm WT}` for the
         absorption-line indices. There is only one definition for the
         bandhead/color indices, and they are included in *both*
@@ -1886,7 +1988,8 @@ class SpectralIndices:
                 (False otherwise).
 
         Returns:
-            `numpy.recarray`_: A record array with the index measurements.
+            :class:`SpectralIndicesDataTable`: The object with the
+            index-measurement data.
         """
         # Check the input databases
         if absdb is not None and not isinstance(absdb, AbsorptionIndexDB):
@@ -1902,7 +2005,8 @@ class SpectralIndices:
 
         nspec = flux.shape[0]
         # Check the input and initialize the output
-        measurements = init_record_array(nspec, SpectralIndices.output_dtype(nindx,bitmask=bitmask))
+        measurements = SpectralIndicesDataTable(nindx=nindx, bitmask=bitmask, shape=nspec)
+#        measurements = init_record_array(nspec, SpectralIndices.output_dtype(nindx,bitmask=bitmask))
         _flux, noise, measurements['REDSHIFT'] \
                     = SpectralIndices.check_and_prep_input(wave, flux, ivar=ivar, mask=mask,
                                                            redshift=redshift, bitmask=bitmask)
@@ -2635,18 +2739,14 @@ class SpectralIndices:
         passband_database = self._compile_database()
 
         # Save the data to the hdu attribute
-        self.hdu = fits.HDUList([ fits.PrimaryHDU(header=pri_hdr),
-                                  fits.ImageHDU(data=bin_indx, header=map_hdr, name='BINID'),
-                                  fits.ImageHDU(data=map_mask, header=map_hdr, name='MAPMASK'),
-                                  fits.BinTableHDU.from_columns( [ fits.Column(name=n,
+        self.hdu = fits.HDUList([fits.PrimaryHDU(header=pri_hdr),
+                                 fits.ImageHDU(data=bin_indx, header=map_hdr, name='BINID'),
+                                 fits.ImageHDU(data=map_mask, header=map_hdr, name='MAPMASK'),
+                                 fits.BinTableHDU.from_columns([fits.Column(name=n,
                                                     format=rec_to_fits_type(passband_database[n]),
                             array=passband_database[n]) for n in passband_database.dtype.names ],
                                                                name='SIPAR'),
-                                  fits.BinTableHDU.from_columns( [ fits.Column(name=n,
-                                                    format=rec_to_fits_type(measurements[n]),
-                                array=measurements[n]) for n in measurements.dtype.names ],
-                                                               name='SINDX')
-                                ])
+                                  measurements.to_hdu(name='SINDX')])
 
         # Write the data, if requested
         if self.hardcopy:

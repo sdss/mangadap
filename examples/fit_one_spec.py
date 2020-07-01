@@ -329,6 +329,9 @@ if __name__ == '__main__':
                          plot=fit_plots)
     print('TIME: ', time.perf_counter() - efit_t)
 
+    embed()
+    exit()
+
     # Line-fit metrics
     eml_eml_par = EmissionLineFit.line_metrics(emldb, wave, flux, ferr, model_flux, eml_eml_par,
                                                model_mask=eml_mask, bitmask=emlfit.bitmask)

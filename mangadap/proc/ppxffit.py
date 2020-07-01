@@ -64,7 +64,6 @@ from ppxf import ppxf, capfit
 
 from ..par.parset import KeywordParSet
 from ..util.pixelmask import PixelMask, SpectralPixelMask
-from ..util.fileio import init_record_array
 from ..util.filter import BoxcarFilter
 from ..util.log import log_output
 from ..util.sampling import spectrum_velocity_scale, angstroms_per_pixel, Resample
@@ -2484,12 +2483,12 @@ class PPXFFit(StellarKinematicsFit):
         #---------------------------------------------------------------
         # Initialize the output data
         model_flux = numpy.zeros(self.obj_flux.shape, dtype=numpy.float)
-        model_par = init_record_array(self.nobj,
-                        self._per_stellar_kinematics_dtype(self.ntpl, 
-                                            0 if self._mode_uses_filter() else self.degree+1,
-                                            0 if self._mode_uses_filter() else max(self.mdegree,0),
-                                                           self.moments,
-                                                           self.bitmask.minimum_dtype()))
+        model_par = self.init_datatable(self.ntpl,
+                                        0 if self._mode_uses_filter() else self.degree+1,
+                                        0 if self._mode_uses_filter() else max(self.mdegree,0),
+                                        self.moments, self.bitmask.minimum_dtype(),
+                                        shape=self.nobj)
+
         # Set the bins; here the ID and index are identical
         model_par['BINID'] = numpy.arange(self.nobj)
         model_par['BINID_INDEX'] = numpy.arange(self.nobj)

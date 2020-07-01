@@ -51,6 +51,7 @@ from ppxf import ppxf
 
 from ..par.parset import KeywordParSet
 from ..par.emissionlinedb import EmissionLineDB
+from ..util.datatable import DataTable
 from ..util.fitsutil import DAPFitsUtil
 from ..util.fileio import init_record_array
 from ..util.filter import interpolate_masked_vector
@@ -161,6 +162,108 @@ class SasukePar(KeywordParSet):
     def _check(self):
         if self['mdegree'] > 0 and self['reddening'] is not None:
             raise ValueError('Cannot fit both multiplicative polynomials and an extinction curve.')
+
+
+class SasukeFitDataTable(DataTable):
+    """
+    Holds results specific to how Sasuke fits the spectrum.
+
+        In :func:`fit`, ``BINID`` and ``BINID_INDEX`` are the same.
+        They are not in :func:`fit_SpatiallyBinnedSpectra`.
+
+    Args:
+        ntpl (:obj:`int`):
+            Number of spectral templates.
+        nadd (:obj:`int`):
+            Number of coefficients in any additive polynomial
+            included in the fit. Can be 0.
+        nmult (:obj:`int`):
+            Number of coefficients in any multiplicative polynomial
+            included in the fit. Can be 0.
+        nkin (:obj:`int`):
+            Number of kinematic parameters (e.g., 2 for V and sigma)
+        mask_dtype (:obj:`type`):
+            The data type used for the maskbits (e.g., numpy.int16).
+            Typically this would be set by
+            :func:`mangadap.util.bitmask.BitMask.minimum_dtype`.
+        shape (:obj:`int`, :obj:`tuple`, optional):
+            The shape of the initial array. If None, the data array
+            will not be instantiated; use :func:`init` to initialize
+            the data array after instantiation.
+    """
+    def __init__(self, ntpl, nadd, nmult, nkin, mask_dtype, shape=None):
+        # NOTE: This should require python 3.7 to make sure that this
+        # is an "ordered" dictionary.
+        datamodel = dict(BINID=dict(typ=int, shape=None, descr='Spectrum/bin ID number'),
+                         BINID_INDEX=dict(typ=int, shape=None,
+                                          descr='Index of the spectrum in the list of '
+                                                'provided spectra.'),
+                         NEAREST_BIN=dict(typ=int, shape=None,
+                                          descr='ID of the nearest binned spectrum when '
+                                                'deconstructing bins.'),
+                         MASK=dict(typ=mask_dtype, shape=None,
+                                   descr='The bitmask value of the fit.  See '
+                                         ':func:`_save_results`.'),
+                         BEGPIX=dict(typ=int, shape=None,
+                                     descr='Index of the first pixel included in the fit'),
+                         ENDPIX=dict(typ=int, shape=None,
+                                     descr='Index of the pixel just beyond the last pixel '
+                                           'included in fit'),
+                         NPIXTOT=dict(typ=int, shape=None, 
+                                      descr='Total number of pixels in the spectrum to be fit.'),
+                         NPIXFIT=dict(typ=int, shape=None,
+                                      descr='Number of pixels used by the fit.'),
+                         KINCMP=dict(typ=int, shape=(ntpl,),
+                                     descr='The kinematic component assigned to each template.'),
+                         VELCMP=dict(typ=int, shape=(ntpl,),
+                                     descr='The velocity group assigned to each template.'),
+                         SIGCMP=dict(typ=int, shape=(ntpl,),
+                                     descr='The sigma group assigned to each template.'),
+                         TPLWGT=dict(typ=float, shape=(ntpl,),
+                                     descr='Optimal weight of each template.'),
+                         TPLWGTERR=dict(typ=float, shape=(ntpl,),
+                                        descr='Nominal error in the weight of each template.'),
+                         ADDCOEF=dict(typ=float, shape=(nadd,) if nadd > 1 else None,
+                                      descr='Additive polynomal coefficients.'),
+                         APLYMINMAX=dict(typ=float, shape=(2,) if nadd > 1 else None,
+                                         descr='Minimum and maximum of additive polynomial.'),
+                         MULTCOEF=dict(typ=float, shape=(nmult,) if nmult > 1 else None,
+                                       descr='Multiplicative polynomal coefficients.'),
+                         MPLYMINMAX=dict(typ=float, shape=(2,) if nmult > 1 else None,
+                                         descr='Minimum and maximum of multiplicative polynomial.'),
+                         EBV=dict(typ=float, shape=None,
+                                  descr='Fitted E(B-V) from pPXF, if requested.'),
+                         KININP=dict(typ=float, shape=(nkin,), descr='Initial guess kinematics.'),
+                         KIN=dict(typ=float, shape=(nkin,), descr='Best-fitting kinematics.'),
+                         KINERR=dict(typ=float, shape=(nkin,),
+                                     descr='Error in the best-fitting kinematics.'),
+                         TIEDKIN=dict(typ=int, shape=(nkin,),
+                                      descr='Index of the kinematic parameter to which each '
+                                            'parameter is tied.  I.e., TIEDKIN[3] = 1 means that '
+                                            'parameter 4 is tied to parameter 2.'),
+                         CHI2=dict(typ=float, shape=None, descr='Chi-square of the fit'),
+                         RCHI2=dict(typ=float, shape=None, descr='Reduced chi-square of the fit'),
+                         CHIGRW=dict(typ=float, shape=(5,),
+                                    descr='Value of the error-normalized residuals at 0, 68%, '
+                                          '95%, 99%, and 100% growth'),
+                         RMS=dict(typ=float, shape=None,
+                                  descr='Root-mean-square of the fit residuals.'),
+                         RMSGRW=dict(typ=float, shape=(5,),
+                                    descr='Value of absolute value of the fit residuals at 0, '
+                                          '68%, 95%, 99%, and 100% growth'),
+                         FRMS=dict(typ=float, shape=None,
+                                   descr='Root-mean-square of the fractional residuals '
+                                         '(i.e., residuals/model).'),
+                         FRMSGRW=dict(typ=float, shape=(5,),
+                                      descr='Value of absolute value of the fractional residuals '
+                                            'at 0, 68%, 95%, 99%, 100% growth'))
+
+        keys = list(datamodel.keys())
+        super(SasukeFitDataTable,
+                self).__init__(keys, [datamodel[k]['typ'] for k in keys],
+                               element_shapes=[datamodel[k]['shape'] for k in keys],
+                               descr=[datamodel[k]['descr'] for k in keys],
+                               shape=shape)
 
 
 class Sasuke(EmissionLineFit):
@@ -454,118 +557,6 @@ class Sasuke(EmissionLineFit):
         self.base_velocity = None
 
     @staticmethod
-    def _per_fit_dtype(ntpl, nadd, nmult, nkin, mask_dtype):
-        r"""
-        Returns the data type for the result of each pPXF fit.
-        
-        The data are as follows:
-            - ``BINID``: Spectrum ID number.
-            - ``BINID_INDEX``: Index of the spectrum in the list of
-              provided spectra.
-            - ``NEAREST_BIN``: ID of the nearest binned spectrum when
-              deconstructing bins.
-            - ``MASK``: The bitmask value of the fit.  See
-              :func:`_save_results`.
-            - ``BEGPIX``: Same as :attr:`spectrum_start`.
-            - ``ENDPIX``: Same as :attr:`spectrum_end`.
-            - ``NPIXTOT``: Length of spectrum passed to pPXF
-              (``ENDPIX-BEGPIX``)
-            - ``NPIXFIT``: Number of pixels included in the fit
-              (excluding rejected/masked pixels)
-            - ``KINCMP``: The kinematic component assigned to each
-              template.  Shape is (:math:`N_{\rm tpl}`,)
-            - ``VELCMP``: The velocity group assigned to each template.
-              Shape is (:math:`N_{\rm tpl}`,)
-            - ``SIGCMP``: The sigma group assigned to each template.
-              Shape is (:math:`N_{\rm tpl}`,)
-            - ``USETPL``: Flag that the template was used during the
-              fit.  Shape is (:math:`N_{\rm tpl}`,)
-            - ``TPLWGT``: Optimal weight of each template in the fit.
-              Shape is (:math:`N_{\rm tpl}`,)
-            - ``ADDCOEF``: Additive polynomal coefficients.  Shape is
-              (:math:`o_{\rm add}+1`,)
-            - ``APLYMINMAX``: Minimum and maximum of additive
-              polynomial.  Shape is (2,).
-            - ``MULTCOEF``: Multiplicative polynomal coefficients.
-              Shape is (:math:`o_{\rm mult}`,)
-            - ``MPLYMINMAX``: Minimum and maximum of multiplicative
-              polynomial.  Shape is (2,).
-            - ``EBV``: Fitted E(B-V) from pPXF, if applied.
-            - ``KININP``: Initial guess kinematics.  Shape is
-              (:math:`N_{\rm kin}`,)
-            - ``KIN``: Best-fitting kinematics.  Shape is (:math:`N_{\rm
-              kin}`,)
-            - ``KINERR``: Errors in the best-fitting kinematics.  Shape
-              is (:math:`N_{\rm kin}`,)
-            - ``TIEDKIN``: Index of the kinematic parameter to which
-              each parameter is tied.  I.e., TIEDKIN[3] = 1 means that
-              parameter 4 is tied to paramter 2.  Shape is
-              (:math:`N_{\rm kin}`,)
-            - ``CHI2``: Chi-square of the fit
-            - ``RCHI2``: Reduced chi-square (recalculated after pPXF).
-            - ``CHIGRW``: The minimum, 68%, 95%, and 99% growth, and
-              maximum of the chi-square in each pixel.  Shape is (5,).
-            - ``RMS``: RMS of the fit residuals.
-            - ``RMSGRW``: The minimum, 68%, 95%, and 99% growth, and
-              maximum absolute residual.  Shape is (5,).
-            - ``FRMS``: RMS of the fractional fit residuals, where the
-              fractional residuals are (data-model)/model.
-            - ``FRMSGRW``: The minimum, 68%, 95%, and 99% growth, and
-              maximum absolute fractional residual.  Shape is (5,).
-
-        In :func:`fit`, ``BINID`` and ``BINID_INDEX`` are the same.
-        They are not in :func:`fit_SpatiallyBinnedSpectra`.
-
-        Args:
-            ntpl (int): Number of templates, :math:`N_{\rm tpl}`.
-            nadd (int): Number of additive polynomial coefficents,
-                :math:`o_{\rm add}+1`.
-            nmult (int): Number of multiplicative polynomial
-                coefficients, :math:`o_{\rm mult}`.
-            nkin (int): Number of kinematic parameters, :math:`N_{\rm
-                kin}`.
-            mask_dtype (dtype): Type for the bitmask variable.  See
-                :func:`mangadap.util.bitmask.BitMask.minimum_dtype`.
-
-        Returns:
-            list: List of tuples with the name and type of each element
-            in the array.
-
-        """
-        return [ ('BINID',numpy.int),
-                 ('BINID_INDEX',numpy.int),
-                 ('NEAREST_BIN',numpy.int),
-                 ('MASK', mask_dtype),
-                 ('BEGPIX', numpy.int),
-                 ('ENDPIX', numpy.int),
-                 ('NPIXTOT',numpy.int),
-                 ('NPIXFIT',numpy.int),
-                 ('KINCMP',numpy.int,(ntpl,)),
-                 ('VELCMP',numpy.int,(ntpl,)),
-                 ('SIGCMP',numpy.int,(ntpl,)),
-#                 ('USETPL',numpy.bool,(ntpl,)),
-                 ('TPLWGT',numpy.float,(ntpl,)),
-                 ('TPLWGTERR',numpy.float,(ntpl,)),
-                 ('ADDCOEF',numpy.float,(nadd,)) if nadd > 1 else ('ADDCOEF',numpy.float),
-                 ('APLYMINMAX',numpy.float,(2,)) if nadd > 1 else ('APLYMINMAX',numpy.float),
-                 ('MULTCOEF',numpy.float,(nmult,)) if nmult > 1 else ('MULTCOEF',numpy.float),
-                 ('MPLYMINMAX',numpy.float,(2,)) if nmult > 1 else ('MPLYMINMAX',numpy.float),
-                 ('EBV',numpy.float),
-                 ('KININP',numpy.float,(nkin,)),
-                 ('KIN',numpy.float,(nkin,)),
-                 ('KINERR',numpy.float,(nkin,)),
-                 ('TIEDKIN',numpy.int,(nkin,)),
-                 ('CHI2',numpy.float),
-                 ('RCHI2',numpy.float),
-#                 ('ROBUST_RCHI2',numpy.float),
-                 ('CHIGRW',numpy.float,(5,)),
-                 ('RMS',numpy.float),
-                 ('RMSGRW',numpy.float,(5,)),
-                 ('FRMS',numpy.float),
-                 ('FRMSGRW',numpy.float,(5,))
-               ] 
-
-    @staticmethod
     def _copy_from_stellar_continuum(stellar_continuum):
         return stellar_continuum.method['fitpar']['template_library'], \
                 stellar_continuum.method['fitpar']['match_resolution'], \
@@ -732,13 +723,13 @@ class Sasuke(EmissionLineFit):
         (KBW) Currently not called...
 
         Args:
-            model_eml_par (`numpy.recarray`_): Record array with the
-                parameters measured for each emission line.  See
-                :func:`mangadap.proc.spectralfitting.EmissionLineFit._per_emission_line_dtype`.
-            rng (list): (**Optional**) Two-element list with the minimum
-                and maximum allowed *corrected* velocity dispersion.
-                Measurements outside this range are flagged as
-                ``BAD_SIGMA``.
+            model_eml_par (:class:`~mangadap.proc.spectralfitting.EmissionLineDataTable`):
+                Data table with the parameters measured for each
+                emission line.
+            rng (:obj:`list`, optional):
+                Two-element list with the minimum and maximum allowed
+                *corrected* velocity dispersion. Measurements outside
+                this range are flagged as ``BAD_SIGMA``.
 
         Returns:
             `numpy.recarray`_: Returns the input record array with any
@@ -834,12 +825,13 @@ class Sasuke(EmissionLineFit):
                 The array of bitmask values associated with spectral
                 fitting flags.  Shape is :math:`(N_{\rm spec}, N_{\rm
                 pix})`.
-            model_fit_par (`numpy.recarray`_):
-                Record array with the dtype as defined by
-                :func:`_per_fit_dtype` that holds the ppxf output.
-            model_eml_par (`numpy.recarray`_):
-                Record array with the individual emission-line data; see
-                :func:`mangadap.proc.spectralfitting.EmissionLineFit._per_emission_line_dtype`.
+            model_fit_par (:class:`SasukeFitDataTable`):
+                Data table with the specific fit parameters. This is
+                parsed into the main datatable by
+                :func:`_save_results`.
+            model_eml_par (:class:`~mangadap.proc.spectralfitting.EmissionLineDataTable`):
+                Data table with the parameters measured for each
+                emission line.
             fill_value (scalar-like, optional):
                 The value used to fill masked measurements.
 
@@ -2107,14 +2099,18 @@ class Sasuke(EmissionLineFit):
         model_eml_flux = numpy.ma.masked_all(output_shape, dtype=float)
         model_eml_flux.data[:,:] = 0.0
         #  - Model parameters and fit quality
-        model_fit_par = init_record_array(output_shape[0],
-                                          self._per_fit_dtype(self.ntpl, self.degree+1,
-                                          self.mdegree, self.npar_kin,
-                                          self.bitmask.minimum_dtype()))
+        model_fit_par = SasukeFitDataTable(self.ntpl, self.degree+1, self.mdegree, self.npar_kin,
+                                           self.bitmask.minimum_dtype(), shape=output_shape[0])
+#        model_fit_par = init_record_array(output_shape[0],
+#                                          self._per_fit_dtype(self.ntpl, self.degree+1,
+#                                          self.mdegree, self.npar_kin,
+#                                          self.bitmask.minimum_dtype()))
         #  - Model emission-line parameters
-        model_eml_par = init_record_array(output_shape[0],
-                                          self._per_emission_line_dtype(self.neml, 2,
-                                                                self.bitmask.minimum_dtype()))
+        model_eml_par = self.init_datatable(self.neml, 2, self.bitmask.minimum_dtype(),
+                                            shape=output_shape[0])
+#        model_eml_par = init_record_array(output_shape[0],
+#                                          self._per_emission_line_dtype(self.neml, 2,
+#                                                                self.bitmask.minimum_dtype()))
         model_eml_par['CONTMPLY'] = numpy.ones(model_eml_par['CONTMPLY'].shape, dtype=float)
 
         #---------------------------------------------------------------

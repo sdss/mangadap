@@ -32,6 +32,7 @@ from mangadap.util import fileio
 from mangadap.par.parset import ParSet
 
 # TODO: Can I just subclass from recarray?
+# TODO: Add units
 
 class DataTable:
     """
@@ -129,7 +130,8 @@ class DataTable:
             raise ValueError('Number of descriptions does not match the number of columns.')
 
         # Build the record array dtype
-        self._dtype = [(k, t, s) for k,t,s in zip(self.keys, self.types, self.element_shapes)]
+        self._dtype = [(k, t) if s is None else (k,t,s) 
+                            for k,t,s in zip(self.keys, self.types, self.element_shapes)]
 
         # Instantiate the array if the shape is defined
         if shape is None:
@@ -174,6 +176,17 @@ class DataTable:
         return None if self.data is None else self.data.shape
 
     @property
+    def size(self):
+        """
+        Return the size of the data array.
+
+        Returns:
+            :obj:`int`: Returns the number of elements in the array. If the
+            :attr:`data` has not been instantiated, returns 0.
+        """
+        return 0 if self.data is None else self.data.size
+
+    @property
     def dtype(self):
         """
         Return the data type of the record array.
@@ -202,14 +215,15 @@ class DataTable:
             :obj:`list`: Returns a list of lines that can be written
             to an ``*.rst`` file.
         """
-        data_table = numpy.empty((self.ncols+1, 4), dtype=object)
-        data_table[0,:] = ['Key', 'Type', 'Shape', 'Description']
+        data_table = numpy.empty((self.ncols+1, 3), dtype=object)
+#        data_table[0,:] = ['Key', 'Type', 'Shape', 'Description']
+        data_table[0,:] = ['Key', 'Type', 'Description']
         for i in range(self.ncols):
             data_table[i+1,0] = self.keys[i]
             data_table[i+1,1] = self.types[i].__name__
-            data_table[i+1,2] = '(1,)' if self.element_shapes[i] is None \
-                                    else str(self.element_shapes[i])
-            data_table[i+1,3] = '..' if self.descr[i] is None else self.descr[i]
+#            data_table[i+1,2] = '(1,)' if self.element_shapes[i] is None \
+#                                    else str(self.element_shapes[i])
+            data_table[i+1,2] = '..' if self.descr[i] is None else self.descr[i]
 
         output = []
         if header:

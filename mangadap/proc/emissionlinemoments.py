@@ -50,6 +50,7 @@ from ..util.fitsutil import DAPFitsUtil
 from ..util.fileio import init_record_array, rec_to_fits_type
 from ..util.bitmask import BitMask
 from ..util.dapbitmask import DAPBitMask
+from ..util.datatable import DataTable
 from ..util.pixelmask import SpectralPixelMask
 from ..util.log import log_output
 from ..util.parser import DefaultConfig
@@ -194,9 +195,85 @@ class EmissionLineMomentsBitMask(DAPBitMask):
     cfg_root = 'emission_line_moments_bits'
 
 
+class EmissionLineMomentsDataTable(DataTable):
+    """
+    Primary data table with the results of the emission-line-moment
+    calculations.
+
+    Table includes:
+
+    .. include:: ../tables/emissionlinemomentsdatatable.rst
+
+    Args:
+        neml (:obj:`int`):
+            Number of emission lines being measured.
+        bitmask (:class:`~mangadap.util.bitmask.BitMask`, optional):
+            Object used to flag mask bits. If None, flags are simply
+            boolean.
+        shape (:obj:`int`, :obj:`tuple`, optional):
+            The shape of the initial array. If None, the data array
+            will not be instantiated; use :func:`init` to initialize
+            the data array after instantiation.
+    """
+    def __init__(self, neml=1, bitmask=None, shape=None):
+        # NOTE: This should require python 3.7 to make sure that this
+        # is an "ordered" dictionary.
+        datamodel = dict(BINID=dict(typ=int, shape=None, descr='Spectrum/Bin ID number'),
+                         BINID_INDEX=dict(typ=int, shape=None,
+                                          descr='Index of the spectrum in the list of '
+                                                'provided spectra.'),
+                         REDSHIFT=dict(typ=float, shape=None,
+                                       descr='Redshift used for shifting the passbands'),
+                         MASK=dict(typ=bool if bitmask is None else bitmask.minimum_dtype(),
+                                   shape=(neml,),
+                                   descr='Bad-value boolean or bit mask value for the moments'),
+                         BCEN=dict(typ=float, shape=(neml,), descr='Center of the blue sideband.'),
+                         BCONT=dict(typ=float, shape=(neml,),
+                                    descr='Pseudo-continuum in the blue sideband'),
+                         BCONTERR=dict(typ=float, shape=(neml,),
+                                       descr='Error in the blue-sideband pseudo-continuum'),
+                         RCEN=dict(typ=float, shape=(neml,), descr='Center of the red sideband.'),
+                         RCONT=dict(typ=float, shape=(neml,),
+                                    descr='Pseudo-continuum in the red sideband'),
+                         RCONTERR=dict(typ=float, shape=(neml,),
+                                       descr='Error in the red-sideband pseudo-continuum'),
+                         CNTSLOPE=dict(typ=float, shape=(neml,),
+                                       descr='Continuum slope used to determine the continuum at '
+                                             'the line center.'),
+                         FLUX=dict(typ=float, shape=(neml,), descr='Summed flux (0th moment)'),
+                         FLUXERR=dict(typ=float, shape=(neml,),
+                                      descr='Error in the summed flux'),
+                         MOM1=dict(typ=float, shape=(neml,),
+                                   descr='Line centroid redshift (:math:`cz`; 1st moment)'),
+                         MOM1ERR=dict(typ=float, shape=(neml,),
+                                      descr='Error in the line centroid redshift'),
+                         MOM2=dict(typ=float, shape=(neml,),
+                                   descr='Line standard deviation (2nd moment)'),
+                         MOM2ERR=dict(typ=float, shape=(neml,),
+                                      descr='Error in the line standard deviation'),
+                         SINST=dict(typ=float, shape=(neml,),
+                                    descr='Instrumental dispersion at the line centroid'),
+                         BMED=dict(typ=float, shape=(neml,),
+                                   descr='Median flux in the blue sideband used for EW'),
+                         RMED=dict(typ=float, shape=(neml,),
+                                   descr='Median flux in the red sideband used for EW'),
+                         EWCONT=dict(typ=float, shape=(neml,),
+                                     descr='Continuum value used for EW calculation'),
+                         EW=dict(typ=float, shape=(neml,),
+                                 descr='Equivalent width (FLUX/pseudo continuum)'),
+                         EWERR=dict(typ=float, shape=(neml,),
+                                    descr='Error in the equivalent width'))
+
+        keys = list(datamodel.keys())
+        super(EmissionLineMomentsDataTable,
+                self).__init__(keys, [datamodel[k]['typ'] for k in keys],
+                               element_shapes=[datamodel[k]['shape'] for k in keys],
+                               descr=[datamodel[k]['descr'] for k in keys],
+                               shape=shape)
+
+
 class EmissionLineMoments:
     r"""
-
     Class that holds the emission-line moment measurements.
 
     Args:
@@ -379,40 +456,38 @@ class EmissionLineMoments:
         return hdr
 
 
-    def _moments_database_dtype(self, name_len):
-        r"""
-        Construct the record array data type for the output fits
-        extension.
-        """
-        return [ ('ID',numpy.int),
-                 ('NAME','<U{0:d}'.format(name_len)),
-                 ('RESTWAVE', numpy.float),
-                 ('PASSBAND', numpy.float, (2,)),
-                 ('BLUEBAND', numpy.float, (2,)),
-                 ('REDBAND', numpy.float, (2,))
-               ]
-
-    
-    def _compile_database(self):
-        """
-        Compile the database with the specifications of each index.
-        """
-        name_len = 0
-        for n in self.momdb['name']:
-            if name_len < len(n):
-                name_len = len(n)
-
-        # Instatiate the table data that will be saved defining the set
-        # of emission-line moments measured
-        passband_database = init_record_array(self.nmom, self._moments_database_dtype(name_len))
-
-        hk = [ 'ID', 'NAME', 'RESTWAVE', 'PASSBAND', 'BLUEBAND', 'REDBAND' ]
-        mk = [ 'index', 'name', 'restwave', 'primary', 'blueside', 'redside' ]
-        for _hk, _mk in zip(hk,mk):
-            passband_database[_hk] = self.momdb[_mk]
-
-        return passband_database
-
+#    def _moments_database_dtype(self, name_len):
+#        r"""
+#        Construct the record array data type for the output fits
+#        extension.
+#        """
+#        return [ ('ID',numpy.int),
+#                 ('NAME','<U{0:d}'.format(name_len)),
+#                 ('RESTWAVE', numpy.float),
+#                 ('PASSBAND', numpy.float, (2,)),
+#                 ('BLUEBAND', numpy.float, (2,)),
+#                 ('REDBAND', numpy.float, (2,))
+#               ]
+#
+#    def _compile_database(self):
+#        """
+#        Compile the database with the specifications of each index.
+#        """
+#        name_len = 0
+#        for n in self.momdb['name']:
+#            if name_len < len(n):
+#                name_len = len(n)
+#
+#        # Instatiate the table data that will be saved defining the set
+#        # of emission-line moments measured
+#        passband_database = init_record_array(self.nmom, self._moments_database_dtype(name_len))
+#
+#        hk = [ 'ID', 'NAME', 'RESTWAVE', 'PASSBAND', 'BLUEBAND', 'REDBAND' ]
+#        mk = [ 'index', 'name', 'restwave', 'primary', 'blueside', 'redside' ]
+#        for _hk, _mk in zip(hk,mk):
+#            passband_database[_hk] = self.momdb[_mk]
+#
+#        return passband_database
 
     def _assign_image_arrays(self):
         """
@@ -420,7 +495,6 @@ class EmissionLineMoments:
         in :attr:`hdu` that are on-sky image data.
         """
         self.image_arrays = [ 'BINID' ]
-
 
     def _get_missing_bins(self, unique_bins=None):
         if unique_bins is None:
@@ -516,88 +590,88 @@ class EmissionLineMoments:
         return self.binned_spectra.above_snr_limit(self.database['minimum_snr'])
 
 
-    @staticmethod
-    def output_dtype(nmom, bitmask=None):
-        r"""
-        Construct the record array data type for the output fits
-        extension.
-
-        Returned columns are:
-
-        +-------------+--------------------------------------------+
-        |      Column | Description                                |
-        +=============+============================================+
-        |       BINID | Bin ID of the fitted spectrum              |
-        +-------------+--------------------------------------------+
-        | BINID_INDEX | Index of the bin ID of the fitted spectrum |
-        +-------------+--------------------------------------------+
-        |    REDSHIFT | Redshift used for setting the passbands    |
-        +-------------+--------------------------------------------+
-        |        MASK | Bit mask value for the measurements        |
-        +-------------+--------------------------------------------+
-        |        BCEN | Blueband center for moments                |
-        +-------------+--------------------------------------------+
-        |       BCONT | Blueband pseudocontinuum for moments       |
-        +-------------+--------------------------------------------+
-        |    BCONTERR | Error in the above                         |
-        +-------------+--------------------------------------------+
-        |        RCEN | Redband center for moments                 |
-        +-------------+--------------------------------------------+
-        |       RCONT | Redband pseudocontinuum for moments        |
-        +-------------+--------------------------------------------+
-        |    RCONTERR | Error in the above                         |
-        +-------------+--------------------------------------------+
-        |    CNTSLOPE | Continuum slope used for the moments       |
-        +-------------+--------------------------------------------+
-        |        FLUX | Zeroth moment                              |
-        +-------------+--------------------------------------------+
-        |     FLUXERR | Zeroth moment error                        |
-        +-------------+--------------------------------------------+
-        |        MOM1 | First velocity moment                      |
-        +-------------+--------------------------------------------+
-        |     MOM1ERR | First velocity moment error                |
-        +-------------+--------------------------------------------+
-        |        MOM2 | Second velocity moment                     |
-        +-------------+--------------------------------------------+
-        |     MOM2ERR | Second velocity moment error               |
-        +-------------+--------------------------------------------+
-        |       SINST | Instrumental dispersion at mom1            |
-        +-------------+--------------------------------------------+
-        |        BMED | Median flux in the blue band used for EW   |
-        +-------------+--------------------------------------------+
-        |        RMED | Median flux in the red band used for EW    |
-        +-------------+--------------------------------------------+
-        |      EWCONT | Continuum value used for EW                |
-        +-------------+--------------------------------------------+
-        |          EW | Equivalenth width (FLUX/pseudo continuum)  |
-        +-------------+--------------------------------------------+
-        |       EWERR | Error in the above                         |
-        +-------------+--------------------------------------------+
-        """
-        return [ ('BINID',numpy.int),
-                 ('BINID_INDEX',numpy.int),
-                 ('REDSHIFT', numpy.float),
-                 ('MASK', numpy.bool if bitmask is None else bitmask.minimum_dtype(), (nmom,)),
-                 ('BCEN', numpy.float, (nmom,)), 
-                 ('BCONT', numpy.float, (nmom,)), 
-                 ('BCONTERR', numpy.float, (nmom,)),
-                 ('RCEN', numpy.float, (nmom,)), 
-                 ('RCONT', numpy.float, (nmom,)), 
-                 ('RCONTERR', numpy.float, (nmom,)), 
-                 ('CNTSLOPE', numpy.float, (nmom,)),
-                 ('FLUX', numpy.float, (nmom,)), 
-                 ('FLUXERR', numpy.float, (nmom,)),
-                 ('MOM1', numpy.float, (nmom,)), 
-                 ('MOM1ERR', numpy.float, (nmom,)),
-                 ('MOM2', numpy.float, (nmom,)), 
-                 ('MOM2ERR', numpy.float, (nmom,)),
-                 ('SINST', numpy.float, (nmom,)),
-                 ('BMED', numpy.float, (nmom,)), 
-                 ('RMED', numpy.float, (nmom,)), 
-                 ('EWCONT', numpy.float, (nmom,)), 
-                 ('EW', numpy.float, (nmom,)), 
-                 ('EWERR', numpy.float, (nmom,))
-               ]
+#    @staticmethod
+#    def output_dtype(nmom, bitmask=None):
+#        r"""
+#        Construct the record array data type for the output fits
+#        extension.
+#
+#        Returned columns are:
+#
+#        +-------------+--------------------------------------------+
+#        |      Column | Description                                |
+#        +=============+============================================+
+#        |       BINID | Bin ID of the fitted spectrum              |
+#        +-------------+--------------------------------------------+
+#        | BINID_INDEX | Index of the bin ID of the fitted spectrum |
+#        +-------------+--------------------------------------------+
+#        |    REDSHIFT | Redshift used for setting the passbands    |
+#        +-------------+--------------------------------------------+
+#        |        MASK | Bit mask value for the measurements        |
+#        +-------------+--------------------------------------------+
+#        |        BCEN | Blueband center for moments                |
+#        +-------------+--------------------------------------------+
+#        |       BCONT | Blueband pseudocontinuum for moments       |
+#        +-------------+--------------------------------------------+
+#        |    BCONTERR | Error in the above                         |
+#        +-------------+--------------------------------------------+
+#        |        RCEN | Redband center for moments                 |
+#        +-------------+--------------------------------------------+
+#        |       RCONT | Redband pseudocontinuum for moments        |
+#        +-------------+--------------------------------------------+
+#        |    RCONTERR | Error in the above                         |
+#        +-------------+--------------------------------------------+
+#        |    CNTSLOPE | Continuum slope used for the moments       |
+#        +-------------+--------------------------------------------+
+#        |        FLUX | Zeroth moment                              |
+#        +-------------+--------------------------------------------+
+#        |     FLUXERR | Zeroth moment error                        |
+#        +-------------+--------------------------------------------+
+#        |        MOM1 | First velocity moment                      |
+#        +-------------+--------------------------------------------+
+#        |     MOM1ERR | First velocity moment error                |
+#        +-------------+--------------------------------------------+
+#        |        MOM2 | Second velocity moment                     |
+#        +-------------+--------------------------------------------+
+#        |     MOM2ERR | Second velocity moment error               |
+#        +-------------+--------------------------------------------+
+#        |       SINST | Instrumental dispersion at mom1            |
+#        +-------------+--------------------------------------------+
+#        |        BMED | Median flux in the blue band used for EW   |
+#        +-------------+--------------------------------------------+
+#        |        RMED | Median flux in the red band used for EW    |
+#        +-------------+--------------------------------------------+
+#        |      EWCONT | Continuum value used for EW                |
+#        +-------------+--------------------------------------------+
+#        |          EW | Equivalenth width (FLUX/pseudo continuum)  |
+#        +-------------+--------------------------------------------+
+#        |       EWERR | Error in the above                         |
+#        +-------------+--------------------------------------------+
+#        """
+#        return [ ('BINID',numpy.int),
+#                 ('BINID_INDEX',numpy.int),
+#                 ('REDSHIFT', numpy.float),
+#                 ('MASK', numpy.bool if bitmask is None else bitmask.minimum_dtype(), (nmom,)),
+#                 ('BCEN', numpy.float, (nmom,)), 
+#                 ('BCONT', numpy.float, (nmom,)), 
+#                 ('BCONTERR', numpy.float, (nmom,)),
+#                 ('RCEN', numpy.float, (nmom,)), 
+#                 ('RCONT', numpy.float, (nmom,)), 
+#                 ('RCONTERR', numpy.float, (nmom,)), 
+#                 ('CNTSLOPE', numpy.float, (nmom,)),
+#                 ('FLUX', numpy.float, (nmom,)), 
+#                 ('FLUXERR', numpy.float, (nmom,)),
+#                 ('MOM1', numpy.float, (nmom,)), 
+#                 ('MOM1ERR', numpy.float, (nmom,)),
+#                 ('MOM2', numpy.float, (nmom,)), 
+#                 ('MOM2ERR', numpy.float, (nmom,)),
+#                 ('SINST', numpy.float, (nmom,)),
+#                 ('BMED', numpy.float, (nmom,)), 
+#                 ('RMED', numpy.float, (nmom,)), 
+#                 ('EWCONT', numpy.float, (nmom,)), 
+#                 ('EW', numpy.float, (nmom,)), 
+#                 ('EWERR', numpy.float, (nmom,))
+#               ]
 
 
     @staticmethod
@@ -817,7 +891,6 @@ class EmissionLineMoments:
         return cntm, cntb, flux, fluxerr, mom1, mom1err, mom2, mom2err, sinst, incomplete, empty, \
                     divbyzero, undefined_mom1, undefined_mom2
 
-
     @staticmethod
     def measure_moments(momdb, wave, flux, ivar=None, mask=None, sres=None, continuum=None,
                         redshift=None, bitmask=None):
@@ -848,8 +921,9 @@ class EmissionLineMoments:
         # Initialize the output data
         nspec = _flux.shape[0]
         nmom = momdb.size
-        measurements = init_record_array(nspec, EmissionLineMoments.output_dtype(nmom,
-                                                                                 bitmask=bitmask))
+#        measurements = init_record_array(nspec, EmissionLineMoments.output_dtype(nmom,
+#                                                                                 bitmask=bitmask))
+        measurements = EmissionLineMomentsDataTable(neml=nmom, bitmask=bitmask, shape=nspec)
 
         # Save the redshift used
         measurements['REDSHIFT'] = _redshift
@@ -1326,24 +1400,15 @@ class EmissionLineMoments:
 #        bin_indx = DAPFitsUtil.downselect_bins(self.binned_spectra['BINID'].data.ravel(),
 #                                               measurements['BINID'])
 
-        # Compile the saved information on the suite of measured indices
-        passband_database = self._compile_database()
+#        # Compile the saved information on the suite of measured indices
+#        passband_database = self._compile_database()
 
         # Save the data to the hdu attribute
         self.hdu = fits.HDUList([ fits.PrimaryHDU(header=pri_hdr),
                                   fits.ImageHDU(data=bin_indx, header=map_hdr, name='BINID'),
                                   fits.ImageHDU(data=map_mask, header=map_hdr, name='MAPMASK'),
-                                  fits.BinTableHDU.from_columns(
-                                        [ fits.Column(name=n,
-                                                      format=rec_to_fits_type(passband_database[n]),
-                                                      array=passband_database[n])
-                                          for n in passband_database.dtype.names ], name='ELMBAND'),
-                                  fits.BinTableHDU.from_columns(
-                                        [ fits.Column(name=n,
-                                                      format=rec_to_fits_type(measurements[n]),
-                                                      array=measurements[n])
-                                          for n in measurements.dtype.names ], name='ELMMNTS'),
-                                ])
+                                  self.momdb.to_datatable().to_hdu(name='ELMBAND'),
+                                  measurements.to_hdu(name='ELMMNTS')])
 
         #---------------------------------------------------------------
         # Write the data, if requested
