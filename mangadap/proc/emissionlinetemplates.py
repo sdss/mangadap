@@ -3,7 +3,7 @@
 r"""
 
 Class that constructs a set of emission-line templates, primarily for
-use with :class:`mangadap.proc.sasuke.Sasuke`.
+use with :class:`~mangadap.proc.sasuke.Sasuke`.
 
 Class usage examples
 --------------------
@@ -23,12 +23,6 @@ construction would be::
     sigma_inst = 30                     # Instrumental resolution in km/s
 
     tpl = EmissionLineTemplates(wave, sigma_inst, emldb=EmissionLineDB.from_key('ELPMILES'))
-
-Revision history
-----------------
-
-    | **08 Sep 2017**: Originally pulled from
-        :mod:`mangadap.proc.sasuke` by K. Westfall (KBW)
 
 ----
 
@@ -60,8 +54,9 @@ from matplotlib import pyplot
 
 class EmissionLineTemplates:
     r"""
-    Construct a set of emission-line templates based on an emission-line
-    database, primarily for use in :class:`mangadap.proc.sasuke.Sasuke`.
+    Construct a set of emission-line templates based on an
+    emission-line database, primarily for use in
+    :class:`~mangadap.proc.sasuke.Sasuke`.
 
     The templates are constructed based on the constraints provided by
     the emission-line database.  See
@@ -87,7 +82,8 @@ class EmissionLineTemplates:
 
     .. warning::
 
-        The construction of templates for use with :class:`Sasuke` does
+        The construction of templates for use with
+        :class:`~mangadap.proc.sasuke.Sasuke` does
         *not* allow one to tie fluxes while leaving the velocities
         and/or velocity dispersions as independent.
 
@@ -124,7 +120,7 @@ class EmissionLineTemplates:
             Suppress all terminal and logging output.
 
     Attributes:
-        wave (numpy.ndarray):
+        wave (`numpy.ndarray`_):
             Array with the wavelength (angstroms) of each pixel for all
             the constructed templates.  Shape is :math:`(N_{\rm pix},)`.
         sigma_inst (`scipy.interpolate.interp1d`_):
@@ -139,36 +135,37 @@ class EmissionLineTemplates:
             :math:`(N_{\rm pix},)`.
         ntpl (:obj:`int`):
             Total number of templates.
-        flux (numpy.ndarray):
+        flux (`numpy.ndarray`_):
             The template spectra.  Shape is :math:`(N_{\rm tpl},N_{\rm
             pix})`.
-        tpli (numpy.ndarray):
+        tpli (`numpy.ndarray`_):
             The index of the template containing each emission line.
             Any emission-lines with ``tpli==-1`` means that the emission
             line was not included in any template, which should only
             occur for lines with ``action==i`` in the database.  Shape
             is :math:`(N_{\rm eml},)`.
-        comp (numpy.ndarray):
+        comp (`numpy.ndarray`_):
             The component number assigned to each template.  Templates
             with the same component number are forced to have the same
             velocity and velocity dispersion by pPXF.  Shape is
             :math:`(N_{\rm tpl},)`.
-        vgrp (numpy.ndarray):
+        vgrp (`numpy.ndarray`_):
             The velocity group assigned to each template.  Templates in
             the same velocity group have their velocity parameters tied
             in pPXF, but the velocity dispersion parameters are
             independent.  Shape is :math:`(N_{\rm tpl},)`.
-        sgrp (numpy.ndarray):
+        sgrp (`numpy.ndarray`_):
             The velocity disperison (sigma) group assigned to each
             template.  Templates in the same sigma group have their
             velocity dispersion parameters tied in pPXF, but the
             velocity parameters are independent.  Shape is
             :math:`(N_{\rm tpl},)`.
-        eml_sigma_inst (numpy.ndarray):
-            The instrumental dispersion (km/s) at the rest wavelength of
-            each emission line.  This is mostly used to aid the velocity
-            dispersion corrections determined by :class:`Sasuke`.  Shape
-            is :math:`(N_{\rm eml},)`.
+        eml_sigma_inst (`numpy.ndarray`_):
+            The instrumental dispersion (km/s) at the rest wavelength
+            of each emission line. This is mostly used to aid the
+            velocity dispersion corrections determined by
+            :class:`~mangadap.proc.sasuke.Sasuke`. Shape is
+            :math:`(N_{\rm eml},)`.
         loggers (:obj:`list`):
             List of `logging.Logger`_ objects to log progress; ignored
             if quiet=True.  Logging is done using
@@ -278,9 +275,10 @@ class EmissionLineTemplates:
 
         .. warning::
 
-            The construction of templates for use with :class:`Sasuke`
-            does *not* allow one to tie fluxes while leaving the
-            velocities and/or velocity dispersions as independent.
+            The construction of templates for use with
+            :class:`~mangadap.proc.sasuke.Sasuke` does *not* allow
+            one to tie fluxes while leaving the velocities and/or
+            velocity dispersions as independent.
 
         This is an entirely internal procedure, taking no arguments and
         only assigning results to self.
@@ -451,12 +449,12 @@ class EmissionLineTemplates:
                 Suppress all terminal and logging output.
 
         Returns:
-            numpy.ndarray: Returns 4 arrays: (1) the set of templates
-            with shape :math:`N_{\rm tpl}\times N_{\rm wave}`, (2) the
-            kinematic component assignement for each template, (3) the
-            velocity group associated with each template, and (4) the
-            sigma group assocated with each template.
-
+            `numpy.ndarray`_: Returns 4 arrays: (1) the set of
+            templates with shape :math:`N_{\rm tpl}\times N_{\rm
+            wave}`, (2) the kinematic component assignement for each
+            template, (3) the velocity group associated with each
+            template, and (4) the sigma group assocated with each
+            template.
         """
         #---------------------------------------------------------------
         # Initialize the reporting

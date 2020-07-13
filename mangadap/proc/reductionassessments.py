@@ -5,20 +5,6 @@ Class that performs a number of assessments of a DRP file needed for
 handling of the data by the DAP.  These assessments need only be done
 once per DRP data file.
 
-Revision history
-----------------
-
-    | **24 Mar 2016**: Implementation begun by K. Westfall (KBW)
-    | **11 May 2016**: (KBW) Switch to using
-        `pydl.goddard.astro.airtovac`_ instead of internal function
-    | **19 May 2016**: (KBW) Added loggers and quiet keyword arguments
-        to :class:`ReductionAssessment`, removed verbose 
-    | **23 Feb 2017**: (KBW) Use DAPFitsUtil read and write functions.
-    | **27 Feb 2017**: (KBW) Use DefaultConfig.
-    | **17 May 2017**: (KBW) Added ability to use a response function
-        for the flux statistics.
-    | **23 Feb 2020**: (KBW) Now uses DataCube instead of DRPFits
-
 ----
 
 .. include license and copyright
@@ -51,10 +37,11 @@ from ..par.parset import KeywordParSet
 
 from ..config import defaults
 
+from ..util.datatable import DataTable
 from ..util.fitsutil import DAPFitsUtil
 from ..util.covariance import Covariance
 from ..util.geometry import SemiMajorAxisCoo
-from ..util.fileio import init_record_array, rec_to_fits_type, create_symlink
+from ..util.fileio import create_symlink
 from ..util.log import log_output
 from ..util.parser import DefaultConfig
 from .util import select_proc_method
@@ -232,6 +219,53 @@ def available_reduction_assessments():
     # Return the default list of assessment methods
     return assessment_methods
 
+
+class ReductionAssessmentDataTable(DataTable):
+    """
+    Primary data table with the reduction assessments.
+
+    The data table includes:
+
+    .. include:: ../tables/reductionassessmentdatatable.rst
+
+    Args:
+        shape (:obj:`int`, :obj:`tuple`, optional):
+            The shape of the initial array. If None, the data array
+            will not be instantiated; use :func:`init` to initialize
+            the data array after instantiation.
+    """
+    def __init__(self, shape=None):
+        # NOTE: This should require python 3.7 to make sure that this
+        # is an "ordered" dictionary.
+        datamodel = dict(SPAT_INDX=dict(typ=int, shape=(2,),
+                            descr='The 2D spatial array indices associated with each measurement. '
+                                'See :attr:`~mangadap.datacube.datacube.DataCube.spatial_index`.'),
+                         SKY_COO=dict(typ=float, shape=(2,),
+                            descr='On-sky X and Y coordinates.  Coordinates are sky-right '
+                                  'offsets from the object center; i.e., positive X is along the '
+                                  'direction of positive right ascension. See '
+                            ':class:`mangadap.datacube.datacube.DataCube.mean_sky_coordinates`.'),
+                         ELL_COO=dict(typ=float, shape=(2,),
+                                      descr='Elliptical (semi-major axis) radius and azimuth '
+                                            'angle from N through E with respect to the '
+                                            'photometric position angle; based on the provided '
+                                            'ellipticity parameters.  See '
+                                            ':class:`mangadap.util.geometry.SemiMajorAxisCoo`.'),
+                         FGOODPIX=dict(typ=float, shape=None,
+                                       descr='Fraction of good pixels in each spectrum.'),
+                         MINEQMAX=dict(typ=bool, shape=None,
+                                       descr='Flag that min(flux) = max(flux) in the spectrum; '
+                                             'i.e., the spaxel has no data.'),
+                         SIGNAL=dict(typ=float, shape=None, descr='Per pixel mean flux'),
+                         VARIANCE=dict(typ=float, shape=None, descr='Per pixel mean variance'),
+                         SNR=dict(typ=float, shape=None, descr='Per pixel mean S/N'))
+
+        keys = list(datamodel.keys())
+        super(ReductionAssessmentDataTable,
+                self).__init__(keys, [datamodel[k]['typ'] for k in keys],
+                               element_shapes=[datamodel[k]['shape'] for k in keys],
+                               descr=[datamodel[k]['descr'] for k in keys],
+                               shape=shape)
 
 class ReductionAssessment:
     r"""
@@ -434,21 +468,21 @@ class ReductionAssessment:
                                                     analysis_path=analysis_path,
                                                     output_file=output_file)
 
-    def _per_spectrum_dtype(self):
-        """
-        Construct the record array data type for the output fits
-        extension.
-        """
-        # TODO: Is SPAT_INDX useful?
-        return [ ('SPAT_INDX',numpy.int,(numpy.asarray(tuple(self.cube.spatial_index)).shape[1],)),
-                 ('SKY_COO',numpy.float,(2,)),
-                 ('ELL_COO',numpy.float,(2,)),
-                 ('FGOODPIX',numpy.float),
-                 ('MINEQMAX',numpy.uint8),
-                 ('SIGNAL',numpy.float),
-                 ('VARIANCE',numpy.float),
-                 ('SNR',numpy.float)
-               ]
+#    def _per_spectrum_dtype(self):
+#        """
+#        Construct the record array data type for the output fits
+#        extension.
+#        """
+#        # TODO: Is SPAT_INDX useful?
+#        return [ ('SPAT_INDX',numpy.int,(numpy.asarray(tuple(self.cube.spatial_index)).shape[1],)),
+#                 ('SKY_COO',numpy.float,(2,)),
+#                 ('ELL_COO',numpy.float,(2,)),
+#                 ('FGOODPIX',numpy.float),
+#                 ('MINEQMAX',numpy.uint8),
+#                 ('SIGNAL',numpy.float),
+#                 ('VARIANCE',numpy.float),
+#                 ('SNR',numpy.float)
+#               ]
     
     def _initialize_primary_header(self, hdr=None):
         """
@@ -549,37 +583,13 @@ class ReductionAssessment:
 
             - ``PRIMARY`` : Empty apart from the header information.
             - ``SPECTRUM`` : Extension with the main, per-spectrum
-              measurements; see below.
+              measurements; see :class:`ReductionAssessmentDataTable`.
             - ``CORREL`` : The correlation matrix between the ``SIGNAL``
               measurements provided in the ``SPECTRUM`` extension.  The
               format of this extension is identical to the nominal
               output of the :class:`mangadap.util.covariance.Covariance`
               object; see
               :func:`mangadap.util.covariance.Covariance.write`.
-
-        The ``SPECTRUM`` extension contains the following columns:
-
-            - ``SPAT_INDX``: Vector of tuples providing the 2D
-              spatial array indices associated with each measurement.
-              See
-              :attr:`mangadap.datacube.datacube.DataCube.spatial_index`.
-            - ``SKY_COO``: On-sky X and Y coordinates.  Coordinates are
-              sky-right offsets from the object center; i.e., positive X
-              is along the direction of positive right ascension. See
-              :class:`mangadap.datacube.datacube.DataCube.mean_sky_coordinates`.
-            - ``ELL_COO``: Elliptical (semi-major axis) radius and
-              azimuth angle from N through East with respect to the
-              photometric position angle; based on the provided
-              ellipticity parameters.  See
-              :class:`mangadap.util.geometry.SemiMajorAxisCoo`.
-            - ``FGOODPIX``: Fraction of good pixels in each spectrum.
-            - ``MINEQMAX``: Flag that min(flux) = max(flux) in the
-              spectrum; i.e., the spaxel has no data.
-            - ``SIGNAL``, ``VARIANCE``, ``SNR`` : Per pixel means of the
-              flux, flux variance, and signal-to-noise. The
-              ``VARIANCE`` and ``SNR`` columns use the inverse
-              variance provided by the DRP. See
-              :func:`mangadap.datacube.datacube.DataCube.flux_stats`.
 
         Args:
             cube (:class:`mangadap.datacube.datacube.DataCube`):
@@ -743,7 +753,8 @@ class ReductionAssessment:
             self.ell = ell
 
         # Initialize the record array for the SPECTRUM extension
-        spectrum_data = init_record_array(self.cube.nspec, self._per_spectrum_dtype())
+#        spectrum_data = init_record_array(self.cube.nspec, self._per_spectrum_dtype())
+        spectrum_data = ReductionAssessmentDataTable(shape=self.cube.nspec)
         spectrum_data['SPAT_INDX'] = numpy.asarray(tuple(self.cube.spatial_index))
         spectrum_data['SKY_COO'][:,0], spectrum_data['SKY_COO'][:,1] \
                 = (x.ravel() for x in self.cube.mean_sky_coordinates())
@@ -845,10 +856,8 @@ class ReductionAssessment:
             hdr, ivar_hdu, covar_hdu = self.correlation.output_hdus(reshape=True, hdr=hdr)
 
         # Get the main extension columns and construct the HDUList
-        spectrum_cols = [fits.Column(name=n, format=rec_to_fits_type(spectrum_data[n]),
-                                     array=spectrum_data[n]) for n in spectrum_data.dtype.names]
         self.hdu = fits.HDUList([fits.PrimaryHDU(header=hdr),
-                                 fits.BinTableHDU.from_columns(spectrum_cols, name='SPECTRUM')])
+                                 spectrum_data.to_hdu(name='SPECTRUM')])
 
         # Add the covariance information
         if self.method['covariance']:

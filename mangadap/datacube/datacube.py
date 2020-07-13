@@ -179,6 +179,9 @@ class DataCube:
             Shape of the datacube spatial axes .
         nwave (:obj:`int`):
             Number of wavelength channels.
+        spatial_index (`numpy.ndarray`_):
+            Array of tuples with the spatial indices of each spectrum
+            in the flattened datacube.
         wcs (`astropy.wcs.WCS`_):
             Datacube world-coordinate system.  Can be None.
         pixelscale (:obj:`float`):
@@ -217,6 +220,20 @@ class DataCube:
         rss (:class:`mangadap.spectra.rowstackedspectra.RowStackedSpectra`):
             The source row-stacked spectra used to build the
             datacube.
+        sigma_rho (:obj:`float`):
+            The :math:`\sigma_{\rho}` of the Gaussian function used
+            to approximate the trend of the correlation coefficient
+            with spaxel separation. Used to construct the approximate
+            correlation matrix (see
+            :func:`approximate_correlation_matrix`).
+        correl_rlim (:obj:`float`):
+            The limiting radius of the image reconstruction
+            (Gaussian) kernel in arcseconds. Used to construct the
+            approximate correlation matrix (see
+            :func:`approximate_correlation_matrix`).
+        approx_correl (:class:`~mangadap.util.covariance.Covariance`):
+            Approximate correlation matrix; see
+            :func:`approximate_correlation_matrix`.
     """
     # TODO: Add reconstructed PSF?
     def __init__(self, flux, wave=None, ivar=None, mask=None, bitmask=None, sres=None, covar=None,
@@ -305,6 +322,7 @@ class DataCube:
 
         # For the approximate covariance matrix calculations
         self.sigma_rho = None
+        self.correl_rlim = None
         self.approx_correl = None
 
     @classmethod
@@ -863,7 +881,7 @@ class DataCube:
         channels.
 
         This is a simple wrapper for a call to
-        :func:`mangadap.spectra.rowstackedspectra.covariance_cube`
+        :func:`mangadap.spectra.rowstackedspectra.RowStackedSpectra.covariance_cube`
         executed using :attr:`rss`, which cannot be None. See that
         method for the argument description.
 
@@ -878,7 +896,7 @@ class DataCube:
             raise ValueError('RowStackedSpectra object not available for this datacube!')
         return self.rss.covariance_cube(**kwargs)
 
-    def approximate_correlation_matrix(self, sigma_rho, rlim, redo=False):
+    def approximate_correlation_matrix(self, sigma_rho, rlim, rho_tol=None, redo=False):
         r"""
         Construct a correlation matrix with correlation coefficients
         that follow a Gaussian in 2D pixel separation.
@@ -927,6 +945,9 @@ class DataCube:
             rlim (:obj:`float`):
                 The limiting radius of the image reconstruction
                 (Gaussian) kernel in arcseconds.
+            rho_tol (:obj:`float`, optional):
+                Any correlation coefficient less than this is assumed
+                to be equivalent to (and set to) 0.
             redo (:obj:`bool`, optional):
                 Force the recalculation of the cube dimensions if
                 they are already defined and :math:`\sigma_{\rho}` has
@@ -958,21 +979,29 @@ class DataCube:
         # other spaxel
         dij = numpy.square(j_i-i_i) + numpy.square(j_j-i_j)
         indx = dij <= numpy.square(2*rlim/self.pixelscale)
-        
+
         # Calculate the correlation coefficient
+        ii = ii[indx]
+        jj = jj[indx]
         rhoij = numpy.exp(-dij[indx]/numpy.square(sigma_rho)/2)
+
+        if rho_tol is not None:
+            indx = rhoij > rho_tol
+            ii = ii[indx]
+            jj = jj[indx]
+            rhoij = rhoij[indx]
 
         # Construct the Covariance object and save the input
         self.sigma_rho = sigma_rho
         self.correl_rlim = rlim
-        self.approx_correl = Covariance(sparse.coo_matrix((rhoij, (ii[indx],jj[indx])),
+        self.approx_correl = Covariance(sparse.coo_matrix((rhoij, (ii,jj)),
                                                           shape=(self.nspec,self.nspec)).tocsr(),
                                         impose_triu=True, correlation=True,
                                         raw_shape=self.spatial_shape)
         return self.approx_correl
 
-    def approximate_covariance_matrix(self, channel, sigma_rho=None, rlim=None, csr=False,
-                                      quiet=False):
+    def approximate_covariance_matrix(self, channel, sigma_rho=None, rlim=None, rho_tol=None,
+                                      csr=False, quiet=False):
         r"""
         Return an approximate calculation of the covariance matrix
         assuming
@@ -1007,6 +1036,9 @@ class DataCube:
             rlim (:obj:`float`, optional):
                 The limiting radius of the image reconstruction
                 (Gaussian) kernel in arcseconds.
+            rho_tol (:obj:`float`, optional):
+                Any correlation coefficient less than this is assumed
+                to be equivalent to (and set to) 0.
             csr (:obj:`bool`, optional):
                 Instead of returning a
                 :class:`mangadap.util.covariance.Covariance` object,
@@ -1025,14 +1057,14 @@ class DataCube:
             matrix for the designated wavelength channel. The return
             type depends on `csr`.
         """
-        self.approximate_correlation_matrix(sigma_rho, rlim)
+        self.approximate_correlation_matrix(sigma_rho, rlim, rho_tol=rho_tol)
         var = numpy.ma.power(self.ivar[...,channel], -1).filled(0.0).ravel()
         covar = self.approx_correl.apply_new_variance(var)
         covar.revert_correlation()
         return covar.full() if csr else covar
 
-    def approximate_covariance_cube(self, channels=None, sigma_rho=None, rlim=None, csr=False,
-                                    quiet=False):
+    def approximate_covariance_cube(self, channels=None, sigma_rho=None, rlim=None, rho_tol=None,
+                                    csr=False, quiet=False):
         r"""
         Return the approximate covariance matrices for many
         wavelength channels.
@@ -1057,6 +1089,9 @@ class DataCube:
             rlim (:obj:`float`, optional):
                 The limiting radius of the image reconstruction
                 (Gaussian) kernel in arcseconds.
+            rho_tol (:obj:`float`, optional):
+                Any correlation coefficient less than this is assumed
+                to be equivalent to (and set to) 0.
             csr (:obj:`bool`, optional):
                 Instead of returning a
                 :class:`mangadap.util.covariance.Covariance` object,
@@ -1086,7 +1121,8 @@ class DataCube:
             if not quiet:
                 print('Calculating covariance matrix: {0}/{1}'.format(i+1,nc), end='\r')
             CovCube[i] = self.approximate_covariance_matrix(_channels[i], sigma_rho=sigma_rho,
-                                                            rlim=rlim, csr=True, quiet=True)
+                                                            rlim=rlim, rho_tol=rho_tol, csr=True,
+                                                            quiet=True)
         if not quiet:
             print('Calculating covariance matrix: {0}/{0}'.format(nc))
         return Covariance(CovCube, input_indx=_channels) if not csr else CovCube

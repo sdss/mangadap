@@ -11,6 +11,7 @@ Submodules
    mangadap.util.constants
    mangadap.util.covariance
    mangadap.util.dapbitmask
+   mangadap.util.datatable
    mangadap.util.drpfits
    mangadap.util.exception_tools
    mangadap.util.extinction

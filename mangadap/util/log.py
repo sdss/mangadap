@@ -3,12 +3,6 @@
 """
 Logging routines.
 
-Revision history
-----------------
-
-    | **21 Mar 2016**: Original implementation by K. Westfall (KBW)
-    | **05 May 2017**: (KBW) Clean up the documentation
-
 ----
 
 .. include license and copyright

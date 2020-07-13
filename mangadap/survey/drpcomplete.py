@@ -8,52 +8,6 @@ The drpcomplete file/data is primarily required for the survey-level
 :ref:`execution` of the DAP. However, it does provide useful information
 regarding the completed DRP files.
 
-Revision history
-----------------
-
-    | **20 Nov 2014**: Started implementation by K. Westfall (KBW)
-    | **01 Dec 2014**: (KBW) Committed to SVN
-    | **12 Jan 2015**: (KBW) Allow for use of plateTargets file using yanny.py
-    | **19 Mar 2015**: (KBW) Adjustments for changes to drpfile and
-        drpfile_list.  Now always sets the names of the NSA catalogs and
-        the plateTargets files; added the nsa_catid.  Changed drppath to
-        redux_path.  Added catid and catindx to output file.  Major
-        change to matching when using NSA catalog(s).  Imports full
-        :class:`mangadap.drpfits` and :class:`mangadap.dapfile` classes,
-        require a change to the function calls. Changed parameter order
-        in :func:`write` and allowed for use of attributes as default.
-    | **20 May 2015**: (KBW) Documentation and Sphinx tests. Prep for
-        conversion from NSA to TRG nomenclatature, but still need to
-        make the full conversion.
-    | **21 Aug 2015**: (KBW) Major revisions: File moved from main
-        module to survey submodule; now only reads plateTargets files,
-        which have the NSA IDs in them; changed the number of arrays
-        returned by :func:`DRPComplete._match_platetargets` and the
-        default values; removed def_veldisp and use_trg from
-        :func:`DRPComplete.update`; added target-catalog version, and
-        NSAID v1_0_0 to the output fits file; removed options from
-        :func:`DRPComplete.write` related to the target catalogs and
-        platetargets files (these should be defined by the object);
-    | **27 Aug 2015**: (KBW) Include MANGA_TARGET1 and MANGA_TARGET3 in
-        data structure, pulled from plateTargets files; NSAID v1_0_0
-        removed; changed from returning Sersic parameters to elliptical
-        Petrosian parameters.
-    | **06 Oct 2015**: (KBW) Changed to reading 'object_ra' and
-        'object_dec', instead of target counter parts due to changes in
-        MaNGA core
-    | **17 Feb 2016**: (KBW) Converted the name of the class to
-        DRPComplete
-    | **29 Feb 2016**: (KBW) Import drpfits, not drpfile
-    | **13 May 2016**: (KBW) Switch to using `pydl.pydlutils.yanny`_
-        instead of internal yanny reader.  Incorporated changes to
-        plateTargets column names defined for DR13.
-    | **02 Aug 2016**: (KBW) Added directory_path input parameter to
-        :class:`DRPComplete`
-    | **01 Mar 2018**: (KBW) Added ability to read the redshift fix
-        file.
-    | **15 Jan 2019**: (KBW) Allow the object to be defined using the
-        DRPall file.
-    
 ----
 
 .. include license and copyright
@@ -1276,7 +1230,8 @@ class DRPComplete:
 
     def can_analyze(self, row=None):
         """
-        Determine the DAP can analyze a plate-ifu entry in the database.
+        Determine if the DAP can analyze a plate-ifu entry in the
+        database.
 
         The selection is currently:
 

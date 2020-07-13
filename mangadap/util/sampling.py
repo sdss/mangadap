@@ -3,12 +3,6 @@
 """
 Provides a set of functions to handle resampling.
 
-Revision history
-----------------
-
-    | **30 Aug 2018**: Moved here from old instrument.py module by K.
-        Westfall (KBW).
-
 ----
 
 .. include license and copyright

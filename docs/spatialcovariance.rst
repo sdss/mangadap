@@ -42,7 +42,7 @@ read these correlation matrices as follows:
     path = defaults.drp_directory_path()
 
     # Set the file and open it
-    drpfile = os.path.join(path(), MaNGADataCube.build_file_name(plate, ifu))
+    drpfile = os.path.join(path, MaNGADataCube.build_file_name(plate, ifu))
     with fits.open(drpfile) as hdu:
         # Read the correlation data; setting ivar_ext to None here is
         # important.

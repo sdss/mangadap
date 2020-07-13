@@ -7,6 +7,8 @@ import numpy
 
 import argparse
 
+from IPython import embed
+
 from mangadap.config import defaults
 from mangadap.par.analysisplan import AnalysisPlanSet
 from mangadap.proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
@@ -79,18 +81,25 @@ def build_lists(analysis_path, logdir=None):
 
     if logdir is not None:
         log_path = os.path.join(analysis_path, 'log', logdir)
-
         print('Searching for status files at:\n    {0}'.format(log_path))
-        return glob.glob(os.path.join(log_path, '*', '*', '*.ready')), \
-                glob.glob(os.path.join(log_path, '*', '*', '*.started')), \
-                glob.glob(os.path.join(log_path, '*', '*', '*.done')), \
-                glob.glob(os.path.join(log_path, '*', '*', '*.err'))
+
+        # Need to ensure the returned lists are sorted and coincident
+        ready = glob.glob(os.path.join(log_path, '*', '*', '*.ready'))
+
+        root = ['.'.join(r.split('.')[:-1]) for r in ready]
+        started = [r+'.started' if os.path.isfile(r+'.started') else None for r in root]
+        done = [r+'.done' if os.path.isfile(r+'.done') else None for r in root]
+        err = [r+'.err' if os.path.isfile(r+'.err') else None for r in root]
+
+        return numpy.array(ready, dtype=object), numpy.array(started, dtype=object), \
+                numpy.array(done, dtype=object), numpy.array(err, dtype=object)
 
     # Get and sort the list of directories
     lp = [d for d in os.listdir(os.path.join(analysis_path, 'log')) if 'UTC' in d]
     indx = numpy.argsort(numpy.array([datetime.datetime.strptime(t, '%d%b%YT%H.%M.%SUTC')
                                       for t in lp]))
 
+    # Find all the relevant files
     ndir = len(lp)
     ready = [None]*ndir
     start = [None]*ndir
@@ -99,20 +108,27 @@ def build_lists(analysis_path, logdir=None):
     for i,j in enumerate(indx):
         ready[i], start[i], done[i], err[i] = build_lists(analysis_path, logdir=lp[j])
 
+    # Get the list of all possible pltifus
     pltifu = numpy.unique([ '-'.join(os.path.split(f)[1].split('.')[0].split('-')[1:3]) 
                              for f in numpy.concatenate(ready)])
-
     ncube = len(pltifu)
 
-    last_ready = [None]*ncube
-    last_start = [None]*ncube
-    last_done = [None]*ncube
-    last_err = [None]*ncube
+    # Initialize the lists of the most recent status files
+    last_ready = numpy.empty(ncube, dtype=object)
+    last_start = numpy.empty(ncube, dtype=object)
+    last_done = numpy.empty(ncube, dtype=object)
+    last_err = numpy.empty(ncube, dtype=object)
+
+    # Find the status files for the executions that most recently
+    # finished
+    print('Finding most recently finished executions.')
     for j in range(ncube):
         for i in range(ndir-1,-1,-1):
-            indx = numpy.array([pltifu[j] in e for e in done[i]])
+            indx = numpy.array([e is not None and pltifu[j] in e for e in done[i]])
             if not numpy.any(indx):
                 continue
+            if numpy.sum(indx) > 1:
+                raise ValueError('Degenerate plate ifu')
             k = numpy.where(indx)[0][0]
             last_ready[j] = ready[i][k]
             last_start[j] = start[i][k]
@@ -120,24 +136,66 @@ def build_lists(analysis_path, logdir=None):
             last_err[j] = err[i][k]
             break
 
+    # For those that did not finish, find the most recent status files
+    # for the executions that were only started
+    not_finished = numpy.where(last_ready == None)[0]
+    print('Finding most recently started executions that did not finish.')
+    for j in not_finished:
+        for i in range(ndir-1,-1,-1):
+            indx = numpy.array([e is not None and pltifu[j] in e for e in start[i]])
+            if not numpy.any(indx):
+                continue
+            if numpy.sum(indx) > 1:
+                raise ValueError('Degenerate plate ifu')
+            k = numpy.where(indx)[0][0]
+            last_ready[j] = ready[i][k]
+            last_start[j] = start[i][k]
+            last_err[j] = err[i][k]
+            break
+        
+    # For those that were not started, find the most recent status files
+    # for the executions that were only ready
+    not_started = numpy.where(last_ready == None)[0]
+    print('Finding most recent ready executions that did not start.')
+    for j in not_started:
+        for i in range(ndir-1,-1,-1):
+            indx = numpy.array([e is not None and pltifu[j] in e for e in ready[i]])
+            if not numpy.any(indx):
+                continue
+            if numpy.sum(indx) > 1:
+                raise ValueError('Degenerate plate ifu')
+            k = numpy.where(indx)[0][0]
+            last_ready[j] = ready[i][k]
+            break
+
     return last_ready, last_start, last_done, last_err
 
 
 def dap_status(analysis_path, daptypes, logdir=None):
 
-    ready_list, started_list, done_list, err_list = build_lists(analysis_path, logdir=logdir)
+    ready, started, done, err = build_lists(analysis_path, logdir=logdir)
+
+    # There should be no remaining None values in last_ready
+    if numpy.any(ready == None):
+        raise ValueError('Should not be any None entries in list of ready files.')
+
+    # Remove any Nones
+    done = done[numpy.logical_not(done == None)]
+    err = err[numpy.logical_not(err == None)]
+    started = started[numpy.logical_not(started == None)]
+
     log_path = os.path.join(analysis_path, 'log')
     if logdir is not None:
         log_path = os.path.join(log_path, logdir)
 
     print('Constructing plateifu lists.')
-    ready_pltifu = [ '{0}-{1}'.format(*(r.split('/')[-3:-1])) for r in ready_list ]
-    started_pltifu = [ '{0}-{1}'.format(*(r.split('/')[-3:-1])) for r in started_list ]
-    done_pltifu = [ '{0}-{1}'.format(*(r.split('/')[-3:-1])) for r in done_list ]
-    err_pltifu = ['{0}-{1}'.format(*(r.split('/')[-3:-1])) for r in err_list]
+    ready_pltifu = [ '{0}-{1}'.format(*(r.split('/')[-3:-1])) for r in ready ]
+    started_pltifu = [ '{0}-{1}'.format(*(r.split('/')[-3:-1])) for r in started ]
+    done_pltifu = [ '{0}-{1}'.format(*(r.split('/')[-3:-1])) for r in done ]
+    err_pltifu = ['{0}-{1}'.format(*(r.split('/')[-3:-1])) for r in err]
 
     print('Determine which executions finished in error.')
-    errored = [ has_error(e) for e in err_list ]
+    errored = [ has_error(e) for e in err ]
     err_pltifu = (numpy.array(err_pltifu)[errored]).tolist() if numpy.any(errored) else []
 
     print('STATUS:')
@@ -146,7 +204,7 @@ def dap_status(analysis_path, daptypes, logdir=None):
     print('       DONE: {0}'.format(len(done_pltifu)))
     print('    Errored: {0}'.format(len(err_pltifu)))
 
-    tracebacks, counts, trace_in_err = sort_errors(numpy.array(err_list)[errored])
+    tracebacks, counts, trace_in_err = sort_errors(numpy.array(err)[errored])
     print('Errors:')
     for i in range(len(tracebacks)):
         print('{0:>4} {1:>4} {2}'.format(i, counts[i], tracebacks[i]))
@@ -222,7 +280,4 @@ def main(args):
     dap_status(analysis_path, daptypes, logdir=args.logdir)
 
     print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
-
-
-
 

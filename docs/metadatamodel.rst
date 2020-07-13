@@ -1,3 +1,6 @@
+
+.. include:: include/links.rst
+
 .. |ang|   unicode:: U+212B
 
 .. _metadatamodel:
@@ -5,25 +8,21 @@
 Metadata Model
 ==============
 
-.. todo::
-
-    - Links in the description of the DRPComplete file.
-
 .. _metadatamodel-maskbits:
 
 Maskbits
 --------
 
-The mask bits for the DAP output files are pulled from ``IDLUTILS``. A
-default file is provided with the ``mangadap`` distribution; however,
-the DAP ``setup.py`` file will also attempt to download the most
-relevant file from the public SDSS SVN repository using the python
-`requests library <https://pypi.org/project/requests/>`_.
+The mask bits for the DAP output files are pulled from ``IDLUTILS``.
+A default file is provided with the ``mangadap`` distribution;
+however, the DAP ``setup.py`` file will also attempt to download the
+most relevant file from the public SDSS SVN repository using
+`requests`_.
 
-If you're unfamiliar with maskbits, see the `SDSS Primer
-<http://www.sdss.org/dr15/algorithms/bitmasks/>`_
-
-See :ref:`gettingstarted-bitmasks` for examples of how to use the mask bits.
+ * If you're unfamiliar with maskbits, see the description of `SDSS
+   Bitmasks`_.
+ * For examples of how to use the mask bits, see
+   :ref:`gettingstarted-bitmasks`.
 
 .. note::
 
@@ -44,7 +43,7 @@ The three bitmask groups for DAP output files are:
       model ``LOGCUBE`` data
 
 These bitmask groups are further described and listed below.  For
-reference, we also list the two *DRP* bitmask groups that the DAP
+reference, we also list the two DRP bitmask groups that the DAP
 uses to flag the data it analyzes.
 
 .. _metadatamodel-drp3qual:
@@ -94,7 +93,7 @@ generally not be used for scientific purposes.
 MANGA_DAPPIXMASK
 ~~~~~~~~~~~~~~~~
 
-``MANGA_DAPPIXMASK`` is the 2D image bitmap used to describe the quality
+``MANGA_DAPPIXMASK`` is the 2D image bitmask used to describe the quality
 of individual pixel measurements in the DAP ``MAPS`` file.
 The DAP class used to handle these bits and the
 bit values are below.
@@ -112,15 +111,15 @@ The NEARBOUND flag
 The ``NEARBOUND`` flag is used to signify that a returned parameter
 is likely biased by an imposed boundary on the allowed parameter
 space. These are specifically relevant to the pPXF kinematics from
-:class:`mangadap.proc.ppxffit.PPXFFit` (stellar) and
-:class:`mangdap.proc.sasuke.Sasuke` (gas). We use pPXF with a
+:class:`~mangadap.proc.ppxffit.PPXFFit` (stellar) and
+:class:`~mangdap.proc.sasuke.Sasuke` (gas). We use pPXF with a
 :math:`\pm 2000` km/s limit relative to the input guess velocity (set
 by :math:`cz` in ``SCINPVEL`` header keyword in the ``PRIMARY``
 extension and most often identical to the NSA redshift) on the
 returned velocity and :math:`{\rm d}v/100 < \sigma < 1000` limit on
 the velocity dispersion, where :math:`{\rm d}v` is the size of the
 MaNGA ``LOGCUBE`` wavelength channel (:math:`\sim 70` km/s; given by
-the ``VSTEP`` header keyword in the ``PRIMARY`` extension. The
+the ``VSTEP`` header keyword in the ``PRIMARY`` extension). The
 returned velocity is determined to be ``NEARBOUND`` if the "best-fit"
 value is within 1/100 of the width of the allowed range of either
 boundary; i.e., ``NEARBOUND`` is triggered if the velocity is
@@ -146,10 +145,9 @@ of criteria that allow users to determine when measurements can be
 trusted carte blanche and when the data should be treated more
 skeptically. Only spaxels where analysis has been attempted (with
 non-zero bin IDs) are flagged as ``UNRELIABLE`` if they meet the
-necessary criteria. *Please `let us know
-<https://github.com/sdss/mangadap/issues>`_ if you find a set of
+necessary criteria. *Please* `Submit an issue`_ if you find a set of
 automated criteria that would be useful to the development team in
-terms of what you would like to see marked as* ``UNRELIABLE``.
+terms of what you would like to see marked as ``UNRELIABLE``.
 
 Currently, the use of the ``UNRELIABLE`` flag is still rather
 limited. This is not to say that all measurements are reliable, but
@@ -159,21 +157,21 @@ because we haven't had sufficient time to do so. Below, we list the
 condition under which ``UNRELIABLE`` flags are tripped, and the
 affected masks in the ``MAPS`` file.
 
-+-----------------------+---------------------------------------------------+
-| Affected mask         | Criteria                                          |
-+=======================+===================================================+
-| ``EMLINE_SFLUX_MASK`` | If there are **any** masked pixels in the three   |
-|                       | passbands (blue, main, red) used to construct the |
-|                       | measurement.                                      |
-+-----------------------+---------------------------------------------------+
-| ``EMLINE_SEW_MASK``   | If there are **any** masked pixels in the three   |
-|                       | passbands (blue, main, red) used to construct the |
-|                       | measurement.                                      |
-+-----------------------+---------------------------------------------------+
-| ``SPECINDEX_MASK``    | If there are **any** masked pixels in the three   |
-|                       | passbands (blue, main, red) used to construct the |
-|                       | measurement.                                      |
-+-----------------------+---------------------------------------------------+
++------------------------+---------------------------------------------------+
+| Affected mask          | Criteria                                          |
++========================+===================================================+
+| ``EMLINE_SFLUX_MASK``  | If there are **any** masked pixels in the three   |
+|                        | passbands (blue, main, red) used to construct the |
+|                        | measurement.                                      |
++------------------------+---------------------------------------------------+
+| ``EMLINE_SEW_MASK``    | If there are **any** masked pixels in the three   |
+|                        | passbands (blue, main, red) used to construct the |
+|                        | measurement.                                      |
++------------------------+---------------------------------------------------+
+| ``SPECINDEX_MASK``,    | If there are **any** masked pixels in the three   |
+| ``SPECINDEX_BF_MASK``, | passbands (blue, main, red) used to construct the |
+| ``SPECINDEX_WGT_MASK`` | measurement.                                      |
++------------------------+---------------------------------------------------+
 
 .. _metadatamodel-dapspecmask:
 
@@ -190,11 +188,13 @@ bit values are below.
 Reference Files
 ~~~~~~~~~~~~~~~
 
-Internally, the DAP uses separate bitmasks to flag data resulting from
-each of its main modules.  These bitmasks are written to the module
-reference files and then consolidated into the bits tabulated above for
-the main DAP output files (the ``MAPS`` and model ``LOGCUBE`` files).
-These bits are listed in the description of each analysis module.
+Internally, the DAP uses separate bitmasks to flag data resulting
+from each of its main modules. These bitmasks are written to the
+module reference files and then consolidated into the bits tabulated
+above for the main DAP output files (the ``MAPS`` and model
+``LOGCUBE`` files). These bits are listed in the description of each
+analysis module; e.g.,
+:class:`~mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectraBitMask`.
 
 ----
 
@@ -207,14 +207,13 @@ intermediary script files created by the DAP to allow for event
 handling and cluster coordination.
 
 See :ref:`execution` for more general information about execution of
-the DAP.  What follows is specifically for the survey-level execution of
-the DAP.
+the DAP; the following is for its survey-level execution.
 
 AnalysisPlan file
 ~~~~~~~~~~~~~~~~~
 
 For a general description the ``AnalysisPlan`` file, see
-:ref:`execution-analysis-plan`.
+the :ref:`execution-analysis-plan`.
 
 *File root*: ``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/log/[timestamp]``
 
@@ -235,13 +234,14 @@ DRPComplete database
 
 *File name*: ``drpcomplete_$MANGADRP_VER.fits``
 
-The :class:`mangadap.survey.drpcomplete.DRPComplete` file is
+The :class:`~mangadap.survey.drpcomplete.DRPComplete` file is
 primarily created for the survey-level execution of the DAP. It
 collates information used to create the input configuration files for
-each DRP-produced datacube. The ``DRPComplete`` database is
+each DRP-produced datacube. The
+:class:`~mangadap.survey.drpcomplete.DRPComplete` database is
 created/updated at the beginning of each :ref:`execution-rundap`.
 
-The :class:`mangadap.survey.drpcomplete.DRPComplete` database is written
+The :class:`~mangadap.survey.drpcomplete.DRPComplete` database is written
 to a fits file with a primary extension and a binary-table extension;
 the table extension has the following columns:
 
@@ -293,7 +293,7 @@ the table extension has the following columns:
       search for or analyze the ``LIN`` format.
     * ``OBJRA`` and ``OBJDEC`` are not necessarily located at the center
       of the IFU field of view.  The IFU center coordinates are provided
-      in DRPall file (**link**) as ``IFURA`` and ``IFUDEC``.
+      in the `DRPall`_ file as ``IFURA`` and ``IFUDEC``.
     * The MaNGA ID is defined as ``[CATID]-[CATINDX]`` (**link**)
     * For the main survey galaxies, ``TRG_VERSION`` and ``TRG_ID`` are
       drawn from the NASA-Sloan atlas and are identical to
@@ -320,11 +320,10 @@ Redshift Fix File
 
 *File name*: ``redshift_fix.par``
 
-The redshift-fix file is an `SDSS parameter file
-<https://www.sdss.org/dr15/software/par/>`_ used to replace any
-redshift (:math:`z`) read from the DRPall or plateTargets files. It
-has a simple format that identifies the plate, ifudesign, and
-replacement redshift:
+The redshift-fix file is an `SDSS-style parameter file`_ used to
+replace any redshift (:math:`z`) read from the DRPall or plateTargets
+files. It has a simple format that identifies the plate, ifudesign,
+and replacement redshift:
 
 .. code-block:: c
 
@@ -338,9 +337,43 @@ replacement redshift:
     DAPZCORR  9677  6103 0.0
     ...
 
-This files serves to both provide redshifts for objects that don't have
-them and replace incorrect redshifts from, e.g., the NASA-Sloan Atlas.
-The redshift-fix file is updated for each version of the DAP.
+This files serves to both provide redshifts for objects that don't
+have them and replace incorrect redshifts from, e.g., the NASA-Sloan
+Atlas. The redshift-fix file is updated for each version of the DAP.
+This file is *only* used when constructing the
+:ref:`metadatamodel-drpcomplete`, which then propagates to the
+:ref:`execution-config` and then to the :ref:`execution-mangadap`.
+
+Photometry Fix File
+~~~~~~~~~~~~~~~~~~~
+
+*File root*: ``$MANGADAP_DIR/mangadap/data/fix``
+
+*File name*: ``photometry_fix.par``
+
+The photometry-fix file is an `SDSS-style parameter file`_ used to
+replace photometric properties from the DRPall or plateTargets files.
+These properties are the isophotal ellipticity, :math:`\epsilon \equiv
+1-b/a`, the major-axis position angle, :math:`\phi_0`, and the
+effective radius, :math:`R_{\rm eff}`. It has a simple format that
+identifies the plate, ifudesign, and replacement data:
+
+.. code-block:: c
+
+    typedef struct {
+        int plate;
+        int ifudesign;
+        double ell;
+        double pa;
+        double reff;
+    } DAPPHOTCORR;
+
+    DAPPHOTCORR   8083 12702 0.265 7.57 28.3
+
+The photometry-fix file is updated for each version of the DAP. This
+file is *only* used when constructing the
+:ref:`metadatamodel-drpcomplete`, which then propagates to the
+:ref:`execution-config` and then to the :ref:`execution-mangadap`.
 
 Execution Script
 ~~~~~~~~~~~~~~~~
@@ -370,9 +403,10 @@ For a general description, see :ref:`execution-config`.
 
 In the file templates, ``[PLATE]`` is the plate number,
 ``[IFUDESIGN]`` is the IFU number, ``[MODE]`` is the data format
-(always ``CUBE``), and ``[DAPTYPE]`` is the keyword for the analysis
-approach. These files provide input observational parameters to the
-DAP and are almost entirely from the NASA-Sloan Atlas.
+(always ``CUBE``), and ``[DAPTYPE]`` is the keyword for the
+:ref:`datamodel-daptype`. These files provide input observational
+parameters to the DAP and are almost entirely from the NASA-Sloan
+Atlas.
 
 ----
 
@@ -388,7 +422,20 @@ DAPall database
 The DAPall file has an empty primary extension and then one extension
 for each ``DAPTYPE`` performed by a given analysis plan. The name of
 the extension is identically the ``DAPTYPE`` and it contains one row
-per analyzed datacube.
+per analyzed datacube. For example, in MPL-10, the list of extensions
+in the DAPall file are:
+
++-----------+-----------------------------+
+| Extension | Extension Name              |
++===========+=============================+
+|         0 | ``PRIMARY``                 |
++-----------+-----------------------------+
+|         1 | ``SPX-MILESHC-MASTARHC2``   |
++-----------+-----------------------------+
+|         2 | ``VOR10-MILESHC-MASTARHC2`` |
++-----------+-----------------------------+
+|         3 | ``HYB10-MILESHC-MASTARHC2`` |
++-----------+-----------------------------+
 
 Header data
 ~~~~~~~~~~~
@@ -422,10 +469,11 @@ keywords:
 |  ``DATASUM`` | Used for checking data fidelity                       |
 +--------------+-------------------------------------------------------+
 
-Binary table data
-~~~~~~~~~~~~~~~~~
+DAPTYPE table data
+~~~~~~~~~~~~~~~~~~
 
-The binary table in the ``DAPALL`` extension has the following columns:
+Each subsequent extension, named after the :ref:`datamodel-daptype`
+(DAPTYPE), includes a binary table with the following columns:
 
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
 |                        Key |            Type |                                              Units | Comment                                                                       |
@@ -444,7 +492,7 @@ The binary table in the ``DAPALL`` extension has the following columns:
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
 |                   ``MODE`` |             str |                                                    | 3D mode of the DRP file (``CUBE`` or ``RSS``)                                 |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
-|                ``DAPTYPE`` |             str |                                                    | Keyword of the analysis approach used (e.g., ``SPX-MILESHC-MASTARHC``)        |
+|                ``DAPTYPE`` |             str |                                                    | Keyword of the analysis approach used (e.g., ``SPX-MILESHC-MASTARHC2``)       |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
 |                ``DAPDONE`` |            bool |                                                    | Flag that MAPS file successfully produced                                     |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
@@ -551,7 +599,7 @@ The binary table in the ``DAPALL`` extension has the following columns:
 |               ``SNR_RING`` | double (vector) |                                                    | S/N in the ''griz'' bands when binning all spaxels within 1.0-1.5             |
 |                            |                 |                                                    | :math:`R_e`.  This should be independent of the ``DAPTYPE``.                  |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
-|                 ``SB_1RE`` |          double | :math:`10^{-17} {\rm erg/s/cm}^2{\rm /\AA/spaxel}` | Mean g-band surface brightness of valid spaxels within 1 :math:`R_e`.  This   |
+|                 ``SB_1RE`` |          double |     :math:`10^{-17} {\rm erg/s/cm}^2`/|ang|/spaxel | Mean g-band surface brightness of valid spaxels within 1 :math:`R_e`.  This   |
 |                            |                 |                                                    | should be independent of the ``DAPTYPE``.                                     |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
 |               ``BIN_RMAX`` |          double |                                        :math:`R_e` | Maximum g-band luminosity-weighted semi-major radius of any "valid" binned    |
@@ -688,8 +736,12 @@ The binary table in the ``DAPALL`` extension has the following columns:
  * All radially averaged or summed properties are calculated within
    ''elliptical'' apertures defined using the NSA ellipticity and
    position angle.
- * Possible Future developments: (1) Provide default set of cross
-   matching: SDSS I/II, Galaxy Zoo? (2) Include initial radial profiles
-   of the emission-line, spectral-index, and other derived properties?
+ * Possible future additions:
+
+   #. Add ``nsa_sersic_mass`` from the DRPall file.
+   #. Balmer decrement extinction corrections for SFR
+   #. Provide default set of cross matching: SDSS I/II, Galaxy Zoo?
+   #. Include initial radial profiles of the emission-line,
+      spectral-index, and other derived properties?
 
 

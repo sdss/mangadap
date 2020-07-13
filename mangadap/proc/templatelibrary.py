@@ -130,48 +130,6 @@ a mean flux of unity and define various paths if you're not working
 within the nominal DAP directory structure.  See the optional
 instantiation arguments for :class:`TemplateLibrary`.
 
-Revision history
-----------------
-
-    | **23 Apr 2015**: Implementation begun by K. Westfall (KBW)
-    | **26 May 2015**: (KBW) Added some Sphinx documentation.
-    | **17 Jun 2015**: (KBW) Added flexibility in definition of template
-        libraries from which to choose using the new
-        :class:`TemplateLibraryDef` class.
-    | **23 Jun 2015**: (KBW) Allow user to provided non-DRP input
-        spectra, meaning they need to provide the velocity scale and the
-        wavelength and spectral resolution vectors.  They must also
-        directly set the name of the output processed file.
-    | **01 Feb 2016**: (KBW) Propagated changes to
-        :class:`TemplateLibraryDef` and changed procedure for reading
-        raw template library.
-    | **04 Feb 2016**: (KBW) Converted from
-        :func:`mangadap.util.instrument.log_rebin` to
-        :func:`mangadap.util.instrument.resample_vector`.  Allows input
-        library to be logarithmically sampled and provides a different
-        approach to subsampling spectra.  Implemented other convenience
-        operations, such as selecting a certain wavelength range for the
-        processed library.
-    | **19 May 2016**: (KBW) Added loggers and quiet keyword arguments
-        to :class:`TemplateLibrary`
-    | **22 Jun 2016**: (KBW) Included MILESHC library in documentation.
-        Allow to specify how the resolution and sampling are matched to
-        the DRP data.  The :class:`TemplateLibrary` class should be
-        generalized to make this more transparent (and unnecessary).
-    | **03 Apr 2017**: (KBW) Include arguments for
-        :func:`mangadap.util.instrument.match_spectral_resolution` that
-        specify the minimum sigma in pixels for the convolution kernel
-        and any offset in the resolution required in the call for the
-        template library.  Check that the resampling of the spectrum
-        does not reach the two-pixel resolution limit; flag the spectrum
-        in those regions that do and change the resolution to the two
-        pixel limit.
-    | **30 Aug 2017**: (KBW) Switch from using
-        :func:`mangadap.util.instrument.resample_vector` to
-        :func:`mangadap.util.instrument.resample1d`
-    | **30 Aug 2018**: (KBW) Switch from using resample1d to
-        :class:`mangadap.util.sampling.Resample`.
-
 ----
 
 .. include license and copyright

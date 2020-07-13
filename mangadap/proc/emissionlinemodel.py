@@ -3,26 +3,6 @@
 """
 A class hierarchy that fits the emission lines.
 
-Revision history
-----------------
-
-    | **26 Apr 2016**: Implementation begun by K. Westfall (KBW)
-    | **28 Jul 2016**: (KBW) Fixed error in initialization of guess
-        redshift when stellar continuum is provided.
-    | **23 Feb 2017**: (KBW) Use DAPFitsUtil read and write functions.
-    | **31 May 2017**: (KBW) Revert to using
-        :class:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel`
-        on input
-    | **08 Sep 2017**: (KBW) Add `deconstruct_bins` flag to parameters.
-    | **02 Feb 2018**: (KBW) Use
-        :func:`mangadap.proc.spectralfitting.EmissionLineFit.select_binned_spectra_to_fit`.
-    | **15 Feb 2018**: (KBW) No longer imports
-        :class:`mangadap.proc.emissionlinemoments.EmissionLineMoments`
-        to avoid circular imports (this should be coded better...)
-    | **24 Feb 2018**: (KBW) Added keyword for a new template library
-        that can be used instead of the same templates used during the
-        stellar-continuum fit.
-    
 ----
 
 .. include license and copyright
@@ -100,7 +80,7 @@ class EmissionLineModelDef(KeywordParSet):
                  'Minimum S/N of spectrum to fit',
                  'Method to use for deconstructing binned spectra into individual spaxels for ' \
                     'emission-line fitting.  See ' \
-                    ':func:`mangadap.proc.sasuke.Sasuke.deconstruct_bin_options`.',
+                    ':func:`~mangadap.proc.sasuke.Sasuke.deconstruct_bins_options`.',
                  'Name of the emission-line moments band used to set the initial velocity guess ' \
                     'for each spaxel.',
                  'Name of the emission-line moments band used to set the initial velocity ' \
@@ -424,28 +404,28 @@ class EmissionLineModel:
         hdr['NELMOD'] = (self.nmodels, 'Number of unique emission-line models')
         return hdr
 
-    def _emission_line_database_dtype(self, name_len, mode_len, prof_len):
-        r"""
-        Construct the record array data type for the output fits
-        extension.
-        """
-        return [ ('ID', int),
-                 ('NAME','<U{0:d}'.format(name_len)),
-                 ('RESTWAVE', float),
-                 ('ACTION', '<U1'),
-                 ('FLUXRATIO', float),
-                 ('MODE','<U{0:d}'.format(mode_len)),
-                 ('PROFILE', '<U{0:d}'.format(prof_len)),
-                 ('NCOMP', int)
-               ]
-
-    def _compile_database(self, quiet=False):
-        """
-        Compile the database with the specifications of each index.
-        """
-        if self.emldb is None:
-            raise NotImplementedError('EmissionLineModel must be able to construct an '
-                                      'EmissionLineDB objects for the lines to fit.')
+#    def _emission_line_database_dtype(self, name_len, mode_len, prof_len):
+#        r"""
+#        Construct the record array data type for the output fits
+#        extension.
+#        """
+#        return [ ('ID', int),
+#                 ('NAME','<U{0:d}'.format(name_len)),
+#                 ('RESTWAVE', float),
+#                 ('ACTION', '<U1'),
+#                 ('FLUXRATIO', float),
+#                 ('MODE','<U{0:d}'.format(mode_len)),
+#                 ('PROFILE', '<U{0:d}'.format(prof_len)),
+#                 ('NCOMP', int)
+#               ]
+#
+#    def _compile_database(self, quiet=False):
+#        """
+#        Compile the database with the specifications of each index.
+#        """
+#        if self.emldb is None:
+#            raise NotImplementedError('EmissionLineModel must be able to construct an '
+#                                      'EmissionLineDB objects for the lines to fit.')
 #            try:
 #                # Try to use member functions of the fitting class to
 #                # set at least the NAME and RESTWAVE of the line for use
@@ -459,21 +439,21 @@ class EmissionLineModel:
 #                line_database = None
 #            return line_database
 
-        name_len = numpy.amax([ len(n) for n in self.emldb['name'] ])
-        mode_len = numpy.amax([ len(m) for m in self.emldb['mode'] ])
-        prof_len = numpy.amax([ len(p) for p in self.emldb['profile'] ])
-
-        # Instatiate the table data that will be saved defining the set
-        # of emission-line moments measured
-        line_database = init_record_array(self.emldb.size,
-                                self._emission_line_database_dtype(name_len, mode_len, prof_len))
-
-        hk = [ 'ID', 'NAME', 'RESTWAVE', 'ACTION', 'FLUXRATIO', 'MODE', 'PROFILE', 'NCOMP' ]
-        mk = [ 'index', 'name', 'restwave', 'action', 'flux', 'mode', 'profile', 'ncomp' ]
-        for _hk, _mk in zip(hk,mk):
-            line_database[_hk] = self.emldb[_mk]
-
-        return line_database
+#        name_len = numpy.amax([ len(n) for n in self.emldb['name'] ])
+#        mode_len = numpy.amax([ len(m) for m in self.emldb['mode'] ])
+#        prof_len = numpy.amax([ len(p) for p in self.emldb['profile'] ])
+#
+#        # Instatiate the table data that will be saved defining the set
+#        # of emission-line moments measured
+#        line_database = init_record_array(self.emldb.size,
+#                                self._emission_line_database_dtype(name_len, mode_len, prof_len))
+#
+#        hk = [ 'ID', 'NAME', 'RESTWAVE', 'ACTION', 'FLUXRATIO', 'MODE', 'PROFILE', 'NCOMP' ]
+#        mk = [ 'index', 'name', 'restwave', 'action', 'flux', 'mode', 'profile', 'ncomp' ]
+#        for _hk, _mk in zip(hk,mk):
+#            line_database[_hk] = self.emldb[_mk]
+#
+#        return line_database
 
 
     def _assign_input_kinematics(self, emission_line_moments, redshift, dispersion,
@@ -501,16 +481,16 @@ class EmissionLineModel:
         instead of the full vector.
 
         Args:
-            emission_line_moments
-                (:class:`mangadap.proc.emissionlinemoments.EmissionLineMoments`):
+            emission_line_moments (:class:`mangadap.proc.emissionlinemoments.EmissionLineMoments`):
                 Object with the results of the emission-line-moment
                 measurements
-            redshift (float, numpy.ndarray): Redshifts (:math:`z`) to
-                use for each spectrum.
-            dispersion (float, numpy.ndarray): Velocity dispersion
-                (km/s) to use for each spectrum.
-            default_dispersion (float, numpy.ndarray): (**Optional**)
-                Default velocity dispersion to use (km/s), if relevant.
+            redshift (:obj:`float`, `numpy.ndarray`_):
+                Redshifts (:math:`z`) to use for each spectrum.
+            dispersion (:obj:`float`, `numpy.ndarray`_):
+                Velocity dispersion (km/s) to use for each spectrum.
+            default_dispersion (:obj:`float`, `numpy.ndarray`_, optional):
+                Default velocity dispersion to use (km/s), if
+                relevant.
         """
 
         #---------------------------------------------------------------
@@ -725,23 +705,23 @@ class EmissionLineModel:
         Primarily a wrapper of :func:`EmissionLineFit.line_metrics`.
 
         Args:
-            model_flux (`numpy.ndarray`):
+            model_flux (`numpy.ndarray`_):
                 The best-fitting emission-line model spectra.
-            model_base (`numpy.ndarray`):
+            model_base (`numpy.ndarray`_):
                 The "baseline" of the emission-line model defined as the
                 difference between the best-fitting stellar-continuum
                 model and the best-fitting continuum from the
                 emission-line modeling procedure.
-            model_mask (`numpy.ndarray`):
+            model_mask (`numpy.ndarray`_):
                 A boolean or integer (bitmask) array with the mask for
                 the model data.
-            model_eml_par (`numpy.recarray`):
+            model_eml_par (:class:`~mangadap.proc.spectralfitting.EmissionLineFitDataTable`):
                 A record array with the best-fitting results and
                 parameters for each emission line.  The format is
                 expected to be given by
                 :func:`EmissionLineFit._per_emission_line_dtype`.  *This
                 object is edited in place and returned.*
-            model_binid (`numpy.ndarray`, optional):
+            model_binid (`numpy.ndarray`_, optional):
                 A 2D array with the bin ID assigned to each spaxel with
                 a fitted emission-line model.  The number of
                 non-negative bin IDs must match the number of fitted
@@ -752,10 +732,9 @@ class EmissionLineModel:
                 calculation of the figures of merit.
 
         Returns:
-            `numpy.recarray`: Return the input `model_eml_par` after
-            filling the LINE_PIXC, AMP, ANR, LINE_NSTAT, LINE_CHI2,
-            LINE_RMS, and LINE_FRMS columns.
-                
+            `numpy.recarray`_: Return the input ``model_eml_par``
+            after filling the LINE_PIXC, AMP, ANR, LINE_NSTAT,
+            LINE_CHI2, LINE_RMS, and LINE_FRMS columns.
         """
         # Get the baseline continuum
         bin_indx = DAPFitsUtil.downselect_bins(self.binned_spectra['BINID'].data.ravel(),
@@ -939,45 +918,26 @@ class EmissionLineModel:
         else:
             _model_mask = model_mask
 
-        # Compile the information on the suite of measured indices
-        line_database = self._compile_database()
-
         # Save the data to the hdu attribute
-        par_hdu = fits.BinTableHDU(data=None, name='PAR') if line_database is None else \
-                        fits.BinTableHDU.from_columns([ fits.Column(name=n,
-                                                        format=rec_to_fits_type(line_database[n]),
-                                                        array=line_database[n])
-                                                            for n in line_database.dtype.names],
-                                                      name='PAR')
-
+        par_hdu = fits.BinTableHDU(data=None, name='PAR') if self.emldb is None else \
+                        self.emldb.to_datatable().to_hdu(name='PAR')
         fit_hdu = fits.BinTableHDU(data=None, name='FIT') if model_fit_par is None else \
-                        fits.BinTableHDU.from_columns([fits.Column(name=n,
-                                                        format=rec_to_fits_type(model_fit_par[n]),
-                                                        dim=rec_to_fits_col_dim(model_fit_par[n]),
-                                                        array=model_fit_par[n])
-                                                            for n in model_fit_par.dtype.names],
-                                                      name='FIT')
+                        model_fit_par.to_hdu(name='FIT', add_dim=True)
 
-        self.hdu = fits.HDUList([ fits.PrimaryHDU(header=pri_hdr),
-                                  fits.ImageHDU(data=model_flux.data, name='FLUX'),
-                                  fits.ImageHDU(data=model_base.data, name='BASE'),
-                                  fits.ImageHDU(data=_model_mask, name='MASK'),
-                                  self.binned_spectra['WAVE'].copy(),
-                                  fits.ImageHDU(data=bin_indx, header=map_hdr, name='BINID'),
-                                  fits.ImageHDU(data=map_mask, header=map_hdr, name='MAPMASK'),
-                                  par_hdu, fit_hdu,
-                                  fits.BinTableHDU.from_columns([fits.Column(name=n,
-                                                        format=rec_to_fits_type(model_eml_par[n]),
-                                                        dim=rec_to_fits_col_dim(model_eml_par[n]),
-                                        array=model_eml_par[n]) for n in model_eml_par.dtype.names],
-                                                                    name='EMLDATA')
+        self.hdu = fits.HDUList([fits.PrimaryHDU(header=pri_hdr),
+                                 fits.ImageHDU(data=model_flux.data, name='FLUX'),
+                                 fits.ImageHDU(data=model_base.data, name='BASE'),
+                                 fits.ImageHDU(data=_model_mask, name='MASK'),
+                                 self.binned_spectra['WAVE'].copy(),
+                                 fits.ImageHDU(data=bin_indx, header=map_hdr, name='BINID'),
+                                 fits.ImageHDU(data=map_mask, header=map_hdr, name='MAPMASK'),
+                                 par_hdu, fit_hdu,
+                                 model_eml_par.to_hdu(name='EMLDATA', add_dim=True)
                                 ])
-
 
     def file_name(self):
         """Return the name of the output file."""
         return self.output_file
-
 
     def file_path(self):
         """Return the full path to the output file."""
@@ -1328,9 +1288,8 @@ class EmissionLineModel:
                 a size that accommodates the missing models.
 
         Returns:
-            numpy.ndarray: A 2D array with a copy of the data from the
-            selected extension.
-
+            `numpy.ndarray`_: A 2D array with a copy of the data from
+            the selected extension.
         """
         return DAPFitsUtil.copy_to_array(self.hdu, ext=ext, allowed_ext=self.spectral_arrays,
                                          waverange=waverange,
@@ -1369,8 +1328,8 @@ class EmissionLineModel:
                 a size that accommodates the missing models.
 
         Returns:
-            numpy.ndarray: A 2D array with a copy of the data from the
-            selected extension.
+            `numpy.ndarray`_: A 2D array with a copy of the data from
+            the selected extension.
         """
         return DAPFitsUtil.copy_to_masked_array(self.hdu, ext=ext, mask_ext='MASK', flag=flag,
                                                 bitmask=self.bitmask,
@@ -1435,8 +1394,9 @@ class EmissionLineModel:
         argument.
 
         Args:
-            binid (numpy.ndarray): 2D array with the bin ID associate
-                with each spaxel in the datacube.
+            binid (`numpy.ndarray`_):
+                2D array with the bin ID associate with each spaxel
+                in the datacube.
             line (str): Line to use for the kinematics.  Must match one
                 of the lines created by :func:`channel_names`.  Function
                 will raise an exception if the line_name is None or if
@@ -1466,8 +1426,8 @@ class EmissionLineModel:
                 output matched data.
 
         Returns:
-            numpy.ndarray: Returns arrays with a redshift (or cz) and
-            dispersion for each spectrum.
+            `numpy.ndarray`_: Returns arrays with a redshift (or cz)
+            and dispersion for each spectrum.
 
         Raises:
             TypeError: Raised if the input redshift or dispersion values
@@ -1695,8 +1655,9 @@ class EmissionLineModel:
 
     # TODO: Use the EmissionMomentsDB.channel_names function!
     def channel_names(self):
-        line_database = self._compile_database(quiet=True)
-        if line_database is None:
+        if self.emldb is None:
+#        line_database = self._compile_database(quiet=True)
+#        if line_database is None:
             raise ValueError('Channel names undefined because line database is not available.')
         
         return numpy.array([ '{0}-{1}'.format(n,int(w)) \
@@ -1711,13 +1672,14 @@ class EmissionLineModel:
         This is primarily used to set the output data for the MAPS file.
         
         Returns:
-            Three objects are returned: a list of names to assign each
-            column (length is NFOM), the units of the data in this
-            column (length is NFOM), and a 2D array with the figures of
-            merit for each spectrum (shape is NSPEC x NFOM).  If the
-            fitting class used does not have a `fit_figures_of_merit`
-            function, the name is set to 'null', the unit is an empty
-            string, and the data is a (NMOD,1) array of zeros.
+            :obj:`tuple`: Returns (1) a list of names to assign each
+            column (length is NFOM), (2) the units of the data in
+            this column (length is NFOM), and (3) a 2D array with the
+            figures of merit for each spectrum (shape is NSPEC x
+            NFOM). If the fitting class used does not have a
+            `fit_figures_of_merit` function, the name is set to
+            'null', the unit is an empty string, and the data is a
+            (NMOD,1) array of zeros.
         """
         try:
             names, units, fom = self.method['fitclass'].fit_figures_of_merit(self.hdu['FIT'].data)

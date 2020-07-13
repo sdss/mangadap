@@ -5,10 +5,10 @@ respect of the rest of the lines being modeled.
 The valid modes are:
 
     * ``f``: Fit the line independently of all others.
-    * ``wN``: Used by :class:`mangadap.proc.elric.Elric` only.  Fit the
+    * ``wN``: Used by :class:`~mangadap.proc.elric.Elric` only.  Fit the
       line with untied parameters, but use a window that includes both
       this line and the line with index ``N``.
-    * ``xN``: Used by :class:`mangadap.proc.elric.Elric` only.  Fit the
+    * ``xN``: Used by :class:`~mangadap.proc.elric.Elric` only.  Fit the
       line with its flux tied to the line with index ``N``.
     * ``vN``: Fit the line with the velocity tied to the line with index
       ``N``.
@@ -20,17 +20,17 @@ The valid modes are:
       dispersion tied to the line with index ``N``.
 
 As noted in the mode description, many of the modes are only
-available when using the :class:`mangadap.proc.elric.Elric` module.
+available when using the :class:`~mangadap.proc.elric.Elric` module.
 For the ``w`` mode, this is simply because the preferred module,
-:class:`mangadap.proc.sasuke.Sasuke`, fits the full spectrum instead
+:class:`~mangadap.proc.sasuke.Sasuke`, fits the full spectrum instead
 of fitting the lines within small spectral windows. The other
-limitation are because :class:`mangadap.proc.sasuke.Sasuke` is based
+limitation are because :class:`~mangadap.proc.sasuke.Sasuke` is based
 on the use of template spectra to fit the emission lines (see
-:class:`mangadap.proc.emissionelinetemplates.EmissionLineTemplates`):
+:class:`~mangadap.proc.emissionlinetemplates.EmissionLineTemplates`):
 To tie line fluxes, the lines to be tied are included in the same
 template spectrum, meaning that their kinematics are also
 automatically tied. That means that, for
-:class:`mangadap.proc.sasuke.Sasuke`, the ``x`` and ``a`` modes are
+:class:`~mangadap.proc.sasuke.Sasuke`, the ``x`` and ``a`` modes are
 identical.
 
 In the :ref:`emissionlines-model-par-format` example, the modes set

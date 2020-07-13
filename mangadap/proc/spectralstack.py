@@ -4,30 +4,6 @@
 
 Stack some spectra!
 
-Revision history
-----------------
-
-    | **01 Apr 2016**: Implementation begun by K. Westfall (KBW)
-    | **10 Nov 2016**: (KBW) Include dispersion cube in DRP file to
-        construct spectral resolution of binned spectra.
-    | **30 Nov 2016**: (KBW) Use, e.g., [None,:] slicing instead of,
-        e.g., numpy.array([v]*n) when necessary for array arithmetic
-    | **01 Dec 2016**: (KBW) Allow stacking the spectral resolution to
-        be turned off via :class:`SpectralStackPar`.
-    | **06 Dec 2016**: (KBW) In
-        :func:`mangadap.proc.spectralstack.SpectralStack._set_rebin_transfer_matrix`,
-        the number of bins is set by the number of unique indices;
-        before based on the maximum unique index, meaning that "missing"
-        bins were included.  They're now excluded, forcing classes like
-        :class:`mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra`
-        to keep track of missing bins.
-    | **30 Aug 2017**: (KBW) Switch from
-        :func:`mangadap.util.instrument.resample_vector` to
-        :func:`mangadap.util.instrument.resample1d` in untested function
-        :func:`SpectralStack.register`.
-    | **30 Aug 2018**: (KBW) Switch from resample1d to
-        :func:`mangadap.util.sampling.Resample`
-
 ----
 
 .. include license and copyright

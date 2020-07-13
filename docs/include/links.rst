@@ -1,6 +1,8 @@
 .. distribution
 
 .. _pypi: https://pypi.org/project/sdss-mangadap/
+.. _Anaconda: https://www.continuum.io/DOWNLOADS
+.. _python.org: https://www.python.org/
 
 .. core
 
@@ -13,6 +15,7 @@
 .. _argparse.Namespace: https://docs.python.org/3/library/argparse.html#argparse.Namespace
 .. _argparse.ArgumentParser: https://docs.python.org/3/library/argparse.html#argparse.ArgumentParser
 .. _configparser.ConfigParser: https://docs.python.org/3/library/configparser.html
+.. _eval: https://docs.python.org/3/library/functions.html#eval
 
 .. configobj
 
@@ -29,6 +32,7 @@
 .. _numpy.ravel_multi_index: https://numpy.org/doc/stable/reference/generated/numpy.ravel_multi_index.html
 .. _numpy.unravel_index: https://numpy.org/doc/stable/reference/generated/numpy.unravel_index.html
 .. _numpy.polynomial.legendre.legvander: https://numpy.org/doc/stable/reference/generated/numpy.polynomial.legendre.legvander.html
+.. _numpy.dtype: https://numpy.org/doc/stable/reference/generated/numpy.dtype.html
 
 .. scipy
 
@@ -76,12 +80,16 @@
 
 .. misc
 
+.. _requests: https://pypi.org/project/requests/
 .. _ppxf: https://pypi.org/project/ppxf/
 .. _vorbin: https://pypi.org/project/vorbin/
 
 .. SDSS
 
-.. _SDSS-style parameter file: http://www.sdss.org/dr15/software/par/
+.. _SDSS-style parameter file: http://www.sdss.org/dr16/software/par/
+.. _SDSS Bitmasks: http://www.sdss.org/dr16/algorithms/bitmasks/
+.. _Firefly VAC: https://www.sdss.org/dr16/manga/manga-data/manga-firefly-value-added-catalog/
+.. _Pipe3D VAC: https://www.sdss.org/dr16/manga/manga-data/manga-pipe3d-value-added-catalog/
 
 .. papers
 
@@ -89,3 +97,34 @@
 .. _Westfall et al. (2019, AJ, 158, 231): https://ui.adsabs.harvard.edu/abs/2019AJ....158..231W/abstract
 .. _Belfiore et al. (2019, AJ, 158, 160): https://ui.adsabs.harvard.edu/abs/2019AJ....158..160B/abstract
 
+.. mangadap github
+
+.. _mangadap GitHub repo: https://github.com/sdss/mangadap
+.. _Submit an issue: https://github.com/sdss/mangadap/issues
+
+.. TRM
+
+.. _DRPall: https://trac.sdss.org/wiki/MANGA/TRM/TRM_MPL-10/metadata#DRP:DRPall
+.. _DRP datamodel: https://trac.sdss.org/wiki/MANGA/TRM/TRM_MPL-10/datamodel
+.. _DRP HDUCLASS: https://trac.sdss.org/wiki/MANGA/TRM/TRM_MPL-10/datamodel#HDUCLASS
+.. _DRP LOGCUBE: https://trac.sdss.org/wiki/MANGA/TRM/TRM_MPL-10/datamodel#manga-PLATE-IFUDESIGN-LOGCUBE.fits.gz
+
+.. SAS
+
+.. _DR15 SAS: https://dr15.sdss.org/sas/dr15/manga/spectro/analysis/v2_4_3/2.2.1/
+.. _MPL-10 SAS: https://data.sdss.org/sas/mangawork/manga/spectro/analysis/v3_0_1/3.0.1
+.. _MANGA_SPECTRO_ANALYSIS: https://data.sdss.org/sas/mangawork/manga/spectro/analysis
+.. _MANGA_SPECTRO_REDUX: https://data.sdss.org/sas/mangawork/manga/spectro/redux
+
+.. _MPL-9 error report: https://data.sdss.org/sas/mangawork/manga/spectro/analysis/v2_7_1/2.4.1/log/error_report.txt
+.. _MPL-10 error report: https://data.sdss.org/sas/mangawork/manga/spectro/analysis/v3_0_1/3.0.1/log/error_report.txt
+
+.. Example files
+.. _manga-8138-12704-MAPS-HYB10-MILESHC-MASTARHC2.fits.gz: https://data.sdss.org/sas/mangawork/manga/spectro/analysis/MPL-10/HYB10-MILESHC-MASTARHC2/8138/12704/manga-8138-12704-MAPS-HYB10-MILESHC-MASTARHC2.fits.gz
+
+.. marvin
+
+.. _Marvin: https://sdss-marvin.readthedocs.io
+.. _install Marvin: https://sdss-marvin.readthedocs.io/en/latest/installation.html
+.. _Marvin Maskbits utility: https://sdss-marvin.readthedocs.io/en/latest/reference/utils.html#module-marvin.utils.general.maskbit
+.. _SDSS Collaboration Access: https://sdss-marvin.readthedocs.io/en/latest/installation.html#sdss-collaboration-access

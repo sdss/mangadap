@@ -1,6 +1,7 @@
-.. |ang|   unicode:: U+212B
 
-.. include:: include/ang.rst
+.. include:: include/links.rst
+
+.. |ang|   unicode:: U+212B
 
 .. _datamodel:
 
@@ -9,12 +10,33 @@ Data Model
 
 The DAP data model consists of a number of input files and two main
 output files, the :ref:`datamodel-maps` and :ref:`datamodel-cube` files,
-one for each unique observation (``PLATEIFU``) and ``DAPTYPE``
-combination.
+one for each unique observation (``PLATEIFU``) and analysis approach.
 
 The ``MAPS`` file contains the 2D maps with the DAP-derived properties,
 whereas the model ``LOGCUBE`` file contains the best-fitting model
 spectra.
+
+.. _datamodel-daptype:
+
+DAP Analysis Approach
+---------------------
+
+Each analysis approach used by the DAP is signified by a unique
+string called the ``DAPTYPE``, constructed by
+:func:`~mangadap.config.defaults.dap_method`. Note that the
+construction of the ``DAPTYPE`` has changed since DR15.
+
+.. include:: include/daptype.rst
+
+The table below provides relevant ``DAPTYPE`` keywords:
+
++---------+-------------------------------------------------------------------------------------+
+| Release | ``DAPTYPE``                                                                         |
++=========+=====================================================================================+
+| DR-15   | ``VOR10-GAU-MILESHC``, ``HYB10-GAU-MILESHC``                                        |
++---------+-------------------------------------------------------------------------------------+
+| MPL-10  | ``SPX-MILESHC-MASTARHC2``, ``VOR10-MILESHC-MASTARHC2``, ``HYB10-MILESHC-MASTARHC2`` |
++---------+-------------------------------------------------------------------------------------+
 
 .. _datamodel-directory-structure:
 
@@ -22,12 +44,11 @@ DAP Directory Structure
 -----------------------
 
 The root output directory is codified in the environmental variable
-``$MANGA_SPECTRO_ANALYSIS``.  On the (internal) SAS, the root directory
-is `here <https://data.sdss.org/sas/mangawork/manga/spectro/analysis/>`__.
+``$MANGA_SPECTRO_ANALYSIS`` (`MANGA_SPECTRO_ANALYSIS`_; internal).
 
 The results of each run of the DAP are tied to the DRP version used
-to produce the analyzed datacubes and version of the DAP used to do
-the analysis, such that the top-level directory for the DAP output
+to produce the analyzed datacubes and the version of the DAP used to
+do the analysis, such that the top-level directory for the DAP output
 is: ``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER``.
 
 ----
@@ -45,7 +66,7 @@ the MPL-10, these are:
 
  * ``SPX-MILESHC-MASTARHC2/``: Analysis of each individual spaxel;
    spaxels must have a valid continuum fit for an emission-line model to
-   be fit
+   be fit.
  * ``VOR10-MILESHC-MASTARHC2/``: Analysis of spectra binned to
    :math:`{\rm S/N}\sim 10` using the Voronoi binning algorithm
    (Cappellari & Copin 2003).
@@ -65,15 +86,17 @@ Within each ``[DAPTYPE]`` directory, you'll find the following:
  * ``[PLATE]``: Top-level directory for analysis of the observations on
    each plate.
  * ``qa``: Quality assessment plots based on data from the DAPall file
-   specifically for this ``[DAPTYPE]]``
+   specifically for this ``[DAPTYPE]``.
 
 ----
 
 Within each ``[PLATE]`` directory, you'll find the following:
 
  * ``[IFUDESIGN]``: Subdirectory with the main analysis products for
-   each ``PLATEIFU`` combination for the relevant ``[DAPTYPE]``.  **The
-   DAP maps and logcube output files are here.**
+   each ``PLATEIFU`` combination for the relevant ``[DAPTYPE]``.
+   **This is the directory that contains** the DAP ``MAPS`` and model
+   ``LOGCUBE`` output files.
+
  * ``qa``: Quality assessment plots consolidated for all the
    observations on this plate.
 
@@ -91,10 +114,8 @@ Within each ``[IFUDESIGN]`` directory, you'll find the following subdirectories:
 HDUCLASS
 --------
 
-As with the DRP output data (internal; see `here
-<https://trac.sdss.org/wiki/MANGA/TRM/TRM_MPL-8/datamodel#HDUCLASS>`__)
-the DAP output files follow the ``HDUCLASS`` header group convention;
-see also `here
+As with the `DRP HDUCLASS`_, the DAP output files follow the
+``HDUCLASS`` header group convention; see also `here
 <ftp://ftp.eso.org/pub/dfs/pipelines/doc/VLT-SPE-ESO-19500-5667_DataFormat.pdf>`_.
 
 All headers specify ``HDUCLASS=SDSS``.  The ``HDUCLASS`` header block
@@ -116,8 +137,9 @@ and ``EMLINE_GFLUX_MASK`` extensions, the ``SCIDATA`` keyword provides
 the extension with the associated science data (``EMLINE_GFLUX`` in this
 case).
 
-The ``QUALDATA`` extensions provide bit masks of each property value.  **It is important
-that you use these :ref:`metadatamodel-maskbits` when using the data.**
+The ``QUALDATA`` extensions provide bit masks of each property value.
+It is **important** that you use these :ref:`metadatamodel-maskbits`
+when using the data.
 
 .. _datamodel-maps:
 
@@ -167,206 +189,234 @@ and may change again.
 
 The ``MAPS`` files contain the following extensions:
 
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-| HDU |               Name | Channels |                                                Units | Description                                                        |
-+=====+====================+==========+======================================================+====================================================================+
-|   0 | PRIMARY            |        0 |                                                      | Empty extension with primary header information.                   |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-| **Coordinate and binning extensions**                                                                                                                           |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|   1 | SPX_SKYCOO         |        2 |                                               arcsec | Sky-right offsets -- +x toward +RA and +y toward +DEC -- of each   |
-|     |                    |          |                                                      | spaxel from the galaxy center                                      |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|   2 | SPX_ELLCOO         |        4 |      arcsec, unitless, :math:`h^{-1} {\rm kpc}`, deg | Elliptical polar coordinates of each spaxel from the galaxy        |
-|     |                    |          |                                                      | center; :math:`R` in arcsec, :math:`R/R_e`, :math:`R` in           |
-|     |                    |          |                                                      | :math:`h^{-1} {\rm kpc}`, and azimuthal angle :math:`\theta`.  In  |
-|     |                    |          |                                                      | the limit of tilted thin disk, these are the in-plane disk radius  |
-|     |                    |          |                                                      | and azimuth.                                                       |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|   3 | SPX_MFLUX          |        1 |       :math:`10^{-17} {\rm erg/s/cm}^2`/|ang|/spaxel | g-band-weighted mean flux, *not* corrected for Galactic extinction |
-|     |                    |          |                                                      | or internal attenuation.                                           |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|   4 | SPX_MFLUX_IVAR     |        1 |                                                      | Inverse variance of g-band-weighted mean flux.                     |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|   5 | SPX_SNR            |        1 |                                                      | Mean g-band weighted signal-to-noise ratio per pixel.              |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|   6 | BINID              |        5 |                                                      | Numerical ID for spatial bins for the binned spectra,              |
-|     |                    |          |                                                      | stellar-continuum results, emission-line moment results,           |
-|     |                    |          |                                                      | emission-line model results, and spectral-index results;           |
-|     |                    |          |                                                      | see :ref:`datamodel-binid-usage`.                                  |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|   7 | BIN_LWSKYCOO       |        2 |                                               arcsec | Light-weighted sky-right offsets -- +x toward +RA and +y toward    |
-|     |                    |          |                                                      | +DEC -- of each bin from the galaxy center.                        |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|   8 | BIN_LWELLCOO       |        4 |       arcsec, unitless, :math:`h^{-1} {\rm kpc}`,deg | Light-weighted elliptical polar coordinates of each bin from the   |
-|     |                    |          |                                                      | galaxy center; :math:`R` in arcsec, :math:`R/R_e`, :math:`R` in    |
-|     |                    |          |                                                      | :math:`h^{-1} {\rm kpc}`, and azimuthal angle :math:`\theta`.  In  |
-|     |                    |          |                                                      | the limit of tilted thin disk, these are the in-plane disk radius  |
-|     |                    |          |                                                      | and azimuth.                                                       |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|   9 | BIN_AREA           |        1 |                               :math:`{\rm arcsec}^2` | Area of each bin.                                                  |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  10 | BIN_FAREA          |        1 |                                                      | Fractional area that the bin covers for the expected bin shape     |
-|     |                    |          |                                                      | (only relevant for radial binning).                                |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  11 | BIN_MFLUX          |        1 |       :math:`10^{-17} {\rm erg/s/cm}^2`/|ang|/spaxel | g-band-weighted mean flux for the binned spectra, *not* corrected  |
-|     |                    |          |                                                      | for Galactic extinction or internal attenuation.                   |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  12 | BIN_MFLUX_IVAR     |        1 |                                                      | Inverse variance of g-band-weighted mean flux for the binned       |
-|     |                    |          |                                                      | spectra.                                                           |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  13 | BIN_MFLUX_MASK     |        1 |                                                      | Bit mask for the g-band-weighted mean flux per bin.                |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  14 | BIN_SNR            |        1 |                                                      | Mean g-band-weighted signal-to-noise ratio per pixel in the binned |
-|     |                    |          |                                                      | spectra.                                                           |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-| **Stellar (absorption-line) kinematics**                                                                                                                        |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  15 | STELLAR_VEL        |        1 |                                                 km/s | Line-of-sight stellar velocity, relative to the input guess        |
-|     |                    |          |                                                      | redshift (given as :math:`cz` by the keyword ``SCINPVEL`` in the   |
-|     |                    |          |                                                      | header of the ``PRIMARY`` extension, and most often identical to   |
-|     |                    |          |                                                      | the NSA redshift).                                                 |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  16 | STELLAR_VEL_IVAR   |        1 |                                                      | Inverse variance of stellar velocity measurements.                 |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  17 | STELLAR_VEL_MASK   |        1 |                                                      | Data quality mask for stellar velocity measurements.               |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  18 | STELLAR_SIGMA      |        1 |                                                 km/s | Raw line-of-sight stellar velocity dispersion; see                 |
-|     |                    |          |                                                      | :ref:`corrections` for how to use the ``STELLAR_SIGMACORR`` to     |
-|     |                    |          |                                                      | obtain the *astrophysical* stellar velocity dispersion.            |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  19 | STELLAR_SIGMA_IVAR |        1 |                                                      | Inverse variance of raw stellar velocity dispersion.               |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  20 | STELLAR_SIGMA_MASK |        1 |                                                      | Data quality mask for stellar velocity dispersion.                 |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  21 | STELLAR_SIGMACORR  |        1 |                                                 km/s | Quadrature correction for STELLAR_SIGMA to obtain the              |
-|     |                    |          |                                                      | astrophysical velocity dispersion; see :ref:`corrections` for how  |
-|     |                    |          |                                                      | to use this extension with the ``STELLAR_SIGMA`` extension to      |
-|     |                    |          |                                                      | obtain the *astrophysical* stellar velocity dispersion.            |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  22 | STELLAR_FOM        |        9 |                                                      | Figures-of-merit for the stellar-continuum fit in 9 channels: (1)  |
-|     |                    |          |                                                      | RMS of residuals (in                                               |
-|     |                    |          |                                                      | :math:`10^{-17} {\rm erg/s/cm}^2`/|ang|/spaxel), (2) RMS of        |
-|     |                    |          |                                                      | fractional residuals, (3) reduced :math:`\chi^2`, (4-6) 68th and   |
-|     |                    |          |                                                      | 99th percentile and maximum value of fractional residuals, and     |
-|     |                    |          |                                                      | (7-9) 68th and 99th percentile and maximum value of                |
-|     |                    |          |                                                      | error-normalized residual (:math:`\chi`).                          |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-| **Emission-line measurements**                                                                                                                                  |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  23 | EMLINE_SFLUX       |       35 |       :math:`10^{-17} {\rm erg/s/cm}^2{\rm /spaxel}` | Non-parametric summed flux *after subtracting the*                 |
-|     |                    |          |                                                      | *stellar-continuum model*.  The emission-line fluxes account for   |
-|     |                    |          |                                                      | Galactic reddening using the E(B-V) value (copied to the DAP       |
-|     |                    |          |                                                      | primary headers, see the ``EBVGAL`` header keyword) provided by    |
-|     |                    |          |                                                      | the DRP header and assuming an O’Donnell (1994, ApJ, 422, 158)     |
-|     |                    |          |                                                      | reddening law; however, no attenuation correction is applied due   |
-|     |                    |          |                                                      | to dust internal to the galaxy.                                    |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  24 | EMLINE_SFLUX_IVAR  |       35 |                                                      | Inverse variance for summed flux measurements.                     |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  25 | EMLINE_SFLUX_MASK  |       35 |                                                      | Data quality mask for summed flux measurements.                    |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  26 | EMLINE_SEW         |       35 |                                                |ang| | Non-parametric equivalent widths measurements (based on            |
-|     |                    |          |                                                      | the non-parametric fluxes in ``EMLINE_SFLUX``).                    |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  27 | EMLINE_SEW_CNT     |       35 |       :math:`10^{-17} {\rm erg/s/cm}^2`/|ang|/spaxel | Continuum value used to compute the emission-line equivalent width |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  28 | EMLINE_SEW_IVAR    |       35 |                                                      | Inverse variance for non-parametric equivalent width measurements. |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  29 | EMLINE_SEW_MASK    |       35 |                                                      | Data quality mask for non-parametric equivalent width measurements |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  30 | EMLINE_GFLUX       |       35 |       :math:`10^{-17} {\rm erg/s/cm}^2{\rm /spaxel}` | Gaussian profile integrated flux *from a combined*                 |
-|     |                    |          |                                                      | *continuum+emission-line fit*.  The flux ratio of the [OIII],      |
-|     |                    |          |                                                      | [OI], and [NII] lines are fixed and cannot be treated as           |
-|     |                    |          |                                                      | independent measurements.  The emission-line fluxes account for    |
-|     |                    |          |                                                      | Galactic reddening using the E(B-V) (copied to the DAP primary     |
-|     |                    |          |                                                      | headers, see the ``EBVGAL`` header keyword) value provided by the  |
-|     |                    |          |                                                      | DRP header and assuming an O’Donnell (1994, ApJ, 422, 158)         |
-|     |                    |          |                                                      | reddening law; however, no attenuation correction is applied due   |
-|     |                    |          |                                                      | to dust internal to the galaxy.                                    |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  31 | EMLINE_GFLUX_IVAR  |       35 |                                                      | Inverse variance for Gaussian flux measurements                    |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  32 | EMLINE_GFLUX_MASK  |       35 |                                                      | Data quality mask for Gaussian flux measurements                   |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  33 | EMLINE_GEW         |       35 |                                                |ang| | Gaussian-fitted equivalent widths measurements (based on the       |
-|     |                    |          |                                                      | parametric fluxes in ``EMLINE_GFLUX``).                            |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  34 | EMLINE_GEW_CNT     |       35 |       :math:`10^{-17} {\rm erg/s/cm}^2`/|ang|/spaxel | Continuum value used to compute the emission-line equivalent width |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  35 | EMLINE_GEW_IVAR    |       35 |                                                      | Inverse variance of the above.                                     |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  36 | EMLINE_GEW_MASK    |       35 |                                                      | Data quality mask of the above.                                    |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  37 | EMLINE_GVEL        |       35 |                                                 km/s | Line-of-sight emission-line velocity, relative to the input guess  |
-|     |                    |          |                                                      | redshift (given as :math:`cz` by the keyword ``SCINPVEL`` in the   |
-|     |                    |          |                                                      | header of the ``PRIMARY`` extension, and most often identical to   |
-|     |                    |          |                                                      | the NSA redshift).  A velocity is provided for each line,          |
-|     |                    |          |                                                      | **but the velocities are identical for all lines** because the     |
-|     |                    |          |                                                      | parameters are tied during the fitting process.                    |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  38 | EMLINE_GVEL_IVAR   |       35 |                                                      | Inverse variance for Gaussian-fitted velocity measurements, which  |
-|     |                    |          |                                                      | are **the same for all lines and should not be combined as if**    |
-|     |                    |          |                                                      | **independent measurements**.                                      |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  39 | EMLINE_GVEL_MASK   |       35 |                                                      | Data quality mask for Gaussian-fitted velocity measurements.       |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  40 | EMLINE_GSIGMA      |       35 |                                                 km/s | Gaussian profile velocity dispersion as would be measured from a   |
-|     |                    |          |                                                      | direct Gaussian fit; see :ref:`corrections` for how                |
-|     |                    |          |                                                      | to use the ``EMLINE_INSTSIGMA`` extension with these data to       |
-|     |                    |          |                                                      | obtain the *astrophysical* gas velocity dispersion.  Tied velocity | 
-|     |                    |          |                                                      | dispersions ([OII], [OIII], [OI], [NII], [NI] and H-zeta+HeI 3889) |
-|     |                    |          |                                                      | cannot be treated as independent measurements.                     |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  41 | EMLINE_GSIGMA_IVAR |       35 |                                                      | Inverse variance for Gaussian profile velocity dispersion.         |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  42 | EMLINE_GSIGMA_MASK |       35 |                                                      | Data quality mask for Gaussian profile velocity dispersion.        |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  43 | EMLINE_INSTSIGMA   |       35 |                                                 km/s | The instrumental dispersion at the fitted center of each emission  |
-|     |                    |          |                                                      | line.                                                              |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  44 | EMLINE_TPLSIGMA    |       35 |                                                 km/s | The dispersion of each emission line used in the template spectra; |
-|     |                    |          |                                                      | see :ref:`datamodel-eml-tpl-resolution`.                           |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  45 | EMLINE_GA          |       35 |       :math:`10^{-17} {\rm erg/s/cm}^2`/|ang|/spaxel | The amplitude of the model Gaussian fit to each emission line.     |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  46 | EMLINE_GANR        |       35 |                                                      | The amplitude of the model Gaussian fit relative to the median     |
-|     |                    |          |                                                      | noise in two sidebands near the line; the sidebands are identical  |
-|     |                    |          |                                                      | to those used in the equivalent width measurement.                 |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  47 | EMLINE_FOM         |        9 |                                                      | Figures-of-merit for the continuum+emission-line model fit in 9    |
-|     |                    |          |                                                      | channels: (1) RMS of residuals (in                                 |
-|     |                    |          |                                                      | :math:`10^{-17} {\rm erg/s/cm}^2`/|ang|/spaxel), (2) RMS of        |
-|     |                    |          |                                                      | fractional residuals, (3) reduced :math:`\chi^2`, (4-6) 68th and   |
-|     |                    |          |                                                      | 99th percentile and maximum value of fractional residuals, and     |
-|     |                    |          |                                                      | (7-9) 68th and 99th percentile and maximum value of                |
-|     |                    |          |                                                      | error-normalized residual (:math:`\chi`).                          |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  48 | EMLINE_LFOM        |       35 |                                                      | The reduced :math:`\chi^2` of the fit to each line calculated in   |
-|     |                    |          |                                                      | 15-pixel windows centered on each line.                            |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-| **Spectral index measurements**                                                                                                                                 |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  49 | SPECINDEX          |       46 |                                           |ang| ,mag | Spectral-index measurements.                                       |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  50 | SPECINDEX_IVAR     |       46 |                                                      | Inverse variance for spectral index maps.                          |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  51 | SPECINDEX_MASK     |       46 |                                                      | Data quality mask for spectral index maps.                         |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  52 | SPECINDEX_CORR     |       46 |                                                  mag | Corrections to apply to account for the velocity dispersion and    |
-|     |                    |          |                                                      | effectively determine the index without Doppler broadening;        |
-|     |                    |          |                                                      | see :ref:`corrections`.                                            | 
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  53 | SPECINDEX_MODEL    |       46 |                                           |ang| ,mag | Spectral-index measurements for the best-fitting model spectrum.   |
-|     |                    |          |                                                      | Note the extension number is different from MPL-9.                 |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  53 | SPECINDEX_BF       |       46 |                                                |ang| | **New in MPL-10**: Luminosity-weighted center of the blue sideband |
-|     |                    |          |                                                      | used during the absorption-line index measurment.                  |
-+-----+--------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+| HDU |                Name | Channels |                                                Units | Description                                                        |
++=====+=====================+==========+======================================================+====================================================================+
+|   0 | PRIMARY             |        0 |                                                      | Empty extension with primary header information.                   |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+| **Coordinate and binning extensions**                                                                                                                            |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|   1 | SPX_SKYCOO          |        2 |                                               arcsec | Sky-right offsets -- +x toward +RA and +y toward +DEC -- of each   |
+|     |                     |          |                                                      | spaxel from the galaxy center                                      |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|   2 | SPX_ELLCOO          |        4 |      arcsec, unitless, :math:`h^{-1} {\rm kpc}`, deg | Elliptical polar coordinates of each spaxel from the galaxy        |
+|     |                     |          |                                                      | center; :math:`R` in arcsec, :math:`R/R_e`, :math:`R` in           |
+|     |                     |          |                                                      | :math:`h^{-1} {\rm kpc}`, and azimuthal angle :math:`\theta`.  In  |
+|     |                     |          |                                                      | the limit of tilted thin disk, these are the in-plane disk radius  |
+|     |                     |          |                                                      | and azimuth.                                                       |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|   3 | SPX_MFLUX           |        1 |       :math:`10^{-17} {\rm erg/s/cm}^2`/|ang|/spaxel | g-band-weighted mean flux, *not* corrected for Galactic extinction |
+|     |                     |          |                                                      | or internal attenuation.                                           |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|   4 | SPX_MFLUX_IVAR      |        1 |                                                      | Inverse variance of g-band-weighted mean flux.                     |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|   5 | SPX_SNR             |        1 |                                                      | Mean g-band weighted signal-to-noise ratio per pixel.              |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|   6 | BINID               |        5 |                                                      | Numerical ID for spatial bins for the binned spectra,              |
+|     |                     |          |                                                      | stellar-continuum results, emission-line moment results,           |
+|     |                     |          |                                                      | emission-line model results, and spectral-index results;           |
+|     |                     |          |                                                      | see :ref:`datamodel-binid-usage`.                                  |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|   7 | BIN_LWSKYCOO        |        2 |                                               arcsec | Light-weighted sky-right offsets -- +x toward +RA and +y toward    |
+|     |                     |          |                                                      | +DEC -- of each bin from the galaxy center.                        |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|   8 | BIN_LWELLCOO        |        4 |       arcsec, unitless, :math:`h^{-1} {\rm kpc}`,deg | Light-weighted elliptical polar coordinates of each bin from the   |
+|     |                     |          |                                                      | galaxy center; :math:`R` in arcsec, :math:`R/R_e`, :math:`R` in    |
+|     |                     |          |                                                      | :math:`h^{-1} {\rm kpc}`, and azimuthal angle :math:`\theta`.  In  |
+|     |                     |          |                                                      | the limit of tilted thin disk, these are the in-plane disk radius  |
+|     |                     |          |                                                      | and azimuth.                                                       |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|   9 | BIN_AREA            |        1 |                               :math:`{\rm arcsec}^2` | Area of each bin.                                                  |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  10 | BIN_FAREA           |        1 |                                                      | Fractional area that the bin covers for the expected bin shape     |
+|     |                     |          |                                                      | (only relevant for radial binning).                                |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  11 | BIN_MFLUX           |        1 |       :math:`10^{-17} {\rm erg/s/cm}^2`/|ang|/spaxel | g-band-weighted mean flux for the binned spectra, *not* corrected  |
+|     |                     |          |                                                      | for Galactic extinction or internal attenuation.                   |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  12 | BIN_MFLUX_IVAR      |        1 |                                                      | Inverse variance of g-band-weighted mean flux for the binned       |
+|     |                     |          |                                                      | spectra.                                                           |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  13 | BIN_MFLUX_MASK      |        1 |                                                      | Bit mask for the g-band-weighted mean flux per bin.                |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  14 | BIN_SNR             |        1 |                                                      | Mean g-band-weighted signal-to-noise ratio per pixel in the binned |
+|     |                     |          |                                                      | spectra.                                                           |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+| **Stellar (absorption-line) kinematics**                                                                                                                         |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  15 | STELLAR_VEL         |        1 |                                                 km/s | Line-of-sight stellar velocity, relative to the input guess        |
+|     |                     |          |                                                      | redshift (given as :math:`cz` by the keyword ``SCINPVEL`` in the   |
+|     |                     |          |                                                      | header of the ``PRIMARY`` extension, and most often identical to   |
+|     |                     |          |                                                      | the NSA redshift).                                                 |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  16 | STELLAR_VEL_IVAR    |        1 |                                                      | Inverse variance of stellar velocity measurements.                 |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  17 | STELLAR_VEL_MASK    |        1 |                                                      | Data quality mask for stellar velocity measurements.               |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  18 | STELLAR_SIGMA       |        1 |                                                 km/s | Raw line-of-sight stellar velocity dispersion; see                 |
+|     |                     |          |                                                      | :ref:`corrections` for how to use the ``STELLAR_SIGMACORR`` to     |
+|     |                     |          |                                                      | obtain the *astrophysical* stellar velocity dispersion.            |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  19 | STELLAR_SIGMA_IVAR  |        1 |                                                      | Inverse variance of raw stellar velocity dispersion.               |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  20 | STELLAR_SIGMA_MASK  |        1 |                                                      | Data quality mask for stellar velocity dispersion.                 |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  21 | STELLAR_SIGMACORR   |        1 |                                                 km/s | Quadrature correction for STELLAR_SIGMA to obtain the              |
+|     |                     |          |                                                      | astrophysical velocity dispersion; see :ref:`corrections` for how  |
+|     |                     |          |                                                      | to use this extension with the ``STELLAR_SIGMA`` extension to      |
+|     |                     |          |                                                      | obtain the *astrophysical* stellar velocity dispersion.            |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  22 | STELLAR_FOM         |        9 |                                                      | Figures-of-merit for the stellar-continuum fit in 9 channels: (1)  |
+|     |                     |          |                                                      | RMS of residuals (in                                               |
+|     |                     |          |                                                      | :math:`10^{-17} {\rm erg/s/cm}^2`/|ang|/spaxel), (2) RMS of        |
+|     |                     |          |                                                      | fractional residuals, (3) reduced :math:`\chi^2`, (4-6) 68th and   |
+|     |                     |          |                                                      | 99th percentile and maximum value of fractional residuals, and     |
+|     |                     |          |                                                      | (7-9) 68th and 99th percentile and maximum value of                |
+|     |                     |          |                                                      | error-normalized residual (:math:`\chi`).                          |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+| **Emission-line measurements**                                                                                                                                   |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  23 | EMLINE_SFLUX        |       35 |       :math:`10^{-17} {\rm erg/s/cm}^2{\rm /spaxel}` | Non-parametric summed flux *after subtracting the*                 |
+|     |                     |          |                                                      | *stellar-continuum model*.  The emission-line fluxes account for   |
+|     |                     |          |                                                      | Galactic reddening using the E(B-V) value (copied to the DAP       |
+|     |                     |          |                                                      | primary headers, see the ``EBVGAL`` header keyword) provided by    |
+|     |                     |          |                                                      | the DRP header and assuming an O’Donnell (1994, ApJ, 422, 158)     |
+|     |                     |          |                                                      | reddening law; however, no attenuation correction is applied due   |
+|     |                     |          |                                                      | to dust internal to the galaxy.                                    |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  24 | EMLINE_SFLUX_IVAR   |       35 |                                                      | Inverse variance for summed flux measurements.                     |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  25 | EMLINE_SFLUX_MASK   |       35 |                                                      | Data quality mask for summed flux measurements.                    |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  26 | EMLINE_SEW          |       35 |                                                |ang| | Non-parametric equivalent widths measurements (based on            |
+|     |                     |          |                                                      | the non-parametric fluxes in ``EMLINE_SFLUX``).                    |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  27 | EMLINE_SEW_CNT      |       35 |       :math:`10^{-17} {\rm erg/s/cm}^2`/|ang|/spaxel | Continuum value used to compute the emission-line equivalent width |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  28 | EMLINE_SEW_IVAR     |       35 |                                                      | Inverse variance for non-parametric equivalent width measurements. |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  29 | EMLINE_SEW_MASK     |       35 |                                                      | Data quality mask for non-parametric equivalent width measurements |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  30 | EMLINE_GFLUX        |       35 |       :math:`10^{-17} {\rm erg/s/cm}^2{\rm /spaxel}` | Gaussian profile integrated flux *from a combined*                 |
+|     |                     |          |                                                      | *continuum+emission-line fit*.  The flux ratio of the [OIII],      |
+|     |                     |          |                                                      | [OI], and [NII] lines are fixed and cannot be treated as           |
+|     |                     |          |                                                      | independent measurements.  The emission-line fluxes account for    |
+|     |                     |          |                                                      | Galactic reddening using the E(B-V) (copied to the DAP primary     |
+|     |                     |          |                                                      | headers, see the ``EBVGAL`` header keyword) value provided by the  |
+|     |                     |          |                                                      | DRP header and assuming an O’Donnell (1994, ApJ, 422, 158)         |
+|     |                     |          |                                                      | reddening law; however, no attenuation correction is applied due   |
+|     |                     |          |                                                      | to dust internal to the galaxy.                                    |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  31 | EMLINE_GFLUX_IVAR   |       35 |                                                      | Inverse variance for Gaussian flux measurements                    |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  32 | EMLINE_GFLUX_MASK   |       35 |                                                      | Data quality mask for Gaussian flux measurements                   |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  33 | EMLINE_GEW          |       35 |                                                |ang| | Gaussian-fitted equivalent widths measurements (based on the       |
+|     |                     |          |                                                      | parametric fluxes in ``EMLINE_GFLUX``).                            |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  34 | EMLINE_GEW_CNT      |       35 |       :math:`10^{-17} {\rm erg/s/cm}^2`/|ang|/spaxel | Continuum value used to compute the emission-line equivalent width |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  35 | EMLINE_GEW_IVAR     |       35 |                                                      | Inverse variance of the above.                                     |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  36 | EMLINE_GEW_MASK     |       35 |                                                      | Data quality mask of the above.                                    |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  37 | EMLINE_GVEL         |       35 |                                                 km/s | Line-of-sight emission-line velocity, relative to the input guess  |
+|     |                     |          |                                                      | redshift (given as :math:`cz` by the keyword ``SCINPVEL`` in the   |
+|     |                     |          |                                                      | header of the ``PRIMARY`` extension, and most often identical to   |
+|     |                     |          |                                                      | the NSA redshift).  A velocity is provided for each line,          |
+|     |                     |          |                                                      | **but the velocities are identical for all lines** because the     |
+|     |                     |          |                                                      | parameters are tied during the fitting process.                    |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  38 | EMLINE_GVEL_IVAR    |       35 |                                                      | Inverse variance for Gaussian-fitted velocity measurements, which  |
+|     |                     |          |                                                      | are **the same for all lines and should not be combined as if**    |
+|     |                     |          |                                                      | **independent measurements**.                                      |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  39 | EMLINE_GVEL_MASK    |       35 |                                                      | Data quality mask for Gaussian-fitted velocity measurements.       |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  40 | EMLINE_GSIGMA       |       35 |                                                 km/s | Gaussian profile velocity dispersion as would be measured from a   |
+|     |                     |          |                                                      | direct Gaussian fit; see :ref:`corrections` for how                |
+|     |                     |          |                                                      | to use the ``EMLINE_INSTSIGMA`` extension with these data to       |
+|     |                     |          |                                                      | obtain the *astrophysical* gas velocity dispersion.  Tied velocity | 
+|     |                     |          |                                                      | dispersions ([OII], [OIII], [OI], [NII], [NI] and H-zeta+HeI 3889) |
+|     |                     |          |                                                      | cannot be treated as independent measurements.                     |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  41 | EMLINE_GSIGMA_IVAR  |       35 |                                                      | Inverse variance for Gaussian profile velocity dispersion.         |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  42 | EMLINE_GSIGMA_MASK  |       35 |                                                      | Data quality mask for Gaussian profile velocity dispersion.        |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  43 | EMLINE_INSTSIGMA    |       35 |                                                 km/s | The instrumental dispersion at the fitted center of each emission  |
+|     |                     |          |                                                      | line.                                                              |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  44 | EMLINE_TPLSIGMA     |       35 |                                                 km/s | The dispersion of each emission line used in the template spectra; |
+|     |                     |          |                                                      | see :ref:`datamodel-eml-tpl-resolution`.                           |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  45 | EMLINE_GA           |       35 |       :math:`10^{-17} {\rm erg/s/cm}^2`/|ang|/spaxel | The amplitude of the model Gaussian fit to each emission line.     |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  46 | EMLINE_GANR         |       35 |                                                      | The amplitude of the model Gaussian fit relative to the median     |
+|     |                     |          |                                                      | noise in two sidebands near the line; the sidebands are identical  |
+|     |                     |          |                                                      | to those used in the equivalent width measurement.                 |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  47 | EMLINE_FOM          |        9 |                                                      | Figures-of-merit for the continuum+emission-line model fit in 9    |
+|     |                     |          |                                                      | channels: (1) RMS of residuals (in                                 |
+|     |                     |          |                                                      | :math:`10^{-17} {\rm erg/s/cm}^2`/|ang|/spaxel), (2) RMS of        |
+|     |                     |          |                                                      | fractional residuals, (3) reduced :math:`\chi^2`, (4-6) 68th and   |
+|     |                     |          |                                                      | 99th percentile and maximum value of fractional residuals, and     |
+|     |                     |          |                                                      | (7-9) 68th and 99th percentile and maximum value of                |
+|     |                     |          |                                                      | error-normalized residual (:math:`\chi`).                          |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  48 | EMLINE_LFOM         |       35 |                                                      | The reduced :math:`\chi^2` of the fit to each line calculated in   |
+|     |                     |          |                                                      | 15-pixel windows centered on each line.                            |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+| **Spectral index measurements**                                                                                                                                  |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  49 | SPECINDEX           |       46 |                                           |ang|, mag | Spectral-index measurements.  Indices follow the definition from   |
+|     |                     |          |                                                      | Worthey et al. (1994) and Trager et al. (1998), as used in all     |
+|     |                     |          |                                                      | previous releases.  See :ref:`spectralindices`.                    |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  50 | SPECINDEX_IVAR      |       46 |                                                      | Inverse variance for spectral index maps.                          |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  51 | SPECINDEX_MASK      |       46 |                                                      | Data quality mask for spectral index maps.                         |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  52 | SPECINDEX_CORR      |       46 |                                                  mag | Corrections to apply to account for the velocity dispersion and    |
+|     |                     |          |                                                      | effectively determine the index without Doppler broadening;        |
+|     |                     |          |                                                      | see :ref:`corrections`.                                            | 
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  53 | SPECINDEX_MODEL     |       46 |                                           |ang|, mag | Spectral-index measurements for the best-fitting model spectrum.   |
+|     |                     |          |                                                      | Note the extension number is different from MPL-9.                 |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  54 | SPECINDEX_BF        |       46 |                                           |ang|, mag | **New in MPL-10**.  Spectral-index measurements calculated using a |
+|     |                     |          |                                                      | definition similar to Burstein et al. (1984) and                   |
+|     |                     |          |                                                      | Faber et al. (1985).  See :ref:`spectralindices`.                  |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  55 | SPECINDEX_BF_IVAR   |       46 |                                                      | **New in MPL-10**.  Inverse variance in the BF spectral indices.   |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  56 | SPECINDEX_BF_MASK   |       46 |                                                      | **New in MPL-10**.  Data quality mask for the BF spectral indices. |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  57 | SPECINDEX_BF_CORR   |       46 |                                                  mag | **New in MPL-10**.  Corrections to apply to account for the        |
+|     |                     |          |                                                      | velocity dispersion and effectively determine the index without    |
+|     |                     |          |                                                      | Doppler broadening; see :ref:`corrections`.                        | 
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  58 | SPECINDEX_BF_MODEL  |       46 |                                           |ang|, mag | **New in MPL-10**.  Spectral indices with the BF definition        |
+|     |                     |          |                                                      | measured using the best-fitting model spectrum.                    |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  59 | SPECINDEX_WGT       |       46 |       :math:`10^{-17} {\rm erg/s/cm}^2`/|ang|/spaxel | **New in MPL-10**.  Weights to use when aggregating spectral-index |
+|     |                     |          |                                                      | measurements.  See :ref:`spectralindices` and :ref:`aggregation`.  |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  60 | SPECINDEX_WGT_IVAR  |       46 |                                                      | **New in MPL-10**. Inverse variance in the spectral index weights. |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  61 | SPECINDEX_WGT_MASK  |       46 |                                                      | **New in MPL-10**.  Data quality mask for spectral index weights.  |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  62 | SPECINDEX_WGT_CORR  |       46 |                                                      | **New in MPL-10**.  Corrections to apply to account for the        |
+|     |                     |          |                                                      | effect of the velocity dispersion on the calculation of the index  |
+|     |                     |          |                                                      | weight; see :ref:`corrections`.                                    | 
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
+|  63 | SPECINDEX_WGT_MODEL |       46 |       :math:`10^{-17} {\rm erg/s/cm}^2`/|ang|/spaxel | **New in MPL-10**.  Spectral-index weights determined by the       |
+|     |                     |          |                                                      | best-fitting models.                                               |
++-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
 
 .. _datamodel-emission-line-channels:
 
-The emission-line measurements for MPL-10 are:
+The emission-line measurements for MPL-10 are (identical to MPL-9):
 
 .. code-block:: fortran
 
@@ -408,32 +458,33 @@ The emission-line measurements for MPL-10 are:
 
 .. note::
 
-    * The order of the emission-line channels has changed since MPL-8!
-    * For the emission-line moments:
-        * Channels 2 ('OII-3729'), 8 ('HeI-3889'), 10 ('NeIII-3968'),
-          and 19 ('NI-5201') are empty because the line falls in the
-          passband of another line: 'OII-3729'  in 'OIId-3728',
-          'HeI-3889' in 'Hzet-3890', 'NeIII-3968' in 'Heps-3971', and
-          'NI-5201' in 'NI-5199'.  To compare these fluxes with the
-          Gaussian-fitted values, you should sum the Gaussian-fitted
-          fluxes first.
-        * OIId is contaminated by H14 and H13
-        * Hzet is contaminated by HeI
-        * Heps is contaminated by NeIII
-        * Red sideband of Hbeta is contaminated by HeI
-        * Unknown line at 4990 and may contaminate red sideband of OIII
-          4960 and the blue sideband of OIII 5008
-        * OIII 5008 contaminated by HeI 5017
+    For the emission-line moments (``SFLUX``, ``SEW``):
+
+      * Channels 2 ('OII-3729'), 8 ('HeI-3889'), 10 ('NeIII-3968'),
+        and 19 ('NI-5201') are empty because the line falls in the
+        passband of another line: 'OII-3729' in 'OIId-3728',
+        'HeI-3889' in 'Hzet-3890', 'NeIII-3968' in 'Heps-3971', and
+        'NI-5201' in 'NI-5199'. To compare these fluxes with the
+        Gaussian-fitted values, you should sum the Gaussian-fitted
+        fluxes first.
+      * OIId is contaminated by H14 and H13
+      * Hzet is contaminated by HeI
+      * Heps is contaminated by NeIII
+      * Red sideband of Hbeta is contaminated by HeI
+      * Unknown line at 4990 and may contaminate red sideband of OIII
+        4960 and the blue sideband of OIII 5008
+      * OIII 5008 contaminated by HeI 5017
 
 ----
 
 .. _datamodel-spectral-index-channels:
 
-The spectral-index measurements for MPL-10 are below. Because the
-spectral-index measurements can be either angstroms, magnitudes, or
-unitless, the header of the spectral-index extensions also include
-the units using header keywords ``U[n]``. The indices and relevant
-units as included in the relevant extension header are:
+The spectral-index measurements for MPL-10 are below (identical to
+MPL-9). Because the spectral-index measurements can be either
+angstroms, magnitudes, or unitless, the header of the spectral-index
+extensions also include the units using header keywords ``U[n]``. The
+indices and relevant units as included in the relevant extension
+header are:
 
 .. code-block:: fortran
 
@@ -542,22 +593,21 @@ DAP Model LOGCUBE file
 *File name*: ``manga-[PLATE]-[IFUDESIGN]-LOGCUBE-[DAPTYPE].fits.gz``
 
 The ``LOGCUBE`` files provide the binned spectra and the best-fitting
-model spectrum for each spectrum that was successfully fit.  These files
-are useful for detailed assessments of the model parameters because they
-allow you to return to the spectra and compare the model against the
-data.  As described by the `DAP Overview paper
-<https://ui.adsabs.harvard.edu/abs/2019arXiv190100856W/abstract>`__, the
-DAP fits the spectra in two stages, one to get the stellar kinematics
-and the second to determine the emission-line properties.  The
-emission-line module (used for all binning schemes) fits both the
-stellar continuum and the emission lines at the same time, where the
-stellar kinematics are fixed by the first fit.  The stellar-continuum
-models from the first fit are provided in the ``STELLAR`` extension; to
-get the stellar continuum determined during the emission-line modeling,
-you have to subtract the emission-line model (in the ``EMLINE``
-extension) from the full model (in the ``MODEL`` extension).  Our
-:ref:`gettingstarted-cube-example` shows how to plot the model
-LOGCUBE data.
+model spectrum for each spectrum that was successfully fit. These
+files are useful for detailed assessments of the model parameters
+because they allow you to return to the spectra and compare the model
+against the data. As described by `Westfall et al. (2019, AJ, 158,
+231)`_, the DAP fits the spectra in two stages, one to get the
+stellar kinematics and the second to determine the emission-line
+properties. The emission-line module (used for all binning schemes)
+fits both the stellar continuum and the emission lines at the same
+time, where the stellar kinematics are fixed by the first fit. The
+stellar-continuum models from the first fit are provided in the
+``STELLAR`` extension; to get the stellar continuum determined during
+the emission-line modeling, you have to subtract the emission-line
+model (in the ``EMLINE`` extension) from the full model (in the
+``MODEL`` extension). Our :ref:`gettingstarted-cube-example` shows
+how to plot the model LOGCUBE data.
 
 .. warning::
 
@@ -589,31 +639,35 @@ The ``LOGCUBE`` files contain the following extensions:
 +=====+====================+======================================================+=======================================================================+
 |   0 |            PRIMARY |                                                      | Empty extension with primary header information.                      |
 +-----+--------------------+------------------------------------------------------+-----------------------------------------------------------------------+
-|   1 |               FLUX |   :math:`10^{-17} {\rm erg/s/cm}^2{\rm /ang/spaxel}` | Flux of the ''binned'' spectra                                        |
+|   1 |               FLUX |       :math:`10^{-17} {\rm erg/s/cm}^2`/|ang|/spaxel | Flux of the ''binned'' spectra                                        |
 +-----+--------------------+------------------------------------------------------+-----------------------------------------------------------------------+
 |   2 |               IVAR |                                                      | Inverse variance in the binned spectra                                |
 +-----+--------------------+------------------------------------------------------+-----------------------------------------------------------------------+
 |   3 |               MASK |                                                      | Bitmask for the binned spectra.  Note that this mask only applies to  |
 |     |                    |                                                      | the binned spectra.                                                   |
 +-----+--------------------+------------------------------------------------------+-----------------------------------------------------------------------+
-|   4 |               WAVE |                                             angstrom | Vacuum-wavelength vector                                              |
+|   4 |                LSF |                                                |ang| | **New in MPL-10**: The dispersion (:math:`\sigma`) of the Gaussian    |
+|     |                    |                                                      | line-spread function of the binned spectra.  For MPL-10, the source   |
+|     |                    |                                                      | DRP extension is ``LSFPRE``.                                          |
 +-----+--------------------+------------------------------------------------------+-----------------------------------------------------------------------+
-|   5 |            REDCORR |                                                      | Reddening correction applied during the fitting procedures.           |
+|   5 |               WAVE |                                                |ang| | Vacuum-wavelength vector                                              |
 +-----+--------------------+------------------------------------------------------+-----------------------------------------------------------------------+
-|   6 |              MODEL |   :math:`10^{-17} {\rm erg/s/cm}^2{\rm /ang/spaxel}` | The best-fitting model spectra (sum of the fitted continuum and       |
+|   6 |            REDCORR |                                                      | Reddening correction applied during the fitting procedures.           |
++-----+--------------------+------------------------------------------------------+-----------------------------------------------------------------------+
+|   7 |              MODEL |       :math:`10^{-17} {\rm erg/s/cm}^2`/|ang|/spaxel | The best-fitting model spectra (sum of the fitted continuum and       |
 |     |                    |                                                      | emission-line models)                                                 |
 +-----+--------------------+------------------------------------------------------+-----------------------------------------------------------------------+
-|   7 |         MODEL_MASK |                                                      | The mask from the combined continuum+emission-line model fit          |
+|   8 |         MODEL_MASK |                                                      | The mask from the combined continuum+emission-line model fit          |
 +-----+--------------------+------------------------------------------------------+-----------------------------------------------------------------------+
-|   8 |             EMLINE |   :math:`10^{-17} {\rm erg/s/cm}^2{\rm /ang/spaxel}` | The model spectrum with *only* the emission lines                     |
+|   9 |             EMLINE |       :math:`10^{-17} {\rm erg/s/cm}^2`/|ang|/spaxel | The model spectrum with *only* the emission lines                     |
 +-----+--------------------+------------------------------------------------------+-----------------------------------------------------------------------+
-|   9 |            STELLAR |   :math:`10^{-17} {\rm erg/s/cm}^2{\rm /ang/spaxel}` | The best-fitting model spectra fit from the stellar-continuum-only    |
+|  10 |            STELLAR |       :math:`10^{-17} {\rm erg/s/cm}^2`/|ang|/spaxel | The best-fitting model spectra fit from the stellar-continuum-only    |
 |     |                    |                                                      | fit (used to model the stellar kinematics)                            |
 +-----+--------------------+------------------------------------------------------+-----------------------------------------------------------------------+
-|  10 |       STELLAR_MASK |                                                      | The mask for the best-fitting model spectra fit from the              |
+|  11 |       STELLAR_MASK |                                                      | The mask for the best-fitting model spectra fit from the              |
 |     |                    |                                                      | stellar-continuum-only fit (used to model the stellar kinematics)     |
 +-----+--------------------+------------------------------------------------------+-----------------------------------------------------------------------+
-|  11 |              BINID |                                                      | Numerical ID for spatial bins in 5 channels: (1) binned spectra,      |
+|  12 |              BINID |                                                      | Numerical ID for spatial bins in 5 channels: (1) binned spectra,      |
 |     |                    |                                                      | (2) stellar-continuum results, (3) empty, (4) emission-line model     |
 |     |                    |                                                      | results, and (5) empty; i.e., channels 1, 2, and 4 are the same as    |
 |     |                    |                                                      | the BINID extension in the ``MAPS`` files and channels 3 and 5 are    |
@@ -622,11 +676,14 @@ The ``LOGCUBE`` files contain the following extensions:
 
 .. note::
 
-    - The shape and WCS of all extensions with datacubes identically
+    * The shape and WCS of all extensions with datacubes identically
       match that of the corresponding DRP ``LOGCUBE`` file.
-    - To calculate the dereddened flux::
+
+    * To calculate the dereddened flux::
 
         dereddened_flux = FLUX * REDCORR
+
+----
 
 Special considerations
 ----------------------
@@ -684,8 +741,8 @@ and :math:`{\rm H}\alpha` surface-brightness profiles.
 
 .. _datamodel-hybrid-binning:
 
-HYB binning scheme
-~~~~~~~~~~~~~~~~~~
+Hybrid (HYB) binning scheme
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In all cases except the ``HYB`` binning approach, each analysis
 module only works with the "binned" spectra after the binning is
@@ -727,17 +784,13 @@ in mind:
    the emission-line model is first subtracted from the data before the
    index measurements.
 
-Usage Guidlines
-~~~~~~~~~~~~~~~
-
-Stellar velocity dispersions
-++++++++++++++++++++++++++++
+Usage Guidlines: Stellar velocity dispersions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Measurement of stellar (and gas!) velocity dispersions in MaNGA is
-complicated by the spectral resolution, particularly at low S/N and low
-:math:`\sigma`.  Please tread carefully!  In particular, please consult
-Section 7.7 of the `DAP Overview paper
-<https://ui.adsabs.harvard.edu/abs/2019AJ....158..231W/abstract>`__ for a
+complicated by the spectral resolution, particularly at low S/N and
+low :math:`\sigma`. Please tread carefully! In particular, please
+consult Section 7.7 of `Westfall et al. (2019, AJ, 158, 231)`_ for a
 detailed discussion of best practices for the stellar velocity
 dispersion data.
 
@@ -763,21 +816,21 @@ guidelines to consider when handling the velocity dispersion data:
 
 .. _datamodel-eml-tpl-resolution:
 
-Emission-line template resolution
-+++++++++++++++++++++++++++++++++
+Usage Guidlines: Emission-line template resolution
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 When using the recommended emission-line module
-(:class:`mangadap.proc.sasuke.Sasuke`), the emission lines are fit in a
-very similar way to the stellar continuum using a set of emission-line
-templates.  Given the varying spectral resolution of the MaNGA data, we
-setup these templates to have a non-zero "instrumental dispersion" that
-is the same as the MaNGA data up to some quadrature offset.  The value
-of the "template instrumental dispersion" at the location of each
-emission line is provided in the ``EMLINE_TPLSIGMA`` extension of the
-``MAPS`` files.  The velocity dispersion actually measured by this
-emission-line module (using pPXF) is the quadrature difference between
-the template dispersion and the directly observed sigma of the
-emission-line (as fit by a Gaussian).
+(:class:`~mangadap.proc.sasuke.Sasuke`), the emission lines are fit
+in a very similar way to the stellar continuum using a set of
+emission-line templates. Given the varying spectral resolution of the
+MaNGA data, we setup these templates to have a non-zero "instrumental
+dispersion" that is the same as the MaNGA data up to some quadrature
+offset. The value of the "template instrumental dispersion" at the
+location of each emission line is provided in the ``EMLINE_TPLSIGMA``
+extension of the ``MAPS`` files. The velocity dispersion actually
+measured by this emission-line module (using pPXF) is the quadrature
+difference between the template dispersion and the directly observed
+sigma of the emission-line (as fit by a Gaussian).
 
 To keep things consistent between MPLs and provide what people expect,
 the ``EMLINE_GSIGMA`` data provide the sigma of the line as it would be if
@@ -797,16 +850,17 @@ equations above, where :math:`\sigma` and
 ``EMLINE_TPLSIGMA`` when calculating the astrophysical Doppler
 broadening of each line; see :ref:`corrections`.
 
+----
+
 DAP global header data
 ----------------------
 
 The first extension of each of the main DAP output files (the
 ``MAPS`` and model ``LOGCUBE``) is empty apart from the header data.
 The header data is an exact copy of the primary header for the `DRP
-LOGCUBE files (internal)
-<https://trac.sdss.org/wiki/MANGA/TRM/TRM_MPL-10/datamodel#manga-PLATE-IFUDESIGN-LOGCUBE.fits.gz>`_
-file except that the ``BSCALE``, ``BZERO``, and ``BUNIT`` keywords
-are removed and the ``AUTHOR`` and ``MASKNAME`` keywords are changed.
+LOGCUBE`_ file except that the ``BSCALE``, ``BZERO``, and ``BUNIT``
+keywords are removed and the ``AUTHOR`` and ``MASKNAME`` keywords are
+changed.
 
 The following keywords are also added, any keyword enclose in
 () are only written under certain conditions:
@@ -816,17 +870,18 @@ The following keywords are also added, any keyword enclose in
 +============+======================================================================================+
 | VERSPY     | `Python <https://www.python.org/>`_ version                                          |
 +------------+--------------------------------------------------------------------------------------+
-| VERSNP     | `Numpy <http://www.numpy.org/>`_  version                                            |
+| VERSNP     | `Numpy <https://www.numpy.org/>`_  version                                           |
 +------------+--------------------------------------------------------------------------------------+
 | VERSSCI    | `Scipy <https://www.scipy.org/>`_ version                                            |
 +------------+--------------------------------------------------------------------------------------+
-| VERSAST    | `Astropy <http://www.astropy.org/>`_ version                                         |
+| VERSAST    | `Astropy <https://www.astropy.org/>`_ version                                        |
 +------------+--------------------------------------------------------------------------------------+
-| VERSPYDL   | `pydl <http://pydl.readthedocs.io/en/stable/>`_ version                              |
+| VERSPYDL   | `pydl <https://pydl.readthedocs.io/>`_ version                                       |
 +------------+--------------------------------------------------------------------------------------+
 | VERSDAP    | MaNGA DAP version                                                                    |
 +------------+--------------------------------------------------------------------------------------+
-| DAPTYPE    | The analysis method identifier for the DAP analysis (``HYB10-MILESHC-MASTARHC``)     |
+| DAPTYPE    | The analysis method identifier for the DAP analysis                                  |
+|            | (e.g., ``HYB10-MILESHC-MASTARHC2``)                                                  |
 +------------+--------------------------------------------------------------------------------------+
 | DAPFRMT    | The format of this output file, either ``MAPS`` or ``LOGCUBE``                       |
 +------------+--------------------------------------------------------------------------------------+
@@ -983,13 +1038,16 @@ The following keywords are also added, any keyword enclose in
 | DAPQUAL    | Global DAP quality bit mask: :ref:`metadatamodel-dapqual`                            |
 +------------+--------------------------------------------------------------------------------------+
 
-The headers of the data extensions are more minimal.  They include:
+The headers of the data extensions are more minimal. They include:
+
  * the WCS information,
  * the :ref:`datamodel-hduclass` keyword block,
  * the channel description for the :ref:`datamodel-maps` files,
  * the units for any single image or datacube extensions (``BUNIT``),
    and
  * the ``DATASUM`` and ``CHECKSUM`` values.
+
+----
 
 Reference Files
 ---------------
@@ -1002,15 +1060,8 @@ These are identically the keys used in the
 :ref:`execution-analysis-plan` file: ``drpqa_key``, ``bin_key``,
 ``continuum_key``, ``elmom_key``, ``elfit_key``, ``spindex_key``.
 
-The DAPTYPE is constructed based on these keys and must be unique.
-Currently, the DAPTYPE is ``[bin_key]-[sctpl]-[emltpl]``, where
-``[sctpl]`` and ``[emltpl]`` are the keywords for the continuum
-templates used during the stellar-continuum and emission-line modules,
-respectively.
-
 The reference files are primarily for developer use, but may contain
 information that you want.  A bare-bones description of the content of
 these files is forthcoming.  If you're interested in using something in
-these files, it's probably best to `Submit an issue
-<https://github.com/sdss/mangadap/issues/new>`_.
+these files, it's probably best to `Submit an issue`_.
 

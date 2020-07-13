@@ -4,13 +4,6 @@
 Provides a set of utility function that should **only be used for the
 survey-level execution of the DAP**.
 
-Revision history
-----------------
-
-    | **?? ??? 2014**: Original implementation by K. Westfall (KBW).
-        Functions pulled (unedited) from file provided by J. Brownstein.
-    | **27 Aug 2015**: (KBW) Sphinx documentation.
-
 ----
 
 .. include license and copyright

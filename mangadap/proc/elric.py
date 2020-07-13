@@ -9,37 +9,6 @@ Implements an emission-line profile fitting class.
     currently not actively used by the survey-level operation of the
     MaNGA DAP. See instead :class:`mangadap.proc.sasuke.Sasuke`.
 
-Revision history
-----------------
-
-    | **26 Apr 2016**: Original implementation by K. Westfall (KBW)
-    | **13 Jul 2016**: (KBW) Include log_bounds determining whether or
-        not a returned parameters is near its boundary.
-    | **19 Jul 2016**: (KBW) Changed file name
-    | **19 Oct 2016**: (KBW) Added
-        :func:`Elric.reset_continuum_mask_window` function to deal with
-        the subtraction of the continuum over the fully viable spectral
-        range, and ignoring small spectral regions ignored during the
-        stellar continuum fit.  Changed the initial creation of the
-        continuum mask to include the emission line regions to avoid any
-        polynomial extrapolation errors, in case the emission line
-        happens to fall exactly at the edge of the valid spectral range.
-    | **08 Nov 2016**: (KBW) Moved the
-        :func:`StellarContinuumModel.reset_continuum_mask_window`
-        function from :class:`Elric` to be a member of
-        :class:`StellarContinuumModel`.
-    | **24 May 2017**: (KBW) Moved _check_db to
-        :func:`mangadap.proc.spectralfitting.EmissionLineFit.check_emission_line_database`
-        and moved fill_equivalent_width to
-        :func:`mangadap.proc.spectralfitting.EmissionLineFit.measure_equivalent_width`.
-        Moved _per_fitting_window_dtype from EmissionLineFit to
-        :class:`Elric`.
-    | **24 Aug 2017**: (KBW) Use new
-        :func:`mangadap.proc.util.sample_growth` instead of old
-        residual_growth function.
-    | **02 Feb 2018**: (KBW) Adjust for change to
-        :func:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel.fill_to_match`.
-
 ----
 
 .. include license and copyright
@@ -81,10 +50,11 @@ from matplotlib import pyplot
 # Main fitting engine --------------------------------------------------
 class LineProfileFit:
     r"""
-    Simultaneously fit multiple line profiles.  Currently only allows
-    one to fit using an NCompLineProfile object.  The fitting algorithm
-    used is `scipy.optimize.least_squares`_ with fitting method 'trf' to
-    allow for bounds.
+    Simultaneously fit multiple line profiles. Currently only allows
+    one to fit using an
+    :class:`~mangadap.util.lineprofiles.NCompLineProfile` object. The
+    fitting algorithm used is `scipy.optimize.least_squares`_ with
+    fitting method 'trf' to allow for bounds.
 
     .. todo::
         For multicomponent lines, set the first normalization to be the
@@ -93,35 +63,41 @@ class LineProfileFit:
         lowest and bounded from 0 to 1.
 
     Args:
-        x (1D array): Independent variable
-        y (1D array): Dependent variable
-        profile_list (list of or individual :class:`NCompLineProfile`):
+        x (array-like):
+            1D vector with the independent variable
+        y (array-like):
+            1D vector with the dependent variable
+        profile_list (:obj:`list`, :class:`~mangadap.util.lineprofiles.NCompLineProfile`):
             The profile(s) to fit to the dependent variable.
         base_order (int): (**Optional**) The order of the Legendre
             polynomial to include in the model for the baseline trend in
             y below the fitted line profile(s).
-        error (1D array): (**Optional**) Error in the dependent
-            variables.  If not provided, no error weighting is performed
-            during the fitting process, and the covariance *will not* be
+        error (array-like, optional):
+            1D vector with the error in the dependent variables. If
+            not provided, no error weighting is performed during the
+            fitting process, and the covariance *will not* be
             constructed.
-        mask (1D array): (**Optional**) Boolean array used to ignore
-            values in `y` during the fit.
-        par (1D array): (**Optional**) Initial guess for model
-            parameters.  The number of parameters much match the
-            expectation based on the provided list of profiles and the
-            order of the baseline polynomial.  If not provided, the
-            parameters are initialized to 0.
-        fixed (1D array): (**Optional**) Flags used to fix parameters
-            during the fit.  The number of parameters much match the
-            expectation based on the provided list of profiles and the
-            order of the baseline polynomial.  If not provided, all
-            parameters are freely fit.
-        bounds (2-tuple): (**Optional**) Tuple with two array-like
-            elements giving the upper and lower bound for each
-            parameter.  The length of each array element must match the
-            number of parameters.  For an unbounded problem, set
-            ``bounds=None``, or use numpy.inf with an appropriate sign
-            to disable bounds on all or some variables.
+        mask (array-like, optional):
+            1D boolean array used to ignore values in `y` during the
+            fit.
+        par (array-like, optional):
+            1D vector with the initial guess for model parameters.
+            The number of parameters much match the expectation based
+            on the provided list of profiles and the order of the
+            baseline polynomial. If not provided, the parameters are
+            initialized to 0.
+        fixed (array-like, optional):
+            1D vector with flags used to fix parameters during the
+            fit. The number of parameters much match the expectation
+            based on the provided list of profiles and the order of
+            the baseline polynomial. If not provided, all parameters
+            are freely fit.
+        bounds (:obj:`tuple`): (**Optional**) 2-tuple with two
+            array-like elements giving the upper and lower bound for
+            each parameter. The length of each array element must
+            match the number of parameters. For an unbounded problem,
+            set ``bounds=None``, or use numpy.inf with an appropriate
+            sign to disable bounds on all or some variables.
         run_fit (bool): (**Optional**) Flag to run the fit upon
             instantiation of the object, which defaults to True.  If set
             to False, the object is initialized but the fit is not
@@ -134,12 +110,12 @@ class LineProfileFit:
             `scipy.optimize.least_squares`_; default is 0.
 
     Attributes:
-        x (numpy.ndarray): Independent variable of length :math:`M`.
-        y (numpy.ndarray): Dependent variable to be fit of length
+        x (`numpy.ndarray`_): Independent variable of length :math:`M`.
+        y (`numpy.ndarray`_): Dependent variable to be fit of length
             :math:`M`.
-        err (numpy.ndarray): Error, :math:`\sigma`, in the dependent
+        err (`numpy.ndarray`_): Error, :math:`\sigma`, in the dependent
             variable of length :math:`M`.
-        mask (numpy.ndarray): Flag to fit dependent variables of length
+        mask (`numpy.ndarray`_): Flag to fit dependent variables of length
             :math:`M`.
         nlines (int): Number of lines being fit.
         base_order (int): The order of the Legendre polynomial include
@@ -157,11 +133,11 @@ class LineProfileFit:
             included in the baseline.
         nfitpar (int): Number of *free* parameters, defined as
             :math:`N`.
-        par (numpy.ndarray): Full list of model parameters, including
+        par (`numpy.ndarray`_): Full list of model parameters, including
             those parameters that have been fixed.
-        fixed (numpy.ndarray): Flags to fit (False) or fix (True) a
+        fixed (`numpy.ndarray`_): Flags to fit (False) or fix (True) a
             given parameter.
-        bounds (2-tuple): Tuple with two array-like
+        bounds (:obj:`tuple`): 2-tuple with two array-like
             elements giving the upper and lower bound for each
             parameter.  For an unbounded problem, this is set to
             ``bounds=(-numpy.inf,numpy.inf)``.
@@ -169,7 +145,7 @@ class LineProfileFit:
             results from `scipy.optimize.least_squares`_.  The
             best-fitting parameters, :math:`\mathbf{\theta}`, is
             returned as ``result.x``.
-        cov (numpy.ndarray): The formal covariance matrix for the fit.
+        cov (`numpy.ndarray`_): The formal covariance matrix for the fit.
             The `scipy.optimize.OptimizeResult`_ object provides the
             Jacobian of the model, an :math:`M \times N` array with
             elements
@@ -192,12 +168,14 @@ class LineProfileFit:
             That is, :math:`\mathbf{C} = \mathbf{\alpha}^{-1}`.
 
     Raises:
-        TypeError: Raised if the provided profile objects are not
-            instances of :class:`NCompLineProfile`.
-        ValueError: Raised if any of the provided parameter arrays (par,
-            fixed) are not one-dimensional or the number of parameters
-            is not as expected based on the number of profile and
-            baseline parameters.
+        TypeError:
+            Raised if the provided profile objects are not instances
+            of :class:`~mangadap.util.lineprofiles.NCompLineProfile`.
+        ValueError:
+            Raised if any of the provided parameter arrays (par,
+            fixed) are not one-dimensional or the number of
+            parameters is not as expected based on the number of
+            profile and baseline parameters.
 
     .. todo::
         - Provide a better initialization for the parameters.
@@ -461,23 +439,23 @@ class ElricFittingWindow:
     Args:
         nlines (int): (**Optional**) The number of lines to be fit
             simultaneously.
-        db_indx (numpy.ndarray): (**Optional**) An array with the
+        db_indx (`numpy.ndarray`_): (**Optional**) An array with the
             database index (0-based) of each line to be fit.
-        line_index (numpy.ndarray): (**Optional**) An array with the
+        line_index (`numpy.ndarray`_): (**Optional**) An array with the
             index numbers, read from the database, of each line to be
             fit.
-        restwave (numpy.ndarray): (**Optional**) An array with the rest
+        restwave (`numpy.ndarray`_): (**Optional**) An array with the rest
             wavelengths of each line to be fit.
-        profile_set (numpy.ndarray): (**Optional**) An array with the
+        profile_set (`numpy.ndarray`_): (**Optional**) An array with the
             profile objects that define the functional form of each
             line.
-        fixed_par (numpy.ndarray): (**Optional**) An array with the
+        fixed_par (`numpy.ndarray`_): (**Optional**) An array with the
             fixed parameters for *all* parameters in the model to be
             fit.
-        bounds (numpy.ndarray): (**Optional**) A two-column array with
+        bounds (`numpy.ndarray`_): (**Optional**) A two-column array with
             the lower (first column) and upper (second column) bounds
             for the fit parameters.
-        log_bounds (numpy.ndarray): (**Optional**) The range of the
+        log_bounds (`numpy.ndarray`_): (**Optional**) The range of the
             boundary should be considered as logarithmic when testing if
             a parameter is near its boundary.
         output_model (bool): (**Optional**) Include the best-fitting
@@ -485,10 +463,10 @@ class ElricFittingWindow:
             spectrum.  This is only flagged as true if ALL the emission
             lines in the fitting window are to be included according to
             the emission-line database.
-        tied_pairs (numpy.ndarray): (**Optional**) The series of
+        tied_pairs (`numpy.ndarray`_): (**Optional**) The series of
             tied profiles (:class:`TiedLineProfile` objects) that are
             used to tie parameters of the model.
-        tied_funcs (numpy.ndarray): (**Optional**) The member functions
+        tied_funcs (`numpy.ndarray`_): (**Optional**) The member functions
             of the :class:`TiedLineProfile` objects that should be
             called *sequentially* to tie model parameters.
     """
@@ -622,6 +600,7 @@ class Elric(EmissionLineFit):
                  guess_dispersion=guess_dispersion, loggers=loggers, quiet=quiet)
 
 
+    # TODO: Convert this to a DataTable
     @staticmethod
     def _per_fitting_window_dtype(nwin, max_npar, mask_dtype):
         r"""
@@ -1396,9 +1375,11 @@ class Elric(EmissionLineFit):
         model_fit_par['BINID_INDEX'] = numpy.arange(self.nspec)
 
         # Emission-line parameters
-        model_eml_par = init_record_array(self.nspec,
-                                          self._per_emission_line_dtype(self.neml, 2,
-                                                                self.bitmask.minimum_dtype()))
+        model_eml_par = self.emission_line_datatable(self.neml, 2, self.bitmask.minimum_dtype(),
+                                                     shape=self.nspec)
+#        model_eml_par = init_record_array(self.nspec,
+#                                          self._per_emission_line_dtype(self.neml, 2,
+#                                                                self.bitmask.minimum_dtype()))
         model_eml_par['CONTMPLY'] = numpy.ones(model_eml_par['CONTMPLY'].shape, dtype=float)
         model_eml_par['BINID'] = numpy.arange(self.nspec)
         model_eml_par['BINID_INDEX'] = numpy.arange(self.nspec)

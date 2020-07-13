@@ -5,11 +5,6 @@ Implements a BitMask derived class that simplifies the implementation of
 the derived classes used by the DAP that all define their bits using the
 files in the configuration directory.
 
-Revision history
-----------------
-
-    | **04 Dec 2019**: Original implementation by K. Westfall (KBW)
-
 ----
 
 .. include license and copyright

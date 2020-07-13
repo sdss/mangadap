@@ -35,10 +35,10 @@ DAP LOGCUBE File Construction
    and the provided objects.
  * Initialize the primary header by copying over the DRP header and
    adding the DAP version information.
- * Construct the ``FLUX``, ``IVAR``, ``MASK``, ``WAVE``, and
+ * Construct the ``FLUX``, ``IVAR``, ``MASK``, ``LSF``, ``WAVE``, and
    ``REDCORR`` extensions using the 3D binned spectra cube and
-   :func:`~mangadap.dapfits.construct_cube_file.binned_data_cube`. The
-   reddening vector is used to *remove* the reddening correction,
+   :func:`~mangadap.dapfits.construct_cube_file.binned_data_cube`.
+   The reddening vector is used to *remove* the reddening correction,
    such that the returned spectra match the observed flux in the DRP
    files.
  * Construct the ``MODEL``, ``MODEL_MASK``, ``EMLINE``, ``STELLAR``,

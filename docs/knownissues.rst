@@ -1,4 +1,6 @@
 
+.. include:: include/links.rst
+
 ****************
 DAP Known Issues
 ****************
@@ -9,12 +11,13 @@ Persistent
 LSF limitations
 ---------------
 
-The DRP provides both pre- and post-pixelized Gaussian measurements of
-the instrumental line-spread function.  Because it makes the most sense
-to use the pre-pixelized versions with pPXF, the DAP uses these
-pre-pixelized measurements for the dispersion calculations in both the
-stellar and ionized-gas velocity dispersions.  A more in-depth analysis
-is needed to understand how these LSF changes affect the results.
+The DRP provides both pre- and post-pixelized Gaussian measurements
+of the instrumental line-spread function. Because it makes the most
+sense to use the pre-pixelized versions with pPXF, the DAP uses these
+pre-pixelized measurements for the dispersion calculations in both
+the stellar and ionized-gas velocity dispersions. A more in-depth
+analysis is ongoing to understand how these LSF changes affect the
+results (Law et al. 2020).
 
 Artifact effects on emission-line fitting
 -----------------------------------------
@@ -57,27 +60,89 @@ etc).
 Uncertainties
 -------------
 
-Errors are generally "formal" errors determined either by the covariance
-(inverse Hessian) matrix provided by the optimization algorithm (stellar
-and emission-line kinematics) or a direct propagation of the error based
-on the inverse variances provided by the DRP (as for the emission-line
-moments and spectral indices).  Idealized experiments and analysis of
-repeat observations have shown that the formal errors are within a
-factor of two of the statistical error.  See the detailed assessments of
-the DAP uncertainties in the two main DAP papers: `Westfall et al.
-(2019, AJ, 158, 231)
-<https://ui.adsabs.harvard.edu/abs/2019AJ....158..231W/abstract>`_ and
-`Belfiore et al. (2019, AJ, 158, 160)
-<https://ui.adsabs.harvard.edu/abs/2019AJ....158..160B/abstract>`_.
+Errors are generally "formal" errors determined either by the
+covariance (inverse Hessian) matrix provided by the optimization
+algorithm (stellar and emission-line kinematics) or a direct
+propagation of the error based on the inverse variances provided by
+the DRP (as for the emission-line moments and spectral indices).
+Idealized experiments and analysis of repeat observations have shown
+that the formal errors are within a factor of two of the statistical
+error. See the detailed assessments of the DAP uncertainties in the
+two main DAP papers: `Westfall et al. (2019, AJ, 158, 231)`_ and
+`Belfiore et al. (2019, AJ, 158, 160)`_.
 
-
-MPL-10 (3.0.0)
+MPL-10 (3.0.1)
 ==============
 
 Faults
 ------
 
-TBD
+The full report of the observations that faulted and the consolidated
+list of error messages can be found in the `MPL-10 error report`_
+(internal).
+
+In total, there are 10529 DRP-produced data cubes. Of these, 488 did
+not have an input redshift, and were therefore not analyzed by the
+DAP; most (if not all) of these are the result of allocating bundles
+to empty sky for special observations (such as the mosaic of IC342).
+
+Of the 10041 cubes that the DAP attempted to analyze, 42 caused
+faults during the analysis. These failures are mostly because the S/N
+required for either the stellar kinematics or emission-line fit was
+insufficient for *any* spectrum in the datacube. Of these, one cube
+successefully finished the ``SPX-MILESHC-MASTARHC2`` analysis, but
+was unsuccessful for the other two types. Therefore, here are the
+number of completed ``MAPS`` files for each ``DAPTYPE``:
+
++-----------------------------+-----------------------+
+|                 ``DAPTYPE`` | :math:`N_{\rm cubes}` |
++=============================+=======================+
+|  ``SPX-MILESHC-MASTARHC2``  |                 10000 |
++-----------------------------+-----------------------+
+| ``VOR10-MILESHC-MASTARHC2`` |                  9999 |
++-----------------------------+-----------------------+
+| ``HYB10-MILESHC-MASTARHC2`` |                  9999 |
++-----------------------------+-----------------------+
+
+The 41 cubes that failed all ``DAPTYPEs`` are::
+
+    8479-6101, 8479-6102, 8479-12703, 8480-6102, 8480-12703,
+    8312-6101, 8953-6104, 9051-12704, 9051-6104, 9051-3704,
+    9673-6104, 9673-3701, 9673-3702, 9673-1902, 9673-1901, 9673-6101,
+    9673-6103, 9673-3703, 9673-3704, 9674-1902, 9674-6104, 9674-3701,
+    9674-1901, 9674-6101, 9674-3702, 9674-3703, 9674-3704, 9675-3701,
+    9675-3704, 9675-3702, 9675-1902, 9675-6104, 9675-6103, 9675-1901,
+    9675-3703, 9675-6101, 11987-6104, 11987-1901, 8587-12702,
+    8587-12701, 11828-1902
+
+The cube that passed ``SPX-MILESHC-MASTARHC2``, but failed the other two is::
+
+    8158-3703 
+
+Emission-line fluxes
+--------------------
+
+Flipping between the plots
+`here <https://data.sdss.org/sas/mangawork/manga/spectro/analysis/MPL-9/SPX-MILESHC-MASTARHC/qa/dapall_mass_lha.png>`__
+and
+`here <https://data.sdss.org/sas/mangawork/manga/spectro/analysis/MPL-10/SPX-MILESHC-MASTARHC2/qa/dapall_mass_lha.png>`__
+(see below), you'll note that the :math:`{\rm H}\alpha` luminosity in
+the quiescent sequence seems to show a systematic shift to lower flux in MPL-10
+compared with MPL-9. This likely has to do with the change in
+templates between MPL-9 and MPL-10; however, we're investigating this
+further. Updates will be announced to the collaboration and posted
+here.
+
+.. figure:: figures/mpl10_flux.png
+   :width: 80%
+
+   Comparison between the automatically generated plots from the
+   DAPall file for MPL-9 (left) and MPL-10 (right) for the individual
+   spaxel output (results for the other two binning schemes are
+   comparable). MPL-10 seems to result in a systematic shift in the
+   :math:`{\rm H}\alpha` luminosity in the quiescent sequence.
+   Further information TBD.
+
 
 MPL-9 (2.4.1)
 =============
@@ -86,8 +151,7 @@ Faults
 ------
 
 The full report of the observations that faulted and the consolidated
-list of error messages can be found `here
-<https://data.sdss.org/sas/mangawork/manga/spectro/analysis/v2_7_1/2.4.1/log/error_report.txt>`_
+list of error messages can be found in the `MPL-9 error report`_
 (internal).
 
 Of the 8130 attempted analyses, 73 did not successfully finish all three
