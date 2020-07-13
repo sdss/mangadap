@@ -35,8 +35,7 @@ TODO
 
  - Added DataTable, mostly for automated documentation purposes.
  - Removed revision histories
-
-
+ - Updated docs for MPL-10
 
 3.0.1 (31 May 2020)
 -------------------
