@@ -3,27 +3,6 @@
 """
 A class hierarchy that performs the stellar-continuum fitting.
 
-Revision history
-----------------
-
-    | **14 Apr 2016**: Implementation begun by K. Westfall (KBW)
-    | **19 Apr 2016**: (KBW) First version
-    | **19 May 2016**: (KBW) Added loggers and quiet keyword arguments
-        to :class:`StellarContinuumModel`, removed verbose 
-    | **05 Jul 2016**: (KBW) Removed oversample keyword from instantion
-        of :class:`mangadap.proc.ppxffit.PPXFFit` objects.
-    | **08 Nov 2016**: (KBW) Moved
-        :func:`StellarContinuumModel.reset_continuum_mask_window` from
-        :class:`Elric` to here.  The function allows one to deal with
-        the subtraction of the continuum over the fully viable spectral
-        range, ignoring small spectral regions that were ignored during
-        the stellar continuum fit.  Also added wrapper function,
-        :func:`StellarContinuumModel.emission_line_continuum_model`.
-    | **11 Jan 2017**: (KBW) Changed
-        StellarContinuumModel.emission_line_continuum_model to
-        :func:`StellarContinuumModel.unmasked_continuum_model`.
-    | **23 Feb 2017**: (KBW) Use DAPFitsUtil read and write functions.
-
 ----
 
 .. include license and copyright

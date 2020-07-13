@@ -19,10 +19,11 @@ available emission-line moment databases::
     print(EmissionMomentsDB.available_databases())
     elmom = EmissionMomentsDB.from_key('ELBMPL9')
 
-The above call uses the :func:`EmissionMoments.from_key` method to
-define the database using its keyword and the database provided with
-the MaNGA DAP source distribution. You can also define the database
-directly for an SDSS-style parameter file::
+The above call uses the
+:func:`~mangadap.par.spectralfeaturedb.SpectralFeatureDB.from_key`
+method to define the database using its keyword and the database
+provided with the MaNGA DAP source distribution. You can also define
+the database directly for an SDSS-style parameter file::
 
     from mangadap.par.emissionmomentsdb import EmissionMomentsDB
     elmom = EmissionMomentsDB('/path/to/emission/moments/database/myelm.par')
@@ -30,16 +31,6 @@ directly for an SDSS-style parameter file::
 The above will read the file and set the database keyword to 'MYELM'
 (i.e., the capitalized root name of the ``*.par`` file). See
 :ref:`emissionlines` for the format of the parameter file.
-
-Revision history
-----------------
-
-    | **17 Mar 2016**: Original implementation by K. Westfall (KBW)
-    | **11 May 2016**: (KBW) Switch to using `pydl.pydlutils.yanny`_ and
-        `pydl.goddard.astro.airtovac`_ instead of internal functions
-    | **06 Oct 2017**: (KBW) Add function to return channel names.
-    | **02 Dec 2019**: (KBW) Significantly reworked to use the new
-        base class.
 
 ----
 
@@ -80,8 +71,9 @@ class EmissionMomentsDefinitionTable(DataTable):
             The maximum length of any of the emission feature names.
         shape (:obj:`int`, :obj:`tuple`, optional):
             The shape of the initial array. If None, the data array
-            will not be instantiated; use :func:`init` to initialize
-            the data array after instantiation.
+            will not be instantiated; use
+            :func:`~mangadap.util.datatable.DataTable.init` to
+            initialize the data array after instantiation.
     """
     def __init__(self, name_len=1, shape=None):
         # NOTE: This should require python 3.7 to make sure that this

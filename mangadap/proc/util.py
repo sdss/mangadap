@@ -3,11 +3,6 @@
 """
 Provides a set of processing utility functions for the MaNGA DAP.
 
-Revision history
-----------------
-
-    | **01 Feb 2016**: Original implementation by K. Westfall (KBW)
-
 ----
 
 .. include license and copyright

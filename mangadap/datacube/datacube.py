@@ -179,6 +179,9 @@ class DataCube:
             Shape of the datacube spatial axes .
         nwave (:obj:`int`):
             Number of wavelength channels.
+        spatial_index (`numpy.ndarray`_):
+            Array of tuples with the spatial indices of each spectrum
+            in the flattened datacube.
         wcs (`astropy.wcs.WCS`_):
             Datacube world-coordinate system.  Can be None.
         pixelscale (:obj:`float`):
@@ -217,6 +220,20 @@ class DataCube:
         rss (:class:`mangadap.spectra.rowstackedspectra.RowStackedSpectra`):
             The source row-stacked spectra used to build the
             datacube.
+        sigma_rho (:obj:`float`):
+            The :math:`\sigma_{\rho}` of the Gaussian function used
+            to approximate the trend of the correlation coefficient
+            with spaxel separation. Used to construct the approximate
+            correlation matrix (see
+            :func:`approximate_correlation_matrix`).
+        correl_rlim (:obj:`float`):
+            The limiting radius of the image reconstruction
+            (Gaussian) kernel in arcseconds. Used to construct the
+            approximate correlation matrix (see
+            :func:`approximate_correlation_matrix`).
+        approx_correl (:class:`~mangadap.util.covariance.Covariance`):
+            Approximate correlation matrix; see
+            :func:`approximate_correlation_matrix`.
     """
     # TODO: Add reconstructed PSF?
     def __init__(self, flux, wave=None, ivar=None, mask=None, bitmask=None, sres=None, covar=None,
@@ -305,6 +322,7 @@ class DataCube:
 
         # For the approximate covariance matrix calculations
         self.sigma_rho = None
+        self.correl_rlim = None
         self.approx_correl = None
 
     @classmethod
@@ -863,7 +881,7 @@ class DataCube:
         channels.
 
         This is a simple wrapper for a call to
-        :func:`mangadap.spectra.rowstackedspectra.covariance_cube`
+        :func:`mangadap.spectra.rowstackedspectra.RowStackedSpectra.covariance_cube`
         executed using :attr:`rss`, which cannot be None. See that
         method for the argument description.
 

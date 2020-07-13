@@ -6,12 +6,6 @@ Defines a catch-all class for useful constants.  These are meant to be
 values that are **not** available elsewhere, such as
 `astropy.constants`_.
 
-Revision history
-----------------
-
-    | **28 May 2015**: Original implementation by K. Westfall (KBW)
-    | **01 Jun 2017**: (KBW) Changed attributes to class globals
-
 ----
 
 .. include license and copyright

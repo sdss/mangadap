@@ -19,15 +19,6 @@ However, this class is mostly to provide a base class used by
 :class:`mangadap.par.bandheadindexdb.BandheadIndexDB`; it is not
 really meant to be used as given above.
 
-Revision history
-----------------
-
-    | **18 Mar 2016**: Original implementation by K. Westfall (KBW)
-    | **20 Apr 2016**: (KBW) Include measurements
-    | **29 Jul 2016**: (KBW) Convert some calls to asarray to atleast_1d
-    | **15 Mar 2018**: (KBW) Allow the redshift in the equivalent width
-        measurement to be specific to each bandpass.
-
 ----
 
 .. include license and copyright
@@ -205,21 +196,23 @@ def pixel_fraction_in_passband(x, passband, dx=None):
     passband integrals.
 
     Args:
-        x (1D array-like):
-            Borders of pixels.
-        passband (1D or 2D array-like):
-            Passbands to integrate over.  If more than one, the shape of
-            the input should be :math:`(N_{\rm passband},2)`.
-        dx (1D array-like, optional):
-            The size of each pixel.  If not provided, calculated from
-            `x`.  Can be provided to speed calculations for multiple
-            calls.
+        x (array-like):
+            1D array with pixel borders.
+        passband (array-like):
+            1D or 2D array with the passbands to integrate over. If
+            more than one passband is provided, the shape of the
+            input should be :math:`(N_{\rm passband},2)`.
+        dx (array-like, optional):
+            1D array with the size of each pixel. If not provided,
+            calculated from `x`. Can be provided to speed
+            calculations for multiple calls.
 
     Returns:
-        numpy.ndarray: The array with the fraction of each pixel within
-        each passband.  The output shape is :math:`(N_{\rm pixel},N_{\rm
-        passband})`, where :math:`N_{\rm pixel}` is the 1 less than the
-        number of pixel borders.
+        `numpy.ndarray`_: The array with the fraction of each pixel
+        within each passband. The output shape is :math:`(N_{\rm
+        pixel},N_{\rm passband})`, where :math:`N_{\rm pixel}` is the
+        1 less than the number of pixel borders.
+    
     """
     _x = numpy.atleast_1d(x)
     if _x.ndim != 1:
@@ -313,8 +306,8 @@ def passband_integral(x, y, passband=None, borders=False, log=False, base=10.0, 
             is used for error calculations.
         
     Returns:
-        float, `numpy.ndarray`_: The passband integral for each
-        passband.
+        :obj:`float`, `numpy.ndarray`_: The passband integral for
+        each passband.
 
     Raises:
         ValueError:
@@ -438,9 +431,9 @@ def passband_weighted_mean(x, y, z, passband=None, borders=False, yerr=None, zer
         -doc the args
 
     Returns:
-        numpy.ma.MaskedArray: Two masked arrays with the
-        passband-weighted mean and its error.  The error is returned as
-        `None` if no errors are provided.
+        `numpy.ma.MaskedArray`_: Two masked arrays with the
+        passband-weighted mean and its error. The error is returned
+        as `None` if no errors are provided.
     """
     # Get the passband interval, accounting for masked pixels
     weighted_integral = passband_integral(x, z*y, passband=passband, borders=borders, log=log,
@@ -513,8 +506,8 @@ def passband_weighted_sdev(x, y, z, passband=None, borders=False, yerr=None, zer
         \epsilon_\sigma = \frac{\epsilon_{\sigma^2}}{2 \sigma}.
 
     Returns:
-        numpy.ma.MaskedArray: Two masked arrays with the
-        passband-weighted standard deviation and its error.  The error
+        `numpy.ma.MaskedArray`_: Two masked arrays with the
+        passband-weighted standard deviation and its error. The error
         is returned as `None` if no errors are provided.
     """
     mu = passband_weighted_mean(x, y, z, passband=passband, borders=borders, log=log,
@@ -561,11 +554,12 @@ def pseudocontinuum(x, y, passband=None, err=None, log=True, weighted_center=Fal
     Get the pseudocontinua in a set of passbands for a single vector (y)
 
     Returns:
-        float, numpy.ndarray: Return five arrays or floats: (1) The
-        center of each passband, (2) the mean continuum level, (3) the
-        propagated error in the continuum level (will be None if no
-        errors are provided), (4) flag that part of the passband was
-        masked, (5) flag that the passband was fully masked or empty.
+        :obj:`float`, `numpy.ndarray`_: Return five arrays or floats:
+        (1) The center of each passband, (2) the mean continuum
+        level, (3) the propagated error in the continuum level (will
+        be None if no errors are provided), (4) flag that part of the
+        passband was masked, (5) flag that the passband was fully
+        masked or empty.
     """
     # Calculate the pseudo-continua in the sidebands
     continuum, continuum_error = passband_integrated_mean(x, y, err=err, passband=passband,
@@ -592,39 +586,39 @@ def emission_line_equivalent_width(wave, flux, bluebands, redbands, line_centroi
     spectra and the previously measured line flux.
 
     Args:
-        wave (`numpy.ndarray`):
+        wave (`numpy.ndarray`_):
             Vector with the observed wavelength of each spectrum in
             angstroms.
-        flux (`numpy.ndarray`):
+        flux (`numpy.ndarray`_):
             Array (1 or 2) with the observed flux density (units in per
             angstrom) with size Nspec x Nwave.
-        blueside (`numpy.ndarray`):
+        blueside (`numpy.ndarray`_):
             Wavelength limits for the blue sidebands in angstroms, with
             size Nbands x 2.
-        redside (`numpy.ndarray`):
+        redside (`numpy.ndarray`_):
             Wavelength limits for the red sidebands in angstroms, with
             size Nbands x 2.
-        line_centroid (`numpy.ndarray`):
+        line_centroid (`numpy.ndarray`_):
             Wavelengths at which to sample the continuum for the
             equivalent width measurement.  Can be anything, but should
             typically be the *observed* wavelength of line center in
             angstroms, with size Nspec x Nband.
-        line_flux (`numpy.ndarray`):
+        line_flux (`numpy.ndarray`_):
             Integrated flux of the emission feature with size Nspec x
             Nband.
-        ivar (`numpy.ndarray`, optional): 
+        ivar (`numpy.ndarray`_, optional): 
             Inverse variance in the observed flux, with shape that
             matches flux.  Default ignores error calculation.
             **Currently the equivalent width errors do not account for
             errors in the continuum characterization beneath the line.
             So this ivar array is ignored!**
-        mask (`numpy.ndarray`, optional): 
+        mask (`numpy.ndarray`_, optional): 
             Boolean bad-pixel mask: True values are considered to be bad
             pixels.  Default assumes all pixels are good.
         log (:obj:`bool`, optional): 
             Boolean that the spectra are logarithmically sampled in
             wavelength.
-        redshift (`numpy.ndarray`, optional):
+        redshift (`numpy.ndarray`_, optional):
             Redshift of each spectrum used to appropriately shift the
             definition of the bandpasses.  If a single vector is
             provided, the length must match the number of provided
@@ -632,22 +626,25 @@ def emission_line_equivalent_width(wave, flux, bluebands, redbands, line_centroi
             (Nspec,Nband).  If None, all measurements are done assuming
             the redshift is 0 (i.e., that the observed and rest frames
             are identical).
-        line_flux_err (`numpy.ndarray`, optional):
+        line_flux_err (`numpy.ndarray`_, optional):
             Errors in the line flux, with size Nspec x Nband.  Default
             is to ignore the error propagation.
-        include_band (`numpy.ndarray`, optional): 
+        include_band (`numpy.ndarray`_, optional): 
             Boolean array with size Nspec x Nband used to select which
             bands to use in the calculation for each spectrum.  Default
             is to include all bands for all spectra. 
 
     Returns:
-        Six arrays all with size Nspec x Nbands:
-            - the passband median in the blue and red sidebands
-            - a boolean array if the sideband medians were measured and
-              have positive values
-            - The continuum value used to calculate the equivalent width
-            - The equivalent with measurements and their errors; the
-              errors are 0 if no line flux errors were provided
+        :obj:`tuple`: Returns the following arrays, all with shape
+        (Nspec, Nbands):
+            
+            #. the passband median in the blue and red sidebands
+            #. a boolean array if the sideband medians were measured
+               and have positive values
+            #. The continuum value used to calculate the equivalent
+               width
+            #. The equivalent with measurements and their errors; the
+               errors are 0 if no line flux errors were provided
 
     Raises:
         ValueError: Raised if the shapes of the input arrays are not

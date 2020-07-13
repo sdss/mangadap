@@ -9,15 +9,6 @@ the base class used by :class:`mangadap.par.artifactdb.ArtifactDB`,
 :class:`mangadap.par.absorptionindexdb.AbsorptionIndexDB`, and
 :class:`mangadap.par.bandheadindexdb.BandheadIndexDB`.
 
-Revision history
-----------------
-
-    | **18 Mar 2016**: Original implementation by K. Westfall (KBW)
-    | **25 Feb 2017**: (KBW) Change to using
-        :class:`mangadap.util.parser.DefaultConfig`
-    | **02 Dec 2019**: (KBW) Significantly reworked to provide a more
-        useful and user-friendly base class.
-
 ----
 
 .. include license and copyright
@@ -45,18 +36,19 @@ class SpectralFeatureDB(ParDatabase):
     Basic container class for the parameters databases of spectral
     features.  This is the base class for all of the following:
 
-        - class used by :class:`mangadap.par.artifactdb.ArtifactDB`
-        - :class:`mangadap.par.emissionlinedb.EmissionLineDB`
-        - :class:`mangadap.par.emissionmomentsdb.EmissionMomentsDB`
-        - :class:`mangadap.par.absorptionindexdb.AbsorptionIndexDB`
-        - :class:`mangadap.par.bandheadindexdb.BandheadIndexDB`
-    
-    See :class:`mangadap.parset.ParDatabase` for additional attributes.
+        - class used by :class:`~mangadap.par.artifactdb.ArtifactDB`
+        - :class:`~mangadap.par.emissionlinedb.EmissionLineDB`
+        - :class:`~mangadap.par.emissionmomentsdb.EmissionMomentsDB`
+        - :class:`~mangadap.par.absorptionindexdb.AbsorptionIndexDB`
+        - :class:`~mangadap.par.bandheadindexdb.BandheadIndexDB`
+
+    See :class:`~mangadap.par.parset.ParDatabase` for additional
+    attributes.
 
     Each derived class must define its own default directory that
     contains the relevant databases, the class that defines the base
-    :class:`mangadap.par.parset.ParSet` for each
-    :class:`mangadap.par.parset.ParDatabase` entry, and the method
+    :class:`~mangadap.par.parset.ParSet` for each
+    :class:`~mangadap.par.parset.ParDatabase` entry, and the method
     that parses the parameter file into the parameter list.
 
     The primary instantiation requires the SDSS parameter file. To
@@ -151,9 +143,8 @@ class SpectralFeatureDB(ParDatabase):
                 Keyword selecting the database to use.
             directory_path (:obj:`str`, optional):
                 Root path with the database parameter files. If None,
-                uses the default set by
-                :func:`default_emission_line_database_path`. Note
-                that the file search includes *any* file with a
+                uses the default set by :func:`available_databases`.
+                Note that the file search includes *any* file with a
                 ``.par`` extension. The root of the file should be
                 case-insensitive.
         """

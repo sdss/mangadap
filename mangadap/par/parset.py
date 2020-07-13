@@ -14,22 +14,6 @@
     - Write an __add__ function that will all you to add multiple
       parameter sets.
 
-Revision history
-----------------
-
-    | **16 Jun 2015**: Original implementation by K. Westfall (KBW)
-    | **18 Mar 2016**: (KBW) Change dtype checking
-    | **23 Mar 2016**: (KBW) Changed initialization type checking of
-        lists to use `isinstance`_.
-    | **02 Apr 2016**: (KBW) Allow input parameters to be callable
-        functions.
-    | **05 Apr 2018**: (KBW) Added to pypit repo
-    | **18 Apr 2018**: (KBW) Add parameter descriptions; keep default
-        values as attributes
-    | **19 Apr 2018**: (KBW) Spruce up the __repr__ function and add the
-        info function.  Add to_config function to write to a
-        configuration file.
-
 ----
 
 .. include license and copyright
@@ -274,7 +258,7 @@ class ParSet:
     def _output_string(self, header=None, value_only=False):
         """
         Constructs the short-format table strings for the
-        :func:`__repr__` method.
+        ``__repr__`` method.
 
         Args:
             header (:obj:`str`, optional):
@@ -289,7 +273,7 @@ class ParSet:
 
         Returns:
             str: Single long string with the parameter table for the
-            :func:`__repr__` method.
+            ``__repr__`` method.
         """
         additional_par_strings = []
         ncol = 2 if value_only else 5
@@ -359,10 +343,10 @@ class ParSet:
     def _data_string(data, use_repr=True, verbatum=False):
         """
         Convert a single datum into a string
-        
-        Simply return strings, recursively convert the elements of any
-        objects with a :attr:`__len__` attribute, or use the object's
-        own :attr:`__repr__` attribute for all other objects.
+
+        Simply return strings, recursively convert the elements of
+        any objects with a ``__len__`` attribute, or use the object's
+        own ``__repr__`` attribute for all other objects.
 
         Args:
             data (object):

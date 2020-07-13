@@ -84,6 +84,19 @@ language = 'en'
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', 'include/*.rst', 'tables/*.rst',
                     'help/*.rst']
 
+# When nit-picking, ignore these warnings:
+nitpick_ignore = [('py:class', 'optional'),
+                  ('py:class', 'array-like'),
+                  ('py:class', 'scalar-like'),
+                  ('py:obj', 'int'),
+                  ('py:obj', 'float'),
+                  ('py:obj', 'bool'),
+                  ('py:obj', 'str'),
+                  ('py:obj', 'tuple'),
+                  ('py:obj', 'list'),
+                  ('py:obj', 'dict'),
+                  ]
+
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'lovelace'
 

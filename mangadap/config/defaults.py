@@ -4,48 +4,6 @@ r"""
 Provides a set of functions that define and return defaults used by the
 MaNGA DAP, such as paths and file names.
 
-Revision history
-----------------
-
-    | **23 Apr 2015**: Original implementation by K. Westfall (KBW)
-    | **19 May 2015**: (KBW) Documentation and Sphinx tests
-    | **20 May 2015**: (KBW) TODO: Change the default names of the par
-        and output fits files
-    | **15 Jun 2015**: (KBW) Added default functions moved from
-        :class:`mangadap.drpfile`
-    | **16 Jun 2015**: (KBW) Added wavelength limits and lower flux
-        limit to
-        :func:`mangadap.config.inputdata.available_template_libraries`
-    | **17 Jun 2015**: (KBW) Moved declarations of template library keys
-        to its own function: *default_template_library_keys*, and
-        edited :func:`available_template_libraries` accordingly
-    | **27 Aug 2015**: (KBW) Changed the name of the plan file; added
-        :func:`default_dap_file_root` based on file_root() from
-        :class:`mangadap.scripts.rundap`.
-    | **28 Aug 2015**: (KBW) Added :func:`default_manga_fits_root` and
-        :func:`default_cube_covariance_file`
-    | **07 Oct 2015**: (KBW) Adjusted for changes to naming of the
-        template library database definitions.  Added M11-STELIB-ZSOL
-        library.
-    | **29 Jan 2016**: (KBW) Changed
-        :func:`manga.config.inputdata.available_template_libraries` to
-        use configparser ini files to define each template library.
-    | **03 Feb 2016**: (KBW) Added checks for required environmental
-        variables.
-    | **17 Feb 2016**: (KBW) Added try/except blocks for importing
-        ConfigParser.
-    | **16 Mar 2016**: (KBW) Created :mod:`mangadap.config.inputdata`
-        and moved **default_template_libraries** there (and changed it
-        to
-        :func:`mangadap.config.inputdata.available_template_libraries`.
-        No longer need ConfigParser here.
-    | **12 Jul 2016**: (KBW) Changed :func:`default_manga_fits_root` to
-        accommodate MAPS output name.
-    | **05 May 2017**: (KBW) :func:`default_dap_version` returns
-        internal version if MANGADAP_VER environmental variable is not
-        defined.
-    | **01 Mar 2018**: (KBW) Added :func:`default_redshift_fix_file`.
-
 ----        
 
 .. include license and copyright
@@ -444,46 +402,46 @@ def dap_file_root(plate, ifudesign, mode=None):
     return 'mangadap-{0}-{1}'.format(plate, ifudesign) if mode is None else \
                     'mangadap-{0}-{1}-LOG{2}'.format(plate, ifudesign, mode)
 
-# TODO: This method should be obsolete now.
-def dap_par_file(plate, ifudesign, mode, partype='input', drpver=None, dapver=None,
-                 analysis_path=None, directory_path=None):
-    """
-    Return the full path to a par file used by the DAP to analyze the
-    specified DRP output file.
-
-    Args:
-        plate (:obj:`int`):
-            Plate number
-        ifudesign (:obj:`int`):
-            IFU design number
-        mode (:obj:`str`):
-            Mode of the DRP reduction; either ``RSS`` or ``CUBE``.
-        partype (:obj:`str`):
-            An "unregulated" type for the parameter file. The default
-            is ``'input'``, signifying the input set of observational
-            parameters; see
-            :class:`mangadap.par.obsinput.ObsInputPar`.
-        drpver (:obj:`str`, optional):
-            DRP version. Default is to use :func:`drp_version`.
-        dapver (:obj:`str`, optional):
-            DAP version. Default is to use :func:`dap_version`.
-        analysis_path (:obj:`str`, optional): 
-            Path to the root analysis directory. Default is to use
-            :func:`dap_analysis_path`.
-        directory_path (:obj:`str`, optional):
-            Path to the directory with the DAP output files. Default
-            is to use :func:`dap_common_path`
-
-    Returns:
-        :obj:`str`: Full path to the DAP par file
-    """
-    # Make sure the directory path is defined
-    _directory_path = dap_common_path(plate=plate, ifudesign=ifudesign, drpver=drpver,
-                                             dapver=dapver, analysis_path=analysis_path) \
-                            if directory_path is None else os.path.abspath(directory_path)
-    # Set the name of the par file; put this in its own function?
-    par_file = '{0}-{1}.par'.format(dap_file_root(plate, ifudesign, mode), partype)
-    return os.path.join(_directory_path, par_file)
+## TODO: This method should be obsolete now.
+#def dap_par_file(plate, ifudesign, mode, partype='input', drpver=None, dapver=None,
+#                 analysis_path=None, directory_path=None):
+#    """
+#    Return the full path to a par file used by the DAP to analyze the
+#    specified DRP output file.
+#
+#    Args:
+#        plate (:obj:`int`):
+#            Plate number
+#        ifudesign (:obj:`int`):
+#            IFU design number
+#        mode (:obj:`str`):
+#            Mode of the DRP reduction; either ``RSS`` or ``CUBE``.
+#        partype (:obj:`str`):
+#            An "unregulated" type for the parameter file. The default
+#            is ``'input'``, signifying the input set of observational
+#            parameters; see
+#            :class:`mangadap.par.obsinput.ObsInputPar`.
+#        drpver (:obj:`str`, optional):
+#            DRP version. Default is to use :func:`drp_version`.
+#        dapver (:obj:`str`, optional):
+#            DAP version. Default is to use :func:`dap_version`.
+#        analysis_path (:obj:`str`, optional): 
+#            Path to the root analysis directory. Default is to use
+#            :func:`dap_analysis_path`.
+#        directory_path (:obj:`str`, optional):
+#            Path to the directory with the DAP output files. Default
+#            is to use :func:`dap_common_path`
+#
+#    Returns:
+#        :obj:`str`: Full path to the DAP par file
+#    """
+#    # Make sure the directory path is defined
+#    _directory_path = dap_common_path(plate=plate, ifudesign=ifudesign, drpver=drpver,
+#                                             dapver=dapver, analysis_path=analysis_path) \
+#                            if directory_path is None else os.path.abspath(directory_path)
+#    # Set the name of the par file; put this in its own function?
+#    par_file = '{0}-{1}.par'.format(dap_file_root(plate, ifudesign, mode), partype)
+#    return os.path.join(_directory_path, par_file)
 
     
 def dap_config(plate, ifudesign, drpver=None, dapver=None, analysis_path=None,
@@ -528,7 +486,7 @@ def dap_plan_file(drpver=None, dapver=None, analysis_path=None):
     Args:
         drpver (:obj:`str`, optional):
             DRP version. Default is to use :func:`drp_version`.
-        dapver (:obj:`str, optional):
+        dapver (:obj:`str`, optional):
             DAP version. Default is to use :func:`dap_version`.
         analysis_path (:obj:`str`, optional):
             Path to the root analysis directory. Default is to use

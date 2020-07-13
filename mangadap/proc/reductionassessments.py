@@ -5,20 +5,6 @@ Class that performs a number of assessments of a DRP file needed for
 handling of the data by the DAP.  These assessments need only be done
 once per DRP data file.
 
-Revision history
-----------------
-
-    | **24 Mar 2016**: Implementation begun by K. Westfall (KBW)
-    | **11 May 2016**: (KBW) Switch to using
-        `pydl.goddard.astro.airtovac`_ instead of internal function
-    | **19 May 2016**: (KBW) Added loggers and quiet keyword arguments
-        to :class:`ReductionAssessment`, removed verbose 
-    | **23 Feb 2017**: (KBW) Use DAPFitsUtil read and write functions.
-    | **27 Feb 2017**: (KBW) Use DefaultConfig.
-    | **17 May 2017**: (KBW) Added ability to use a response function
-        for the flux statistics.
-    | **23 Feb 2020**: (KBW) Now uses DataCube instead of DRPFits
-
 ----
 
 .. include license and copyright

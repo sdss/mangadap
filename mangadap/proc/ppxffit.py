@@ -9,39 +9,6 @@ Implements a wrapper class for pPXF.
     not up against one of the +/- 2000 km/s limits?  Could be useful for
     poor redshift guesses.
 
-Revision history
-----------------
-
-    | **26 Apr 2016**: Moved from spectralfitting.py to its own file by
-        K. Westfall (KBW)
-    | **05 Jul 2016**: (KBW) V6.0.0 of pPXF does not use the oversample
-        keyword given a better solution; see Cappellari (in prep).  This
-        keyword was therefore removed from the parameter set.
-    | **06 Jul 2016**: (KBW) Use v6.0.0 pPXF functions to compute models
-        using new LOSVD kernel functionality.
-    | **10 Oct 2016**: (KBW) Fixed error in calculation of velocity
-        offset between template and object spectra to account for
-        different size pixels.
-    | **31 Oct 2016**: (KBW) Allow the spectral resolution to be a
-        vector per spaxel or a vector per set of input spectra in
-        :func:`PPXFFit.fit`.
-    | **01 Nov 2016**: (KBW) Added new iteration method that does not do
-        a first fit to the global spectrum but does include the
-        rejection iteration.  Allows users to treat each spectrum
-        provided to :func:`PPXFFit.fit` individually.  Fixed goodpixel
-        mask when not first fitting the global spectrum.
-    | **02 Nov 2016**: (KBW) Added ability to limit which templates are
-        fit to each spectrum in :func:`PPXFFit.fit` using usetpl kwarg.
-    | **17 Feb 2017**: (KBW) Included filtering options.  Changed to use
-        ppxf v6.0.4; mpfit object no longer returned, only mpfit status.
-    | **30 Aug 2017**: (KBW) Switch from
-        :func:`mangadap.util.instrument.resample_vector` to
-        :func:`mangadap.util.instrument.resample1d`.
-    | **05 Feb 2018**: (KBW) Added :class:`PPXFModel`.
-    | **22 May 2018**: (KBW) Change import to ppxf package.
-    | **30 Aug 2018**: (KBW) Changed from resample1d to
-        :class:`mangadap.util.sampling.Resample`.
-
 ----
 
 .. include license and copyright

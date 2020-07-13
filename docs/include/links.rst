@@ -15,6 +15,7 @@
 .. _argparse.Namespace: https://docs.python.org/3/library/argparse.html#argparse.Namespace
 .. _argparse.ArgumentParser: https://docs.python.org/3/library/argparse.html#argparse.ArgumentParser
 .. _configparser.ConfigParser: https://docs.python.org/3/library/configparser.html
+.. _eval: https://docs.python.org/3/library/functions.html#eval
 
 .. configobj
 

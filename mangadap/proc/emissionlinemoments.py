@@ -3,28 +3,6 @@
 """
 A class hierarchy that measures moments of the observed emission lines.
 
-Revision history
-----------------
-
-    | **25 Apr 2016**: Implementation begun by K. Westfall (KBW)
-    | **20 May 2016**: (KBW) Added loggers and quiet keyword arguments
-        to :class:`EmissionLineMoments`, removed verbose 
-    | **28 Jul 2016**: (KBW) Fixed error in initialization of guess
-        redshift when stellar continuum is provided.
-    | **09 Jan 2017**: (KBW) Generalized so that it no longer reads in
-        StellarContinuumModel object.
-    | **23 Feb 2017**: (KBW) Use DAPFitsUtil read and write functions.
-    | **27 Feb 2017**: (KBW) Use DefaultConfig for ini files.
-    | **31 May 2017**: (KBW) Revert to using
-        :class:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel`
-        on input
-    | **02 Feb 2018**: (KBW) Adjust for change to
-        :func:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel.fill_to_match`.
-    | **15 Feb 2018**: (KBW) Add parameter that will set whether or not
-        the moments should be remeasured after the emission-line
-        modeling.  Allow to pass an emission-line model for setting up
-        the continuum and the velocities to measure.
-
 ----
 
 .. include license and copyright
@@ -525,12 +503,12 @@ class EmissionLineMoments:
         instead of the full vector.
 
         Args:
-            redshift (float, numpy.ndarray):
+            redshift (:obj:`float`, `numpy.ndarray`_):
                 Redshifts (:math:`z`) to use for each spectrum.
             measure_on_unbinned_spaxels (:obj:`bool`):
                 Flag that method expects to measure moments on unbinned
                 spaxels.
-            good_snr (numpy.ndarray):
+            good_snr (`numpy.ndarray`_):
                 Boolean array setting which spectra have sufficient S/N
                 for the measurements.
 
@@ -682,12 +660,12 @@ class EmissionLineMoments:
         err is a single vector that is the same for all spec!
 
         Returns:
-            float, numpy.ndarray: Return five arrays or floats: (1) The
-            center of each passband, (2) the mean continuum level, (3)
-            the propagated error in the continuum level (will be None if
-            no errors are provided), (4) flag that part of the passband
-            was masked, (5) flag that the passband was fully masked or
-            empty.
+            :obj:`float`, `numpy.ndarray`_: Return five arrays or
+            floats: (1) The center of each passband, (2) the mean
+            continuum level, (3) the propagated error in the
+            continuum level (will be None if no errors are provided),
+            (4) flag that part of the passband was masked, (5) flag
+            that the passband was fully masked or empty.
         """
 
         if spec.ndim == 1:
@@ -739,13 +717,13 @@ class EmissionLineMoments:
         as 0.0.
 
         Args:
-            wave (numpy.ndarray):
+            wave (`numpy.ndarray`_):
                 Wavelengths in angstroms
-            spec (numpy.ndarray):
+            spec (`numpy.ndarray`_):
                 Flux in flux density (per angstrom)
             restwave (float):
                 The rest wavelength of the line.
-            err (numpy.ndarray):
+            err (`numpy.ndarray`_):
                 The 1-sigma errors in the flux density.
 
         Returns:

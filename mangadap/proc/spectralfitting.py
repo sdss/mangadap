@@ -3,20 +3,6 @@
 """
 Implements a few base classes used during spectral fitting procedures.
 
-Revision history
-----------------
-
-    | **14 Apr 2016**: Implementation begun by K. Westfall (KBW)
-    | **19 Apr 2016**: (KBW) First version
-    | **26 Apr 2016**: (KBW) Moved PPXFFit to a separate file (ppxffit.py)
-    | **03 Nov 2016**: (KBW) Added USETPL column to stellar kinematics
-        output table.
-    | **25 Oct 2017**: (KBW) Added PLY columns to emission-line database
-    | **02 Feb 2018**: (KBW) Added :func:`select_binned_spectra_to_fit`.
-    | **15 Mar 2018**: (KBW) Equivalenth width now measured at the
-        velocity of each line if a redshift is not provided.  See
-        :func:`measure_equivalent_width`.
-
 ----
 
 .. include license and copyright

@@ -3,17 +3,6 @@
 """
 Provides a set of utility functions to deal with dust extinction.
 
-Revision history
-----------------
-
-    | **02 Jun 2016**: Original implementation by K. Westfall (KBW).
-        Drawn from dust.py in David Wilkinson's FIREFLY code, and the
-        dereddening functions in IDLUTILS.
-    | **14 Jul 2016**: (KBW) Added :func:`apply_reddening`
-    | **02 Dec 2016**: (KBW) Added :class:`GalacticExtinction`
-    | **15 Sep 2017**: (KBW) Allow to pass error instead of inverse
-        variance to :func:`GalacticExtinction.apply`.
-
 ----
 
 .. include license and copyright

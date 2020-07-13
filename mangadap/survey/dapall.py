@@ -13,16 +13,6 @@ file is created.
       luminosity and the star-formation rate.
     - Provide a rough Balmer decrement measurement?
 
-Revision history
-----------------
-
-    | **19 Aug 2016**: Original Implementation by K. Westfall (KBW)
-    | **29 Sep 2017**: (KBW) Force the number of emission-line
-        passbands, emission-lines to fit, and spectral indices to be the
-        same for all analysis methods.
-    | **30 Jan 2019**: (KBW) Add effective chi-square for emission-line
-        fits.
-
 ----
 
 .. include license and copyright

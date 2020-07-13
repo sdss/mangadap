@@ -3,13 +3,6 @@
 """
 Defines some utility routines used to map a provided set of quantities.
 
-Revision history
-----------------
-
-    | **10 Jun 2015**: Pulled out functions by Michele Cappellari into a
-        utility file (K. Westfall; KBW)
-    | **07 Jul 2017**: (KBW) Added map matching functions
-
 ----
 
 .. include license and copyright

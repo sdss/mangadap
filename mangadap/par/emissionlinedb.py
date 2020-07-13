@@ -21,10 +21,11 @@ the default set of available emission-line databases::
     print(EmissionLineDB.available_databases())
     emldb = EmissionLineDB.from_key('ELPMPL9')
 
-The above call uses the :func:`EmissionLineDB.from_key` method to
-define the database using its keyword and the database provided with
-the MaNGA DAP source distribution. You can also define the database
-directly for an SDSS-style parameter file::
+The above call uses the
+:func:`~mangadap.par.spectralfeaturedb.SpectralFeatureDB.from_key`
+method to define the database using its keyword and the database
+provided with the MaNGA DAP source distribution. You can also define
+the database directly for an SDSS-style parameter file::
 
     from mangadap.par.emissionlinedb import EmissionLineDB
     emldb = EmissionLineDB('/path/to/emission/line/database/myeml.par')
@@ -32,18 +33,6 @@ directly for an SDSS-style parameter file::
 The above will read the file and set the database keyword to
 'MYEML' (i.e., the capitalized root name of the ``*.par`` file).
 See :ref:`emissionlines` for the format of the parameter file.
-
-Revision history
-----------------
-
-    | **17 Mar 2016**: Original implementation by K. Westfall (KBW)
-    | **11 May 2016**: (KBW) Switch to using `pydl.pydlutils.yanny`_ and
-        `pydl.goddard.astro.airtovac`_ instead of internal functions
-    | **13 Jul 2016**: (KBW) Include log_bounded, blueside, and redside
-        in database.
-    | **06 Oct 2017**: (KBW) Add function to return channel names
-    | **02 Dec 2019**: (KBW) Significantly reworked to use the new
-        base class.
 
 ----
 
@@ -223,8 +212,9 @@ class EmissionLineDefinitionTable(DataTable):
             emission line.
         shape (:obj:`int`, :obj:`tuple`, optional):
             The shape of the initial array. If None, the data array
-            will not be instantiated; use :func:`init` to initialize
-            the data array after instantiation.
+            will not be instantiated; use
+            :func:`~mangadap.util.datatable.DataTable.init` to
+            initialize the data array after instantiation.
     """
     def __init__(self, name_len=1, mode_len=1, prof_len=1, shape=None):
         # NOTE: This should require python 3.7 to make sure that this
@@ -246,7 +236,7 @@ class EmissionLineDefinitionTable(DataTable):
                          PROFILE=dict(typ='<U{0:d}'.format(prof_len), shape=None,
                                       descr='Name of the parameterization used for the instrinsic '
                                             'line profile'),
-                         NCOMP=dict(type=int, shape=None,
+                         NCOMP=dict(typ=int, shape=None,
                                     descr='Number of components; never used!'))
 
         keys = list(datamodel.keys())
@@ -262,13 +252,13 @@ class EmissionLineDB(SpectralFeatureDB):
     Basic container class for the database of emission-line parameters.
 
     Each row of the database is parsed using
-    :class:`mangadap.proc.emissionlinedb.EmissionLinePar`.  For the
+    :class:`~mangadap.par.emissionlinedb.EmissionLinePar`. For the
     format of the input file, see :ref:`emissionlines-modeling`.
 
     The primary instantiation requires the SDSS parameter file with
     the emission-line data. To instantiate using a keyword (and
     optionally a directory that holds the parameter files), use the
-    :func:`mangadap.par.spectralfeaturedb.SpectralFeatureDB.from_key`
+    :func:`~mangadap.par.spectralfeaturedb.SpectralFeatureDB.from_key`
     class method.  See the base class for additional attributes.
 
     Args:

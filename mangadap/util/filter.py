@@ -3,15 +3,6 @@
 """
 A set of functions used to filter arrays.
 
-Revision history
-----------------
-
-    | **26 Jan 2017**: Original implementation by K. Westfall (KBW)
-    | **06 Apr 2017**: Interpolate sigma vectors as well as the smoothed
-        vectors in :class:`BoxcarFilter`.
-    | **21 Dec 2017**: Add weighting functionality to
-        :class:`BoxcarFilter`.
-
 ----
 
 .. include license and copyright

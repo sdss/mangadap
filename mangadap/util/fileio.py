@@ -3,24 +3,6 @@
 """
 Provides a set of file I/O routines.
 
-Revision history
-----------------
-
-    | **27 May 2015**: Original implementation by K. Westfall (KBW)
-    | **29 Jan 2016**: (KBW) Added :func:`read_template_spectrum`
-    | **01 Feb 2016**: (KBW) Moved wavelength calculation to a common
-        function.
-    | **09 Feb 2016**: (KBW) Added :func:`writefits_1dspec`.
-    | **28 Mar 2016**: (KBW) Added function :func:`init_record_array`
-        and :func:`rec_to_fits_type`
-    | **19 May 2016**: (KBW) In :func:`write_hdu`, removed verbose and
-        added loggers and quiet.
-    | **25 Aug 2016**: (KBW) Added :func:`channel_dictionary`
-    | **23 Feb 2017**: (KBW) create_symlink now creates the directory if
-        it doesn't exist
-    | **23 Mar 2017**: (KBW) Force type of header keywords in
-        :func:`wavelength_vector`.
-
 ----
 
 .. include license and copyright

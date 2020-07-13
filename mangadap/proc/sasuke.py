@@ -3,28 +3,6 @@
 """
 Implements an emission-line fitting class that largely wraps pPXF.
 
-Revision history
-----------------
-
-    | **24 May 2017**: Original implementation started by K. Westfall (KBW)
-    | **23 Jun 2017**: (KBW) Documentation; fix error in
-        :func:`Sasuke._save_results`
-    | **08 Sep 2017**: (KBW) Move emission-line template construction to
-        :mod:`mangadap.proc.emissionlinetemplates`. Add
-        `deconstruct_bins` flag to parameters.
-    | **25 Oct 2017**: (KBW) Allow to use reddening fit from pPXF
-    | **02 Feb 2018**: (KBW) Use 
-        :func:`mangadap.proc.spectralfitting.EmissionLineFit.select_binned_spectra_to_fit`.
-        Adjust for change to
-        :func:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel.fill_to_match`.
-    | **24 Feb 2018**: (KBW) Allow for a new template library to be
-        used, different from the one used during the stellar continuum
-        fit.
-    | **20 Mar 2018**: (KBW) Corrected flux calculation and inclusion
-        of provided pixel mask.
-    | **22 May 2018**: (KBW) Change import to ppxf package.
-    | **29 May 2018**: (KBW) Change xjmc function import and call
-
 ----
 
 .. include license and copyright

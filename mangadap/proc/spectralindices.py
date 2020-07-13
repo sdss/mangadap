@@ -47,25 +47,6 @@ spectra:
     - The behavior is exactly as if the stellar-continuum model was not
       provided.
 
-Revision history
-----------------
-
-    | **20 Apr 2016**: Implementation begun by K. Westfall (KBW)
-    | **09 May 2016**: (KBW) Add subtraction of emission-line models
-    | **11 Jul 2016**: (KBW) Allow to not apply dispersion corrections
-        for index measurements
-    | **28 Jul 2016**: (KBW) Fixed error in initialization of guess
-        redshift when stellar continuum is provided.
-    | **23 Feb 2017**: (KBW) Use DAPFitsUtil read and write functions.
-    | **27 Feb 2017**: (KBW) Use DefaultConfig
-    | **02 Feb 2018**: (KBW) Allow for stellar-continuum and
-        emission-line models to be performed on different spectra (i.e.,
-        allow for the hybrid binning scheme).  Adjust for change to
-        :func:`mangadap.proc.stellarcontinuummodel.StellarContinuumModel.fill_to_match`.
-    | **15 Mar 2018**: (KBW) Correct the indices measured in angstroms
-        for redshift.  Keep the indices as measured by the best-fitting
-        model.
-
 ----
 
 .. include license and copyright
@@ -282,7 +263,13 @@ class SpectralIndicesDefinitionTable(DataTable):
                          ORDER=dict(typ='<U3', shape=None,
                                     descr='The numerator-denominator order of the index '
                                           '(bandhead/color indices only)'))
-    
+
+        keys = list(datamodel.keys())
+        super(SpectralIndicesDefinitionTable,
+                self).__init__(keys, [datamodel[k]['typ'] for k in keys],
+                               element_shapes=[datamodel[k]['shape'] for k in keys],
+                               descr=[datamodel[k]['descr'] for k in keys],
+                               shape=shape) 
 
 
 class SpectralIndicesDataTable(DataTable):

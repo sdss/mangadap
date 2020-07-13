@@ -4,11 +4,6 @@
 Light-weight class for handling data tables using numpy record
 arrays.
 
-Revision history
-----------------
-
-    | **05 Jun 2020**: Original implementation by K. Westfall (KBW)
-
 ----
 
 .. include license and copyright
@@ -100,8 +95,10 @@ class DataTable:
         self.types = [types] if isinstance(keys, type) else list(types)
         if not isinstance(self.types, list):
             raise TypeError('Input types must be a single type or a list.')
-        if not all([isinstance(t(0), (int, numpy.integer)) 
-                        | isinstance(t(0), (float, numpy.floating)) for t in self.types]):
+        if not all([isinstance(numpy.dtype(t).type(0),
+                               (int, numpy.integer, float, numpy.floating, str, numpy.str_,
+                                bool, numpy.bool_)) 
+                        for t in self.types]):
             raise TypeError('Input types must cast to an integer or floating point object.')
         if len(self.types) == 1:
             self.types = [self.types[0]]*self.ncols
@@ -220,7 +217,7 @@ class DataTable:
         data_table[0,:] = ['Key', 'Type', 'Description']
         for i in range(self.ncols):
             data_table[i+1,0] = self.keys[i]
-            data_table[i+1,1] = self.types[i].__name__
+            data_table[i+1,1] = '``{0}``'.format(numpy.dtype(self.types[i]).type.__name__)
 #            data_table[i+1,2] = '(1,)' if self.element_shapes[i] is None \
 #                                    else str(self.element_shapes[i])
             data_table[i+1,2] = '..' if self.descr[i] is None else self.descr[i]

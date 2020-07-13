@@ -8,14 +8,6 @@ Provides a set of parsing utility functions.
     - Add function that will parse the default MaNGA fits file name (see
       :func:`mangadap.config.defaults.manga_fits_root`).
 
-Revision history
-----------------
-
-    | **2015**: Original implementation by K. Westfall (KBW)
-    | **20 May 2015**: (KBW) Documentation and Sphinx tests
-    | **04 Jun 2015**: (KBW) Added :func:`parse_drp_file_name`,
-        :func:`parse_dap_file_name`
-
 ----
 
 .. include license and copyright
@@ -33,27 +25,26 @@ from .exception_tools import print_frame
 
 def arginp_to_list(inp, evaluate=False, quiet=True):
     """
-    Separate a list of comma-separated values in the input string to a
-    *list* object.
+    Separate a list of comma-separated values in the input string to
+    a :obj:`list`.
 
     Args:
-        inp (str or list): Input string with a list of comma-separated values
-        evaluate (bool): (Optional) Attempt to evaluate the elements in
-            the list using :func:`eval`.
-        quiet (bool): (Optional) Suppress terminal output
+        inp (:obj:`str`, :obj:`list`):
+            Input string with a list of comma-separated values
+        evaluate (:obj:`bool`, optional):
+            Attempt to evaluate the elements in the list using
+            `eval`_.
+        quiet (:obj:`bool`, optional):
+            Suppress terminal output.
 
     Returns:
-        list: The list of the comma-separated values
+        :obj:`list`: The list of the comma-separated values
     """
     out = inp
-
-#    print('INP type: {0}'.format(type(inp)))
 
     # Simply return a None value
     if out is None:
         return out
-
-#    print(out)
 
     # If the input value is a string, convert it to a list of strings
     if isinstance(out, str):
@@ -62,13 +53,9 @@ def arginp_to_list(inp, evaluate=False, quiet=True):
         out = out.replace(" ", "")
         out = out.split(',')
 
-#    print(out)
-
     # If the input is still not a list, make it one
     if not isinstance(out, list):
         out = [out]
-
-#    print(out)
 
     # Evaluate each string, if requested
     if evaluate:
@@ -83,27 +70,22 @@ def arginp_to_list(inp, evaluate=False, quiet=True):
             else:
                 out[i] = tmp
 
-#    print(out)
-#    print('OUT type: {0}'.format(type(out)))
     return out
 
 
-#def funcarg_to_list(*arg):
-##   print(len(arg))
-#    return arg[1:]
-
-
+# TODO: Replace with ', '.join([str(f) for f in flist])
 def list_to_csl_string(flist):
     """
     Convert a list to a comma-separated string; i.e. perform the inverse
     of :func:`arginp_to_list`.
 
     Args:
-        flist (list): List to convert to a comma-separated string
+        flist (:obj:`list`):
+            List to convert to a comma-separated string
 
     Returns:
-        str: String with the values in the input list converted to
-        string, using :func:`str`, separated by commas
+        :obj:`str`: String with the values in the input list
+        converted to strings separated by commas
     """
     n = len(flist)
     out=str(flist[0])

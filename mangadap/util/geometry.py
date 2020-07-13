@@ -4,18 +4,6 @@
 
 Provides a set of utility functions dealing with computational geometry.
 
-Revision history
-----------------
-
-    | **2015**: Original implementation by K. Westfall (KBW)
-    | **20 May 2015**: (KBW) Documentation and Sphinx tests
-    | **28 Mar 2016**: (KBW) Copied old projected_disk_plane to
-        :class:`SemiMajorAxisCoo`.  Coordinate projection functions
-        (e.g., :func:`SemiMajorAxisCoo.polar`) can now take array-like
-        objects as arguments.
-    | **08 Sep 2016**: (KBW) Allow :func:`point_inside_polygon` to
-        accept multiple coordinates.
-
 ----
 
 .. include license and copyright

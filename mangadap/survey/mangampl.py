@@ -12,25 +12,6 @@ Defines a class to keep track of MaNGA MPL dependencies and versioning.
     Deprecate this. I'm not sure it's actually used (or useful)
     anymore.
 
-Revision history
-----------------
-
-    | **2015**: Original Implementation by K. Westfall (KBW)
-    | **Apr 2015**: (KBW) Added MPL-3
-    | **20 May 2015**: (KBW) Documentation and Sphinx tests. Change
-        default to MPL-3
-    | **27 Aug 2015**: (KBW) Added (temporary) MPL-4 dependencies
-    | **06 Oct 2015**: (KBW) Changed DRP version for MPL-4 to v1_5_0
-    | **22 Oct 2015**: (KBW) Changed DRP version for MPL-4 to v1_5_1.  Added
-        version dependency for mangacore and sdss_access.
-    | **13 May 2016**: (KBW) Added MPL-5 (for now trunk).
-    | **10 Oct 2016**: (KBW) Updated for MPL-6 (DAP is trunk
-        temporarily).
-    | **11 Oct 2016**: (KBW) Moved version checking to here (previously
-        in rundap.py).
-    | **11 May 2017**: (KBW) Update MPL-6 dependencies; remove
-        module_file function
-
 ----
 
 .. include license and copyright

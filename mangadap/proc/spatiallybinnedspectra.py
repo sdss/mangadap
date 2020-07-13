@@ -7,29 +7,6 @@ two-dimensional data.
 The base class allows for user-defined definitions of binning
 procedures.
 
-Revision history
-----------------
-
-    | **01 Apr 2016**: Implementation begun by K. Westfall (KBW)
-    | **19 May 2016**: (KBW) Include SPECRES and SPECRESD extensions
-        from DRP file in output. Added loggers and quiet keyword
-        arguments to :class:`SpatiallyBinnedSpectra`, removed verbose 
-    | **06 Jul 2016**: (KBW) Make the application of a reddening
-        correction an input parameter.
-    | **25 Aug 2016**: (KBW) Fixed error in bin area when calling
-        :func:`SpatiallyBinnedSpetra._unbinned_data_table`
-    | **01 Dec 2016**: (KBW) Include keyword that describes how to
-        handle the spectral resolution.
-    | **02 Dec 2016**: (KBW) Incorporate
-        :class:`mangadap.util.extinction.GalacticExtinction`.  Revert
-        main file structure to be bin-based instead of cube-based;
-        include convenience functions that construct the cube for each
-        extension as requested.
-    | **06 Dec 2016**: (KBW) Significantly restructured.
-    | **23 Feb 2017**: (KBW) Use DAPFitsUtil read and write functions.
-    | **21 Aug 2017**: (KBW) Use the new PRE-pixelized assessments of
-        the LSF.
-
 ----
 
 .. include license and copyright

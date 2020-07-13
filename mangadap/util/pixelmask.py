@@ -3,15 +3,6 @@
 """
 A class hierarchy for pixel masks.
 
-Revision history
-----------------
-
-    | **18 Apr 2016**: Original implementation K. Westfall (KBW)
-    | **30 Nov 2016**: (KBW) Generalization of :class:`PixelMask` and
-        minor edits
-    | **16 Oct 2019**:  KHRR made nsigma a class attribute so that it
-    |   it can be set externally.  The default value is still 3.0 (same as before).
-
 ----
 
 .. include license and copyright

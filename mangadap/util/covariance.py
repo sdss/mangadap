@@ -116,29 +116,6 @@ can be written and read in without issue. See
     assert not (numpy.abs(numpy.sum(Cov.toarray(channel=2000) 
                         - Corr.toarray(channel=2000))) > 0.0)
 
-Revision history
-----------------
-
-    | **23 Feb 2015**: Original Implementation by K. Westfall (KBW)
-    | **04 Aug 2015**: (KBW) Sphinx documentation and minor edits.
-    | **29 Mar 2016**: (KBW) Allow the object to flip between a true
-        covariance matrix or a correlation matrix with saved variances.
-        Allow for a function that only returns the
-        `astropy.io.fits.BinTableHDU`_ object with the coordinate-format
-        covariance data.
-    | **06 Apr 2016**: (KBW) Allow :func:`Covariance.read` to read from
-        a file or an `astropy.io.fits.HDUList`_ object, and
-        allow the specification of the extensions to read the header,
-        covariance, and plane data.
-    | **23 Feb 2017**: (KBW) Major revisions: Use DAPFitsUtil to
-        read/write the HDUList.  Output is always a correlation matrix.
-        Rearrange ordering of 3D covariance matrices to reflect the
-        ordering in the DRPFits cube and the DAP Maps channels.  Change
-        *plane* keyword to *channel*.  Change the format of the
-        covariance matrices when written/read from a file to match what
-        is done by the DRP.  Change read method to :func:`from_fits`
-        class method.  Include :func:`from_samples` class method.
-
 ----
 
 .. include license and copyright
