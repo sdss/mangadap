@@ -1655,8 +1655,9 @@ class EmissionLineModel:
 
     # TODO: Use the EmissionMomentsDB.channel_names function!
     def channel_names(self):
-        line_database = self._compile_database(quiet=True)
-        if line_database is None:
+        if self.emldb is None:
+#        line_database = self._compile_database(quiet=True)
+#        if line_database is None:
             raise ValueError('Channel names undefined because line database is not available.')
         
         return numpy.array([ '{0}-{1}'.format(n,int(w)) \

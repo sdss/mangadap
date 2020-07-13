@@ -196,7 +196,7 @@ class EmissionMomentsDB(SpectralFeatureDB):
 
         # Instatiate the table data that will be saved defining the set
         # of emission-line moments measured
-        db = EmissionMomentsDefinitionTable(name_len=name_len, shape=self.nmom)
+        db = EmissionMomentsDefinitionTable(name_len=name_len, shape=self.size)
         hk = [ 'ID', 'NAME', 'RESTWAVE', 'PASSBAND', 'BLUEBAND', 'REDBAND' ]
         mk = [ 'index', 'name', 'restwave', 'primary', 'blueside', 'redside' ]
         for _hk, _mk in zip(hk,mk):

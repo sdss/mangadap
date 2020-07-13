@@ -80,6 +80,7 @@ class SpectralFeatureDB(ParDatabase):
         self.file = parfile
         self.size = None
 
+        # _parse_yanny() has to set `size` for each subclass.
         ParDatabase.__init__(self, self._parse_yanny())
 
         # Ensure that all indices are unique

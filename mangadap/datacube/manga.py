@@ -399,6 +399,6 @@ class MaNGADataCube(DRPFits, DataCube):
         _rlim = defaults.regrid_rlim() if rlim is None else rlim
         return super(MaNGADataCube, 
                     self).approximate_covariance_cube(channels=channels, sigma_rho=sigma_rho,
-                                                      rlim=_rlim, rho_tol=rho_tols, csr=csr,
+                                                      rlim=_rlim, rho_tol=rho_tol, csr=csr,
                                                       quiet=quiet)
 
