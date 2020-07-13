@@ -7,29 +7,6 @@ two-dimensional data.
 The base class allows for user-defined definitions of binning
 procedures.
 
-Revision history
-----------------
-
-    | **01 Apr 2016**: Implementation begun by K. Westfall (KBW)
-    | **19 May 2016**: (KBW) Include SPECRES and SPECRESD extensions
-        from DRP file in output. Added loggers and quiet keyword
-        arguments to :class:`SpatiallyBinnedSpectra`, removed verbose 
-    | **06 Jul 2016**: (KBW) Make the application of a reddening
-        correction an input parameter.
-    | **25 Aug 2016**: (KBW) Fixed error in bin area when calling
-        :func:`SpatiallyBinnedSpetra._unbinned_data_table`
-    | **01 Dec 2016**: (KBW) Include keyword that describes how to
-        handle the spectral resolution.
-    | **02 Dec 2016**: (KBW) Incorporate
-        :class:`mangadap.util.extinction.GalacticExtinction`.  Revert
-        main file structure to be bin-based instead of cube-based;
-        include convenience functions that construct the cube for each
-        extension as requested.
-    | **06 Dec 2016**: (KBW) Significantly restructured.
-    | **23 Feb 2017**: (KBW) Use DAPFitsUtil read and write functions.
-    | **21 Aug 2017**: (KBW) Use the new PRE-pixelized assessments of
-        the LSF.
-
 ----
 
 .. include license and copyright
@@ -56,8 +33,9 @@ from astropy.io import fits
 
 from ..datacube import DataCube
 from ..par.parset import KeywordParSet, ParSet
+from ..util.datatable import DataTable
 from ..util.fitsutil import DAPFitsUtil
-from ..util.fileio import init_record_array, rec_to_fits_type, create_symlink
+from ..util.fileio import create_symlink
 from ..util.parser import DefaultConfig
 from ..util.dapbitmask import DAPBitMask
 from ..util.pixelmask import SpectralPixelMask
@@ -304,6 +282,62 @@ class SpatiallyBinnedSpectraBitMask(DAPBitMask):
     .. include:: ../tables/spatiallybinnedspectrabitmask.rst
     """
     cfg_root = 'spatially_binned_spectra_bits'
+
+
+class SpatiallyBinnedSpectraDataTable(DataTable):
+    """
+    Primary data table with the results of the spatial binning.
+
+    Table includes:
+
+    .. include:: ../tables/spatiallybinnedspectradatatable.rst
+
+    .. todo::
+
+        There currently is no mask; however, could add masks for:
+            - Insufficient good wavelength channels in the spectrum.
+            - Variance in flux in bin is too large.
+
+    Args:
+        shape (:obj:`int`, :obj:`tuple`, optional):
+            The shape of the initial array. If None, the data array
+            will not be instantiated; use :func:`init` to initialize
+            the data array after instantiation.
+    """
+    def __init__(self, shape=None):
+        # NOTE: This should require python 3.7 to make sure that this
+        # is an "ordered" dictionary.
+        datamodel = dict(BINID=dict(typ=int, shape=None, descr='Bin ID number'),
+                         NBIN=dict(typ=int, shape=None, descr='Number of spaxels in the bin'),
+                         SKY_COO=dict(typ=float, shape=(2,),
+                                      descr='The mean on-sky coordinates of the binned spaxels.'),
+                         LW_SKY_COO=dict(typ=float, shape=(2,),
+                                         descr='The luminosity-weighted mean on-sky coordinates '
+                                               'of the binned spaxels.'),
+                         ELL_COO=dict(typ=float, shape=(2,),
+                                      descr='The mean elliptical coordinates of the binned '
+                                            'spaxels.'),
+                         LW_ELL_COO=dict(typ=float, shape=(2,),
+                                         descr='The luminosity-weighted mean elliptical '
+                                               'coordinates of the binned spaxels.'),
+                         AREA=dict(typ=float, shape=None, descr='Total on-sky area of the bin'),
+                         AREA_FRAC=dict(typ=float, shape=None,
+                                        descr='Fraction of the expected area covered by good '
+                                              'spaxels (not relevant to all binning schemes)'),
+                         SIGNAL=dict(typ=float, shape=None,
+                                     descr='Mean flux per pixel in the binned spectrum.'),
+                         VARIANCE=dict(typ=float, shape=None,
+                                       descr='Mean variance per pixel in the binned spectrum.'),
+                         SNR=dict(typ=float, shape=None,
+                                       descr='Mean S/N per pixel in the binned spectrum.'))
+
+        keys = list(datamodel.keys())
+        super(SpatiallyBinnedSpectraDataTable,
+                self).__init__(keys, [datamodel[k]['typ'] for k in keys],
+                               element_shapes=[datamodel[k]['shape'] for k in keys],
+                               descr=[datamodel[k]['descr'] for k in keys],
+                               shape=shape)
+
 
 
 class SpatiallyBinnedSpectra:
@@ -697,29 +731,29 @@ class SpatiallyBinnedSpectra:
         """
         self.image_arrays = ['BINID']
 
-    def _per_bin_dtype(self):
-        """
-        Construct the record array data type that holds the information
-        for the binned spectra.
-
-        .. todo::
-
-            There currently is no mask; however, could add masks for:
-                - Insufficient good wavelength channels in the spectrum.
-                - Variance in flux in bin is too large.
-        """
-        return [ ('BINID',numpy.int),
-                 ('NBIN',numpy.int),
-                 ('SKY_COO',numpy.float,(2,)),
-                 ('LW_SKY_COO',numpy.float,(2,)),
-                 ('ELL_COO',numpy.float,(2,)),
-                 ('LW_ELL_COO',numpy.float,(2,)),
-                 ('AREA',numpy.float),
-                 ('AREA_FRAC',numpy.float),
-                 ('SIGNAL',numpy.float),
-                 ('VARIANCE',numpy.float),
-                 ('SNR',numpy.float)
-               ]
+#    def _per_bin_dtype(self):
+#        """
+#        Construct the record array data type that holds the information
+#        for the binned spectra.
+#
+#        .. todo::
+#
+#            There currently is no mask; however, could add masks for:
+#                - Insufficient good wavelength channels in the spectrum.
+#                - Variance in flux in bin is too large.
+#        """
+#        return [ ('BINID',numpy.int),
+#                 ('NBIN',numpy.int),
+#                 ('SKY_COO',numpy.float,(2,)),
+#                 ('LW_SKY_COO',numpy.float,(2,)),
+#                 ('ELL_COO',numpy.float,(2,)),
+#                 ('LW_ELL_COO',numpy.float,(2,)),
+#                 ('AREA',numpy.float),
+#                 ('AREA_FRAC',numpy.float),
+#                 ('SIGNAL',numpy.float),
+#                 ('VARIANCE',numpy.float),
+#                 ('SNR',numpy.float)
+#               ]
 
     @staticmethod
     def _get_missing_bins(unique_bins):
@@ -746,7 +780,8 @@ class SpatiallyBinnedSpectra:
         self.missing_bins = []                  # No missing bins
 
         # Copy the data from the ReductionAssessments object
-        bin_data = init_record_array(self.nbins, self._per_bin_dtype())
+#        bin_data = init_record_array(self.nbins, self._per_bin_dtype())
+        bin_data = SpatiallyBinnedSpectraDataTable(shape=self.nbins)
 
         bin_data['BINID'] = numpy.arange(self.nbins)
         bin_data['NBIN'] = numpy.ones(self.nbins, dtype=int)
@@ -810,7 +845,8 @@ class SpatiallyBinnedSpectra:
         self.missing_bins = SpatiallyBinnedSpectra._get_missing_bins(unique_bins)
 
         # Intialize the data for the binned spectra
-        bin_data = init_record_array(self.nbins, self._per_bin_dtype())
+#        bin_data = init_record_array(self.nbins, self._per_bin_dtype())
+        bin_data = SpatiallyBinnedSpectraDataTable(shape=self.nbins)
         bin_data['BINID'] = unique_bins.astype(int)
         bin_data['NBIN'] = bin_count.astype(int)
 
@@ -963,9 +999,9 @@ class SpatiallyBinnedSpectra:
                 coverage.
             good_snr (`numpy.ndarray`_):
                 Boolean array selecting spaxels with good S/N.
-            bin_data (`numpy.recarray`_):
+            bin_data (:class:`SpatiallyBinnedSpectraDataTable`):
                 Data table with relevant metadata for each binned
-                spectrum.  See :func:`_per_bin_dtype`.
+                spectrum.
             stack_flux (`numpy.ndarray`_):
                 Array with the stacked spectral flux. Shape is
                 :math:`(N_{\rm bin}, N_{\rm wave})`.
@@ -1039,23 +1075,19 @@ class SpatiallyBinnedSpectra:
             pri_hdr, ivar_hdu, covar_hdu = self.covariance.output_hdus(hdr=pri_hdr)
 
         # Save the data to the hdu attribute
-        self.hdu = fits.HDUList([ fits.PrimaryHDU(header=pri_hdr),
-                                  fits.ImageHDU(data=stack_flux.data, name='FLUX'),
-                                  fits.ImageHDU(data=stack_ivar.data, name='IVAR'),
-                                  fits.ImageHDU(data=stack_mask, name='MASK'),
-                                  fits.ImageHDU(data=self.cube.wave, name='WAVE'),
-                                  fits.ImageHDU(data=stack_sres.data, name='SPECRES'),
-                                  fits.ImageHDU(data=self.galext.redcorr.data, header=red_hdr,
-                                                name='REDCORR'),
-                                  fits.ImageHDU(data=stack_sdev.data, name='FLUXD'),
-                                  fits.ImageHDU(data=stack_npix.data, name='NPIX'),
-                                  fits.ImageHDU(data=bin_indx, header=map_hdr, name='BINID'),
-                                  fits.ImageHDU(data=map_mask, header=map_hdr, name='MAPMASK'),
-                                  fits.BinTableHDU.from_columns([fits.Column(name=n,
-                                                             format=rec_to_fits_type(bin_data[n]),
-                                                array=bin_data[n]) for n in bin_data.dtype.names ],
-                                                               name='BINS')
-                                ])
+        self.hdu = fits.HDUList([fits.PrimaryHDU(header=pri_hdr),
+                                 fits.ImageHDU(data=stack_flux.data, name='FLUX'),
+                                 fits.ImageHDU(data=stack_ivar.data, name='IVAR'),
+                                 fits.ImageHDU(data=stack_mask, name='MASK'),
+                                 fits.ImageHDU(data=self.cube.wave, name='WAVE'),
+                                 fits.ImageHDU(data=stack_sres.data, name='SPECRES'),
+                                 fits.ImageHDU(data=self.galext.redcorr.data, header=red_hdr,
+                                               name='REDCORR'),
+                                 fits.ImageHDU(data=stack_sdev.data, name='FLUXD'),
+                                 fits.ImageHDU(data=stack_npix.data, name='NPIX'),
+                                 fits.ImageHDU(data=bin_indx, header=map_hdr, name='BINID'),
+                                 fits.ImageHDU(data=map_mask, header=map_hdr, name='MAPMASK'),
+                                 bin_data.to_hdu(name='BINS')])
 
         # Fill the covariance matrix
         if self.covariance is not None:

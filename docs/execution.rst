@@ -1,4 +1,6 @@
 
+.. include:: include/links.rst
+
 .. _execution:
 
 Execution
@@ -14,19 +16,19 @@ analyze a datacube from the MaNGA survey, as well as how to execute
 the survey-level batch mode that analyzes all the MaNGA datacubes
 within a given directory structure.
 
-Test cases for how to use the DAP to analyze datacubes from other
-instruments/surveys will be added soon.
+Examples are available (or will be soon) that demonstrate
+:ref:`fitonespec` and :ref:`fitonecube` using the DAP software, for
+both MaNGA and other integral-field instruments.
 
 Input files
 -----------
 
 .. _execution-analysis-plan:
 
-The DAP AnalysisPlan
-~~~~~~~~~~~~~~~~~~~~
+DAP AnalysisPlan
+~~~~~~~~~~~~~~~~
 
-The DAP uses an `SDSS parameter file
-<https://www.sdss.org/dr15/software/par/>`_ to define one or more
+The DAP uses an `SDSS-style parameter file`_ to define one or more
 methods to use when analyzing any given MaNGA datacube. Each method,
 or "analysis plan", is defined by a set of six keywords that identify
 the method to use for each of the DAP's six main
@@ -35,8 +37,8 @@ allows you to analyze the same datacube multiple ways in a single
 execution of the DAP; however, note that this is no different than
 executing the DAP once per analysis method. The ``AnalysisPlan`` is
 required to execute the DAP; however, the DAP provides a
-`execution-analysis-plan-default`_ that will be used if no file is
-provided.
+:ref:`execution-analysis-plan-default` that will be used if no file
+is provided.
 
 An example ``AnalysisPlan`` parameter file looks like this (this is
 exactly the file used for MPL-10):
@@ -119,23 +121,22 @@ The DAP Datacube Configuration File
 
 The DAP uses a configuration (``ini``) file to set the datacube to be
 analyzed and provides some relevant metadata. These configuration
-files are generated at the survey-level by a combination of
-:func:`mangadap.survey.drpcomplete.write_config` and
-:func:`mangadap.datacube.MaNGADataCube.write_config`. However, we
-also provide the ``$MANGADAP_DIR/bin/write_dap_config`` script that
-will generate the relevant configuration files if you have the DRPall
-or DRPComplete file. As with all the DAP scripts, you can use the
-``-h`` command-line option to get the usage:
+files are generated at the survey-level by
+:func:`~mangadap.survey.drpcomplete.write_config`. However, we also
+provide the ``$MANGADAP_DIR/bin/write_dap_config`` script that will
+generate the relevant configuration files if you have the DRPall or
+DRPComplete file. As with all the DAP scripts, you can use the ``-h``
+command-line option to get the usage:
 
 .. include:: help/write_dap_config.rst
 
-To construct the configuration file for datacube 7815-3702, executing:
+To construct the configuration file for datacube 7815-3702, run:
 
 .. code-block:: console
 
     write_dap_config 7815 3702 mangadap-7815-3702.ini -a drpall-v3_0_1.fits
 
-produces the following file:
+to produce:
 
 .. code-block:: ini
 
@@ -167,7 +168,7 @@ for the spectral resolution and spatial correlation matrix (e.g.,
     If the isophotal ellipticity, ``ell``, is such that
     :math:`\epsilon < 0` or :math:`\epsilon > 1`, the DAP will adopt
     a default value of 0. The DAP accepts any value for the position
-    angle, ``pa``, but imposes periodic limits (i.e., 380 deg is
+    angle, ``pa``, but imposes periodic limits (e.g., 380 deg is
     converted to 20 deg). If the effective radius, ``reff``, is
     :math:`R_{\rm eff} < 0` or undefined, the DAP uses :math:`R_{\rm
     eff} = 1`.
@@ -203,7 +204,7 @@ and assuming you have the DRPall file and the relevant LOGCUBE and
 LOGRSS files (see the warning below) in the current directory, you
 could execute the DAP as follows:
 
-.. code-block::
+.. code-block:: console
 
     write_dap_config 7815 3702 mangadap-7815-3702.ini -a drpall-v3_0_1.fits
     manga_dap -c mangadap-7815-3702.ini -vv -log mangadap-7815-3702.log -d . -a dap_output
@@ -262,7 +263,7 @@ directly from the command line:
 
 .. include:: help/rundap.rst
 
-If :ref:`execution-analysis-plan` is not provided, the scripts will
+If a :ref:`execution-analysis-plan` is not provided, the scripts will
 use the :ref:`execution-analysis-plan-default`.
 
 An example call of this script that will only construct scripts for
@@ -278,12 +279,12 @@ In this call, I've specified that the DRP data is in
 in ``/path/for/dap/output/`` instead of using the default
 :ref:`datamodel-directory-structure`.
 
-The **script file** this call produces is written to
+The script file this call produces is written to
 ``/path/for/dap/output/log/[time]/7495/12704/mangadap-7495-12704``,
-where ``[time]`` is a time stamp of when ``rundap`` was executed.  (If
+where ``[time]`` is a time stamp of when ``rundap`` was executed. (If
 you execute ``rundap`` multiple times, it will create new directories
-using new time stamps each time.)  The lines of the script file for each
-plate-ifu:
+using new time stamps each time.) The lines of the script file for
+each plate-ifu:
 
  - touches the ``*.started`` file
  - executes ``manga_dap``
@@ -297,24 +298,24 @@ The example script generated by the above command would look something like this
     # Auto-generated batch file
     # Wed 27 May 2020 11:50:45
 
-    touch /uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/3.0.0/log/27May2020T17.50.29UTC/7443/12701/mangadap-7443-12701.started
+    touch /uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/3.0.1/log/27May2020T17.50.29UTC/7443/12701/mangadap-7443-12701.started
 
-    OMP_NUM_THREADS=1 manga_dap -c /uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/3.0.0/common/7443/12701/mangadap-7443-12701-LOGCUBE.ini -r /uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/redux/v3_0_1 -a /uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/3.0.0 -p /uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/3.0.0/log/27May2020T17.50.29UTC/mpl10_plan.par --log /uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/3.0.0/log/27May2020T17.50.29UTC/7443/12701/mangadap-7443-12701.log -vv
+    OMP_NUM_THREADS=1 manga_dap -c /uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/3.0.1/common/7443/12701/mangadap-7443-12701-LOGCUBE.ini -r /uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/redux/v3_0_1 -a /uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/3.0.1 -p /uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/3.0.1/log/27May2020T17.50.29UTC/mpl10_plan.par --log /uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/3.0.1/log/27May2020T17.50.29UTC/7443/12701/mangadap-7443-12701.log -vv
 
-    OMP_NUM_THREADS=1 dap_ppxffit_qa 7443 12701 --analysis_path /uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/3.0.0 --plan_file /uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/3.0.0/log/27May2020T17.50.29UTC/mpl10_plan.par
+    OMP_NUM_THREADS=1 dap_ppxffit_qa 7443 12701 --analysis_path /uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/3.0.1 --plan_file /uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/3.0.1/log/27May2020T17.50.29UTC/mpl10_plan.par
 
-    OMP_NUM_THREADS=1 spotcheck_dap_maps 7443 12701 --analysis_path /uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/3.0.0 --plan_file /uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/3.0.0/log/27May2020T17.50.29UTC/mpl10_plan.par
+    OMP_NUM_THREADS=1 spotcheck_dap_maps 7443 12701 --analysis_path /uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/3.0.1 --plan_file /uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/3.0.1/log/27May2020T17.50.29UTC/mpl10_plan.par
 
-    OMP_NUM_THREADS=1 dap_fit_residuals 7443 12701 --analysis_path /uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/3.0.0 --plan_file /uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/3.0.0/log/27May2020T17.50.29UTC/mpl10_plan.par
+    OMP_NUM_THREADS=1 dap_fit_residuals 7443 12701 --analysis_path /uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/3.0.1 --plan_file /uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/3.0.1/log/27May2020T17.50.29UTC/mpl10_plan.par
 
-    touch /uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/3.0.0/log/27May2020T17.50.29UTC/7443/12701/mangadap-7443-12701.done
+    touch /uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/3.0.1/log/27May2020T17.50.29UTC/7443/12701/mangadap-7443-12701.done
 
 
 To execute the script, you would then run:
 
 .. code-block:: bash
 
-    source /path/for/dap/output/v3_0_1/3.0.0/log/27May2020T17.50.29UTC/7443/12701/mangadap-7443-12701
+    source /path/for/dap/output/v3_0_1/3.0.1/log/27May2020T17.50.29UTC/7443/12701/mangadap-7443-12701
 
 The ``rundap`` script allows you to construct scripts for all datacubes
 it can find on disk, all IFUs on a given plate, all combinations of a

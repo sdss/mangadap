@@ -22,7 +22,7 @@ def _eval_ignore():
 
 def recursive_dict_evaluate(d):
     """
-    Recursively run :func:`eval` on each element of the provided
+    Recursively run `eval`_ on each element of the provided
     dictionary.
 
     A raw read of a configuration file with `configobj.ConfigObj`_

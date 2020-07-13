@@ -30,6 +30,13 @@ TODO
    continuum value? (e.g., latter only cares about the side bands)
  - Deprecate `mangadap.survey.mangampl`
 
+3.0.2dev
+--------
+
+ - Added DataTable, mostly for automated documentation purposes.
+ - Removed revision histories
+ - Updated docs for MPL-10
+
 3.0.1 (31 May 2020)
 -------------------
 

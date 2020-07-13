@@ -28,7 +28,7 @@ between specific line doublets.  The expected flux ratio is:
 
 .. math::
 
-    f_1 / f_2 = \lambda_2/\lambda_1\ \cdot\ (M1_1+E2_1)/(M1_2+E2_2)
+    \frac{f_1}{f_2} = \frac{\lambda_2}{\lambda_1}\ \cdot\ \frac{M1_1+E2_1}{M1_2+E2_2}
 
 where, e.g., :math:`\lambda_1` is the rest wavelength of the first line
 in the doublet.

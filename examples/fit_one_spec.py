@@ -1,5 +1,5 @@
-#!/usr/bin/env python3
 
+# Imports
 import os
 import time
 
@@ -11,6 +11,7 @@ from astropy.io import fits
 from matplotlib import pyplot
 
 from mangadap.datacube import MaNGADataCube
+from mangadap.config import defaults
 from mangadap.util.sampling import spectral_coordinate_step
 
 from mangadap.util.fitsutil import DAPFitsUtil
@@ -32,23 +33,57 @@ from mangadap.proc.spectralfitting import EmissionLineFit
 #-----------------------------------------------------------------------------
 
 def get_redshift(plt, ifu, drpall_file=None):
-    hdu = fits.open(os.path.join(os.environ['MANGA_SPECTRO_REDUX'], os.environ['MANGADRP_VER'],
-                                 'drpall-{0}.fits'.format(os.environ['MANGADRP_VER']))) \
-                if drpall_file is None else fits.open(drpall_file)
+    """
+    Get the redshift of a galaxy from the DRPall file.
+
+    Args:
+        plt (:obj:`int`):
+            Plate number
+        ifu (:obj:`int`):
+            IFU identifier
+        drapall_file (:obj:`str`, optional):
+            DRPall file. If None, attempts to use the default path to
+            the file using environmental variables.
+    
+    Returns:
+        :obj:`float`: The redshift to the galaxy observed by the
+        provided PLATEIFU.
+    """
+    if drpall_file is None:
+        drpall_file = defaults.drpall_file()
+    hdu = fits.open(drpall_file)
     indx = hdu[1].data['PLATEIFU'] == '{0}-{1}'.format(plt, ifu)
     return hdu[1].data['NSA_Z'][indx][0]
 
 
 def get_spectrum(plt, ifu, x, y, directory_path=None):
+    """
+    Extract a single spectrum from a MaNGA observation.
+
+    Args:
+        plt (:obj:`int`):
+            Plate number
+        ifu (:obj:`int`):
+            IFU identifier
+        x (:obj:`int`):
+            The spaxel coordinate along the RA axis.
+        y (:obj:`int`):
+            The spaxel coordinate along the DEC axis.
+        directory_path (:obj:`str`, optional):
+            Directory with the DRP LOGCUBE file. If None, uses the
+            default directory path based on the environmental
+            variables.
+
+    Returns:
+        :obj:`tuple`: Returns 4 numpy vectors: The wavelength, flux,
+        flux inverse variance, and spectral resolution extracted from
+        the datacube.
+    """
     cube = MaNGADataCube.from_plateifu(plt, ifu, directory_path=directory_path)
     flat_indx = cube.spatial_shape[1]*x+y
     # This function always returns as masked array
     flux = cube.copy_to_masked_array(attr='flux', flag=cube.do_not_fit_flags())
     ivar = cube.copy_to_masked_array(attr='ivar', flag=cube.do_not_fit_flags())
-
-#    embed()
-#    exit()
-
     sres = cube.copy_to_array(attr='sres')
     return cube.wave, flux[flat_indx,:], ivar[flat_indx,:], sres[flat_indx,:]
         
@@ -71,7 +106,6 @@ if __name__ == '__main__':
     x = 30
     y = 37
     # Read a spectrum
-    print('reading spectrum')
     wave, flux, ivar, sres = get_spectrum(plt, ifu, x, y, directory_path=directory_path)
     # In general, the DAP fitting functions expect data to be in 2D
     # arrays with shape (N-spectra,N-wave). So if you only have one
@@ -167,25 +201,55 @@ if __name__ == '__main__':
     #-------------------------------------------------------------------
     # Fit the stellar continuum
 
-    # Mask the 5577 sky line and the emission lines
-    sc_pixel_mask = SpectralPixelMask(artdb=ArtifactDB.from_key('BADSKY'),
-                                      emldb=EmissionLineDB.from_key('ELPFULL'))
-
-    # Construct the template library
+    # First, we construct the template library. The keyword that
+    # selects the template library (sc_tpl_key) is defined above. The
+    # following call reads in the template library and processes the
+    # data to have the appropriate pixel sampling. Note that *no*
+    # matching of the spectral resolution to the galaxy spectrum is
+    # performed.
     sc_tpl = TemplateLibrary(sc_tpl_key, match_resolution=False, velscale_ratio=sc_velscale_ratio,
                              spectral_step=spectral_step, log=True, hardcopy=False)
+
+    # This calculation of the mean spectral resolution is a kludge. The
+    # template library should provide spectra that are *all* at the
+    # same spectral resolution. Otherwise, one cannot freely combine
+    # the spectra to fit the Doppler broadening of the galaxy spectrum
+    # in a robust (constrained) way (without substantially more
+    # effort). There should be no difference between what's done below
+    # and simply taking the spectral resolution to be that of the first
+    # template spectrum (i.e., sc_tpl['SPECRES'].data[0])
     sc_tpl_sres = numpy.mean(sc_tpl['SPECRES'].data, axis=0).ravel()
 
-    # Instantiate the fitting class
+    # Now we want to construct a pixel mask that excludes regions with
+    # known artifacts and emission lines. The 'BADSKY' artifact
+    # database only masks the 5577, which can have strong left-over
+    # residuals after sky-subtraction. The list of emission lines (set
+    # by the ELPMPL8 keyword) can be different from the list of
+    # emission lines fit below.
+    sc_pixel_mask = SpectralPixelMask(artdb=ArtifactDB.from_key('BADSKY'),
+                                      emldb=EmissionLineDB.from_key('ELPMPL8'))
+
+    # Instantiate the fitting class, including the mask that it should
+    # use to flag the data. [[This mask should just be default...]]
     ppxf = PPXFFit(StellarContinuumModelBitMask())
 
-    # Perform the fit
+    # The following call performs the fit to the spectrum. Specifically
+    # note that the code only fits the first two moments, uses an
+    # 8th-order additive polynomial, and uses the 'no_global_wrej'
+    # iteration mode. See
+    # https://sdss-mangadap.readthedocs.io/en/latest/api/mangadap.proc.ppxffit.html#mangadap.proc.ppxffit.PPXFFit.fit
     cont_wave, cont_flux, cont_mask, cont_par \
         = ppxf.fit(sc_tpl['WAVE'].data.copy(), sc_tpl['FLUX'].data.copy(), wave, flux, ferr,
                    z, dispersion, iteration_mode='no_global_wrej', reject_boxcar=100,
                    ensemble=False, velscale_ratio=sc_velscale_ratio, mask=sc_pixel_mask,
                    matched_resolution=False, tpl_sres=sc_tpl_sres, obj_sres=sres, degree=8,
                    moments=2, plot=fit_plots)
+
+    # The returned objects from the fit are the wavelength, model, and
+    # mask vectors and the record array with the best-fitting model
+    # parameters. The datamodel of the best-fitting model parameters is
+    # set by:
+    # https://sdss-mangadap.readthedocs.io/en/latest/api/mangadap.proc.spectralfitting.html#mangadap.proc.spectralfitting.StellarKinematicsFit._per_stellar_kinematics_dtype
 
 #    mod_dcnvlv = PPXFFit.construct_models(sc_tpl['WAVE'].data.copy(), sc_tpl['FLUX'].data.copy(),
 #                                          wave, flux.shape, cont_par, redshift_only=True)
@@ -264,6 +328,9 @@ if __name__ == '__main__':
                          velscale_ratio=el_velscale_ratio, matched_resolution=False, mdegree=8,
                          plot=fit_plots)
     print('TIME: ', time.perf_counter() - efit_t)
+
+    embed()
+    exit()
 
     # Line-fit metrics
     eml_eml_par = EmissionLineFit.line_metrics(emldb, wave, flux, ferr, model_flux, eml_eml_par,

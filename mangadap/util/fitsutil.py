@@ -5,15 +5,6 @@ Defines a class with common functions for MaNGA fits files.  This class
 needs to be as core as possible (little to no dependencies are
 higher-level classes).
 
-Revision history
-----------------
-
-    | **17 May 2016**: Original implementation by K. Westfall (KBW)
-    | **02 Dec 2016**: (KBW) Added
-        :func:`mangadap.util.fitsutil.DAPFitsUtil.reconstruct_cube`
-    | **23 Feb 2016**: (KBW) Added functionality that deals with the
-        transpose of the data arrays provided by astropy.io.fits.
-
 ----
 
 .. include license and copyright

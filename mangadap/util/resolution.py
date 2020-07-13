@@ -4,44 +4,6 @@
 Provides a set of functions to handle and alter the instrumental
 resolution.
 
-Revision history
-----------------
-
-    | **27 May 2015**: Original implementation by K. Westfall (KBW)
-        based on downgrader_MANGA.f provided by D.  Thomas, O. Steele,
-        D.  Wilkinson, D. Goddard.
-    | **13 Jun 2015**: D.Wilkinson edit to not calculate unimportant
-        convolution terms -> runs 5x faster.
-    | **03 Feb 2016**: (KBW) Generalized M. Cappellari's
-        :func:`log_rebin` to :func:`resample_vector` to allow for linear
-        interpolation of flux density across the pixel.
-    | **04 Feb 2016**: (KBW) Further fixes to :func:`resample_vector`.
-        Added :func:`spectral_coordinate_step`, and propagated change to
-        :func:`spectrum_velocity_scale`
-    | **21 Apr 2016**: (KBW) It's the Queen's 90th birthday!  Removed
-        log10 keyword from :func:`spectrum_velocity_scale`.
-    | **20 May 2016**: (KBW) Corrected match between number of pixels
-        and output range computed in :func:`resample_vector_npix`; now
-        returns an adjusted range to make sure that the sampling and
-        range results in an exact integer number of pixels.
-    | **05 Jul 2016**: (KBW) To avoid confusion, commented out
-        log_rebin.
-    | **25 Oct 2016**: (KBW) Modified :func:`spectral_coordinate_step`
-        to be a mean over the full spectrum to avoid numerical precision
-        errors.
-    | **06 Apr 2017**: (KBW) Add :func:`angstroms_per_pixel`.
-    | **30 Aug 2017**: (KBW) Add :func:`resample1d`;
-        :func:`resample_vector` should be deprecated.
-    | **27 Sep 2017**: (KBW) Added `integral` keyword to
-        :func:`match_spectral_resolution` so that it can be passed to
-        :func:`convolution_variable_sigma`.
-    | **19 Jul 2018**: (KBW) Fixed a bug in
-        :class:`VariableGaussianKernel` when constructing the kernel
-        based on the error function.
-    | **30 Aug 2018**: (KBW) Removed sampling code and moved it to
-        sampling.py.  Renamed this file from instrument.py to
-        resolution.py.
-
 ----
 
 .. include license and copyright

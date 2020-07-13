@@ -14,10 +14,11 @@ absorption-line index databases::
     print(AbsorptionIndexDB.available_databases())
     absdb = AbsorptionIndexDB.from_key('LICKINDX')
 
-The above call uses the :func:`AbsorptionIndexDB.from_key` method to
-define the database using its keyword and the database provided with
-the MaNGA DAP source distribution. You can also define the database
-directly for an SDSS-style parameter file::
+The above call uses the
+:func:`~mangadap.par.spectralfeaturedb.SpectralFeatureDB.from_key`
+method to define the database using its keyword and the database
+provided with the MaNGA DAP source distribution. You can also define
+the database directly for an SDSS-style parameter file::
 
     from mangadap.par.absorptionindexdb import AbsorptionIndexDB
     absdb = AbsorptionIndexDB('/path/to/absorption/index/database/myabs.par')
@@ -26,15 +27,6 @@ The above will read the file and set the database keyword to
 'MYABS' (i.e., the capitalized root name of the ``*.par`` file).
 See :ref:`spectralindices` for the format of the parameter file.
     
-Revision history
-----------------
-
-    | **18 Mar 2016**: Original implementation by K. Westfall (KBW)
-    | **11 May 2016**: (KBW) Switch to using `pydl.pydlutils.yanny`_ and
-        `pydl.goddard.astro.airtovac`_ instead of internal functions
-    | **01 Dec 2016**: (KBW) Relocated from proc to par.
-    | **06 Oct 2017**: (KBW) Add function to return channel names
-
 ----
 
 .. include license and copyright
@@ -64,11 +56,11 @@ class AbsorptionIndexDB(SpectralFeatureDB):
     :class:`mangadap.proc.bandpassfilter.BandPassFilterPar`.  For the
     format of the input file, see :ref:`spectralindices-absorption`.
 
-    The primary instantiation requires the SDSS parameter file with the
-    bandpass data. To instantiate using a keyword (and optionally a
-    directory that holds the parameter files), use the
-    :func:`mangadap.par.spectralfeaturedb.SpectralFeatureDB.from_key`
-    class method.  See the base class for additional attributes.
+    The primary instantiation requires the SDSS parameter file with
+    the bandpass data. To instantiate using a keyword (and optionally
+    a directory that holds the parameter files), use the
+    :func:`~mangadap.par.spectralfeaturedb.SpectralFeatureDB.from_key`
+    class method. See the base class for additional attributes.
 
     Args:
         parfile (:obj:`str`):

@@ -21,6 +21,7 @@ apirst:
 	SPHINX_APIDOC_OPTIONS=$(SPHINXAPIOPT) $(SPHINXAPI) --separate -o ./api ../mangadap ../mangadap/tests/* ../mangadap/scripts/* 
 	python3 ./scripts/write_bitmask_tables.py
 	python3 ./scripts/write_parset_tables.py
+	python3 ./scripts/write_datatables.py
 	python3 ./scripts/write_defaultplan.py
 	python3 ./scripts/write_script_help.py
 

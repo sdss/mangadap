@@ -73,10 +73,12 @@ DAP MAPS File Construction
    using
    :func:`~mangadap.dapfits.construct_maps_file.emission_line_model_maps`.
  * Construct the ``SPECINDEX``, ``SPECINDEX_IVAR``,
-   ``SPECINDEX_MASK``, ``SPECINDEX_CORR``, ``SPECINDEX_BCEN``,
-   ``SPECINDEX_BCNT``, ``SPECINDEX_RCEN``, ``SPECINDEX_RCNT``, and
-   ``SPECINDEX_MODEL`` extensions using the
-   :class:`~mangadap.proc.spectralindices.SpectralIndices` object
+   ``SPECINDEX_MASK``, ``SPECINDEX_CORR``, ``SPECINDEX_MODEL``
+   ``SPECINDEX_BF``, ``SPECINDEX_BF_IVAR``, ``SPECINDEX_BF_MASK``,
+   ``SPECINDEX_BF_CORR``, ``SPECINDEX_BF_MODEL`` ``SPECINDEX_WGT``,
+   ``SPECINDEX_WGT_IVAR``, ``SPECINDEX_WGT_MASK``,
+   ``SPECINDEX_WGT_CORR``, ``SPECINDEX_WGT_MODEL`` extensions using
+   the :class:`~mangadap.proc.spectralindices.SpectralIndices` object
    using
    :func:`~mangadap.dapfits.construct_maps_file.spectral_index_maps`.
  * Compute the *griz* S/N metrics to include in the header and which

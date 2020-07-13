@@ -1,7 +1,7 @@
 
 The ``action`` parameter allows the emission-line database to be used
 both in masking during the stellar-continuum modeling (see
-:mod:`mangadap.util.pixelmask.SpectralPixelMask`) and during the
+:class:`~mangadap.util.pixelmask.SpectralPixelMask`) and during the
 emission-line modeling itself.
 
 The valid actions are:

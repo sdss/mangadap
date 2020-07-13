@@ -4,18 +4,6 @@
 
 A catch-all module with miscellaneous utility functions.
 
-Revision history
-----------------
-
-    | **2015**: Original implementation by K. Westfall (KBW)
-    | **20 May 2015**: (KBW) Documentation and Sphinx tests
-    | **04 Jun 2015**: (KBW) Added where_not
-    | **29 Jul 2016**: (KBW) Change asarray to atleast_1d
-    | **17 Nov 2016**: (KBW) Added :func:`high_pass_filter`
-    | **26 Jan 2017**: (KBW) Created :mod:`mangadap.util.filter` and
-        removed the filtering and smoothing functions from this file.
-    | **07 Jul 2017**: (KBW) Removed where_not function.
-
 ----
 
 .. include license and copyright

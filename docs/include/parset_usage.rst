@@ -28,8 +28,8 @@ As an example, we can create a bogus parameter set as follows:
              None,
              'this is a rather long description of the junk parameter.  You can include ' \
                 'rst-style references like pointing back to the ' \
-                ':class:`mangadap.par.parset.ParSet` class, for when this description is ' \
-                'written to an rst table using :func:`mangadap.par.parset.ParSet.to_rst_table` ' \
+                ':class:`~mangadap.par.parset.ParSet` class, for when this description is ' \
+                'written to an rst table using :func:`~mangadap.par.parset.ParSet.to_rst_table` ' \
                 'and included in an rst doc synthesized into html using sphinx.']
     p = ParSet(pars, defaults=defaults, options=options, dtypes=dtypes, descr=descr)
 
@@ -82,9 +82,9 @@ dictionary, with some convenience printing methods::
          Callable: False
       Description: this is a rather long description of the junk parameter.
                    You can include rst-style references like pointing back
-                   to the :class:`mangadap.par.parset.ParSet` class, for
+                   to the :class:`~mangadap.par.parset.ParSet` class, for
                    when this description is written to an rst table using
-                   :func:`mangadap.par.parset.ParSet.to_rst_table` and
+                   :func:`~mangadap.par.parset.ParSet.to_rst_table` and
                    included in an rst doc synthesized into html using
                    sphinx.
     
@@ -166,9 +166,9 @@ There are also a number of IO methods:
             lst = 0.0
             # this is a rather long description of the junk parameter.  You can
             # include rst-style references like pointing back to the
-            # :class:`mangadap.par.parset.ParSet` class, for when this
+            # :class:`~mangadap.par.parset.ParSet` class, for when this
             # description is written to an rst table using
-            # :func:`mangadap.par.parset.ParSet.to_rst_table` and included in an
+            # :func:`~mangadap.par.parset.ParSet.to_rst_table` and included in an
             # rst doc synthesized into html using sphinx.
             junk = None
         >>> ParSet.from_config(p.to_config())
@@ -181,33 +181,33 @@ There are also a number of IO methods:
 
 Note that in all of the IO methods above, the instantiation method loses
 essentially all of the differences between the
-:class:`mangadap.par.parset.ParSet` and a normal dictionary.  For this
+:class:`~mangadap.par.parset.ParSet` and a normal dictionary.  For this
 and other reasons, we've implemented an abstract class called
-:class:`mangadap.par.parset.KeywordParSet`.
+:class:`~mangadap.par.parset.KeywordParSet`.
 
 KeywordParSet class
 -------------------
 
-The :class:`mangadap.par.parset.KeywordParSet` class is derived from
-:class:`mangadap.par.parset.ParSet` and does two things:
+The :class:`~mangadap.par.parset.KeywordParSet` class is derived from
+:class:`~mangadap.par.parset.ParSet` and does two things:
 
-    1. overwrites the :func:`mangadap.par.parset.ParSet.add` method so
+    1. overwrites the :func:`~mangadap.par.parset.ParSet.add` method so
        that no new parameters can be added and
 
-    2. overwrites the :func:`mangadap.par.parset.ParSet.from_dict`
+    2. overwrites the :func:`~mangadap.par.parset.ParSet.from_dict`
        method with the expectation that any class derived from
-       :class:`mangadap.par.parset.KeywordParSet` has an ``__init__``
+       :class:`~mangadap.par.parset.KeywordParSet` has an ``__init__``
        method that takes a fixed set of keyword arguments.
 
 By overwriting the base class definition,
-:func:`mangadap.par.parset.KeywordParSet.from_dict` takes care of all
+:func:`~mangadap.par.parset.KeywordParSet.from_dict` takes care of all
 of the other "from" methods because they in turn use this "from_dict"
 method to instantiate the object.
 
 All of the parameter-set classes defined and used by the DAP use
-:class:`mangadap.par.parset.KeywordParSet` as their base.  We can
-rewrite the :class:`ParSet` example above to use this new base class and
-construct a relevant demonstration class:
+:class:`~mangadap.par.parset.KeywordParSet` as their base. We can
+rewrite the :class:`~mangadap.par.parset.ParSet` example above to use
+this new base class and construct a relevant demonstration class:
 
 .. code-block:: python
 
@@ -226,19 +226,19 @@ construct a relevant demonstration class:
                      None,
                      'this is a rather long description of the junk parameter.  You can include ' \
                         'rst-style references like pointing back to the ' \
-                        ':class:`mangadap.par.parset.ParSet` class, for when this description ' \
+                        ':class:`~mangadap.par.parset.ParSet` class, for when this description ' \
                         'is written to an rst table using ' \
-                        ':func:`mangadap.par.parset.ParSet.to_rst_table` ' \
+                        ':func:`~mangadap.par.parset.ParSet.to_rst_table` ' \
                         'and included in an rst doc synthesized into html using sphinx.']
             super(DemoPar, self).__init__(pars, values=values, defaults=defaults, options=options,
                                           dtypes=dtypes, descr=descr)
 
 
-The :func:`__init__` method for the derived class looks nearly identical
-to how we originally defined the :class:`mangadap.par.parset.ParSet`
-instance.  However, we can now define the instance using keyword
-arguments directly, and the ancillary information is now propagated to
-all the IO methods::
+The instantiation method for the derived class looks nearly identical
+to how we originally defined the :class:`~mangadap.par.parset.ParSet`
+instance. However, we can now define the instance using keyword
+arguments directly, and the ancillary information is now propagated
+to all the IO methods::
 
     >>> p = DemoPar(par=3, test='that')
     >>> p

@@ -4,13 +4,6 @@
 
 Binning!
 
-Revision history
-----------------
-
-    | **01 Apr 2016**: Implementation begun by K. Westfall (KBW)
-    | **22 May 2018**: (KBW) Import vorbin package version of
-        voronoi_2d_binning
-
 ----
 
 .. include license and copyright

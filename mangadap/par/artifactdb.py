@@ -8,16 +8,6 @@ regions with poorly subtracted sky lines.  They are also currently
 independent of spatial position and expected to be applied for all
 spectra in an RSS or CUBE file.
 
-Revision history
-----------------
-
-    | **16 Apr 2016**: Original implementation by K. Westfall (KBW)
-    | **11 May 2016**: (KBW) Switch to using `pydl.pydlutils.yanny`_ and
-        `pydl.goddard.astro.airtovac`_ instead of internal functions
-    | **01 Dec 2016**: (KBW) Relocated from proc to par.
-    | **02 Dec 2019**: (KBW) Completely revamped to use the new base
-        class.
-
 ----
 
 .. include license and copyright
@@ -88,8 +78,7 @@ class ArtifactDB(SpectralFeatureDB):
     """
     Basic container class for the database of artifacts.
 
-    Each row of the database is parsed using
-    :class:`mangadap.proc.bandpassfilter.ArtifactPar`.
+    Each row of the database is parsed using :class:`ArtifactPar`.
 
     The primary instantiation requires the SDSS parameter file with
     the artifact data. To instantiate using a keyword (and

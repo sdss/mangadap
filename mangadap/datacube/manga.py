@@ -38,11 +38,13 @@ class MaNGADataCube(DRPFits, DataCube):
     classes.
 
     See :func:`from_plateifu` to instantiate using the plate and ifu
-    numbers. See :func:`from_config` to instantiate from a
-    configuration file.
+    numbers. See
+    :func:`~mangadap.datacube.datacube.DataCube.from_config` to
+    instantiate from a configuration file.
 
     Note that ``z``, ``vdisp``, ``ell``, ``pa``, and ``reff`` are
-    saved to the :attr:`meta` dictionary.
+    saved to the :attr:`~mangadap.datacube.datacube.DataCube.meta`
+    dictionary.
 
     Args:
         ifile (:obj:`str`):
@@ -71,7 +73,8 @@ class MaNGADataCube(DRPFits, DataCube):
             assuming ``reff=1``.
         sres_ext (:obj:`str`, optional):
             The extension to use when constructing the spectral
-            resolution vectors. See :func:`spectral_resolution`.
+            resolution vectors. See
+            :func:`~mangadap.util.drpfits.DRPFits.spectral_resolution`.
         sres_fill (:obj:`bool`, optional):
             Fill masked values by interpolation. Default is to leave
             masked pixels in returned array.
@@ -270,8 +273,9 @@ class MaNGADataCube(DRPFits, DataCube):
         """
         Try to load the source row-stacked spectra for this datacube.
 
-        If :attr:`rss` is not None, this method does not attempt to
-        reload it, unless ``force`` is True.
+        If :attr:`~mangadap.datacube.datacube.DataCube.rss` is not
+        None, this method does not attempt to reload it, unless
+        ``force`` is True.
 
         The method first looks for the relevant file in the same
         directory with the datacube. If the file is not there, it
@@ -282,12 +286,14 @@ class MaNGADataCube(DRPFits, DataCube):
 
         Nothing is returned. If successful, the method initializes
         the row-stacked spectra object
-        (:class:`mangadap.spectra.manga.MaNGARSS`) to :attr:`rss`.
+        (:class:`mangadap.spectra.manga.MaNGARSS`) to
+        :attr:`~mangadap.datacube.datacube.DataCube.rss`.
 
         Args:
             force (:obj:`bool`, optional):
-                Reload the row-stacked spectra if :attr:`rss` is not
-                None.
+                Reload the row-stacked spectra if
+                :attr:`~mangadap.datacube.datacube.DataCube.rss` is
+                not None.
         """
         if self.rss is not None and not force:
             return
@@ -342,12 +348,12 @@ class MaNGADataCube(DRPFits, DataCube):
                            if center_coo is None and offset is not None else center_coo
         return super(MaNGADataCube, self).mean_sky_coordinates(center_coo=_center_coo)
 
-    def approximate_correlation_matrix(self, sigma_rho=1.92, rlim=None, redo=False):
+    def approximate_correlation_matrix(self, sigma_rho=1.92, rlim=None, rho_tol=None, redo=False):
         """
         Construct an approximate correlation matrix for the datacube.
 
         This is a simple wrapper for
-        :func:`mangadap.datacube.DataCube.approximate_correlation_matrix`
+        :func:`mangadap.datacube.datacube.DataCube.approximate_correlation_matrix`
         that defaults to the expected values for a MaNGA datacube.
         See that method for a description of the arguments. The
         default ``sigma_rho`` is from Westfall et al. (2019, AJ, 158,
@@ -356,15 +362,16 @@ class MaNGADataCube(DRPFits, DataCube):
         """
         _rlim = defaults.regrid_rlim() if rlim is None else rlim
         return super(MaNGADataCube, self).approximate_correlation_matrix(sigma_rho, _rlim,
+                                                                         rho_tol=rho_tol,
                                                                          redo=redo)
 
-    def approximate_covariance_matrix(self, channel, sigma_rho=1.92, rlim=None, csr=False,
-                                      quiet=False):
+    def approximate_covariance_matrix(self, channel, sigma_rho=1.92, rlim=None, rho_tol=None,
+                                      csr=False, quiet=False):
         """
         Construct an approximate covariance matrix.
         
         This is a simple wrapper for
-        :func:`mangadap.datacube.DataCube.approximate_covariance_matrix`
+        :func:`mangadap.datacube.datacube.DataCube.approximate_covariance_matrix`
         that defaults to the expected values for a MaNGA datacube.
         See that method for a description of the arguments. The
         default ``sigma_rho`` is from Westfall et al. (2019, AJ, 158,
@@ -374,15 +381,15 @@ class MaNGADataCube(DRPFits, DataCube):
         _rlim = defaults.regrid_rlim() if rlim is None else rlim
         return super(MaNGADataCube, 
                     self).approximate_covariance_matrix(channel, sigma_rho=sigma_rho, rlim=_rlim,
-                                                        csr=csr, quiet=quiet)
+                                                        rho_tol=rho_tol, csr=csr, quiet=quiet)
 
-    def approximate_covariance_cube(self, channels=None, sigma_rho=1.92, rlim=None, csr=False,
-                                    quiet=False):
+    def approximate_covariance_cube(self, channels=None, sigma_rho=1.92, rlim=None, rho_tol=None,
+                                    csr=False, quiet=False):
         """
         Construct approximate covariance matrices for multiple channels.
         
         This is a simple wrapper for
-        :func:`mangadap.datacube.DataCube.approximate_covariance_cube`
+        :func:`mangadap.datacube.datacube.DataCube.approximate_covariance_cube`
         that defaults to the expected values for a MaNGA datacube.
         See that method for a description of the arguments. The
         default ``sigma_rho`` is from Westfall et al. (2019, AJ, 158,
@@ -392,5 +399,6 @@ class MaNGADataCube(DRPFits, DataCube):
         _rlim = defaults.regrid_rlim() if rlim is None else rlim
         return super(MaNGADataCube, 
                     self).approximate_covariance_cube(channels=channels, sigma_rho=sigma_rho,
-                                                      rlim=_rlim, csr=csr, quiet=quiet)
+                                                      rlim=_rlim, rho_tol=rho_tol, csr=csr,
+                                                      quiet=quiet)
 

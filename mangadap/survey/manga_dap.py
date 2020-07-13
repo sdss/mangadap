@@ -3,14 +3,6 @@
 """
 Provides the main wrapper function for the MaNGA DAP.
 
-Revision history
-----------------
-
-    | **21 Mar 2016**: Original implementation by K. Westfall (KBW): started.
-    | **19 Jul 2016**: (KBW) Always provide the NSA redshift to the modules!
-    | **05 May 2017**: (KBW) Clean up documentation; use import to get
-        __version__
-
 ----
 
 .. include license and copyright

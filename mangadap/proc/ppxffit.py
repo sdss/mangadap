@@ -9,39 +9,6 @@ Implements a wrapper class for pPXF.
     not up against one of the +/- 2000 km/s limits?  Could be useful for
     poor redshift guesses.
 
-Revision history
-----------------
-
-    | **26 Apr 2016**: Moved from spectralfitting.py to its own file by
-        K. Westfall (KBW)
-    | **05 Jul 2016**: (KBW) V6.0.0 of pPXF does not use the oversample
-        keyword given a better solution; see Cappellari (in prep).  This
-        keyword was therefore removed from the parameter set.
-    | **06 Jul 2016**: (KBW) Use v6.0.0 pPXF functions to compute models
-        using new LOSVD kernel functionality.
-    | **10 Oct 2016**: (KBW) Fixed error in calculation of velocity
-        offset between template and object spectra to account for
-        different size pixels.
-    | **31 Oct 2016**: (KBW) Allow the spectral resolution to be a
-        vector per spaxel or a vector per set of input spectra in
-        :func:`PPXFFit.fit`.
-    | **01 Nov 2016**: (KBW) Added new iteration method that does not do
-        a first fit to the global spectrum but does include the
-        rejection iteration.  Allows users to treat each spectrum
-        provided to :func:`PPXFFit.fit` individually.  Fixed goodpixel
-        mask when not first fitting the global spectrum.
-    | **02 Nov 2016**: (KBW) Added ability to limit which templates are
-        fit to each spectrum in :func:`PPXFFit.fit` using usetpl kwarg.
-    | **17 Feb 2017**: (KBW) Included filtering options.  Changed to use
-        ppxf v6.0.4; mpfit object no longer returned, only mpfit status.
-    | **30 Aug 2017**: (KBW) Switch from
-        :func:`mangadap.util.instrument.resample_vector` to
-        :func:`mangadap.util.instrument.resample1d`.
-    | **05 Feb 2018**: (KBW) Added :class:`PPXFModel`.
-    | **22 May 2018**: (KBW) Change import to ppxf package.
-    | **30 Aug 2018**: (KBW) Changed from resample1d to
-        :class:`mangadap.util.sampling.Resample`.
-
 ----
 
 .. include license and copyright
@@ -64,7 +31,6 @@ from ppxf import ppxf, capfit
 
 from ..par.parset import KeywordParSet
 from ..util.pixelmask import PixelMask, SpectralPixelMask
-from ..util.fileio import init_record_array
 from ..util.filter import BoxcarFilter
 from ..util.log import log_output
 from ..util.sampling import spectrum_velocity_scale, angstroms_per_pixel, Resample
@@ -250,7 +216,7 @@ class PPXFFitPar(KeywordParSet):
         
 
 
-class PPXFFitResult(object):
+class PPXFFitResult:
     """
     A basic utility to save the critical parts of the pPXF model.
     """
@@ -326,7 +292,7 @@ class PPXFFitResult(object):
         return self.empty_fit() or self.status <= 0
 
 
-class PPXFModel():
+class PPXFModel:
     """
     Class that reconstructs a pPXF model given a set of templates and
     the model parameters.
@@ -667,17 +633,15 @@ class PPXFFit(StellarKinematicsFit):
 
         self.fix_kinematics = None
 
-
     @staticmethod
     def iteration_modes():
         r"""
-        
         Possible iteration methods:
 
-            ``none``: Fit all bins with all templates with a single call
+          * ``none``: Fit all bins with all templates with a single call
             to pPXF.
 
-            ``fit_reject_filter``: Perform the following procedure:
+          * ``fit_reject_filter``: Perform the following procedure:
                 - Fit each spectrum
                 - for n iterations:
                     - Reject outliers
@@ -686,25 +650,25 @@ class PPXFFit(StellarKinematicsFit):
                 - Fit the unfiltered spectra with the kinematics fixed
                   to result of the final filtered fit
 
-            ``no_global_wrej``: Do not fit the global spectrum
+          * ``no_global_wrej``: Do not fit the global spectrum
             first, but include a rejection iteration.  All templates are
             fit in each step.
 
-            ``global_template``:  Fit the global spectrum with all
+          * ``global_template``:  Fit the global spectrum with all
             templates and include a single rejection iteration.  The
             pixel mask for this fit is the base mask for all fits to the
             individual bins.  A single rejection iteration is done for
             each bin.  **Only the global template is used when fitting
             each bin.**
 
-            ``nonzero_templates``:  Fit the global spectrum with
+          * ``nonzero_templates``:  Fit the global spectrum with
             all templates and include a single rejection iteration.  The
             pixel mask for this fit is the base mask for all fits to the
             individual bins.  A single rejection iteration is done for
             each bin.  **Only the templates with non-zero weights are
             used when fitting each bin.**
 
-            ``all_templates``:  Fit the global spectrum with all
+          * ``all_templates``:  Fit the global spectrum with all
             templates and include a single rejection iteration.  The
             pixel mask for this fit is the base mask for all fits to the
             individual bins.  A single rejection iteration is done for
@@ -718,33 +682,28 @@ class PPXFFit(StellarKinematicsFit):
                  'no_global_wrej',
                  'global_template',
                  'nonzero_templates',
-                 'all_templates'
-               ]
-
+                 'all_templates']
 
     def _mode_uses_global_spectrum(self):
-        return self.iteration_mode in [ 'global_template',
-                                        'nonzero_templates',
-                                        'all_templates' ]
+        return self.iteration_mode in ['global_template', 'nonzero_templates', 'all_templates']
 
     def _mode_uses_global_template(self):
-        return self.iteration_mode in [ 'global_template' ]
+        return self.iteration_mode in ['global_template']
 
             
     def _mode_uses_nonzero_templates(self):
-        return self.iteration_mode in [ 'nonzero_templates' ]
+        return self.iteration_mode in ['nonzero_templates']
 
 
     def _mode_uses_all_templates(self):
-        return self.iteration_mode in [ 'none', 'fit_reject_filter', 'no_global_wrej',
-                                        'all_templates' ]
+        return self.iteration_mode in ['none', 'fit_reject_filter', 'no_global_wrej',
+                                       'all_templates']
 
     def _mode_includes_rejection(self):
         return self.iteration_mode != 'none'
 
     def _mode_uses_filter(self):
         return self.iteration_mode == 'fit_reject_filter'
-
 
     def _check_mode(self, iteration_mode, reject_boxcar, filter_boxcar, filter_operation,
                     filter_iterations, mdegree):
@@ -766,7 +725,6 @@ class PPXFFit(StellarKinematicsFit):
                 self.filter_operation = 'divide'
             else:
                 self.filter_operation = filter_operation
-
 
     @staticmethod
     def check_template_usage_flags(nobj, ntpl, usetpl):
@@ -2492,12 +2450,12 @@ class PPXFFit(StellarKinematicsFit):
         #---------------------------------------------------------------
         # Initialize the output data
         model_flux = numpy.zeros(self.obj_flux.shape, dtype=numpy.float)
-        model_par = init_record_array(self.nobj,
-                        self._per_stellar_kinematics_dtype(self.ntpl, 
-                                            0 if self._mode_uses_filter() else self.degree+1,
-                                            0 if self._mode_uses_filter() else max(self.mdegree,0),
-                                                           self.moments,
-                                                           self.bitmask.minimum_dtype()))
+        model_par = self.init_datatable(self.ntpl,
+                                        0 if self._mode_uses_filter() else self.degree+1,
+                                        0 if self._mode_uses_filter() else max(self.mdegree,0),
+                                        self.moments, self.bitmask.minimum_dtype(),
+                                        shape=self.nobj)
+
         # Set the bins; here the ID and index are identical
         model_par['BINID'] = numpy.arange(self.nobj)
         model_par['BINID_INDEX'] = numpy.arange(self.nobj)

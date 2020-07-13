@@ -3,11 +3,6 @@
 """
 Implements a set of line profile parameterizations.
 
-Revision history
-----------------
-
-    | **25 May 2017**: Original implementation by K. Westfall (KBW)
-
 ----
 
 .. include license and copyright

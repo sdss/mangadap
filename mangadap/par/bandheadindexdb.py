@@ -14,10 +14,11 @@ bandhead index databases::
     print(BandheadIndexDB.available_databases())
     bhddb = BandheadIndexDB.from_key('BHBASIC')
 
-The above call uses the :func:`BandheadIndexDB.from_key` method to
-define the database using its keyword and the database provided with
-the MaNGA DAP source distribution. You can also define the database
-directly for an SDSS-style parameter file::
+The above call uses the
+:func:`~mangadap.par.spectralfeaturedb.SpectralFeatureDB.from_key`
+method to define the database using its keyword and the database
+provided with the MaNGA DAP source distribution. You can also define
+the database directly for an SDSS-style parameter file::
 
     from mangadap.par.bandheadindexdb import BandheadIndexDB
     bhddb = BandheadIndexDB('/path/to/bandhead/index/database/mybhd.par')
@@ -25,16 +26,6 @@ directly for an SDSS-style parameter file::
 The above will read the file and set the database keyword to
 'MYBHD' (i.e., the capitalized root name of the ``*.par`` file).
 See :ref:`spectralindices` for the format of the parameter file.
-
-Revision history
-----------------
-
-    | **18 Mar 2016**: Original implementation by K. Westfall (KBW)
-    | **11 May 2016**: (KBW) Switch to using `pydl.pydlutils.yanny`_ and
-        `pydl.goddard.astro.airtovac`_ instead of internal functions
-    | **06 Oct 2017**: (KBW) Add function to return channel names
-    | **02 Dec 2019**: (KBW) Significantly reworked to use the new
-        base class.
 
 ----
 
@@ -78,7 +69,7 @@ class BandheadIndexDB(SpectralFeatureDB):
     The primary instantiation requires the SDSS parameter file with the
     bandpass data. To instantiate using a keyword (and optionally a
     directory that holds the parameter files), use the
-    :func:`mangadap.par.spectralfeaturedb.SpectralFeatureDB.from_key`
+    :func:`~mangadap.par.spectralfeaturedb.SpectralFeatureDB.from_key`
     class method.  See the base class for additional attributes.
 
     Args:

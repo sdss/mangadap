@@ -3,13 +3,6 @@
 r"""
 Classes to handle MaNGA DAP analysis plans.
 
-Revision history
-----------------
-
-    | **11 May 2016**: Original implementation by K. Westfall (KBW)
-    | **03 Jun 2016**: (KBW) Any key with value 'None' is converted to
-        NoneType
-
 ----
 
 .. include license and copyright

@@ -5,13 +5,6 @@
 Provides a set of tools that the MaNGA DAP uses to handle/report raised
 exceptions.
 
-Revision history
-----------------
-
-    | **2015**: Original implementation by K. Westfall (KBW)
-    | **20 May 2015**: (KBW) Documentation and Sphinx tests
-    | **03 Feb 2016**: (KBW) Added :func:`check_environment_variable`
-
 ----
 
 .. include license and copyright
