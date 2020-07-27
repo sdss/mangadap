@@ -118,19 +118,22 @@ def _pixel_centers(xlim, npix, log=False, base=10.0):
     sampled vector given first, last and number of pixels
 
     Args:
-        xlim (numpy.ndarray) : (Geometric) Centers of the first and last
-            pixel in the vector.
-        npix (int) : Number of pixels in the vector.
-        log (bool) : (**Optional**) The input range is (to be)
-            logarithmically sampled.
-        base (float) : (**Optional**) The base of the logarithmic
-            sampling.  The default is 10.0; use numpy.exp(1.) for the
-            natural logarithm.
+        xlim (`numpy.ndarray`_) :
+            (Geometric) Centers of the first and last pixel in the
+            vector.
+        npix (:obj:`int`):
+            Number of pixels in the vector.
+        log (:obj:`bool`, optional):
+            The input range is (to be) logarithmically sampled.
+        base (:obj:`float`, optional):
+            The base of the logarithmic sampling. The default is
+            10.0; use numpy.exp(1.) for the natural logarithm.
 
     Returns:
-        numpy.ndarray, float: A vector with the npix centres of the
-        pixels and the sampling rate.  If logarithmically binned, the
-        sampling is the step in :math`\log x`.
+        `numpy.ndarray`_, :obj:`float`: A vector with the npix
+        centres of the pixels and the sampling rate. If
+        logarithmically binned, the sampling is the step in
+        :math`\log x`.
     """
     if log:
         logRange = numpy.log(xlim)/numpy.log(base)
@@ -148,19 +151,22 @@ def _pixel_borders(xlim, npix, log=False, base=10.0):
     number of pixels
 
     Args:
-        xlim (numpy.ndarray) : (Geometric) Centers of the first and last
-            pixel in the vector.
-        npix (int) : Number of pixels in the vector.
-        log (bool) : (**Optional**) The input range is (to be)
-            logarithmically sampled.
-        base (float) : (**Optional**) The base of the logarithmic
-            sampling.  The default is 10.0; use numpy.exp(1.) for the
-            natural logarithm.
+        xlim (`numpy.ndarray`_):
+            (Geometric) Centers of the first and last pixel in the
+            vector.
+        npix (:obj:`int`):
+            Number of pixels in the vector.
+        log (:obj:`bool`, optional):
+            The input range is (to be) logarithmically sampled.
+        base (:obj:`float`, optional):
+            The base of the logarithmic sampling. The default is
+            10.0; use numpy.exp(1.) for the natural logarithm.
 
     Returns:
-        numpy.ndarray, float: A vector with the (npix+1) borders of the
-        pixels and the sampling rate.  If logarithmically binned, the
-        sampling is the step in :math`\log x`.
+        `numpy.ndarray`_, :obj:`float`: A vector with the (npix+1)
+        borders of the pixels and the sampling rate. If
+        logarithmically binned, the sampling is the step in
+        :math`\log x`.
     """
     if log:
         logRange = numpy.log(xlim)/numpy.log(base)
@@ -427,6 +433,9 @@ class Resample:
         # this defines the self.outx and self.outborders
         self._output_coordinates(newRange, newpix, newLog, newdx, base)
 
+#        test = self._resample_step_matrix(self.y)
+#        exit()
+
         # Perform the resampling
         self.outy = self._resample_step(self.y) if step else self._resample_linear(self.y)
        
@@ -602,6 +611,77 @@ class Resample:
             
         
         return numpy.sqrt(out) if quad else out
+
+    def _resample_step_matrix(self):
+        r"""
+        Build a matrix such that
+
+        .. math::
+            y = \mathbf{A} x
+
+        where :math:`x` is the input vector, :math:`y` is the resampled
+        vector, and :math:`\mathbf{A}` is the matrix operations that
+        resamples :math:`x`.
+        """
+        ny = self.outx.size
+        nx = self.x.size
+        dx = numpy.diff(self.xborders)
+
+        # Repeat each element of the border array twice, and remove the
+        # first and last elements
+        _p = numpy.repeat(numpy.arange(x.size), 2)
+        _x = numpy.repeat(self.xborders, 2)[1:-1]
+
+        # Combine the input coordinates and the output borders into a
+        # single vector
+        indx = numpy.searchsorted(_x, self.outborders)
+        combinedX = numpy.insert(_x, indx, self.outborders)
+
+        # Insert points at the borders of the output function
+        p_indx = indx.copy()
+        p_indx[indx >= _p.shape[-1]] = -1
+        combinedP = numpy.insert(_p, indx, _p[p_indx])
+
+        # Get the indices where the data should be reduced
+        border = numpy.insert(numpy.zeros(_x.size, dtype=bool), indx,
+                              numpy.ones(self.outborders.size, dtype=bool))
+        nn = numpy.where(numpy.invert(border))[0][::2]
+        k = numpy.zeros(len(combinedX), dtype=int)
+        k[border] = numpy.arange(numpy.sum(border))
+        k[nn-1] = k[nn-2]
+        k[nn] = k[nn-1]
+        start,end = numpy.where(border)[0][[0,-1]]
+
+        fraction = numpy.diff(combinedX[start:end+1])
+        indx = fraction > 0
+
+        A = numpy.zeros((ny, nx), dtype=float)
+        A[k[start:end][indx], combinedP[start:end][indx]] = fraction[indx]
+
+        return A
+
+        from matplotlib import pyplot
+        pyplot.imshow(A, origin='lower', interpolation='nearest')
+        pyplot.show()
+
+        pyplot.step(self.x, v, where='mid')
+        pyplot.plot(self.outx, numpy.dot(A,v)/numpy.diff(self.outborders))
+        pyplot.plot(self.outx, self._resample_step(v)/numpy.diff(self.outborders))
+        pyplot.show()
+        exit()
+
+        for j in range(start,end):
+            print(' {0:>3} {1:>3} {2:>3} {3:>6.3}'.format(j, k[j], combinedP[j], fraction[j-start]))
+
+        pyplot.plot(combinedX[~border], combinedP[~border])
+        pyplot.scatter(combinedX[nn], combinedP[nn], color='C3')
+        pyplot.scatter(combinedX[border], combinedP[border], color='C1')
+        for i in range(len(combinedX)):
+            pyplot.text(combinedX[i], combinedP[i]+0.1, str(k[i]))
+        pyplot.show()
+
+        exit()
+
 
 
 
