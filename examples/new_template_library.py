@@ -8,7 +8,7 @@ from astropy.io import fits
 from matplotlib import pyplot
 from matplotlib.ticker import NullFormatter
 
-from mangadap.drpfits import DRPFits
+from mangadap.datacube import MaNGADataCube
 from mangadap.util.constants import DAPConstants
 from mangadap.util.fitsutil import DAPFitsUtil
 from mangadap.util.resolution import SpectralResolution
@@ -17,7 +17,6 @@ from mangadap.util.fileio import read_template_spectrum
 from mangadap.util.pixelmask import SpectralPixelMask
 
 from mangadap.par.artifactdb import ArtifactDB
-from mangadap.par.emissionmomentsdb import EmissionMomentsDB
 from mangadap.par.emissionlinedb import EmissionLineDB
 
 from mangadap.proc.templatelibrary import available_template_libraries
@@ -29,23 +28,22 @@ from mangadap.proc.stellarcontinuummodel import StellarContinuumModel, StellarCo
 from mangadap.proc.emissionlinemodel import EmissionLineModelBitMask
 
 #-----------------------------------------------------------------------------
-
-def get_redshift(plt, ifu, drpall_file):
-#    hdu = fits.open(os.path.join(os.environ['MANGA_SPECTRO_REDUX'], os.environ['MANGADRP_VER'],
-#                                 'drpall-{0}.fits'.format(os.environ['MANGADRP_VER'])))
-    hdu = fits.open(drpall_file)
+def get_redshift(plt, ifu, drpall_file=None):
+    hdu = fits.open(os.path.join(os.environ['MANGA_SPECTRO_REDUX'], os.environ['MANGADRP_VER'],
+                                 'drpall-{0}.fits'.format(os.environ['MANGADRP_VER']))) \
+                if drpall_file is None else fits.open(drpall_file)
     indx = hdu[1].data['PLATEIFU'] == '{0}-{1}'.format(plt, ifu)
     return hdu[1].data['NSA_Z'][indx][0]
 
 
-def get_spectrum(plt, ifu, x, y):
-    drpf = DRPFits(plt, ifu, 'CUBE', read=True)
-    flat_indx = drpf.spatial_shape[1]*x+y
+def get_spectrum(plt, ifu, x, y, directory_path=None):
+    cube = MaNGADataCube.from_plateifu(plt, ifu, directory_path=directory_path)
+    flat_indx = cube.spatial_shape[1]*x+y
     # This function always returns as masked array
-    sres = drpf.spectral_resolution(toarray=True, fill=True, pre=True).data
-    flux = drpf.copy_to_masked_array(ext='FLUX', flag=drpf.do_not_fit_flags())
-    ivar = drpf.copy_to_masked_array(ext='IVAR', flag=drpf.do_not_fit_flags())
-    return drpf['WAVE'].data, flux[flat_indx,:], ivar[flat_indx,:], sres[flat_indx,:]
+    flux = cube.copy_to_masked_array(attr='flux', flag=cube.do_not_fit_flags())
+    ivar = cube.copy_to_masked_array(attr='ivar', flag=cube.do_not_fit_flags())
+    sres = cube.copy_to_array(attr='sres')
+    return cube.wave, flux[flat_indx,:], ivar[flat_indx,:], sres[flat_indx,:]
 
 
 def create_mastar_template_spectrum():
@@ -70,7 +68,7 @@ def create_mastar_template_spectrum():
 #-----------------------------------------------------------------------------
 
 if __name__ == '__main__':
-    t = time.clock()
+    t = time.perf_counter()
 
     # Get the list of available libraries
     tpllib_list = available_template_libraries()
@@ -94,12 +92,8 @@ if __name__ == '__main__':
 
     # ------------------------------------------------------------------
     # Create a new library based on a MaStar spectrum
-    create_mastar_template_spectrum()
-#    wave, flux, sres = read_template_spectrum('mastar-8047-9101-tpl.fits', sres_ext='SPECRES')
-#    pyplot.plot(wave, flux)
-#    pyplot.plot(wave, sres)
-#    pyplot.show()
-
+    if not os.path.isfile('mastar-8047-9101-tpl.fits'):
+        create_mastar_template_spectrum()
     tpllib_list += [ TemplateLibraryDef('MaStar',
                                         file_search='mastar-8047-9101-tpl.fits',
                                         sres_ext='SPECRES',
@@ -111,10 +105,10 @@ if __name__ == '__main__':
 
     # Plate-IFU to use
     plt = 7815
-    ifu = 6101
+    ifu = 3702
     # Spaxel coordinates
-    x = 25
-    y = 25
+    x = 21
+    y = 21
 
     # Template keywords
 #    sc_tpl_key = 'MILESHC'
@@ -125,14 +119,17 @@ if __name__ == '__main__':
     velscale_ratio = 4
 
     # Get the redshift
-    drpall_file = './data/drpall-v2_4_3.fits'
+    drpver = 'v2_7_1'
+    directory_path = os.path.join(os.environ['MANGADAP_DIR'], 'mangadap', 'data', 'remote')
+    drpall_file = os.path.join(directory_path, 'drpall-{0}.fits'.format(drpver))
     z = numpy.array([get_redshift(plt, ifu, drpall_file)])
     print('Redshift: {0}'.format(z[0]))
     dispersion = numpy.array([100.])
 
     # Read a spectrum
     print('reading spectrum')
-    wave, flux, ivar, sres = get_spectrum(plt, ifu, x, y)
+    wave, flux, ivar, sres = get_spectrum(plt, ifu, x, y, directory_path=directory_path)
+
     # Fitting functions expect data to be in 2D arrays (for now):
     flux = flux.reshape(1,-1)
     ferr = numpy.ma.power(ivar, -0.5).reshape(1,-1)
@@ -142,10 +139,11 @@ if __name__ == '__main__':
     # Fit the stellar continuum
 
     # Mask the 5577 sky line and the emission lines
-    sc_pixel_mask = SpectralPixelMask(artdb=ArtifactDB('BADSKY'), emldb=EmissionLineDB('ELPFULL'))
+    sc_pixel_mask = SpectralPixelMask(artdb=ArtifactDB.from_key('BADSKY'),
+                                      emldb=EmissionLineDB.from_key('ELPFULL'))
 
     # Construct the template library
-    sc_tpl = TemplateLibrary(sc_tpl_key, tpllib_list=tpllib_list, match_to_drp_resolution=False,
+    sc_tpl = TemplateLibrary(sc_tpl_key, tpllib_list=tpllib_list, match_resolution=False,
                              velscale_ratio=velscale_ratio, spectral_step=1e-4, log=True,
                              hardcopy=False)
     sc_tpl_sres = numpy.mean(sc_tpl['SPECRES'].data, axis=0).ravel()
@@ -182,5 +180,5 @@ if __name__ == '__main__':
     pyplot.show()
     #-------------------------------------------------------------------
 
-    print('Elapsed time: {0} seconds'.format(time.clock() - t))
+    print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
 

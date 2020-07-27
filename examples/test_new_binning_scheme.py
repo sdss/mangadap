@@ -70,7 +70,7 @@ class ApertureBinning():
 
 #-----------------------------------------------------------------------------
 if __name__ == '__main__':
-    t = time.clock()
+    t = time.perf_counter()
 
     # Set the plate, ifu, and initial velocity/redshift
     plate = 7443
@@ -94,28 +94,42 @@ if __name__ == '__main__':
     apbin = ApertureBinning(ax, ay, 1.25)
 
     # Setup the stacking operations
-    stackpar = SpectralStackPar('mean',         # Operation for stack
-                                False,          # Apply a velocity registration
-                                None,           # Velocity offsets for registration
-                                'channels',     # Covariance mode and parameters
-                                SpectralStack.parse_covariance_parameters('channels', 11),
-                                True,           # Propagate the LSF through the stacking
-                                True)  # Use pre-pixelized LSF (KHRR added this)
+    stackpar = SpectralStackPar(# Operation for stack
+                                operation='mean',
+                                # Apply a velocity registration
+                                vel_register=False,
+                                # Velocity offsets for registration
+                                vel_offsets=None,
+                                # Covariance mode and parameters
+                                covar_mode='channels',
+                                covar_par=SpectralStack.parse_covariance_parameters('channels', 11),
+                                # Propagate the LSF through the stacking
+                                stack_sres=True,
+                                # Use pre-pixelized LSF (KHRR added this)
+                                prepixel_sres=True)
     stacker = SpectralStack()
 
     # Create a new binning method
-    binning_method = SpatiallyBinnedSpectraDef('Aperture',      # Key for binning method
-                                               'ODonnell',      # Galactic reddening function to use
-                                               3.1,             # Rv for Galactic reddening
-                                               0.0,             # Minimum S/N to include
-                                               None,            # Object with binning parameters
-                                               None,            # Binning class instance
-                                               apbin.bin_spaxels,   # Binning function
-                                               stackpar,        # Object with stacking parameters
-                                               stacker,         # Stacking class instance
-                                               stacker.stack_DRPFits,   # Stacking function
-                                               'spaxel',    # Type of LSF characterization to use
-                                               True)  # Use pre-pixelized LSF (KHRR added this)
+    binning_method = SpatiallyBinnedSpectraDef(# Key for binning method
+                                               key='Aperture',
+                                               # Galactic reddening function to use
+                                               galactic_reddening='ODonnell',
+                                               # Rv for Galactic reddening
+                                               galactic_rv=3.1,             
+                                               # Minimum S/N to include
+                                               minimum_snr=0.0,
+                                               # Binning function
+                                               binfunc=apbin.bin_spaxels,
+                                               # Object with stacking parameters
+                                               stackpar=stackpar,
+                                               # Stacking class instance
+                                               stackclass=stacker,
+                                               # Stacking function
+                                               stackfunc=stacker.stack_DRPFits,
+                                               # Type of LSF characterization to use
+                                               spec_res='spaxel',
+                                               # Use pre-pixelized LSF (KHRR added this)
+                                               prepixel_sres=True)
 
     # Bin the spectra using the new binning method
     binned_spectra = SpatiallyBinnedSpectra('Aperture',     # Key for binning method
@@ -156,5 +170,5 @@ if __name__ == '__main__':
     construct_cube_file(drpf, binned_spectra=binned_spectra, stellar_continuum=stellar_continuum,
                         emission_line_model=emission_line_model, analysis_path=analysis_path)
 
-    print('Elapsed time: {0} seconds'.format(time.clock() - t))
+    print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
 

@@ -1,23 +1,198 @@
-2.4.0dev
+TODO
+----
+
+ - Change default to fix bad pixels in spectral resolution?
+ - Add DAP versioning to reference files
+ - Fix minor issue in moment and index spaxels fit in hybrid case,
+   compared to emission-line modeling data.
+ - Make velocity dispersion correction for spectral indices use template
+   mix from fit to the bin instead of the individual spaxels?
+ - Add errors to DAPall
+ - Add fraction of spectra with `sigma < sigma_corr` to DAPall
+ - Reconstruct MILES HC library using same procedure used for MaStar
+   spectra
+ - Additional tests for MaStar HC library
+ - Define an emission-line FOM flag that identifies poorly fit lines
+ - Documentation of config examples are out of date!
+ - Get rid of the filter keyword from the output headers...
+ - Fix ELMREBIN in 2nd round of moment calculations (not sure this is
+   still a problem...)
+ - Keep all the reference files to the common directory?
+ - Make the package pip installable
+ - Change format of emission-line module reference file?
+    - Make more independent of stellar-continnuum module reference file
+    - Change `BASE` extension to `CONTINUUM` extension.
+ - Enable composite indices
+ - Allow construction of DAP MAPS headers to indicate masks that don't
+   have the same prepended extenstion name... (e.g., quality mask of
+   `SPECINDEX_CORR` should be `SPECINDEX_MASK`).
+ - Differentiate between mask provided for BF index and mask for main
+   continuum value? (e.g., latter only cares about the side bands)
+ - Deprecate `mangadap.survey.mangampl`
+
+3.0.2dev
 --------
+
+ - Added DataTable, mostly for automated documentation purposes.
+ - Removed revision histories
+ - Updated docs for MPL-10
+
+3.0.1 (31 May 2020)
+-------------------
+
+ - Fixed bug in association of spaxels with bins in emission-line module
+ - Catch failures in pPXF in emission-line module, spaxel/bin flagged as
+   `FIT_FAILED`, execution keeps going.
+ - 7443-3703 redshift fix
+ - Added LSF extension with LSF of binned spectra to output model cube
+   file
+ - Fixed corner cases in `StellarContinuumModel.matched_kinematics` and
+   `EmissionLineModel.matched_kinematics` where all bins are masked.
+ - Fixed bug in use of `ColorbarBase` in some plotting scripts.
+
+3.0.0 (27 May 2020)
+-------------------
+
+ - Directory restructuring:  Removed "python" top-level directory and
+   moved "data" into "mangadap".  This should make package distribution
+   via pip easier.
+ - Remove "default" prefix from methods in `mangadap.config.defaults`.
+ - Remove obsolete `dapsrc` keyword arguments
+ - Some general clean-up of commented code and docs.
+ - Import clean-up, including removal of any `from __future__` imports.
+ - Added `bin/dap_status` to check the status of a batch DAP run.
+ - `__credits__` now include all authors of the DAP papers
+ - Added new DataCube and RowStackedSpectra classes, beginning the
+   generalization of the interface with the input data for use with
+   non-MaNGA data.
+ - For instantiating a MaNGADataCube, changed from using a yanny par
+   file to a configuration (ini) file.  Included code that can write
+   these files using data from the DRPall or DRPComplete files.
+ - Included a script that will download data into a new
+   `mangadap/data/remote` directory for testing.  The directory is not
+   included in the repo and has been added to .gitignore to prevent it
+   from being accidentally added.
+ - Included a number of tests that use the new remote data.  These will
+   be skipped if the remote data is not available.
+ - Significant improvements and testing of `mangadap.util.covariance`.
+   Ensuring that the correlation matrices provided by the DRP can be
+   read by `MaNGADataCube` and are effectively identical to the
+   calculation performed by `MaNGARSS`.
+ - Moved all core script code from `bin` to `mangadap/scripts`.  Code in
+   `bin` now make simple calls to these scripts.  Moved `rundap.py` from
+   `mangadap.survey` to `mangadap.scripts`.
+ - General clean-up of the executables in `bin`.
+ - Integrated use of `MaNGADataCube` instead of `DRPFits` when executing
+   the pipeline.  Usage of `DRPFits` is now largely obsolete.  Not
+   removed yet.  Interface is still not abstracted enough for a general
+   `DataCube` (because of naming conventions), but getting there.
+ - Tests now include a nominal run of `manga_dap` using the `ALL`
+   binning scheme.
+ - Usage of `ObsInputPar` is now obsolete.
+ - Spectral resolution is no longer chosen by the spectral binning
+   module; instead the spectral resolution is selected when reading the
+   datacube (makes much more sense!).  Led to some clean-up of the
+   binning config files.
+ - To select different spectral resolution extensions, use command-line
+   arguments in `rundap` or `write_dap_config`.
+ - Started doc edits.
+ - Example scripts now use `MaNGADataCube` instead of `DRPFits`, but
+   further clean-up of the `examples` directory is needed.
+ - Include a default analysis plan, so that executions of `manga_dap`
+   don't require an analysis plan yanny parameter file.
+ - Docstring updates for modules up through `StellarContinuumModel`, but
+   still lots to do.
+ - Consolidates the common functionality in `MaNGADataCube` and
+   `MaNGARSS` into a new, repurposed `DRPFits` base class.
+ - Global data from unique DAPTYPEs now put in separate extensions of
+   the DAPall file.
+ - Incorporate change from 'PREDISP' to 'LSFPRE' and 'DISP' to 'LSFPOST'
+   in the spectral resolution extensions produced by the DRP.
+ - Added DataCube metadata.
+ - Added Legendre polynomial fitter
+ - Added MaStar HC V2 library
+ - Include additional spectral index measurements and weights to use
+   when combining indices; leads to changes in MAPS data model.
+ - Updated versions of required packages, including incrementing version
+   dependency to ppxf==7.2.0; code still uses default `linear_method`
+   pending testing of `linear_method='lsqlin'`.
+ - Added photometry fix file; only adjusts 8083-12702 pending further
+   assessments.
+ - Added redshift fixes for IC342, Coma, and globular cluster cubes.
+ - Fixed minor bug in coordinates used in HYB binning cases for some
+   DAPall calculations.
+
+
+2.5.2 (14 Feb 2020)
+-------------------
+
+ - Had to retag for pip release after increase in space limit to 150MB.
+   Version 2.5.1 on pip (code-base only) removed.
+
+
+2.5.1 (13 Feb 2020)
+-------------------
+
+ - Jumped the gun on tagging 2.5.0.  Fixed Travis testing and package
+   data installation issues.
+
+
+2.5.0 (13 Feb 2020)
+-------------------
+
+ - Added BPASS theoretical spectral template library
+ - Added numerous config files / line lists to allow for masking of NaD
+   in both stellar continuum modeling and emission line modeling steps
+ - Adjusted nsigma parameter in `pixelmask.py` so that it can be set
+   externally. (This is needed to avoid masking HeI 5877 emission while
+   simultaneously masking NaD.)
+ - Fixed a bug in `angstroms_per_pixel` that caused it to return a
+   single number instead of a vector.
+ - Significant doc improvements by migrating most of the information on
+   the internal wiki into the docs/ directory.
+ - Significant reworking of I/O interface for "spectral feature
+   databases".  These were databases where the config files basically
+   just pointed to the file in the data/ directory.  The new interface
+   circumvents the need for these config files.
+ - Added tests to ensure available configuration files are valid.
+
+2.4.1 (01 Nov 2019)
+-------------------
+ - Bug fix in construction of `STELLAR` extension in model LOGCUBE file;
+   construction used a pointer instead of a copy that cause the
+   `STELLAR` and `MODEL` extensions to be identical.
+
+2.4.0 (31 Oct 2019)
+-------------------
 
  - Hotfix to accommodate change in padding computation in ppxf>=6.7.15
  - Fixed units bug in `flux_to_fnu`
-
-TODO:
- - Add channel with R in kpc
- - Documentation of config examples are out of date!
- - Get rid of the filter keyword from the output headers...
- - Change default to fix bad pixels in spectral resolution?
- - Fix MASKNAME in reference files
- - Add DAP versioning to reference files
- - Fix ELMREBIN in 2nd round of moment calculations
- - Stop transposing the datacube data!
- - Get rid of optional dapsrc
- - Keep all the reference files to the common directory?
- - Fix minor issue in moment and index spaxels fit in hybrid case,
-   compared to emission-line modeling data.
-
+ - Allow emission-line moment, modeling, and spectral-index keys to be
+   None, meaning that the DAP only fits the stellar kinematics but still
+   produces the MAPS and LOGCUBE files.
+ - Fixed bug in templates when using iteration_mode = 'global_template'
+ - Change from `time.clock()` to `time.perf_counter()`
+ - Bug fix in record array dimensionality when writing to binary table
+ - Minor plotting changes for Overview paper plots
+ - Added a channel with R in h^-1 kpc to both the spaxel and bin
+   elliptical-coordinate extensions
+ - Remove MASKNAME header keyword inherited from DRP files
+ - Added continuum measurements for both emission-line moments and
+   spectral indices to MAPS files
+ - Add model spectral indices to the MAPS files
+ - Added new emission lines to parameter and bandpass database files
+ - Added beta version of hierarchically clustered MaStar templates
+ - Fixed masking of emission-line chi-square measurements
+ - Adjusted fixed flux ratio of doublets based on improved calculation:
+   `(M1_1+E2_1)/(M1_2+E2_2) * L_2/L_1`, where `M1` and `E2` are the
+   magnetic dipole and electric quadrapole Einstein A coefficients and
+   `L` is the line wavelength.  The Einstein A coefficients are all
+   taken from NIST, except for the OII 7320,7330 complext (two doublets)
+   which use the values from Zeippen (1987), A&A, 173, 410.  In all but
+   this OII 7320,7330 complex, the magnetic dipole term dominates such
+   that the electric quadrapole terms are effectively irrelevant.
+ - Added a script that computes the weights used during the `ppxffit_qa`
+   plot construction.
 
 2.3.0 (31 Jan 2019)
 -------------------

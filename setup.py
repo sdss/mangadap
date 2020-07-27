@@ -8,37 +8,42 @@ import os
 import glob
 from setuptools import setup, find_packages
 
+from IPython import embed
+
 import requests
 import warnings
 
-_IDLUTILS_VER = 'v5_5_30'
-_MANGADRP_VER = 'v2_4_3'
-_MANGACORE_VER = 'v1_6_2'
+_IDLUTILS_VER = 'v5_5_35'
+_MANGADRP_VER = 'v3_0_1'
+_MANGACORE_VER = 'v1_8_1'
 
-_VERSION = '2.4.0dev'
+_VERSION = '3.0.2dev'
 _RELEASE = 'dev' not in _VERSION
-_MINIMUM_PYTHON_VERSION = '3.5'
+_MINIMUM_PYTHON_VERSION = '3.7'
 
-def get_data_files():
-    """Generate the list of data files."""
-    data_files = []
-    data_roots = [ 'data', 'python/mangadap/config' ]
-    for root in data_roots:
-        for path, directories, files in os.walk(root):
-            for f in files:
-                data_path = '/'.join(path.split('/')[1:])
-                data_files.append(os.path.join(data_path, f))
-    return data_files
-
+def get_package_data(root='mangadap'):
+    """Generate the list of package data."""
+    return [os.path.relpath(f, root) 
+                    for f in glob.glob(os.path.join(root, 'config/*/*.ini'))] \
+           + [os.path.relpath(f, root) 
+                    for f in glob.glob(os.path.join(root, 'data/*/*.ini'))] \
+           + [os.path.relpath(f, root) 
+                    for f in glob.glob(os.path.join(root, 'data/*/*.par'))] \
+           + [os.path.relpath(f, root) 
+                    for f in glob.glob(os.path.join(root, 'data/*/*/README'))] \
+           + [os.path.relpath(f, root) 
+                    for f in glob.glob(os.path.join(root, 'data/*/*/*.fits'))] \
+           + [os.path.relpath(f, root) 
+                    for f in glob.glob(os.path.join(root, 'data/*/*/*.fits.gz'))] \
 
 def get_scripts():
     """ Grab all the scripts in the bin directory.  """
-    scripts = []
-    if os.path.isdir('bin'):
-        scripts = [ fname for fname in glob.glob(os.path.join('bin', '*'))
+    if not os.path.isdir('bin'):
+        return []
+
+    return [fname for fname in glob.glob(os.path.join('bin', '*'))
                                 if not os.path.basename(fname).endswith('.rst') and
-                                   not os.path.basename(fname).endswith('.bash') ]
-    return scripts
+                                   not os.path.basename(fname).endswith('.bash')]
 
 
 def get_requirements():
@@ -51,40 +56,41 @@ def get_requirements():
     return install_requires
 
 
-def run_setup(data_files, scripts, packages, install_requires):
+def run_setup(package_data, scripts, packages, install_requires):
 
     setup(name='sdss-mangadap',
           version=_VERSION,
           license='BSD3',
           description='MaNGA Data Analysis Pipeline',
           long_description=open('README.md').read(),
+          long_description_content_type='text/markdown',
           author='SDSS-IV/MaNGA Pipeline Group',
           author_email='westfall@ucolick.org',
           keywords='astronomy analysis-pipeline spectroscopy MaNGA',
           url='https://github.com/sdss/mangadap',
           python_requires='>='+_MINIMUM_PYTHON_VERSION,
           packages=packages,
-          package_dir={'': 'python'},
-          package_data={'': data_files},
+          package_dir={'mangadap': 'mangadap'},
+          package_data={'mangadap': package_data},
           include_package_data=True,
           install_requires=install_requires,
           scripts=scripts,
           setup_requires=[ 'pytest-runner' ],
           tests_require=[ 'pytest' ],
           classifiers=[
-              'Development Status :: 4 - Beta',
+              'Development Status :: 5 - Production/Stable',
               'Intended Audience :: Science/Research',
               'License :: OSI Approved :: BSD License',
               'Natural Language :: English',
               'Operating System :: OS Independent',
               'Programming Language :: Python',
-              'Programming Language :: Python :: 3.5',
-              'Programming Language :: Python :: 3.6',
+              'Programming Language :: Python :: 3.7',
               'Programming Language :: Python :: 3 :: Only',
               'Topic :: Documentation :: Sphinx',
               'Topic :: Scientific/Engineering :: Astronomy',
               'Topic :: Software Development :: Libraries :: Python Modules'
           ])
+
 
 # TODO: Put these in a config file
 def default_paths():
@@ -100,7 +106,7 @@ def default_paths():
 def check_environment():
     ev = default_paths()
     for k in ev.keys():
-        if k not in os.environ:
+        if k not in os.environ and 'MANGACORE' not in k:
             warnings.warn('{0} environmental variable undefined.  Default is: {1}'.format(k,ev[k]))
 
 
@@ -118,7 +124,7 @@ if __name__ == '__main__':
 
     # Pull over the maskbits file
     idlpath = 'https://svn.sdss.org/public/repo/sdss/idlutils'
-    ofile = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'sdss',
+    ofile = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'mangadap', 'data', 'sdss',
                          'sdssMaskbits.par')
     try:
         idldir = 'tags/{0}'.format(_IDLUTILS_VER)
@@ -133,20 +139,20 @@ if __name__ == '__main__':
         except:
             warnings.warn('Could not download SDSS maskbits file!')
 
-    # Compile the data files to include
-    data_files = get_data_files()
+    # Get the package data (data inside the main product root)
+    package_data = get_package_data()
 
     # Compile the scripts in the bin/ directory
     scripts = get_scripts()
 
     # Get the packages to include
-    packages = find_packages(where='python')
+    packages = find_packages()
 
     # Collate the dependencies based on the system text file
     install_requires = get_requirements()
 
     # Run setup from setuptools
-    run_setup(data_files, scripts, packages, install_requires)
+    run_setup(package_data, scripts, packages, install_requires)
 
     # Check if the environmental variables are found and warn the user
     # of their defaults

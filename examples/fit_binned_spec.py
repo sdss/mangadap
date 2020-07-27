@@ -1,13 +1,14 @@
-#!/usr/bin/env python3
-
 import os
 import time
+
+from IPython import embed
+
 import numpy
 
 from astropy.io import fits
 from matplotlib import pyplot
 
-from mangadap.drpfits import DRPFits
+from mangadap.datacube import MaNGADataCube
 from mangadap.util.fitsutil import DAPFitsUtil
 from mangadap.util.resolution import SpectralResolution
 from mangadap.util.pixelmask import SpectralPixelMask
@@ -36,19 +37,20 @@ def get_redshift(plt, ifu, drpall_file=None):
 
 
 def get_spectra(plt, ifu, x, y, directory_path=None):
-    drpf = DRPFits(plt, ifu, 'CUBE', read=True, directory_path=directory_path)
-    flat_indx = drpf.spatial_shape[1]*x+y
+    cube = MaNGADataCube.from_plateifu(plt, ifu, directory_path=directory_path)
+    flat_indx = cube.spatial_shape[1]*x+y
     # This function always returns as masked array
-    sres = drpf.spectral_resolution(toarray=True, fill=True, pre=True).data
-    flux = drpf.copy_to_masked_array(ext='FLUX', flag=drpf.do_not_fit_flags())
-    ivar = drpf.copy_to_masked_array(ext='IVAR', flag=drpf.do_not_fit_flags())
-    return drpf['WAVE'].data, flux[flat_indx,:], ivar[flat_indx,:], sres[flat_indx,:]
+    flux = cube.copy_to_masked_array(attr='flux', flag=cube.do_not_fit_flags())
+    ivar = cube.copy_to_masked_array(attr='ivar', flag=cube.do_not_fit_flags())
+    sres = cube.copy_to_array(attr='sres')
+    return cube.wave, flux[flat_indx,:], ivar[flat_indx,:], sres[flat_indx,:]
         
 
 #-----------------------------------------------------------------------------
 
 if __name__ == '__main__':
-    t = time.clock()
+    t = time.perf_counter()
+
 
     # Plate-IFU to use
     plt = 7815
@@ -82,14 +84,17 @@ if __name__ == '__main__':
     velscale_ratio = 4
 
     # Get the redshift
-#    drpall_file = './data/drpall-v2_4_3.fits'
-    z = numpy.array([get_redshift(plt, ifu)]*nspec) #, drpall_file)])
+    drpver = 'v2_7_1'
+    directory_path = os.path.join(os.environ['MANGADAP_DIR'], 'mangadap', 'data', 'remote')
+    drpall_file = os.path.join(directory_path, 'drpall-{0}.fits'.format(drpver))
+    z = numpy.array([get_redshift(plt, ifu, drpall_file)]*nspec)
     print('Redshift: {0}'.format(z[0]))
     dispersion = numpy.full_like(z, 100.)
 
     # Read the spectra
     print('reading spectra')
-    wave, flux, ivar, sres = get_spectra(plt, ifu, x, y) #, directory_path='./data')
+    directory_path = os.path.join(os.environ['MANGADAP_DIR'], 'mangadap', 'data', 'remote')
+    wave, flux, ivar, sres = get_spectra(plt, ifu, x, y, directory_path=directory_path)
     ferr = numpy.ma.power(ivar, -0.5)
 
     # Fitting functions expect data to be in 2D arrays (for now):
@@ -124,12 +129,12 @@ if __name__ == '__main__':
     # Fit the stellar continuum
 
     # Mask the 5577 sky line and the emission lines
-    sc_pixel_mask = SpectralPixelMask(artdb=ArtifactDB('BADSKY'), emldb=EmissionLineDB('ELPFULL'))
+    sc_pixel_mask = SpectralPixelMask(artdb=ArtifactDB.from_key('BADSKY'),
+                                      emldb=EmissionLineDB.from_key('ELPFULL'))
 
     # Construct the template library
-    sc_tpl = TemplateLibrary(sc_tpl_key, match_to_drp_resolution=False,
-                             velscale_ratio=velscale_ratio, spectral_step=1e-4, log=True,
-                             hardcopy=False)
+    sc_tpl = TemplateLibrary(sc_tpl_key, match_resolution=False, velscale_ratio=velscale_ratio,
+                             spectral_step=1e-4, log=True, hardcopy=False)
     sc_tpl_sres = numpy.mean(sc_tpl['SPECRES'].data, axis=0).ravel()
 
     # Instantiate the fitting class
@@ -163,7 +168,7 @@ if __name__ == '__main__':
     # Get the emission-line moments using the fitted stellar continuum
 
     # Read the database that define the emission lines and passbands
-    momdb = EmissionMomentsDB(elmom_key)
+    momdb = EmissionMomentsDB.from_key(elmom_key)
 
     # Measure the moments
     elmom = EmissionLineMoments.measure_moments(momdb, wave, flux_binned, continuum=sc_continuum,
@@ -195,10 +200,10 @@ if __name__ == '__main__':
                                                     numpy.square(cont_par['SIGMACORR_EMP']))
     
     # Mask the 5577 sky line
-    el_pixel_mask = SpectralPixelMask(artdb=ArtifactDB('BADSKY'))
+    el_pixel_mask = SpectralPixelMask(artdb=ArtifactDB.from_key('BADSKY'))
 
     # Read the emission line fitting database
-    emldb = EmissionLineDB(elfit_key)
+    emldb = EmissionLineDB.from_key(elfit_key)
 
     # Instantiate the fitting class
     emlfit = Sasuke(EmissionLineModelBitMask())
@@ -258,5 +263,5 @@ if __name__ == '__main__':
 
     # TODO: Add the spectral index calls...
 
-    print('Elapsed time: {0} seconds'.format(time.clock() - t))
+    print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
 

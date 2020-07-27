@@ -2,5 +2,6 @@
 
 -r requirements.txt
 
-Sphinx>=1.6.5
+Sphinx>=3.0.4
+sphinx-automodapi>=0.12
 
