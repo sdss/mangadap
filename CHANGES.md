@@ -25,6 +25,7 @@ MPL-11 TODO
         - Make more independent of stellar-continnuum module reference
           file
         - Change `BASE` extension to `CONTINUUM` extension.
+    - Wavelength dependent sigma rejection?
  - DAPall:
     - provide absolute H-alpha luminosity as a separate column
     - attenuation corrections to H-alpha luminosity, SFR
