@@ -148,7 +148,7 @@ class DataTable:
                              self.__class__.__name__))        
         self.data[key] = value
 
-    def __len__(self)
+    def __len__(self):
         return self.size
 
     def init(self, shape):
