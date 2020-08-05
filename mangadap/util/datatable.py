@@ -184,7 +184,8 @@ class DataTable:
         if not isinstance(rhs, self.__class__):
             #if rhs.__class__.__name__ != self.__class__.__name__:
             raise TypeError('Object to append must be of type {0}!'.format(self.__class__.__name__))
-        self.data = numpy.append(self.data, rhs.data)
+        self.data = rhs.data.copy() if self.data is None \
+                        else self.data = numpy.append(self.data, rhs.data)
 
     @property
     def shape(self):
