@@ -216,13 +216,10 @@ class DataTable:
             to an ``*.rst`` file.
         """
         data_table = numpy.empty((self.ncols+1, 3), dtype=object)
-#        data_table[0,:] = ['Key', 'Type', 'Shape', 'Description']
         data_table[0,:] = ['Key', 'Type', 'Description']
         for i in range(self.ncols):
             data_table[i+1,0] = self.keys[i]
             data_table[i+1,1] = '``{0}``'.format(numpy.dtype(self.types[i]).type.__name__)
-#            data_table[i+1,2] = '(1,)' if self.element_shapes[i] is None \
-#                                    else str(self.element_shapes[i])
             data_table[i+1,2] = '..' if self.descr[i] is None else self.descr[i]
 
         output = []
