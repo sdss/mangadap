@@ -164,6 +164,28 @@ class DataTable:
         """
         self.data = fileio.init_record_array(shape, self._dtype)
 
+    def append(self, rhs):
+        """
+        Append the data in the provided datatable to this one.
+
+        Both objects (``self`` and ``rhs``) must have the same
+        derived class.  This instance is directly modified.
+
+        Args:
+            rhs (:class:`DataTable`):
+
+                The instance with the data to append. The derived
+                class of this object **must** be the same as the
+                object to which you want to append the data.  I.e.::
+
+                    assert isinstance(rhs, self.__class__)
+
+        """
+        if not isinstance(rhs, self.__class__):
+            #if rhs.__class__.__name__ != self.__class__.__name__:
+            raise TypeError('Object to append must be of type {0}!'.format(self.__class__.__name__))
+        self.data = numpy.append(self.data, rhs.data)
+
     @property
     def shape(self):
         """
