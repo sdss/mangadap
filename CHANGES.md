@@ -36,6 +36,8 @@ TODO
  - Added DataTable, mostly for automated documentation purposes.
  - Removed revision histories
  - Updated docs for MPL-10
+ - Enabled fitting a restricted wavelength range in the emission-line
+   module.
 
 3.0.1 (31 May 2020)
 -------------------
