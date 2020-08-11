@@ -5,6 +5,8 @@ import time
 import numpy
 import glob
 
+from IPython import embed
+
 from astropy.io import fits
 import astropy.constants
 
@@ -40,16 +42,10 @@ class ReferencePropertyTable(DataTable):
 
 
 def get_maps_files(dapver='3.0.1', daptype='SPX-MILESHC-MASTARHC2'):
-    return ['/uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/{0}/{1}/7443/12704/manga-7443-12704-MAPS-{1}.fits.gz'.format(dapver, daptype),
-            '/uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/{0}/{1}/7443/12701/manga-7443-12701-MAPS-{1}.fits.gz'.format(dapver, daptype),
-            '/uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/{0}/{1}/7443/12703/manga-7443-12703-MAPS-{1}.fits.gz'.format(dapver, daptype),
-            '/uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/{0}/{1}/7443/12705/manga-7443-12705-MAPS-{1}.fits.gz'.format(dapver, daptype),
-            '/uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/{0}/{1}/7443/1901/manga-7443-1901-MAPS-{1}.fits.gz'.format(dapver, daptype),
-            '/uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/{0}/{1}/7443/1902/manga-7443-1902-MAPS-{1}.fits.gz'.format(dapver, daptype),
-            '/uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/{0}/{1}/7443/12702/manga-7443-12702-MAPS-{1}.fits.gz'.format(dapver, daptype)]
+#    return ['/uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/{0}/{1}/7443/12704/manga-7443-12704-MAPS-{1}.fits.gz'.format(dapver, daptype), '/uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/{0}/{1}/7443/12701/manga-7443-12701-MAPS-{1}.fits.gz'.format(dapver, daptype), '/uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/{0}/{1}/7443/12703/manga-7443-12703-MAPS-{1}.fits.gz'.format(dapver, daptype), '/uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/{0}/{1}/7443/12705/manga-7443-12705-MAPS-{1}.fits.gz'.format(dapver, daptype), '/uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/{0}/{1}/7443/1901/manga-7443-1901-MAPS-{1}.fits.gz'.format(dapver, daptype), '/uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/{0}/{1}/7443/1902/manga-7443-1902-MAPS-{1}.fits.gz'.format(dapver, daptype), '/uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/{0}/{1}/7443/12702/manga-7443-12702-MAPS-{1}.fits.gz'.format(dapver, daptype)]
 
-#    root = os.path.join(defaults.dap_analysis_path(dapver='3.0.1'), daptype)
-#    return glob.glob(os.path.join(root, '*', '*', '*MAPS*fits.gz'))
+    root = os.path.join(defaults.dap_analysis_path(dapver=dapver), daptype)
+    return glob.glob(os.path.join(root, '*', '*', '*MAPS*fits.gz'))
 
 # This won't work with hybrid binning scheme!
 def include_maps_data(tbl, maps_file):
@@ -96,6 +92,7 @@ def include_maps_data(tbl, maps_file):
         haew = hdu['EMLINE_GEW'].data[el['Ha-6564']].ravel()[bin_indx][indx]
         d4000 = hdu['SPECINDEX'].data[si['D4000']].ravel()[bin_indx][indx]
         sigma = hdu['STELLAR_SIGMA'].data.ravel()[bin_indx][indx]
+        binid = binid[indx]
 
         d4000_i = numpy.digitize(d4000, d4000_bins[1:-1])
         sigma_j = numpy.digitize(sigma, sigma_bins[1:-1])
@@ -117,9 +114,8 @@ def include_maps_data(tbl, maps_file):
                         if nbin == 0:
                             continue
                        
-                        tbl['NBIN'] += nbin
-
                         ii = i*nsigma*nhaew*nsnr + j*nhaew*nsnr + k*nsnr + l
+                        tbl['NBIN'][ii] += nbin
 
                         _snr = snr[indx]
                         # Still find the highest S/N spectrum in each
@@ -179,9 +175,10 @@ def main():
                                                              indexing='ij')))
 
     # Iterate through the maps files and add the data
+    ncrit = 0
     for i in range(nmaps):
-        print('{0}/{1}'.format(fi+1,nmaps), end='\r')
-        ncrit += include_maps_data(tbl, maps_file[i])
+        print('{0}/{1}'.format(i+1,nmaps), end='\r')
+        ncrit += include_maps_data(tbl, maps_files[i])
     print('{0}/{0}'.format(nmaps))
     print('Number of CRITICAL flags: {0}/{1}'.format(ncrit, nmaps))
 
@@ -192,9 +189,9 @@ def main():
 #-----------------------------------------------------------------------------
 
 if __name__ == '__main__':
-    t = time.clock()
+    t = time.perf_counter()
     main()
-    print('Elapsed time: {0} seconds'.format(time.clock() - t))
+    print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
 
 
 
