@@ -148,6 +148,9 @@ class DataTable:
                              self.__class__.__name__))        
         self.data[key] = value
 
+    def __len__(self):
+        return self.size
+
     def init(self, shape):
         """
         (Re)Initialize :attr:`data`.
@@ -160,6 +163,29 @@ class DataTable:
                 The shape of the array to construct.
         """
         self.data = fileio.init_record_array(shape, self._dtype)
+
+    def append(self, rhs):
+        """
+        Append the data in the provided datatable to this one.
+
+        Both objects (``self`` and ``rhs``) must have the same
+        derived class.  This instance is directly modified.
+
+        Args:
+            rhs (:class:`DataTable`):
+
+                The instance with the data to append. The derived
+                class of this object **must** be the same as the
+                object to which you want to append the data.  I.e.::
+
+                    assert isinstance(rhs, self.__class__)
+
+        """
+        if not isinstance(rhs, self.__class__):
+            #if rhs.__class__.__name__ != self.__class__.__name__:
+            raise TypeError('Object to append must be of type {0}!'.format(self.__class__.__name__))
+        self.data = rhs.data.copy() if self.data is None \
+                        else numpy.append(self.data, rhs.data)
 
     @property
     def shape(self):
@@ -213,13 +239,10 @@ class DataTable:
             to an ``*.rst`` file.
         """
         data_table = numpy.empty((self.ncols+1, 3), dtype=object)
-#        data_table[0,:] = ['Key', 'Type', 'Shape', 'Description']
         data_table[0,:] = ['Key', 'Type', 'Description']
         for i in range(self.ncols):
             data_table[i+1,0] = self.keys[i]
             data_table[i+1,1] = '``{0}``'.format(numpy.dtype(self.types[i]).type.__name__)
-#            data_table[i+1,2] = '(1,)' if self.element_shapes[i] is None \
-#                                    else str(self.element_shapes[i])
             data_table[i+1,2] = '..' if self.descr[i] is None else self.descr[i]
 
         output = []

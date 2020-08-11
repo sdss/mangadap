@@ -1,3 +1,39 @@
+MPL-11 TODO
+-----------
+
+ - Schedule:
+    - Last observations?:   30 Sep
+    - Run DRP:              15 Oct
+    - Run DAP:               1 Nov
+    - MPL-11 release:        1 Dec
+    
+ - (?) Redo selection of "representative galaxies": D4000, H-alpha EW,
+   sigma, S/N (others?)
+ - MILES-HC:
+    - Reconstruct using same procedure used for MaStar spectra
+    * Direct spectral resolution assessments
+ - Stellar kinematics:
+    - Get rid of the filter keyword from the output headers...
+    - Try fitting with some high-resolution templates?
+ - Emission lines:
+    - Datamodel for indicating which emission-line parameters are tied
+    - FOM flag that identifies poorly fit lines
+    * Test use of MaStar SSP models
+    * Test use of reddening instead of multiplicative polynomials
+    * Balmer-line (particularly H-beta) flux changes
+    - Reference files:
+        - Make more independent of stellar-continnuum module reference
+          file
+        - Change `BASE` extension to `CONTINUUM` extension.
+    - Wavelength dependent sigma rejection?
+ - DAPall:
+    - provide absolute H-alpha luminosity as a separate column
+    - attenuation corrections to H-alpha luminosity, SFR
+    - fraction of spectra with `sigma < sigma_corr`
+    - change 1 Re computation?
+    - errors
+ - Visual inspection campaign
+
 TODO
 ----
 
@@ -7,24 +43,13 @@ TODO
    compared to emission-line modeling data.
  - Make velocity dispersion correction for spectral indices use template
    mix from fit to the bin instead of the individual spaxels?
- - Add errors to DAPall
- - Add fraction of spectra with `sigma < sigma_corr` to DAPall
- - Reconstruct MILES HC library using same procedure used for MaStar
-   spectra
- - Additional tests for MaStar HC library
- - Define an emission-line FOM flag that identifies poorly fit lines
  - Documentation of config examples are out of date!
- - Get rid of the filter keyword from the output headers...
  - Fix ELMREBIN in 2nd round of moment calculations (not sure this is
    still a problem...)
- - Keep all the reference files to the common directory?
  - Make the package pip installable
- - Change format of emission-line module reference file?
-    - Make more independent of stellar-continnuum module reference file
-    - Change `BASE` extension to `CONTINUUM` extension.
  - Enable composite indices
  - Allow construction of DAP MAPS headers to indicate masks that don't
-   have the same prepended extenstion name... (e.g., quality mask of
+   have the same prepended extension name... (e.g., quality mask of
    `SPECINDEX_CORR` should be `SPECINDEX_MASK`).
  - Differentiate between mask provided for BF index and mask for main
    continuum value? (e.g., latter only cares about the side bands)
@@ -36,6 +61,8 @@ TODO
  - Added DataTable, mostly for automated documentation purposes.
  - Removed revision histories
  - Updated docs for MPL-10
+ - Enabled fitting a restricted wavelength range in the emission-line
+   module.
 
 3.0.1 (31 May 2020)
 -------------------

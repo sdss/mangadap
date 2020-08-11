@@ -344,7 +344,7 @@ class Resample:
         ext_value (:obj:`float`, optional):
             Set extrapolated values to the provided float.  By default,
             extrapolated values are set to 0.  If set to None, values
-            are just set to the linear exatrapolation of the data beyond
+            are just set to the linear extrapolation of the data beyond
             the provided limits; use `ext_value=None` with caution!
         conserve (:obj:`bool`, optional):
             Conserve the integral of the input vector.  For example, if

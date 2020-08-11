@@ -974,6 +974,7 @@ class KeywordParSet(ParSet):
                                   self.__class__.__name__))
 
 
+# TODO: Change this to a DataTable?
 class ParDatabase:
     """
     Class used as a list of ParSets in a glorified structured numpy
