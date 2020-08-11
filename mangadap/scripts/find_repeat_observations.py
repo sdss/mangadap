@@ -72,10 +72,10 @@ def find_repeat_observations(output_file, drpver, redux_path, dapver, analysis_p
 
             double_print(f, ' {0:>9s}'.format(unid[i]), end='')
             for j in range(len(indx)):
-                double_print(f, ' {0:>4} {1:>5}'.format(plt[indx[j]], ifu[indx[j]]), end='')
+                double_print(f, ' {0:>5} {1:>5}'.format(plt[indx[j]], ifu[indx[j]]), end='')
             if nempty > 0:
                 for j in range(nempty):
-                    double_print(f, ' {0:>4} {1:>5}'.format(-1, -1), end='')
+                    double_print(f, ' {0:>5} {1:>5}'.format(-1, -1), end='')
             double_print(f, '')
 
 def parse_args(options=None, return_parser=False):
