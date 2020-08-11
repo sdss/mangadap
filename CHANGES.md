@@ -63,8 +63,6 @@ TODO
  - Updated docs for MPL-10
  - Enabled fitting a restricted wavelength range in the emission-line
    module.
- - Changed MILES stars resolution from 2.5 angstrom to 2.54 angstroms to
-   match Beifiori et al. (2011) measurement.
 
 3.0.1 (31 May 2020)
 -------------------
