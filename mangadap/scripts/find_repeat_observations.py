@@ -62,7 +62,7 @@ def find_repeat_observations(output_file, drpver, redux_path, dapver, analysis_p
         double_print(f, '#')
         double_print(f, '#{0:>9s}'.format('MANGAID'), end='')
         for i in range(max_rep):
-            double_print(f, ' {1:>3s}{0} {2:>4s}{0}'.format(i+1, 'PLT','IFU'), end='')
+            double_print(f, ' {1:>4s}{0} {2:>4s}{0}'.format(i+1, 'PLT','IFU'), end='')
         double_print(f, '')
         for i in range(len(unid)):
             if unid_cnts[i] == 1:

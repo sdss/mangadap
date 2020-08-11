@@ -7,8 +7,6 @@ MPL-11 TODO
     - Run DAP:               1 Nov
     - MPL-11 release:        1 Dec
     
- - (?) Redo selection of "representative galaxies": D4000, H-alpha EW,
-   sigma, S/N (others?)
  - MILES-HC:
     - Reconstruct using same procedure used for MaStar spectra
     * Direct spectral resolution assessments
@@ -25,14 +23,69 @@ MPL-11 TODO
         - Make more independent of stellar-continnuum module reference
           file
         - Change `BASE` extension to `CONTINUUM` extension.
-    - Wavelength dependent sigma rejection?
+    - Wavelength dependent sigma rejection during fit?
+ - Spectral Indices:
+    - Enable composite indices?
  - DAPall:
     - provide absolute H-alpha luminosity as a separate column
     - attenuation corrections to H-alpha luminosity, SFR
     - fraction of spectra with `sigma < sigma_corr`
     - change 1 Re computation?
     - errors
- - Visual inspection campaign
+
+
+Tasks
+-----
+
+ - H-beta analysis when fitting a common wavelength range for MILESHC,
+   MASTARHC, and MASTARHC2
+    - Analysis of existing data
+
+ - Adjustment to wavelengths in line list (Francesco's recommendations)
+
+ - Analysis of MPL-10
+    - H-beta masking
+    - Spaxels with failed pPXF fits from emission-line module
+    - Visual inspection campaign
+        - Try to set up a Zooniverse project
+
+ - Test spectra:
+    - Reconstruct set of spectra that span a relevant range in: S/N,
+      stellar sigma, H-alpha EW, D4000
+
+ - Test galaxies:
+    - Test galaxies from Belfiore et al.
+    - Test galaxies from Westfall et al.
+    - Repeat observations
+    - Subsample of galaxies that contain the "representative" spectra
+      from above?
+
+ - Test new version of pPXF
+    - Speed up using new fitting method
+    - Compare old and new measurements
+
+ - Spin-up on determination of resolution MILES-HC spectra
+    - Test accuracy of wavelength-dependent convolution in the
+      undersampled limit -> implement analytic FFT prescription?
+    - First fit with pPXF to get best template mix
+    - Then fit with own code to get resolution
+
+ - Analysis of repeat observations
+    - What parameter space is covered by the repeat observations?
+    - Repeat plots for stellar kinematics from Overview
+    - Construct similar plots for emission-line flux and kinematics
+
+ - Test use of Maraston+ MaStar SSP models
+    - Decide on down-selection of templates
+    - Compare with MaStar-HC2, BC03, MILES-SSP, M11-MILES
+    - Best-fitting polynomial
+        - Compare multiplicative polynomial of order ?-25 and
+          attenuation law
+    - (?) Check resolution of MaStar SSP templates?
+    - (?) Detailed list of what stars went into each SSP
+
+ - Test fitting a non-MaNGA cube
+    - SAMI galaxies with MaNGA data?
 
 TODO
 ----
