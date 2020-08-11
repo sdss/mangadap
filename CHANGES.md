@@ -39,9 +39,16 @@ Tasks
 
  - H-beta analysis when fitting a common wavelength range for MILESHC,
    MASTARHC, and MASTARHC2
-    - Analysis of existing data
+    - (DONE) Repeat analysis of new data
+    - Compare velocity dispersions?
+    - ACTION: Test imposing limits on the H-beta dispersion relative to
+      the H-alpha dispersion?
 
  - Adjustment to wavelengths in line list (Francesco's recommendations)
+
+ - Check offset velocity used for gas vs. stellar velocity fields
+    - Make sure they're the same and the former isn't referenced to the
+      input H-alpha velocity moment.
 
  - Analysis of MPL-10
     - H-beta masking
@@ -72,6 +79,8 @@ Tasks
 
  - Analysis of repeat observations
     - What parameter space is covered by the repeat observations?
+    X Build table of MPL-10 repeats (@manga:kbw/mpl10_repeats.db)
+    - Construct "repeat files" for value comparison
     - Repeat plots for stellar kinematics from Overview
     - Construct similar plots for emission-line flux and kinematics
 
