@@ -61,6 +61,8 @@ TODO
  - Added DataTable, mostly for automated documentation purposes.
  - Removed revision histories
  - Updated docs for MPL-10
+ - Enabled fitting a restricted wavelength range in the emission-line
+   module.
  - Changed MILES stars resolution from 2.5 angstrom to 2.54 angstroms to
    match Beifiori et al. (2011) measurement.
 
