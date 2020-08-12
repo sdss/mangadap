@@ -26,6 +26,8 @@ MPL-11 TODO
     - Wavelength dependent sigma rejection during fit?
  - Spectral Indices:
     - Enable composite indices?
+ - Model cube files
+    - Make BINID extension identical to BINID in MAPS file
  - DAPall:
     - provide absolute H-alpha luminosity as a separate column
     - attenuation corrections to H-alpha luminosity, SFR
@@ -95,6 +97,8 @@ Tasks
 
  - Test fitting a non-MaNGA cube
     - SAMI galaxies with MaNGA data?
+
+ - Check all flags are correctly in the sdssmaskbits.par file.
 
 TODO
 ----
