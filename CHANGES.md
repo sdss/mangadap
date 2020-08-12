@@ -14,6 +14,8 @@ MPL-11 TODO
     - Get rid of the filter keyword from the output headers...
     - Try fitting with some high-resolution templates?
  - Emission lines:
+    - Check construction of the continuum and emission-line models.
+      Model - emline looks odd in some cases.  E.g. SPX-MILESHC-MASTARHC2/9036-3703-41
     - Datamodel for indicating which emission-line parameters are tied
     - FOM flag that identifies poorly fit lines
     * Test use of MaStar SSP models
