@@ -17,10 +17,10 @@ from mangadap.dapfits import DAPCubeBitMask
 #-----------------------------------------------------------------------------
 
 def main():
-    select_file = 'repr/representative_spectra_selection.fits'
-    spec_file = 'repr/benchmark_spectra.fits'
-    flag_file = 'repr/representative_spectra_flags.db'
-    plot_file = 'repr/representative_spectra.pdf'
+    select_file = 'repr/representative_spectra_selection_v2.fits'
+    spec_file = 'repr/benchmark_spectra_v2.fits'
+    flag_file = 'repr/representative_spectra_flags_v2.db'
+    plot_file = 'repr/representative_spectra_v2.pdf'
 
     select_hdu = fits.open(select_file)
     spec_hdu = fits.open(spec_file)
@@ -113,7 +113,8 @@ def main():
             lambda_limits = d4000_limits*(1+select_hdu['PAR'].data['Z'][i])
             indx = numpy.logical_not(numpy.ma.getmaskarray(flux)[i,:]) \
                         & (wave > lambda_limits[0]) & (wave < lambda_limits[1])
-            mod_lim = [numpy.ma.amin(model[i,indx]), numpy.ma.amax(model[i,indx])]
+            mod_lim = [0,1] if numpy.sum(indx) == 0 \
+                        else [numpy.ma.amin(model[i,indx]), numpy.ma.amax(model[i,indx])]
             Df = (mod_lim[1]-mod_lim[0])*1.5
             flux_limits = numpy.mean(mod_lim) + numpy.array([-Df/2, Df/2])
 
@@ -138,7 +139,8 @@ def main():
             lambda_limits = mg_limits*(1+select_hdu['PAR'].data['Z'][i])
             indx = numpy.logical_not(numpy.ma.getmaskarray(flux)[i,:]) \
                         & (wave > lambda_limits[0]) & (wave < lambda_limits[1])
-            mod_lim = [numpy.ma.amin(model[i,indx]), numpy.ma.amax(model[i,indx])]
+            mod_lim = [0,1] if numpy.sum(indx) == 0 \
+                        else [numpy.ma.amin(model[i,indx]), numpy.ma.amax(model[i,indx])]
             Df = (mod_lim[1]-mod_lim[0])*1.5
             flux_limits = numpy.mean(mod_lim) + numpy.array([-Df/2, Df/2])
 
@@ -163,7 +165,8 @@ def main():
             lambda_limits = halpha_limits*(1+select_hdu['PAR'].data['Z'][i])
             indx = numpy.logical_not(numpy.ma.getmaskarray(flux)[i,:]) \
                         & (wave > lambda_limits[0]) & (wave < lambda_limits[1])
-            mod_lim = [numpy.ma.amin(model[i,indx]), numpy.ma.amax(model[i,indx])]
+            mod_lim = [0,1] if numpy.sum(indx) == 0 \
+                        else [numpy.ma.amin(model[i,indx]), numpy.ma.amax(model[i,indx])]
             Df = (mod_lim[1]-mod_lim[0])*1.5
             flux_limits = numpy.mean(mod_lim) + numpy.array([-Df/2, Df/2])
 
@@ -188,7 +191,8 @@ def main():
             lambda_limits = ca_limits*(1+select_hdu['PAR'].data['Z'][i])
             indx = numpy.logical_not(numpy.ma.getmaskarray(flux)[i,:]) \
                         & (wave > lambda_limits[0]) & (wave < lambda_limits[1])
-            mod_lim = [numpy.ma.amin(model[i,indx]), numpy.ma.amax(model[i,indx])]
+            mod_lim = [0,1] if numpy.sum(indx) == 0 \
+                        else [numpy.ma.amin(model[i,indx]), numpy.ma.amax(model[i,indx])]
             Df = (mod_lim[1]-mod_lim[0])*1.5
             flux_limits = numpy.mean(mod_lim) + numpy.array([-Df/2, Df/2])
 
