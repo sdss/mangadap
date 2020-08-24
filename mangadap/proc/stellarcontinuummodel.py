@@ -480,7 +480,7 @@ class StellarContinuumModel:
                 the resolution provided by the ``cube``; the latter must
                 be provided for this argument to have any use.
             resolution_fwhm (:obj:`float`, optional):
-                The targe resolution for the template library set by
+                The target resolution for the template library set by
                 a constant FWHM of the resolution element in
                 angstroms over all wavelengths. If None, the
                 resolution is either matched to the binned spectra
