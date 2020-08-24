@@ -15,6 +15,8 @@ Stack some spectra!
 .. include:: ../include/links.rst
 """
 
+from IPython import embed
+
 import numpy
 from scipy import sparse
 from astropy.io import fits
@@ -288,23 +290,23 @@ class SpectralStack:
         valid = binid > -1
         unique_bins = numpy.unique(binid[valid])
         nbin = len(unique_bins)
-        self.rebin_T = numpy.zeros((nbin,nspec), dtype=numpy.float)
+        self.rebin_T = numpy.zeros((nbin,nspec), dtype=float)
         for j in range(nbin):
             indx = binid == unique_bins[j]
             self.rebin_T[j,indx] = 1.0 if binwgt is None else \
                                     binwgt[indx]*numpy.sum(indx)/numpy.sum(binwgt[indx])
         self.rebin_T = sparse.csr_matrix(self.rebin_T)
 
-    def _stack_without_covariance(self, flux, ivar=None, sres=None):
+    def _stack_without_covariance(self, flux, ivar=None, sres=None, linear_sres=False):
         """
         Stack the spectra, ignoring any covariance that may or may not
         exist.
 
-        Sets :attr:`flux`, :attr:`fluxsqr`, :attr:`npix`, :attr:`ivar`,
-        :attr:`sres`.
-
-        The stored data is always based on the **sum** of the spectra
-        in the stack.
+        This method calculates the sum of the flux, flux^2, and
+        determines the number of pixels in the sum. Sets
+        :attr:`flux`, :attr:`fluxsqr`, :attr:`npix`, :attr:`ivar`,
+        :attr:`sres`. The stored data is always based on the **sum**
+        of the spectra in the stack.
         
         Args:
             flux (`numpy.ma.MaskedArray`_):
@@ -315,33 +317,83 @@ class SpectralStack:
                 1D or 2D spectral resolution as a function of
                 wavelength for all or each input spectrum. Default is
                 to ignore any spectral resolution data.
+            linear_sres (:obj:`bool`, optional):
+                Construct the combined resolution as the mean of the
+                input instrumental FWHM (1/sres). If False, the
+                quadratic mean is used (i.e., rms =
+                sqrt(mean(square))); this mode is formally correct
+                for the second moment of the combined LSF (however,
+                note that this not the same as the accuracy of a
+                Gaussian fit to the combined line profile; cf. Law et
+                al. 2020).
         """
-        # Calculate the sum of the flux, flux^2, and determine the
-        # number of pixels in the sum
-        # NOTE: In these numpy.ma expressions, masked values are
-        # ignored, and output values are masked only if all values in
-        # the arithmetic expression are masked
+        # Convert the stack transform matrix to a dense array
         rt = self.rebin_T.toarray()
-        self.flux = numpy.ma.dot(rt, flux)
-        self.fluxsqr = numpy.ma.dot(rt, numpy.square(flux))
-        self.npix = numpy.ma.dot(rt, numpy.invert(numpy.ma.getmaskarray(flux))).astype(int)
+        # Relevant shapes
+        nstack, nspec = rt.shape
+        nwave = flux.shape[-1]
 
-        # Calculate the spectral resolution
+        # Get the number of pixels included in the stack of each spectrum.
+        gpm = numpy.logical_not(numpy.ma.getmaskarray(flux)).astype(int)
+        self.npix = numpy.dot(rt, gpm)
+
+        # The gymnastics below are done primarily to ensure that stacks
+        # that only include a single spectrum do *not* lose their
+        # masked values in the array with the stacked spectra. I.e.,
+        # these spectra are simply copied to the stacked array,
+        # whereas numpy.dot is used for the stack calculations. NOTE:
+        # numpy.ma.dot was abandoned because it is *much* slower than
+        # the simple multiplication by the gpm done below.
+
+        # Calculate the number of spectra in each stack
+        nspec_per_stack = numpy.sum((rt > 0).astype(int), axis=1)
+
+        # Construct the output vectors
+        self.flux = numpy.ma.zeros((nstack, nwave), dtype=float)
+        self.fluxsqr = numpy.ma.zeros((nstack, nwave), dtype=float)
+        self.ivar = None
+        if ivar is not None:
+            self.ivar = numpy.ma.zeros((nstack, nwave), dtype=float)
         self.sres = None
         if sres is not None:
             Tc = numpy.sum(rt, axis=1)
-            Tc[numpy.invert(Tc>0)] = 1.0
-            self.sres = numpy.ma.power(numpy.ma.dot(rt, numpy.ma.power(sres, -2))/Tc[:,None], -0.5)
+            Tc[numpy.logical_not(Tc>0)] = 1.0
+            self.sres = numpy.ma.zeros((nstack, nwave), dtype=float)
+        
+        # Find the stacked spectra that include more than one input
+        # spectrum
+        stacki, speci = numpy.where((nspec_per_stack[:,None] > 1) & (rt > 0))
+        # Do the stacking
+        self.flux[stacki] = numpy.dot(rt[stacki,:][:,speci], gpm[speci]*flux.data[speci])
+        self.fluxsqr[stacki] = numpy.dot(rt[stacki,:][:,speci],
+                                         numpy.square(gpm[speci]*flux.data[speci]))
+        if self.ivar is not None:
+            self.ivar[stacki] = numpy.ma.power(numpy.dot(numpy.square(rt[stacki,:][:,speci]),
+                                        numpy.ma.divide(gpm[speci], ivar[speci]).filled(0.0)), -1.)
+        if self.sres is not None:
+            self.sres[stacki] = numpy.ma.power(numpy.dot(rt[stacki,:][:,speci],
+                                                    numpy.ma.power(sres[speci], -1).filled(0.0))
+                                                / Tc[stacki,None], -1) if linear_sres \
+                                    else numpy.ma.power(numpy.dot(rt[stacki,:][:,speci],
+                                                    numpy.ma.power(sres[speci], -2).filled(0.0))
+                                                / Tc[stacki,None], -0.5)
 
-        # No inverse variance so we're done
-        if ivar is None:
-            self.ivar = None
-            return
+        # Copy over the data from the "stacks" that only include single
+        # spectra
+        stacki, speci = numpy.where((nspec_per_stack[:,None] == 1) & (rt > 0))
+        self.flux[stacki] = flux[speci]
+        self.fluxsqr[stacki] = numpy.square(flux[speci])
+        if self.ivar is not None:
+            self.ivar[stacki] = ivar[speci]
+        if self.sres is not None:
+            self.sres[stacki] = sres[speci]
 
-        # Calculate the propagated inverse variance (assumes no
-        # covariance)
-        self.ivar = numpy.ma.power(numpy.ma.dot(numpy.power(rt, 2.0), numpy.ma.power(ivar, -1.)),
-                                   -1.)
+        # Ensure that pixels with zero contributions are masked;
+        # spectral resolution vectors are *not* masked.
+        self.flux[self.npix == 0] = numpy.ma.masked
+        self.fluxsqr[self.npix == 0] = numpy.ma.masked
+        if self.ivar is not None:
+            self.ivar[self.npix == 0] = numpy.ma.masked
 
     def _stack_with_covariance(self, flux, covariance_mode, covar, ivar=None, sres=None):
         """
@@ -409,14 +461,14 @@ class SpectralStack:
 
         # Set ivar by recalibrating the existing data
         if recalibrate_ivar:
-            ratio = numpy.ma.median( variance_ratio, axis=1 )
+            ratio = numpy.ma.median(variance_ratio, axis=1 )
             # TODO: Add a debug mode for this?
 #            self._recalibrate_ivar_figure(ratio, ofile='ivar_calibration.pdf')
             self.ivar = numpy.ma.power(ratio, -1.0)[:,None] * self.ivar
             return
 
         # Get the inverse variance from the full covariance matrix
-        self.ivar = numpy.ma.power(self.covar.variance(), -1.).filled(0.0)
+        self.ivar = numpy.ma.power(self.covar.variance(), -1.) #.filled(0.0)
 
 
     def _recalibrate_ivar_figure(self, ratio, ofile=None):
@@ -468,7 +520,7 @@ class SpectralStack:
         division by the number of pixels through the covariance matrix.
 
         Returns:
-            :class:`mangadap.util.covariance.Covariance`: Covariance
+            :class:`~mangadap.util.covariance.Covariance`: Covariance
             in the mean spectrum. Returns None if :attr:`covar` is
             None.
         """
@@ -917,9 +969,10 @@ class SpectralStack:
                 Shape is :math:`(N_{\rm spec},)`. If not provided,
                 all the spectra will be combined.
             binwgt (`numpy.ndarray`_, optional):
-                Weights for each of the spectra. Shape is
-                :math:`(N_{\rm spec},)`. If None, weights are
-                uniform.
+                Weights for each of the spectra. All weights must be
+                positive. A binwgt of 0 is considered identical to
+                masking the spectrum. Shape is :math:`(N_{\rm
+                spec},)`. If None, weights are uniform.
             ivar (`numpy.ndarray`_, `numpy.ma.MaskedArray`_, optional):
                 Inverse variance in the spectrum fluxes. Shape must
                 match ``flux``.
@@ -964,12 +1017,14 @@ class SpectralStack:
             
         Raises:
             ValueError:
-                Raised if the wavelength vector is not one-dimensional,
-                if the flux array is not two-dimensional, if the inverse
-                variance or mask arrays do not have the same shape as
-                the flux array, or if the number of wavelengths does not
-                match the second axis of the flux array.  Also raised if
-                the covariance mode is not recognized; see
+                Raised if the wavelength vector is not
+                one-dimensional, if the flux array is not
+                two-dimensional, if the ancillary arrays (inverse
+                variance, weights, mask) do not have the same shape
+                as the flux array, if any of the weights are
+                negative, or if the number of wavelengths does not
+                match the second axis of the flux array. Also raised
+                if the covariance mode is not recognized; see
                 :func:`covariance_mode_options`.
             TypeError:
                 Raised if the object type of ``covar`` does not match
@@ -997,8 +1052,11 @@ class SpectralStack:
         nspec = flux.shape[0]
         if binid is not None and binid.size != nspec:
             raise ValueError('Length of binid must match the number of input spectra.')
-        if binwgt is not None and binwgt.size != nspec:
-            raise ValueError('Length of binwgt must match the number of input spectra.')
+        if binwgt is not None:
+            if binwgt.size != nspec:
+                raise ValueError('Length of binwgt must match the number of input spectra.')
+            if numpy.any(binwgt < 0):
+                raise ValueError('Weights cannot be negative.')
 
         # Check that the covariance data is correct
         if covariance_mode is not None \

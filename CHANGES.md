@@ -37,9 +37,15 @@ MPL-11 TODO
     - change 1 Re computation?
     - errors
 
-
 Tasks
 -----
+
+ - Add flag for when *observed* gas dispersion is less than 0.7 pixels.
+   This adds side-lobe peaks that are ~1% of the model peak, and the RMS
+   difference wrt an pixelized Gaussian is about 0.3%.
+
+ - Distribution of RMS difference between stellar continuum fit and
+   emission-line continuum model over the common fitting region?
 
  - H-beta analysis when fitting a common wavelength range for MILESHC,
    MASTARHC, and MASTARHC2
@@ -53,6 +59,9 @@ Tasks
  - Check offset velocity used for gas vs. stellar velocity fields
     - Make sure they're the same and the former isn't referenced to the
       input H-alpha velocity moment.
+
+ - Check velocity dispersion corrections between the two different
+   methods.
 
  - Analysis of MPL-10
     - H-beta masking
@@ -131,6 +140,10 @@ TODO
  - Updated docs for MPL-10
  - Enabled fitting a restricted wavelength range in the emission-line
    module.
+ - Add parameter to change the required fraction of spectral coverage to
+   perform a fit.
+ - Detailed handling of masks for binning, MW extinction correction, and
+   emission-line continuum construction.
 
 3.0.1 (31 May 2020)
 -------------------
