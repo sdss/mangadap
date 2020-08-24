@@ -2,10 +2,10 @@ MPL-11 TODO
 -----------
 
  - Schedule:
-    - Last observations?:   30 Sep
-    - Run DRP:              15 Oct
-    - Run DAP:               1 Nov
-    - MPL-11 release:        1 Dec
+    - Last observations?:       24 Aug
+    - Full DRP run finished:    11 Sep
+    - MPL-11 DRP run starts:    12 Oct
+    - MPL-11 DAP run starts:     1 Nov
     
  - MILES-HC:
     - Reconstruct using same procedure used for MaStar spectra
