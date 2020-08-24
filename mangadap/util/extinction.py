@@ -496,69 +496,11 @@ class GalacticExtinction:
 
         r = self._deredden_vec() if deredden else self._redden_vec()
 
-        # Flux is 1D
-        if len(flux.shape) == 1:
-            if flux.size != self.redcorr.size:
-                raise ValueError('Flux and reddening correction vector must have same size.')
-            if ivar is None and err is None:
-                return flux * r
-            elif err is None:
-                return flux * r, ivar / numpy.square(r)
-            return flux * r, err * r
-
+        if flux.shape[-1] != self.redcorr.size:
+            raise ValueError('Flux and reddening correction vector must have same size.')
         if ivar is None and err is None:
-            return flux * r[None,:]
+            return flux * r[...,:]
         elif err is None:
-            return flux * r[None,:], ivar / numpy.square(r)[None,:]
-        return flux * r[None,:], err * r[None,:]
-
-
-#
-#def apply_reddening(flux, reddening_correction, deredden=True, ivar=None):
-#    """
-#    Apply the reddening.  Default operation is to **deredden** a
-#    spectrum.  Set deredden=False to **redden** a spectrum.
-#
-#    The reddening vector is expected to be the multiplicative factor
-#    needed to **deredden** the spectrum.  I.e., the returned array
-#    when dereddening will be: dereddened_flux = flux *
-#    reddening_correction.
-#
-#    Errors propagated if ivar provided.
-#
-#    If ivar provided, returns flux and ivar arrays; if not, only flux
-#    array is returned.
-#
-#    1 Dec 2016: Removed dispaxis keyword.  Flux and ivar should have
-#    shape Nspec x Npix.
-#
-#    """
-#
-#    # Check the input
-#    if len(reddening_correction.shape) != 1:
-#        raise ValueError('Input reddening correction must be a vector.')
-#    if ivar is not None and flux.shape != ivar.shape:
-#        raise ValueError('Flux and inverse variance arrays must have the same shape.')
-#    if len(flux.shape) == 1:
-#        if flux.size != reddening_correction.size:
-#            raise ValueError('Fluxe and reddening vector must have same number of wavelengths.')
-#        _flux = flux * reddening_correction if deredden else flux / reddening_correction
-#        if ivar is None:
-#            return _flux
-#        return _flux, ivar / numpy.square(reddening_correction) if deredden \
-#                        else ivar * numpy.square(reddening_correction)
-##    if dispaxis is None:
-##        raise ValueError('Must provide dispersion axis if flux array is multidimensional.')
-##    spatial_shape = MaNGAFits.get_spatial_shape(flux.shape, dispaxis)
-##    c = numpy.array([reddening_correction]*numpy.prod(spatial_shape)).reshape(*spatial_shape,-1)
-##    _flux = flux * c if deredden else flux / c
-#    _flux = flux * reddening_correction[None,:] if deredden else flux / reddening_correction[None,:]
-#    if ivar is None:
-#        return _flux
-##    return _flux, ivar / numpy.square(c) if deredden else ivar * numpy.square(c)
-#    return _flux, (ivar / numpy.square(reddening_correction)[None,:] if deredden \
-#                    else ivar * numpy.square(reddening_correction)[None,:])
-#
-#
-#
+            return flux * r[...,:], ivar / numpy.square(r)[...,:]
+        return flux * r[...,:], err * r[...,:]
 

@@ -76,13 +76,15 @@ class ReductionAssessmentDef(KeywordParSet):
     .. include:: ../tables/reductionassessmentdef.rst
 
     """
-    def __init__(self, key=None, waverange=None, response_func=None, covariance=False):
+    def __init__(self, key=None, waverange=None, response_func=None, covariance=False,
+                 minimum_frac=0.8):
         # Perform some checks of the input
         ar_like = [ numpy.ndarray, list ]
+        in_fl = [ int, float ]
         
-        pars =   [ 'key', 'waverange', 'response_func', 'covariance' ]
-        values = [   key,   waverange,   response_func,   covariance ]
-        dtypes = [   str,     ar_like,         ar_like,         bool ]
+        pars =   ['key', 'waverange', 'response_func', 'covariance', 'minimum_frac']
+        values = [key, waverange, response_func, covariance, minimum_frac]
+        dtypes = [str, ar_like, ar_like, bool, in_fl]
         descr = ['Keyword to distinguish the assessment method.',
                  'A two-element vector with the starting and ending wavelength (angstroms ' \
                     'in **vacuum**) within which to calculate the signal-to-noise',
@@ -96,7 +98,10 @@ class ReductionAssessmentDef(KeywordParSet):
                      'does not already provide a computed covariance matrix, one is calculated ' \
                      'using :func:`mangadap.datacube.datacube.DataCube.covariance_matrix` ' \
                      'method.  **WARNING**: If the latter fails either, the DAP will issue a ' \
-                     'warning and continue assuming no spatial covariance.']
+                     'warning and continue assuming no spatial covariance.',
+                 'Minimum fraction of unmasked pixels in a spectrum required for inclusion in ' \
+                     'the spatial covariance calculation.  Note this should match the value ' \
+                     'used for the spatial-binning module.']
 
         super(ReductionAssessmentDef, self).__init__(pars, values=values, dtypes=dtypes,
                                                      descr=descr)
@@ -199,15 +204,15 @@ def available_reduction_assessments():
             if not in_vacuum:
                 waverange = airtovac(waverange)
             assessment_methods += [ReductionAssessmentDef(key=cnfg['key'], waverange=waverange,
-                                                          covariance=cnfg.getbool('covariance',
-                                                                                  default=False))]
+                                        covariance=cnfg.getbool('covariance', default=False),
+                                        minimum_frac=cnfg.getfloat('minimum_frac', default=0.8))]
         elif def_response:
             response = numpy.genfromtxt(cnfg['response_function_file'])[:,:2]
             if not in_vacuum:
                 response[:,0] = airtovac(response[:,0])
             assessment_methods += [ReductionAssessmentDef(key=cnfg['key'], response_func=response,
-                                                          covariance=cnfg.getbool('covariance',
-                                                                                  default=False))]
+                                        covariance=cnfg.getbool('covariance', default=False),
+                                        minimum_frac=cnfg.getfloat('minimum_frac', default=0.8))]
         else:
             raise ValueError('Must define a wavelength range or a response function.')
 
@@ -253,9 +258,9 @@ class ReductionAssessmentDataTable(DataTable):
                                             ':class:`mangadap.util.geometry.SemiMajorAxisCoo`.'),
                          FGOODPIX=dict(typ=float, shape=None,
                                        descr='Fraction of good pixels in each spectrum.'),
-                         MINEQMAX=dict(typ=bool, shape=None,
-                                       descr='Flag that min(flux) = max(flux) in the spectrum; '
-                                             'i.e., the spaxel has no data.'),
+#                         MINEQMAX=dict(typ=bool, shape=None,
+#                                       descr='Flag that min(flux) = max(flux) in the spectrum; '
+#                                             'i.e., the spaxel has no data.'),
                          SIGNAL=dict(typ=float, shape=None, descr='Per pixel mean flux'),
                          VARIANCE=dict(typ=float, shape=None, descr='Per pixel mean variance'),
                          SNR=dict(typ=float, shape=None, descr='Per pixel mean S/N'))
@@ -468,22 +473,6 @@ class ReductionAssessment:
                                                     analysis_path=analysis_path,
                                                     output_file=output_file)
 
-#    def _per_spectrum_dtype(self):
-#        """
-#        Construct the record array data type for the output fits
-#        extension.
-#        """
-#        # TODO: Is SPAT_INDX useful?
-#        return [ ('SPAT_INDX',numpy.int,(numpy.asarray(tuple(self.cube.spatial_index)).shape[1],)),
-#                 ('SKY_COO',numpy.float,(2,)),
-#                 ('ELL_COO',numpy.float,(2,)),
-#                 ('FGOODPIX',numpy.float),
-#                 ('MINEQMAX',numpy.uint8),
-#                 ('SIGNAL',numpy.float),
-#                 ('VARIANCE',numpy.float),
-#                 ('SNR',numpy.float)
-#               ]
-    
     def _initialize_primary_header(self, hdr=None):
         """
         Constuct the primary header for the reference file.
@@ -768,14 +757,14 @@ class ReductionAssessment:
         # TODO: Move this into DataCube?
         flags = self.cube.do_not_use_flags()
         flux = self.cube.copy_to_masked_array(flag=flags)
-        spectrum_data['FGOODPIX'] = numpy.sum(numpy.invert(numpy.ma.getmaskarray(flux)), axis=1) \
-                                            / flux.shape[1]
+        spectrum_data['FGOODPIX'] = numpy.sum(numpy.logical_not(numpy.ma.getmaskarray(flux)),
+                                              axis=1) / flux.shape[1]
 
         # Flag spaxels with a flux that doesn't vary
         # TODO: Is this superfluous now?
-        frange = numpy.ma.max(flux, axis=1)-numpy.ma.min(flux, axis=1)
-        spectrum_data['MINEQMAX'] = (numpy.invert(numpy.ma.getmaskarray(frange))) \
-                                        & (numpy.ma.absolute(frange) < 1e-10)
+#        frange = numpy.ma.amax(flux, axis=1)-numpy.ma.amin(flux, axis=1)
+#        spectrum_data['MINEQMAX'] = (numpy.logical_not(numpy.ma.getmaskarray(frange))) \
+#                                        & (numpy.ma.absolute(frange) < 1e-10)
 
         # Set the wavelength range in the statistics. If a response
         # function is used, only use the wavelength region where the
@@ -807,21 +796,20 @@ class ReductionAssessment:
                                         waverange=self.method['waverange'],
                                         response_func=self.method['response_func'], flag=flags)
             self.covar_channel = numpy.argsort(numpy.absolute(self.cube.wave-self.covar_wave))[0]
-
-            # TODO: Make this fraction an input parameter!
-            goodfrac = (spectrum_data['FGOODPIX'].reshape(self.cube.spatial_shape) > 0.8)
-
+            goodfrac = spectrum_data['FGOODPIX'].reshape(self.cube.spatial_shape) \
+                            > self.method['minimum_frac']
             off = 1
             sign = 1
             while self.covar_wave > waverange[0] and self.covar_wave < waverange[1] \
-                    and numpy.sum(goodfrac
-                                  & numpy.invert(self.cube.ivar[:,:,self.covar_channel] > 0)) > 0:
+                    and numpy.sum(goodfrac & numpy.logical_not(
+                                    self.cube.ivar[:,:,self.covar_channel] > 0)) > 0:
                 self.covar_channel += sign*off
                 self.covar_wave = self.cube.wave[self.covar_channel]
                 sign *= -1
                 off += 1
 
-            if numpy.sum(goodfrac & numpy.invert(self.cube.ivar[:,:,self.covar_channel] > 0)) > 0:
+            if numpy.sum(goodfrac 
+                         & numpy.logical_not(self.cube.ivar[:,:,self.covar_channel] > 0)) > 0:
                 raise ValueError('Unable to find wavelength channel within fully valid data.')
             if not self.quiet:
                 log_output(self.loggers, 1, logging.INFO,

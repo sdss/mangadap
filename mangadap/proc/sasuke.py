@@ -1511,41 +1511,34 @@ class Sasuke(EmissionLineFit):
         # stellar-continuum + emission-line fit:
         if par['stellar_continuum'] is not None:
 
-            if par['deconstruct_bins'] != 'ignore':
-                # Get the stellar continuum.  The model extends over
-                # over regions masked during the fit, but 0 outside the
-                # spectral range of the fit.
-                sc_continuum = par['stellar_continuum'].fill_to_match(
-                                                    binned_spectra['BINID'].data,
-                                                    missing=binned_spectra.missing_bins)
+            # Get the stellar continuum. The model extends over over
+            # regions masked during the fit, but 0 outside the spectral
+            # range of the fit.
+            sc_continuum = par['stellar_continuum'].fill_to_match(binned_spectra['BINID'].data,
+                                                            missing=binned_spectra.missing_bins)
 
-                # Construct the full 3D cube for the stellar continuum
+            # Get the stellar continuum fit during the emission-line
+            # modeling. The masked arrays are reset to only mask
+            # regions to the blue or red of the first and last unmasked
+            # pixels, respectively.
+            el_continuum = StellarContinuumModel.reset_continuum_mask_window(model_flux) \
+                            - StellarContinuumModel.reset_continuum_mask_window(model_eml_flux)
+
+            # Get the continuum model differences, and restructure the
+            # array to match the shape of the emission-line models
+            if par['deconstruct_bins'] != 'ignore':
+                # Construct the full 3D cubes for both continuum models
                 sc_model_flux = DAPFitsUtil.reconstruct_cube(binned_spectra.shape,
                                                              binned_spectra['BINID'].data.ravel(),
                                                              sc_continuum.filled(0.0)
                                                             ).reshape(-1,self.npix_obj)
-
-                # Construct the full 3D cube of the new stellar
-                # continuum from the combined stellar-continuum +
-                # emission-line fit
                 el_continuum = DAPFitsUtil.reconstruct_cube(binned_spectra.shape,
                                                             model_binid.ravel(),
-                                                            model_flux - model_eml_flux
+                                                            el_continuum.filled(0.0)
                                                            ).reshape(-1,self.npix_obj)
-                el_continuum = StellarContinuumModel.reset_continuum_mask_window(el_continuum)
-
-                # Get the difference, restructure it to match the shape
-                # of the emission-line models
                 model_eml_base = (el_continuum - sc_model_flux)[spaxel_to_fit,:]
-#                if model_mask is not None:
-#                    model_eml_base[model_mask==0] = 0.0
-
             else:
-                el_continuum = StellarContinuumModel.reset_continuum_mask_window(
-                                                            model_flux - model_eml_flux)
-                sc_continuum = par['stellar_continuum'].fill_to_match(binned_spectra['BINID'].data,
-                                                            missing=binned_spectra.missing_bins)
-                model_eml_base = (el_continuum - sc_continuum.data[bins_to_fit,:]).filled(0.0)
+                model_eml_base = el_continuum.filled(0.0) - sc_continuum.filled(0.0)[bins_to_fit,:]
         else:
             model_eml_base = numpy.zeros(model_flux.shape, dtype=float)
 

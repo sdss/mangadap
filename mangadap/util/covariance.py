@@ -176,7 +176,7 @@ class Covariance:
             covariance matrix. Otherwise, the input matrix is
             **assumed** to only have the upper triangle of numbers.
         correlation (:obj:`bool`, optional):
-            Convert the input to a correlation matix. The input
+            Convert the input to a correlation matrix. The input
             **must** be the covariance matrix.
         raw_shape (:obj:`tuple`, optional):
             The covariance data is for a higher dimensional array
