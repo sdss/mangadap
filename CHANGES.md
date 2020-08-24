@@ -134,6 +134,10 @@ TODO
  - Updated docs for MPL-10
  - Enabled fitting a restricted wavelength range in the emission-line
    module.
+ - Add parameter to change the required fraction of spectral coverage to
+   perform a fit.
+ - Detailed handling of masks for binning, MW extinction correction, and
+   emission-line continuum construction.
 
 3.0.1 (31 May 2020)
 -------------------
