@@ -116,8 +116,8 @@ def main():
     nspec, npix = flux.shape
     dispersion = numpy.full(nspec, 100., dtype=numpy.float)
 
-#    fit_spectrum[:] = False
-#    fit_spectrum[0] = True
+    fit_spectrum[:] = False
+    fit_spectrum[0] = True
 #    fit_spectrum[171] = True
 #    fit_spectrum[791] = True
 
@@ -157,9 +157,9 @@ def main():
                    matched_resolution=False, tpl_sres=sc_tpl_sres, obj_sres=sres,
                    degree=arg.sc_deg, moments=2) #, plot=True)
 
-    if numpy.any(cont_par['KIN'][:,1] < 0):
-        embed()
-        exit()
+#    if numpy.any(cont_par['KIN'][:,1] < 0):
+#        embed()
+#        exit()
     #-------------------------------------------------------------------
 
 
@@ -200,13 +200,13 @@ def main():
         stellar_kinematics[:,1] = numpy.ma.sqrt(numpy.square(cont_par['KIN'][:,1]) -
                                         numpy.square(cont_par['SIGMACORR_SRES'])).filled(0.0)
 
-    if numpy.any(cont_par['KIN'][:,1] < 0):
-        embed()
-        exit()
-
-    if numpy.any(stellar_kinematics[:,1] < 0):
-        embed()
-        exit()
+#    if numpy.any(cont_par['KIN'][:,1] < 0):
+#        embed()
+#        exit()
+#
+#    if numpy.any(stellar_kinematics[:,1] < 0):
+#        embed()
+#        exit()
 
     # Mask the 5577 sky line
     # Mask the 5577 sky line
@@ -231,9 +231,13 @@ def main():
                          matched_resolution=False, mdegree=arg.el_deg, ensemble=False)#, plot=True)
     print('TIME: ', time.perf_counter() - efit_t)
 
-    # Line-fit metrics
-#    eml_eml_par = EmissionLineFit.line_metrics(emldb, wave, flux, ferr, model_flux, eml_eml_par,
-#                                               model_mask=model_mask, bitmask=emlfit.bitmask)
+    # Line-fit metrics (should this be done in the fit method?)
+    eml_eml_par = EmissionLineFit.line_metrics(emldb, wave, flux, ferr, model_flux, eml_eml_par,
+                                               model_mask=model_mask, bitmask=emlfit.bitmask)
+
+    # Equivalent widths
+    EmissionLineFit.measure_equivalent_width(wave, flux, emldb, eml_eml_par,
+                                             bitmask=emlfit.bitmask, checkdb=False)
 
     hdu = fits.HDUList([ fits.PrimaryHDU(),
                    fits.ImageHDU(data=wave, name='WAVE'),

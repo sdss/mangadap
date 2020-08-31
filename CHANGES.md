@@ -70,7 +70,7 @@ Tasks
         - Try to set up a Zooniverse project
 
  - Test spectra:
-    - Reconstruct set of spectra that span a relevant range in: S/N,
+    X Reconstruct set of spectra that span a relevant range in: S/N,
       stellar sigma, H-alpha EW, D4000
 
  - Test galaxies:
@@ -80,9 +80,9 @@ Tasks
     - Subsample of galaxies that contain the "representative" spectra
       from above?
 
- - Test new version of pPXF
+ - Test new version of pPXF (7.4.0)
     - Speed up using new fitting method
-    - Compare old and new measurements
+    ~ Compare old and new measurements
 
  - Spin-up on determination of resolution MILES-HC spectra
     - Test accuracy of wavelength-dependent convolution in the
