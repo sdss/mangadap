@@ -2,6 +2,8 @@
 import os
 import time
 
+from IPython import embed
+
 import numpy
 
 from astropy.io import fits
@@ -11,6 +13,7 @@ from matplotlib import pyplot, rc, colors, ticker
 
 from mangadap.util.drpfits import DRPFitsBitMask
 from mangadap.dapfits import DAPCubeBitMask
+from mangadap.proc.stellarcontinuummodel import StellarContinuumModel
 
 #-----------------------------------------------------------------------------
 
@@ -20,10 +23,16 @@ def main():
     select_file = 'repr/representative_spectra_selection_v2.fits'
     spec_file = 'repr/benchmark_spectra_v2.fits'
     flag_file = 'repr/representative_spectra_flags_v2.db'
-    plot_file = 'repr/representative_spectra_v2.pdf'
+
+#    mod_file = None
+#    plot_file = 'repr/representative_spectra_v2.pdf'
+
+    mod_file = 'repr/benchmark_spectra_v2_model.fits'
+    plot_file = 'repr/representative_spectra_v2_model.pdf'
 
     select_hdu = fits.open(select_file)
     spec_hdu = fits.open(spec_file)
+    mod_hdu = None if mod_file is None else fits.open(mod_file)
 
     nspec = spec_hdu['FLUX'].shape[0]
 
@@ -40,16 +49,27 @@ def main():
     flux = numpy.ma.MaskedArray(spec_hdu['FLUX'].data,
                                 mask=drp_bm.flagged(spec_hdu['MASK'].data,
                                                 flag=['DONOTUSE', 'FORESTAR']))
-    model = numpy.ma.MaskedArray(spec_hdu['MODEL'].data,
-                                 mask=cube_bm.flagged(spec_hdu['MODEL_MASK'].data,
-                                                      flag='NOMODEL'))
-    cont = numpy.ma.MaskedArray(spec_hdu['MODEL'].data - spec_hdu['EMLINE'].data,
-                                 mask=cube_bm.flagged(spec_hdu['MODEL_MASK'].data,
-                                                      flag='NOMODEL'))
 
-    stellar = numpy.ma.MaskedArray(spec_hdu['STELLAR'].data,
-                                   mask=cube_bm.flagged(spec_hdu['STELLAR_MASK'].data,
+    if mod_hdu is None:
+        model = numpy.ma.MaskedArray(spec_hdu['MODEL'].data,
+                                     mask=cube_bm.flagged(spec_hdu['MODEL_MASK'].data,
                                                       flag='NOMODEL'))
+        cont = numpy.ma.MaskedArray(spec_hdu['MODEL'].data - spec_hdu['EMLINE'].data,
+                                    mask=cube_bm.flagged(spec_hdu['MODEL_MASK'].data,
+                                                      flag='NOMODEL'))
+        stellar = numpy.ma.MaskedArray(spec_hdu['STELLAR'].data,
+                                       mask=cube_bm.flagged(spec_hdu['STELLAR_MASK'].data,
+                                                      flag='NOMODEL'))
+    else:
+        model = numpy.ma.MaskedArray(mod_hdu['MODEL'].data, mask=mod_hdu['MODEL_MASK'].data > 0)
+        model = StellarContinuumModel.reset_continuum_mask_window(model)
+        cont = numpy.ma.MaskedArray(mod_hdu['MODEL'].data - mod_hdu['EMLINE'].data,
+                                    mask=mod_hdu['MODEL_MASK'].data > 0)
+        cont = StellarContinuumModel.reset_continuum_mask_window(cont)
+        
+        stellar = numpy.ma.MaskedArray(mod_hdu['STELLAR'].data,
+                                       mask=mod_hdu['STELLAR_MASK'].data > 0)
+        stellar = StellarContinuumModel.reset_continuum_mask_window(stellar)
 
     if not os.path.isfile(flag_file):
         include_flags = numpy.ones(nspec, dtype=int)
@@ -72,10 +92,16 @@ def main():
                         & (wave > lambda_limits[0]) & (wave < lambda_limits[1])
             if numpy.sum(indx) == 0:
                 continue
+            if numpy.sum(numpy.logical_not(numpy.ma.getmaskarray(model)[i,:])) == 0:
+                continue
 
             mod_lim = [numpy.ma.amin(model[i,indx]), numpy.ma.amax(model[i,indx])]
             Df = (mod_lim[1]-mod_lim[0])*1.5
             flux_limits = numpy.mean(mod_lim) + numpy.array([-Df/2, Df/2])
+
+            if not numpy.all(numpy.isfinite(flux_limits)):
+                embed()
+                exit()
 
             fig = pyplot.figure()
 

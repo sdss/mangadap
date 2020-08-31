@@ -1379,164 +1379,6 @@ class PPXFFit(StellarKinematicsFit):
         # Return the filtered results
         return result
 
-        #---------------------------------------------------------------
-        #---------------------------------------------------------------
-        # THIS CODE IS THE OLD APPROACH !!
-        #---------------------------------------------------------------
-#        # Reset template flags back to original, unfiltered flags and
-#        # construct the optimized template based on the filtered fit
-#        optimal_templates = numpy.zeros((self.nobj,self.npix_tpl), dtype=float)
-#        optimal_templates_filt = numpy.zeros((self.nobj,self.npix_tpl), dtype=float)
-#        optimal_templates_rfft = numpy.empty((self.nobj,self.tpl_rfft.shape[1]), dtype=complex)
-#        for i in range(self.nobj):
-#            if result[i] is None:
-#                continue
-#            optimal_templates_filt[i,:] = numpy.dot(result[i].tplwgt,
-#                                                    tpl_flux_filt.data[result[i].tpl_to_use,:])
-#            result[i].tpl_to_use = tpl_to_use[i,:]
-#            optimal_templates[i,:] = numpy.dot(result[i].tplwgt, templates[tpl_to_use[i,:],:])
-#            optimal_templates_rfft[i,:] = numpy.dot(result[i].tplwgt,
-#                                                    templates_rfft[tpl_to_use[i,:],:])
-##            pyplot.plot(self.tpl_wave, optimal_templates[i,:])
-##            pyplot.plot(self.tpl_wave, optimal_templates[i,:]-optimal_templates_filt[i,:])
-##            pyplot.plot(self.tpl_wave, optimal_templates_filt[i,:])
-##            pyplot.show()
-#        optimal_tpl_to_use = numpy.identity(self.nobj, dtype=bool)
-#        print(optimal_tpl_to_use)
-#
-#        # Use the best-fit kinematics for the final fit where the
-#        # kinematics are fixed to the filtered result
-#        best_fit_kin = numpy.zeros((nspec,numpy.absolute(self.moments)), dtype=float)
-#        best_fit_kin[obj_to_fit] = numpy.array([ r.kin for r in result[obj_to_fit] ])
-#
-#        # Refit the unfiltered spectra with the fixed kinematics
-#        fixed_kin_result = self._run_fit_iteration(obj_flux, obj_ferr, self.spectrum_start,
-#                                                   self.spectrum_end, self.base_velocity,
-#                                                   optimal_templates, optimal_templates_rfft,
-#                                                   best_fit_kin,
-#                                                   fix_kinematics=True, obj_to_fit=obj_to_fit,
-#                                                   tpl_to_use=optimal_tpl_to_use, degree=degree,
-#                                                   mdegree=mdegree, plot=True)#plot)
-##        tplwgt = result[numpy.arange(self.nobj)[obj_to_fit][0]].tplwgt * \
-##                fixed_kin_result[numpy.arange(self.nobj)[obj_to_fit][0]].tplwgt[0]
-##        print(result[numpy.arange(self.nobj)[obj_to_fit][0]].tplwgt *
-##                fixed_kin_result[numpy.arange(self.nobj)[obj_to_fit][0]].tplwgt[0])
-#
-#        # Refit the unfiltered spectra with the fixed kinematics
-#        fixed_kin_result = self._run_fit_iteration(obj_flux, obj_ferr, self.spectrum_start,
-#                                                   self.spectrum_end, self.base_velocity,
-#                                                   templates, templates_rfft, best_fit_kin,
-#                                                   fix_kinematics=True, obj_to_fit=obj_to_fit,
-#                                                   tpl_to_use=tpl_to_use, degree=degree,
-#                                                   mdegree=mdegree, plot=True)#plot)
-##        print(fixed_kin_result[numpy.arange(self.nobj)[obj_to_fit][0]].tplwgt)
-##        pyplot.scatter(tplwgt, fixed_kin_result[numpy.arange(self.nobj)[obj_to_fit][0]].tplwgt,
-##                        marker='.', s=50)
-##        pyplot.plot([0,0.1],[0.0,0.1])
-##        pyplot.show()
-
-#        # Copy elements from the fixed kinematics result into the main
-#        # result
-#        for r,fr in zip(result[obj_to_fit],fixed_kin_result[obj_to_fit]):
-#            fr.kinerr = r.kinerr
-#
-#        return fixed_kin_result
-
-
-#    def _rescale_to_fit_emission_lines(self, ppxf_fit, i, global_weights, gpm, dvtol):
-#
-#        # - updated mask with emission-lines unmasked
-#        # - Keep stellar kinematics fixed
-#
-#        # Construct a set of Gaussian emission line templates
-#        z = (numpy.exp(ppxf_fit.sol[0]/astropy.constants.c.to('km/s').value)-1.0)
-#        obj_rest_waverange = numpy.array([self.obj_wave[self.spectrum_start[i]],
-#                                          self.obj_wave[self.spectrum_end[i]-1] ]) / (1+z)
-#        
-#        # TODO: Just adopting FWHM = 2.5 for now
-#        gas_templates, line_names, line_wave = \
-#                ppxf_util.emission_lines(numpy.log(self.tpl_wave), obj_rest_waverange, 2.5)
-##        print('GAS')
-##        print( gas_templates.shape )
-##        print( numpy.sum(gas_templates, axis=0) )
-##        for ii in range(gas_templates.shape[1]):
-##            pyplot.plot(numpy.arange(gas_templates.shape[0]), gas_templates[:,ii])
-##        pyplot.show()
-#
-#        # Construct the best-fitting stellar template based on the first
-#        # fit
-#
-#        # TODO: Need to check that this works with the change in how the
-#        # templates are selected for individual spectra
-#        if self.iteration_mode == 'global_template_plus_emlines':
-#            global_weights *= ppxf_fit.weights[0]
-##        elif self.iteration_mode == 'nonzero_templates_plus_emlines':
-##            global_weights[tpl_to_fit[i,:]] = ppxf_fit.weights[0:ntpl_to_fit]
-#            #templates.shape[0]]
-#        else:
-#            global_weights[tpl_to_fit[i,:]] = ppxf_fit.weights[0:ntpl_to_fit]
-##            global_weights = ppxf_fit.weights[0:self.ntpl]
-#        global_template = numpy.dot(global_weights, self.tpl_flux).reshape(1,-1)
-#
-##        pyplot.plot(self.tpl_wave, global_template[0,:])
-##        pyplot.show()
-#
-#        # Include emission-line templates with others
-#        _templates = numpy.row_stack([global_template, gas_templates.T])
-##        for ii in range(_templates.shape[0]):
-##            pyplot.plot(numpy.arange(_templates.shape[1]), _templates[ii,:])
-##        pyplot.show()
-#
-#        # Set the component values
-#        _component = [0]*1 + [1]*gas_templates.shape[1]
-#        # do not fit stars but use previous solution
-#        _moments = [-self.moments, 2]
-#        # initialize the gas kinematics based on the stars
-#        _guess_kin = [ppxf_fit.sol[0:2], [ppxf_fit.sol[0], 50]]
-##        _guess_kin = [ppxf_fit.sol[0:2], ppxf_fit.sol[0:2]]
-#        # unmask the emission lines
-#        _gpm = numpy.union1d(gpm, numpy.where(self.bitmask.flagged(
-#                                        model_mask[i,self.spectrum_start[i]:self.spectrum_end[i]],
-#                                        flag='EML_REGION'))[0])
-#        # Fit with emission lines, using only multiplicative polynomials
-#        _ppxf_fit = ppxf.ppxf(_templates.T,
-#                         self.obj_flux.data[i,self.spectrum_start[i]:self.spectrum_end[i]],
-#                         self.obj_ferr.data[i,self.spectrum_start[i]:self.spectrum_end[i]],
-#                         self.velscale, _guess_kin, velscale_ratio=self.velscale_ratio,
-#                         goodpixels=_gpm, bias=self.bias, clean=self.clean, degree=-1,
-#                         mdegree=8, moments=_moments, vsyst=-self.base_velocity[i],
-#                         quiet=(not plot), plot=plot, component=_component)
-#        if plot:
-#            pyplot.show()
-#
-#        # Fit failed
-#        if not ppxf_fit.status > 0:
-#            model_mask[i,:], model_par['MASK'][i] = self._set_and_report_failed_status(
-#                            model_mask[i,:], model_par['MASK'][i],
-#                           'Emission-line iteration pPXF status for spectrum {0}; '
-#                           'nothing saved.'.format(i+1))
-#            continue
-#
-#        # Save the necessary new data to the old fit (without
-#        # emission lines)
-#        ppxf_fit.weights = global_weights * _ppxf_fit.weights[0]
-#        ppxf_fit.polyweights = None
-#        ppxf_fit.mpolyweights = _ppxf_fit.mpolyweights
-#
-##        old_bestfit = ppxf_fit.bestfit
-#        ppxf_fit.bestfit = self.reconstruct_model(self.tpl_wave, self.tpl_flux,
-#                                self.obj_wave, ppxf_fit.sol, ppxf_fit.weights[0:self.ntpl],
-#                                self.velscale, polyweights=ppxf_fit.polyweights,
-#                                mpolyweights=ppxf_fit.mpolyweights,
-#                                start=self.spectrum_start[i], end=self.spectrum_end[i],
-#                                velscale_ratio=self.velscale_ratio, dvtol=dvtol,
-#                                revert_velocity=False)[self.spectrum_start[i]:self.spectrum_end[i]]
-##        pyplot.plot(self.obj_wave[self.spectrum_start:self.spectrum_end], ppxf_fit.bestfit)
-##        pyplot.plot(self.obj_wave[self.spectrum_start:self.spectrum_end], _ppxf_fit.bestfit)
-##        pyplot.plot(self.obj_wave[self.spectrum_start:self.spectrum_end], old_bestfit)
-##        pyplot.show()
-#        return ppxf_fit
-
 
     def _fit_dispersion_correction(self, templates, templates_rfft, result,
                                    baseline_dispersion=None):
@@ -2836,6 +2678,16 @@ class PPXFFit(StellarKinematicsFit):
                 the object spectra.  Default is the resolution is not
                 provided and assumed to be same as the template
                 resolution.
+
+        Returns:
+            :obj:`tuple`: Returns four arrays: the object wavelength
+            vector, the object flux array, the object flux error and
+            the object spectral resolution. The latter two objects
+            can be None if the relevant object is None on input. All
+            arrays have the same shape as the input ``obj_flux``. If
+            ``obj_sres`` is input as a 1D vector, the spectral
+            resolution is repeated for all input flux vectors. All
+            input arrays are **copies** of the input.
         """
         if len(obj_wave.shape) != 1:
             raise ValueError('Input object wavelengths must be a vector; all spectra should '

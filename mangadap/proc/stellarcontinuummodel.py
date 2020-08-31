@@ -1295,6 +1295,7 @@ class StellarContinuumModel:
                                                         dvtol=1e-9)
 
     # TODO: Get rid of dispaxis?
+    # TODO: Make this a general routine.
     @staticmethod
     def reset_continuum_mask_window(continuum, dispaxis=1, quiet=False):
         """
@@ -1338,7 +1339,7 @@ class StellarContinuumModel:
             if isinstance(s, numpy.ma.core.MaskedConstant) \
                     or isinstance(e, numpy.ma.core.MaskedConstant):
                 continue
-            c.mask[s:e] = False
+            numpy.ma.getmaskarray(c)[s:e] = False
 
         return _continuum if dispaxis == 1 else _continuum.T
 
@@ -1651,5 +1652,4 @@ class StellarContinuumModel:
 #            return _usetpl
 #
 #        raise NotImplementedError('Can only match to internal binned_spectra.')
-
 
