@@ -8,12 +8,13 @@ from IPython import embed
 
 import numpy
 from astropy.io import fits
+import astropy.constants
 from matplotlib import pyplot, ticker
 
 from mangadap.util.constants import DAPConstants
 from mangadap.util.filter import interpolate_masked_vector
 from mangadap.util.drpfits import DRPFitsBitMask
-
+from mangadap.util.fileio import compress_file
 from mangadap.util.resolution import SpectralResolution
 from mangadap.util.pixelmask import SpectralPixelMask
 
@@ -21,8 +22,10 @@ from mangadap.par.artifactdb import ArtifactDB
 from mangadap.par.emissionmomentsdb import EmissionMomentsDB
 from mangadap.par.emissionlinedb import EmissionLineDB
 
+from mangadap.proc.bandpassfilter import emission_line_equivalent_width
+
 from mangadap.proc.templatelibrary import TemplateLibrary
-from mangadap.proc.emissionlinemoments import EmissionLineMoments
+from mangadap.proc.emissionlinemoments import EmissionLineMoments, EmissionLineMomentsBitMask
 from mangadap.proc.sasuke import Sasuke
 from mangadap.proc.ppxffit import PPXFFit
 from mangadap.proc.stellarcontinuummodel import StellarContinuumModel, StellarContinuumModelBitMask
@@ -80,6 +83,8 @@ def parse_args():
                         help='velocity-scale ratio for templates during stellar kinematics fit')
     parser.add_argument('--sc_deg', type=int, default=8,
                         help='additive order during stellar kinematics fit')
+    parser.add_argument('--sc_only', default=False, action='store_true',
+                        help='skip the emission-line modeling and only fit the stellar kinematics')
 
     parser.add_argument('--el_tpl', type=str, default='MILESHC',
                         help='template library to use for the emission-line fitting')
@@ -96,6 +101,39 @@ def parse_args():
                         help='fourth column sets whether (1) or not (0) to fit spectrum')
 
     return parser.parse_args()
+    
+
+def write(ofile, wave, cont_flux, cont_mask, cont_par, model_flux=None, model_mask=None,
+          eml_flux=None, eml_fit_par=None, eml_eml_par=None, elmom=None):
+
+    compress = False
+    if ofile.split('.')[-1] == 'gz':
+        _ofile = ofile[:ofile.rfind('.')] 
+        compress = True
+    else:
+        _ofile = ofile
+
+    hdu = fits.HDUList([fits.PrimaryHDU(),
+                        fits.ImageHDU(data=wave, name='WAVE'),
+                        fits.ImageHDU(data=cont_flux.data, name='STELLAR'),
+                        fits.ImageHDU(data=cont_mask, name='STELLAR_MASK'),
+                        cont_par.to_hdu(name='STRPAR')])
+
+    if model_flux is not None:
+        hdu += [fits.ImageHDU(data=model_flux.data, name='MODEL'),
+                fits.ImageHDU(data=model_mask, name='MODEL_MASK'),
+                fits.ImageHDU(data=eml_flux.data, name='EMLINE'),
+                eml_fit_par.to_hdu(name='EMLFIT'),
+                eml_eml_par.to_hdu(name='EMLPAR'),
+                elmom.to_hdu(name='EMLMOM')]
+
+    hdu.writeto(_ofile, overwrite=True)
+    
+    # Compress if desired
+    if compress:
+        compress_file(_ofile, clobber=True)
+        os.remove(_ofile)
+
 
 def main():
     t = time.perf_counter()
@@ -116,8 +154,8 @@ def main():
     nspec, npix = flux.shape
     dispersion = numpy.full(nspec, 100., dtype=numpy.float)
 
-    fit_spectrum[:] = False
-    fit_spectrum[0] = True
+#    fit_spectrum[:] = False
+#    fit_spectrum[0] = True
 #    fit_spectrum[171] = True
 #    fit_spectrum[791] = True
 
@@ -156,6 +194,11 @@ def main():
                    ensemble=False, velscale_ratio=arg.sc_vsr, mask=sc_pixel_mask,
                    matched_resolution=False, tpl_sres=sc_tpl_sres, obj_sres=sres,
                    degree=arg.sc_deg, moments=2) #, plot=True)
+
+    if arg.sc_only:
+        write(fit_file, wave, cont_flux, cont_mask, cont_par)
+        print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
+        return
 
 #    if numpy.any(cont_par['KIN'][:,1] < 0):
 #        embed()
@@ -209,7 +252,6 @@ def main():
 #        exit()
 
     # Mask the 5577 sky line
-    # Mask the 5577 sky line
     el_pixel_mask = SpectralPixelMask(artdb=ArtifactDB.from_key('BADSKY'))
 
     # Read the emission line fitting database
@@ -221,7 +263,6 @@ def main():
     # TODO: Improve the initial velocity guess using the first moment...
 
     # Perform the fit
-    efit_t = time.perf_counter()
     model_wave, model_flux, eml_flux, model_mask, eml_fit_par, eml_eml_par \
             = emlfit.fit(emldb, wave, flux, obj_ferr=ferr, obj_mask=el_pixel_mask, obj_sres=sres,
                          guess_redshift=redshift, guess_dispersion=dispersion, reject_boxcar=101,
@@ -229,7 +270,6 @@ def main():
                          stpl_sres=el_tpl_sres, stellar_kinematics=stellar_kinematics,
                          etpl_sinst_mode='offset', etpl_sinst_min=10., velscale_ratio=arg.el_vsr,
                          matched_resolution=False, mdegree=arg.el_deg, ensemble=False)#, plot=True)
-    print('TIME: ', time.perf_counter() - efit_t)
 
     # Line-fit metrics (should this be done in the fit method?)
     eml_eml_par = EmissionLineFit.line_metrics(emldb, wave, flux, ferr, model_flux, eml_eml_par,
@@ -239,17 +279,41 @@ def main():
     EmissionLineFit.measure_equivalent_width(wave, flux, emldb, eml_eml_par,
                                              bitmask=emlfit.bitmask, checkdb=False)
 
-    hdu = fits.HDUList([ fits.PrimaryHDU(),
-                   fits.ImageHDU(data=wave, name='WAVE'),
-                   fits.ImageHDU(data=cont_flux.data, name='STELLAR'),
-                   fits.ImageHDU(data=cont_mask, name='STELLAR_MASK'),
-                   cont_par.to_hdu(name='STRPAR'),
-                   fits.ImageHDU(data=model_flux.data, name='MODEL'),
-                   fits.ImageHDU(data=model_mask, name='MODEL_MASK'),
-                   fits.ImageHDU(data=eml_flux.data, name='EMLINE'),
-                   eml_fit_par.to_hdu(name='EMLFIT'),
-                   eml_eml_par.to_hdu(name='EMLPAR')]).writeto(fit_file, overwrite=True)
+    # Measure the emission-line moments
+    #   - Model continuum
+    continuum = StellarContinuumModel.reset_continuum_mask_window(model_flux - eml_flux)
+    #   - Updated redshifts
+    fit_redshift = eml_eml_par['KIN'][:,numpy.where(emldb['name'] == 'Ha')[0][0],0] \
+                        / astropy.constants.c.to('km/s').value
+    #   - Set the moment database
+    momdb = EmissionMomentsDB.from_key(arg.el_band)
+    #   - Set the moment bitmask
+    mombm = EmissionLineMomentsBitMask()
+    #   - Measure the moments
+    elmom = EmissionLineMoments.measure_moments(momdb, wave, flux, ivar=numpy.ma.power(ferr, -2),
+                                                continuum=continuum, redshift=fit_redshift,
+                                                bitmask=mombm)
+    #   - Select the bands that are valid
+    include_band = numpy.array([numpy.logical_not(momdb.dummy)]*nspec) \
+                        & numpy.logical_not(mombm.flagged(elmom['MASK'],
+                                                          flag=['BLUE_EMPTY', 'RED_EMPTY']))
+    #   - Set the line center at the center of the primary passband
+    line_center = (1.0+fit_redshift)[:,None]*momdb['restwave'][None,:]
+    elmom['BMED'], elmom['RMED'], pos, elmom['EWCONT'], elmom['EW'], elmom['EWERR'] \
+            = emission_line_equivalent_width(wave, flux, momdb['blueside'], momdb['redside'],
+                                             line_center, elmom['FLUX'], redshift=fit_redshift,
+                                             line_flux_err=elmom['FLUXERR'],
+                                             include_band=include_band)
+    #   - Flag non-positive measurements
+    indx = include_band & numpy.logical_not(pos)
+    elmom['MASK'][indx] = mombm.turn_on(elmom['MASK'][indx], 'NON_POSITIVE_CONTINUUM')
+    #   - Set the binids
+    elmom['BINID'] = numpy.arange(nspec)
+    elmom['BINID_INDEX'] = numpy.arange(nspec)
 
+    write(fit_file, wave, cont_flux, cont_mask, cont_par, model_flux=model_flux,
+          model_mask=model_mask, eml_flux=eml_flux, eml_fit_par=eml_fit_par,
+          eml_eml_par=eml_eml_par, elmom=elmom)
     print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
 
 
