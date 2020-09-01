@@ -3,6 +3,8 @@ import time
 import warnings
 import argparse
 
+import numpy
+
 try:
     import pbs.queue
 except:
@@ -46,15 +48,15 @@ def main():
     args = parse_args()
 
     # Hard-wired cases to run
-    sc_tpl = ['MILESHC', 'MILESHC']
-    sc_vsr = [2, 4]
-    sc_deg = [8, 8]
+    sc_tpl = ['MILESHC']*16
+    sc_vsr = [2] + [4]*15
+    sc_deg = [8]*16
 
-    el_tpl = [None, 'MILESHC']
-    el_vsr = [None, 4]
-    el_deg = [None, 8]
-    el_band = [None, 'ELBMPL9']
-    el_list = [None, 'ELPMPL9']
+    el_tpl = [None, 'MILESHC'] + ['MASTARHC2']*14
+    el_vsr = [None, 4] + [1]*14
+    el_deg = [None, 8] + (numpy.arange(14)+1).tolist()
+    el_band = [None] + ['ELBMPL9']*15
+    el_list = [None] + ['ELPMPL9']*15
 
     # Hard-wired location of script
     fit_script = os.path.abspath('fit_selected_spectra.py')

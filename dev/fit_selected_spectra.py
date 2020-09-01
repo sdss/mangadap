@@ -263,6 +263,7 @@ def main():
     # TODO: Improve the initial velocity guess using the first moment...
 
     # Perform the fit
+    elfit_time = time.perf_counter()
     model_wave, model_flux, eml_flux, model_mask, eml_fit_par, eml_eml_par \
             = emlfit.fit(emldb, wave, flux, obj_ferr=ferr, obj_mask=el_pixel_mask, obj_sres=sres,
                          guess_redshift=redshift, guess_dispersion=dispersion, reject_boxcar=101,
@@ -270,6 +271,7 @@ def main():
                          stpl_sres=el_tpl_sres, stellar_kinematics=stellar_kinematics,
                          etpl_sinst_mode='offset', etpl_sinst_min=10., velscale_ratio=arg.el_vsr,
                          matched_resolution=False, mdegree=arg.el_deg, ensemble=False)#, plot=True)
+    print('EML FIT TIME: ', time.perf_counter() - elfit_time)
 
     # Line-fit metrics (should this be done in the fit method?)
     eml_eml_par = EmissionLineFit.line_metrics(emldb, wave, flux, ferr, model_flux, eml_eml_par,
