@@ -46,6 +46,8 @@ def main():
 
     # Read the arguments
     args = parse_args()
+    if args.submit and not args.create:
+        args.create = True
 
     # Hard-wired cases to run
     sc_tpl = ['MILESHC']*16
@@ -76,7 +78,7 @@ def main():
 
     # Build the queue if requested
     if args.create:
-        queue = pbs.queue(verbose=not self.quiet)
+        queue = pbs.queue(verbose=True)
         ppn = 16
         cpus = ppn if args.cpus is None else min(args.cpus, ppn)
         queue.create(label=args.label, nodes=args.nodes, qos=args.qos, umask=args.umask,
