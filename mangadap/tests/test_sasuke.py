@@ -81,12 +81,7 @@ def test_sasuke():
                          stpl_wave=tpl['WAVE'].data, stpl_flux=tpl['FLUX'].data,
                          stpl_sres=tpl_sres, stellar_kinematics=sc_par['KIN'],
                          etpl_sinst_mode='offset', etpl_sinst_min=10.,
-                         velscale_ratio=velscale_ratio, matched_resolution=False, #) #, # mdegree=8,
-                         plot=True)
-
-    # Test the results
-    embed()
-    exit()
+                         velscale_ratio=velscale_ratio, matched_resolution=False) #, plot=True)
 
     # Rejected pixels
     assert numpy.sum(emlfit.bitmask.flagged(el_mask, flag='PPXF_REJECT')) == 265, \
@@ -149,6 +144,3 @@ def test_sasuke():
                                                  81.0, 49.7])) < 1e-1), \
             'H-alpha dispersions are too different'
 
-
-if __name__ == '__main__':
-    test_sasuke()
