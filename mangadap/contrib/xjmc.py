@@ -738,7 +738,6 @@ def _fit_iteration(templates, wave, flux, noise, velscale, start, moments, compo
             warnings.warn('pPXF fault: "{0}".  Logging fault and continuing.'.format(str(e)))
             fault[i] = True
             continue
-
         if plot:
             plt.show()
 

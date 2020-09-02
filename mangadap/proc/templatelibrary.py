@@ -164,8 +164,7 @@ from ..util.dapbitmask import DAPBitMask
 from ..util.log import log_output
 from ..util.fileio import readfits_1dspec, read_template_spectrum, writefits_1dspec, create_symlink
 from ..util.fitsutil import DAPFitsUtil
-from ..util.sampling import Resample, resample_vector_npix, angstroms_per_pixel
-from ..util.sampling import spectral_coordinate_step, spectrum_velocity_scale
+from ..util import sampling
 from ..util.resolution import SpectralResolution, match_spectral_resolution
 from ..util.parser import DefaultConfig
 from .util import select_proc_method, HDUList_mask_wavelengths
@@ -894,11 +893,11 @@ class TemplateLibrary:
             return self.spectral_step
 
         nspec = self.hdu['WAVE'].data.shape[0]
-        minimum_step = spectral_coordinate_step(self.hdu['WAVE'].data[0,:].ravel(),
-                                     log=self.library['log10'])
+        minimum_step = sampling.spectral_coordinate_step(self.hdu['WAVE'].data[0,:].ravel(),
+                                                         log=self.library['log10'])
         for i in range(1,nspec):
-            step = spectral_coordinate_step(self.hdu['WAVE'].data[0,:].ravel(),
-                                            log=self.library['log10'])
+            step = sampling.spectral_coordinate_step(self.hdu['WAVE'].data[0,:].ravel(),
+                                                     log=self.library['log10'])
             if minimum_step > step:
                 minimum_step = step
         return minimum_step
@@ -936,8 +935,9 @@ class TemplateLibrary:
         unity = numpy.ma.MaskedArray(numpy.ones(self.hdu['WAVE'].data.shape[1], dtype=float),
                                      mask=self.bitmask.flagged(self.hdu['MASK'].data[i,:],
                                                                flag=flag))
-        r = Resample(unity, x=self.hdu['WAVE'].data[i,:], inLog=self.library['log10'],
-                     newRange=fullRange, newLog=self.log10_sampling, newdx=self.spectral_step)
+        r = sampling.Resample(unity, x=self.hdu['WAVE'].data[i,:], inLog=self.library['log10'],
+                              newRange=fullRange, newLog=self.log10_sampling,
+                              newdx=self.spectral_step)
         return r.outf < rmsk_lim
 
     # TODO: Having this return the redshift is a bit weird.
@@ -1046,8 +1046,9 @@ class TemplateLibrary:
             log_output(self.loggers, 1, logging.INFO, 'Matching sampling ... ')
 
         # Number of angstroms per pixel
-        ang_per_pix = numpy.array([angstroms_per_pixel(w, log=self.library['log10'], base=10.,
-                                                       regular=self.library['in_vacuum'])
+        ang_per_pix = numpy.array([sampling.angstroms_per_pixel(w, log=self.library['log10'],
+                                                                base=10.,
+                                                                regular=self.library['in_vacuum'])
                                         for w in self.hdu['WAVE'].data])
 
         # TODO: I think this kludge was necessary because of a bug in
@@ -1084,8 +1085,8 @@ class TemplateLibrary:
             self.spectral_step = self._minimum_sampling()
 
         # Get the number of pixels needed
-        npix, _fullRange = resample_vector_npix(outRange=fullRange, dx=self.spectral_step,
-                                                log=self.log10_sampling)
+        npix, _fullRange = sampling.grid_npix(rng=fullRange, dx=self.spectral_step,
+                                              log=self.log10_sampling)
 
         # Any pixels without data after resampling are given a value
         # that is the minimum flux - 100 so that they can be easily
@@ -1101,10 +1102,10 @@ class TemplateLibrary:
 
         for i in range(self.ntpl):
             # Rebin the observed wavelength range
-            r = Resample(self.hdu['FLUX'].data[i,:], mask=no_data[i,:],
-                         x=self.hdu['WAVE'].data[i,:], inLog=self.library['log10'],
-                         newRange=fullRange, newLog=self.log10_sampling,
-                         newdx=self.spectral_step, step=False)
+            r = sampling.Resample(self.hdu['FLUX'].data[i,:], mask=no_data[i,:],
+                                  x=self.hdu['WAVE'].data[i,:], inLog=self.library['log10'],
+                                  newRange=fullRange, newLog=self.log10_sampling,
+                                  newdx=self.spectral_step, step=False)
             
             # Save the result
             wave = r.outx
@@ -1122,8 +1123,8 @@ class TemplateLibrary:
 
             # Recalculate the number of pixels per fwhm
             # - Number of angstroms per pixel
-            _ang_per_pix = angstroms_per_pixel(wave, log=self.log10_sampling, base=10.,
-                                               regular=True)
+            _ang_per_pix = sampling.angstroms_per_pixel(wave, log=self.log10_sampling, base=10.,
+                                                        regular=True)
             # - Number of pixels per resolution element
             _pix_per_fwhm = numpy.ma.divide(wave, sres[i,:] * _ang_per_pix)
 
@@ -1159,8 +1160,8 @@ class TemplateLibrary:
             log_output(self.loggers, 1, logging.INFO,
                        'After resampling (target): {0}'.format(self.spectral_step))
             log_output(self.loggers, 1, logging.INFO,
-                       'After resampling (calculated): {0}'.format(spectral_coordinate_step(wave,
-                                                                                        log=True)))
+                       'After resampling (calculated): {0}'.format(
+                            sampling.spectral_coordinate_step(wave, log=True)))
 
         # Finally, we need to (again) trim the wavelength range to
         # exclude pixels with invalid or empty flux.
@@ -1272,8 +1273,8 @@ class TemplateLibrary:
             - Force a common wavelength range and sampling for all
               templates, where the sampling is forced to match the
               sampling of the DRP spectra; see
-              :func:`mangadap.util.sampling.resample_vector_pix`.  The
-              masks are appropriately resampled as well; see
+              :func:`mangadap.util.sampling.grid_pix`. The masks are
+              appropriately resampled as well; see
               :func:`_rebin_masked`.
 
         .. warning::
@@ -1387,7 +1388,7 @@ class TemplateLibrary:
             # Use the provided datacube to set the sampling
             self.sres = None
             self.log10_sampling = cube.log
-            self.spectral_step = spectral_coordinate_step(cube.wave, log=cube.log)
+            self.spectral_step = sampling.spectral_coordinate_step(cube.wave, log=cube.log)
 
             # Use the datacube to set the spectral resolution, if
             # resolution matching was requested. The fiducial spectral

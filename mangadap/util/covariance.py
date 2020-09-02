@@ -136,6 +136,7 @@ from scipy import sparse
 from astropy.io import fits
 from matplotlib import pyplot
 
+# TODO: Can I avoid using DAPFitsUtil here?
 from .fitsutil import DAPFitsUtil
 
 class Covariance:
@@ -694,7 +695,7 @@ class Covariance:
             return
 
         self.nnz = 0
-        for i in range(self.shape[0]):
+        for i in range(self.shape[-1]):
             self.cov[i] = sparse.triu(self.cov[i]).tocsr()
             self.nnz += self.cov[i].nnz
 
