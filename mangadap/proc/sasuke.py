@@ -2097,8 +2097,9 @@ class Sasuke(EmissionLineFit):
                                                        velocity_offset=self.input_cz,
                                                        max_velocity_range=max_velocity_range,
                                                        alias_window=alias_window,
-                                                       ensemble=True, #False,
+                                                       ensemble=False,
                                                        loggers=self.loggers, quiet=self.quiet)
+
         ended_in_error = numpy.array([e is not None for e in err])
         if numpy.any(ended_in_error):
             if not self.quiet:
@@ -2131,7 +2132,7 @@ class Sasuke(EmissionLineFit):
                                                     velocity_offset=numpy.median(self.input_cz),
                                                            max_velocity_range=max_velocity_range,
                                                            alias_window=alias_window,
-                                                           ensemble=True, #False,
+                                                           ensemble=False,
                                                            loggers=self.loggers, quiet=self.quiet)
             ended_in_error = numpy.array([e is not None for e in err])
             if numpy.any(ended_in_error):

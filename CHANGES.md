@@ -138,6 +138,12 @@ TODO
    perform a fit.
  - Detailed handling of masks for binning, MW extinction correction, and
    emission-line continuum construction.
+ - Enable the output grid for :class:`mangadap.util.sampling.Resample`
+   to be defined directly.
+ - Include covariance calculation in
+   :class:`mangadap.util.sampling.Resample`.
+ - Add a class that reads trace sets produced by IDLUTILS,
+   :class:`mangadap.util.trace.TraceSet`, but not well tested yet.
 
 3.0.1 (31 May 2020)
 -------------------
