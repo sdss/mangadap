@@ -550,7 +550,7 @@ class Resample:
                         self.covar[i] = Covariance.from_matrix_multiplication(A,
                                             numpy.square(self.e[i])).full()
                     self.covar = Covariance(self.covar, impose_triu=True)
-                    self.oute = self.covar.variance().T
+                    self.oute = numpy.sqrt(self.covar.variance().T)
                 else:
                     self.covar = Covariance.from_matrix_multiplication(A, numpy.square(self.e))
                     self.oute = numpy.sqrt(self.covar.variance())

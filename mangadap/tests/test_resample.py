@@ -52,7 +52,10 @@ def test_resample_covar():
     y = numpy.linspace(0.1, 2.0, 20)
     y = y*y - y*y*y + 0.2*y + 3 + 0.2 * numpy.square(numpy.sin(50*y))
     newRange = numpy.array([2,8]) + delt
-    r = sampling.Resample(y, xRange=[x[0],x[-1]], newRange=newRange, newpix=40, newLog=True)
+    e = numpy.ones_like(y)
+    r = sampling.Resample(y, e=e, xRange=[x[0],x[-1]], newRange=newRange, newpix=40, newLog=True)
+
+    # Test covar without errors
     _r = sampling.Resample(y, xRange=[x[0],x[-1]], newRange=newRange, newpix=40, newLog=True,
                            covar=True)
     assert numpy.array_equal(r.outy, _r.outy), 'Bad resampling with covariance'
@@ -63,15 +66,19 @@ def test_resample_covar():
     assert numpy.allclose(r.outy, _r.outy[0], rtol=0.0, atol=1e-15), \
             'Bad resampling with covariance'
 
-    # Test with errors
-    e = numpy.ones_like(y)
-    _r = sampling.Resample(y, xRange=[x[0],x[-1]], e=e, newRange=newRange, newpix=40, newLog=True, covar=True)
+    # Test covar with errors
+    _r = sampling.Resample(y, xRange=[x[0],x[-1]], e=e, newRange=newRange, newpix=40, newLog=True,
+                           covar=True)
     assert numpy.array_equal(r.outy, _r.outy), 'Bad resampling with covariance'
+    assert numpy.array_equal(r.oute, _r.oute), 'Bad resampling errors with covariance'
 
     # Test multiple vectors with errors
-    _r = sampling.Resample(numpy.row_stack((y,y)), e=numpy.row_stack((e,e)), xRange=[x[0],x[-1]], newRange=newRange, newpix=40, newLog=True, covar=True)
+    _r = sampling.Resample(numpy.row_stack((y,y)), e=numpy.row_stack((e,e)), xRange=[x[0],x[-1]],
+                           newRange=newRange, newpix=40, newLog=True, covar=True)
     assert numpy.allclose(r.outy, _r.outy[0], rtol=0.0, atol=1e-15), \
             'Bad resampling with covariance'
+    assert numpy.allclose(r.oute, _r.oute[0], rtol=0.0, atol=1e-15), \
+            'Bad resampling errors with covariance'
 
 
 def test_against_brute_force():
@@ -176,3 +183,4 @@ def test_grid_centers():
     centers, _dx = sampling.grid_centers(rng, nx, log=True)
     assert dx == _dx, 'Bad logarithmic step size'
     assert numpy.allclose(centers, x), 'Bad geometric borders'
+
