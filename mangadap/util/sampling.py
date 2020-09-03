@@ -147,7 +147,7 @@ def grid_npix(rng=None, dx=None, log=False, base=10.0, default=None):
 
     Raises:
         ValueError:
-            Raised if the range is not a two-element vector
+            Raised if the range is not a two-element vector.
     """
     # If the range or sampling are not provided, the number of pixels is
     # already set
@@ -306,7 +306,7 @@ class Resample:
     input data.
 
     The data to resample (``y``) can be a 1D or 2D array; the
-    abscissa coordinates must always be 1D. If (``y``) is 2D, the
+    abscissa coordinates must always be 1D. If ``y`` is 2D, the
     resampling is performed along the last axis (i.e., ``axis=-1``).
 
     The nominal assumption is that the provided function is a step
@@ -324,9 +324,18 @@ class Resample:
 
         Depending on the details of the resampling, the output errors
         are likely highly correlated.  Any later analysis of the
-        resampled function should account for this.  A covariance
-        calculation will be provided in the future on a best-effort
-        basis.
+        resampled function should account for this.
+
+    The covariance in the resampled pixels can be constructed by
+    setting ``covar=True``; however, this is currently only supported
+    when ``step=True``. If no errors are provided and ``covar=True``,
+    the computed matrix is the *correlation* matrix instead of the
+    *covariance* matrix. Given that the resampling is the same for all
+    vectors, only one correlation matix will be calculated if no
+    errors are provided, even if the input ``y`` is 2D. If the input
+    data to be resampled is 2D and errors *are* provided, a
+    covariance matrix is calculated for *each* vector in ``y``.
+    Beware that this can be an expensive computation.
 
     The ``conserve`` keyword sets how the units of the input data
     should be treated. If ``conserve=False``, the input data are
@@ -345,6 +354,7 @@ class Resample:
     .. todo::
         - Allow for higher order interpolations.
         - Enable covariance matrix calculations for ``step=False``.
+        - Provide examples
 
     Args:
         y (`numpy.ndarray`_, `numpy.ma.MaskedArray`_):
@@ -441,33 +451,42 @@ class Resample:
             *correlation* matrix.
     
     Attributes:
-        x (numpy.ndarray):
+        x (`numpy.ndarray`_):
             The coordinates of the function on input.
-        xborders (numpy.ndarray):
+        xborders (`numpy.ndarray`_):
             The borders of the input pixel samples.
-        y (numpy.ndarray):
+        y (`numpy.ndarray`_):
             The function to resample.
-        e (numpy.ndarray):
+        e (`numpy.ndarray`_):
             The 1-sigma errors in the function to resample.
-        m (numpy.ndarray):
+        m (`numpy.ndarray`_):
             The boolean mask for the input function.
-        outx (numpy.ndarray):
+        outx (`numpy.ndarray`_):
             The coordinates of the function on output.
-        outborders (numpy.ndarray):
+        outborders (`numpy.ndarray`_):
             The borders of the output pixel samples.
-        outy (numpy.ndarray):
+        outy (`numpy.ndarray`_):
             The resampled function.
-        oute (numpy.ndarray):
+        oute (`numpy.ndarray`_):
             The resampled 1-sigma errors.
-        outf (numpy.ndarray):
+        outf (`numpy.ndarray`_):
             The fraction of each output pixel that includes valid data
             from the input function.
+        covar (:class:`~mangadap.util.covariance.Covariance`):
+            The covariance or correlation matrices for the resampled
+            vectors.
 
     Raises:
-        ValueError: Raised if *y* is not of type numpy.ndarray, if *y*
-            is not one-dimensional, or if *xRange* is not provided and
-            the input vector is logarithmically binned (see *inLog*
-            above).
+        ValueError:
+            Raised if more the one of ``x``, ``xRange``, or
+            ``xBorders`` are provided, if more the one of ``newx``,
+            ``newRange``, or ``newBorders`` are provided, if ``y`` is
+            a `numpy.ndarray`_, if ``y`` is not 1D or 2D, if the
+            covariance is requested but ``step`` is False, if the
+            shapes of the provided errors or mask do not match ``y``,
+            if there is insufficient information to construct the
+            input or output grid, or if either ``xRange`` or
+            ``newRange`` are not two-element arrays.
     """
     def __init__(self, y, e=None, mask=None, x=None, xRange=None, xBorders=None, inLog=False,
                  newx=None, newRange=None, newBorders=None, newpix=None, newLog=True, newdx=None,
@@ -482,7 +501,7 @@ class Resample:
                              'should be provided.')
         if not isinstance(y, numpy.ndarray):
             raise ValueError('Input vector must be a numpy.ndarray!')
-        if len(y.shape) > 2:
+        if y.ndim > 2:
             raise ValueError('Input must be a 1D or 2D array!')
         if covar and not step:
             raise ValueError('Covariance is currently only calculated for step resampling.')
@@ -507,10 +526,6 @@ class Resample:
             self.m |= e.mask
 
         # Get the input coordinates
-#        self.x = None
-#        self.xborders = None
-#        # this defines the self.x and self.xborders
-#        self._input_coordinates(x, xRange, xBorders, inLog, base)
         nx = self.y.shape[-1] if x is None and xBorders is None else None
         self.x, self.xborders = self._coordinate_grid(x=x, rng=xRange, nx=nx, borders=xBorders,
                                                       log=inLog, base=base)
@@ -522,10 +537,6 @@ class Resample:
                                 else numpy.diff(self.xborders))
 
         # Get the output coordinates
-#        self.outx = None
-#        self.outborders = None
-#        # this defines the self.outx and self.outborders
-#        self._output_coordinates(newRange, newpix, newLog, newdx, base)
         nx = self.x.size \
                 if newx is None and newBorders is None and newpix is None and newdx is None \
                 else newpix
@@ -572,6 +583,8 @@ class Resample:
             if self.oute is not None:
                 self.oute /= (numpy.diff(self.outborders)[None,:] if self.twod \
                                     else numpy.diff(self.outborders))
+                if self.covar is not None:
+                    self.covar = self.covar.apply_new_variance(numpy.square(self.oute.T))
 
         # Set values for extrapolated regions
         if ext_value is not None:
@@ -625,53 +638,6 @@ class Resample:
         nx, _rng = grid_npix(rng=rng, dx=dx, log=log, base=base)
         borders = grid_borders(_rng, nx, log=log, base=base)[0]
         return borders_to_centers(borders, log=log), borders
-
-#    def _input_coordinates(self, x, xRange, xBorders, inLog, base):
-#        """
-#        Determine the centers and pixel borders of the input
-#        coordinates.
-#        """
-#        if (x is not None or xBorders is not None) and xRange is not None:
-#            warnings.warn('Provided both x or x borders and the x range.  Ignoring range.')
-#        _xRange = xRange if x is None and xBorders is None else None
-#        
-#        if x is not None:
-#            if x.ndim != 1:
-#                raise ValueError('Coordinate vector must be 1D.')
-#            if x.size != self.y.shape[-1]:
-#                raise ValueError('Coordinate vector must match last dimension of value array.')
-#        if xBorders is not None:
-#            if xBorders.ndim != 1:
-#                raise ValueError('Coordinate borders must be 1D.')
-#            if xBorders.size != self.y.shape[-1]+1:
-#                raise ValueError('Coordinate borders must match last dimension of value array.')
-#
-#        if x is None:
-#            if xBorders is not None:
-#                self.x = borders_to_centers(xBorders, log=inLog)
-#            elif xRange is not None:
-#                self.x = grid_centers(xRange, self.y.shape[-1], log=inLog, base=base)[0]
-#            else:
-#                self.x = numpy.arange(self.y.shape[-1]) + 0.5
-#        else:
-#            self.x = x
-#
-#        self.xborders = centers_to_borders(self.x, log=inLog) if xBorders is None else xBorders
-#
-#    def _output_coordinates(self, newRange, newpix, newLog, newdx, base):
-#        """Set the output coordinates."""
-#
-#        # Set the output range and number of pixels
-#        outRange = numpy.array([self.x[0], self.x[-1]]) if newRange is None \
-#                        else numpy.array(newRange)
-#        m, _outRange = grid_npix(rng=outRange, log=newLog, base=base, dx=newdx,
-#                                 default=(self.y.shape[-1] if newpix is None else newpix))
-#        outRange = outRange if _outRange is None else _outRange
-#
-#        # Get the output pixel borders
-#        self.outborders = grid_borders(outRange, m, log=newLog, base=base)[0]
-#        # Get the output coordinate vector
-#        self.outx = borders_to_centers(self.outborders, log=newLog)
 
     def _resample_linear(self, v, quad=False):
         """Resample the vectors."""
@@ -744,16 +710,6 @@ class Resample:
         # Use reduceat to calculate the integral
         out = numpy.add.reduceat(integrand, k[:-1], axis=-1) if k[-1] == combinedX.size-1 \
                     else numpy.add.reduceat(integrand, k, axis=-1)[...,:-1]
-#        if self.twod:
-#            out = numpy.array(numpy.add.reduceat(integrand, k[:-1], axis=-1)) \
-#                        if k[-1] == combinedX.size-1 else \
-#                        numpy.array(numpy.add.reduceat(integrand, k, axis=-1))[:, 0:-1]
-#            
-#        else:
-#            out = numpy.add.reduceat(integrand, k[:-1], axis=-1) if k[-1] == combinedX.size-1 \
-#                            else numpy.add.reduceat(integrand, k, axis=-1)[:-1]
-            
-        
         return numpy.sqrt(out) if quad else out
 
     def _resample_step_matrix(self):
