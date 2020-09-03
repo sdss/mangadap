@@ -85,5 +85,5 @@ class TraceSet:
         if index is not None:
             return self.val(self._normalized_coordinates(x), self.coeff[index,:])
 
-        return numpy.dot(coeff, self.vander(self._normalilzed_coordinates(x), self.order))
+        return numpy.dot(coeff, self.vander(self._normalized_coordinates(x), self.order))
 
