@@ -1,3 +1,7 @@
+
+t = TraceSet(hdu['WSET'].data['FUNC'][0], hdu['WSET'].data['XMIN'][0], hdu['WSET'].data['XMAX'][0], hdu['WSET'].data['COEFF'][0])
+
+
 MPL-11 TODO
 -----------
 

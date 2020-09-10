@@ -17,13 +17,17 @@ wavelength-dependent dispersion.
 
 import os
 import time
+import warnings
+
+from IPython import embed
+
 import numpy
+from scipy import interpolate, optimize, ndimage
+from matplotlib import pyplot, rc, patches
+from matplotlib.ticker import NullFormatter, MultipleLocator, FormatStrFormatter
 
 from astropy.io import fits
 import astropy.constants
-from matplotlib import pyplot, rc, patches
-from matplotlib.ticker import NullFormatter, MultipleLocator, FormatStrFormatter
-from scipy import interpolate, optimize, ndimage
 
 from ppxf.ppxf_util import gaussian_filter1d
 
@@ -39,6 +43,10 @@ from mangadap.util.bitmask import BitMask
 #from mangadap.proc.util import optimal_scale
 
 #-----------------------------------------------------------------------------
+
+def scaled_coordinates(x, rng):
+    return x if rng is None else 2 * (x - rng[0]) / (rng[1]-rng[0]) - 1 
+
 
 class PieceWiseLinear:
     def __init__(self, deg, c=None, rng=[-1,1]):
@@ -62,10 +70,14 @@ class PieceWiseLinear:
 
 
 class LegendrePolynomial:
-    def __init__(self, deg, c=None):
+    def __init__(self, deg, c=None, rng=None):
         self.deg = deg
         self.np = self.deg+1
         self.coeff = numpy.ones(self.np, dtype=float) if c is None else c
+        self.rng = rng
+
+    def reset_range(self, rng):
+        self.rng = rng
 
     def __call__(self, x, a=None):
         if a is not None:
@@ -75,18 +87,21 @@ class LegendrePolynomial:
         return numpy.polynomial.legendre.legval(x, self.coeff)
 
 
+# TODO:  assess how rng should be used here
 class ScaledEmpirical:
-    def __init__(self, x, y, scale_func=None):
+    def __init__(self, x, y, scale_func=None, rng=None, assume_sorted=True):
         self.deg = 0 if scale_func is None else scale_func.deg
         self.np = 1 if scale_func is None else scale_func.np
         self.sf = LegendrePolynomial(0) if scale_func is None else scale_func
         self.coeff = numpy.array([1.0]) if scale_func is None else scale_func.coeff
-        self.interp = interpolate.interp1d(x, y, fill_value='extrapolate')
-        self.has_rng = hasattr(self.sf, 'rng')
+        self.reset_range(rng)
+        self.interp = interpolate.interp1d(scaled_coordinates(x, self.rng), y,
+                                           fill_value='extrapolate', assume_sorted=assume_sorted)
 
     def reset_rng(self, rng):
-        if self.has_rng:
-            self.sf.reset_rng(rng)
+        if hasattr(self.sf, 'reset_range'):
+            self.sf.reset_range(rng)
+        self.rng = rng
 
     def __call__(self, x, a=None):
         if a is not None:
@@ -96,283 +111,478 @@ class ScaledEmpirical:
         return self.sf(x, a=self.coeff)*self.interp(x)
         
 
-class ModelSpectrum:
-    """
-    The domain for all functions is expected to be [-1, 1].
-
-    If sig_func is None, only a shift is applied.
-
-    """
-    def __init__(self, tpl_flux, sig_func=None, add_func=None, mult_func=None, sampling_factor=1):
-        if len(tpl_flux.shape) != 1:
-            raise ValueError('Use vectors, not arrays.')
-        if not isinstance(sampling_factor,int):
-            raise TypeError('sampling_factor must be an integer; can be 1')
-        if len(tpl_flux) % sampling_factor:
-            raise ValueError('The length of the flux vector must be an integer number of samples.')
-
-        # Number of pixels to bin for output
-        self.sampling_factor = sampling_factor
-        # Total number of output pixels (expects no modulus as tested
-        # above).
-        self.npix = len(tpl_flux)//self.sampling_factor
-        # Rebinned samples
-        self.x = numpy.linspace(-1., 1., self.npix)
-        # Native samples
-        self.s = numpy.linspace(-1., 1., self.npix*self.sampling_factor)
-
-        # Set the functions for sigma, the additive polynomial, and the
-        # multiplicative polynomial
-        self.sf = sig_func
-        self.af = add_func
-        self.mf = mult_func
-        
-        self.sd = 0 if self.sf is None else self.sf.np
-        self.ad = 0 if self.af is None else self.af.np
-        self.md = 0 if self.mf is None else self.mf.np
-
-        self.flux = tpl_flux.copy()
-        self.np = 1+self.sd+self.ad+self.md     # all the functional coeffs and the pixel shift
-        self.p = numpy.zeros(self.np)
-        self.free = numpy.ones(self.np, dtype=bool)
-        self.nfree = numpy.sum(self.free)
-        self.pname = self._set_parameter_names()
-
-
-    def _set_parameter_names(self):
-        pname = [ 'SHIFT' ]
-        for i in range(self.sd):
-            pname += [ 'SIG{0}'.format(i+1) ]
-        for i in range(self.ad):
-            pname += [ 'ADD{0}'.format(i+1) ]
-        for i in range(self.md):
-            pname += [ 'MULT{0}'.format(i+1) ]
-        return pname
-
-
-    def __call__(self, a):
-        return self.get_model(a)
-
-    def _set_par(self, a):
-        if a.shape != self.nfree:
-            raise ValueError('Number of parameters is not correct!')
-        self.p[self.free] = a
-
-    def _sig_coeff(self):
-        return self.p[1:1+self.sd]
-
-    def _add_coeff(self):
-        return self.p[1+self.sd:1+self.sd+self.ad]
-
-    def _mult_coeff(self):
-        return self.p[1+self.sd+self.ad:]
-
-    def fix_par(self, p, fixed):
-        if len(fixed) != len(self.free):
-            raise ValueError('Fixed vector has incorrect length.')
-        if len(p.shape) != 1 or p.size != self.np:
-            raise ValueError('Par vector has incorrect shape.')
-        self.p = p.copy()
-        self.free = ~fixed
-        self.nfree = numpy.sum(self.free)
-
-    def get_model(self, a):
-        self._set_par(a)
-        model = ndimage.interpolation.shift(self.flux, self.p[0]*self.sampling_factor, order=1)
-        if self.sf is not None:
-            model = convolution_variable_sigma(model,
-                            self.sampling_factor*self.sf(self.s, a=self._sig_coeff()))
-        if self.sampling_factor > 1:
-            model = numpy.mean(model.reshape(-1,self.sampling_factor), axis=1)
-        if self.mf is not None:
-            model *= self.mf(self.x, a=self._mult_coeff())
-        if self.af is not None:
-            model += self.af(self.x, a=self._add_coeff())
-        return model
-
-    def get_sigma_function(self, a, sample=False):
-        if self.sf is None:
-            return None
-        self._set_par(a)
-        return (self.sampling_factor if sample else 1.0) \
-                    * self.sf(self.s if sample else self.x, a=self._sig_coeff())
-
-    def get_multc_function(self, a, sample=False):
-        if self.mf is None:
-            return None
-        self._set_par(a)
-        return self.mf(self.s if sample else self.x, a=self._mult_coeff())
-
-    def get_addc_function(self, a, sample=False):
-        if self.af is None:
-            return None
-        self._set_par(a)
-        return self.af(self.s if sample else self.x, a=self._add_coeff())
-
-    def bounds(self):
-        lb = numpy.full(self.np, -numpy.inf, dtype=float)
-        ub = numpy.full(self.np, numpy.inf, dtype=float)
-
-        # +/- 5 pixels for offset
-        lb[0] = -10
-        ub[0] = 10
-
-        # sigma factor must be positive
-        lb[1] = 0.0
-        # multiplicative factor must be positive
-        lb[1+self.sd+self.ad] = 0.0
-        return (lb[self.free], ub[self.free])
-        
-
-
 class FitResiduals:
-    def __init__(self, obj_flux, model, goodpixels=None):
+    def __init__(self, obj_flux, model, gpm=None):
         self.obj_flux = obj_flux.copy()
         self.model = model
-        self.gpm = numpy.arange(obj_flux.size) if goodpixels is None else goodpixels
+        self.gpm = numpy.ones(obj_flux.size, dtype=bool) if gpm is None else gpm
     def __call__(self, a):
-        return (self.obj_flux-self.model(a))[self.gpm]
+        resid = (self.obj_flux[self.gpm]-self.model(a)[self.gpm])
+        print(a) #, numpy.sqrt(numpy.sum(numpy.square(resid))))
+        return resid
 
 
 class FitChiSquare:
-    def __init__(self, obj_flux, obj_ferr, model, goodpixels=None):
+    def __init__(self, obj_flux, obj_ferr, model, gpm=None):
         self.obj_flux = obj_flux.copy()
         self.obj_ferr = obj_ferr.copy()
         self.model = model
-        self.gpm = numpy.arange(obj_flux.size) if goodpixels is None else goodpixels
+        self.gpm = numpy.ones(obj_flux.size, dtype=bool) if gpm is None else gpm
     def __call__(self, a):
         return ((self.obj_flux[self.gpm]-self.model(a)[self.gpm])/self.obj_ferr[self.gpm])
 
 
-def template_library_list():
-
-    return [ TemplateLibraryDef(key='BASS10k',
-                                file_search='./bass2000_solar_spectrum_10k.fits',
-                                fwhm=None,
-                                sres_ext='SPECRES',
-                                in_vacuum=False,
-                                wave_limit=numpy.array([None, None]),
-                                lower_flux_limit=None,
-                                log10=False),
-
-             TemplateLibraryDef(key='BASS20k',
-                                file_search='./bass2000_solar_spectrum_20k.fits',
-                                fwhm=None,
-                                sres_ext='SPECRES',
-                                in_vacuum=False,
-                                wave_limit=numpy.array([None, None]),
-                                lower_flux_limit=None,
-                                log10=False),
-
-             TemplateLibraryDef(key='Kurucz10k',
-                                file_search='./kurucz_solar_spectrum_10k.fits',
-                                fwhm=None,
-                                sres_ext='SPECRES',
-                                in_vacuum=True,
-                                wave_limit=numpy.array([None, None]),
-                                lower_flux_limit=None,
-                                log10=False),
-
-             TemplateLibraryDef(key='Kurucz20k',
-                                file_search='./kurucz_solar_spectrum_20k.fits',
-                                fwhm=None,
-                                sres_ext='SPECRES',
-                                in_vacuum=True,
-                                wave_limit=numpy.array([None, None]),
-                                lower_flux_limit=None,
-                                log10=False)
-            ]
+class RukiaBitMask(BitMask):
+    """
+    Global mask bits used for Rukia.
+    """
+    def __init__(self):
+        super(RukiaBitMask, self).__init__(['LOSIGMA', 'HISIGMA'])
 
 
-def resample_twilight_spectra(wave, flux, ferr, sres, mask=None, dlogLam=1e-5,
-                              wavelength_range=None):
+class Rukia:
+    """
+    Fit a spectrum by convolving a *single* template spectrum with a
+    Gaussian kernel that has a wavelength-dependent width.
 
-    if not isinstance(flux, numpy.ma.MaskedArray):
-        raise TypeError('flux must be a masked array')
-    if not isinstance(ferr, numpy.ma.MaskedArray):
-        raise TypeError('ferr must be a masked array')
+    This instantiation defines up to three functional forms used to
+    define the fitted model. The objects used to describe each
+    functional form must have an ``np`` attribute that provides the
+    number of parameters and it must be callable with a form::
 
-    _mask = numpy.zeros(flux.shape, dtype=int) if mask is None else mask.astype(int)
-    _mask |= numpy.ma.getmaskarray(flux).astype(int)
+        func(x, a=a)
 
-    nspec = flux.shape[0]
+    where ``func`` is the object, ``x`` is the coordinate vector, and
+    ``a`` are the model parameters. For example, see
+    :class:`LegendrePolynomial`.
 
-    fullRange = [wave[0], wave[-1]] if wavelength_range is None \
-                    else numpy.array(wavelength_range).astype(float)
+    The total number of parameters for the fitted model is the sum of
+    the number of parameters for each functional form, plus one
+    additional parameter if a Doppler shift is also included in the
+    fit (see ``fit_shift``).
 
-    # Get the number of pixels needed
-    npix, _fullRange = resample_vector_npix(outRange=fullRange, dx=dlogLam, log=True)
+    Args:
+        sigma_model (object):
+            An object that provides the parametrized form of sigma as
+            a function of wavelength.
+        add_model (object, optional):
+            An object that provides the parametrized form of an
+            additive function included in the model.
+        mul_model (object, optional):
+            An object that provides the parametrized form of a
+            multiplicative function included in the model.
+    """
 
-    # Now resample the spectra.  First allocate the arrays
-    flux_out = numpy.zeros((nspec, npix), dtype=numpy.float64)
-    ferr_out = numpy.zeros((nspec, npix), dtype=numpy.float64)
-    sres_out = numpy.zeros((nspec, npix), dtype=numpy.float64)
-    mask_out = numpy.zeros((nspec, npix), dtype=numpy.float64)
-    wave_in = wave.copy()
-    for i in range(nspec):
-        print('Resampling {0}/{1}'.format(i+1,nspec), end='\r')
-        # Rebin the observed wavelength range
-        wave_out, flux_out[i, :] = resample_vector(flux.data[i,:], xRange=[wave_in[0], wave_in[-1]],
-                                                   inLog=True, newRange=fullRange, newLog=True,
-                                                   dx=dlogLam, ext_value=-9999., conserve=False,
-                                                   flat=False)
+    bitmask = RukiaBitMask()
+    """
+    Bitmask for Rukia results.
+    """
 
-        wave_out, ferr_out[i, :] = resample_vector(numpy.square(ferr.data[i,:]), xRange=[wave_in[0],
-                                                   wave_in[-1]], inLog=True, newRange=fullRange,
-                                                   newLog=True, dx=dlogLam, ext_value=-9999.,
-                                                   conserve=False, flat=False)
+    def __init__(self, sigma_model, mul_model=None, add_model=None):
 
-        wave_out, mask_out[i, :] = resample_vector(_mask[i,:].astype(float), xRange=[wave_in[0],
-                                                   wave_in[-1]], inLog=True, newRange=fullRange,
-                                                   newLog=True, dx=dlogLam, ext_value=1.0,
-                                                   conserve=False, flat=False)
+        # Saved for convenience
+        self._c = astropy.constants.c.to('km/s').value
 
-#        pyplot.step(wave_in, flux[i,:], where='mid')
-#        pyplot.step(wave_out, flux_out[i,:], where='mid', color='g')
-#        pyplot.show()
+        self.sigma = sigma_model
+        self.nsp = self.sigma.np
+        self.mul = mul_model
+        self.nmp = 0 if self.mul is None else self.mul.np
+        self.add = add_model
+        self.nap = 0 if self.add is None else self.add.np
+        self.np = 1 + self.nsp + self.nmp + self.nap
 
-        # Find the unobserved pixels, set them to have 0. flux, and
-        # flag them as having no data
-        indx = numpy.where(flux_out[i,:] < -9900.)
-        flux_out[i,indx] = 0.0
-        ferr_out[i,indx] = 1.0
+        # Model parameters
+        self.par = numpy.ones(self.np, dtype=float)
+        # Initialize all parameters as free
+        self.free = numpy.ones(self.np, dtype=bool)
+        self.nfree = numpy.sum(self.free)
 
-        ferr_out[i,:] = numpy.sqrt(ferr_out[i,:])
+        # Objects with data for the spectrum to fit
+        self.wave_scaled = None
+        self.wave = None
+        self.dw = None
+        self.flux = None
+        self.err = None
+        self.gpm = None
+        self.sres = None
+        # Objects with data for the template spectrum
+        self.tpl_wave = None
+        self.tpl_dw = None
+        self.tpl_flux = None
+        self.tpl_sres = None
 
-        # Resample the spectral resolution by simple interpolation.
-        # Select the good pixels
-        # define the interpolator (uses linear interpolation; k=1)
-#        interpolator = InterpolatedUnivariateSpline(self.hdu['WAVE'].data[i,:].ravel(),
-#                                                    self.hdu['SPECRES'].data[i,:].ravel(), k=1)
-        interpolator = interpolate.interp1d(wave_in, sres[i,:], fill_value='extrapolate')
-        # And then interpolate
-        sres_out[i,:] = interpolator(wave_out)
+        # Bitmask value for modeling results/input
+        self.flags = self.bitmask.minimum_dtype()(0)
 
-#        pyplot.step(wave_in, sres[i,:], where='mid')
-#        pyplot.step(wave_out, sres_out[i,:], where='mid', color='g')
-#        pyplot.show()
+        # Range is initialized to None and then changed by the fit()
+        # method
+        # TODO: Issue warning if any of the models have rng defined?
+        # This will overwrite them.
+        self._reset_range(None)
 
-    print('Resampling DONE                     ')
-    indx = mask_out > 0.1
-    mask_out[indx] = 1.0
-    mask_out[~indx] = 0.0
+    @staticmethod
+    def _init_data(wave, flux, err, mask, sres):
+        # Set the data to fit
+        if flux.ndim > 1:
+            raise ValueError('Flux vector must be 1D.')
+        _mask = numpy.zeros(flux.shape, dtype=bool) if mask is None else mask.copy()
+        if _mask.shape != flux.shape:
+            raise ValueError('Mask and flux vectors do not have the same shape.')
+        if isinstance(flux, numpy.ma.MaskedArray):
+            _flux = flux.data.copy()
+            _mask |= numpy.ma.getmaskarray(flux)
+        else:
+            _flux = flux.copy()
+        if wave.shape != _flux.shape:
+            raise ValueError('Wavelength and flux vectors do not have the same shape.')
+        _dw = angstroms_per_pixel(wave, regular=False)
+        _err = None
+        if err is not None:
+            if err.shape != _flux.shape:
+                raise ValueError('Flux error and flux vectors do not have the same shape.')
+            if isinstance(err, numpy.ma.MaskedArray):
+                _err = err.data.copy()
+                _mask |= numpy.ma.getmaskarray(err)
+            else:
+                _err = err.copy()
+        _sres = None
+        if sres is not None:
+            if sres.shape != _flux.shape:
+                raise ValueError('Spectral resolution and flux vectors do not have the same shape.')
+            _sres = interpolate_masked_vector(sres) if isinstance(sres, numpy.ma.MaskedArray) \
+                        else sres.copy()
+        return _dw, _flux, _err, numpy.logical_not(_mask), _sres
 
-#    print(ferr_out.size)
-#    print(numpy.sum(numpy.invert(ferr_out>0)))
-#    print(numpy.sum(mask_out))
-#    print(numpy.sum(numpy.invert(ferr_out>0) & numpy.invert(mask_out.astype(bool))))
+    @property
+    def has_template(self):
+        return self.tpl_wave is not None and self.tpl_flux is not None
 
-    indx = numpy.invert(ferr_out > 0)
-    mask_out[indx] = 1.0
+    def shifted_wave(self, wave, shift=None):
+        if shift is None:
+            shift = self.par[0]
+        return wave/(1+shift/self._c)
 
-#    print(ferr_out.size)
-#    print(numpy.sum(numpy.invert(ferr_out>0)))
-#    print(numpy.sum(mask_out))
-#    print(numpy.sum(numpy.invert(ferr_out>0) & numpy.invert(mask_out.astype(bool))))
-#
-#    exit()
+    def model(self, par, wave=None, tpl_wave=None, tpl_flux=None, rng=None,
+              pixel_sigma_bounds=[0.01,100]):
+        r"""
+        Construct the model spectrum.
 
-    return wave_out, flux_out, ferr_out, sres_out, mask_out.astype(bool)
+        Args:
+            par (`numpy.ndarray`_):
+
+                List of model parameters. Shape must be
+                :math:`(N_{\rm par},)` or the number of free
+                parameters (see :attr:`free`).
+            
+            wave (`numpy.ndarray`_, optional):
+                The wavelength vector on which to construct the
+                model. If not provided, the wavelengths for the model
+                must have already been defined for this instance,
+                e.g., via a fit to a provided spectrum (see
+                :func:`fit`).
+            tpl_wave(`numpy.ndarray`_, optional):
+                Wavelength vector for template spectrum. If provided,
+                ``tpl_flux`` must also be provided. If not provided,
+                the template spectrum must have already been defined
+                for this instance, e.g., via a fit to a provided
+                spectrum (see :func:`fit`).
+            tpl_flux(`numpy.ndarray`_, optional):
+                Flux vector for template spectrum. If provided,
+                ``tpl_wave`` must also be provided. If not provided,
+                the template spectrum must have already been defined
+                for this instance, e.g., via a fit to a provided
+                spectrum (see :func:`fit`).
+            rng (`numpy.ndarray`_, optional):
+                The wavelength range used to scale the functional
+                forms used for the model parameters. If None, the
+                range is assumed to be already defined or irrelevant
+                to the construction of the model.
+
+        Returns:
+            `numpy.ndarray`_: The model spectrum.
+        """
+        if (tpl_wave is None or tpl_flux is None) and not self.has_template:
+            raise ValueError('No template data available to construct model.')
+        if (tpl_wave is None and tpl_flux is not None) \
+                or (tpl_wave is not None and tpl_flux is None):
+            raise ValueError('If providing tpl_wave or tpl_flux, must provide both.')
+        if wave is None and self.wave is None:
+            raise ValueError('No wavelength vector available for model.')
+        if rng is not None:
+            self._reset_range(rng)
+
+        self._set_par(par)
+
+        _wave_scaled = self.wave_scaled if wave is None else scaled_coordinates(wave, self.rng)
+        _wave = self.wave if wave is None else wave
+        _tpl_wave = self.shifted_wave(self.tpl_wave if tpl_wave is None else tpl_wave)
+        _tpl_wave_scaled = scaled_coordinates(_tpl_wave, self.rng)
+        _tpl_flux = self.tpl_flux if tpl_flux is None else tpl_flux
+
+        # Sigma in angstroms
+        sigma = self.sigma(_tpl_wave_scaled, a=self.sigma_par())
+        # Convert it to pixels
+        dw = angstroms_per_pixel(_tpl_wave, regular=False)
+        sigma /= dw
+        # Imposes bounds on the allowed sigma in pixels for the
+        # convolution. The minimum is, by default, set to be the same
+        # as what is used by ppxf.ppxf_util.gaussian_filter1d
+        self.flags = 0
+        if numpy.any(sigma <= pixel_sigma_bounds[0]):
+            self.flags = self.bitmask.turn_on(self.flags, 'LOSIGMA')
+        if numpy.any(sigma >= pixel_sigma_bounds[1]):
+            self.flags = self.bitmask.turn_on(self.flags, 'HISIGMA')
+        # Clip the sigma to the specified bounds
+        sigma = numpy.clip(sigma, *pixel_sigma_bounds)
+
+        # TODO: Should insist that spectra are regularly gridded.
+        # Otherwise, the convertion to pixels below is not strictly
+        # true if there are significant differences in the width of
+        # adjacent pixels, relative to the width of the kernel.
+
+        # Convolve the template spectrum. The
+        # gaussian_filter1d algorithm results in the first and last
+        # ``p`` pixels being set to 0.
+        p = int(numpy.ceil(numpy.max(3*sigma)))
+        model_flux = gaussian_filter1d(_tpl_flux, sigma)[p:-p]
+
+        # Resample the convolved data to the output wavelength grid
+        model_flux = Resample(model_flux, x=_tpl_wave[p:-p], newx=_wave).outy #, step=False).outy
+
+#        model_flux = interpolate.interp1d(_tpl_wave[p:-p], model_flux)(_wave)
+
+        if numpy.any(numpy.isclose(model_flux, 0.)):
+            embed()
+            exit()
+
+        # Multiply by any polynomial
+        if self.mul is not None:
+            model_flux *= self.mul(_wave_scaled, a=self.mul_par())
+        # Include an additive polynomial
+        if self.add is not None:
+            model_flux += self.mul(_wave_scaled, a=self.add_par())
+        return model_flux
+
+    def _set_par(self, par):
+        """
+        Set the parameters by accounting for any fixed parameters.
+        """
+        if par.ndim != 1:
+            raise ValueError('Parameter array must be a 1D vector.')
+        if par.size == self.np:
+            self.par = par.copy()
+            return
+        if par.size != self.nfree:
+            raise ValueError('Must provide {0} or {1} parameters.'.format(self.np, self.nfree))
+        self.par[self.free] = par.copy()
+
+    def _reset_range(self, rng):
+        self.rng = rng
+        for f in [self.sigma, self.add, self.mul]:
+            if f is None:
+                continue
+            if hasattr(f, 'reset_range'):
+                f.reset_range(rng)
+        if self.wave is not None:
+            self.wave_scaled = scaled_coordinates(self.wave, self.rng)
+
+    def _sigma_par_slice(self):
+        return slice(1,1+self.nsp)
+
+    def sigma_par(self, par=None):
+        if par is None:
+            par = self.par
+        return par[self._sigma_par_slice()]
+
+    def _mul_par_slice(self):
+        s = 1+self.nsp
+        return slice(s,s+self.nmp)
+
+    def mul_par(self, par=None):
+        if par is None:
+            par = self.par
+        return par[self._mul_par_slice()]
+
+    def _add_par_slice(self):
+        s = 1+self.nsp+self.nmp
+        return slice(s,s+self.nap)
+
+    def add_par(self, par=None):
+        if par is None:
+            par = self.par
+        return par[self._add_par_slice()]
+
+    def _init_par(self, shift=0.0, fit_shift=True, sigma_p0=None, add_p0=None, mul_p0=None):
+        # Check the input parameters
+        if sigma_p0 is not None and len(sigma_p0) != self.nsp:
+            raise ValueError('Incorrect number of parameters for the sigma model.')
+        if add_p0 is not None and len(add_p0) != self.nap:
+            raise ValueError('Incorrect number of parameters for the sigma model.')
+        if mul_p0 is not None and len(mul_p0) != self.nmp:
+            raise ValueError('Incorrect number of parameters for the sigma model.')
+        # Initialize the parameter vector
+        self.par[0] = shift
+        self.free[0] = fit_shift
+        self.nfree = numpy.sum(self.free)
+        if sigma_p0 is not None:
+            self.par[self._sigma_par_slice()] = sigma_p0
+        elif self.nsp > 0:
+            self.par[self._sigma_par_slice()] = numpy.array([1.] + [0.]*(self.nsp-1))
+        if mul_p0 is not None:
+            self.par[self._mul_par_slice()] = mul_p0
+        elif self.nmp > 0:
+            self.par[self._mul_par_slice()] = numpy.array([1.] + [0.]*(self.nmp-1))
+        if add_p0 is not None:
+            self.par[self._add_par_slice()] = add_p0
+        elif self.nap > 0:
+            self.par[self._add_par_slice()] = numpy.array([1.] + [0.]*(self.nap-1))
+
+    def par_scale(self):
+        scale = numpy.ones(self.np, dtype=float)
+        scale[0] = 1000.
+        return scale
+
+    def fitting_range(self, wave, tpl_wave, shift=None, shift_range=None, rng=None):
+
+        # Determine the spectral range to fit
+        if wave[-1] < tpl_wave[0] or wave[0] > tpl_wave[-1]:
+            raise ValueError('No overlapping spectral region between the spectrum to fit and '
+                             'the template.')
+
+        # 300 here is matched to the maximum sigma allowed of 100 in
+        # gaussian_filter1d and how it maskes the edges of the
+        # spectrum.
+        tpl_wave_lim = [self.shifted_wave(tpl_wave[300], shift=shift if shift_range is None
+                                                               else shift+shift_range[0]),
+                        self.shifted_wave(tpl_wave[-300], shift=shift if shift_range is None
+                                                                else shift+shift_range[1])]
+
+        # Get the overlapping spectral range to fit
+        # TODO: Alter this based on the range of allowed shifts
+        _rng = numpy.array([max(wave[0], tpl_wave_lim[0]), min(wave[-1], tpl_wave_lim[-1])])
+
+        if rng is None:
+            return _rng
+
+        if rng[0] < _rng[0] or rng[0] > _rng[1] or rng[1] > _rng[1] or rng[1] < _rng[0]:
+            raise ValueError('Provided range is invalid.  Maximum range is: '
+                             '{0}, but requested range is {1}'.format(_rng, rng))
+        return rng
+
+#    def _reject(self, rejiter=None, rejsig=3.0, rejbox=101):
+
+
+    @staticmethod
+    def reject_model_outliers(obj_flux, ppxf_result, rescale=False, local_sigma=False, boxcar=None,
+                              nsigma=3.0, niter=9, loggers=None, quiet=False):
+        if boxcar is None and local_sigma:
+            raise ValueError('For local sigma determination, must provide boxcar size.')
+        model_flux = PPXFFit.compile_model_flux(obj_flux, ppxf_result, rescale=rescale)
+
+        if local_sigma:
+            if not quiet:
+                log_output(loggers, 1, logging.INFO,
+                           'Rejecting using local sigma (boxcar is {0} pixels).'.format(boxcar))
+            residual = obj_flux-model_flux # This should be masked where the data were not fit
+            bf = BoxcarFilter(boxcar, lo=nsigma, hi=nsigma, niter=niter, y=residual,
+                              local_sigma=True)
+            obj_flux[bf.output_mask] = numpy.ma.masked
+            return obj_flux
+
+        if not quiet:
+            log_output(loggers, 1, logging.INFO, 'Rejecting full spectrum outliers.')
+        for i in range(niter):
+            residual = obj_flux-model_flux  # This should be masked where the data were not fit
+            sigma = numpy.array([numpy.ma.std(residual, axis=1)]*residual.shape[1]).T
+            indx = numpy.absolute(residual) > nsigma*sigma
+            old_mask = numpy.ma.getmaskarray(obj_flux).copy()
+            obj_flux[indx] = numpy.ma.masked
+            if numpy.sum(numpy.ma.getmaskarray(obj_flux)) == numpy.sum(old_mask):
+                break
+        return obj_flux
+
+    def fit(self, wave, flux, tpl_wave, tpl_flux, err=None, mask=None, sres=None, tpl_sres=None,
+            shift=0.0, fit_shift=True, shift_range=[-300.,300.], rejiter=None, rejsig=3.0,
+            rejbox=101, sigma_p0=None, add_p0=None, mul_p0=None, rng=None):
+        r"""
+        Fit the spectrum.
+
+        If err is provided:
+            - the fit figure-of-merit is chi-square
+            - rejections are based on error-normalized residuals
+        Otherwise:
+            - the fit figure-of-merit is the fit RMS
+            - rejections are based on un-normalized residuals.
+
+        Args:
+            shift (:obj:`float`, optional):
+                The Doppler (multiplicative) shift between the input
+                spectrum wavelengths and the template wavelengths;
+                i.e., this is :math:`z` is the Doppler shift such
+                that the best match in the spectra is achieved when
+                the wavelengths of the spectrum to fit are
+                
+                .. math::
+                    
+                    \lambda = (1+z) \lambda_{\rm tpl}.
+
+                If ``fit_shift`` is False, this shift is fixed during
+                the fit; otherwise, it is included as a fitted model
+                parameter and the provided value is used as an
+                initial guess.
+            fit_shift (:obj:`bool`, optional):
+                In addition to the broadening, fit a Doppler (i.e.,
+                multiplicative) shift between the template and target
+                wavelengths.
+        """
+        self._init_par(shift=shift, fit_shift=fit_shift, sigma_p0=sigma_p0, add_p0=add_p0,
+                       mul_p0=mul_p0)
+
+        self.wave = wave
+        self.tpl_wave = tpl_wave
+        self._reset_range(self.fitting_range(wave, tpl_wave, shift, shift_range=shift_range,
+                          rng=rng))
+
+        indx = (self.wave > self.rng[0]) & (self.wave < self.rng[1])
+        if numpy.sum(indx) != len(indx):
+            warnings.warn('Limiting fit to {0} - {1}.'.format(*self.rng))
+
+        # Setup the spectrum to fit
+        self.wave_scaled = self.wave_scaled[indx]
+        self.wave = self.wave[indx]
+        self.dw, self.flux, self.err, self.gpm, self.sres \
+                = self._init_data(wave[indx], flux[indx], None if err is None else err[indx],
+                                  None if mask is None else mask[indx],
+                                  None if sres is None else sres[indx])
+
+        # Setup the template spectrum
+        self.tpl_dw, self.tpl_flux, _, _, self.tpl_sres \
+                = self._init_data(tpl_wave, tpl_flux, None, None, tpl_sres)
+
+        lb = numpy.full(self.np, -numpy.inf, dtype=float)
+        ub = numpy.full(self.np, numpy.inf, dtype=float)
+        lb[0], ub[0] = shift + numpy.array(shift_range)
+
+        # Set the figure-of-merit for the fit, perform the fit, and get
+        # the parameter errors from the covariance matrix
+        resid = FitResiduals(self.flux, self.model, gpm=self.gpm) if self.err is None \
+                    else FitChiSquare(self.flux, self.ferr, self.model, gpm=self.gpm)
+
+        diff_step = numpy.full(self.np, numpy.sqrt(numpy.finfo(float).eps), dtype=float)
+        diff_step[0] = 0.1
+        result = optimize.least_squares(resid, self.par[self.free], method='trf',
+                                        x_scale=self.par_scale()[self.free],
+                                        diff_step=diff_step[self.free],
+                                        bounds=(lb[self.free], ub[self.free]), verbose=2)
+        self._set_par(result.x)
+        result = optimize.least_squares(resid, self.par[self.free], method='trf',
+                                        x_scale=self.par_scale()[self.free],
+#                                        diff_step=diff_step[self.free],
+                                        bounds=(lb[self.free], ub[self.free]), verbose=2)
+
+        print(result.x)
+        embed()
+        exit()
 
 
 def calculate_parameter_covariance(result):
@@ -382,45 +592,6 @@ def calculate_parameter_covariance(result):
     except:
         return numpy.linalg.pinv(a)
 
-
-def initialize_model(wave, tpl, sampling_factor=10, sig_degree=None, sig_pwl=False,
-                     add_degree=None, mult_degree=None, base_mult=None, fom_is_chisqr=False,
-                     base_sig=None, fix_sig_diff=False, init_sig_factor=1.0):
-
-    # Build the fitting functions:
-    # Convolution kernel sigma:
-    sigma_function = (PieceWiseLinear(sig_degree) if sig_pwl else LegendrePolynomial(sig_degree)) \
-                        if base_sig is None else ScaledEmpirical(base_sig)
-    # Multiplicative Continuum:
-    mult_function = None if mult_degree is None else LegendrePolynomial(mult_degree)
-    if base_mult is not None:
-        mult_function = ScaledEmpirical(base_mult, scale_func=mult_function)
-    # Additive Continuum:
-    add_function = None if add_degree is None else LegendrePolynomial(add_degree)
-
-    # Instantiate the class that produces the model spectrum
-    model = ModelSpectrum(tpl['FLUX'].data[0,:], sig_func=sigma_function, add_func=add_function,
-                          mult_func=mult_function, sampling_factor=sampling_factor)
-
-    # Initialize the kernel to a constant offset based on the spectral
-    # resolution vectors
-    p = numpy.zeros(model.np)
-    if base_sig is None:
-        p[1] = 1.0 #init_sig_factor * numpy.ma.sqrt(numpy.ma.mean(numpy.square(base_sig)))
-    else:
-        p[1] = init_sig_factor
-        if fix_sig_diff:
-            fixp = numpy.zeros(model.np, dtype=bool)
-            fixp[1] = True
-            model.fix_par(p, fixp)
-
-    # Initialize the multiplicative polynomial to 1
-    if mult_degree is not None:
-        p[1+model.sd+model.ad] = 1.0
-    # The parameter vector that will be optimized
-    a0 = p[model.free]
-
-    return model, p, a0
 
 
 def fit_spectra(wave, flux, ferr, sres, good_pixels, tpl, sampling_factor=None, sig_degree=None,
@@ -557,289 +728,6 @@ def fit_spectra(wave, flux, ferr, sres, good_pixels, tpl, sampling_factor=None, 
     return best_fit_model, best_fit_par, best_fit_par_err, best_fit_chi, best_fit_rchi, \
                 sigma_resolution_match, estimated_resolution
     
-
-def get_resolution_data(best_fit_par, model, velscale, tpl_sres):
-
-    sigma_resolution_match = model.get_sigma_function(best_fit_par[model.free])*velscale
-
-    s = constants().sig2fwhm
-    c = astropy.constants.c.to('km/s').value
-    estimated_resolution = numpy.ma.power(numpy.square(c/s/tpl_sres)
-                                          + numpy.square(sigma_resolution_match), -0.5)*c/s
-
-    return sigma_resolution_match, estimated_resolution
-
-
-def get_polynomial_model(npix, par, degree, s=None):
-    if degree is None:
-        return None
-    nsets = par.shape[0]
-    poly = LegendrePolynomial(degree)
-    x = numpy.linspace(-1., 1., npix)
-    model = numpy.empty((nsets,npix), dtype=float)
-    for i in range(nsets):
-        model[i,:] = poly(x, a=par[i,:] if s is None else par[i,s:s+poly.np])
-    return model
-
-class RukiaBitMask(BitMask):
-    """
-    Global mask bits used for Rukia.
-    """
-    def __init__(self):
-        super(RukiaBitMask, self).__init__(['LOWSIGMA'])
-
-class Rukia:
-    """
-    Fit a spectrum by convolving a *single* template spectrum with a
-    Gaussian kernel that has a wavelength-dependent width.
-
-    This instantiation defines up to three functional forms used to
-    define the fitted model. The objects used to describe each
-    functional form must have an ``np`` attribute that provides the
-    number of parameters and it must be callable with a form::
-
-        func(x, a=a)
-
-    where ``func`` is the object, ``x`` is the coordinate vector, and
-    ``a`` are the model parameters. For example, see
-    :class:`LegendrePolynomial`.
-
-    The total number of parameters for the fitted model is the sum of
-    the number of parameters for each functional form, plus one
-    additional parameter if a Doppler shift is also included in the
-    fit (see ``fit_shift``).
-
-    Args:
-        sigma_model (object):
-            An object that provides the parametrized form of sigma as
-            a function of wavelength.
-        add_model (object, optional):
-            An object that provides the parametrized form of an
-            additive function included in the model.
-        mul_model (object, optional):
-            An object that provides the parametrized form of a
-            multiplicative function included in the model.
-    """
-    bitmask = RukiaBitMask()
-    def __init__(self, sigma_model, add_model=None, mul_model=None):
-        self.sigma = sigma_model
-        self.nsp = self.sigma.np
-        self.add = add_model
-        self.nap = 0 if self.add is None else self.add.np
-        self.mul = mul_model
-        self.nmp = 0 if self.mul is None else self.mul.np
-        self.np = 1 + self.nsp + self.nap + self.nmp
-
-        # Model parameters
-        self.par = numpy.ones(self.np, dtype=float)
-        # Initialize all parameters as free
-        self.free = numpy.ones(self.np, dtype=bool)
-
-        # Objects with data for the spectrum to fit
-        self.wave = None
-        self.flux = None
-        self.err = None
-        self.mask = None
-        self.sres = None
-        # Objects with data for the template spectrum
-        self.tpl_wave = None
-        self.tpl_flux = None
-        self.tpl_sres = None
-
-        # Bitmask value for modeling results/input
-        self.flags = bitmask.minimum_dtype()(0)
-
-    @staticmethod
-    def _init_data(wave, flux, err, mask, sres):
-        # Set the data to fit
-        if flux.dim > 1:
-            raise ValueError('Flux vector must be 1D.')
-        _mask = numpy.zeros(flux.shape, dtype=bool) if mask is None else mask.copy()
-        if _mask.shape != flux.shape:
-            raise ValueError('Mask and flux vectors do not have the same shape.')
-        if isinstance(flux, numpy.ma.MaskedArray):
-            _flux = flux.data.copy()
-            _mask |= numpy.ma.getmaskarray(flux)
-        else:
-            _flux = flux.copy()
-        if wave.shape != _flux.shape:
-            raise ValueError('Wavelength and flux vectors do not have the same shape.')
-        _err = None
-        if err is not None:
-            if err.shape != _flux.shape:
-                raise ValueError('Flux error and flux vectors do not have the same shape.')
-            if isinstance(err, numpy.ma.MaskedArray) else err.copy()
-                _err = err.data.copy()
-                _mask |= numpy.ma.getmaskarray(err)
-            else:
-                _err = err.copy()
-        _sres = None
-        if sres is not None:
-            if sres.shape != _flux.shape:
-                raise ValueError('Spectral resolution and flux vectors do not have the same shape.')
-            _sres = interpolate_masked_vector(sres) if isinstance(sres, numpy.ma.MaskedArray) \
-                        else sres.copy()
-        return _flux, _err, _mask, _sres
-
-    @property
-    def has_template(self):
-        return self.tpl_wave is not None and self.tpl_flux is not None
-
-    def model(self, par, wave=None, tpl_wave=None, tpl_flux=None, rng=None):
-        r"""
-        Construct the model spectrum.
-
-        Args:
-            par (`numpy.ndarray`_):
-
-                List of model parameters. Shape must be
-                :math:`(N_{\rm par},)` or the number of free
-                parameters (see :attr:`free`).
-            
-            wave (`numpy.ndarray`_, optional):
-                The wavelength vector on which to construct the
-                model. If not provided, the wavelengths for the model
-                must have already been defined for this instance,
-                e.g., via a fit to a provided spectrum (see
-                :func:`fit`).
-            tpl_wave(`numpy.ndarray`_, optional):
-                Wavelength vector for template spectrum. If provided,
-                ``tpl_flux`` must also be provided. If not provided,
-                the template spectrum must have already been defined
-                for this instance, e.g., via a fit to a provided
-                spectrum (see :func:`fit`).
-            tpl_flux(`numpy.ndarray`_, optional):
-                Flux vector for template spectrum. If provided,
-                ``tpl_wave`` must also be provided. If not provided,
-                the template spectrum must have already been defined
-                for this instance, e.g., via a fit to a provided
-                spectrum (see :func:`fit`).
-            rng (`numpy.ndarray`_, optional):
-                The wavelength range used to scale the functional
-                forms used for the model parameters. If None, the
-                range is assumed to be already defined or irrelevant
-                to the construction of the model.
-
-        Returns:
-            `numpy.ndarray`_: The model spectrum.
-        """
-        if par.dim != 1:
-            raise ValueError('Parameter array must be a 1D vector.')
-        nfree = numpy.sum(self.free)
-        if par.size != self.np and par.size != nfree:
-            raise ValueError('Parameter vector must have {0} or {1} elements.'.format(
-                                self.np, nfree))
-        if (tpl_wave is None or tpl_flux is None) and not self.has_template:
-            raise ValueError('No template data available to construct model.')
-        if (tpl_wave is None and tpl_flux is not None) \
-                or (tpl_wave is not None and tpl_flux is None):
-            raise ValueError('If providing tpl_wave or tpl_flux, must provide both.')
-        if wave is None and self.wave is None:
-            raise ValueError('No wavelength vector available for model.')
-        _wave = self.wave if wave is None else wave
-        _tpl_wave = self.tpl_wave if tpl_wave is None else tpl_wave
-        _dw = angstroms_per_pixel(_tpl_wave, regular=False) if self.dw is None else self.dw
-        _tpl_flux = self.tpl_flux if tpl_flux is None else tpl_flux
-        self._set_par(par)
-        if rng is not None:
-            self._reset_range(rng)
-
-        # Get the convolution kernel width in angstroms for at each
-        # template wavelength, accounting for the shift in the template
-        # wavelengths
-        sigma = self.sigma(_tpl_wave/(1+self.par[0]), a=self.par[1:1+self.nsp])
-        if numpy.any(sigma <= 0.01):
-            # Imposes a minimum sigma for the convolution. This is set
-            # to be the same as what is used by
-            # ppxf.ppxf_util.gaussian_filter1d
-            sigma = numpy.clip(sigma, 0.01, None)
-            self.flags = self.bitmask.turn_on(self.flags, 'LOWSIGMA')
-
-        # Convolve the template spectrum, where the sigma is converted
-        # to the number of pixels
-        # TODO: Should insist that spectra are regularly gridded.
-        # Otherwise, the convertion to pixels below is not strictly
-        # true if there are significant differences in the width of
-        # adjacent pixels, relative to the width of the kernel.
-        model_flux = gaussian_filter1d(_tpl_flux, sigma/_dw)
-
-        # Resample the convolved data to the output wavelength grid
-        model_flux = Resample(model_flux, x=_tpl_wave/(1+self.par[0]), )
-
-           def __init__(self, y, e=None, mask=None, x=None, xRange=None, xBorders=None, inLog=False,
-                 newRange=None, newpix=None, newLog=True, newdx=None, base=10.0, ext_value=0.0,
-                 conserve=False, step=True): 
-
-
-
-
-    def _set_par(self, par):
-        """
-        Set the parameters by accounting for any fixed parameters.
-        """
-        if par.size == self.np:
-            self.par = par
-            return
-        self.par[self.free] = par
-        return self.par
-
-    def _reset_range(self, rng):
-        for f in [self.sigma, self.add, self.mul]:
-            if f is None:
-                continue
-            if hasattr(f, 'reset_range'):
-                f.reset_range(rng)
-
-    def fit(self, wave, flux, tpl_wave, tpl_flux, err=None, mask=None, sres=None, tpl_sres=None,
-            shift=0.0, fit_shift=True, width=None, rejiter=None, rejsig=3.0, rejbox=101):
-        r"""
-        Fit the spectrum.
-
-        If err is provided:
-            - the fit figure-of-merit is chi-square
-            - rejections are based on error-normalized residuals
-        Otherwise:
-            - the fit figure-of-merit is the fit RMS
-            - rejections are based on un-normalized residuals.
-
-        Args:
-            shift (:obj:`float`, optional):
-                The Doppler (multiplicative) shift between the input
-                spectrum wavelengths and the template wavelengths;
-                i.e., this is :math:`z` is the Doppler shift such
-                that the best match in the spectra is achieved when
-                the wavelengths of the spectrum to fit are
-                
-                .. math::
-                    
-                    \lambda = (1+z) \lambda_{\rm tpl}.
-
-                If ``fit_shift`` is False, this shift is fixed during
-                the fit; otherwise, it is included as a fitted model
-                parameter and the provided value is used as an
-                initial guess.
-            fit_shift (:obj:`bool`, optional):
-                In addition to the broadening, fit a Doppler (i.e.,
-                multiplicative) shift between the template and target
-                wavelengths.
-        """
-        # Setup the spectrum to fit
-        self.wave = wave
-        self.flux, self.err, self.mask, self.sres \
-                = self.init_data(wave, flux, err, mask, sres)
-        # Setup the template spectrum
-        self.tpl_wave = tpl_wave
-        self.tpl_flux, _, _, self.tpl_sres \
-                = self.init_data(tpl_wave, tpl_flux, None, None, tpl_sres)
-        if self.wave[-1] < self.tpl_wave[0] or self.wave[0] > self.tpl_wave[-1]:
-            raise ValueError('No overlapping spectral region between the spectrum to fit and '
-                             'the template.')
-        # Fit the overlapping spectral range
-        self.rng = numpy.array([max(self.wave[0], self.tpl_wave[0]),
-                                min(self.wave[-1], self.tpl_wave[-1])])
-
-
-
 
 def fit_tpl_to_twilight_spectrum(
                                  # Input data to fit
