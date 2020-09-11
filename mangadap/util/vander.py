@@ -19,7 +19,11 @@ from IPython import embed
 
 import numpy
 
-from .filter import BoxcarFilter
+from . import modeling
+
+# TODO: Generalize this even further so that a user can provide their
+# own "basis" functions. And change the name of this module to
+# basis.py?
 
 class Vander1D:
     r"""
@@ -64,14 +68,17 @@ class Vander1D:
 
     @property
     def size(self):
+        """The size of the coordinate vector."""
         return self.x.size
 
     @property
     def shape(self):
+        """The shape of the coordinate vector."""
         return self.x.shape
 
     @property
     def order(self):
+        """The order of the function."""
         return self.v.shape[0]-1
 
     def fit(self, y, w=None, err=None, mask=None, rej_iter=0, rej_lo=3., rej_hi=3., rej_win=None,
@@ -94,18 +101,19 @@ class Vander1D:
 
         Args:
             y (array-like):
-                A 1D or 2D array with the 1D functions to fit.  Shape is
-                :math:`(N_{\rm vec},N_x)`, where :math:`N_x` is the
-                length of the ordinate (:attr:`x`).  Input can be a
-                masked array.
+                A 1D or 2D array with the 1D functions to fit. Shape
+                is :math:`(N_x,)` or :math:`(N_{\rm vec},N_x)`, where
+                :math:`N_x` is the length of the ordinate
+                (:attr:`x`). Input can be a masked array.
             w (array-like, optional):
-                A 1D or 2D array with the weights for each pixel.  Shape
-                is :math:`(N_{\rm vec},N_x)`, where :math:`N_x` is the
-                length of the ordinate (:attr:`x`).  If ``w`` is 1D, but
-                ``y`` is 2D, the same weights are applied to all
-                vectors.
+                A 1D or 2D array with the weights for each pixel.
+                Shape is :math:`(N_x,)` or :math:`(N_{\rm vec},N_x)`,
+                where :math:`N_x` is the length of the ordinate
+                (:attr:`x`). If ``w`` is 1D, but ``y`` is 2D, the
+                same weights are applied to all vectors.
             err (array-like, optional):
-                Error in y, used for weighting.  Shape must match ``y``.
+                Error in ``y``, used for weighting. Shape must match
+                ``y``.
             mask (array-like, optional):
                 A boolean mask; values to ignore should have ``mask
                 == True``. Shape must match ``y``. Treated
@@ -134,11 +142,18 @@ class Vander1D:
                 coefficients.
 
         Returns:
-            `numpy.ndarray`, :obj:`tuple`: Returns the vector(s) with
-            the best-fitting coefficients.  If ``model`` is True, a
-            second object with the best-fitting models are also returned
-            (same shape as ``y``).
-
+            `numpy.ndarray`, :obj:`tuple`: As many as three objects
+            can be returned. Regardless of the input, the function
+            always returns an array with the best-fitting
+            coefficients, with shape :math:`(o+1,)` or :math:`(N_{\rm
+            vec},o+1)`, depending on the input shape of ``y``. If
+            ``model`` is True, an array with the best-fitting models
+            are also returned (same shape as ``y``). If rejection
+            operations are performed, a boolean array flagging the
+            pixels excluded from the fit is also returned. Note that
+            any data that will have been ignored based on the input
+            (the element is masked or has 0 weight) is *not* flagged
+            as having been rejected.
         """
         # Check the input vectors to fit
         _y = numpy.atleast_1d(y)
@@ -199,21 +214,11 @@ class Vander1D:
 
         # Iteratively reject
         i = 0
-#        from matplotlib import pyplot
         while i < rej_iter or rej_iter < 0:
             # Setup a masked array to hold the weighted residuals
             resid = _w * numpy.ma.MaskedArray(_y - self.model(c), mask=numpy.logical_not(_w > 0))
             # Reject pixels
-            rej = self._reject(resid, rej_lo, rej_hi, rej_win)
-
-#            nindx = numpy.ma.getmaskarray(resid)
-#            indx = numpy.logical_not(nindx)
-#            pyplot.scatter(self.x, resid, marker='.', s=30, color='k', lw=0)
-#            pyplot.scatter(self.x[nindx], resid.data[nindx], marker='.', s=30, color='0.5', lw=0)
-#            pyplot.scatter(self.x[rej], resid[rej], marker='x', s=60, color='C3', lw=1)
-#            pyplot.title('Rej iter {0}'.format(i+1))
-#            pyplot.show()
-
+            rej = modeling.reject_residuals_1d(resid, lo=rej_lo, hi=rej_hi, boxcar=rej_win)
             # Determine if any were rejected
             refit = numpy.any(rej, axis=-1)
             if not numpy.any(refit):
@@ -227,13 +232,23 @@ class Vander1D:
             i += 1
 
         rejected = numpy.logical_not(_w > 0) & init_good
-        return (c, rejected, self.model(c)) if model else (c, rejected)
+        return (c, self.model(c), rejected) if model else (c, rejected)
 
     def model(self, c):
-        """
+        r"""
         Return the model function constructed using the provided
         coefficients.
 
+        Args:
+            c (array-like):
+                The coefficients for the model with shape shape
+                :math:`(o+1,)` or :math:`(N_{\rm vec},o+1)`, where
+                :math:`o` is the order of the function.
+
+        Returns:
+            `numpy.ndarray`_: Array with the evaluated functions. The
+            output shape is :math:`(N_x,)` or :math:`(N_{\rm
+            vec},N_x)` depending on the input shape of ``c``.
         """
         return numpy.dot(c, self.v)
 
@@ -283,44 +298,6 @@ class Vander1D:
         c = numpy.linalg.lstsq(lhs.T/scl, rhs.T, rcond=self.rcond)[0].T
         return c/scl
 
-    @staticmethod    
-    def _reject(resid, lo, hi, boxcar):
-        r"""
-        Reject fit residuals.
-
-        Args:
-            resid (`numpy.ndarray`_, numpy.ma.MaskedArray`_):
-                Weighted fit residuals. If input as a
-                `numpy.ndarray`_, all data is included in the
-                calculation of the local or global standard
-                deviation. To exclude values from this calculation,
-                the input *must* be a masked array. Shape must be
-                either :math:`(N_x,)` or :math:`(N_{\rm vec},N_x})`.
-                If 2D, the rejection is performed separately for each
-                row.
-            lo (:obj:`float`):
-                Sigma rejection for low values.
-            hi (:obj:`float`):
-                Sigma rejection for high values.
-            boxcar (:obj:`int`):
-                Size of a boxcar to use if using local sigma
-                rejection. If None, rejection is based on the global
-                standard deviation.
-
-        Returns:
-            `numpy.ndarray`_: Boolean array flagging values that were
-            rejected.
-        """
-        if boxcar is None:
-            mean = numpy.ma.mean(resid, axis=-1)
-            std = numpy.ma.std(resid, axis=-1)
-            # NOTE: Transposes avoid the need for numpy.newaxis usage.
-            return ((resid.data.T < mean - lo * std) | (resid.data.T > mean + hi * std)).T \
-                        & numpy.logical_not(numpy.ma.getmaskarray(resid))
-
-        bf = BoxcarFilter(boxcar, lo=lo, hi=hi, niter=1, y=resid, local_sigma=True)
-        return numpy.squeeze(bf.output_mask) & numpy.logical_not(numpy.ma.getmaskarray(resid))
-
 
 class Legendre1D(Vander1D):
     """
@@ -341,3 +318,4 @@ class Legendre1D(Vander1D):
     def __init__(self, x, order, rcond=None):
         super(Legendre1D, self).__init__(numpy.polynomial.legendre.legvander, x, order,
                                          rcond=rcond)
+
