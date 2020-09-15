@@ -27,8 +27,11 @@ def main():
 #    mod_file = None
 #    plot_file = 'repr/representative_spectra_v2.pdf'
 
-    mod_file = 'repr/benchmark_spectra_v2_model.fits'
-    plot_file = 'repr/representative_spectra_v2_model.pdf'
+#    mod_file = 'repr/benchmark_spectra_v2_model.fits'
+#    plot_file = 'repr/representative_spectra_v2_model.pdf'
+
+    mod_file = 'repr/run3/run3_MILESHC_4_8_MASTARSSP_1_14_ELBMPL9_ELPMPL9.fits.gz'
+    plot_file = 'repr/representative_spectra_v2_model_run3_ssp_14.pdf'
 
     select_hdu = fits.open(select_file)
     spec_hdu = fits.open(spec_file)

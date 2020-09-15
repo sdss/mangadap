@@ -29,6 +29,7 @@ import astropy.constants
 from ppxf.ppxf_util import gaussian_filter1d
 from ppxf.capfit import cov_err
 
+from ..util.filter import interpolate_masked_vector
 from ..util.sampling import angstroms_per_pixel, Resample
 from ..util.bitmask import BitMask
 from ..util import modeling
