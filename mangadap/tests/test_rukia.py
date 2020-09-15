@@ -44,7 +44,7 @@ def read_xsl(ifile, minimum_useful=True):
                                                 hdu['SPECTRUM'].data['ERR'])))
         if not minimum_useful:
             return wave, flux, ferr
-        indx = wave > float(hdu[0].header['WMIN_VIS'])*10
+        indx = wave > float(hdu[0].header['WMIN_UVB'])*10
         return wave[indx], flux[indx], ferr[indx]
 
 
@@ -84,52 +84,26 @@ def test_rukia_model():
 
 
 def test_rukia_fit():
-    miles_file = '../data/spectral_templates/miles/MILES_res2.50_star_m0505V.fits'
-    miles_wave, miles_flux = read_miles(miles_file)
+    miles_wave, miles_flux = read_miles(data_test_file('MILES_res2.50_star_m0505V.fits'))
     miles_flux /= numpy.median(miles_flux)
 
-    xsl_file = '/Users/westfall/Work/MaNGA/templates/xsl/dr2/xsl_spectrum_X0360_vis.fits'
-    xsl_wave, xsl_flux, xsl_ferr = read_xsl(xsl_file)
-    norm = numpy.ma.median(xsl_flux)
-    xsl_flux /= norm
-    xsl_ferr /= norm
+    xsl_wave, xsl_flux, _ = read_xsl(data_test_file('xsl_spectrum_X0360_uvb.fits'))
+    xsl_flux /= numpy.ma.median(xsl_flux)
 
+    # Setup the fitting functions
     sigma = LegendrePolynomial(1)
-#    addp = LegendrePolynomial(0)
-    mulp = LegendrePolynomial(11)
-    r = Rukia(sigma, mul_model=mulp) #, add_model=addp)
+    mulp = LegendrePolynomial(5)
+    r = Rukia(sigma, mul_model=mulp)
 
-#    shift = 0.0003
-#    test_wave = xsl_wave.data*(1+shift)
-    shift = 300.
-    test_wave = xsl_wave.data*(1+shift/astropy.constants.c.to('km/s').value)
+    # Perform the fit
+    r.fit(miles_wave, miles_flux, xsl_wave.data, xsl_flux.data, shift=0.0, fit_shift=True,
+          rejiter=-1)
 
-    r.fit(miles_wave, miles_flux, test_wave, xsl_flux.data, shift=shift-400, #-410, #-300,
-          shift_range=[-500., 500.], fit_shift=True, sigma_p0=[2.,0.])
-
-    embed()
-    exit()
-
-    shift = r.par[0]
-    r.fit(miles_wave, miles_flux, test_wave, xsl_flux.data, shift=shift,
-          shift_range=[-500., 500.], fit_shift=True) #False)
-    shift = r.par[0]
-    r.fit(miles_wave, miles_flux, test_wave, xsl_flux.data, shift=shift,
-          shift_range=[-500., 500.], fit_shift=True) #False)
-    shift = r.par[0]
-    r.fit(miles_wave, miles_flux, test_wave, xsl_flux.data, shift=shift,
-          shift_range=[-500., 500.], fit_shift=True) #False)
-    shift = r.par[0]
-    r.fit(miles_wave, miles_flux, test_wave, xsl_flux.data, shift=shift,
-          shift_range=[-500., 500.], fit_shift=True) #False)
-    shift = r.par[0]
-    r.fit(miles_wave, miles_flux, test_wave, xsl_flux.data, shift=shift,
-          shift_range=[-500., 500.], fit_shift=True) #False)
-
-    embed()
-    exit()
+    assert numpy.sum(r.gpm) == 2176, 'Change in the number of pixels rejected.'
+    assert numpy.sqrt(numpy.mean(numpy.square((r.flux-r.model(r.par))[r.gpm]))) < 0.01, \
+            'Fit quality changed.'
 
 
 
-if __name__ == '__main__':
-    test_rukia_fit()
+#if __name__ == '__main__':
+    #test_rukia_model() #fit()
