@@ -80,6 +80,7 @@ def collate_data(ofile, tbl, dapver=None, daptype=None):
         filled[indx] = True
 
     print('{0}/{0}'.format(nspec))
+    print('All filled: {0}'.format(str(numpy.all(filled))))
     
     fits.HDUList([fits.PrimaryHDU(),
                   fits.ImageHDU(data=wave, name='WAVE'),
@@ -98,8 +99,8 @@ def collate_data(ofile, tbl, dapver=None, daptype=None):
 #-----------------------------------------------------------------------------
 
 def main():
-    ifile = 'representative_spectra_selection.fits'
-    ofile = 'benchmark_spectra.fits'
+    ifile = 'representative_spectra_selection_v2.fits'
+    ofile = 'benchmark_spectra_v2.fits'
     dapver = '3.0.1'
     daptype = 'SPX-MILESHC-MASTARHC2'
 

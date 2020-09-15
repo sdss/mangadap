@@ -19,6 +19,7 @@ from mangadap.config import defaults
 from mangadap.util.datatable import DataTable
 from mangadap.util.fileio import channel_dictionary
 
+
 class ReferencePropertyTable(DataTable):
     def __init__(self, shape=None):
         datamodel = dict(D4000BIN=dict(typ=float, shape=(2,)),
@@ -29,11 +30,18 @@ class ReferencePropertyTable(DataTable):
                          PLT=dict(typ=int, shape=None),
                          IFU=dict(typ=int, shape=None),
                          BIN=dict(typ=int, shape=None),
+                         MNGTARG1=dict(typ=int, shape=None),
+                         MNGTARG3=dict(typ=int, shape=None),
                          Z=dict(typ=float, shape=None),
-                         D4000=dict(typ=float, shape=None),
+                         SNR=dict(typ=float, shape=None),
+                         STZ=dict(typ=float, shape=None),
                          SIGMA=dict(typ=float, shape=None),
+                         HAANR=dict(typ=float, shape=None),
+                         HAZ=dict(typ=float, shape=None),
+                         HASIGMA=dict(typ=float, shape=None),
                          HAEW=dict(typ=float, shape=None),
-                         SNR=dict(typ=float, shape=None))
+                         D4000=dict(typ=float, shape=None))
+
         keys = list(datamodel.keys())
         super(ReferencePropertyTable,
                 self).__init__(keys, [datamodel[k]['typ'] for k in keys],
@@ -48,12 +56,20 @@ def get_maps_files(dapver='3.0.1', daptype='SPX-MILESHC-MASTARHC2'):
     return glob.glob(os.path.join(root, '*', '*', '*MAPS*fits.gz'))
 
 # This won't work with hybrid binning scheme!
-def include_maps_data(tbl, maps_file):
+def include_maps_data(tbl, maps_file, exclude_ancillary=False):
     qual_bm = DAPQualityBitMask()
     bm = DAPMapsBitMask()
+   
+#    # Targeting bits
+#    sdssMaskbits = defaults.sdss_maskbits_file()
+#    mngtarg1_bm = BitMask.from_par_file(sdssMaskbits, 'MANGA_TARGET1')
+#    mngtarg3_bm = BitMask.from_par_file(sdssMaskbits, 'MANGA_TARGET3')
+
     with fits.open(maps_file) as hdu:
         # Check if the file was CRITICAL
         if qual_bm.flagged(hdu['PRIMARY'].header['DAPQUAL'], flag='DRPCRIT'):
+            return 1
+        if exclude_ancillary and hdu[0].header['MNGTARG1'] == 0:
             return 1
 
         d4000_bins = numpy.unique(tbl['D4000BIN'])
@@ -89,9 +105,13 @@ def include_maps_data(tbl, maps_file):
 
         indx = (good_snr & good_haew & good_d4000 & good_sigma)[bin_indx]
         snr = hdu['SPX_SNR'].data.ravel()[bin_indx][indx]
+        stvel = hdu['STELLAR_VEL'].data.ravel()[bin_indx][indx]
+        sigma = hdu['STELLAR_SIGMA'].data.ravel()[bin_indx][indx]
+        haanr = hdu['EMLINE_GANR'].data[el['Ha-6564']].ravel()[bin_indx][indx]
+        havel = hdu['EMLINE_GVEL'].data[el['Ha-6564']].ravel()[bin_indx][indx]
+        hasig = hdu['EMLINE_GSIGMA'].data[el['Ha-6564']].ravel()[bin_indx][indx]
         haew = hdu['EMLINE_GEW'].data[el['Ha-6564']].ravel()[bin_indx][indx]
         d4000 = hdu['SPECINDEX'].data[si['D4000']].ravel()[bin_indx][indx]
-        sigma = hdu['STELLAR_SIGMA'].data.ravel()[bin_indx][indx]
         binid = binid[indx]
 
         d4000_i = numpy.digitize(d4000, d4000_bins[1:-1])
@@ -126,23 +146,32 @@ def include_maps_data(tbl, maps_file):
 
                         tbl['PLT'][ii] = plt
                         tbl['IFU'][ii] = ifu
-                        tbl['Z'][ii] = z
                         tbl['BIN'][ii] = binid[indx][m]
+                        tbl['MNGTARG1'][ii] = int(hdu[0].header['MNGTARG1'])
+                        tbl['MNGTARG3'][ii] = int(hdu[0].header['MNGTARG3'])
+                        tbl['Z'][ii] = z
                         tbl['SNR'][ii] = snr[indx][m]
-                        tbl['D4000'][ii] = d4000[indx][m]
+                        tbl['STZ'][ii] \
+                            = stvel[indx][m]*(1+z)/astropy.constants.c.to('km/s').value + z
                         tbl['SIGMA'][ii] = sigma[indx][m]
+                        tbl['HAANR'][ii] = haanr[indx][m]
+                        tbl['HAZ'][ii] \
+                            = havel[indx][m]*(1+z)/astropy.constants.c.to('km/s').value + z
+                        tbl['HASIGMA'][ii] = hasig[indx][m]
                         tbl['HAEW'][ii] = haew[indx][m]
+                        tbl['D4000'][ii] = d4000[indx][m]
 
     return 0
     
 
 def main():
-    ofile = 'representative_spectra_selection.fits'
+    ofile = 'representative_spectra_selection_v2.fits'
     force = False
     if os.path.isfile(ofile) and not force:
         print('File already exists.')
         return
 
+    exclude_ancillary = True
     daptype = 'SPX-MILESHC-MASTARHC2'
     maps_files = get_maps_files()
     nmaps = len(maps_files)
@@ -152,13 +181,14 @@ def main():
     # Sigmas are *uncorrected*
     d4000_bins = numpy.array([ 1.0, 1.2, 1.4, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4 ])
     sigma_bins = numpy.array([0, 25, 50, 75, 100, 150, 200, 250, 2000])
-    haew_bins = numpy.array([-5,0,2,8,16,32,128])
-    snr_bins = numpy.array([1,5,10,20,40,500])
+    haew_bins = numpy.array([-1,2,8,16,32,128])
+    snr_bins = numpy.array([1,2,5,10,20,40,500])
     nsigma = len(sigma_bins)-1
     nd4000 = len(d4000_bins)-1
     nhaew = len(haew_bins)-1
     nsnr = len(snr_bins)-1
 
+    print(nd4000*nsigma*nhaew*nsnr)
     tbl = ReferencePropertyTable(shape=(nd4000*nsigma*nhaew*nsnr,))
 
     # Ensure the number in the bin is initialized to 0
@@ -175,12 +205,12 @@ def main():
                                                              indexing='ij')))
 
     # Iterate through the maps files and add the data
-    ncrit = 0
+    nskipped = 0
     for i in range(nmaps):
         print('{0}/{1}'.format(i+1,nmaps), end='\r')
-        ncrit += include_maps_data(tbl, maps_files[i])
+        nskipped += include_maps_data(tbl, maps_files[i], exclude_ancillary=exclude_ancillary)
     print('{0}/{0}'.format(nmaps))
-    print('Number of CRITICAL flags: {0}/{1}'.format(ncrit, nmaps))
+    print('Number of skipped datacubes: {0}/{1}'.format(nskipped, nmaps))
 
     # Write the output
     print('Writing: {0}'.format(ofile))
