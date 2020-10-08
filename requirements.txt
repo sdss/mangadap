@@ -1,13 +1,13 @@
 # Package dependencies of the MaNGA DAP
-astropy>=4.0
-ipython>=7.14
-matplotlib>=3.2.1
-numpy>=1.18.4
-ppxf==7.2.0
-pydl>=0.7.0
-requests>=2.23
-scipy>=1.4
-setuptools>=46.1
-vorbin==3.1.4
+setuptools>=50.0
+requests>=2.24
+ipython>=7.18
+matplotlib>=3.3
+numpy>=1.19.2
+scipy>=1.5.2
 configobj>=5.0.6
+astropy>=4.0
+pydl>=0.7.0
+ppxf==7.4.1
+vorbin==3.1.4
 

@@ -1,5 +1,25 @@
 
-t = TraceSet(hdu['WSET'].data['FUNC'][0], hdu['WSET'].data['XMIN'][0], hdu['WSET'].data['XMAX'][0], hdu['WSET'].data['COEFF'][0])
+- Find ppxf failures
+
+- For the test galaxies:
+    - 7815-6101: low mass blue
+        - Check D4000
+    - 8138-12704: high mass blue
+        - Check D4000
+        - Check pixels in upper left corner
+    - 8131-3702: low mass red ; no emission lines
+        - Check emission-line properties and errors
+    - 8131-6102: high mass blue ; no emission lines
+        - Check emission-line properties and errors
+    - 8329-1901: low mass red; some emission lines
+    - 8258-6102: low mass red; some emission lines
+
+
+- Setup to run ~100 galaxies with SSPs for benchmark tests
+
+- Identify reason for bad H-alpha velocities in 8138-12704
+
+- Spectral resolution fitting
 
 
 MPL-11 TODO
@@ -72,10 +92,6 @@ Tasks
     - Spaxels with failed pPXF fits from emission-line module
     - Visual inspection campaign
         - Try to set up a Zooniverse project
-
- - Test spectra:
-    X Reconstruct set of spectra that span a relevant range in: S/N,
-      stellar sigma, H-alpha EW, D4000
 
  - Test galaxies:
     - Test galaxies from Belfiore et al.
@@ -154,6 +170,7 @@ TODO
    :class:`mangadap.util.sampling.Resample`.
  - Add a class that reads trace sets produced by IDLUTILS,
    :class:`mangadap.util.trace.TraceSet`, but not well tested yet.
+ - Upgraded package requirements
 
 3.0.1 (31 May 2020)
 -------------------
