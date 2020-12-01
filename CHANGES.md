@@ -1,5 +1,7 @@
 
-- Find ppxf failures
+X Find ppxf failures
+
+- Redshift fix
 
 - For the test galaxies:
     - 7815-6101: low mass blue
