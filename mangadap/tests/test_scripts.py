@@ -187,4 +187,3 @@ def test_status():
 # TODO: Improve this!
 def test_run():
     assert script_help_okay('rundap'), 'Basic help call failed'
-

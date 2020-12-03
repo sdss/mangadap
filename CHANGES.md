@@ -91,7 +91,7 @@ Tasks
 
  - Analysis of MPL-10
     - H-beta masking
-    - Spaxels with failed pPXF fits from emission-line module
+    X Spaxels with failed pPXF fits from emission-line module
     - Visual inspection campaign
         - Try to set up a Zooniverse project
 
@@ -120,7 +120,7 @@ Tasks
     - Construct similar plots for emission-line flux and kinematics
 
  - Test use of Maraston+ MaStar SSP models
-    - Decide on down-selection of templates
+    X Decide on down-selection of templates
     - Compare with MaStar-HC2, BC03, MILES-SSP, M11-MILES
     - Best-fitting polynomial
         - Compare multiplicative polynomial of order ?-25 and
