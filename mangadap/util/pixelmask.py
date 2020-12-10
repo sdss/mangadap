@@ -19,6 +19,7 @@ import astropy.constants
 from .bitmask import BitMask
 from ..par.artifactdb import ArtifactDB
 from ..par.emissionlinedb import EmissionLineDB
+from ..par.emissionlinedb import EmissionLineDBNew
 
 from matplotlib import pyplot
 
@@ -121,7 +122,7 @@ class SpectralPixelMask(PixelMask):
             raise TypeError('Must provide an ArtifactDB for artifacts to mask.')
         self.artdb = artdb
 
-        if emldb is not None and not isinstance(emldb, EmissionLineDB):
+        if emldb is not None and not isinstance(emldb, (EmissionLineDB, EmissionLineDBNew)):
             raise TypeError('Must provide EmissionLineDB for emission-lines to mask.')
         self.emldb = emldb
 

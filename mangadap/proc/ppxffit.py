@@ -2821,7 +2821,7 @@ class PPXFFit(StellarKinematicsFit):
 
         .. math::
 
-            V = \delta V N_{\rm shift} = c \ln(\lambda_{N_{\rm
+            V = \delta v N_{\rm shift} = c \ln(\lambda_{N_{\rm
             shift}}/\lambda_0)
 
         which implies that the relation between PPXF output velocity and
@@ -2847,7 +2847,7 @@ class PPXFFit(StellarKinematicsFit):
 
 
     @staticmethod
-    def revert_velocity(v,verr):
+    def revert_velocity(v, verr):
         """
         Revert the velocity back to the "pixelized" velocity returned by
         pPXF.

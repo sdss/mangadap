@@ -27,6 +27,7 @@ from ..util.constants import DAPConstants
 from ..util import lineprofiles
 from ..util.filter import interpolate_masked_vector
 from ..par.emissionlinedb import EmissionLineDB
+from ..par.emissionlinedb import EmissionLineDBNew
 from .bandpassfilter import emission_line_equivalent_width, passband_median
 
 # For debugging
@@ -677,6 +678,69 @@ class EmissionLineFit(SpectralFitting):
             if emldb['log_bnd'][i].size != npar*emldb['ncomp'][i]:
                 raise ValueError('Provided {0} log boundaries designations, but expected '
                                  '{1}.'.format(emldb['log_bnd'][i].size, npar*emldb['ncomp'][i]))
+
+    @staticmethod
+    def check_emission_line_database_new(emldb, wave=None):
+        r"""
+        Check the emission-line database.  Modes are checked by
+        :class:`mangadap.par.emissionlinedb.EmissionLinePar`, and the
+        indices are checked to be unique by
+        :class:`mangadap.par.emissionlinedb.EmissionLineDB`.
+
+            - The type of the object must be
+              :class:`mangadap.par.emissionlinedb.EmissionLineDB`
+            - At least one line must be fit independently
+            - All tied lines must be tied to a line with a correctly
+              specified index.
+            - The database must provide at least one valid line to fit.
+
+        Args:
+            emldb (:class:`mangadap.par.emissionlinedb.EmissionLineDB`):
+                Emission-line database.
+            wave (array-like):
+                Wavelength vector.
+
+        Raises:
+            TypeError:
+                Raised if the provided object is not an instance of
+                :class:`mangadap.par.emissionlinedb.EmissionLineDB`.
+            ValueError:
+                Raised if there are no independently fitted lines, if there
+                are no lines to fit, if there are no valid lines within the
+                provided wavelength range, if the wavelength range is not
+                provided as a 1D vector, or if the index to tie lines is not
+                valid. (Warning: The latter does not catch lines with valid
+                indices but where the tied line falls outside of the provided
+                wavelength range.)
+        """
+        # Check the object type
+        if not isinstance(emldb, EmissionLineDBNew):
+            raise TypeError('Emission lines must be defined using an EmissionLineDB object.')
+
+        # There must be one primary line
+        if numpy.all(emldb['tie_index'] > 0):
+            raise ValueError('At least one line in the database must be independent of all '
+                             'other lines.  I.e., the tied index must be None.')
+
+        # Check that there are lines to fit
+        lines_to_fit = emldb['action'] == 'f'
+        if numpy.sum(lines_to_fit) == 0:
+            raise ValueError('No lines to fit in the database!')
+        if wave is not None:
+            _wave = numpy.asarray(wave)
+            if len(_wave.shape) != 1:
+                raise ValueError('Provided wavelengths must be a single vector.')
+            lines_in_range = numpy.array([rw > _wave[0] and rw < _wave[-1] 
+                                                for rw in emldb['restwave']]) 
+            if numpy.sum(lines_to_fit & lines_in_range) == 0:
+                raise ValueError('No lines to fit in the provided spectral range!')
+
+        # Check that the tied line indices exist in the database
+        for i in emldb['tie_index']:
+            if i <= 0:
+                continue
+            if numpy.sum(emldb['index'] == i) == 0:
+                raise ValueError('No line with index={0} to tie to!'.format(tied_index))
 
     @staticmethod
     def measure_equivalent_width(wave, flux, emission_lines, model_eml_par, mask=None,
