@@ -141,7 +141,7 @@ def test_moments_with_continuum():
 
     # Get the pixel mask
     pixelmask = SpectralPixelMask(artdb=ArtifactDB.from_key('BADSKY'),
-                                  emldb=EmissionLineDB.from_key('ELPFULL'))
+                                  emldb=EmissionLineDB.from_key('ELPSCMSK'))
 
     # Instantiate the fitting class
     ppxf = PPXFFit(StellarContinuumModelBitMask())

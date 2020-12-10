@@ -28,7 +28,8 @@ import astropy.constants
 from ppxf import ppxf
 
 from ..par.parset import KeywordParSet
-from ..par.emissionlinedb import EmissionLineDB, EmissionLineDBNew
+from ..par.emissionlinedb import EmissionLineDB
+#from ..par.emissionlinedb import EmissionLineDBNew
 from ..util.datatable import DataTable
 from ..util.fitsutil import DAPFitsUtil
 from ..util.fileio import init_record_array
@@ -43,7 +44,8 @@ from .templatelibrary import TemplateLibrary
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .stellarcontinuummodel import StellarContinuumModel
 from .spectralfitting import EmissionLineFit
-from .emissionlinetemplates import EmissionLineTemplates, EmissionLineTemplatesNew
+from .emissionlinetemplates import EmissionLineTemplates
+#from .emissionlinetemplates import EmissionLineTemplatesNew
 from .util import sample_growth
 from .ppxffit import PPXFModel, PPXFFitResult, PPXFFit
 from ..contrib.xjmc import emline_fitter_with_ppxf, ppxf_tied_parameters
@@ -749,7 +751,7 @@ class Sasuke(EmissionLineFit):
     def _save_results(self, etpl, start, end, flux, ferr, spec_to_fit, model_flux, model_eml_flux,
                       model_wgts, model_wgts_err, model_addcoef, model_multcoef, model_reddening,
                       model_kin_inp, model_kin, model_kin_err, model_mask, model_fit_par,
-                      model_eml_par, fill_value=-999., _new=False):
+                      model_eml_par, fill_value=-999.): #, _new=False):
         r"""
         Save and assess the results of the ppxf fits.
         
@@ -1002,10 +1004,15 @@ class Sasuke(EmissionLineFit):
             # rest frame.  The ppxf convolution keeps the sum of the
             # template constant, meaning that the total flux in the line
             # increases with redshift.
+#            model_eml_par['FLUX'][:,j] = model_fit_par['TPLWGT'][:,self.eml_tpli[j]] \
+#                                            * (etpl.line_flux[j] if _new else self.emldb['flux'][j]) * (1 + z)
+#            model_eml_par['FLUXERR'][:,j] = model_fit_par['TPLWGTERR'][:,self.eml_tpli[j]] \
+#                                                * (etpl.line_flux[j] if _new else self.emldb['flux'][j]) * (1 + z)
+
             model_eml_par['FLUX'][:,j] = model_fit_par['TPLWGT'][:,self.eml_tpli[j]] \
-                                            * (etpl.line_flux[j] if _new else self.emldb['flux'][j]) * (1 + z)
+                                            * etpl.line_flux[j] * (1 + z)
             model_eml_par['FLUXERR'][:,j] = model_fit_par['TPLWGTERR'][:,self.eml_tpli[j]] \
-                                                * (etpl.line_flux[j] if _new else self.emldb['flux'][j]) * (1 + z)
+                                                * etpl.line_flux[j] * (1 + z)
 
             # Get the bound masks specific to this emission-line (set)
             # - Determine if the emission-line was part of a rejected
@@ -1551,7 +1558,7 @@ class Sasuke(EmissionLineFit):
             obj_skyx=None, obj_skyy=None, velscale_ratio=None, matched_resolution=True,
             waverange=None, bias=None, degree=-1, mdegree=0, reddening=None,
             max_velocity_range=400., alias_window=None, dvtol=1e-10, loggers=None, quiet=False,
-            plot=False, sigma_rej=3., ensemble=True, _new=False):
+            plot=False, sigma_rej=3., ensemble=True): #, _new=False):
             #moments=2,
         r"""
         Fit a set of emission lines using pPXF to all provided spectra.
@@ -1966,8 +1973,10 @@ class Sasuke(EmissionLineFit):
         # object will check the database
         self.emldb = emission_lines
         self.neml = self.emldb.size
-        etpl = (EmissionLineTemplatesNew if _new else EmissionLineTemplates)(self.tpl_wave,
-                     etpl_sinst, emldb=self.emldb, loggers=self.loggers, quiet=self.quiet)
+        etpl = EmissionLineTemplates(self.tpl_wave, etpl_sinst, emldb=self.emldb,
+                                     loggers=self.loggers, quiet=self.quiet)
+#        etpl = (EmissionLineTemplatesNew if _new else EmissionLineTemplates)(self.tpl_wave,
+#                     etpl_sinst, emldb=self.emldb, loggers=self.loggers, quiet=self.quiet)
 
         # pyplot.plot(self.tpl_wave, numpy.sum(etpl.flux, axis=0))
         # # pyplot.plot(self.tpl_wave, etpl.flux[i,:])
@@ -2322,8 +2331,8 @@ class Sasuke(EmissionLineFit):
                 = self._save_results(etpl, start, end, flux, ferr, spec_to_fit, model_flux,
                                      model_eml_flux, model_wgts, model_wgts_err, model_addcoef,
                                      model_multcoef, model_reddening, model_kin_inp, model_kin,
-                                     model_kin_err, model_mask, model_fit_par, model_eml_par,
-                                     _new=_new)
+                                     model_kin_err, model_mask, model_fit_par, model_eml_par)
+                                     #, _new=_new)
 
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, 'Sasuke finished')

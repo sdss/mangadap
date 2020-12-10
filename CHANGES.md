@@ -173,6 +173,8 @@ TODO
  - Add a class that reads trace sets produced by IDLUTILS,
    :class:`mangadap.util.trace.TraceSet`, but not well tested yet.
  - Upgraded package requirements
+ - Line profile in `EmissionLineTemplates` now hardwired to be
+   `FFTGaussianLSF`.
 
 3.0.1 (31 May 2020)
 -------------------

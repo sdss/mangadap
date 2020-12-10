@@ -27,7 +27,7 @@ from ..util.constants import DAPConstants
 from ..util import lineprofiles
 from ..util.filter import interpolate_masked_vector
 from ..par.emissionlinedb import EmissionLineDB
-from ..par.emissionlinedb import EmissionLineDBNew
+#from ..par.emissionlinedb import EmissionLineDBNew
 from .bandpassfilter import emission_line_equivalent_width, passband_median
 
 # For debugging
@@ -714,7 +714,7 @@ class EmissionLineFit(SpectralFitting):
                 wavelength range.)
         """
         # Check the object type
-        if not isinstance(emldb, EmissionLineDBNew):
+        if not isinstance(emldb, EmissionLineDB): #New):
             raise TypeError('Emission lines must be defined using an EmissionLineDB object.')
 
         # There must be one primary line

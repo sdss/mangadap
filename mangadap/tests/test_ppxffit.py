@@ -13,7 +13,7 @@ from mangadap.datacube import MaNGADataCube
 
 from mangadap.par.artifactdb import ArtifactDB
 from mangadap.par.emissionlinedb import EmissionLineDB
-from mangadap.par.emissionlinedb import EmissionLineDBNew
+#from mangadap.par.emissionlinedb import EmissionLineDBNew
 
 from mangadap.util.drpfits import DRPFitsBitMask
 from mangadap.util.pixelmask import SpectralPixelMask
@@ -48,8 +48,7 @@ def test_ppxffit():
 
     # Get the pixel mask
     pixelmask = SpectralPixelMask(artdb=ArtifactDB.from_key('BADSKY'),
-                                  emldb=EmissionLineDBNew.from_key('ELPSCMSK'))
-                                  #emldb=EmissionLineDB.from_key('ELPFULL'))
+                                  emldb=EmissionLineDB.from_key('ELPSCMSK'))
 
     # Instantiate the fitting class
     ppxf = PPXFFit(StellarContinuumModelBitMask())
