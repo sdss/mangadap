@@ -1003,9 +1003,9 @@ class Sasuke(EmissionLineFit):
             # template constant, meaning that the total flux in the line
             # increases with redshift.
             model_eml_par['FLUX'][:,j] = model_fit_par['TPLWGT'][:,self.eml_tpli[j]] \
-                                            * self.emldb['flux'][j] * (1 + z)
+                                            * etpl.line_flux[j] * (1 + z)
             model_eml_par['FLUXERR'][:,j] = model_fit_par['TPLWGTERR'][:,self.eml_tpli[j]] \
-                                                * self.emldb['flux'][j] * (1 + z)
+                                                * etpl.line_flux[j] * (1 + z)
 
             # Get the bound masks specific to this emission-line (set)
             # - Determine if the emission-line was part of a rejected
@@ -1896,9 +1896,6 @@ class Sasuke(EmissionLineFit):
             self.nstpl = 0
             self.tpl_to_use = None
 
-        # TODO: Allow the gas template resolution to be some fraction of
-        # the stellar template resolution?
-
         #---------------------------------------------------------------
         # Set the emission-line spectral resolution.
         # - If the object resolution and template resolution are not
@@ -1971,10 +1968,6 @@ class Sasuke(EmissionLineFit):
         self.neml = self.emldb.size
         etpl = EmissionLineTemplates(self.tpl_wave, etpl_sinst, emldb=self.emldb,
                                      loggers=self.loggers, quiet=self.quiet)
-    
-        # pyplot.plot(self.tpl_wave, numpy.sum(etpl.flux, axis=0))
-        # # pyplot.plot(self.tpl_wave, etpl.flux[i,:])
-        # pyplot.show()
 
         # Report the resolution mode
         if not self.quiet:
@@ -1983,7 +1976,7 @@ class Sasuke(EmissionLineFit):
             log_output(self.loggers, 1, logging.INFO,
                        'Imposed minimum instrumental dispersion: {0}'.format(etpl_sinst_min))
 
-        # Set the component associated with each emission line emission line
+        # Set the component associated with each emission line
         self.fit_eml = self.emldb['action'] == 'f'
         self.eml_tpli = etpl.tpli.copy()
         self.eml_compi = numpy.full(self.neml, -1, dtype=int)
@@ -2008,6 +2001,8 @@ class Sasuke(EmissionLineFit):
         # Compile the template fluxes, components, and velocity and
         # sigma groups; the gas templates are always appended after the
         # stellar templates
+        self.constr_kinem = None if not hasattr(etpl, 'A_ineq') or etpl.A_ineq is None \
+                                else {'A_ineq': etpl.A_ineq, 'b_ineq': etpl.b_ineq}
         if self.nstpl == 0:
             self.gas_tpl = numpy.ones(etpl.ntpl, dtype=bool)
             self.tpl_flux = etpl.flux
@@ -2034,15 +2029,15 @@ class Sasuke(EmissionLineFit):
             self.comp_moments = numpy.array([-stellar_moments] + [moments]*(self.ncomp-1))
             self.comp_start_kin = numpy.array([ [sk.tolist()] + [gk.tolist()]*(self.ncomp-1) 
                                             for sk,gk in zip(_stellar_kinematics, guess_kin) ])
+            if self.constr_kinem is not None:
+                self.constr_kinem['A_ineq'] \
+                        = numpy.hstack((numpy.zeros((self.constr_kinem['A_ineq'].shape[0], 2),
+                                                    dtype=float), self.constr_kinem['A_ineq']))
+
         self.ntpl, self.npix_tpl = self.tpl_flux.shape
         self.tpl_npad = 2**int(numpy.ceil(numpy.log2(self.npix_tpl)))
 #        self.tpl_npad = fftpack.next_fast_len(self.npix_tpl)
         self.tpl_rfft = numpy.fft.rfft(self.tpl_flux, self.tpl_npad, axis=1)
-
-#        # Set which components are gas components
-#        self.gas_comp = numpy.ones(self.ncomp, dtype=bool)
-#        if self.nstpl > 0:
-#            self.gas_comp[0] = False
 
         # Total number of kinematics parameters (tied or otherwise)
         self.npar_kin = numpy.sum(numpy.absolute(self.comp_moments))
@@ -2073,16 +2068,9 @@ class Sasuke(EmissionLineFit):
         #  - Model parameters and fit quality
         model_fit_par = SasukeFitDataTable(self.ntpl, self.degree+1, self.mdegree, self.npar_kin,
                                            self.bitmask.minimum_dtype(), shape=output_shape[0])
-#        model_fit_par = init_record_array(output_shape[0],
-#                                          self._per_fit_dtype(self.ntpl, self.degree+1,
-#                                          self.mdegree, self.npar_kin,
-#                                          self.bitmask.minimum_dtype()))
         #  - Model emission-line parameters
         model_eml_par = self.init_datatable(self.neml, 2, self.bitmask.minimum_dtype(),
                                             shape=output_shape[0])
-#        model_eml_par = init_record_array(output_shape[0],
-#                                          self._per_emission_line_dtype(self.neml, 2,
-#                                                                self.bitmask.minimum_dtype()))
         model_eml_par['CONTMPLY'] = numpy.ones(model_eml_par['CONTMPLY'].shape, dtype=float)
 
         #---------------------------------------------------------------
@@ -2266,15 +2254,16 @@ class Sasuke(EmissionLineFit):
                                               ferr, mask, self.velscale, self.velscale_ratio,
                                               self.tpl_comp, self.gas_tpl, self.comp_moments,
                                               comp_start_kin, vgrp=self.tpl_vgrp,
-                                              sgrp=self.tpl_sgrp, degree=self.degree,
-                                              mdegree=self.mdegree, reddening=self.reddening,
+                                              sgrp=self.tpl_sgrp, constr_kinem=self.constr_kinem,
+                                              degree=self.degree, mdegree=self.mdegree,
+                                              reddening=self.reddening,
                                               reject_boxcar=self.reject_boxcar,
                                               tpl_to_use=tpl_to_use, binid=binid,
                                               flux_binned=flux_binned, noise_binned=ferr_binned,
                                               mask_binned=mask_binned, x_binned=x_binned,
                                               y_binned=y_binned, x=skyx, y=skyy, plot=plot,
-                                              quiet=not plot, sigma_rej=sigma_rej)
-        # ppxf_faults='raise'
+                                              quiet=not plot, sigma_rej=sigma_rej,
+                                              ppxf_faults='raise')
 
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, 'Fits completed in {0:.4e} min.'.format(

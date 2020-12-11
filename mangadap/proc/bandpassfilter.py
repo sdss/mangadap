@@ -31,6 +31,9 @@ really meant to be used as given above.
 """
 
 import warnings
+
+from IPython import embed
+
 import numpy
 
 from ..par.parset import KeywordParSet
@@ -182,8 +185,8 @@ def passband_median(x, y, passband=None):
     _x[mask] = numpy.ma.masked
     _x = _x.compressed()
 
-    indx = numpy.array([ numpy.arange(_x.size)[numpy.logical_and(_x > p[0], _x < p[1])]
-                                for p in passband ])
+    indx = numpy.array([numpy.where(numpy.logical_and(_x > p[0], _x < p[1]))[0]
+                                for p in passband], dtype=object)
     nonzero = numpy.array([ len(ii) > 0 for ii in indx ])
     if not numpy.all(nonzero):
         warnings.warn('Returning empty passbands with median values of 0!')

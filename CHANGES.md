@@ -1,4 +1,5 @@
 
+
 X Find ppxf failures
 
 - Redshift fix
@@ -173,6 +174,13 @@ TODO
  - Add a class that reads trace sets produced by IDLUTILS,
    :class:`mangadap.util.trace.TraceSet`, but not well tested yet.
  - Upgraded package requirements
+ - Line profile in `EmissionLineTemplates` now hardwired to be
+   `FFTGaussianLSF`.
+ - Changed the format of the emission-line database files:
+    - Elric will *really* no longer work
+    - Format specifies tying in a 4 element vector for each line
+    - Adds ability to specify inequality constraints on velocity and
+      dispersion
 
 3.0.1 (31 May 2020)
 -------------------

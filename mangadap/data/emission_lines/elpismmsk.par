@@ -1,0 +1,53 @@
+#------------------------------------------------------------------------
+# Created by: Kyle Westfall (KBW)
+# Date: 16 Mar 2016
+#
+# Line wavelengths are "Ritz" wavelengths from NIST:
+#   http://physics.nist.gov/PhysRefData/ASD/Html/help.html
+#
+# Revisions:
+#       10 Dec 2020: (KBW) Copied from elpscmsk.par, adjusted for the
+#           new datamodel (v3.1+).  Added the NaI lines.
+#       
+#------------------------------------------------------------------------
+
+typedef struct {
+    int index;
+    char name[6];
+    double restwave;
+    char waveref[3];
+    char action;
+    char tie[4][10];
+    double blueside[2];
+    double redside[2];
+} DAPEML;
+
+DAPEML   2  OII     3727.092   vac  f  {   34   None    = None }  {  3706.3  3716.3 }  {  3738.6  3748.6 }
+DAPEML   3  OII     3729.875   vac  f  {    2   None    =    = }  {  3706.3  3716.3 }  {  3738.6  3748.6 }
+DAPEML   7  Hthe    3798.9826  vac  f  {   34   None    = None }  {  3776.5  3791.5 }  {  3806.5  3821.5 }
+DAPEML   8  Heta    3836.4790  vac  f  {   34   None    = None }  {  3806.5  3826.5 }  {  3900.2  3920.2 }
+DAPEML   9  NeIII   3869.86    vac  f  {   34   None    = None }  {  3806.5  3826.5 }  {  3900.2  3920.2 }
+DAPEML  11  Hzet    3890.1576  vac  f  {   34   None    = None }  {  3806.5  3826.5 }  {  3900.2  3920.2 }
+DAPEML  12  NeIII   3968.59    vac  f  {    9  =0.30    =    = }  {  3938.6  3958.6 }  {  3978.6  3998.6 }
+DAPEML  13  Heps    3971.2020  vac  f  {   34   None    = None }  {  3941.2  3961.2 }  {  3981.2  4001.2 }
+DAPEML  17  Hdel    4102.8991  vac  f  {   34   None    = None }  {  4082.0  4092.9 }  {  4112.9  4132.9 }
+DAPEML  18  Hgam    4341.691   vac  f  {   34   None    = None }  {  4311.7  4331.7 }  {  4349.7  4358.7 }
+DAPEML  21  HeII    4687.015   vac  f  {   34   None    = None }  {  4667.0  4677.0 }  {  4697.0  4707.0 }
+DAPEML  23  Hb      4862.691   vac  f  {   34   None    =    = }  {  4798.9  4838.9 }  {  4885.6  4925.6 }
+DAPEML  25  OIII    4960.295   vac  f  {   26  =0.35    =    = }  {  4930.3  4950.3 }  {  4970.3  4990.3 }
+DAPEML  26  OIII    5008.240   vac  f  {   34   None    = None }  {  4978.2  4998.2 }  {  5028.2  5048.2 }
+DAPEML  28  NI      5199.3490  vac  f  {   34   None    = None }  {  5169.4  5189.3 }  {  5211.7  5231.7 }
+DAPEML  29  NI      5201.7055  vac  f  {   28   None    =    = }  {  5169.4  5189.4 }  {  5211.7  5231.7 }
+DAPEML  30  HeI     5877.243   vac  f  {   34   None    = None }  {  5847.2  5867.2 }  {  5887.2  5907.2 }
+DAPEML  31  OI      6302.046   vac  f  {   34   None    = None }  {  6272.0  6292.0 }  {  6312.0  6332.0 }
+DAPEML  32  OI      6365.535   vac  f  {   31  =0.32    =    = }  {  6335.5  6355.5 }  {  6375.5  6395.5 }
+DAPEML  33  NII     6549.86    vac  f  {   35  =0.34    =    = }  {  6483.0  6513.0 }  {  6623.0  6653.0 }
+DAPEML  34  Ha      6564.632   vac  f  { None   None None None }  {  6483.0  6513.0 }  {  6623.0  6653.0 }
+DAPEML  35  NII     6585.271   vac  f  {   34   None    = None }  {  6483.0  6513.0 }  {  6623.0  6653.0 }
+DAPEML  37  SII     6718.294   vac  f  {   34   None    = None }  {  6690.0  6708.0 }  {  6748.0  6768.0 }
+DAPEML  38  SII     6732.674   vac  f  {   34   None    = None }  {  6690.0  6708.0 }  {  6748.0  6768.0 }
+DAPEML  40  ArIII   7137.76    vac  f  {   34   None    = None }  {  7107.8  7127.8 }  {  7147.8  7167.8 }
+DAPEML  45  ArIII   7753.24    vac  f  {   34   None    = None }  {  7703.2  7743.2 }  {  7763.2  7803.2 }
+DAPEML  63  NaI     5891.583   vac  m  { None   None None None }  {  5850.0  5870.0 }  {  5910.0  5930.0 }
+DAPEML  64  NaI     5897.558   vac  m  { None   None None None }  {  5850.0  5870.0 }  {  5910.0  5930.0 }
+

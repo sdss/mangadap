@@ -75,7 +75,7 @@ def test_artifact():
 
 
 def test_emldb():
-    emldb = EmissionLineDB.from_key('ELPMPL9')
+    emldb = EmissionLineDB.from_key('ELPMPL11')
     assert emldb.size == 35
 
     _emldb = EmissionLineDB(emldb.file)
@@ -83,7 +83,7 @@ def test_emldb():
 
 
 def test_eml_channel_names():
-    emldb = EmissionLineDB.from_key('ELPMPL9')
+    emldb = EmissionLineDB.from_key('ELPMPL11')
     names = emldb.channel_names()
     assert 'Ha-6564' in list(names.keys())
     assert names['OII-3727'] == 0

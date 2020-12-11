@@ -140,7 +140,7 @@ if __name__ == '__main__':
 
     # Mask the 5577 sky line and the emission lines
     sc_pixel_mask = SpectralPixelMask(artdb=ArtifactDB.from_key('BADSKY'),
-                                      emldb=EmissionLineDB.from_key('ELPFULL'))
+                                      emldb=EmissionLineDB.from_key('ELPSCMSK'))
 
     # Construct the template library
     sc_tpl = TemplateLibrary(sc_tpl_key, tpllib_list=tpllib_list, match_resolution=False,
