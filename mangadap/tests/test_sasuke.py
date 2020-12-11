@@ -13,7 +13,6 @@ from mangadap.datacube import MaNGADataCube
 
 from mangadap.par.artifactdb import ArtifactDB
 from mangadap.par.emissionlinedb import EmissionLineDB
-#from mangadap.par.emissionlinedb import EmissionLineDBNew
 
 from mangadap.util.drpfits import DRPFitsBitMask
 from mangadap.util.pixelmask import SpectralPixelMask
@@ -71,8 +70,6 @@ def test_sasuke():
     # Read the emission line fitting database
     emldb = EmissionLineDB.from_key('ELPMILES')
     assert emldb['name'][18] == 'Ha', 'Emission-line database names or ordering changed'
-#    emldb = EmissionLineDBNew.from_key('ELPMPL11')
-#    assert emldb['name'][23] == 'Ha', 'Emission-line database names or ordering changed'
 
     # Instantiate the fitting class
     emlfit = Sasuke(EmissionLineModelBitMask())
@@ -85,7 +82,7 @@ def test_sasuke():
                          stpl_wave=tpl['WAVE'].data, stpl_flux=tpl['FLUX'].data,
                          stpl_sres=tpl_sres, stellar_kinematics=sc_par['KIN'],
                          etpl_sinst_mode='offset', etpl_sinst_min=10.,
-                         velscale_ratio=velscale_ratio, matched_resolution=False) #, _new=True)
+                         velscale_ratio=velscale_ratio, matched_resolution=False)
 
     # Rejected pixels
     assert numpy.sum(emlfit.bitmask.flagged(el_mask, flag='PPXF_REJECT')) == 266, \
@@ -156,8 +153,6 @@ def test_sasuke_mpl11():
     drpbm = DRPFitsBitMask()
     flux = numpy.ma.MaskedArray(hdu['FLUX'].data, mask=drpbm.flagged(hdu['MASK'].data,
                                                                 MaNGADataCube.do_not_fit_flags()))
-#    flux[:2,:] = numpy.ma.masked
-#    flux[3:,:] = numpy.ma.masked
     ferr = numpy.ma.power(hdu['IVAR'].data, -0.5)
     flux[ferr.mask] = numpy.ma.masked
     ferr[flux.mask] = numpy.ma.masked
@@ -202,7 +197,7 @@ def test_sasuke_mpl11():
                          stpl_wave=tpl['WAVE'].data, stpl_flux=tpl['FLUX'].data,
                          stpl_sres=tpl_sres, stellar_kinematics=sc_par['KIN'],
                          etpl_sinst_mode='offset', etpl_sinst_min=10.,
-                         velscale_ratio=velscale_ratio, matched_resolution=False) #, _new=True)
+                         velscale_ratio=velscale_ratio, matched_resolution=False)
 
     # Rejected pixels
     assert numpy.sum(emlfit.bitmask.flagged(el_mask, flag='PPXF_REJECT')) == 261, \

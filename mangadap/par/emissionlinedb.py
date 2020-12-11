@@ -420,8 +420,6 @@ class EmissionLineDefinitionTable(DataTable):
             The maximum length of any of the emission line names.
         tie_len (:obj:`int`, optional):
             The maximum length of a tying string. Not sure if this is needed.
-        npar (:obj:`int`, optional):
-            The number of model parameters for each line profile.
         shape (:obj:`int`, :obj:`tuple`, optional):
             The shape of the initial array. If None, the data array
             will not be instantiated; use

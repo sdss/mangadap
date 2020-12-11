@@ -1048,7 +1048,7 @@ class EmissionLineTemplates:
 
         #---------------------------------------------------------------
         # Check the database can be used with this class
-        EmissionLineFit.check_emission_line_database_new(emldb, wave=self.wave)
+        EmissionLineFit.check_emission_line_database(emldb, wave=self.wave)
         # Save a pointer to the database
         self.emldb = emldb
         # Parse the database for construction of the templates

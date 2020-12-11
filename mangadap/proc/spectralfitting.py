@@ -681,7 +681,7 @@ class EmissionLineFit(SpectralFitting):
                                  '{1}.'.format(emldb['log_bnd'][i].size, npar*emldb['ncomp'][i]))
 
     @staticmethod
-    def check_emission_line_database_new(emldb, wave=None):
+    def check_emission_line_database(emldb, wave=None):
         r"""
         Check the emission-line database.  Modes are checked by
         :class:`mangadap.par.emissionlinedb.EmissionLinePar`, and the
@@ -715,7 +715,7 @@ class EmissionLineFit(SpectralFitting):
                 wavelength range.)
         """
         # Check the object type
-        if not isinstance(emldb, EmissionLineDB): #New):
+        if not isinstance(emldb, EmissionLineDB):
             raise TypeError('Emission lines must be defined using an EmissionLineDB object.')
 
         # There must be one primary line

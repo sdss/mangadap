@@ -98,5 +98,3 @@ def test_constraint_select():
     valid[4] = True
 
 
-#if __name__ == '__main__':
-    #test_constraint_select()
