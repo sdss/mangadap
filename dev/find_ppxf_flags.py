@@ -40,10 +40,10 @@ class PPXFFlagTable(DataTable):
 
 
 def get_maps_files(dapver='3.0.1', daptype='SPX-MILESHC-MASTARHC2'):
-    return ['/uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/{0}/{1}/7443/12704/manga-7443-12704-MAPS-{1}.fits.gz'.format(dapver, daptype), '/uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/{0}/{1}/7443/12701/manga-7443-12701-MAPS-{1}.fits.gz'.format(dapver, daptype), '/uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/{0}/{1}/7443/12703/manga-7443-12703-MAPS-{1}.fits.gz'.format(dapver, daptype), '/uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/{0}/{1}/7443/12705/manga-7443-12705-MAPS-{1}.fits.gz'.format(dapver, daptype), '/uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/{0}/{1}/7443/1901/manga-7443-1901-MAPS-{1}.fits.gz'.format(dapver, daptype), '/uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/{0}/{1}/7443/1902/manga-7443-1902-MAPS-{1}.fits.gz'.format(dapver, daptype), '/uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/{0}/{1}/7443/12702/manga-7443-12702-MAPS-{1}.fits.gz'.format(dapver, daptype)]
+#    return ['/uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/{0}/{1}/7443/12704/manga-7443-12704-MAPS-{1}.fits.gz'.format(dapver, daptype), '/uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/{0}/{1}/7443/12701/manga-7443-12701-MAPS-{1}.fits.gz'.format(dapver, daptype), '/uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/{0}/{1}/7443/12703/manga-7443-12703-MAPS-{1}.fits.gz'.format(dapver, daptype), '/uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/{0}/{1}/7443/12705/manga-7443-12705-MAPS-{1}.fits.gz'.format(dapver, daptype), '/uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/{0}/{1}/7443/1901/manga-7443-1901-MAPS-{1}.fits.gz'.format(dapver, daptype), '/uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/{0}/{1}/7443/1902/manga-7443-1902-MAPS-{1}.fits.gz'.format(dapver, daptype), '/uufs/chpc.utah.edu/common/home/sdss/mangawork/manga/spectro/analysis/v3_0_1/{0}/{1}/7443/12702/manga-7443-12702-MAPS-{1}.fits.gz'.format(dapver, daptype)]
 
-#    root = os.path.join(defaults.dap_analysis_path(dapver=dapver), daptype)
-#    return glob.glob(os.path.join(root, '*', '*', '*MAPS*fits.gz'))
+    root = os.path.join(defaults.dap_analysis_path(dapver=dapver), daptype)
+    return glob.glob(os.path.join(root, '*', '*', '*MAPS*fits.gz'))
 
 # This won't work with hybrid binning scheme!
 def ppxf_flag_info(tbl, maps_file):
@@ -72,8 +72,9 @@ def ppxf_flag_info(tbl, maps_file):
         tbl['NGOOD'] = numpy.sum(numpy.logical_not(numpy.ma.getmaskarray(haflx)))
         indx = bm.flagged(hdu['EMLINE_GFLUX_MASK'].data[el['Ha-6564']], 'FITFAILED')
         tbl['NFLG'] = numpy.sum(indx)
+
         if not numpy.any(indx):
-            continue
+            return
 
         snr = numpy.ma.MaskedArray(hdu['SPX_SNR'].data,
                                    mask=numpy.logical_not(hdu['SPX_SNR'].data > 0))
@@ -84,13 +85,13 @@ def ppxf_flag_info(tbl, maps_file):
 
 
 def main():
-    ofile = 'ppxf_failures.fits'
+    ofile = 'ppxf_failures_hyb.fits'
     force = False
     if os.path.isfile(ofile) and not force:
         print('File already exists.')
         return
 
-    daptype = 'SPX-MILESHC-MASTARHC2'
+    daptype = 'HYB10-MILESHC-MASTARHC2'
     maps_files = get_maps_files()
     nmaps = len(maps_files)
     print('Found {0} MAPS files.'.format(nmaps))
