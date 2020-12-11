@@ -10,12 +10,12 @@ def test_default():
     plan = AnalysisPlanSet.default()
     assert len(plan) == 1, 'Default is to perform one plan.'
     assert plan[0]['drpqa_key'] == 'SNRG', 'Default DRP reduction QA key changed.'
-    assert plan[0]['elfit_key'] == 'EFITMPL10DB', 'Default emission-line fit key changed.'
+    assert plan[0]['elfit_key'] == 'EFITMPL11DB', 'Default emission-line fit key changed.'
 
 def test_read():
     plan = AnalysisPlanSet.from_par_file(data_test_file('plan.par'))
 
     assert len(plan) == 1, 'Number of example plans changed'
     assert plan[0]['bin_key'] == 'ALL', 'Binning changed'
-    assert plan[0]['elfit_key'] == 'EFITMPL9', 'Emission-line fitting key changed'
+    assert plan[0]['elfit_key'] == 'EFITMPL11', 'Emission-line fitting key changed'
 

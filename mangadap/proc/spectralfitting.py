@@ -33,6 +33,7 @@ from .bandpassfilter import emission_line_equivalent_width, passband_median
 # For debugging
 from matplotlib import pyplot
 
+
 # BASE CLASS -----------------------------------------------------------
 class SpectralFitting():
     """

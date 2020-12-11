@@ -69,7 +69,7 @@ def test_sasuke():
     pixelmask = SpectralPixelMask(artdb=ArtifactDB.from_key('BADSKY'))
 
     # Read the emission line fitting database
-    emldb = EmissionLineDB.from_key('ELPMILES_NEW')
+    emldb = EmissionLineDB.from_key('ELPMILES')
     assert emldb['name'][18] == 'Ha', 'Emission-line database names or ordering changed'
 #    emldb = EmissionLineDBNew.from_key('ELPMPL11')
 #    assert emldb['name'][23] == 'Ha', 'Emission-line database names or ordering changed'

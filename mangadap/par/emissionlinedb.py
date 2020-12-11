@@ -428,7 +428,7 @@ class EmissionLineDefinitionTable(DataTable):
             :func:`~mangadap.util.datatable.DataTable.init` to
             initialize the data array after instantiation.
     """
-    def __init__(self, name_len=1, tie_len=1, npar=3, shape=None):
+    def __init__(self, name_len=1, tie_len=1, shape=None):
         # NOTE: This requires python 3.7 to make sure that this is an "ordered"
         # dictionary.
         datamodel = dict(ID=dict(typ=int, shape=None, descr='Emission line ID number'),
@@ -441,9 +441,12 @@ class EmissionLineDefinitionTable(DataTable):
                                            ':ref:`emission-line-modeling-action`'),
                          TIE_ID=dict(typ=int, shape=None,
                                      descr='ID of the line to which this one is tied.'),
-                         TIE_PAR=dict(typ=list, shape=(npar,),
-                                      descr='Indication of how each line parameter is tied to the '
-                                            'reference line.'))
+                         TIE_FLUX=dict(typ='<U{0:d}'.format(tie_len), shape=None,
+                                      descr='Tying parameter for the flux of each line.'),
+                         TIE_VEL=dict(typ='<U{0:d}'.format(tie_len), shape=None,
+                                      descr='Tying parameter for the velocity of each line.'),
+                         TIE_SIG=dict(typ='<U{0:d}'.format(tie_len), shape=None,
+                                      descr='Tying parameter for the dispersion of each line.'))
 
         keys = list(datamodel.keys())
         super().__init__(keys, [datamodel[k]['typ'] for k in keys],
@@ -547,12 +550,17 @@ class EmissionLineDB(SpectralFeatureDB):
 
         # Instatiate the table data that will be saved defining the set
         # of emission-line moments measured
-        db = EmissionLineDefinitionTable(name_len=name_len, tie_len=tie_len,
-                                         npar=len(self.data['tie_par'][0]), shape=self.size)
-        hk = ['ID', 'NAME', 'RESTWAVE', 'ACTION', 'TIE_ID', 'TIE_PAR']
-        mk = ['index', 'name', 'restwave', 'action', 'tie_id', 'tie_par']
+        db = EmissionLineDefinitionTable(name_len=name_len, tie_len=tie_len, shape=self.size)
+
+        hk = ['ID', 'NAME', 'RESTWAVE', 'ACTION', 'TIE_ID']
+        mk = ['index', 'name', 'restwave', 'action', 'tie_index']
         for _hk, _mk in zip(hk,mk):
             db[_hk] = self.data[_mk]
+
+        db['TIE_FLUX'] = numpy.array([str(d) for d in self.data['tie_par'][:,0]])
+        db['TIE_VEL'] = numpy.array([str(d) for d in self.data['tie_par'][:,1]])
+        db['TIE_SIG'] = numpy.array([str(d) for d in self.data['tie_par'][:,2]])
+
         return db
 
     def tie_index_match(self):
