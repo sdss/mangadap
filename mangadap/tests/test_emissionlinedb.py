@@ -5,11 +5,6 @@ import os
 from IPython import embed
 
 from mangadap.par.emissionlinedb import EmissionLineDB
-#from mangadap.par.emissionlinedb import EmissionLineDBNew
-
-import warnings
-warnings.simplefilter("ignore", UserWarning)
-warnings.simplefilter("ignore", RuntimeWarning)
 
 
 def test_read():

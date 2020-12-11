@@ -27,7 +27,6 @@ from ..util.constants import DAPConstants
 from ..util import lineprofiles
 from ..util.filter import interpolate_masked_vector
 from ..par.emissionlinedb import EmissionLineDB
-#from ..par.emissionlinedb import EmissionLineDBNew
 from .bandpassfilter import emission_line_equivalent_width, passband_median
 
 # For debugging

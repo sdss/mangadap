@@ -13,7 +13,6 @@ from mangadap.datacube import MaNGADataCube
 
 from mangadap.par.artifactdb import ArtifactDB
 from mangadap.par.emissionlinedb import EmissionLineDB
-#from mangadap.par.emissionlinedb import EmissionLineDBNew
 
 from mangadap.util.drpfits import DRPFitsBitMask
 from mangadap.util.pixelmask import SpectralPixelMask
@@ -24,9 +23,6 @@ from mangadap.proc.stellarcontinuummodel import StellarContinuumModelBitMask
 
 from mangadap.tests.util import data_test_file
 
-import warnings
-warnings.simplefilter("ignore", UserWarning)
-warnings.simplefilter("ignore", RuntimeWarning)
 
 def test_ppxffit():
     # Read the data
