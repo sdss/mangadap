@@ -2,6 +2,7 @@
 
 -r requirements.txt
 
-Sphinx>=3.0.4
-sphinx-automodapi>=0.12
+Sphinx>=3.3
+sphinx-automodapi>=0.13
+sphinx-rtd-theme>=0.5
 

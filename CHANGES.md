@@ -1,45 +1,15 @@
 
-
-X Find ppxf failures
-
-- Redshift fix
-
-- For the test galaxies:
-    - 7815-6101: low mass blue
-        - Check D4000
-    - 8138-12704: high mass blue
-        - Check D4000
-        - Check pixels in upper left corner
-    - 8131-3702: low mass red ; no emission lines
-        - Check emission-line properties and errors
-    - 8131-6102: high mass blue ; no emission lines
-        - Check emission-line properties and errors
-    - 8329-1901: low mass red; some emission lines
-    - 8258-6102: low mass red; some emission lines
-
-
-- Setup to run ~100 galaxies with SSPs for benchmark tests
-
-- Identify reason for bad H-alpha velocities in 8138-12704
-
-- Spectral resolution fitting
-
-
 MPL-11 TODO
 -----------
 
- - Schedule:
-    - Last observations?:       24 Aug
-    - Full DRP run finished:    11 Sep
-    - MPL-11 DRP run starts:    12 Oct
-    - MPL-11 DAP run starts:     1 Nov
-    
  - MILES-HC:
     - Reconstruct using same procedure used for MaStar spectra
     * Direct spectral resolution assessments
+
  - Stellar kinematics:
     - Get rid of the filter keyword from the output headers...
     - Try fitting with some high-resolution templates?
+
  - Emission lines:
     - Check construction of the continuum and emission-line models.
       Model - emline looks odd in some cases.  E.g. SPX-MILESHC-MASTARHC2/9036-3703-41
@@ -53,10 +23,13 @@ MPL-11 TODO
           file
         - Change `BASE` extension to `CONTINUUM` extension.
     - Wavelength dependent sigma rejection during fit?
+
  - Spectral Indices:
     - Enable composite indices?
+
  - Model cube files
     - Make BINID extension identical to BINID in MAPS file
+
  - DAPall:
     - provide absolute H-alpha luminosity as a separate column
     - attenuation corrections to H-alpha luminosity, SFR
@@ -66,6 +39,30 @@ MPL-11 TODO
 
 Tasks
 -----
+
+ - Redshift fix
+
+ - For the test galaxies:
+    - 7815-6101: low mass blue
+        - Check D4000
+    - 8138-12704: high mass blue
+        - Check D4000
+        - Check pixels in upper left corner
+    - 8131-3702: low mass red ; no emission lines
+        - Check emission-line properties and errors
+    - 8131-6102: high mass red ; no emission lines
+        - Check emission-line properties and errors
+    - 8329-1901: low mass red; some emission lines
+    - 8258-6102: high mass red; some emission lines
+    - Repeat observations?
+    - Subsample of galaxies that contain the "representative" spectra
+      from above?
+ 
+    ~ Compare old and new measurements
+
+ - Setup to run ~100 galaxies with SSPs for benchmark tests
+
+ - Identify reason for bad H-alpha velocities in 8138-12704
 
  - Add flag for when *observed* gas dispersion is less than 0.7 pixels.
    This adds side-lobe peaks that are ~1% of the model peak, and the RMS
@@ -93,19 +90,6 @@ Tasks
  - Analysis of MPL-10
     - H-beta masking
     X Spaxels with failed pPXF fits from emission-line module
-    - Visual inspection campaign
-        - Try to set up a Zooniverse project
-
- - Test galaxies:
-    - Test galaxies from Belfiore et al.
-    - Test galaxies from Westfall et al.
-    - Repeat observations
-    - Subsample of galaxies that contain the "representative" spectra
-      from above?
-
- - Test new version of pPXF (7.4.0)
-    - Speed up using new fitting method
-    ~ Compare old and new measurements
 
  - Spin-up on determination of resolution MILES-HC spectra
     - Test accuracy of wavelength-dependent convolution in the
@@ -122,8 +106,8 @@ Tasks
 
  - Test use of Maraston+ MaStar SSP models
     X Decide on down-selection of templates
-    - Compare with MaStar-HC2, BC03, MILES-SSP, M11-MILES
-    - Best-fitting polynomial
+    X Compare with MaStar-HC2, BC03, MILES-SSP, M11-MILES
+    X Best-fitting polynomial
         - Compare multiplicative polynomial of order ?-25 and
           attenuation law
     - (?) Check resolution of MaStar SSP templates?
