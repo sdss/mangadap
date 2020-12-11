@@ -1,5 +1,8 @@
 
-- Find ppxf failures
+
+X Find ppxf failures
+
+- Redshift fix
 
 - For the test galaxies:
     - 7815-6101: low mass blue
@@ -89,7 +92,7 @@ Tasks
 
  - Analysis of MPL-10
     - H-beta masking
-    - Spaxels with failed pPXF fits from emission-line module
+    X Spaxels with failed pPXF fits from emission-line module
     - Visual inspection campaign
         - Try to set up a Zooniverse project
 
@@ -118,7 +121,7 @@ Tasks
     - Construct similar plots for emission-line flux and kinematics
 
  - Test use of Maraston+ MaStar SSP models
-    - Decide on down-selection of templates
+    X Decide on down-selection of templates
     - Compare with MaStar-HC2, BC03, MILES-SSP, M11-MILES
     - Best-fitting polynomial
         - Compare multiplicative polynomial of order ?-25 and
@@ -171,6 +174,13 @@ TODO
  - Add a class that reads trace sets produced by IDLUTILS,
    :class:`mangadap.util.trace.TraceSet`, but not well tested yet.
  - Upgraded package requirements
+ - Line profile in `EmissionLineTemplates` now hardwired to be
+   `FFTGaussianLSF`.
+ - Changed the format of the emission-line database files:
+    - Elric will *really* no longer work
+    - Format specifies tying in a 4 element vector for each line
+    - Adds ability to specify inequality constraints on velocity and
+      dispersion
 
 3.0.1 (31 May 2020)
 -------------------

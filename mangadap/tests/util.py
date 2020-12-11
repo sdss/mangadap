@@ -14,13 +14,13 @@ def remote_data_file(filename=None):
     return root if filename is None else os.path.join(root, filename)
 
 def remote_data_files():
-#    return ['manga-7815-3702-LINCUBE.fits.gz', 'manga-7815-3702-LINRSS.fits.gz',
-#            'manga-7815-3702-LOGCUBE.fits.gz', 'manga-7815-3702-LOGRSS.fits.gz']
-    return ['manga-7815-6101-LINCUBE.fits.gz', 'manga-7815-6101-LINRSS.fits.gz',
-            'manga-7815-6101-LOGCUBE.fits.gz', 'manga-7815-6101-LOGRSS.fits.gz']
+    return ['manga-7815-3702-LINCUBE.fits.gz', 'manga-7815-3702-LINRSS.fits.gz',
+            'manga-7815-3702-LOGCUBE.fits.gz', 'manga-7815-3702-LOGRSS.fits.gz']
+#    return ['manga-7815-6101-LINCUBE.fits.gz', 'manga-7815-6101-LINRSS.fits.gz',
+#            'manga-7815-6101-LOGCUBE.fits.gz', 'manga-7815-6101-LOGRSS.fits.gz']
 
 drp_test_version = 'v3_0_1'
-dap_test_version = '2.4.1'
+dap_test_version = '3.0.1'
 remote_available = all([os.path.isfile(remote_data_file(f)) for f in remote_data_files()])
 drpcomplete_available = os.path.isfile(remote_data_file('drpcomplete_{0}.fits'.format(
                                        drp_test_version)))

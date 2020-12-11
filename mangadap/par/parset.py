@@ -29,6 +29,9 @@ import os
 import inspect
 import warnings
 import textwrap
+
+from IPython import embed
+
 import numpy
 
 from configobj import ConfigObj

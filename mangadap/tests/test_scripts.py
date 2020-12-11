@@ -14,9 +14,6 @@ from mangadap.scripts import manga_dap
 from mangadap.scripts import write_dap_config
 from mangadap.util.parser import DefaultConfig
 
-import warnings
-warnings.simplefilter("ignore", UserWarning)
-warnings.simplefilter("ignore", RuntimeWarning)
 
 def script_help_okay(executable):
     # Basic help call

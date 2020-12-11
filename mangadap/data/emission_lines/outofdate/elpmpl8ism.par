@@ -12,6 +12,7 @@
 # Revisions:
 #       28 Jan 2019: K. Westfall, copied from elpmiles.par.  Added He I
 #                    3889 and NI doublet.
+#       10 Dec 2020: KBW: Updated with new format
 #------------------------------------------------------------------------
 
 typedef struct {
