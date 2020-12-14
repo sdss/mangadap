@@ -580,13 +580,17 @@ def _validate_templates_components(templates, gas_template, component, vgrp, sgr
     if constr_kinem is not None:
         _constr_kinem = {}
         if 'A_ineq' in constr_kinem.keys():
-            _constr_kinem['A_ineq'], _constr_kinem['b_ineq'] \
-                    = _reset_kinematic_constraints(component, valid, constr_kinem['A_ineq'],
-                                                   constr_kinem['b_ineq'])
+            A_ineq, b_ineq = _reset_kinematic_constraints(component, valid, constr_kinem['A_ineq'],
+                                                          constr_kinem['b_ineq'])
+            if A_ineq is not None:
+                _constr_kinem['A_ineq'], _constr_kinem['b_ineq'] = A_ineq, b_ineq
         if 'A_eq' in constr_kinem.keys():
-            _constr_kinem['A_eq'], _constr_kinem['b_eq'] \
-                    = _reset_kinematic_constraints(component, valid, constr_kinem['A_eq'],
-                                                   constr_kinem['b_eq'])
+            A_eq, b_eq = _reset_kinematic_constraints(component, valid, constr_kinem['A_eq'],
+                                                      constr_kinem['b_eq'])
+            if A_eq is not None:
+                _constr_kinem['A_eq'], _constr_kinem['b_eq'] = A_eq, b_eq
+        if len(_constr_kinem.keys()) == 0:
+            _constr_kinem = None
 
     return valid, _templates, _gas_template, component_map, _component, \
                 _vgrp, _sgrp, _moments, _start, _constr_kinem
@@ -867,13 +871,18 @@ def _fit_iteration(tpl_wave, templates, wave, flux, noise, velscale, start, mome
         except Exception as e:
 #            embed(header='failed first ppxf')
 #            exit()
-#            np.savez_compressed('ineq.npz', templates=_templates.T, flux=flux[i,ps[i]:pe[i]],
-#                                noise=noise[i,ps[i]:pe[i]], velscale=velscale, start=_start,
-#                                velscale_ratio=velscale_ratio, moments=_moments, degree=degree,
-#                                mdegree=mdegree, lam=wave[ps[i]:pe[i]], tied=tied,
-#                                A_ineq=_constr_kinem['A_ineq'], b_ineq=_constr_kinem['b_ineq'],
-#                                mask=model_mask[i,ps[i]:pe[i]], vsyst=vsyst[i],
-#                                component=_component, gas_component=_gas_template)
+            if _constr_kinem is None:
+                A_ineq = None
+                b_ineq = None
+            else:
+                A_ineq = _constr_kinem['A_ineq']
+                b_ineq = _constr_kinem['b_ineq']
+            np.savez_compressed('xjmc_first_failure.npz', templates=_templates.T, flux=flux[i,ps[i]:pe[i]],
+                                noise=noise[i,ps[i]:pe[i]], velscale=velscale, start=_start,
+                                velscale_ratio=velscale_ratio, moments=_moments, degree=degree,
+                                mdegree=mdegree, lam=wave[ps[i]:pe[i]], tied=tied,
+                                A_ineq=A_ineq, b_ineq=b_ineq, mask=model_mask[i,ps[i]:pe[i]], vsyst=vsyst[i],
+                                component=_component, gas_component=_gas_template)
 
             if ppxf_faults == 'raise':
                 raise e
@@ -935,6 +944,18 @@ def _fit_iteration(tpl_wave, templates, wave, flux, noise, velscale, start, mome
             except Exception as e:
 #                embed(header='failed reject ppxf')
 #                exit()
+                if _constr_kinem is None:
+                    A_ineq = None
+                    b_ineq = None
+                else:
+                    A_ineq = _constr_kinem['A_ineq']
+                    b_ineq = _constr_kinem['b_ineq']
+                np.savez_compressed('xjmc_first_failure.npz', templates=_templates.T, flux=flux[i,ps[i]:pe[i]],
+                                noise=noise[i,ps[i]:pe[i]], velscale=velscale, start=_start,
+                                velscale_ratio=velscale_ratio, moments=_moments, degree=degree,
+                                mdegree=mdegree, lam=wave[ps[i]:pe[i]], tied=tied,
+                                A_ineq=A_ineq, b_ineq=b_ineq, mask=model_mask[i,ps[i]:pe[i]], vsyst=vsyst[i],
+                                component=_component, gas_component=_gas_template)
                 if ppxf_faults == 'raise':
                     raise e
                 warnings.warn('pPXF fault: "{0}".  Logging fault and continuing.'.format(str(e)))
