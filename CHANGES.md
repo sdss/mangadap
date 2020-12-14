@@ -42,6 +42,8 @@ Tasks
 
  - Redshift fix
 
+ - Get rid of ppxf_faults in sasuke.py
+
  - For the test galaxies:
     - 7815-6101: low mass blue
         - Check D4000
