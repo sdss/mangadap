@@ -149,6 +149,6 @@ class AnalysisPlanSet(ParDatabase):
         Return the default analysis plan set.
         """
         return cls([AnalysisPlan(drpqa_key='SNRG', bin_key='HYB10', continuum_key='MILESHCMPL11',
-                                 elmom_key='EMOMMPL11', elfit_key='EFITMPL11DB',
+                                 elmom_key='EMOMMPL11', elfit_key='EFITMPL11HCDB',
                                  spindex_key='INDXEN')])
 
