@@ -800,21 +800,24 @@ def _fit_iteration(tpl_wave, templates, wave, flux, noise, velscale, start, mome
 
     # Use the mask to set the starting and ending pixels and the psuedo
     # velocity offset
-    ps, pe = np.atleast_2d(np.array([np.where(_m)[0][[0,-1]] 
-                                     for _m in model_mask if np.any(_m)])).T
+    ps = np.zeros(nspec, dtype=int)
+    pe = np.full(nspec, flux.shape[1]-1, dtype=int)
+    indx = np.any(model_mask, axis=1) & np.logical_not(np.all(model_mask, axis=1))
+    ps[indx], pe[indx] = np.atleast_2d(np.array([np.where(_m)[0][[0,-1]]
+                                                    for _m in model_mask[indx]])).T
     pe += 1
     vsyst = np.array([-ppxf_vsyst(tpl_wave, wave[s:e], velscale, velscale_ratio=velscale_ratio)
                         for s, e in zip(ps, pe)])
-    # Fix for any fully masked spectra
-    if len(ps) != nspec:
-        indx = np.any(model_mask, axis=1)
-        _ps = np.zeros(nspec, dtype=int)
-        _ps[indx] = ps
-        _pe = np.zeros(nspec, dtype=int)
-        _pe[indx] = pe
-        _vsyst = np.zeros(nspec, dtype=float)
-        _vsyst[indx] = vsyst
-        ps, pe, vsyst = _ps, _pe, _vsyst
+#    # Fix for any fully masked spectra
+#    if len(ps) != nspec:
+#        indx = np.any(model_mask, axis=1)
+#        _ps = np.zeros(nspec, dtype=int)
+#        _ps[indx] = ps
+#        _pe = np.zeros(nspec, dtype=int)
+#        _pe[indx] = pe
+#        _vsyst = np.zeros(nspec, dtype=float)
+#        _vsyst[indx] = vsyst
+#        ps, pe, vsyst = _ps, _pe, _vsyst
 
     #-------------------------------------------------------------------
     # For debugging
@@ -871,18 +874,18 @@ def _fit_iteration(tpl_wave, templates, wave, flux, noise, velscale, start, mome
         except Exception as e:
 #            embed(header='failed first ppxf')
 #            exit()
-            if _constr_kinem is None:
-                A_ineq = None
-                b_ineq = None
-            else:
-                A_ineq = _constr_kinem['A_ineq']
-                b_ineq = _constr_kinem['b_ineq']
-            np.savez_compressed('xjmc_first_failure.npz', templates=_templates.T, flux=flux[i,ps[i]:pe[i]],
-                                noise=noise[i,ps[i]:pe[i]], velscale=velscale, start=_start,
-                                velscale_ratio=velscale_ratio, moments=_moments, degree=degree,
-                                mdegree=mdegree, lam=wave[ps[i]:pe[i]], tied=tied,
-                                A_ineq=A_ineq, b_ineq=b_ineq, mask=model_mask[i,ps[i]:pe[i]], vsyst=vsyst[i],
-                                component=_component, gas_component=_gas_template)
+#            if _constr_kinem is None:
+#                A_ineq = None
+#                b_ineq = None
+#            else:
+#                A_ineq = _constr_kinem['A_ineq']
+#                b_ineq = _constr_kinem['b_ineq']
+#            np.savez_compressed('xjmc_first_failure.npz', templates=_templates.T, flux=flux[i,ps[i]:pe[i]],
+#                                noise=noise[i,ps[i]:pe[i]], velscale=velscale, start=_start,
+#                                velscale_ratio=velscale_ratio, moments=_moments, degree=degree,
+#                                mdegree=mdegree, lam=wave[ps[i]:pe[i]], tied=tied,
+#                                A_ineq=A_ineq, b_ineq=b_ineq, mask=model_mask[i,ps[i]:pe[i]], vsyst=vsyst[i],
+#                                component=_component, gas_component=_gas_template)
 
             if ppxf_faults == 'raise':
                 raise e
@@ -944,18 +947,18 @@ def _fit_iteration(tpl_wave, templates, wave, flux, noise, velscale, start, mome
             except Exception as e:
 #                embed(header='failed reject ppxf')
 #                exit()
-                if _constr_kinem is None:
-                    A_ineq = None
-                    b_ineq = None
-                else:
-                    A_ineq = _constr_kinem['A_ineq']
-                    b_ineq = _constr_kinem['b_ineq']
-                np.savez_compressed('xjmc_first_failure.npz', templates=_templates.T, flux=flux[i,ps[i]:pe[i]],
-                                noise=noise[i,ps[i]:pe[i]], velscale=velscale, start=_start,
-                                velscale_ratio=velscale_ratio, moments=_moments, degree=degree,
-                                mdegree=mdegree, lam=wave[ps[i]:pe[i]], tied=tied,
-                                A_ineq=A_ineq, b_ineq=b_ineq, mask=model_mask[i,ps[i]:pe[i]], vsyst=vsyst[i],
-                                component=_component, gas_component=_gas_template)
+#                if _constr_kinem is None:
+#                    A_ineq = None
+#                    b_ineq = None
+#                else:
+#                    A_ineq = _constr_kinem['A_ineq']
+#                    b_ineq = _constr_kinem['b_ineq']
+#                np.savez_compressed('xjmc_first_failure.npz', templates=_templates.T, flux=flux[i,ps[i]:pe[i]],
+#                                noise=noise[i,ps[i]:pe[i]], velscale=velscale, start=_start,
+#                                velscale_ratio=velscale_ratio, moments=_moments, degree=degree,
+#                                mdegree=mdegree, lam=wave[ps[i]:pe[i]], tied=tied,
+#                                A_ineq=A_ineq, b_ineq=b_ineq, mask=model_mask[i,ps[i]:pe[i]], vsyst=vsyst[i],
+#                                component=_component, gas_component=_gas_template)
                 if ppxf_faults == 'raise':
                     raise e
                 warnings.warn('pPXF fault: "{0}".  Logging fault and continuing.'.format(str(e)))
