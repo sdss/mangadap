@@ -213,7 +213,7 @@ def test_sasuke_mpl11():
 
     # Number of used templates
     assert numpy.array_equal(numpy.sum(numpy.absolute(el_fit['TPLWGT']) > 1e-10, axis=1),
-                             [25, 22, 36, 35, 31,  0, 19, 24]), \
+                             [25, 22, 35, 35, 31,  0, 19, 24]), \
                 'Different number of templates with non-zero weights'
 
     # No additive coefficients
@@ -252,13 +252,13 @@ def test_sasuke_mpl11():
     # Test velocity values
     # TODO: Need some better examples!
     assert numpy.all(numpy.absolute(el_par['KIN'][:,0,0] -
-                                    numpy.array([14598.8, 14393.2, 14767.8, 8174.1, 9258.8, 0.0,
+                                    numpy.array([14585.5, 14393.2, 14767.8, 8174.1, 9258.8, 0.0,
                                                   5132.8,  5423.2])) < 0.1), \
                 'Velocities are too different'
 
     # H-alpha dispersions
     assert numpy.all(numpy.absolute(el_par['KIN'][:,23,1] -
-                                    numpy.array([715.0, 715.0, 224.2, 173.0, 173.6, 0.0, 85.7,
+                                    numpy.array([715.3, 715.0, 224.2, 173.0, 173.6, 0.0, 85.7,
                                                    46.1])) < 1e-1), \
             'H-alpha dispersions are too different'
 
