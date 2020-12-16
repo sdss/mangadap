@@ -22,3 +22,4 @@ def test_init_all():
         emldb = EmissionLineDB.from_key(key)
         etpl = EmissionLineTemplates(wave, velscale, emldb=emldb)
 
+

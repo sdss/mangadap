@@ -1,4 +1,25 @@
 
+Fit again with a factor of 1 change in dispersion to see if these fit
+the narrow OIII lines better
+
+# Bad fits to OIII lines biased by broad H-alpha?
+7991-1901-109
+8713-9102-1171
+11944-12704-1211    - illustrative
+9000-1901-204       - illustrative
+9500-1901-158       - illustrative
+220 7963-3702-326   - meh
+221 7963-3702-352   - bad
+448 9090-9101-1066  - bad
+
+
+
+239 9487-9102-1032  - poor fits to both OIII and H-beta; independent of tying scheme
+
+
+
+
+
 MPL-11 TODO
 -----------
 

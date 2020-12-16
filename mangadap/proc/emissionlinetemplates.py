@@ -956,6 +956,15 @@ class EmissionLineTemplates:
                                         numpy.sum(indx),2)
             tie_comp_par[i,:] = numpy.amax(_par, axis=0)
 
+        # The definition of the fractional constraint is such that the value
+        # MUST be larger than one. Determine if any of the values don't meet
+        # this constraint and raise an exception if so.
+        # TODO: Do this when reading the EmissionLineDB...
+        if numpy.any(numpy.any((tie_comp_par < 0) 
+                               | ((tie_comp_par > 0) & numpy.logical_not(tie_comp_par > 1)),
+                               axis=1)):
+            raise ValueError('Any defined inequality constraints must be >1!')
+
         # NOTE: For reference, this didn't work (compared to the explicit loop
         # above) because it was just assigning the most recent parameter with
         # the same component. Depending on the order of the line list, this
@@ -982,11 +991,11 @@ class EmissionLineTemplates:
             if tie_comp[i] < 0:
                 continue
             for j in range(2):
-                if tie_comp_par[i,j] != 0.:
-                    self.A_ineq[constr,2*tie_comp[i]+j] = 1/(1+tie_comp_par[i,j])
+                if tie_comp_par[i,j] > 1:
+                    self.A_ineq[constr,2*tie_comp[i]+j] = 1/tie_comp_par[i,j]
                     self.A_ineq[constr,2*i+j] = -1.
                     constr += 1
-                    self.A_ineq[constr,2*tie_comp[i]+j] = -(1+tie_comp_par[i,j])
+                    self.A_ineq[constr,2*tie_comp[i]+j] = -tie_comp_par[i,j]
                     self.A_ineq[constr,2*i+j] = 1.
                     constr += 1
 
