@@ -30,8 +30,14 @@ def main():
 #    mod_file = 'repr/benchmark_spectra_v2_model.fits'
 #    plot_file = 'repr/representative_spectra_v2_model.pdf'
 
-    mod_file = 'repr/run4/run4_MILESHC_4_8_MASTARSSP_1_14_ELBMPL9_ELPMPL11.fits.gz'
-    plot_file = 'repr/representative_spectra_v2_model_run4_ssp_14.pdf'
+#    mod_file = 'repr/run5/run5_MILESHC_4_8_MASTARSSP_1_14_ELBMPL9_ELPMPL11.fits.gz'
+#    plot_file = 'repr/representative_spectra_v2_model_run5_ssp_14_sig1.4.pdf'
+#    mod_file = 'repr/run5/run5_MILESHC_4_8_MASTARSSP_1_14_ELBMPL9_ELPMPL11A.fits.gz'
+#    plot_file = 'repr/representative_spectra_v2_model_run5_ssp_14_sig3.0.pdf'
+#    mod_file = 'repr/run5/run5_MILESHC_4_8_MASTARSSP_1_14_ELBMPL9_ELPMPL11B.fits.gz'
+#    plot_file = 'repr/representative_spectra_v2_model_run5_ssp_14_sigmix.pdf'
+    mod_file = 'repr/run5/run5_MILESHC_4_8_MASTARSSP_1_14_ELBMPL9_ELPMPL11UP.fits.gz'
+    plot_file = 'repr/representative_spectra_v2_model_run5_ssp_14_sigmixup.pdf'
 
     select_hdu = fits.open(select_file)
     spec_hdu = fits.open(spec_file)
