@@ -58,6 +58,8 @@ def test_register():
     rwave, rflux, rivar, rsres = SpectralStack.register(wave, cz, flux, log=True)
     reg_stack_flux = numpy.ma.mean(rflux, axis=0)
 
+    assert numpy.allclose(sflux[0], reg_stack_flux), 'Stack and by-hand check failed.'
+
     # Construct the deredshifted stack from scratch
     rcoff = numpy.log10(rwave[0])/dlogw
     rx = numpy.arange(rwave.size)
@@ -76,6 +78,5 @@ def test_register():
     assert numpy.argmax(xcor) == xcor.size//2, 'Should be no lag between the model and stack'
     assert numpy.absolute(numpy.sum(sflux[0])/numpy.sum(model_flux) - 1) < 0.01, \
             'Stack sums should be different by less than 1%'
-
 
 
