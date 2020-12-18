@@ -18,7 +18,7 @@ Stack some spectra!
 from IPython import embed
 
 import numpy
-from scipy import sparse
+from scipy import sparse, interpolate
 from astropy.io import fits
 import astropy.constants
 
@@ -44,23 +44,23 @@ class SpectralStackPar(KeywordParSet):
 
     .. include:: ../tables/spectralstackpar.rst
     """
-    def __init__(self, operation=None, vel_register=None, vel_offsets=None, covar_mode=None,
-                 covar_par=None):
+    def __init__(self, operation=None, register=None, cz=None, covar_mode=None, covar_par=None):
         in_fl = [ int, float ]
         ar_like = [ numpy.ndarray, list ]
         op_options = SpectralStack.operation_options()
         covar_options = SpectralStack.covariance_mode_options()
         
-        pars =     ['operation', 'vel_register', 'vel_offsets',  'covar_mode',   'covar_par']
-        values =   [  operation,   vel_register,   vel_offsets,    covar_mode,     covar_par]
-        defaults = [     'mean',          False,          None,        'none',          None]
-        options =  [ op_options,           None,          None, covar_options,          None]
-        dtypes =   [        str,           bool,       ar_like,           str, in_fl+ar_like]
+        pars = ['operation', 'register', 'cz',  'covar_mode',   'covar_par']
+        values = [operation, register, cz, covar_mode, covar_par]
+        defaults = [ 'mean', False, None, 'none', None]
+        options = [ op_options, None, None, covar_options, None]
+        dtypes = [ str, bool, ar_like, str, in_fl+ar_like]
         descr = ['Operation to perform for the stacked spectrum.  See ' \
                     ':func:`SpectralStack.operation_options` for the available operation options.',
-                 'Flag to velocity register the spectra before adding them based on a provided ' \
+                 'Flag to register the spectra by deshifting them based on their observed *cz* ' \
+                    'velocities.  This is done before adding them based on a provided ' \
                     'prior measurement of the velocities.',
-                 'List of velocity offsets to apply to the spectra to stack.',
+                 'List of measured *cz* velocities used to register the spectra.',
                  'Describes how to incorporate covariance into the spectral stacking.  ' \
                     'See :func:`SpectralStack.covariance_mode_options` for the available options.',
                  'The parameter(s) needed to perform a given method of handling the ' \
@@ -81,7 +81,7 @@ class SpectralStackPar(KeywordParSet):
             `astropy.io.fits.Header`_ : Edited header object.
         """
         hdr['STCKOP'] = (self['operation'], 'Stacking operation')
-        hdr['STCKVREG'] = (str(self['vel_register']), 'Spectra shifted in velocity before stacked')
+        hdr['STCKVREG'] = (str(self['register']), 'Spectra shifted in velocity before stacked')
         hdr['STCKCRMD'] = (str(self['covar_mode']), 'Stacking treatment of covariance')
         hdr['STCKCRPR'] = (str(self['covar_par']), 'Covariance parameter(s)')
         return hdr
@@ -95,7 +95,7 @@ class SpectralStackPar(KeywordParSet):
                 Header object to read from.
         """
         self['operation'] = hdr['STCKOP']
-        self['vel_register'] = eval(hdr['STCKVREG'])
+        self['register'] = eval(hdr['STCKVREG'])
         self['covar_mode'] = hdr['STCKCRMD']
         self['covar_par'] = eval(hdr['STCKCRPR'])
 
@@ -544,8 +544,9 @@ class SpectralStack:
         Returns:
             :obj:`tuple`: See the return statement for :func:`stack`.
         """
-        return self.wave, self.fluxmean, self.fluxsdev, self.npix, \
-                        self.ivar * numpy.square(self.npix), self.sres, self._covar_in_mean()
+        _ivar = None if self.ivar is None else self.ivar * numpy.square(self.npix)
+        return self.wave, self.fluxmean, self.fluxsdev, self.npix, _ivar, self.sres, \
+                    self._covar_in_mean()
 
     @staticmethod
     def operation_options():
@@ -660,7 +661,7 @@ class SpectralStack:
             return [ float(e.strip()) for e in par.split(',') ]
 
     @staticmethod
-    def min_max_wave(wave, voff):
+    def min_max_wave(wave, cz):
         r"""
         Determine the minimum and maximum of all shifted wavelength
         ranges.
@@ -668,42 +669,37 @@ class SpectralStack:
         Args:
             wave (array-like):
                 Original wavelengths.  Should be 1D.
-            voff (:obj:`float`, array-like):
-                The velocity shift in km/s to apply to the wavelength
-                vector (i.e., the velocity shift should be
-                :math:`v_{\rm off} = -cz`). Each element is applied
-                to the wavelength vector to determine the maximum
-                wavelength range allowed for all spectra. Should be
-                1D.
+            cz (:obj:`float`, array-like):
+                The redshift of one or more spectra to be removed. Each
+                element is applied to the wavelength vector to determine the
+                maximum wavelength range required to full sample all
+                deshifted spectra.
 
         Returns:
             :obj:`tuple`: Two floats with the minimum and maximum
-            redshifted wavelengths.
+            wavelengths.
 
         Raises:
             ValueError:
-                Raised if either ``wave`` or ``voff`` have the wrong
+                Raised if either ``wave`` or ``cz`` have the wrong
                 dimensionality.
         """
         _wave = numpy.atleast_1d(wave)
         if _wave.ndim != 1:
             raise ValueError('Wavelength vector should be 1D!')
-        _voff = numpy.atleast_1d(voff)
-        if _voff.ndim != 1:
+        _cz = numpy.atleast_1d(cz)
+        if _cz.ndim != 1:
             raise ValueError('Velocity should be a float or 1D vector.')
         _wave = numpy.array([numpy.amin(_wave), numpy.amax(_wave)])
-        doppler_shifted = _wave[None,:]*(1.+_voff[:,None]/astropy.constants.c.to('km/s').value)
-        return numpy.amin(doppler_shifted), numpy.amax(doppler_shifted)
+        _shifted_wave = _wave[None,:]/(1.+_cz[:,None]/astropy.constants.c.to('km/s').value)
+        return numpy.amin(_shifted_wave), numpy.amax(_shifted_wave)
 
     @staticmethod
-    def register(wave, voff, flux, ivar=None, mask=None, sres=None, log=False, base=10.0,
+    def register(wave, cz, flux, ivar=None, mask=None, sres=None, log=False, base=10.0,
                  keep_range=False, flim=0.5):
         r"""
         Register a set of spectra to the same wavelength range given a
-        set of velocity offsets.
-
-        .. warning::
-            **THIS FUNCTION IS UNTESTED!**
+        set of measured velocities.
 
         .. todo::
             - Allow for correction for deredshifting flux.
@@ -712,10 +708,10 @@ class SpectralStack:
             wave (`numpy.ndarray`_):
                 Single wavelength vector for all input spectra. Must
                 be 1D with shape :math:`(N_{\rm wave},)`.
-            voff (:obj:`float`, array-like):
-                The velocity shift in km/s to apply to the wavelength
-                vector (i.e., the velocity shift should be
-                :math:`v_{\rm off} = -cz`). Should be 1D at most.
+            cz (:obj:`float`, array-like):
+                The measured :math:`cz` velocities of all spectra or each
+                spectrum individually. The "registration" deshifts all the
+                spectra such that :math:`cz = 0`.
             flux (`numpy.ndarray`_, `numpy.ma.MaskedArray`_):
                 Flux array to register. Must be 2D with shape
                 :math:`(N_{\rm spec},N_{\rm wave})`.
@@ -780,43 +776,99 @@ class SpectralStack:
             raise ValueError('Input spectral resolution data has incorrect shape.')
 
         # Get the mask
-        inp_mask = SpectralStack._get_input_mask(flux, ivar=ivar, mask=mask, dtype=float)
+        inp_mask = SpectralStack._get_input_mask(flux, ivar=ivar, mask=mask)
 
         # Get the spectral resolution (always a masked array)
         inp_sres = SpectralStack._check_input_sres(sres, flux.shape[0])
 
-        # Output spectral range
+        # Output spectral range. If keep_range is True, this is the same as the
+        # input range; otherwise, this selects the maximum range necessary to
+        # accommodate all velocity shifts.
         outRange = [wave[0], wave[-1]] if keep_range \
-                        else list(SpectralStack.min_max_wave(wave, voff))
+                        else list(SpectralStack.min_max_wave(wave, cz))
+
         # Sampling (logarithmic or linear)
         dw = spectral_coordinate_step(wave, log=log, base=base)
 
-        # Resample the flux and error
+        # Calculate the 1-sigma error
         ferr = None if ivar is None else numpy.ma.power(ivar, -0.5)
-        resamp = Resample(flux, e=ferr, mask=inp_mask, x=wave, inLog=log, newRange=outRange,
-                          newdx=dw, base=base)
 
-        # Mask pixels covered below the designate fraction
-        _mask = resamp.outf < flim
+        # Resample the flux and error
+        _cz = numpy.atleast_1d(cz)
+        if len(_cz) != 1 and len(_cz) != flux.shape[0]:
+            raise ValueError('Must provide one velocity for all spectra or one velocity per '
+                             'spectrum.')
+        if len(_cz) == 1:
+            # Offsetting all spectra by a single velocity
+            _wave = wave/(1+cz/astropy.constants.c.to('km/s').value)
+            resamp = Resample(flux, e=ferr, mask=inp_mask, x=_wave, inLog=log, newRange=outRange,
+                              newdx=dw, base=base)
+            _flux = resamp.outy
+            _flux[resamp.outf < flim] = numpy.ma.masked
+            if ivar is None:
+                _ivar = None
+            else:
+                _ivar = numpy.ma.power(resamp.oute, -2)
+                _ivar[numpy.ma.getmaskarray(_flux)] = numpy.ma.masked
 
-        # Get the inverse variance
+            # Interpolate the spectral resolution at the location of the new
+            # wavelength vector
+            _sres = None if inp_sres is None \
+                        else interpolate.interp1d(_wave, inp_sres, axis=1, assume_sorted=True,
+                                                  fill_value='extrapolate')(resamp.outx)
+            return resamp.outx, _flux, _ivar, _sres
+
+        # Need to resample each vector independently
+
+        # Get the shifted wavelengths
+        _wave = wave[None,:]/(1.+_cz[:,None]/astropy.constants.c.to('km/s').value)
+
+        # Resample the first spectrum. Done outside of a loop to make sure to
+        # get the length of the new spectra.
+        resamp = Resample(flux[0], e=None if ferr is None else ferr[0], mask=inp_mask[0],
+                          x=_wave[0], inLog=log, newRange=outRange, newdx=dw, base=base)
+
+        # Get the new wavelength array (should be the same for all spectra)
+        newwave = resamp.outx
+
+        # Init the flux array and apply the mask
+        _flux = numpy.ma.MaskedArray(numpy.zeros((flux.shape[0],resamp.outy.size), dtype=float))
+        _flux[0] = resamp.outy
+        _flux[0,resamp.outf < flim] = numpy.ma.masked
+
+        # Init the error array
+        _ferr = numpy.zeros_like(_flux, dtype=float)
+        if ferr is not None:
+            _ferr[0] = resamp.oute
+
+        # Init the spectral resolution vector(s)
+        _sres = None
+        if inp_sres is not None:
+            _sres = numpy.zeros_like(_flux.data, dtype=float)
+            _sres[0] = interpolate.interp1d(wave, inp_sres[0], assume_sorted=True,
+                                            fill_value='extrapolate')(resamp.outx)
+
+        # Loop over the remaining spectra
+        for i in range(1,flux.shape[0]):
+            resamp = Resample(flux[i], e=None if ferr is None else ferr[i], mask=inp_mask[i],
+                              x=_wave[i], inLog=log, newx=newwave)
+            _flux[i] = resamp.outy
+            _flux[i,resamp.outf < flim] = numpy.ma.masked
+            if ferr is not None:
+                _ferr[i] = resamp.oute
+            if inp_sres is not None:
+                _sres[i] = interpolate.interp1d(_wave[i], inp_sres[i], assume_sorted=True,
+                                                fill_value='extrapolate')(newwave)
+
+        # Compute the inverse variance
         if ivar is None:
             _ivar = None
         else:
-            _ivar = numpy.ma.power(resamp.oute, -2)
-            _ivar[_mask] = numpy.ma.masked
+            _ivar = numpy.ma.power(_ferr, -2)
+            _ivar[numpy.ma.getmaskarray(_flux)] = numpy.ma.masked
 
-        # Interpolate the spectral resolution at the location of the new
-        # wavelength vector
-        if inp_sres is None:
-            _sres = None
-        else:
-            interp = interpolate.interp1d(wave, inp_sres, axis=1, assume_sorted=True,
-                                          fill_value='extrapolate')
-            _sres = interp(resamp.outx)
-
-        # Return the result
-        return resamp.outx, numpy.ma.MaskedArray(resamp.outy, mask=_mask), _ivar, _sres
+        # Done
+        return newwave, _flux, _ivar, _sres
 
     @staticmethod
     def build_covariance_data(cube, covariance_mode, covariance_par):
@@ -935,11 +987,11 @@ class SpectralStack:
         return self.stack(cube.wave, flux, binid=binid, ivar=ivar, log=True, keep_range=True) \
                     if par is None else \
                     self.stack(cube.wave, flux, operation=par['operation'], binid=binid, ivar=ivar,
-                               sres=sres, voff=par['vel_offsets'], log=True,
+                               sres=sres, cz=par['cz'], log=True,
                                covariance_mode=par['covar_mode'], covar=covar, keep_range=True)
 
     def stack(self, wave, flux, operation='mean', binid=None, binwgt=None, ivar=None, mask=None,
-              sres=None, voff=None, log=False, base=10.0, covariance_mode=None, covar=None,
+              sres=None, cz=None, log=False, base=10.0, covariance_mode=None, covar=None,
               keep_range=False):
         r"""
         Stack a set of spectra.
@@ -987,9 +1039,9 @@ class SpectralStack:
                 spec},N_{\rm wave})`. If provided as a masked array,
                 masked pixels are replaced with the interpolated
                 resolution at that location.
-            voff (`numpy.ndarray`_, optional):
-                Vector with velocity offsets to apply to each
-                spectrum before stacking. See :func:`register`.
+            cz (`numpy.ndarray`_, optional):
+                Vector with measured :math:`cz` velocities used to deshift
+                the spectra before stacking. See :func:`register`.
             log (:obj:`bool`, optional):
                 Flag that the wavelength vector is geometrically stepped
                 in wavelength.
@@ -1070,22 +1122,22 @@ class SpectralStack:
                             ' type: {2}'.format(covariance_mode, type(covar), type(ivar)))
         if not SpectralStack._check_covariance_shape(covariance_mode, covar, nwave, nspec):
             raise ValueError('Covariance object has incorrect shape for use with specified mode.')
-        if isinstance(covar, Covariance) and voff is not None:
+        if isinstance(covar, Covariance) and cz is not None:
             raise NotImplementedError('Currently cannot both velocity register and apply ' \
                                       'covariance matrix calculation!')
         
         # Get the masked, velocity registered flux and inverse variance
         # arrays
-        if voff is None:
+        if cz is None:
             _mask = SpectralStack._get_input_mask(flux, ivar=ivar, mask=mask)
             _flux = numpy.ma.MaskedArray(flux, mask=_mask)
             _ivar = None if ivar is None else numpy.ma.MaskedArray(ivar, mask=_mask)
             _sres = SpectralStack._check_input_sres(sres, flux.shape[0])
             self.wave = wave
         else:
-            self.wave, _flux, _ivar, _sres = register(wave, voff, flux, ivar=ivar, mask=mask,
-                                                      sres=sres, log=log, base=base,
-                                                      keep_range=keep_range)
+            self.wave, _flux, _ivar, _sres = self.register(wave, cz, flux, ivar=ivar, mask=mask,
+                                                           sres=sres, log=log, base=base,
+                                                           keep_range=keep_range)
 
         # Calculate the transfer matrix
         self._set_rebin_transfer_matrix(numpy.zeros(nspec, dtype=numpy.int) 
