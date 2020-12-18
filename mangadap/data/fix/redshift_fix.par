@@ -11,6 +11,7 @@
 #       have a MaNGA_TARGET2 that indicates it is a sky observation.
 #   25 May 2020: (KBW) Updated for MPL-10.  Includes GLOBULAR_CLUSTER
 #       MANGA_TARGET3.
+#   18 Dec 2020: (KBW) Updated for MPL-11.
 #------------------------------------------------------------------------
 
 typedef struct {
@@ -511,4 +512,4 @@ DAPZCORR  12050  12703 0.0
 DAPZCORR  12050  12704 0.0
 DAPZCORR  12050  12705 0.0
 DAPZCORR  12187  12705 0.0
-
+DAPZCORR  12767   1902 0.0
