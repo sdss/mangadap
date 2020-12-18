@@ -52,9 +52,9 @@ class SpectralStackPar(KeywordParSet):
         
         pars = ['operation', 'register', 'cz',  'covar_mode',   'covar_par']
         values = [operation, register, cz, covar_mode, covar_par]
-        defaults = [ 'mean', False, None, 'none', None]
-        options = [ op_options, None, None, covar_options, None]
-        dtypes = [ str, bool, ar_like, str, in_fl+ar_like]
+        defaults = ['mean', False, None, 'none', None]
+        options = [op_options, None, None, covar_options, None]
+        dtypes = [str, bool, ar_like, str, in_fl+ar_like]
         descr = ['Operation to perform for the stacked spectrum.  See ' \
                     ':func:`SpectralStack.operation_options` for the available operation options.',
                  'Flag to register the spectra by deshifting them based on their observed *cz* ' \
