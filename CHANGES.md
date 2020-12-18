@@ -61,8 +61,6 @@ MPL-11 TODO
 Tasks
 -----
 
- - Redshift fix
-
  - Get rid of ppxf_faults in sasuke.py
 
  - For the test galaxies:
