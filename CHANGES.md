@@ -144,6 +144,8 @@ TODO
    :class:`mangadap.util.sampling.Resample`.
  - Add a class that reads trace sets produced by IDLUTILS,
    :class:`mangadap.util.trace.TraceSet`, but not well tested yet.
+ - Fix untested velocity registration and stacking code, and added
+   registration test
 
 3.0.1 (31 May 2020)
 -------------------
