@@ -250,7 +250,7 @@ def available_spatial_binning_methods():
             binfunc = None
 
         stackpar = SpectralStackPar(operation=cnfg.get('operation', default='mean'),
-                                    vel_register=cnfg.getbool('velocity_register', default=False),
+                                    register=cnfg.getbool('velocity_register', default=False),
                                     covar_mode=cnfg.get('stack_covariance_mode', default='none'),
                                     covar_par=SpectralStack.parse_covariance_parameters(
                                             cnfg.get('stack_covariance_mode', default='none'),
