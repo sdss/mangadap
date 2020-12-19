@@ -81,8 +81,6 @@ Tasks
  
     ~ Compare old and new measurements
 
- - Setup to run ~100 galaxies with SSPs for benchmark tests
-
  - Identify reason for bad H-alpha velocities in 8138-12704
 
  - Add flag for when *observed* gas dispersion is less than 0.7 pixels.
@@ -95,18 +93,15 @@ Tasks
  - H-beta analysis when fitting a common wavelength range for MILESHC,
    MASTARHC, and MASTARHC2
     - (DONE) Repeat analysis of new data
-    - Compare velocity dispersions?
-    - ACTION: Test imposing limits on the H-beta dispersion relative to
+    - (DONE) Test imposing limits on the H-beta dispersion relative to
       the H-alpha dispersion?
-
- - Adjustment to wavelengths in line list (Francesco's recommendations)
 
  - Check offset velocity used for gas vs. stellar velocity fields
     - Make sure they're the same and the former isn't referenced to the
       input H-alpha velocity moment.
 
- - Check velocity dispersion corrections between the two different
-   methods.
+ - Check stellar velocity dispersion corrections between the two
+   different methods.
 
  - Analysis of MPL-10
     - H-beta masking

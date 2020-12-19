@@ -803,21 +803,12 @@ def _fit_iteration(tpl_wave, templates, wave, flux, noise, velscale, start, mome
     ps = np.zeros(nspec, dtype=int)
     pe = np.full(nspec, flux.shape[1]-1, dtype=int)
     indx = np.any(model_mask, axis=1) & np.logical_not(np.all(model_mask, axis=1))
-    ps[indx], pe[indx] = np.atleast_2d(np.array([np.where(_m)[0][[0,-1]]
-                                                    for _m in model_mask[indx]])).T
+    if np.any(indx):
+        ps[indx], pe[indx] = np.atleast_2d(np.array([np.where(_m)[0][[0,-1]]
+                                                        for _m in model_mask[indx]])).T
     pe += 1
     vsyst = np.array([-ppxf_vsyst(tpl_wave, wave[s:e], velscale, velscale_ratio=velscale_ratio)
                         for s, e in zip(ps, pe)])
-#    # Fix for any fully masked spectra
-#    if len(ps) != nspec:
-#        indx = np.any(model_mask, axis=1)
-#        _ps = np.zeros(nspec, dtype=int)
-#        _ps[indx] = ps
-#        _pe = np.zeros(nspec, dtype=int)
-#        _pe[indx] = pe
-#        _vsyst = np.zeros(nspec, dtype=float)
-#        _vsyst[indx] = vsyst
-#        ps, pe, vsyst = _ps, _pe, _vsyst
 
     #-------------------------------------------------------------------
     # For debugging
