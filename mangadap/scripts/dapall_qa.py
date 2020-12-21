@@ -2,6 +2,9 @@ import os
 import time
 import argparse
 import warnings
+
+from IPython import embed
+
 import numpy
 
 from matplotlib import pyplot, ticker, rc, colors
@@ -534,7 +537,7 @@ def radial_coverage_histogram(dapall, daptype, ofile=None):
     # Show RCOV90 in terms of arcseconds for each IFU
     ax = init_ax(fig, [0.1, 0.58, 0.8, 0.4])
     ax.set_ylim(nlim)
-    ax.set_yscale('log', nonposy='clip')
+    ax.set_yscale('log', nonpositive='clip')
     ifu = [ 19, 37, 61, 91, 127 ]
     for i,f in enumerate(ifu):
         _indx = indx & ((dapall['IFUDESIGN']/100).astype(int) == f)
@@ -557,7 +560,7 @@ def radial_coverage_histogram(dapall, daptype, ofile=None):
     # Show RCOV90 in terms of Re for each sample
     ax = init_ax(fig, [0.1, 0.08, 0.8, 0.4])
     ax.set_ylim(nlim)
-    ax.set_yscale('log', nonposy='clip')
+    ax.set_yscale('log', nonpositive='clip')
 
     if numpy.any(primaryplus):
         _rore = (rore[primaryplus]).compressed()
@@ -738,7 +741,8 @@ def main(args):
     spi = channel_dictionary(dapall_hdu, 0, prefix='SPI')
 
     for daptype in daptypes:
-        dapall_qa(drpall_hdu[1].data, dapall_hdu[1].data, analysis_path, daptype, eml, spi)
+        dapall_qa(drpall_hdu['MANGA'].data, dapall_hdu[daptype].data, analysis_path,
+                  daptype, eml, spi)
 
     print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
 
