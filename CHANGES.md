@@ -14,6 +14,10 @@ the narrow OIII lines better
 
 
 
+# Traceback 1: ERROR: ValueError: not enough values to unpack (expected 2, got 0) [mangadap.contrib.xjmc]
+11020  1902
+ 8612  1901
+
 239 9487-9102-1032  - poor fits to both OIII and H-beta; independent of tying scheme
 
 

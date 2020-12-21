@@ -738,7 +738,8 @@ def main(args):
     spi = channel_dictionary(dapall_hdu, 0, prefix='SPI')
 
     for daptype in daptypes:
-        dapall_qa(drpall_hdu[1].data, dapall_hdu[1].data, analysis_path, daptype, eml, spi)
+        dapall_qa(drpall_hdu['MANGA'].data, dapall_hdu[daptype].data, analysis_path,
+                  daptype, eml, spi)
 
     print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
 
