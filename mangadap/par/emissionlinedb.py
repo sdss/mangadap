@@ -402,7 +402,7 @@ class EmissionLinePar(KeywordParSet):
         self._check()
 
     def _check(self):
-        if self.data['index'] <= 0:
+        if self.data['index'] is not None and self.data['index'] <= 0:
             raise ValueError('Index must be larger than 0.')
 
 

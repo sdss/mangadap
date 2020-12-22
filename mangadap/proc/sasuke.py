@@ -1591,8 +1591,7 @@ class Sasuke(EmissionLineFit):
               separate function.
 
         Args:
-            emission_lines
-                (:class:`mangadap.par.emissionlinedb.EmissionLineDB`):
+            emission_lines (:class:`mangadap.par.emissionlinedb.EmissionLineDB`):
                 Emission-line database that is parsed to construct the
                 emission-line templates to fit (see
                 :class:`mangadap.proc.emissionelinetemplates.EmissionLineTemplates`).
@@ -1610,13 +1609,11 @@ class Sasuke(EmissionLineFit):
                 quadrature sum of the fit residuals is used as the fit
                 metric instead of chi-square (all errors are set to
                 unity).
-            obj_mask (numpy.ndarray,
-                :class:`mangadap.util.pixelmask.SpectralPixelMask`,
-                optional):
+            obj_mask (numpy.ndarray, :class:`mangadap.util.pixelmask.SpectralPixelMask`, optional):
                 Boolean array or
-                :class:`mangadap.util.pixelmask.SpectralPixelMask`
-                instance used to censor regions of the spectra to ignore
-                during fitting.
+                :class:`mangadap.util.pixelmask.SpectralPixelMask` instance
+                used to censor regions of the spectra to ignore during
+                fitting.
             obj_sres (numpy.ndarray, optional):
                 The spectral resolution of the object data.  Can be a
                 single vector for all spectra or one vector per object
@@ -1700,9 +1697,7 @@ class Sasuke(EmissionLineFit):
                 The 1-:math:`\sigma` error in `remap_flux`.  Can be
                 provided as a `numpy.ma.MaskedArray`_.  Shape is
                 (:math:`N_{\rm remap},N_{\rm pix}`).
-            remap_mask (numpy.ndarray,
-                :class:`mangadap.util.pixelmask.SpectralPixelMask`,
-                optional):
+            remap_mask (numpy.ndarray, :class:`mangadap.util.pixelmask.SpectralPixelMask`, optional):
                 Boolean array or
                 :class:`mangadap.util.pixelmask.SpectralPixelMask`
                 instance used to censor regions of the remapping spectra
