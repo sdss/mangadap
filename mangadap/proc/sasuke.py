@@ -2257,8 +2257,7 @@ class Sasuke(EmissionLineFit):
                                               flux_binned=flux_binned, noise_binned=ferr_binned,
                                               mask_binned=mask_binned, x_binned=x_binned,
                                               y_binned=y_binned, x=skyx, y=skyy, plot=plot,
-                                              quiet=not plot, sigma_rej=sigma_rej,
-                                              ppxf_faults='raise')
+                                              quiet=not plot, sigma_rej=sigma_rej) #, ppxf_faults='raise')
 
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, 'Fits completed in {0:.4e} min.'.format(
