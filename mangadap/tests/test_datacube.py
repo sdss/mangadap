@@ -125,7 +125,7 @@ def test_copyto():
                              sres[i].data), 'Did not pull sres data.'
 
 
-@requires_remote
+#@requires_remote
 def test_stats():
     cube = MaNGADataCube.from_plateifu(7815, 3702, directory_path=remote_data_file())
 
@@ -147,15 +147,15 @@ def test_stats():
 
     cen_wave = cube.central_wavelength(response_func=methods[i[0]]['response_func'],
                                        flag=cube.do_not_use_flags())
-    assert numpy.isclose(cen_wave, 4639.5), 'Central wavelength changed.'
+    assert numpy.isclose(cen_wave, 4638.0), 'Central wavelength changed.'
 
     cen_wave = cube.central_wavelength(waverange=[4000,8000], flag=cube.do_not_use_flags(),
                                        fluxwgt=True)
-    assert numpy.isclose(cen_wave, 5898.9), 'Central wavelength changed.'
+    assert numpy.isclose(cen_wave, 5895.7), 'Central wavelength changed.'
 
     cen_wave = cube.central_wavelength(waverange=[4000,8000], flag=cube.do_not_use_flags(),
                                        per_pixel=False)
-    assert numpy.isclose(cen_wave, 6047.2), 'Central wavelength changed.'
+    assert numpy.isclose(cen_wave, 6044.9), 'Central wavelength changed.'
 
     sig, var, snr = cube.flux_stats(response_func=methods[i[0]]['response_func'])
     assert sig.shape == cube.spatial_shape, 'Should be shaped as a map.'

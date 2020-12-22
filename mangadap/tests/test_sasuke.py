@@ -213,7 +213,7 @@ def test_sasuke_mpl11():
 
     # Number of used templates
     assert numpy.array_equal(numpy.sum(numpy.absolute(el_fit['TPLWGT']) > 1e-10, axis=1),
-                             [25, 22, 35, 35, 31,  0, 19, 24]), \
+                             [24, 22, 36, 35, 31,  0, 17, 23]), \
                 'Different number of templates with non-zero weights'
 
     # No additive coefficients
@@ -226,20 +226,20 @@ def test_sasuke_mpl11():
 
     # Fit statistics
     assert numpy.all(numpy.absolute(el_fit['RCHI2'] - 
-                                    numpy.array([2.33, 1.22, 1.52, 1.92, 3.21, 0., 1.05, 0.88]))
+                                    numpy.array([2.33, 1.21, 1.51, 1.88, 3.15, 0., 1.04, 0.87]))
                      < 0.02), 'Reduced chi-square are too different'
 
     assert numpy.all(numpy.absolute(el_fit['RMS'] -
-                                    numpy.array([0.036, 0.019, 0.036, 0.025, 0.051, 0.000,
+                                    numpy.array([0.036, 0.019, 0.036, 0.024, 0.050, 0.000,
                                                  0.012, 0.012])) < 0.001), 'RMS too different'
 
     assert numpy.all(numpy.absolute(el_fit['FRMS'] -
                                     numpy.array([0.020, 0.025, 0.025, 0.033, 0.018, 0.000,
-                                                 1.061, 0.101])) < 0.001), \
+                                                 1.051, 0.101])) < 0.001), \
             'Fractional RMS too different'
 
     assert numpy.all(numpy.absolute(el_fit['RMSGRW'][:,2] - 
-                                    numpy.array([0.070, 0.037, 0.070, 0.048, 0.100, 0.000, 0.026,
+                                    numpy.array([0.071, 0.037, 0.070, 0.047, 0.099, 0.000, 0.026,
                                                  0.024])) < 0.001), \
             'Median absolute residual too different'
 
@@ -252,14 +252,14 @@ def test_sasuke_mpl11():
     # Test velocity values
     # TODO: Need some better examples!
     assert numpy.all(numpy.absolute(el_par['KIN'][:,0,0] -
-                                    numpy.array([14585.5, 14393.2, 14767.8, 8174.1, 9258.8, 0.0,
-                                                  5132.8,  5423.2])) < 0.1), \
+                                    numpy.array([14655.1, 14390.3, 14768.2, 8160.9, 9259.7, 0.0,
+                                                  5132.6,  5428.7])) < 0.1), \
                 'Velocities are too different'
 
     # H-alpha dispersions
     assert numpy.all(numpy.absolute(el_par['KIN'][:,23,1] -
-                                    numpy.array([715.3, 715.0, 224.2, 173.0, 173.6, 0.0, 85.7,
-                                                   46.1])) < 1e-1), \
+                                    numpy.array([1000.5, 679.4, 223.4, 119.6, 171.2, 0.0, 81.2,
+                                                   51.9])) < 1e-1), \
             'H-alpha dispersions are too different'
 
 

@@ -104,6 +104,3 @@ def test_rukia_fit():
             'Fit quality changed.'
 
 
-
-#if __name__ == '__main__':
-    #test_rukia_model() #fit()

@@ -863,21 +863,6 @@ def _fit_iteration(tpl_wave, templates, wave, flux, noise, velscale, start, mome
                            gas_component=_gas_template, quiet=quiet, method='capfit',
                            linear=linear, linear_method='lsq_box')
         except Exception as e:
-#            embed(header='failed first ppxf')
-#            exit()
-#            if _constr_kinem is None:
-#                A_ineq = None
-#                b_ineq = None
-#            else:
-#                A_ineq = _constr_kinem['A_ineq']
-#                b_ineq = _constr_kinem['b_ineq']
-#            np.savez_compressed('xjmc_first_failure.npz', templates=_templates.T, flux=flux[i,ps[i]:pe[i]],
-#                                noise=noise[i,ps[i]:pe[i]], velscale=velscale, start=_start,
-#                                velscale_ratio=velscale_ratio, moments=_moments, degree=degree,
-#                                mdegree=mdegree, lam=wave[ps[i]:pe[i]], tied=tied,
-#                                A_ineq=A_ineq, b_ineq=b_ineq, mask=model_mask[i,ps[i]:pe[i]], vsyst=vsyst[i],
-#                                component=_component, gas_component=_gas_template)
-
             if ppxf_faults == 'raise':
                 raise e
             warnings.warn('pPXF fault: "{0}".  Logging fault and continuing.'.format(str(e)))
@@ -936,20 +921,6 @@ def _fit_iteration(tpl_wave, templates, wave, flux, noise, velscale, start, mome
                                component=_component, gas_component=_gas_template, quiet=quiet,
                                method='capfit', linear=linear, linear_method='lsq_box') 
             except Exception as e:
-#                embed(header='failed reject ppxf')
-#                exit()
-#                if _constr_kinem is None:
-#                    A_ineq = None
-#                    b_ineq = None
-#                else:
-#                    A_ineq = _constr_kinem['A_ineq']
-#                    b_ineq = _constr_kinem['b_ineq']
-#                np.savez_compressed('xjmc_first_failure.npz', templates=_templates.T, flux=flux[i,ps[i]:pe[i]],
-#                                noise=noise[i,ps[i]:pe[i]], velscale=velscale, start=_start,
-#                                velscale_ratio=velscale_ratio, moments=_moments, degree=degree,
-#                                mdegree=mdegree, lam=wave[ps[i]:pe[i]], tied=tied,
-#                                A_ineq=A_ineq, b_ineq=b_ineq, mask=model_mask[i,ps[i]:pe[i]], vsyst=vsyst[i],
-#                                component=_component, gas_component=_gas_template)
                 if ppxf_faults == 'raise':
                     raise e
                 warnings.warn('pPXF fault: "{0}".  Logging fault and continuing.'.format(str(e)))
