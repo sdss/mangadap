@@ -5,6 +5,8 @@ import tqdm
 import requests
 import netrc
 
+from IPython import embed
+
 from mangadap.tests.util import remote_data_file, remote_data_files
 from mangadap.tests.util import drp_test_version, dap_test_version
 
@@ -38,6 +40,8 @@ def download_file(remote_root, usr, passwd, local_root, file, overwrite=False):
     print('Downloading: {0}'.format(url))
     # Streaming, so we can iterate over the response.
     r = requests.get(url, stream=True, auth=(usr, passwd))
+    if r.status_code == 404:
+        raise ValueError('Requested URL returned 404')
     # Total size in bytes.
     total_size = int(r.headers.get('content-length', 0))
     block_size = 1024 #1 Kibibyte
@@ -53,6 +57,7 @@ def download_file(remote_root, usr, passwd, local_root, file, overwrite=False):
 
 def main():
 
+    overwrite = False
     usr, acc, passwd = NETRC.authenticators(HOST)
 
     version = drp_test_version
@@ -67,24 +72,37 @@ def main():
     for plate, f in zip(plates, files):
         url_root = 'https://{0}/sas/mangawork/manga/spectro/redux/{1}/{2}/stack/'.format(
                         HOST, drp_test_version, plate)
-        download_file(url_root, usr, passwd, local_root, f)
+        try:
+            download_file(url_root, usr, passwd, local_root, f, overwrite=overwrite)
+        except Exception as e:
+            print(str(e))
+            continue
 
     # Get the DRPComplete file
     f = 'drpcomplete_{0}.fits'.format(drp_test_version)
     url_root = 'https://{0}/sas/mangawork/manga/spectro/analysis/{1}/{2}/common/'.format(
                     HOST, drp_test_version, dap_test_version)
-    download_file(url_root, usr, passwd, local_root, f)
+    try:
+        download_file(url_root, usr, passwd, local_root, f, overwrite=overwrite)
+    except Exception as e:
+        print(str(e))
 
-    # Get the v2_7_1 drpcomplete until a v3_0_1 version is ready!
-    f = 'drpcomplete_v2_7_1.fits'
+    # Get the v3_0_1 drpcomplete until a v3_1_1 version is ready!
+    f = 'drpcomplete_v3_0_1.fits'
     url_root = 'https://{0}/sas/mangawork/manga/spectro/analysis/{1}/{2}/common/'.format(
-                    HOST, 'v2_7_1', '2.4.1')
-    download_file(url_root, usr, passwd, local_root, f)
+                    HOST, 'v3_0_1', '3.0.1')
+    try:
+        download_file(url_root, usr, passwd, local_root, f, overwrite=overwrite)
+    except Exception as e:
+        print(str(e))
 
     # Get the DRPall file
     f = 'drpall-{0}.fits'.format(drp_test_version)
     url_root = 'https://{0}/sas/mangawork/manga/spectro/redux/{1}/'.format(HOST, drp_test_version)
-    download_file(url_root, usr, passwd, local_root, f)
+    try:
+        download_file(url_root, usr, passwd, local_root, f, overwrite=overwrite)
+    except Exception as e:
+        print(str(e))
 
 
 if __name__ == '__main__':
