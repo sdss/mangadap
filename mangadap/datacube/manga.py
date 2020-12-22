@@ -137,7 +137,7 @@ class MaNGADataCube(DRPFits, DataCube):
             # stored by the DRP. Some care needs to be taken here
             # though because the transpose changes the array memory
             # storage from C to Fortran contiguous. However, everything
-            # is expected to be okay because numpy array flattening
+            # is expected to be okay because numpy array-flattening
             # always performs a C-like flattening, even if the memory
             # storage is Fortran contiguous.
             DataCube.__init__(self, hdu['FLUX'].data.T, wave=hdu['WAVE'].data,
@@ -160,6 +160,7 @@ class MaNGADataCube(DRPFits, DataCube):
                           'find paired RSS file if requested.')
 
     # TODO: Include a class method that instantiates from (or wraps a Marvin Cube)
+
     @staticmethod
     def build_file_name(plate, ifudesign, log=True):
         """
@@ -346,7 +347,7 @@ class MaNGADataCube(DRPFits, DataCube):
         _center_coo = (self.prihdr['{0}RA'.format(offset.upper())],
                        self.prihdr['{0}DEC'.format(offset.upper())]) \
                            if center_coo is None and offset is not None else center_coo
-        return super(MaNGADataCube, self).mean_sky_coordinates(center_coo=_center_coo)
+        return super().mean_sky_coordinates(center_coo=_center_coo)
 
     def approximate_correlation_matrix(self, sigma_rho=1.92, rlim=None, rho_tol=None, redo=False):
         """
@@ -361,9 +362,7 @@ class MaNGADataCube(DRPFits, DataCube):
         :func:`mangadap.config.defaults.regrid_rlim`.
         """
         _rlim = defaults.regrid_rlim() if rlim is None else rlim
-        return super(MaNGADataCube, self).approximate_correlation_matrix(sigma_rho, _rlim,
-                                                                         rho_tol=rho_tol,
-                                                                         redo=redo)
+        return super().approximate_correlation_matrix(sigma_rho, _rlim, rho_tol=rho_tol, redo=redo)
 
     def approximate_covariance_matrix(self, channel, sigma_rho=1.92, rlim=None, rho_tol=None,
                                       csr=False, quiet=False):
@@ -379,9 +378,8 @@ class MaNGADataCube(DRPFits, DataCube):
         :func:`mangadap.config.defaults.regrid_rlim`.
         """
         _rlim = defaults.regrid_rlim() if rlim is None else rlim
-        return super(MaNGADataCube, 
-                    self).approximate_covariance_matrix(channel, sigma_rho=sigma_rho, rlim=_rlim,
-                                                        rho_tol=rho_tol, csr=csr, quiet=quiet)
+        return super().approximate_covariance_matrix(channel, sigma_rho=sigma_rho, rlim=_rlim,
+                                                     rho_tol=rho_tol, csr=csr, quiet=quiet)
 
     def approximate_covariance_cube(self, channels=None, sigma_rho=1.92, rlim=None, rho_tol=None,
                                     csr=False, quiet=False):
@@ -397,8 +395,7 @@ class MaNGADataCube(DRPFits, DataCube):
         :func:`mangadap.config.defaults.regrid_rlim`.
         """
         _rlim = defaults.regrid_rlim() if rlim is None else rlim
-        return super(MaNGADataCube, 
-                    self).approximate_covariance_cube(channels=channels, sigma_rho=sigma_rho,
-                                                      rlim=_rlim, rho_tol=rho_tol, csr=csr,
-                                                      quiet=quiet)
+        return super().approximate_covariance_cube(channels=channels, sigma_rho=sigma_rho,
+                                                   rlim=_rlim, rho_tol=rho_tol, csr=csr,
+                                                   quiet=quiet)
 

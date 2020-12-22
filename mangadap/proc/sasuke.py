@@ -436,10 +436,6 @@ class Sasuke(EmissionLineFit):
             spec},)`.
         dof (int):
             Degrees of freedom in the fit.
-        base_velocity (numpy.ndarray):
-            The base velocity shift between the template and object
-            spectra because of the difference in their starting
-            wavelength.  Shape is :math:`(N_{\rm spec},)`.
 
     .. todo::
 
@@ -532,7 +528,6 @@ class Sasuke(EmissionLineFit):
         self.spectrum_start = None
         self.spectrum_end = None
         self.dof = None
-        self.base_velocity = None
 
     @staticmethod
     def _copy_from_stellar_continuum(stellar_continuum):
@@ -869,7 +864,9 @@ class Sasuke(EmissionLineFit):
         model_fit_par['BEGPIX'][:] = start
         model_fit_par['ENDPIX'][:] = end
         model_fit_par['NPIXTOT'][:] = end - start
-        model_fit_par['NPIXFIT'] = numpy.sum(numpy.invert(model_flux.mask[:,start:end]), axis=1)
+        model_fit_par['NPIXFIT'] = numpy.array([numpy.sum(numpy.logical_not(
+                                                 numpy.ma.getmaskarray(model_flux)[i,s:e]))
+                                                    for i,(s,e) in enumerate(zip(start,end))])
 
         # Calculate the model residuals, which are masked where the data
         # were not fit
@@ -1006,9 +1003,9 @@ class Sasuke(EmissionLineFit):
             # template constant, meaning that the total flux in the line
             # increases with redshift.
             model_eml_par['FLUX'][:,j] = model_fit_par['TPLWGT'][:,self.eml_tpli[j]] \
-                                            * self.emldb['flux'][j] * (1 + z)
+                                            * etpl.line_flux[j] * (1 + z)
             model_eml_par['FLUXERR'][:,j] = model_fit_par['TPLWGTERR'][:,self.eml_tpli[j]] \
-                                                * self.emldb['flux'][j] * (1 + z)
+                                                * etpl.line_flux[j] * (1 + z)
 
             # Get the bound masks specific to this emission-line (set)
             # - Determine if the emission-line was part of a rejected
@@ -1046,11 +1043,12 @@ class Sasuke(EmissionLineFit):
 
         #---------------------------------------------------------------
         # Iterate over each spectrum
-        poly_x = numpy.linspace(-1, 1, end-start)
         sres = self.obj_sres if self.nremap == 0 else self.remap_sres
         for i in range(nspec):
             if not spec_to_fit[i]:
                 continue
+        
+            poly_x = numpy.linspace(-1, 1, end[i]-start[i])
 
             # Get growth statistics for the three figures of merit
             model_fit_par['CHIGRW'][i,:] \
@@ -1075,7 +1073,7 @@ class Sasuke(EmissionLineFit):
                     apoly = numpy.polynomial.legendre.legval(poly_x, model_fit_par['ADDCOEF'][i,:])
                     model_fit_par['APLYMINMAX'][i,:] = [numpy.amin(apoly), numpy.amax(apoly)]
                     model_eml_par['CONTAPLY'][i,:] \
-                            = interpolate.interp1d(self.obj_wave[start:end], apoly,
+                            = interpolate.interp1d(self.obj_wave[start[i]:end[i]], apoly,
                                                    bounds_error=False, fill_value=0.0,
                                                    assume_sorted=True)(obswave)
 
@@ -1085,7 +1083,7 @@ class Sasuke(EmissionLineFit):
                                                              model_fit_par['MULTCOEF'][i,:]))
                     model_fit_par['MPLYMINMAX'][i,:] = [numpy.amin(mpoly), numpy.amax(mpoly)]
                     model_eml_par['CONTMPLY'][i,:] \
-                            = interpolate.interp1d(self.obj_wave[start:end], mpoly,
+                            = interpolate.interp1d(self.obj_wave[start[i]:end[i]], mpoly,
                                                    bounds_error=False, fill_value=1.0,
                                                    assume_sorted=True)(obswave)
                 #-------------------------------------------------------
@@ -1553,7 +1551,7 @@ class Sasuke(EmissionLineFit):
             obj_skyx=None, obj_skyy=None, velscale_ratio=None, matched_resolution=True,
             waverange=None, bias=None, degree=-1, mdegree=0, reddening=None,
             max_velocity_range=400., alias_window=None, dvtol=1e-10, loggers=None, quiet=False,
-            plot=False, sigma_rej=3.):
+            plot=False, sigma_rej=3., ensemble=True):
             #moments=2,
         r"""
         Fit a set of emission lines using pPXF to all provided spectra.
@@ -1861,6 +1859,9 @@ class Sasuke(EmissionLineFit):
             self.remap_skyx = None
             self.remap_skyy = None
 
+        if self.nremap > 0 and not ensemble:
+            raise NotImplementedError('To remap to new spectra, ensemble parameter must be True.')
+
         #---------------------------------------------------------------
         # Compare pixel scales and set template wavelength vector
         if stpl_wave is not None:
@@ -1894,9 +1895,6 @@ class Sasuke(EmissionLineFit):
             etpl_sinst = None
             self.nstpl = 0
             self.tpl_to_use = None
-
-        # TODO: Allow the gas template resolution to be some fraction of
-        # the stellar template resolution?
 
         #---------------------------------------------------------------
         # Set the emission-line spectral resolution.
@@ -1970,10 +1968,6 @@ class Sasuke(EmissionLineFit):
         self.neml = self.emldb.size
         etpl = EmissionLineTemplates(self.tpl_wave, etpl_sinst, emldb=self.emldb,
                                      loggers=self.loggers, quiet=self.quiet)
-    
-        # pyplot.plot(self.tpl_wave, numpy.sum(etpl.flux, axis=0))
-        # # pyplot.plot(self.tpl_wave, etpl.flux[i,:])
-        # pyplot.show()
 
         # Report the resolution mode
         if not self.quiet:
@@ -1982,7 +1976,7 @@ class Sasuke(EmissionLineFit):
             log_output(self.loggers, 1, logging.INFO,
                        'Imposed minimum instrumental dispersion: {0}'.format(etpl_sinst_min))
 
-        # Set the component associated with each emission line emission line
+        # Set the component associated with each emission line
         self.fit_eml = self.emldb['action'] == 'f'
         self.eml_tpli = etpl.tpli.copy()
         self.eml_compi = numpy.full(self.neml, -1, dtype=int)
@@ -2007,6 +2001,8 @@ class Sasuke(EmissionLineFit):
         # Compile the template fluxes, components, and velocity and
         # sigma groups; the gas templates are always appended after the
         # stellar templates
+        self.constr_kinem = None if not hasattr(etpl, 'A_ineq') or etpl.A_ineq is None \
+                                else {'A_ineq': etpl.A_ineq, 'b_ineq': etpl.b_ineq}
         if self.nstpl == 0:
             self.gas_tpl = numpy.ones(etpl.ntpl, dtype=bool)
             self.tpl_flux = etpl.flux
@@ -2033,15 +2029,15 @@ class Sasuke(EmissionLineFit):
             self.comp_moments = numpy.array([-stellar_moments] + [moments]*(self.ncomp-1))
             self.comp_start_kin = numpy.array([ [sk.tolist()] + [gk.tolist()]*(self.ncomp-1) 
                                             for sk,gk in zip(_stellar_kinematics, guess_kin) ])
+            if self.constr_kinem is not None:
+                self.constr_kinem['A_ineq'] \
+                        = numpy.hstack((numpy.zeros((self.constr_kinem['A_ineq'].shape[0], 2),
+                                                    dtype=float), self.constr_kinem['A_ineq']))
+
         self.ntpl, self.npix_tpl = self.tpl_flux.shape
         self.tpl_npad = 2**int(numpy.ceil(numpy.log2(self.npix_tpl)))
 #        self.tpl_npad = fftpack.next_fast_len(self.npix_tpl)
         self.tpl_rfft = numpy.fft.rfft(self.tpl_flux, self.tpl_npad, axis=1)
-
-#        # Set which components are gas components
-#        self.gas_comp = numpy.ones(self.ncomp, dtype=bool)
-#        if self.nstpl > 0:
-#            self.gas_comp[0] = False
 
         # Total number of kinematics parameters (tied or otherwise)
         self.npar_kin = numpy.sum(numpy.absolute(self.comp_moments))
@@ -2072,16 +2068,9 @@ class Sasuke(EmissionLineFit):
         #  - Model parameters and fit quality
         model_fit_par = SasukeFitDataTable(self.ntpl, self.degree+1, self.mdegree, self.npar_kin,
                                            self.bitmask.minimum_dtype(), shape=output_shape[0])
-#        model_fit_par = init_record_array(output_shape[0],
-#                                          self._per_fit_dtype(self.ntpl, self.degree+1,
-#                                          self.mdegree, self.npar_kin,
-#                                          self.bitmask.minimum_dtype()))
         #  - Model emission-line parameters
         model_eml_par = self.init_datatable(self.neml, 2, self.bitmask.minimum_dtype(),
                                             shape=output_shape[0])
-#        model_eml_par = init_record_array(output_shape[0],
-#                                          self._per_emission_line_dtype(self.neml, 2,
-#                                                                self.bitmask.minimum_dtype()))
         model_eml_par['CONTMPLY'] = numpy.ones(model_eml_par['CONTMPLY'].shape, dtype=float)
 
         #---------------------------------------------------------------
@@ -2097,8 +2086,8 @@ class Sasuke(EmissionLineFit):
                                                        velocity_offset=self.input_cz,
                                                        max_velocity_range=max_velocity_range,
                                                        alias_window=alias_window,
-                                                       ensemble=False,
-                                                       loggers=self.loggers, quiet=self.quiet)
+                                                       ensemble=ensemble, loggers=self.loggers,
+                                                       quiet=self.quiet)
 
         ended_in_error = numpy.array([e is not None for e in err])
         if numpy.any(ended_in_error):
@@ -2132,8 +2121,8 @@ class Sasuke(EmissionLineFit):
                                                     velocity_offset=numpy.median(self.input_cz),
                                                            max_velocity_range=max_velocity_range,
                                                            alias_window=alias_window,
-                                                           ensemble=False,
-                                                           loggers=self.loggers, quiet=self.quiet)
+                                                           ensemble=ensemble, loggers=self.loggers,
+                                                           quiet=self.quiet)
             ended_in_error = numpy.array([e is not None for e in err])
             if numpy.any(ended_in_error):
                 if not self.quiet:
@@ -2147,23 +2136,31 @@ class Sasuke(EmissionLineFit):
             if numpy.all(ended_in_error):
                 return self.obj_wave, model_flux, model_eml_flux, remap_model_mask, \
                             model_fit_par, model_eml_par
+
+            model_mask = remap_model_mask
+            start = remap_start
+            end = remap_end
+
         else:
-            remap_model_mask= None
+            remap_model_mask = None
             remap_start = None
             remap_end = None
+
+            model_mask = obj_model_mask
+            start = obj_start
+            end = obj_end
 
         #---------------------------------------------------------------
         # Get the input pixel shift between the object and template
         # wavelength vectors; interpretted by pPXF as a base velocity
         # shift between the two.  This is a single number, used for both
         # the object spectra and the remapping spectra if provided
-        start = numpy.amax(obj_start if self.nremap == 0 else numpy.append(obj_start, remap_start))
-        end = numpy.amin(obj_end if self.nremap == 0 else numpy.append(obj_end, remap_end))
-
-        model_mask = obj_model_mask if self.nremap == 0 else remap_model_mask
-        self.base_velocity = -PPXFFit.ppxf_tpl_obj_voff(self.tpl_wave, self.obj_wave[start:end],
-                                                        self.velscale,
-                                                        velscale_ratio=self.velscale_ratio)
+#        start = numpy.amax(obj_start if self.nremap == 0 else numpy.append(obj_start, remap_start))
+#        end = numpy.amin(obj_end if self.nremap == 0 else numpy.append(obj_end, remap_end))
+#        model_mask = obj_model_mask if self.nremap == 0 else remap_model_mask
+#        self.base_velocity = -PPXFFit.ppxf_tpl_obj_voff(self.tpl_wave, self.obj_wave[start:end],
+#                                                        self.velscale,
+#                                                        velscale_ratio=self.velscale_ratio)
 
         #---------------------------------------------------------------
         # Call the emission line fitter contributed by Xihan Ji and
@@ -2173,41 +2170,47 @@ class Sasuke(EmissionLineFit):
 #        self.obj_to_fit[ numpy.arange(self.nobj)[self.obj_to_fit][2:] ] = False
 
         # Prep:
-        wave = self.obj_wave[start:end]
+#        wave = self.obj_wave[start:end]
         if self.nremap == 0:
-            mask = numpy.invert(self.obj_flux.mask[:,start:end])
+            mask = numpy.logical_not(numpy.ma.getmaskarray(self.obj_flux))
             spec_to_fit = numpy.any(mask, axis=1)
             binid = None
             skyx = None
             skyy = None
-            flux = self.obj_flux.data[spec_to_fit,start:end]
-            ferr = self.obj_ferr.data[spec_to_fit,start:end]
-            mask = mask[spec_to_fit,:]
-            tpl_to_use = self.tpl_to_use[spec_to_fit,:]
-            comp_start_kin = self.comp_start_kin[spec_to_fit,:]
+            flux = self.obj_flux.data[spec_to_fit]
+            ferr = self.obj_ferr.data[spec_to_fit]
+            mask = mask[spec_to_fit]
+            tpl_to_use = self.tpl_to_use[spec_to_fit]
+            comp_start_kin = self.comp_start_kin[spec_to_fit]
             flux_binned = None
             ferr_binned = None
             mask_binned = None
             x_binned = None
             y_binned = None
         else:
-            mask = numpy.invert(self.remap_flux.mask[:,start:end])
+            mask = numpy.logical_not(numpy.ma.getmaskarray(self.remap_flux))
             spec_to_fit = numpy.any(mask, axis=1)
             binid = None if self.remapid is None else self.remapid[spec_to_fit]
             skyx = self.remap_skyx[spec_to_fit] if binid is None else None
             skyy = self.remap_skyy[spec_to_fit] if binid is None else None
-            flux = self.remap_flux.data[spec_to_fit,start:end]
-            ferr = self.remap_ferr.data[spec_to_fit,start:end]
-            mask = mask[spec_to_fit,:]
-            mask_binned = numpy.invert(self.obj_flux.mask[:,start:end])
+            flux = self.remap_flux.data[spec_to_fit]
+            ferr = self.remap_ferr.data[spec_to_fit]
+            mask = mask[spec_to_fit]
+            mask_binned = numpy.logical_not(numpy.ma.getmaskarray(self.obj_flux))
             bins_to_fit = numpy.any(mask_binned, axis=1)
             x_binned = self.obj_skyx[bins_to_fit] if binid is None else None
             y_binned = self.obj_skyy[bins_to_fit] if binid is None else None
-            flux_binned = self.obj_flux.data[bins_to_fit,start:end]
-            ferr_binned = self.obj_ferr.data[bins_to_fit,start:end]
-            mask_binned = mask_binned[bins_to_fit,:]
-            tpl_to_use = self.tpl_to_use[bins_to_fit,:]
-            comp_start_kin = self.comp_start_kin[bins_to_fit,:]
+            flux_binned = self.obj_flux.data[bins_to_fit]
+            ferr_binned = self.obj_ferr.data[bins_to_fit]
+            mask_binned = mask_binned[bins_to_fit]
+            tpl_to_use = self.tpl_to_use[bins_to_fit]
+            comp_start_kin = self.comp_start_kin[bins_to_fit]
+
+        for i,(s,e) in enumerate(zip(start,end)):
+            if not spec_to_fit[i]:
+                continue
+            model_mask[i,:s] = self.bitmask.turn_on(model_mask[i,:s], 'DIDNOTUSE')
+            model_mask[i,e:] = self.bitmask.turn_on(model_mask[i,e:], 'DIDNOTUSE')
 
         #---------------------------------------------------------------
         # Report the input/prep checks/results
@@ -2244,25 +2247,23 @@ class Sasuke(EmissionLineFit):
                        'Maximum number of free kinematic parameters: {0}'.format(self.nfree_kin))
 
         # Run the fitter
-        model_flux[spec_to_fit,start:end], model_eml_flux[spec_to_fit,start:end], _model_mask, \
-                model_wgts, model_wgts_err, model_addcoef, model_multcoef, model_reddening, \
-                model_kin_inp, model_kin, model_kin_err, nearest_bin, fault \
-                            = emline_fitter_with_ppxf(self.tpl_flux, wave, flux, ferr, mask,
-                                                      self.velscale, self.velscale_ratio,
-                                                      self.tpl_comp, self.gas_tpl,
-                                                      self.comp_moments, comp_start_kin,
-                                                      vgrp=self.tpl_vgrp, sgrp=self.tpl_sgrp,
-                                                      degree=self.degree, mdegree=self.mdegree,
-                                                      reddening=self.reddening,
-                                                      reject_boxcar=self.reject_boxcar,
-                                                      vsyst=self.base_velocity,
-                                                      tpl_to_use=tpl_to_use, binid=binid,
-                                                      flux_binned=flux_binned,
-                                                      noise_binned=ferr_binned,
-                                                      mask_binned=mask_binned,
-                                                      x_binned=x_binned, y_binned=y_binned,
-                                                      x=skyx, y=skyy, plot=plot, quiet=not plot,
-                                                      sigma_rej=sigma_rej)
+        model_flux[spec_to_fit], model_eml_flux[spec_to_fit], _model_mask, model_wgts, \
+            model_wgts_err, model_addcoef, model_multcoef, model_reddening, model_kin_inp, \
+            model_kin, model_kin_err, nearest_bin, fault \
+                    = emline_fitter_with_ppxf(self.tpl_wave, self.tpl_flux, self.obj_wave, flux,
+                                              ferr, mask, self.velscale, self.velscale_ratio,
+                                              self.tpl_comp, self.gas_tpl, self.comp_moments,
+                                              comp_start_kin, vgrp=self.tpl_vgrp,
+                                              sgrp=self.tpl_sgrp, constr_kinem=self.constr_kinem,
+                                              degree=self.degree, mdegree=self.mdegree,
+                                              reddening=self.reddening,
+                                              reject_boxcar=self.reject_boxcar,
+                                              tpl_to_use=tpl_to_use, binid=binid,
+                                              flux_binned=flux_binned, noise_binned=ferr_binned,
+                                              mask_binned=mask_binned, x_binned=x_binned,
+                                              y_binned=y_binned, x=skyx, y=skyy, plot=plot,
+                                              quiet=not plot, sigma_rej=sigma_rej,
+                                              ppxf_faults='raise')
 
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, 'Fits completed in {0:.4e} min.'.format(
@@ -2282,15 +2283,15 @@ class Sasuke(EmissionLineFit):
         # Flag pixels as rejected during fitting; _model_mask is True
         # where the pixels were fit
         indx = mask & numpy.invert(_model_mask)
-        _model_mask = model_mask[spec_to_fit,start:end]
+        _model_mask = model_mask[spec_to_fit]
         _model_mask[indx] = self.bitmask.turn_on(_model_mask[indx], PPXFFit.rej_flag)
-        model_mask[spec_to_fit,start:end] = _model_mask
+        model_mask[spec_to_fit] = _model_mask
 
         # Flag pixels that weren't in the fitted range
-        model_mask[spec_to_fit,:start] = self.bitmask.turn_on(model_mask[spec_to_fit,:start],
-                                                              'DIDNOTUSE')
-        model_mask[spec_to_fit,end:] = self.bitmask.turn_on(model_mask[spec_to_fit,end:],
-                                                            'DIDNOTUSE')
+#        model_mask[spec_to_fit,:start] = self.bitmask.turn_on(model_mask[spec_to_fit,:start],
+#                                                              'DIDNOTUSE')
+#        model_mask[spec_to_fit,end:] = self.bitmask.turn_on(model_mask[spec_to_fit,end:],
+#                                                            'DIDNOTUSE')
         if not numpy.all(spec_to_fit):
             indx = numpy.invert(spec_to_fit)
             model_mask[indx,:] = self.bitmask.turn_on(model_mask[indx,:], 'DIDNOTUSE')

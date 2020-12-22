@@ -16,5 +16,5 @@ typedef struct {
 
 #           DRP QA      BINNING            CONTINUUM      MOMENTS       LINEPROF     SPECINDEX
 #        ---------  -----------  -------------------  -----------  -------------  ------------
-DAPPLAN    SNRG  0       ALL  0       MILESHCMPL9  0  EMOMMPL9  0    EFITMPL9  0     INDXEN  0
+DAPPLAN    SNRG  0       ALL  0      MILESHCMPL11  0  EMOMMPL11 0  EFITMPL11HC 0     INDXEN  0
 

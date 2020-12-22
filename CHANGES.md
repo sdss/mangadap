@@ -1,19 +1,43 @@
+
+Fit again with a factor of 1 change in dispersion to see if these fit
+the narrow OIII lines better
+
+# Bad fits to OIII lines biased by broad H-alpha?
+7991-1901-109
+8713-9102-1171
+11944-12704-1211    - illustrative
+9000-1901-204       - illustrative
+9500-1901-158       - illustrative
+220 7963-3702-326   - meh
+221 7963-3702-352   - bad
+448 9090-9101-1066  - bad
+
+
+
+# Traceback 1: ERROR: ValueError: not enough values to unpack (expected 2, got 0) [mangadap.contrib.xjmc]
+11020  1902
+ 8612  1901
+
+239 9487-9102-1032  - poor fits to both OIII and H-beta; independent of tying scheme
+
+
+
+
+
 MPL-11 TODO
 -----------
 
- - Schedule:
-    - Last observations?:   30 Sep
-    - Run DRP:              15 Oct
-    - Run DAP:               1 Nov
-    - MPL-11 release:        1 Dec
-    
  - MILES-HC:
     - Reconstruct using same procedure used for MaStar spectra
     * Direct spectral resolution assessments
+
  - Stellar kinematics:
     - Get rid of the filter keyword from the output headers...
     - Try fitting with some high-resolution templates?
+
  - Emission lines:
+    - Check construction of the continuum and emission-line models.
+      Model - emline looks odd in some cases.  E.g. SPX-MILESHC-MASTARHC2/9036-3703-41
     - Datamodel for indicating which emission-line parameters are tied
     - FOM flag that identifies poorly fit lines
     * Test use of MaStar SSP models
@@ -24,8 +48,13 @@ MPL-11 TODO
           file
         - Change `BASE` extension to `CONTINUUM` extension.
     - Wavelength dependent sigma rejection during fit?
+
  - Spectral Indices:
     - Enable composite indices?
+
+ - Model cube files
+    - Make BINID extension identical to BINID in MAPS file
+
  - DAPall:
     - provide absolute H-alpha luminosity as a separate column
     - attenuation corrections to H-alpha luminosity, SFR
@@ -35,6 +64,28 @@ MPL-11 TODO
 
 Tasks
 -----
+
+ - Get rid of ppxf_faults in sasuke.py
+
+ - For the test galaxies:
+    - 7815-6101: low mass blue
+        - Check D4000
+    - 8138-12704: high mass blue
+        - Check D4000
+        - Check pixels in upper left corner
+    - 8131-3702: low mass red ; no emission lines
+        - Check emission-line properties and errors
+    - 8131-6102: high mass red ; no emission lines
+        - Check emission-line properties and errors
+    - 8329-1901: low mass red; some emission lines
+    - 8258-6102: high mass red; some emission lines
+    - Repeat observations?
+    - Subsample of galaxies that contain the "representative" spectra
+      from above?
+ 
+    ~ Compare old and new measurements
+
+ - Identify reason for bad H-alpha velocities in 8138-12704
 
  - Add flag for when *observed* gas dispersion is less than 0.7 pixels.
    This adds side-lobe peaks that are ~1% of the model peak, and the RMS
@@ -46,39 +97,19 @@ Tasks
  - H-beta analysis when fitting a common wavelength range for MILESHC,
    MASTARHC, and MASTARHC2
     - (DONE) Repeat analysis of new data
-    - Compare velocity dispersions?
-    - ACTION: Test imposing limits on the H-beta dispersion relative to
+    - (DONE) Test imposing limits on the H-beta dispersion relative to
       the H-alpha dispersion?
-
- - Adjustment to wavelengths in line list (Francesco's recommendations)
 
  - Check offset velocity used for gas vs. stellar velocity fields
     - Make sure they're the same and the former isn't referenced to the
       input H-alpha velocity moment.
 
- - Check velocity dispersion corrections between the two different
-   methods.
+ - Check stellar velocity dispersion corrections between the two
+   different methods.
 
  - Analysis of MPL-10
     - H-beta masking
-    - Spaxels with failed pPXF fits from emission-line module
-    - Visual inspection campaign
-        - Try to set up a Zooniverse project
-
- - Test spectra:
-    - Reconstruct set of spectra that span a relevant range in: S/N,
-      stellar sigma, H-alpha EW, D4000
-
- - Test galaxies:
-    - Test galaxies from Belfiore et al.
-    - Test galaxies from Westfall et al.
-    - Repeat observations
-    - Subsample of galaxies that contain the "representative" spectra
-      from above?
-
- - Test new version of pPXF
-    - Speed up using new fitting method
-    - Compare old and new measurements
+    X Spaxels with failed pPXF fits from emission-line module
 
  - Spin-up on determination of resolution MILES-HC spectra
     - Test accuracy of wavelength-dependent convolution in the
@@ -94,9 +125,9 @@ Tasks
     - Construct similar plots for emission-line flux and kinematics
 
  - Test use of Maraston+ MaStar SSP models
-    - Decide on down-selection of templates
-    - Compare with MaStar-HC2, BC03, MILES-SSP, M11-MILES
-    - Best-fitting polynomial
+    X Decide on down-selection of templates
+    X Compare with MaStar-HC2, BC03, MILES-SSP, M11-MILES
+    X Best-fitting polynomial
         - Compare multiplicative polynomial of order ?-25 and
           attenuation law
     - (?) Check resolution of MaStar SSP templates?
@@ -104,6 +135,8 @@ Tasks
 
  - Test fitting a non-MaNGA cube
     - SAMI galaxies with MaNGA data?
+
+ - Check all flags are correctly in the sdssmaskbits.par file.
 
 TODO
 ----
@@ -146,6 +179,14 @@ TODO
    :class:`mangadap.util.trace.TraceSet`, but not well tested yet.
  - Fix untested velocity registration and stacking code, and added
    registration test
+ - Upgraded package requirements
+ - Line profile in `EmissionLineTemplates` now hardwired to be
+   `FFTGaussianLSF`.
+ - Changed the format of the emission-line database files:
+    - Elric will *really* no longer work
+    - Format specifies tying in a 4 element vector for each line
+    - Adds ability to specify inequality constraints on velocity and
+      dispersion
 
 3.0.1 (31 May 2020)
 -------------------

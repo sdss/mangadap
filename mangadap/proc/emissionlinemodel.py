@@ -793,68 +793,6 @@ class EmissionLineModel:
         return EmissionLineFit.line_metrics(self.emldb, wave, flux, ferr, model, model_eml_par,
                                             bitmask=self.bitmask, window=window)
 
-#        # Get the continuum-subtracted flux
-#        flux_nc = flux - continuum
-#
-#        # Mask the model flux
-#        _model_flux = numpy.ma.MaskedArray(model_flux+continuum, mask=_model_mask>0)
-#
-#        nspec = continuum.shape[0]
-#
-#        # Get the data for the metrics
-#        resid = numpy.square(flux-_model_flux)
-#        fresid = numpy.square(numpy.ma.divide(flux-_model_flux, _model_flux))
-#        chisqr = numpy.square(numpy.ma.divide(flux-_model_flux, ferr))
-#        spec_mask = resid.mask | fresid.mask | chisqr.mask
-#        resid[spec_mask] = numpy.ma.masked
-#        fresid[spec_mask] = numpy.ma.masked
-#        chisqr[spec_mask] = numpy.ma.masked
-#
-#        # Get the pixel at which to center the metric calculations
-#        flags = ['INSUFFICIENT_DATA', 'FIT_FAILED', 'UNDEFINED_COVAR', 'NEAR_BOUND' ]
-#        z = numpy.ma.MaskedArray(model_eml_par['KIN'][:,:,0] / astropy.constants.c.to('km/s').value,
-#                                 mask=self.bitmask.flagged(model_eml_par['MASK'], flag=flags))
-#        sample_wave = line_database['RESTWAVE'][None,:]*(1+z)
-#        interp = interpolate.interp1d(wave, numpy.arange(wave.size), bounds_error=False,
-#                                      fill_value=-1, assume_sorted=True)
-#        model_eml_par['LINE_PIXC'] = numpy.around(interp(sample_wave.data)).astype(int)
-#        model_eml_par['LINE_PIXC'][sample_wave.mask] = -1
-#        mask = (model_eml_par['LINE_PIXC'] < 0) | (model_eml_par['LINE_PIXC'] >= wave.size)
-#
-#        # Iterate over the number of lines
-#        nspec = flux.shape[0]
-#        for i in range(neml):
-#            if not self.quiet:
-#                print('Getting fit metrics for line: {0}/{1}'.format(i+1, neml), end='\r')
-#            start = model_eml_par['LINE_PIXC'][:,i] - metric_window//2
-#            end = start + metric_window
-#            m = numpy.zeros(flux.shape, dtype=float)
-#            for j in range(nspec):
-#                if mask[j,i]:
-#                    continue
-#                m[j,start[j]:end[j]] = 1.
-#                masked_pixel = flux_nc.mask[j,model_eml_par['LINE_PIXC'][j,i]] \
-#                                | ferr.mask[j,model_eml_par['LINE_PIXC'][j,i]]
-#                if masked_pixel:
-#                    model_eml_par['AMP'][j,i] = 0.0 
-#                    model_eml_par['ANR'][j,i] = 0.0
-#                else:     
-#                    model_eml_par['AMP'][j,i] = flux_nc[j,model_eml_par['LINE_PIXC'][j,i]]
-#                    model_eml_par['ANR'][j,i] = flux_nc[j,model_eml_par['LINE_PIXC'][j,i]] \
-#                                                    / ferr[j,model_eml_par['LINE_PIXC'][j,i]]
-#            m[spec_mask] = 0.
-#
-#            model_eml_par['LINE_NSTAT'][:,i] = numpy.sum(m,axis=1)
-#            model_eml_par['LINE_RMS'][:,i] = numpy.ma.sqrt(numpy.ma.mean(m*resid,axis=1)
-#                                                           ).filled(0.0)
-#            model_eml_par['LINE_FRMS'][:,i] = numpy.ma.sqrt(numpy.ma.mean(m*fresid,axis=1)
-#                                                            ).filled(0.0)
-#            model_eml_par['LINE_CHI2'][:,i] = numpy.ma.sum(m*chisqr,axis=1).filled(0.0)
-#
-#        if not self.quiet:
-#            print('Getting fit metrics for line: {0}/{0}'.format(neml))
-#        return model_eml_par
-
     def _construct_2d_hdu(self, good_snr, model_flux, model_base, model_mask, model_eml_par,
                           model_fit_par=None, model_binid=None):
         """

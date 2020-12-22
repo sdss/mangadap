@@ -37,36 +37,33 @@ class DataCube:
     r"""
     Base container class for a rectilinear datacube.
 
-    Datacubes have three axes: two spatial coordinates and one
-    spectral. The datacubes are expected to be rectilinear; i.e.,
-    each spatial position has the same spectral range and each
-    wavelength channel has the same spatial coordinates.
+    Datacubes have three axes: two spatial coordinates and one spectral. The
+    datacubes are expected to be rectilinear; i.e., each spatial position has
+    the same spectral range and each wavelength channel has the same spatial
+    coordinates.
 
-    On input, the ordering of the three dimensions can be arbitrary;
-    however, the axes are re-ordered for the internal attributes such
-    that wavelengths are ordered along the last axis, with the first
-    two axes being the spatial coordinates. Nominally the spatial
-    coordinates are ordered predominantly coincident with
-    right-ascension (E toward smaller pixels numbers in axis 0) and
-    declination (N toward larger pixel numbers in axis 1); however,
-    rotation of the datacube spatial coordinates can be non-zero with
-    respect to the celestial coordinates, as given by the provided
+    On input, the ordering of the three dimensions can be arbitrary; however,
+    the axes are re-ordered for the internal attributes such that wavelengths
+    are ordered along the last axis, with the first two axes being the
+    spatial coordinates. Nominally the spatial coordinates are ordered
+    predominantly coincident with right-ascension (E toward smaller pixels
+    numbers in axis 0) and declination (N toward larger pixel numbers in axis
+    1); however, rotation of the datacube spatial coordinates can be non-zero
+    with respect to the celestial coordinates, as given by the provided
     world-coordinate system.
 
-    The wavelength vector applicable to all spatial positions can
-    either be provided directly or constructed from the provided WCS.
-    Any directly provided ``wave`` vector takes precedence over the
-    WCS.
+    The wavelength vector applicable to all spatial positions can either be
+    provided directly or constructed from the provided WCS. Any directly
+    provided ``wave`` vector takes precedence over the WCS.
 
-    Spatial covariance/correlation can be provided via the ``covar``
-    keyword argument. If provided as a single array, the provided
-    array is used to define the *correlation* matrix and is assumed
-    to be identical for all wavelength channels. More options are
-    available if the input is provided as a
-    :class:`mangadap.util.covariance.Covariance` object. The ordering
+    Spatial covariance/correlation can be provided via the ``covar`` keyword
+    argument. If provided as a single array, the provided array is used to
+    define the *correlation* matrix and is assumed to be identical for all
+    wavelength channels. More options are available if the input is provided
+    as a :class:`~mangadap.util.covariance.Covariance` object. The ordering
     of the covariance/correlation matrix is expected to provide the
-    correlation between the row-major flattened version of the
-    spatial coordinates. That is, for a datacube with spatial shape
+    correlation between the row-major flattened version of the spatial
+    coordinates. That is, for a datacube with spatial shape
     :math:`(N_x,N_y)`, the covariance/correlation value at location
     :math:`i,j` is the correlation between pixels at 2D locations
     :math:`(i_x,i_y)` and :math:`(j_x,j_y)`, where
@@ -80,13 +77,12 @@ class DataCube:
         j_y & = & j - j_x N_y.
         \end{array}
 
-    If the values of ``axes`` indicates that the provided flux array
-    should have it's spatial axes transposed (i.e. ``axes[0] >
-    axes[1]``), the provided covariance/correlation data is
-    appropriately restructured to correspond to the wavelength
-    channels in :attr:`flux` (again assuming a flattened row-major
-    memory block); see
-    :func:`mangadap.util.covariance.Covariance.transpose_raw_shape`.
+    If the values of ``axes`` indicates that the provided flux array should
+    have it's spatial axes transposed (i.e. ``axes[0] > axes[1]``), the
+    provided covariance/correlation data is appropriately restructured to
+    correspond to the wavelength channels in :attr:`flux` (again assuming a
+    flattened row-major memory block); see
+    :func:`~mangadap.util.covariance.Covariance.transpose_raw_shape`.
     
     Derived classes should, in particular, provide the read methods.
     The critical components of the derived classes are:
@@ -149,7 +145,7 @@ class DataCube:
             Flag that the datacube spectral pixels are binned
             logarithmically in wavelength.
         meta (:obj:`dict`, optional):
-            A free-form dictionary used to hold meta data relevant to
+            A free-form dictionary used to hold metadata relevant to
             the datacube. Metadata required by analysis modules are
             indicated where relevant. If None, :attr:`meta` is
             instantiated as an empty dictionary.

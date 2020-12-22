@@ -303,7 +303,6 @@ class FFTGaussianLSF(GaussianLSF):
         self.dx = 1.0 if dx is None else dx
         self.pixel = pixel
 
-
     def sample(self, x):
         """
         Sample the profile.
@@ -315,6 +314,9 @@ class FFTGaussianLSF(GaussianLSF):
         Args:
             x (array-like): Independent variable.
         """
+        # Require that the center of the line be within the range of x
+        if self.p[1] < x[0] or self.p[1] > x[-1]:
+            return numpy.zeros_like(x)
         xsig = self.p[2]/self.dx
         x0 = (self.p[1]-x[0])/self.dx
         npad = 2**int(numpy.ceil(numpy.log2(x.size)))

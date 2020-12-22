@@ -18,7 +18,7 @@ if HOST not in NETRC.hosts:
     raise ValueError('Host data.sdss.org is not defined in your ~/.netrc file.')
 
 
-def download_file(remote_root, usr, passwd, local_root, file, overwrite=True):
+def download_file(remote_root, usr, passwd, local_root, file, overwrite=False):
     """
     Thanks to 
     https://stackoverflow.com/questions/37573483/progress-bar-while-download-file-over-http-with-requests/37573701
@@ -32,7 +32,8 @@ def download_file(remote_root, usr, passwd, local_root, file, overwrite=True):
             warnings.warn('Overwriting existing file: {0}'.format(ofile))
             os.remove(ofile)
         else:
-            raise FileExistsError('File already exists.  To overwrite, set overwrite=True.')
+            warnings.warn('{0} exists.  To overwrite, set overwrite=True.'.format(ofile))
+            return
 
     print('Downloading: {0}'.format(url))
     # Streaming, so we can iterate over the response.
