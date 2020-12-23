@@ -125,7 +125,7 @@ def test_copyto():
                              sres[i].data), 'Did not pull sres data.'
 
 
-#@requires_remote
+@requires_remote
 def test_stats():
     cube = MaNGADataCube.from_plateifu(7815, 3702, directory_path=remote_data_file())
 
