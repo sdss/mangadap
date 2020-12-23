@@ -136,6 +136,7 @@ from scipy import sparse
 from astropy.io import fits
 from matplotlib import pyplot
 
+# TODO: Can I avoid using DAPFitsUtil here?
 from .fitsutil import DAPFitsUtil
 
 class Covariance:
@@ -176,7 +177,7 @@ class Covariance:
             covariance matrix. Otherwise, the input matrix is
             **assumed** to only have the upper triangle of numbers.
         correlation (:obj:`bool`, optional):
-            Convert the input to a correlation matix. The input
+            Convert the input to a correlation matrix. The input
             **must** be the covariance matrix.
         raw_shape (:obj:`tuple`, optional):
             The covariance data is for a higher dimensional array
@@ -694,7 +695,7 @@ class Covariance:
             return
 
         self.nnz = 0
-        for i in range(self.shape[0]):
+        for i in range(self.shape[-1]):
             self.cov[i] = sparse.triu(self.cov[i]).tocsr()
             self.nnz += self.cov[i].nnz
 

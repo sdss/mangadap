@@ -22,8 +22,8 @@ Submodules
    mangadap.util.lineprofiles
    mangadap.util.log
    mangadap.util.mapping
-   mangadap.util.marginal
    mangadap.util.misc
+   mangadap.util.modeling
    mangadap.util.parser
    mangadap.util.pixelmask
    mangadap.util.resolution

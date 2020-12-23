@@ -14,6 +14,7 @@ Submodules
    mangadap.proc.emissionlinetemplates
    mangadap.proc.ppxffit
    mangadap.proc.reductionassessments
+   mangadap.proc.rukia
    mangadap.proc.sasuke
    mangadap.proc.spatialbinning
    mangadap.proc.spatiallybinnedspectra

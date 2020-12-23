@@ -1,41 +1,32 @@
-TODO
-----
 
- - Change default to fix bad pixels in spectral resolution?
- - Add DAP versioning to reference files
- - Fix minor issue in moment and index spaxels fit in hybrid case,
-   compared to emission-line modeling data.
- - Make velocity dispersion correction for spectral indices use template
-   mix from fit to the bin instead of the individual spaxels?
- - Add errors to DAPall
- - Add fraction of spectra with `sigma < sigma_corr` to DAPall
- - Reconstruct MILES HC library using same procedure used for MaStar
-   spectra
- - Additional tests for MaStar HC library
- - Define an emission-line FOM flag that identifies poorly fit lines
- - Documentation of config examples are out of date!
- - Get rid of the filter keyword from the output headers...
- - Fix ELMREBIN in 2nd round of moment calculations (not sure this is
-   still a problem...)
- - Keep all the reference files to the common directory?
- - Make the package pip installable
- - Change format of emission-line module reference file?
-    - Make more independent of stellar-continnuum module reference file
-    - Change `BASE` extension to `CONTINUUM` extension.
- - Enable composite indices
- - Allow construction of DAP MAPS headers to indicate masks that don't
-   have the same prepended extenstion name... (e.g., quality mask of
-   `SPECINDEX_CORR` should be `SPECINDEX_MASK`).
- - Differentiate between mask provided for BF index and mask for main
-   continuum value? (e.g., latter only cares about the side bands)
- - Deprecate `mangadap.survey.mangampl`
-
-3.0.2dev
---------
+3.1.0 (23 Dec 2020)
+-------------------
 
  - Added DataTable, mostly for automated documentation purposes.
  - Removed revision histories
  - Updated docs for MPL-10
+ - Enabled fitting a restricted wavelength range in the emission-line
+   module.
+ - Add parameter to change the required fraction of spectral coverage to
+   perform a fit.
+ - Detailed handling of masks for binning, MW extinction correction, and
+   emission-line continuum construction.
+ - Enable the output grid for :class:`mangadap.util.sampling.Resample`
+   to be defined directly.
+ - Include covariance calculation in
+   :class:`mangadap.util.sampling.Resample`.
+ - Add a class that reads trace sets produced by IDLUTILS,
+   :class:`mangadap.util.trace.TraceSet`, but not well tested yet.
+ - Fix untested velocity registration and stacking code, and added
+   registration test
+ - Upgraded package requirements
+ - Line profile in `EmissionLineTemplates` now hardwired to be
+   `FFTGaussianLSF`.
+ - Changed the format of the emission-line database files:
+    - Elric will *really* no longer work
+    - Format specifies tying in a 4 element vector for each line
+    - Adds ability to specify inequality constraints on velocity and
+      dispersion
 
 3.0.1 (31 May 2020)
 -------------------

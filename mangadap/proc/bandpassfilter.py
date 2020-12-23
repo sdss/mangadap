@@ -31,10 +31,13 @@ really meant to be used as given above.
 """
 
 import warnings
+
+from IPython import embed
+
 import numpy
 
 from ..par.parset import KeywordParSet
-from ..util.sampling import _pixel_borders
+from ..util.sampling import grid_borders
 
 from matplotlib import pyplot
 
@@ -182,8 +185,8 @@ def passband_median(x, y, passband=None):
     _x[mask] = numpy.ma.masked
     _x = _x.compressed()
 
-    indx = numpy.array([ numpy.arange(_x.size)[numpy.logical_and(_x > p[0], _x < p[1])]
-                                for p in passband ])
+    indx = numpy.array([numpy.where(numpy.logical_and(_x > p[0], _x < p[1]))[0]
+                                for p in passband], dtype=object)
     nonzero = numpy.array([ len(ii) > 0 for ii in indx ])
     if not numpy.all(nonzero):
         warnings.warn('Returning empty passbands with median values of 0!')
@@ -275,7 +278,7 @@ def passband_integral(x, y, passband=None, borders=False, log=False, base=10.0, 
             ``x`` can be either a two element vector giving the
             (geometric) centers of the first and last sample interval
             or a vector with the :math:`N` samples. In either case,
-            :func:`mangadap.util.sampling._pixel_borders` is used to
+            :func:`mangadap.util.sampling.grid_borders` is used to
             determine the borders of the sample intervals.
         y (array-like):
             The 1D or 2D array of measured values to be integrated.
@@ -333,7 +336,7 @@ def passband_integral(x, y, passband=None, borders=False, log=False, base=10.0, 
     if borders and len(_x) != ny+1:
         raise ValueError('Must provide N+1 borders for N samples.')
     if not borders:
-        _x, dx = _pixel_borders( numpy.array([x[0],x[-1]]), ny, log=log, base=base)
+        _x, dx = grid_borders(numpy.array([x[0],x[-1]]), ny, log=log, base=base)
 
     if passband is None:
         # No passband, so just get the full integral; y is checked to

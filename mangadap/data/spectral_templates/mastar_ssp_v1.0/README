@@ -1,0 +1,25 @@
+#-----------------------------------------------------------------------
+# MaStar-based Simple Stellar Population Models (v1.0)
+#-----------------------------------------------------------------------
+#
+# See: 
+#
+#   Public Website:
+#       https://www.icg.port.ac.uk/MaStar/
+#
+#   Publication: C. Maraston et al. 2020:
+#       https://ui.adsabs.harvard.edu/abs/2020MNRAS.496.2962M/abstract
+#
+#   This is a sub-selection of the currently available models.  SSP
+#   parameters are given in the name of the file.  The grid is limited
+#   to:
+#
+#       Age [Gyr]:    0.00316228, 0.01, 0.03162278, 0.100, 0.300,
+#                     1.000, 3.000, 9.000, 14.000
+#       log(Z/Z_sun): -1.35, -1., -0.7, -0.33, 0, 0.35
+#       IMF Slope:    2.35 (Salpeter)
+#
+#-----------------------------------------------------------------------
+#-----------------------------------------------------------------------
+# K.B. Westfall,  10 Sep 2020
+#-----------------------------------------------------------------------

@@ -141,7 +141,7 @@ def test_moments_with_continuum():
 
     # Get the pixel mask
     pixelmask = SpectralPixelMask(artdb=ArtifactDB.from_key('BADSKY'),
-                                  emldb=EmissionLineDB.from_key('ELPFULL'))
+                                  emldb=EmissionLineDB.from_key('ELPSCMSK'))
 
     # Instantiate the fitting class
     ppxf = PPXFFit(StellarContinuumModelBitMask())
@@ -205,25 +205,26 @@ def test_moments_with_continuum():
 
     # Check the values
     assert numpy.all(numpy.absolute(elmom['FLUX'][0] -
-                        numpy.array([ 0.64,  0.00,  0.22, -1.31, -0.87, -0.67, -0.44, -0.14, -1.13,
-                                     -0.09, -0.10,  0.00,  0.39,  0.72,  0.71,  0.44,  0.08,  0.74,
+                        numpy.array([ 0.63,  0.00,  0.22, -1.32, -0.88, -0.68, -0.44, -0.13, -1.14,
+                                     -0.07, -0.11,  0.01,  0.38,  0.73,  0.71,  0.44,  0.08,  0.74,
                                       1.30,  2.34, 0.55,  0.44])) < 0.01), 'Fluxes too different'
 
     assert numpy.all(numpy.absolute(elmom['MOM1'][0] -
-                        numpy.array([ 14682.3,      0.0, 14853.0, 14865.9, 14892.7, 14404.1,
-                                      14207.1,  12393.0, 14658.6, 14308.0, 15915.3, 23097.4,
-                                      14878.5,  14774.4, 14834.6, 14745.4, 15111.5, 14857.2,
-                                      14839.7,  14839.7, 14876.9, 14859.0])) < 0.1), \
+                        numpy.array([ 14682.6,      0.0, 14843.2, 14865.8, 14890.4, 14404.7,
+                                      14208.6,  12376.0, 14662.5, 14148.5, 15804.1, 17948.4,
+                                      14874.5,  14774.9, 14840.5, 14746.0, 15093.1, 14857.8,
+                                      14839.0,  14840.2, 14876.0, 14859.5])) < 0.1), \
                     '1st moments too different'
+
     assert numpy.all(numpy.absolute(elmom['MOM2'][0] -
-                        numpy.array([324.0,   0.0, 588.8, 436.3, 474.0,   0.0,   0.0,   0.0,
-                                     363.0,   0.0,   0.0,   0.0, 288.4, 224.3, 281.3, 283.5,
-                                     202.8, 207.8, 207.6, 253.6, 196.9, 212.3])) < 0.1), \
+                        numpy.array([322.2,   0.0, 591.4, 436.4, 474.6,   0.0,   0.0,   0.0,
+                                     364.6,   0.0,   0.0,   0.0, 289.1, 226.9, 282.6, 283.8,
+                                     227.0, 207.7, 207.7, 253.6, 197.0, 212.4])) < 0.1), \
                     '2nd moments too different'
 
     assert numpy.all(numpy.absolute(elmom['EW'][0] -
-                        numpy.array([ 0.63,  0.00,  0.21, -1.27, -0.75, -0.54, -0.30, -0.09,
-                                     -0.60, -0.04, -0.04,  0.00,  0.13,  0.25,  0.24,  0.13,
-                                      0.02,  0.22,  0.39,  0.69,  0.17,  0.13])) < 0.01), \
+                        numpy.array([ 0.63,  0.00,  0.20, -1.28, -0.76, -0.54, -0.30, -0.09,
+                                     -0.61, -0.03, -0.04,  0.00,  0.13,  0.25,  0.24,  0.13,
+                                      0.02,  0.22,  0.38,  0.69,  0.17,  0.13])) < 0.01), \
                     'EW too different'
 

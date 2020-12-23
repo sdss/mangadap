@@ -92,18 +92,18 @@ class SpatiallyBinnedSpectraDef(KeywordParSet):
     .. include:: ../tables/spatiallybinnedspectradef.rst
     """
     def __init__(self, key=None, galactic_reddening=None, galactic_rv=None, minimum_snr=None,
-                 binpar=None, binclass=None, binfunc=None, stackpar=None, stackclass=None,
-                 stackfunc=None):
+                 minimum_frac=None, binpar=None, binclass=None, binfunc=None, stackpar=None,
+                 stackclass=None, stackfunc=None):
         in_fl = [ int, float ]
         par_opt = [ ParSet, dict ]
 
-        pars =     ['key', 'galactic_reddening', 'galactic_rv', 'minimum_snr', 'binpar',
-                     'binclass', 'binfunc', 'stackpar', 'stackclass', 'stackfunc']
-        values =   [key, galactic_reddening, galactic_rv, minimum_snr, binpar, binclass, binfunc,
-                     stackpar, stackclass, stackfunc]
-        options =  [None, None, None, None, None, None, None, None, None, None]
-        dtypes =   [str, str, in_fl, in_fl, par_opt, None, None, par_opt, None, None]
-        can_call = [False, False, False, False, False, False, True, False, False, True]
+        pars =     ['key', 'galactic_reddening', 'galactic_rv', 'minimum_snr', 'minimum_frac',
+                    'binpar', 'binclass', 'binfunc', 'stackpar', 'stackclass', 'stackfunc']
+        values =   [key, galactic_reddening, galactic_rv, minimum_snr, minimum_frac, binpar,
+                    binclass, binfunc, stackpar, stackclass, stackfunc]
+        options =  [None, None, None, None, None, None, None, None, None, None, None]
+        dtypes =   [str, str, in_fl, in_fl, in_fl, par_opt, None, None, par_opt, None, None]
+        can_call = [False, False, False, False, False, False, False, True, False, False, True]
 
         descr = ['Keyword used to distinguish between different spatial binning schemes.',
                  'The string identifier for the Galactic extinction curve to use.  See ' \
@@ -111,6 +111,7 @@ class SpatiallyBinnedSpectraDef(KeywordParSet):
                     'available curves.  Default is ``ODonnell``.',
                  'Ratio of V-band extinction to the B-V reddening.  Default is 3.1.',
                  'Minimum S/N of spectra to include in any bin.',
+                 'Minimum fraction of unmasked pixels in each spectrum included in any bin.',
                  'The parameter set defining how to place each spectrum in a bin.',
                  'Instance of class object to use for the binning.  Needed in case binfunc ' \
                     'is a non-static member function of the class.',
@@ -249,7 +250,7 @@ def available_spatial_binning_methods():
             binfunc = None
 
         stackpar = SpectralStackPar(operation=cnfg.get('operation', default='mean'),
-                                    vel_register=cnfg.getbool('velocity_register', default=False),
+                                    register=cnfg.getbool('velocity_register', default=False),
                                     covar_mode=cnfg.get('stack_covariance_mode', default='none'),
                                     covar_par=SpectralStack.parse_covariance_parameters(
                                             cnfg.get('stack_covariance_mode', default='none'),
@@ -261,6 +262,7 @@ def available_spatial_binning_methods():
                                         galactic_reddening=cnfg['galactic_reddening'],
                                         galactic_rv=cnfg.getfloat('galactic_rv', default=3.1),
                                         minimum_snr=cnfg.getfloat('minimum_snr', default=0.),
+                                        minimum_frac=cnfg.getfloat('minimum_frac', default=0.8),
                                         binpar=binpar, binclass=binclass, binfunc=binfunc,
                                         stackpar=stackpar, stackclass=stackclass,
                                         stackfunc=stackfunc)]
@@ -589,7 +591,7 @@ class SpatiallyBinnedSpectra:
             hdr['REFF'] = self.reff
         hdr['BINKEY'] = (self.method['key'], 'Spectal binning method keyword')
         hdr['BINMINSN'] = (self.method['minimum_snr'], 'Minimum S/N of spectrum to include')
-        hdr['FSPCOV'] = (0.8, 'Minimum allowed fraction of good pixels')
+        hdr['FSPCOV'] = (self.method['minimum_frac'], 'Minimum required fraction of good pixels')
         hdr['NBINS'] = (self.nbins, 'Number of unique spatial bins')
         return hdr
 
@@ -731,30 +733,6 @@ class SpatiallyBinnedSpectra:
         """
         self.image_arrays = ['BINID']
 
-#    def _per_bin_dtype(self):
-#        """
-#        Construct the record array data type that holds the information
-#        for the binned spectra.
-#
-#        .. todo::
-#
-#            There currently is no mask; however, could add masks for:
-#                - Insufficient good wavelength channels in the spectrum.
-#                - Variance in flux in bin is too large.
-#        """
-#        return [ ('BINID',numpy.int),
-#                 ('NBIN',numpy.int),
-#                 ('SKY_COO',numpy.float,(2,)),
-#                 ('LW_SKY_COO',numpy.float,(2,)),
-#                 ('ELL_COO',numpy.float,(2,)),
-#                 ('LW_ELL_COO',numpy.float,(2,)),
-#                 ('AREA',numpy.float),
-#                 ('AREA_FRAC',numpy.float),
-#                 ('SIGNAL',numpy.float),
-#                 ('VARIANCE',numpy.float),
-#                 ('SNR',numpy.float)
-#               ]
-
     @staticmethod
     def _get_missing_bins(unique_bins):
         """Return bin IDs omitted from a sequential list."""
@@ -780,7 +758,6 @@ class SpatiallyBinnedSpectra:
         self.missing_bins = []                  # No missing bins
 
         # Copy the data from the ReductionAssessments object
-#        bin_data = init_record_array(self.nbins, self._per_bin_dtype())
         bin_data = SpatiallyBinnedSpectraDataTable(shape=self.nbins)
 
         bin_data['BINID'] = numpy.arange(self.nbins)
@@ -845,7 +822,6 @@ class SpatiallyBinnedSpectra:
         self.missing_bins = SpatiallyBinnedSpectra._get_missing_bins(unique_bins)
 
         # Intialize the data for the binned spectra
-#        bin_data = init_record_array(self.nbins, self._per_bin_dtype())
         bin_data = SpatiallyBinnedSpectraDataTable(shape=self.nbins)
         bin_data['BINID'] = unique_bins.astype(int)
         bin_data['NBIN'] = bin_count.astype(int)
@@ -973,15 +949,34 @@ class SpatiallyBinnedSpectra:
         if self.galext.form is None:
             return flux, ivar, sdev, covar
 
+        # NOTE: I'm doing some gymnastics here to make sure that the
+        # masked values are altered by the reddening, but that they're
+        # still masked on output.
+
+        _flux = flux.data if isinstance(flux, numpy.ma.MaskedArray) else flux.copy()
+        _ivar = None if ivar is None \
+                    else (ivar.data if isinstance(ivar, numpy.ma.MaskedArray) else ivar.copy())
+        _sdev = None if sdev is None \
+                    else (sdev.data if isinstance(sdev, numpy.ma.MaskedArray) else sdev.copy())
+        _covar = None if covar is None else covar.copy()
+
         # Apply the reddening correction
-        flux, ivar = self.galext.apply(flux, ivar=ivar, deredden=deredden)
+        _flux, _ivar = self.galext.apply(_flux, ivar=_ivar, deredden=deredden)
         if sdev is not None:
-            sdev = self.galext.apply(sdev, deredden=deredden)
+            _sdev = self.galext.apply(_sdev, deredden=deredden)
         if covar is not None:
-            for i,j in enumerate(covar.input_indx):
-                covar.cov[i] = covar.cov[i] * numpy.square(self.galext.redcorr[j]) if deredden \
-                                    else covar.cov[i] / numpy.square(self.galext.redcorr[j])
-        return flux, ivar, sdev, covar
+            for i,j in enumerate(_covar.input_indx):
+                _covar.cov[i] = _covar.cov[i] * numpy.square(self.galext.redcorr[j]) if deredden \
+                                    else _covar.cov[i] / numpy.square(self.galext.redcorr[j])
+
+        if isinstance(flux, numpy.ma.MaskedArray):
+            _flux = numpy.ma.MaskedArray(_flux, mask=numpy.ma.getmaskarray(flux).copy())
+        if _ivar is not None and isinstance(ivar, numpy.ma.MaskedArray):
+            _ivar = numpy.ma.MaskedArray(_ivar, mask=numpy.ma.getmaskarray(ivar).copy())
+        if _sdev is not None and isinstance(_sdev, numpy.ma.MaskedArray):
+            _sdev = numpy.ma.MaskedArray(_sdev, mask=numpy.ma.getmaskarray(sdev).copy())
+
+        return _flux, _ivar, _sdev, _covar
 
     # TODO: Allow both stack_sres and self.cube.sres to be None.
     def _construct_2d_hdu(self, bin_indx, good_fgoodpix, good_snr, bin_data, stack_flux,
@@ -1116,7 +1111,7 @@ class SpatiallyBinnedSpectra:
     def do_not_fit_flags():
         return ['DIDNOTUSE', 'FORESTAR', 'LOW_SPECCOV', 'LOW_SNR', 'NONE_IN_STACK', 'IVARINVALID']
 
-    def check_fgoodpix(self, minimum_fraction=0.8):
+    def check_fgoodpix(self, minimum_fraction=None):
         r"""
         Determine which spaxels in :attr:`rdxqa` have a fractional
         spectral coverage of greater than the provided minimum fraction.
@@ -1124,14 +1119,17 @@ class SpatiallyBinnedSpectra:
     
         Args:
             minimum_fraction (:obj:`float`, optional):
-                The minimum fraction of the spectrum that must be valid
-                for the spectrum to be included in any bin.
+                The minimum fraction of the spectrum that must be
+                valid for the spectrum to be included in any bin. If
+                None, ``self.method['minimum_frac']`` is used.
 
         Returns:
             `numpy.ndarray`_: Boolean array for the spectra that
             satisfy the criterion. Shape is :math:`(N_{\rm
             spaxel},)`.
         """
+        if minimum_fraction is None:
+            minimum_fraction = self.method['minimum_frac']
         return self.rdxqa['SPECTRUM'].data['FGOODPIX'] > minimum_fraction
 
     def above_snr_limit(self, sn_limit, debug=False):
@@ -1151,7 +1149,7 @@ class SpatiallyBinnedSpectra:
             meet the S/N threshold.
         """
         if debug:
-            warnings.warn('You\'re setting all but two spectra as bad!')
+            warnings.warn('You are setting all but two spectra as bad!')
             test = self.hdu['BINS'].data['SNR'] > sn_limit
             indx = numpy.arange(len(test))[test]
             test[indx[2:]] = False
@@ -1205,7 +1203,7 @@ class SpatiallyBinnedSpectra:
         """
         Bin and stack the spectra.
 
-        This is the core funtion of this class, constructing it main
+        This is the core funtion of this class, constructing its main
         data container, :attr:`hdu`.
 
         .. todo::
@@ -1334,14 +1332,14 @@ class SpatiallyBinnedSpectra:
             log_output(loggers, 1, logging.INFO, '{0:^50}'.format('SPATIALLY BINNING SPECTRA'))
             log_output(self.loggers, 1, logging.INFO, '-'*50)
 
-            log_output(self.loggers, 1, logging.INFO, 'Total spectra: {0}'.format(
-                                                                            len(good_fgoodpix)))
-            log_output(self.loggers, 1, logging.INFO, 'With 80% spectral coverage: {0}'.format(
-                                                                        numpy.sum(good_fgoodpix)))
-            log_output(self.loggers, 1, logging.INFO, 'With good S/N: {0}'.format(
-                                                                            numpy.sum(good_snr)))
-            log_output(self.loggers, 1, logging.INFO, 'Number of good spectra: {0}'.format(
-                                                                            numpy.sum(good_spec)))
+            log_output(self.loggers, 1, logging.INFO,
+                       'Total spectra: {0}'.format(len(good_fgoodpix)))
+            log_output(self.loggers, 1, logging.INFO,
+                       'With 80% spectral coverage: {0}'.format(numpy.sum(good_fgoodpix)))
+            log_output(self.loggers, 1, logging.INFO,
+                       'With good S/N: {0}'.format(numpy.sum(good_snr)))
+            log_output(self.loggers, 1, logging.INFO,
+                       'Number of good spectra: {0}'.format(numpy.sum(good_spec)))
             if self.galext.form is None:
                 log_output(self.loggers, 1, logging.INFO, 'Galactic dereddening not applied.')
             else:
@@ -1397,7 +1395,7 @@ class SpatiallyBinnedSpectra:
 
             # Mask anything with an invalid ivar
             # TODO: Not sure this is necessary
-            indx = numpy.invert(ivar > 0)
+            indx = numpy.logical_not(ivar > 0)
             if numpy.any(indx):
                 flux.mask |= indx
                 ivar.mask |= indx
@@ -1407,7 +1405,7 @@ class SpatiallyBinnedSpectra:
             # this back and forth between what is supposed to be a stack
             # only function
             # (SpectralStack.build_covariance_data_DRPFits) and
-            # something that is supposed to be indepenent of the details
+            # something that is supposed to be independent of the details
             # of the stacking implementation (SpatiallyBinnedSpectra)...
 
             # Try to add the covariance data, if requested
@@ -1423,7 +1421,7 @@ class SpatiallyBinnedSpectra:
                 except AttributeError as e:
                     if not self.quiet:
                         warnings.warn('Could not build covariance data:: '
-                                      'AttributeError: {0}'.format(e))
+                                      'AttributeError: {0}'.format(str(e)))
                     covar = None
 
                 if isinstance(covar, Covariance):

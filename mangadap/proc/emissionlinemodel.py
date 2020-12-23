@@ -54,27 +54,26 @@ class EmissionLineModelDef(KeywordParSet):
     A class that holds the parameters necessary to perform the
     emission-line profile fits.
 
-    .. todo::
-        Include waverange?
-
     The defined parameters are:
 
     .. include:: ../tables/emissionlinemodeldef.rst
     """
     def __init__(self, key=None, minimum_snr=None, deconstruct_bins=None, mom_vel_name=None,
-                 mom_disp_name=None, artifacts=None, ism_mask=None, emission_lines=None,
-                 continuum_tpl_key=None, fitpar=None, fitclass=None, fitfunc=None):
+                 mom_disp_name=None, waverange=None, artifacts=None, ism_mask=None,
+                 emission_lines=None, continuum_tpl_key=None, fitpar=None, fitclass=None,
+                 fitfunc=None):
         in_fl = [ int, float ]
         par_opt = [ ParSet, dict ]
 
         pars =     [ 'key', 'minimum_snr', 'deconstruct_bins', 'mom_vel_name', 'mom_disp_name',
-                     'artifacts', 'ism_mask', 'emission_lines', 'continuum_tpl_key', 'fitpar',
-                     'fitclass', 'fitfunc' ]
-        values =   [ key, minimum_snr, deconstruct_bins, mom_vel_name, mom_disp_name, artifacts,
-                     ism_mask, emission_lines, continuum_tpl_key, fitpar, fitclass, fitfunc ]
-        dtypes =   [ str, in_fl, str, str, str, str, str, str, str, par_opt, None, None ]
+                     'waverange', 'artifacts', 'ism_mask', 'emission_lines', 'continuum_tpl_key', 
+                     'fitpar', 'fitclass', 'fitfunc' ]
+        values =   [ key, minimum_snr, deconstruct_bins, mom_vel_name, mom_disp_name, waverange,
+                     artifacts, ism_mask, emission_lines, continuum_tpl_key, fitpar, fitclass,
+                     fitfunc ]
+        dtypes =   [ str, in_fl, str, str, str, list, str, str, str, str, par_opt, None, None ]
         can_call = [ False, False, False, False, False, False, False, False, False, False, False,
-                     True ]
+                     False, True ]
 
         descr = ['Keyword used to distinguish between different emission-line moment databases.',
                  'Minimum S/N of spectrum to fit',
@@ -85,6 +84,7 @@ class EmissionLineModelDef(KeywordParSet):
                     'for each spaxel.',
                  'Name of the emission-line moments band used to set the initial velocity ' \
                     'dispersion guess for each spaxel.',
+                 'Limited wavelength range to use during the fit',
                  'String identifying the artifact database to use',
                  'String identifying an emission-line database used only for **masking** lines ' \
                     'during the fit.',
@@ -165,6 +165,7 @@ def available_emission_line_modeling_methods():
         deconstruct_bins = cnfg.get('deconstruct_bins', default='ignore')
         minimum_snr = cnfg.getfloat('minimum_snr', default=0.0)
         continuum_tpl_key = cnfg.get('continuum_templates')
+        waverange = cnfg.getlist('waverange', evaluate=True)
 
         ism_mask = cnfg.get('ism_mask')
 
@@ -205,6 +206,7 @@ def available_emission_line_modeling_methods():
                                               deconstruct_bins=deconstruct_bins,
                                               mom_vel_name=cnfg.get('mom_vel_name'),
                                               mom_disp_name=cnfg.get('mom_disp_name'),
+                                              waverange=waverange,
                                               artifacts=cnfg.get('artifact_mask'),
                                               ism_mask=ism_mask,
                                               emission_lines=cnfg['emission_lines'],
@@ -262,21 +264,18 @@ class EmissionLineModel:
         # Define the database properties
         self.method = self.define_method(method_key, method_list=method_list)
 
-        # Instantiate the artifact...
-        self.artdb = None if self.method['artifacts'] is None else \
-                    ArtifactDB.from_key(self.method['artifacts'], directory_path=artifact_path)
-        # ... the pixel mask...
-        if self.method['ism_mask'] is None:
-            self.pixelmask = SpectralPixelMask(artdb=self.artdb)
-        else:
-            # Mask ISM lines if a list is provided -- KHRR
-            # use nsigma=2.0 to avoid masking HeI
-            self.pixelmask = SpectralPixelMask(artdb=self.artdb,
-                                               emldb=EmissionLineDB.from_key(
-                                                        self.method['ism_mask'],
-                                                        directory_path=ism_line_path),
-                                               nsig=2.0)
-        # ... and the emission-line database
+        # Setup the pixel mask
+        # Mask ISM lines if a list is provided -- KHRR
+        # use nsigma=2.0 to avoid masking HeI
+        self.pixelmask = SpectralPixelMask(artdb=None if self.method['artifacts'] is None else 
+                                            ArtifactDB.from_key(self.method['artifacts'],
+                                                                directory_path=artifact_path),
+                                           emldb=None if self.method['ism_mask'] is None else
+                                            EmissionLineDB.from_key(self.method['ism_mask'],
+                                                                    directory_path=ism_line_path),
+                                           waverange=self.method['waverange'], nsig=2.0)
+
+        # Setup the emission-line database
         self.emldb = None if self.method['emission_lines'] is None else \
                         EmissionLineDB.from_key(self.method['emission_lines'],
                                                 directory_path=emission_line_db_path)
@@ -793,68 +792,6 @@ class EmissionLineModel:
         # Get the line metrics
         return EmissionLineFit.line_metrics(self.emldb, wave, flux, ferr, model, model_eml_par,
                                             bitmask=self.bitmask, window=window)
-
-#        # Get the continuum-subtracted flux
-#        flux_nc = flux - continuum
-#
-#        # Mask the model flux
-#        _model_flux = numpy.ma.MaskedArray(model_flux+continuum, mask=_model_mask>0)
-#
-#        nspec = continuum.shape[0]
-#
-#        # Get the data for the metrics
-#        resid = numpy.square(flux-_model_flux)
-#        fresid = numpy.square(numpy.ma.divide(flux-_model_flux, _model_flux))
-#        chisqr = numpy.square(numpy.ma.divide(flux-_model_flux, ferr))
-#        spec_mask = resid.mask | fresid.mask | chisqr.mask
-#        resid[spec_mask] = numpy.ma.masked
-#        fresid[spec_mask] = numpy.ma.masked
-#        chisqr[spec_mask] = numpy.ma.masked
-#
-#        # Get the pixel at which to center the metric calculations
-#        flags = ['INSUFFICIENT_DATA', 'FIT_FAILED', 'UNDEFINED_COVAR', 'NEAR_BOUND' ]
-#        z = numpy.ma.MaskedArray(model_eml_par['KIN'][:,:,0] / astropy.constants.c.to('km/s').value,
-#                                 mask=self.bitmask.flagged(model_eml_par['MASK'], flag=flags))
-#        sample_wave = line_database['RESTWAVE'][None,:]*(1+z)
-#        interp = interpolate.interp1d(wave, numpy.arange(wave.size), bounds_error=False,
-#                                      fill_value=-1, assume_sorted=True)
-#        model_eml_par['LINE_PIXC'] = numpy.around(interp(sample_wave.data)).astype(int)
-#        model_eml_par['LINE_PIXC'][sample_wave.mask] = -1
-#        mask = (model_eml_par['LINE_PIXC'] < 0) | (model_eml_par['LINE_PIXC'] >= wave.size)
-#
-#        # Iterate over the number of lines
-#        nspec = flux.shape[0]
-#        for i in range(neml):
-#            if not self.quiet:
-#                print('Getting fit metrics for line: {0}/{1}'.format(i+1, neml), end='\r')
-#            start = model_eml_par['LINE_PIXC'][:,i] - metric_window//2
-#            end = start + metric_window
-#            m = numpy.zeros(flux.shape, dtype=float)
-#            for j in range(nspec):
-#                if mask[j,i]:
-#                    continue
-#                m[j,start[j]:end[j]] = 1.
-#                masked_pixel = flux_nc.mask[j,model_eml_par['LINE_PIXC'][j,i]] \
-#                                | ferr.mask[j,model_eml_par['LINE_PIXC'][j,i]]
-#                if masked_pixel:
-#                    model_eml_par['AMP'][j,i] = 0.0 
-#                    model_eml_par['ANR'][j,i] = 0.0
-#                else:     
-#                    model_eml_par['AMP'][j,i] = flux_nc[j,model_eml_par['LINE_PIXC'][j,i]]
-#                    model_eml_par['ANR'][j,i] = flux_nc[j,model_eml_par['LINE_PIXC'][j,i]] \
-#                                                    / ferr[j,model_eml_par['LINE_PIXC'][j,i]]
-#            m[spec_mask] = 0.
-#
-#            model_eml_par['LINE_NSTAT'][:,i] = numpy.sum(m,axis=1)
-#            model_eml_par['LINE_RMS'][:,i] = numpy.ma.sqrt(numpy.ma.mean(m*resid,axis=1)
-#                                                           ).filled(0.0)
-#            model_eml_par['LINE_FRMS'][:,i] = numpy.ma.sqrt(numpy.ma.mean(m*fresid,axis=1)
-#                                                            ).filled(0.0)
-#            model_eml_par['LINE_CHI2'][:,i] = numpy.ma.sum(m*chisqr,axis=1).filled(0.0)
-#
-#        if not self.quiet:
-#            print('Getting fit metrics for line: {0}/{0}'.format(neml))
-#        return model_eml_par
 
     def _construct_2d_hdu(self, good_snr, model_flux, model_base, model_mask, model_eml_par,
                           model_fit_par=None, model_binid=None):

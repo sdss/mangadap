@@ -22,9 +22,6 @@ from ..par.emissionlinedb import EmissionLineDB
 
 from matplotlib import pyplot
 
-# Add strict versioning
-# from distutils.version import StrictVersion
-
 
 class PixelMask:
     """

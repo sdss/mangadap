@@ -1,0 +1,27 @@
+#------------------------------------------------------------------------
+# Created by: Kyle Westfall (KBW)
+# Date: 16 Mar 2016
+#
+# Line wavelengths are "Ritz" wavelengths from NIST:
+#   http://physics.nist.gov/PhysRefData/ASD/Html/help.html
+#
+# Revisions:
+#       10 Dec 2020: (KBW) Copied from elpismmsk.par, but removed all
+#           but the two NaI lines.
+#       
+#------------------------------------------------------------------------
+
+typedef struct {
+    int index;
+    char name[6];
+    double restwave;
+    char waveref[3];
+    char action;
+    char tie[4][10];
+    double blueside[2];
+    double redside[2];
+} DAPEML;
+
+DAPEML  63  NaI     5891.583   vac  m  { None   None None None }  {  5850.0  5870.0 }  {  5910.0  5930.0 }
+DAPEML  64  NaI     5897.558   vac  m  { None   None None None }  {  5850.0  5870.0 }  {  5910.0  5930.0 }
+

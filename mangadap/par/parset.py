@@ -29,6 +29,9 @@ import os
 import inspect
 import warnings
 import textwrap
+
+from IPython import embed
+
 import numpy
 
 from configobj import ConfigObj
@@ -974,6 +977,7 @@ class KeywordParSet(ParSet):
                                   self.__class__.__name__))
 
 
+# TODO: Change this to a DataTable?
 class ParDatabase:
     """
     Class used as a list of ParSets in a glorified structured numpy

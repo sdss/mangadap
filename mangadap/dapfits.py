@@ -1904,10 +1904,9 @@ class construct_cube_file:
                                         else emission_line_model.method['continuum_tpl_key']) \
                                 if directory_path is None else None
         self.directory_path = defaults.dap_method_path(self.method, plate=self.cube.plate,
-                                                               ifudesign=self.cube.ifudesign,
-                                                               drpver=self.cube.drpver,
-                                                               dapver=dapver,
-                                                               analysis_path=analysis_path) \
+                                                       ifudesign=self.cube.ifudesign,
+                                                       drpver=self.cube.drpver, dapver=dapver,
+                                                       analysis_path=analysis_path) \
                                                 if directory_path is None else str(directory_path)
 
         # Set the output file

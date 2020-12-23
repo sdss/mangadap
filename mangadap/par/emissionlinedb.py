@@ -47,6 +47,9 @@ See :ref:`emissionlines` for the format of the parameter file.
 
 import os
 import glob
+
+from IPython import embed
+
 import numpy
 
 from pydl.goddard.astro import airtovac
@@ -57,93 +60,46 @@ from .spectralfeaturedb import SpectralFeatureDB
 from ..proc import util
 from ..util.datatable import DataTable
 
+
 class EmissionLinePar(KeywordParSet):
     r"""
-    Parameter object that defines a set of emission-line parameters used
-    by various algorithms in the DAP.
+    Metadata used to define an emission line for the DAP to fit
+    parametrically.
 
-    See :class:`mangadap.par.parset.ParSet` for attributes and raised
-    exceptions.
+    These parameters are only for a single emission line; see
+    :class:`~mangadap.par.emissionlinedb.EmissionLineDB` for setting a full
+    line list of parameters.
 
     .. todo::
-
-        - Specify these algorithms
-        - provide some basic printing functions for user-level
-          interaction
-        - match the variable names to those in the parameter file
-          typedef
-
-    The defined parameters are:
-
-    .. include:: ../tables/emissionlinepar.rst
-
-    .. include:: ../include/emissionline-action.rst
-
-    .. include:: ../include/emissionline-mode.rst
+        - Point to/add a description the paramters.
 
     """
-    def __init__(self, index=None, name=None, restwave=None, action=None, flux=None, mode=None,
-                 profile=None, ncomp=None, output_model=None, par=None, fix=None, lobnd=None,
-                 hibnd=None, log_bnd=None, blueside=None, redside=None):
+    def __init__(self, index=None, name=None, restwave=None, action=None, tie_index=None,
+                 tie_par=None, blueside=None, redside=None):
         
         in_fl = [ int, float ]
         action_options = [ 'i', 'f', 'm', 's']
         arr_like = [ numpy.ndarray, list ]
+
+        _name = None if name is None else name.strip()
+        _action = None if action is None else action.strip()
         
-        l = [ name, action, mode ]
-        for i in range(len(l)):
-            if l[i] is None:
-                continue
-            l[i] = l[i].strip()
+        pars =     ['index', 'name', 'restwave', 'action', 'tie_index', 'tie_par', 'blueside',
+                    'redside']
+        values =   [index, _name, restwave, _action, tie_index, tie_par, blueside, redside]
+        defaults = [None, None, None, 'f', None, None, None, None]
+        options =  [None, None, None, action_options, None, None, None, None]
+        dtypes =   [int, str, in_fl, str, int, arr_like, arr_like, arr_like]
 
-        pars =     [ 'index', 'name', 'restwave', 'action', 'flux', 'mode', 'profile', 'ncomp',
-                     'output_model', 'par', 'fix', 'lobnd', 'hibnd', 'log_bnd', 'blueside',
-                     'redside' ]
-        values =   [   index,   l[0],   restwave,     l[1],   flux,   l[2],   profile,   ncomp,
-                       output_model, par,   fix,   lobnd,   hibnd, log_bnd, blueside, redside ]
-        defaults = [ None, None, None, 'f', 1.0, 'f', 'GaussianLineProfile', 1, True, None, None,
-                     None, None, None, None, None ]
-        options =  [ None, None, None, action_options,  None,  None, None, None, None, None, None,
-                     None, None, None, None, None ]
-        dtypes =   [ int, str, in_fl, str, in_fl, str, str, int, bool, arr_like, arr_like,
-                     arr_like, arr_like, arr_like, arr_like, arr_like ]
-
-        descr = ['An index used to refer to the line in the *line* and *mode* attributes.',
+        descr = ['An index used to refer to the line for tying parameters; must be >0.',
                  'A name for the line.',
                  'The rest wavelength of the line in angstroms *in vacuum*.',
                  'Describes how the line should be treated.  See ' \
                     ':ref:`emission-line-modeling-action`. Default is ``f``.',
-                 '**Relative** flux of the emission (positive) or absorption (negative) lines.  ' \
-                    'This should most often be unity if ``line=l`` and indicates the ratio of ' \
-                    'line flux if ``line=dN``.  Default is 1.0.',
-                 'Fitting mode for the line.  See :ref:`emission-line-modeling-action`.  ' \
-                    'Default is ``f``.',
-                 'The class definition of the profile shape.  Must be a class in ' \
-                    ':mod:`mangadap.util.lineprofiles`.',
-                 'The number of components (number of separate line profiles) to use when ' \
-                 'fitting the line.  Default is 1.',
-                 'Flag to include the best-fitting model of the line in the emission-line model ' \
-                    'spectrum.  Default is True.',
-                 'A list of the initial guess for the line profile parameters.  The number of ' \
-                    'parameters must match the struct declaration at the top of the file.  The ' \
-                    'initial parameters are automatically adjusted to provide any designated ' \
-                    'flux ratios, and the center is automatically adjusted to the provided ' \
-                    'redshift for the spectrum.  For example, for a GaussianLineProfile, this ' \
-                    'is typically set to ``[1.0, 0.0, 100.0]``.',
-                 'A list of flags for fixing the input guess parameters during the fit.  Use 0 ' \
-                    'for a free parameter, 1 for a fixed parameter.  The parameter value is ' \
-                    'only fixed **after** adjusted in the flux and or center based on the ' \
-                    'redshift and the implied tied parameters.  For a free set of parameters ' \
-                    'using a GaussianLineProfile, this is set to ``[0, 0, 0]``.',
-                 'A list of lower bounds for the parameters.  For each parameter, use None to ' \
-                    'indicate no lower bound.  For a GaussianLineProfile with positive flux and ' \
-                    'standard deviation, this is set to ``[0.0, None, 0.0]``.',
-                 'A list of upper bounds for the parameters.  For each parameter, use None to ' \
-                    'indicate no upper bound.  For a GaussianLineProfile with maximum standard ' \
-                    'deviation of 500 km/s, this is set to ``[None, None, 500.0]``.',
-                 'A list of flags used when determining if a fit parameter is near the imposed ' \
-                    'boundary.  If true, the fraction of the boundary range used is done in ' \
-                    'logarithmic, not linear, separation.',
+                 'Index of the line to which parameters for this line are tied.  ' \
+                    'See :ref:`emission-line-modeling-tying`.',
+                 'Details of how each model parameter for this line is tied to the reference ' \
+                    'line.  See :ref:`emission-line-modeling-tying`.',
                  'A two-element vector with the starting and ending wavelength for a bandpass ' \
                     'blueward of the emission line, which is used to set the continuum level ' \
                     'near the emission line when calculating the equivalent width.',
@@ -151,74 +107,39 @@ class EmissionLinePar(KeywordParSet):
                     'redward of the emission line, which is used to set the continuum level ' \
                     'near the emission line when calculating the equivalent width.']
 
-        super(EmissionLinePar, self).__init__(pars, values=values, defaults=defaults,
-                                              options=options, dtypes=dtypes, descr=descr)
+        super().__init__(pars, values=values, defaults=defaults, options=options, dtypes=dtypes,
+                         descr=descr)
+
         self._check()
 
     def _check(self):
-        """
-        Check the parameter list:
-
-            - Amplitude has to be larger than zero.
-            - *mode* must be either ``'f'``, ``'wN'``, ``'xN'``,
-              ``'vN'``, ``'sN'``, ``'kN'``, ``'aN'``
-
-        .. todo::
-            - Add check to __setitem__()?
-            - Add check of profile type
-
-        Raises:
-            ValueError:
-                Raised if one of the conditions above are not met.
-        """
-        if self.data['action'] != 'i' and not self.data['flux'] > 0:
-            warnings.warn('Emission-line fluxes must be larger than 0.  Ignoring line with ' \
-                          'index {0}'.format(self.data['index']))
-            self.data['action'] = 'i'
-        if self.data['mode'][0] not in ['f', 'w', 'x', 'v', 's', 'k', 'a']:
-            raise ValueError('Mode must be either independent (f), fit independently but in the ' \
-                             'same window (w), with a tied flux ratio (x), with a tied velocity ' \
-                             '(v), with a tied velocity dispersion (s), with both kinematics ' \
-                             'tied (k), or with the fluxes and kinematics tied (a).')
-        # Check the lengths of all the arrays
-        npar = 0 if self.data['par'] is None else len(self.data['par'])
-        if npar == 0:
-            return
-        if numpy.any(numpy.array([len(self.data['fix']), len(self.data['lobnd']),
-                                  len(self.data['hibnd']), len(self.data['log_bnd'])]) != npar):
-            raise ValueError('Number of parameters must be the same for par, fix, lobnd, hibnd, '
-                             'and log_bnd.')
-        if numpy.any(numpy.array([ len(self.data['blueside']), len(self.data['redside'])]) != 2):
-            raise ValueError('Bandpasses must be two-element vectors!')
+        if self.data['index'] is not None and self.data['index'] <= 0:
+            raise ValueError('Index must be larger than 0.')
 
 
 class EmissionLineDefinitionTable(DataTable):
     """
-    Wrapper for an :class:`EmissionLineDB`, primarily for output
-    to an `astropy.io.fits.BinTableHDU`_.
+    A :class:`~mangadap.util.datatable.DataTable` with the data from an
+    :class:`~mangadap.par.emissionlinedb.EmissionLineDB` object.
 
     Table includes:
 
     .. include:: ../tables/emissionlinedefinitiontable.rst
     
     Args:
-        name_len (:obj:`int`):
+        name_len (:obj:`int`, optional):
             The maximum length of any of the emission line names.
-        mode_len (:obj:`int`):
-            The maximum length of any mode signature for the emission
-            line.
-        prof_len (:obj:`int`):
-            The maximum length of the profile signature for the
-            emission line.
+        tie_len (:obj:`int`, optional):
+            The maximum length of a tying string. Not sure if this is needed.
         shape (:obj:`int`, :obj:`tuple`, optional):
             The shape of the initial array. If None, the data array
             will not be instantiated; use
             :func:`~mangadap.util.datatable.DataTable.init` to
             initialize the data array after instantiation.
     """
-    def __init__(self, name_len=1, mode_len=1, prof_len=1, shape=None):
-        # NOTE: This should require python 3.7 to make sure that this
-        # is an "ordered" dictionary.
+    def __init__(self, name_len=1, tie_len=1, shape=None):
+        # NOTE: This requires python 3.7 to make sure that this is an "ordered"
+        # dictionary.
         datamodel = dict(ID=dict(typ=int, shape=None, descr='Emission line ID number'),
                          NAME=dict(typ='<U{0:d}'.format(name_len), shape=None,
                                    descr='Name of the emission line'),
@@ -227,24 +148,19 @@ class EmissionLineDefinitionTable(DataTable):
                          ACTION=dict(typ='<U1', shape=None,
                                      descr='Action to take for this emission line; see '
                                            ':ref:`emission-line-modeling-action`'),
-                         FLUXRATIO=dict(typ=float, shape=None,
-                                        descr='Fixed flux ratio compared to reference line; '
-                                              'see MODE'),
-                         MODE=dict(typ='<U{0:d}'.format(mode_len), shape=None,
-                                   descr='Modeling mode to adopt for this line; see '
-                                         ':ref:`emission-line-modeling-mode`'),
-                         PROFILE=dict(typ='<U{0:d}'.format(prof_len), shape=None,
-                                      descr='Name of the parameterization used for the instrinsic '
-                                            'line profile'),
-                         NCOMP=dict(typ=int, shape=None,
-                                    descr='Number of components; never used!'))
+                         TIE_ID=dict(typ=int, shape=None,
+                                     descr='ID of the line to which this one is tied.'),
+                         TIE_FLUX=dict(typ='<U{0:d}'.format(tie_len), shape=None,
+                                      descr='Tying parameter for the flux of each line.'),
+                         TIE_VEL=dict(typ='<U{0:d}'.format(tie_len), shape=None,
+                                      descr='Tying parameter for the velocity of each line.'),
+                         TIE_SIG=dict(typ='<U{0:d}'.format(tie_len), shape=None,
+                                      descr='Tying parameter for the dispersion of each line.'))
 
         keys = list(datamodel.keys())
-        super(EmissionLineDefinitionTable,
-                self).__init__(keys, [datamodel[k]['typ'] for k in keys],
-                               element_shapes=[datamodel[k]['shape'] for k in keys],
-                               descr=[datamodel[k]['descr'] for k in keys],
-                               shape=shape)
+        super().__init__(keys, [datamodel[k]['typ'] for k in keys],
+                         element_shapes=[datamodel[k]['shape'] for k in keys],
+                         descr=[datamodel[k]['descr'] for k in keys], shape=shape)
 
 
 class EmissionLineDB(SpectralFeatureDB):
@@ -252,18 +168,14 @@ class EmissionLineDB(SpectralFeatureDB):
     Basic container class for the database of emission-line parameters.
 
     Each row of the database is parsed using
-    :class:`~mangadap.par.emissionlinedb.EmissionLinePar`. For the
-    format of the input file, see :ref:`emissionlines-modeling`.
+    :class:`~mangadap.par.emissionlinedb.EmissionLinePar`. For the format of
+    the input file, see :ref:`emissionlines-modeling`.
 
-    The primary instantiation requires the SDSS parameter file with
-    the emission-line data. To instantiate using a keyword (and
-    optionally a directory that holds the parameter files), use the
-    :func:`~mangadap.par.spectralfeaturedb.SpectralFeatureDB.from_key`
-    class method.  See the base class for additional attributes.
-
-    Args:
-        parfile (:obj:`str`):
-            The SDSS parameter file with the emission-line database.
+    The primary instantiation requires the SDSS parameter file with the
+    emission-line data. To instantiate using a keyword, use the
+    :func:`~mangadap.par.spectralfeaturedb.SpectralFeatureDB.from_key` method
+    of the base class; see the base class for instantiation and additional
+    attributes.
 
     Attributes:
         key (:obj:`str`):
@@ -273,15 +185,21 @@ class EmissionLineDB(SpectralFeatureDB):
         size (:obj:`int`):
             Number of emission lines in the database. 
     """
+
     default_data_dir = 'emission_lines'
+    """
+    Name of the directory in the mangadap data path with the distributed
+    emission-line databases.
+    """
+
     def _parse_yanny(self):
         """
-        Parse the yanny file (provided by :attr:`file`) for the emission-line database.
+        Parse the yanny file (provided by :attr:`file`) for the emission-line
+        database.
 
         Returns:
-            :obj:`list`: The list of
-            :class:`mangadap.par.parset.ParSet` instances for each
-            line of the database.
+            :obj:`list`: The list of :class:`~mangadap.par.parset.ParSet`
+            instances for each line of the database.
         """
         # Read the yanny file
         par = yanny(filename=self.file, raw=True)
@@ -293,29 +211,21 @@ class EmissionLineDB(SpectralFeatureDB):
         parlist = []
         for i in range(self.size):
             invac = par['DAPEML']['waveref'][i] == 'vac'
-            # Convert None's to +/- inf
-            lobnd = [ -numpy.inf if p == 'None' else float(p) \
-                            for p in par['DAPEML']['lower_bound'][i]]
-            hibnd = [ numpy.inf if p == 'None' else float(p) \
-                            for p in par['DAPEML']['upper_bound'][i] ]
-            parlist += [ EmissionLinePar(index=par['DAPEML']['index'][i],
-                                         name=par['DAPEML']['name'][i],
-                                         restwave=par['DAPEML']['lambda'][i] 
-                                            if invac else airtovac(par['DAPEML']['lambda'][i]),
-                                         action=par['DAPEML']['action'][i],
-                                         flux=par['DAPEML']['relative_flux'][i],
-                                         mode=par['DAPEML']['mode'][i],
-                                         profile=par['DAPEML']['profile'][i],
-                                         ncomp=par['DAPEML']['ncomp'][i],
-                                         output_model=bool(par['DAPEML']['output_model'][i]),
-                                         par=par['DAPEML']['par'][i],
-                                         fix=par['DAPEML']['fix'][i],
-                                         lobnd=lobnd, hibnd=hibnd,
-                                         log_bnd=par['DAPEML']['log_bounded'][i],
-                                    blueside=par['DAPEML']['blueside'][i] if invac \
-                                        else airtovac(numpy.array(par['DAPEML']['blueside'][i])),
-                                    redside=par['DAPEML']['redside'][i] if invac \
-                                        else airtovac(numpy.array(par['DAPEML']['redside'][i])) ) ]
+
+            tie_index = -1 if par['DAPEML']['tie'][i][0] == 'None' \
+                            else int(par['DAPEML']['tie'][i][0])
+            tie_par = [None if t == 'None' else t for t in par['DAPEML']['tie'][i][1:]]
+
+            parlist += [EmissionLinePar(index=par['DAPEML']['index'][i],
+                                       name=par['DAPEML']['name'][i],
+                                       restwave=par['DAPEML']['restwave'][i] if invac 
+                                                else airtovac(par['DAPEML']['restwave'][i]),
+                                       action=par['DAPEML']['action'][i], tie_index=tie_index,
+                                       tie_par=tie_par,
+                                       blueside=par['DAPEML']['blueside'][i] if invac else \
+                                            airtovac(numpy.array(par['DAPEML']['blueside'][i])),
+                                       redside=par['DAPEML']['redside'][i] if invac else \
+                                            airtovac(numpy.array(par['DAPEML']['redside'][i])))]
         return parlist
 
     def channel_names(self, dicttype=True):
@@ -325,23 +235,59 @@ class EmissionLineDB(SpectralFeatureDB):
         ``dicttype`` is False, a list is returned with just the
         string keys.
         """
-        channels = [ '{0}-{1}'.format(self.data['name'][i], int(self.data['restwave'][i])) 
-                            for i in range(self.size) ]
-        return { n:i for i,n in enumerate(channels) } if dicttype else channels
+        channels = ['{0}-{1}'.format(self.data['name'][i], int(self.data['restwave'][i])) 
+                        for i in range(self.size)]
+        return {n:i for i,n in enumerate(channels)} if dicttype else channels
 
     def to_datatable(self, quiet=False):
+        """
+        Constuct an
+        :class:`~mangadap.par.emissionlinedb.EmissionLineDefinitionTable`
+        instance with the line database.
+
+        Args:
+            quiet (:obj:`bool`, optional):
+                Suppress terminal output
+
+        Returns:
+            :class:`~mangadap.par.emissionlinedb.EmissionLineDefinitionTable`:
+            Table with the emission-line metadata.
+        """
         name_len = numpy.amax([len(n) for n in self.data['name']])
-        mode_len = numpy.amax([len(m) for m in self.data['mode']])
-        prof_len = numpy.amax([len(p) for p in self.data['profile']])
+        tie_len = numpy.amax([0 if t is None else len(t) 
+                                for t in numpy.ravel(self.data['tie_par'])])
 
         # Instatiate the table data that will be saved defining the set
         # of emission-line moments measured
-        db = EmissionLineDefinitionTable(name_len=name_len, mode_len=mode_len, prof_len=prof_len,
-                                         shape=self.size)
-        hk = [ 'ID', 'NAME', 'RESTWAVE', 'ACTION', 'FLUXRATIO', 'MODE', 'PROFILE', 'NCOMP' ]
-        mk = [ 'index', 'name', 'restwave', 'action', 'flux', 'mode', 'profile', 'ncomp' ]
+        db = EmissionLineDefinitionTable(name_len=name_len, tie_len=tie_len, shape=self.size)
+
+        hk = ['ID', 'NAME', 'RESTWAVE', 'ACTION', 'TIE_ID']
+        mk = ['index', 'name', 'restwave', 'action', 'tie_index']
         for _hk, _mk in zip(hk,mk):
             db[_hk] = self.data[_mk]
+
+        db['TIE_FLUX'] = numpy.array([str(d) for d in self.data['tie_par'][:,0]])
+        db['TIE_VEL'] = numpy.array([str(d) for d in self.data['tie_par'][:,1]])
+        db['TIE_SIG'] = numpy.array([str(d) for d in self.data['tie_par'][:,2]])
+
         return db
+
+    def tie_index_match(self):
+        """
+        Return a vector with the row indices for the tied parameters, which
+        is more useful than the ID number of the tied line.
+        """
+        tie_indx = numpy.full(self.size, -1, dtype=int)
+        indx = self.data['tie_index'] > 0
+        tie_indx[indx] = [numpy.where(self.data['index'] == i)[0][0]
+                            for i in self.data['tie_index'][indx]]
+        return tie_indx
+
+    @property
+    def neml(self):
+        """
+        Number of emission lines in the database.
+        """
+        return self.nsets
 
 

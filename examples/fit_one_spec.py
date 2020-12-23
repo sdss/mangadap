@@ -103,8 +103,8 @@ if __name__ == '__main__':
     plt = 7815
     ifu = 6101
     # Spaxel coordinates
-    x = 30
-    y = 37
+    x = 25 #30
+    y = 25 #37
     # Read a spectrum
     wave, flux, ivar, sres = get_spectrum(plt, ifu, x, y, directory_path=directory_path)
     # In general, the DAP fitting functions expect data to be in 2D
@@ -153,7 +153,7 @@ if __name__ == '__main__':
     # Templates used in the stellar continuum fits
     sc_tpl_key = 'MILESHC'
     # Templates used in the emission-line modeling
-    el_tpl_key = 'MASTARHC2'
+    el_tpl_key = 'MASTARSSP'
 
     # You also need to specify the sampling for the template spectra.
     # The templates must be sampled with the same pixel step as the
@@ -328,9 +328,6 @@ if __name__ == '__main__':
                          velscale_ratio=el_velscale_ratio, matched_resolution=False, mdegree=8,
                          plot=fit_plots)
     print('TIME: ', time.perf_counter() - efit_t)
-
-    embed()
-    exit()
 
     # Line-fit metrics
     eml_eml_par = EmissionLineFit.line_metrics(emldb, wave, flux, ferr, model_flux, eml_eml_par,
