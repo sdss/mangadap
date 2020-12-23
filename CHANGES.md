@@ -1,6 +1,6 @@
 
-3.0.2dev
---------
+3.1.0 (23 Dec 2020)
+-------------------
 
  - Added DataTable, mostly for automated documentation purposes.
  - Removed revision histories
