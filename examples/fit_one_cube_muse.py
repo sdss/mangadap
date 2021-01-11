@@ -1,40 +1,50 @@
+#!/usr/bin/env python3
 
-import pytest
-
-from IPython import embed
-
+import os
 import numpy
+
+import astropy.constants
 from astropy.io import fits
 
-from mangadap.proc.reductionassessments import available_reduction_assessments
-from mangadap.util.covariance import Covariance
 from mangadap.datacube import MaNGADataCube
 from mangadap.datacube import MUSEDataCube
-from mangadap.tests.util import data_test_file, remote_data_file, requires_remote
+from mangadap.survey.manga_dap import manga_dap
+from mangadap.par.analysisplan import AnalysisPlan, AnalysisPlanSet
+from IPython import embed
 
-import warnings
-warnings.simplefilter("ignore", UserWarning)
-warnings.simplefilter("ignore", RuntimeWarning)
+#-----------------------------------------------------------------------------
+#def get_config(plt, ifu, config_file, drpall_file=None):
+#    if drpall_file is None:
+#        drpall_file = os.path.join(os.environ['MANGA_SPECTRO_REDUX'], os.environ['MANGADRP_VER'],
+#                                   'drpall-{0}.fits'.format(os.environ['MANGADRP_VER']))
+#
+#    # Use the DRPall file
+#    with fits.open(drpall_file) as hdu:
+#        indx = numpy.where(hdu['MANGA'].data['PLATEIFU'] == '{0}-{1}'.format(plt, ifu))[0]
+#        if len(indx) != 1:
+#            raise ValueError('{0}-{1} either does not exist or has more than one match!'.format(
+#                             plt, ifu))
+#
+#        MaNGADataCube.write_config(config_file, plt, ifu, z=hdu[1].data['z'][indx[0]],
+#                                   ell=1-hdu[1].data['nsa_elpetro_ba'][indx[0]],
+#                                   pa=hdu[1].data['nsa_elpetro_phi'][indx[0]],
+#                                   reff=hdu[1].data['nsa_elpetro_th50_r'][indx[0]],
+#                                   overwrite=True)
 
 
-@requires_remote
-def test_sres_ext():
-    file = remote_data_file(filename=MaNGADataCube.build_file_name(7815, 3702, log=True))
-    hdu = fits.open(file)
-    assert MaNGADataCube.spectral_resolution_extension(hdu) == 'LSFPRE', \
-                'Bad spectral resolution extension selection'
-    assert MaNGADataCube.spectral_resolution_extension(hdu, ext='SPECRES') == 'SPECRES', \
-                'Bad spectral resolution extension selection'
-    assert MaNGADataCube.spectral_resolution_extension(hdu, ext='junk') is None, \
-                'Should return None for a bad extension name.'
 
+def test_read_muse(cubefil, sresfil, directory_path=None, analysis_path=None,
+                      redshift=None, vdisp=None, ellipticity=None, pa=None, reff=None):
 
-@requires_remote
-def test_read():
-    cube = MaNGADataCube.from_plateifu(7815, 3702, directory_path=remote_data_file())
+    ifile = directory_path + cubefil
 
-    assert cube.file_name == MaNGADataCube.build_file_name(cube.plate, cube.ifudesign,
-                    log=cube.log), 'Name mismatch'
+    # Read the datacube
+    cube = MUSEDataCube(ifile, z=redshift, vdisp=vdisp, ell=ellipticity, pa=pa,
+                        reff=reff, sres_ifile=sresfil, sres_fill=True, covar_ext=None)
+    #cube = MaNGADataCube.from_plateifu(7815, 3702, directory_path=remote_data_file())
+
+    #assert cube.file_name == MaNGADataCube.build_file_name(cube.plate, cube.ifudesign,
+    #                log=cube.log), 'Name mismatch'
     assert cube.log, 'Should read the log-binned version by default.'
     assert cube.wcs is not None, 'WCS should be defined.'
     assert cube.shape[:2] == cube.spatial_shape, 'Spatial shape should be first two axes.'
@@ -47,27 +57,18 @@ def test_read():
             'Bad calculation of wavelength vector.'
     assert cube.covar is None, 'Covariance should not have been read'
 
-
-@requires_remote
-def test_read_correl():
-    cube = MaNGADataCube.from_plateifu(7815, 3702, directory_path=remote_data_file(),
-                                       covar_ext='GCORREL')
-    assert isinstance(cube.covar, Covariance), 'Incorrect type for covariance.'
-    assert cube.covar.shape == (cube.nspec,cube.nspec), 'Covariance has incorrect shape.'
-    assert cube.covar.is_correlation, 'Covariance object should be in a correlation mode.'
-    
-    # Check that the variances are all unity (or close to it when it's defined)
-    unique_var = numpy.unique(cube.covar.var)
-    assert numpy.allclose(unique_var[unique_var>0], 1.), 'Bad variance values'
+    embed()
 
 
-@requires_remote
-def test_wcs():
+
+
+
+def test_wcs_muse():
     cube = MaNGADataCube.from_plateifu(7815, 3702, directory_path=remote_data_file())
     x, y = cube.mean_sky_coordinates(offset=None)
     assert x[0,0] > x[-1,0], 'RA should increase from large to small indices'
     assert y[0,0] < y[0,-1], 'DEC should increase from small to small indices'
-    assert numpy.unravel_index(numpy.argmin( numpy.square(x - cube.prihdr['OBJRA']) 
+    assert numpy.unravel_index(numpy.argmin( numpy.square(x - cube.prihdr['OBJRA'])
                                             + numpy.square(y - cube.prihdr['OBJDEC'])), x.shape) \
                 == (21,21), 'Object should be at cube center.'
     x, y = cube.mean_sky_coordinates(center_coo=(x[0,0], y[0,0]))
@@ -76,8 +77,7 @@ def test_wcs():
     assert abs(x[21,21]) < 1e-2 and abs(y[21,21]) < 1e-2, 'Offset incorrect'
 
 
-@requires_remote
-def test_copyto():
+def test_copyto_muse():
     cube = MaNGADataCube.from_plateifu(7815, 3702, directory_path=remote_data_file())
     flux = cube.copy_to_array()
     assert not isinstance(flux, numpy.ma.MaskedArray), 'Should output normal array'
@@ -126,8 +126,8 @@ def test_copyto():
                              sres[i].data), 'Did not pull sres data.'
 
 
-@requires_remote
-def test_stats():
+
+def test_stats_muse():
     cube = MaNGADataCube.from_plateifu(7815, 3702, directory_path=remote_data_file())
 
     # Create a fake bin map
@@ -175,65 +175,68 @@ def test_stats():
             'S/N should be the same to better than 2%.'
 
 
-@requires_remote
-def test_read_lin():
+def test_read_lin_muse():
     cube = MaNGADataCube.from_plateifu(7815, 3702, directory_path=remote_data_file(), log=False)
     assert not cube.log, 'Wavelength sampling should be linear'
     assert numpy.isclose(numpy.std(numpy.diff(cube.wave)), 0.), \
                 'Wavelength sampling should be linear'
 
 
-@requires_remote
-def test_from_config():
-    cube = MaNGADataCube.from_config(data_test_file('datacube.ini'))
-    assert cube.meta['z'] == 0.0293823, 'Bad config file read'
-    assert cube.meta['ell'] == 0.110844, 'Bad config file read'
+
+def fit_one_cube_muse(cubefil, sresfil, directory_path=None, analysis_path=None,
+                      redshift=None, vdisp=None, ellipticity=None, pa=None, reff=None):
+    # Grab the required input parameters
+    #config_file = '{0}-{1}.cfg'.format(plt, ifu)
+    #get_config(plt, ifu, config_file, drpall_file=drpall_file)
+
+    ifile = directory_path + cubefil
+
+    # Read the datacube
+    cube = MUSEDataCube(ifile, z=redshift, vdisp=vdisp, ell=ellipticity, pa=pa,
+                        reff=reff, sres_ifile=sresfil, sres_fill=True, covar_ext=None)
+
+    embed()
 
 
-@requires_remote
-def test_load_rss():
-    cube = MaNGADataCube.from_plateifu(7815, 3702, directory_path=remote_data_file())
-    cube.load_rss()
+    # Stop here for now
+
+    # Define how you want to analyze the data
+    plan = AnalysisPlanSet([ AnalysisPlan(drpqa_key='SNRG',
+                                          bin_key='VOR10', #'HYB10',
+                                          continuum_key='MILESHCMPL10',
+                                          elmom_key='EMOMMPL10',
+                                          elfit_key='EFITMPL10', #'EFITMPL9DB',
+                                          spindex_key='INDXEN') ])
+
+    # Run it!
+    return manga_dap(cube, plan, verbose=2, directory_path=directory_path,
+                     analysis_path=analysis_path)
+#-----------------------------------------------------------------------------
 
 
-@requires_remote
-def test_covariance():
-    cube = MaNGADataCube.from_plateifu(7815, 3702, directory_path=remote_data_file())
+if __name__ == '__main__':
+    #drpver = 'v3_0_1'
+    #directory_path = os.path.join(os.environ['MANGADAP_DIR'], 'mangadap', 'data', 'remote')
+    #drpall_file = os.path.join(directory_path, 'drpall-{0}.fits'.format(drpver))
+    #fit_one_cube(7815, 3702, drpall_file=drpall_file, directory_path=directory_path,
+    #             analysis_path='./output')
 
-    with pytest.raises(ValueError):
-        # Have to load the RSS first
-        cube.covariance_matrix(1000)
+    directory_path = '/Users/rubin/Research/MUSE/gistwork/Tutorial/gistTutorial/inputData/'
+    cubefil = 'NGC0000.fits'
+    redshift = 0.008764
 
-    # Load the RSS
-    cube.load_rss()
+    sresfil = '/Users/rubin/Research/MUSE/gistwork/Tutorial/gistTutorial/configFiles/LSF-Config_MUSE_WFM'
 
-    # Construct a covariance matrix
-    C = cube.covariance_matrix(1000)
-    assert C.shape == (1764, 1764), 'Bad covariance shape'
+    # inclination = 35deg
+    ell = 1.0
+    pa = 145.0
+    reff = 59.7 # this is 95% radius for HII regions; Crocker+96
+    vdisp = 200.0
 
-    # Make it a correlation matrix and check it
-    C.to_correlation()
+    # What about flux units?
 
-    # Check that the variances are all unity (or close to it when it's defined)
-    unique_var = numpy.unique(numpy.diag(C.toarray()))
-    assert numpy.allclose(unique_var[unique_var>0], 1.), 'Bad correlation diagonal'
+    test_read_muse(cubefil, sresfil, directory_path=directory_path, analysis_path='./output',
+                      redshift=redshift, vdisp=vdisp, ellipticity=ell, pa=pa, reff=reff)
 
-    # Try multiple channels
-    C = cube.covariance_cube(channels=[1000,2000])
-    assert numpy.array_equal(C.input_indx, [1000,2000]), 'Bad matrix indices'
-    assert C.shape == (1764, 1764, 2), 'Bad covariance shape'
-
-    # Try to convert multiple channels
-    C.to_correlation()
-    # And reverting it
-    C.revert_correlation()
-
-    # Try to generate an approximate correlation matrix, covariance
-    # matrix, and covariance cube
-    approxC = cube.approximate_correlation_matrix()
-    approxC = cube.approximate_covariance_matrix(1000)
-    approxC = cube.approximate_covariance_cube(channels=[1000,2000])
-
-    # Variance should be the same for direct and approximate calculations
-    assert numpy.allclose(approxC.variance(), C.variance()), 'Variances should be the same.'
-
+    fit_one_cube_muse(cubefil, sresfil, directory_path=directory_path, analysis_path='./output',
+                      redshift=redshift, vdisp=vdisp, ellipticity=ell, pa=pa, reff=reff)
