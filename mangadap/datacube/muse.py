@@ -19,9 +19,14 @@ from IPython import embed
 
 import numpy
 import scipy
+from matplotlib import pyplot
+
 
 from astropy.io import fits
 from astropy.wcs import WCS
+
+from pydl.goddard.astro import airtovac
+from ..util import sampling
 
 from ..config import defaults
 from ..util.drpfits import DRPFits, DRPFitsBitMask
@@ -136,28 +141,113 @@ class MUSEDataCube(DataCube):
             flux = hdu['DATA'].data
             variance = hdu['STAT'].data
             ivar = 1.0/variance
+            error = variance**0.5
 
             datadim = numpy.shape(flux)
+            spatial_shape = datadim[1:]
+            nbins = numpy.prod(spatial_shape)
 
             # Define mask
             mask = numpy.full(datadim, False, dtype=bool)
-            mask[numpy.where(numpy.isnan(ivar))] = True
+            mask[numpy.where(~numpy.isfinite(ivar))] = True
+            mask[numpy.where(~numpy.isfinite(flux))] = True
 
-            # linear air wavelength array -- how do we want to get these into vacuum?
+            # Read in linear air wavelength array and convert to vacuum
             wave = datahdr['CRVAL3']+(numpy.arange(datadim[0]))*datahdr['CD3_3']
+            wave = airtovac(wave)
 
-            # for specres, we want 1sigma LSF in Angstroms, correct?
+            # Read in spectral resolution
+            # for specres, we want 1sigma LSF in Angstroms, correct?  Yes!
             # MUSE sres file gives FWHM LSF in Angstroms
+            # Does Francesco know if this is like pre-pixelized or non-pre-pixelized LSF?
             lsf = numpy.genfromtxt(sres_ifile, comments='#')
-            lsf_wave = lsf[:,0]
-            lsf_sig = lsf[:,1] / (2.0 * numpy.sqrt(2.0*numpy.log(2.0)))
+            lsf_wave_air = lsf[:, 0]
+            lsf_wave = airtovac(lsf_wave_air)
+            lsf_sig = lsf[:, 1] / (2.0 * numpy.sqrt(2.0 * numpy.log(2.0)))
+            # pydl - has airtovac, imported in template library
 
             # Interpolate onto wavelength array?
-            sres_func = scipy.interpolate.interp1d(lsf_wave, lsf_sig, kind='linear', fill_value=(lsf_sig[0], lsf_sig[-1]))
-            sres = numpy.ma.MaskedArray(sres_func(wave))
-            #embed()
+            # Convert lsf wavelength array into vacuum (done above), then interpolate using resampled cube
+            sres_func = scipy.interpolate.interp1d(lsf_wave, lsf_sig, assume_sorted=True,
+                                                   fill_value='extrapolate')
 
-            # Does Francesco know if this is like pre-pixelized or non-pre-pixelized LSF?
+            # Number of angstroms per pixel
+            ang_per_pix = numpy.array([sampling.angstroms_per_pixel(wave, log=False, regular=False)])
+            fullRange = numpy.array([numpy.amin(wave), numpy.amax(wave)]).astype(float)
+
+            # Compute desired spectral step
+            # Is this ok??  sampling.spectral_coordinate_step breaks because of the uneven sampling
+            # Actually, it looks like I need to come up with a desired logarithmic spectral step
+            # dw = numpy.diff(wave)
+            # How do we set this??
+            minimum_step = 0.00005
+
+            # Get the number of pixels needed
+            npix, newRange = sampling.grid_npix(rng=fullRange, dx=minimum_step, log=True)
+
+            resampled_flux = numpy.zeros((npix, spatial_shape[0], spatial_shape[1]), dtype=numpy.float64)
+            resampled_error = numpy.zeros((npix, spatial_shape[0], spatial_shape[1]), dtype=numpy.float64)
+            resampled_wave = numpy.zeros((npix), dtype=numpy.float64)
+            resampled_mask = numpy.zeros((npix, spatial_shape[0], spatial_shape[1]), dtype=bool)
+
+            spatial_index = numpy.array([(i, j) for i, j in zip(*numpy.unravel_index(numpy.arange(nbins), spatial_shape))])
+
+            # Loop through each bin
+            # Also need to deal with masks
+            #for i in range(npix):
+                # Rebin the observed wavelength range
+            # Do I need to add xBorders?  I guess not...
+            # What do we do with the covar this produces?  Actually, setting covar=True makes this crash with
+            # "Covariance is currently only calculated for step resampling"
+            i = 0
+            r = sampling.Resample(flux[:,spatial_index[i][0],spatial_index[i][1]],
+                                    e=error[:,spatial_index[i][0],spatial_index[i][1]],
+                                    mask=mask[:,spatial_index[i][0],spatial_index[i][1]],
+                                    x=wave, inLog=False,
+                                    newRange=newRange, newLog=True,
+                                    newdx=minimum_step, step=True, covar=True)
+
+            # Save the result
+            #if(i==0):
+            resampled_wave = r.outx
+
+            resampled_flux[:,spatial_index[i][0],spatial_index[i][1]] = r.outy
+            resampled_error[:,spatial_index[i][0],spatial_index[i][1]] = r.oute
+            indx = r.outf < 0.9
+
+            # TODO: Set the flux to 0?
+            resampled_flux[:,spatial_index[i][0],spatial_index[i][1]][indx] = 0.0
+            resampled_error[:,spatial_index[i][0],spatial_index[i][1]][indx] = 0.0     # What do we want this to be?
+            resampled_mask[:,spatial_index[i][0],spatial_index[i][1]][indx] = True
+
+            # Resample the spectral resolution by simple interpolation.
+            sres = numpy.ma.MaskedArray(sres_func(resampled_wave))
+            sres[indx] = 0.0
+
+            # Plot original spectrum
+            pyplot.plot(wave, flux[:,spatial_index[i][0],spatial_index[i][1]], label='Original Spectrum')
+            pyplot.plot(wave, error[:,spatial_index[i][0],spatial_index[i][1]], label='Original Error')
+            pyplot.plot(wave, mask[:, spatial_index[i][0], spatial_index[i][1]], label='Original Mask')
+
+            pyplot.plot(resampled_wave, resampled_flux[:,spatial_index[i][0],spatial_index[i][1]], label='Resampled Spectrum')
+            pyplot.plot(resampled_wave, resampled_mask[:, spatial_index[i][0], spatial_index[i][1]],
+                        label='Resampled Mask')
+
+            pyplot.legend()
+            pyplot.xlabel('Wavelength')
+            pyplot.ylabel('Flux')
+            pyplot.show()
+
+
+
+            embed()
+
+            # look in template library class -- does resampling, converts to vacuum
+            # In muse datacube, resample, then write a new file
+            # there is a resampling class in utils; needs to be logarithmically binned here
+
+
+
 
             # NOTE: Need to keep a log of what spectral resolution
             # vectors were used so that the same vectors are read from
