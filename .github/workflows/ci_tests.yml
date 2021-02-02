@@ -34,6 +34,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip wheel
         python -m pip install -r requirements_dev.txt
+        python -m pip install -e .
     - name: Print critical environment versions
       run: |
         python -c "import sys; print(f'Python {sys.version}')"
@@ -44,7 +45,7 @@ jobs:
         python -c "import astropy; print(f'astropy {astropy.__version__}')"
     - name: Run tests
       run: |
-        python setup.py test
+        pytest
 
   codestyle:
     runs-on: ubuntu-latest
