@@ -44,7 +44,7 @@ jobs:
         python -c "import astropy; print(f'astropy {astropy.__version__}')"
     - name: Run tests
       run: |
-        pytest
+        python setup.py test
 
   codestyle:
     runs-on: ubuntu-latest
