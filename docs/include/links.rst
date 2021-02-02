@@ -90,14 +90,16 @@
 .. _SDSS Bitmasks: http://www.sdss.org/dr16/algorithms/bitmasks/
 .. _Firefly VAC: https://www.sdss.org/dr16/manga/manga-data/manga-firefly-value-added-catalog/
 .. _Pipe3D VAC: https://www.sdss.org/dr16/manga/manga-data/manga-pipe3d-value-added-catalog/
+.. _MaNGA Bitmasks: https://www.sdss.org/dr16/manga/manga-data/metadata/#Bitmasks
 
-.. papers
+.. citations
 
 .. _Law et al. (2016, AJ, 152, 83): https://ui.adsabs.harvard.edu/abs/2016AJ....152...83L/abstract
 .. _Westfall et al. (2019, AJ, 158, 231): https://ui.adsabs.harvard.edu/abs/2019AJ....158..231W/abstract
 .. _Belfiore et al. (2019, AJ, 158, 160): https://ui.adsabs.harvard.edu/abs/2019AJ....158..160B/abstract
 .. _Maraston et al. (2020, MNRAS, 496, 2962): https://ui.adsabs.harvard.edu/abs/2020MNRAS.496.2962M/abstract
 .. _Law et al. (2021, AJ, 161, 52): https://ui.adsabs.harvard.edu/abs/2021AJ....161...52L/abstract
+.. _Cappellari & Copin (2003, MNRAS, 342, 345): https://ui.adsabs.harvard.edu/abs/2003MNRAS.342..345C/abstract
 
 .. mangadap github
 
@@ -106,23 +108,27 @@
 
 .. TRM
 
-.. _DRPall: https://trac.sdss.org/wiki/MANGA/TRM/TRM_MPL-10/metadata#DRP:DRPall
-.. _DRP datamodel: https://trac.sdss.org/wiki/MANGA/TRM/TRM_MPL-10/datamodel
-.. _DRP HDUCLASS: https://trac.sdss.org/wiki/MANGA/TRM/TRM_MPL-10/datamodel#HDUCLASS
-.. _DRP LOGCUBE: https://trac.sdss.org/wiki/MANGA/TRM/TRM_MPL-10/datamodel#manga-PLATE-IFUDESIGN-LOGCUBE.fits.gz
+.. _DRPall: https://trac.sdss.org/wiki/MANGA/TRM/TRM_MPL-11/metadata#DRP:DRPall
+.. _DRP datamodel: https://trac.sdss.org/wiki/MANGA/TRM/TRM_MPL-11/datamodel
+.. _DRP HDUCLASS: https://trac.sdss.org/wiki/MANGA/TRM/TRM_MPL-11/datamodel#HDUCLASS
+.. _DRP LOGCUBE: https://trac.sdss.org/wiki/MANGA/TRM/TRM_MPL-11/datamodel#manga-PLATE-IFUDESIGN-LOGCUBE.fits.gz
 
 .. SAS
 
 .. _DR15 SAS: https://dr15.sdss.org/sas/dr15/manga/spectro/analysis/v2_4_3/2.2.1/
 .. _MPL-10 SAS: https://data.sdss.org/sas/mangawork/manga/spectro/analysis/v3_0_1/3.0.1
+.. _MPL-11 SAS: https://data.sdss.org/sas/mangawork/manga/spectro/analysis/v3_1_1/3.1.0
 .. _MANGA_SPECTRO_ANALYSIS: https://data.sdss.org/sas/mangawork/manga/spectro/analysis
 .. _MANGA_SPECTRO_REDUX: https://data.sdss.org/sas/mangawork/manga/spectro/redux
 
 .. _MPL-9 error report: https://data.sdss.org/sas/mangawork/manga/spectro/analysis/v2_7_1/2.4.1/log/error_report.txt
 .. _MPL-10 error report: https://data.sdss.org/sas/mangawork/manga/spectro/analysis/v3_0_1/3.0.1/log/error_report.txt
+.. _MPL-11 error report: https://data.sdss.org/sas/mangawork/manga/spectro/analysis/v3_1_1/3.1.0/log/error_report.txt
 
 .. Example files
-.. _manga-8138-12704-MAPS-HYB10-MILESHC-MASTARHC2.fits.gz: https://data.sdss.org/sas/mangawork/manga/spectro/analysis/MPL-10/HYB10-MILESHC-MASTARHC2/8138/12704/manga-8138-12704-MAPS-HYB10-MILESHC-MASTARHC2.fits.gz
+
+.. _manga-8138-12704-MAPS-HYB10-MILESHC-MASTARSSP.fits.gz: https://data.sdss.org/sas/mangawork/manga/spectro/analysis/MPL-11/HYB10-MILESHC-MASTARSSP/8138/12704/manga-8138-12704-MAPS-HYB10-MILESHC-MASTARSSP.fits.gz
+.. _manga-8138-12704-LOGCUBE-HYB10-MILESHC-MASTARSSP.fits.gz: https://data.sdss.org/sas/mangawork/manga/spectro/analysis/MPL-11/HYB10-MILESHC-MASTARSSP/8138/12704/manga-8138-12704-LOGCUBE-HYB10-MILESHC-MASTARSSP.fits.gz
 
 .. marvin
 

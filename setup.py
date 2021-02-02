@@ -13,9 +13,9 @@ from IPython import embed
 import requests
 import warnings
 
-_IDLUTILS_VER = 'v5_5_35'
-_MANGADRP_VER = 'v3_0_1'
-_MANGACORE_VER = 'v1_8_1'
+_IDLUTILS_VER = 'v5_5_36'
+_MANGADRP_VER = 'v3_1_1'
+_MANGACORE_VER = 'v1_9_1'
 
 _VERSION = '3.1.1dev'
 _RELEASE = 'dev' not in _VERSION
