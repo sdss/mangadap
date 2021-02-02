@@ -67,6 +67,14 @@ To install only the DAP dependencies, run:
 
     pip3 install -r requirements.txt
 
+To install the additional development (including the testing package
+``pytest``) and documentation dependencies, also run::
+
+.. code-block:: console
+
+    pip3 install -r requirements_doc.txt
+    pip3 install -r requirements_dev.txt
+
 
 Test your installation
 ----------------------
@@ -84,7 +92,7 @@ To test the installation, you can do one of the following:
     .. code-block:: console
 
         cd mangadap/tests
-        python3 -m pytest .
+        pytest .
 
 Some tests requires a set of "remote" data that are not located in
 the repo for space considerations. Downloading the data used by these
@@ -100,7 +108,7 @@ include usage of that data like this:
 
         python3 download_test_data.py
         cd mangadap/tests
-        python3 -m pytest .
+        pytest .
 
 
 Local Environment Setup
@@ -115,7 +123,7 @@ below.
 +----------------------------+-------------------------------------+------------------------------------------------+
 |                   Variable |                             Default |                                       Comments |
 +============================+=====================================+================================================+
-| ``MANGADRP_VER``           | ``v3_0_1`` (i.e., MPL-10)           | Version of the DRP, used for path construction |
+| ``MANGADRP_VER``           | ``v3_1_1`` (i.e., MPL-11)           | Version of the DRP, used for path construction |
 +----------------------------+-------------------------------------+------------------------------------------------+
 | ``MANGA_SPECTRO_REDUX``    | ``$HOME/MaNGA/redux``               | Root path for the reduced data                 |
 +----------------------------+-------------------------------------+------------------------------------------------+
@@ -132,10 +140,10 @@ that is sourced when you want to run the DAP.  The lines added to your
 .. code-block:: bash
 
     export MANGA_SPECTRO_REDUX=/Volumes/MaNGA/redux
-    export MANGADRP_VER=v3_0_1
+    export MANGADRP_VER=v3_1_1
 
     export MANGA_SPECTRO_ANALYSIS=/Volumes/MaNGA/analysis
-    export MANGADAP_VER=3.0.1
+    export MANGADAP_VER=3.1.0
 
 .. note::
 
