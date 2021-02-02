@@ -1,0 +1,68 @@
+# Adapted from pypeit/.github/workflows/ci_tests.yml
+
+name: CI Tests
+
+on:
+  push:
+    branches: [ master ]
+    tags:
+  pull_request:
+    branches: [ master ]
+
+env:
+  SETUP_XVFB: True  # avoid issues if mpl tries to open a GUI window
+
+jobs:
+  ci-tests:
+    name: Python-${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    if: "!(contains(github.event.head_commit.message, '[skip ci]') || contains(github.event.head_commit.message, '[ci skip]'))"
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python-version: [3.7, 3.8, 3.9]
+
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install development dependencies
+      run: |
+        python -m pip install --upgrade pip wheel
+        python -m pip install -r requirements_dev.txt
+        python -m pip install -e .
+    - name: Print critical environment versions
+      run: |
+        python -c "import sys; print(f'Python {sys.version}')"
+        python -c "import pip; print(f'pip {pip.__version__}')"
+        python -c "import setuptools; print(f'setuptools {setuptools.__version__}')"
+        python -c "import numpy; print(f'numpy {numpy.__version__}')"
+        python -c "import scipy; print(f'scipy {scipy.__version__}')"
+        python -c "import astropy; print(f'astropy {astropy.__version__}')"
+    - name: Run tests
+      run: |
+        pytest
+
+  codestyle:
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, '[ci skip]')"
+    steps:
+    - uses: actions/checkout@v2
+    - name: Python codestyle check
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install pycodestyle
+    - name: Check for runtime errors using pycodestyle
+      run: |
+        pycodestyle mangadap --count --select=E9
+
+
+
