@@ -96,6 +96,8 @@
 .. _Law et al. (2016, AJ, 152, 83): https://ui.adsabs.harvard.edu/abs/2016AJ....152...83L/abstract
 .. _Westfall et al. (2019, AJ, 158, 231): https://ui.adsabs.harvard.edu/abs/2019AJ....158..231W/abstract
 .. _Belfiore et al. (2019, AJ, 158, 160): https://ui.adsabs.harvard.edu/abs/2019AJ....158..160B/abstract
+.. _Maraston et al. (2020, MNRAS, 496, 2962): https://ui.adsabs.harvard.edu/abs/2020MNRAS.496.2962M/abstract
+.. _Law et al. (2021, AJ, 161, 52): https://ui.adsabs.harvard.edu/abs/2021AJ....161...52L/abstract
 
 .. mangadap github
 
