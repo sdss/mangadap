@@ -19,6 +19,7 @@ from IPython import embed
 
 import numpy
 import scipy
+import astropy
 from matplotlib import pyplot
 
 
@@ -91,8 +92,9 @@ class MUSEDataCube(DataCube):
             arbitrary wavelength channel using the RSS file, see
             :func:`mangadap.datacube.datacube.DataCube.covariance_matrix`.
     """
-    def __init__(self, ifile, z=None, vdisp=None, ell=None, pa=None, reff=None, sres_ifile=None,
-                 sres_fill=True, covar_ext=None):
+    def __init__(self, ifile, objra=None, objdec=None, z=None, vdisp=None, ell=None, \
+                 pa=None, reff=None, sres_ifile=None,
+                 sres_fill=True, covar_ext=None, plate=None, ifudesign=None, ebvgal=None):
 
 
         if not os.path.isfile(ifile):
@@ -104,6 +106,10 @@ class MUSEDataCube(DataCube):
         # Instantiate the DRPFits base
         # DRPFits.__init__(self, int(plate), int(ifudesign), 'CUBE', log='LOG' in log,
         #                  directory_path=directory_path)
+        self.filename = os.path.abspath(ifile)
+        self.plate = plate
+        self.ifudesign = ifudesign
+        self.drpver = '0v0'
 
         # Collect the metadata into a dictionary
         meta = {}
@@ -112,6 +118,9 @@ class MUSEDataCube(DataCube):
         meta['ell'] = ell
         meta['pa'] = pa
         meta['reff'] = reff
+        meta['OBJRA'] = objra
+        meta['OBJDEC'] = objdec
+
 
         #embed()
 
@@ -143,14 +152,19 @@ class MUSEDataCube(DataCube):
             ivar = 1.0/variance
             error = variance**0.5
 
+            ## Add objra and objdec to prihdr
+            #prihdr['OBJRA'] = objra
+            #prihdr['OBJDEC'] = objdec
+            prihdr['EBVGAL'] = ebvgal
+
+
             datadim = numpy.shape(flux)
             spatial_shape = datadim[1:]
             nbins = numpy.prod(spatial_shape)
 
             # Define mask
             mask = numpy.full(datadim, False, dtype=bool)
-            mask[numpy.where(~numpy.isfinite(ivar))] = True
-            mask[numpy.where(~numpy.isfinite(flux))] = True
+            mask[numpy.logical_not(numpy.isfinite(ivar)) | numpy.logical_not(numpy.isfinite(flux))] = True
 
             # Read in linear air wavelength array and convert to vacuum
             wave = datahdr['CRVAL3']+(numpy.arange(datadim[0]))*datahdr['CD3_3']
@@ -176,14 +190,11 @@ class MUSEDataCube(DataCube):
             fullRange = numpy.array([numpy.amin(wave), numpy.amax(wave)]).astype(float)
 
             # Compute desired spectral step
-            # Is this ok??  sampling.spectral_coordinate_step breaks because of the uneven sampling
-            # Actually, it looks like I need to come up with a desired logarithmic spectral step
-            # dw = numpy.diff(wave)
-            # How do we set this??
-            minimum_step = 0.00005
+            l7400 = numpy.argmin(numpy.abs(wave-7400.0))
+            dlogl = numpy.log10(wave[l7400]) - numpy.log10(wave[l7400-1])
 
             # Get the number of pixels needed
-            npix, newRange = sampling.grid_npix(rng=fullRange, dx=minimum_step, log=True)
+            npix, newRange = sampling.grid_npix(rng=fullRange, dx=dlogl, log=True)
 
             resampled_flux = numpy.zeros((npix, spatial_shape[0], spatial_shape[1]), dtype=numpy.float64)
             resampled_error = numpy.zeros((npix, spatial_shape[0], spatial_shape[1]), dtype=numpy.float64)
@@ -193,60 +204,56 @@ class MUSEDataCube(DataCube):
             spatial_index = numpy.array([(i, j) for i, j in zip(*numpy.unravel_index(numpy.arange(nbins), spatial_shape))])
 
             # Loop through each bin
-            # Also need to deal with masks
-            #for i in range(npix):
+            for i in range(nbins):
                 # Rebin the observed wavelength range
-            # Do I need to add xBorders?  I guess not...
-            # What do we do with the covar this produces?  Actually, setting covar=True makes this crash with
-            # "Covariance is currently only calculated for step resampling"
-            i = 0
-            r = sampling.Resample(flux[:,spatial_index[i][0],spatial_index[i][1]],
-                                    e=error[:,spatial_index[i][0],spatial_index[i][1]],
-                                    mask=mask[:,spatial_index[i][0],spatial_index[i][1]],
-                                    x=wave, inLog=False,
-                                    newRange=newRange, newLog=True,
-                                    newdx=minimum_step, step=True, covar=True)
+                # Do I need to add xBorders?  I guess not...
+                # What do we do with the covar this produces?  -- Kyle says nothing
 
-            # Save the result
-            #if(i==0):
-            resampled_wave = r.outx
+                r = sampling.Resample(flux[:,spatial_index[i][0],spatial_index[i][1]],
+                                        e=error[:,spatial_index[i][0],spatial_index[i][1]],
+                                        mask=mask[:,spatial_index[i][0],spatial_index[i][1]],
+                                        x=wave, inLog=False,
+                                        newRange=newRange, newLog=True,
+                                        newdx=dlogl, step=True, covar=False)
 
-            resampled_flux[:,spatial_index[i][0],spatial_index[i][1]] = r.outy
-            resampled_error[:,spatial_index[i][0],spatial_index[i][1]] = r.oute
-            indx = r.outf < 0.9
+                # Save the result
+                if(i==0):
+                    resampled_wave = r.outx
 
-            # TODO: Set the flux to 0?
-            resampled_flux[:,spatial_index[i][0],spatial_index[i][1]][indx] = 0.0
-            resampled_error[:,spatial_index[i][0],spatial_index[i][1]][indx] = 0.0     # What do we want this to be?
-            resampled_mask[:,spatial_index[i][0],spatial_index[i][1]][indx] = True
+                resampled_flux[:,spatial_index[i][0],spatial_index[i][1]] = r.outy
+                resampled_error[:,spatial_index[i][0],spatial_index[i][1]] = r.oute
+                indx = r.outf < 0.9
+
+                resampled_flux[:,spatial_index[i][0],spatial_index[i][1]][indx] = 0.0
+                resampled_error[:,spatial_index[i][0],spatial_index[i][1]][indx] = 1.0
+                resampled_mask[:,spatial_index[i][0],spatial_index[i][1]][indx] = True
+
+
+            # Recreate ivar
+            resampled_ivar = 1.0 / resampled_error**2
 
             # Resample the spectral resolution by simple interpolation.
             sres = numpy.ma.MaskedArray(sres_func(resampled_wave))
-            sres[indx] = 0.0
+            # sres[indx] = 0.0
+
+            # Set one corner to be masked to force first bin index to end up as -1
+            resampled_mask[:,spatial_index[0][0],spatial_index[0][1]] = True
+
 
             # Plot original spectrum
-            pyplot.plot(wave, flux[:,spatial_index[i][0],spatial_index[i][1]], label='Original Spectrum')
-            pyplot.plot(wave, error[:,spatial_index[i][0],spatial_index[i][1]], label='Original Error')
-            pyplot.plot(wave, mask[:, spatial_index[i][0], spatial_index[i][1]], label='Original Mask')
+            #i=100
+            #pyplot.plot(wave, flux[:,spatial_index[i][0],spatial_index[i][1]], label='Original Spectrum')
+            #pyplot.plot(wave, error[:,spatial_index[i][0],spatial_index[i][1]], label='Original Error')
+            #pyplot.plot(wave, mask[:, spatial_index[i][0], spatial_index[i][1]], label='Original Mask')
 
-            pyplot.plot(resampled_wave, resampled_flux[:,spatial_index[i][0],spatial_index[i][1]], label='Resampled Spectrum')
-            pyplot.plot(resampled_wave, resampled_mask[:, spatial_index[i][0], spatial_index[i][1]],
-                        label='Resampled Mask')
+            #pyplot.plot(resampled_wave, resampled_flux[:,spatial_index[i][0],spatial_index[i][1]], label='Resampled Spectrum')
+            #pyplot.plot(resampled_wave, resampled_mask[:, spatial_index[i][0], spatial_index[i][1]],
+            #            label='Resampled Mask')
 
-            pyplot.legend()
-            pyplot.xlabel('Wavelength')
-            pyplot.ylabel('Flux')
-            pyplot.show()
-
-
-
-            embed()
-
-            # look in template library class -- does resampling, converts to vacuum
-            # In muse datacube, resample, then write a new file
-            # there is a resampling class in utils; needs to be logarithmically binned here
-
-
+            #pyplot.legend()
+            #pyplot.xlabel('Wavelength')
+            #pyplot.ylabel('Flux')
+            #pyplot.show()
 
 
             # NOTE: Need to keep a log of what spectral resolution
@@ -255,6 +262,8 @@ class MUSEDataCube(DataCube):
             #self.sres_ext, sres = DRPFits.spectral_resolution(hdu, ext=sres_ext, fill=sres_fill)
             #self.sres_fill = sres_fill
             #sres = sres.filled(0.0)
+
+
 
             # NOTE: Transposes are done here because of how the data is
             # read from the fits file. The covariance is NOT transposed
@@ -265,27 +274,75 @@ class MUSEDataCube(DataCube):
             # is expected to be okay because numpy array-flattening
             # always performs a C-like flattening, even if the memory
             # storage is Fortran contiguous.
-            DataCube.__init__(self, flux.T, wave=wave,
-                              ivar=ivar.T, mask=mask.T, bitmask=None,
-                              sres=sres, covar=covar, wcs=WCS(header=datahdr, fix=True),
-                              pixelscale=0.2, log=False, meta=meta, prihdr=prihdr,
+
+            # Is it a problem that the header now has the wrong wavelength info????
+
+            DataCube.__init__(self, resampled_flux.T, wave=resampled_wave,
+                              ivar=resampled_ivar.T, mask=resampled_mask.T, bitmask=None,
+                              sres=sres, covar=None, wcs=WCS(header=datahdr, fix=True),
+                              pixelscale=0.2, log=True, meta=meta, prihdr=prihdr,
                               fluxhdr=datahdr)
         print('Reading MUSE datacube data ... DONE')
-        embed()
+        #embed()
 
         # Try to use the header to set the DRP version
-        self.drpver = self.prihdr['VERSDRP3'] if 'VERSDRP3' in self.prihdr \
-                        else defaults.drp_version()
+        #self.drpver = self.prihdr['VERSDRP3'] if 'VERSDRP3' in self.prihdr \
+        #                else defaults.drp_version()
         # Reduction path is always set to the default. A warning is
         # thrown if the default reduction path is not the same as the
         # path expected for the file.
-        self.redux_path = defaults.drp_redux_path(drpver=self.drpver)
-        if self.directory_path != defaults.drp_directory_path(self.plate, drpver=self.drpver,
-                                                              redux_path=self.redux_path):
-            warnings.warn('Default reduction path does not match file path.  May not be able to '
-                          'find paired RSS file if requested.')
+        #self.redux_path = defaults.drp_redux_path(drpver=self.drpver)
+        #if self.directory_path != defaults.drp_directory_path(self.plate, drpver=self.drpver,
+        #                                                      redux_path=self.redux_path):
+        #    warnings.warn('Default reduction path does not match file path.  May not be able to '
+        #                  'find paired RSS file if requested.')
 
     # TODO: Include a class method that instantiates from (or wraps a Marvin Cube)
+
+
+    def file_path(self):
+
+        return self.filename
+
+
+    def mean_sky_coordinates(self, center_coo=None, offset='OBJ'):
+        """
+        Calculate the sky coordinates for each spaxel.
+
+        This is a simple wrapper for
+        :func:`mangadap.datacube.datacube.DataCube.mean_sky_coordinates`
+        that passes the relevant set of center coordinates; see that
+        function for the default behavior. Any provided coordinates
+        (see ``center_coo``) take precedence.
+
+        Args:
+            center_coo (:obj:`tuple`, optional):
+                A two-tuple with the coordinates in right-ascension
+                and declination for the coordinate-frame origin. If
+                None, no offset is performed.
+            offset (:obj:`str`, optional):
+                The offset coordinates to use from the primary
+                header. Must be either 'obj' or 'ifu'. If None, no
+                header coordinates are used.
+
+        Returns:
+            :obj:`tuple`: Two `numpy.ndarray`_ objects with the RA
+            and declination of each pixel in degrees, or its offset
+            from the center in arcseconds. In both cases the shape of
+            the returned arrays matches the spatial shape of the
+            datacube.
+        """
+        if center_coo is not None and offset is not None:
+            warnings.warn('Center coordinates provided directly.  Ignore other offset requests.')
+        if offset is not None and offset.upper() not in ['OBJ', 'IFU']:
+            raise ValueError('Offset must be None, obj or ifu.')
+        _center_coo = (self.meta['{0}RA'.format(offset.upper())],
+                       self.meta['{0}DEC'.format(offset.upper())]) \
+                           if center_coo is None and offset is not None else center_coo
+        return super().mean_sky_coordinates(center_coo=_center_coo)
+
+
+    ### Everything below this is old, from manga.py
 
     def from_cubefil(cls, infil, **kwargs):
         """
@@ -328,8 +385,6 @@ class MUSEDataCube(DataCube):
         #                                    redux_path=redux_path, directory_path=directory_path)
         #return cls(os.path.join(path, file_name), **kwargs)
         return cls(infil, **kwargs)
-
-
 
 
 
@@ -399,127 +454,6 @@ class MUSEDataCube(DataCube):
         return DRPFits.default_paths(plate, ifudesign, 'CUBE', log=log, drpver=drpver,
                                      redux_path=redux_path, directory_path=directory_path)
 
-    @classmethod
-    def from_plateifu(cls, plate, ifudesign, log=True, drpver=None, redux_path=None,
-                      directory_path=None, **kwargs):
-        """
-        Construct a :class:`mangadap.datacube.manga.MaNGADataCube`
-        object based on its plate-ifu designation.
-
-        This is a simple wrapper function that calls
-        :func:`default_paths` to construct the file names, and then
-        calls the class instantiation method.
-
-        Args:
-            plate (:obj:`int`):
-                Plate number
-            ifudesign (:obj:`int`):
-                IFU design
-            log (:obj:`bool`, optional):
-                Use the datacube that is logarithmically binned in
-                wavelength.
-            drpver (:obj:`str`, optional):
-                DRP version, which is used to define the default DRP
-                redux path. Default is defined by
-                :func:`mangadap.config.defaults.drp_version`
-            redux_path (:obj:`str`, optional):
-                The path to the top level directory containing the
-                DRP output files for a given DRP version. Default is
-                defined by
-                :func:`mangadap.config.defaults.drp_redux_path`.
-            directory_path (:obj:`str`, optional):
-                The exact path to the DRP file. Default is defined by
-                :func:`mangadap.config.defaults.drp_directory_path`.
-                Providing this ignores anything provided for
-                ``drpver`` or ``redux_path``.
-            **kwargs:
-                Keyword arguments passed directly to the primary
-                instantiation method; see
-                :class:`mangadap.datacube.manga.MaNGADataCube` or
-                :class:`mangadap.spectra.manga.MaNGARSS`.
-        """
-        path, file_name = cls.default_paths(int(plate), int(ifudesign), log=log, drpver=drpver,
-                                            redux_path=redux_path, directory_path=directory_path)
-        return cls(os.path.join(path, file_name), **kwargs)
-
-    def load_rss(self, force=False):
-        """
-        Try to load the source row-stacked spectra for this datacube.
-
-        If :attr:`~mangadap.datacube.datacube.DataCube.rss` is not
-        None, this method does not attempt to reload it, unless
-        ``force`` is True.
-
-        The method first looks for the relevant file in the same
-        directory with the datacube. If the file is not there, it
-        uses the DRP version in the header of the datacube file and
-        the paths defined by the keyword arguments to construct the
-        nominal path to the RSS file. If the file is also not there,
-        the method faults.
-
-        Nothing is returned. If successful, the method initializes
-        the row-stacked spectra object
-        (:class:`mangadap.spectra.manga.MaNGARSS`) to
-        :attr:`~mangadap.datacube.datacube.DataCube.rss`.
-
-        Args:
-            force (:obj:`bool`, optional):
-                Reload the row-stacked spectra if
-                :attr:`~mangadap.datacube.datacube.DataCube.rss` is
-                not None.
-        """
-        if self.rss is not None and not force:
-            return
-
-        rss_file = DRPFits.build_file_name(self.plate, self.ifudesign, 'RSS', log=self.log)
-        rss_file_path = os.path.join(self.directory_path, rss_file)
-        if not os.path.isfile(rss_file_path):
-            # Not in this directory.  Check the nominal directory
-            warnings.warn('Could not find: {0}'.format(rss_file_path))
-            rss_file_path = os.path.join(
-                    defaults.drp_directory_path(self.plate, drpver=self.drpver,
-                                                redux_path=self.redux_path), rss_file)
-        if not os.path.isfile(rss_file_path):
-            warnings.warn('Could not find: {0}'.format(rss_file_path))
-            raise FileNotFoundError('Could not find RSS file.')
-
-        self.rss = MaNGARSS(rss_file_path, sres_ext=self.sres_ext, sres_fill=self.sres_fill)
-
-    def mean_sky_coordinates(self, center_coo=None, offset='OBJ'):
-        """
-        Calculate the sky coordinates for each spaxel.
-
-        This is a simple wrapper for
-        :func:`mangadap.datacube.datacube.DataCube.mean_sky_coordinates`
-        that passes the relevant set of center coordinates; see that
-        function for the default behavior. Any provided coordinates
-        (see ``center_coo``) take precedence.
-
-        Args:
-            center_coo (:obj:`tuple`, optional):
-                A two-tuple with the coordinates in right-ascension
-                and declination for the coordinate-frame origin. If
-                None, no offset is performed.
-            offset (:obj:`str`, optional):
-                The offset coordinates to use from the primary
-                header. Must be either 'obj' or 'ifu'. If None, no
-                header coordinates are used.
-
-        Returns:
-            :obj:`tuple`: Two `numpy.ndarray`_ objects with the RA
-            and declination of each pixel in degrees, or its offset
-            from the center in arcseconds. In both cases the shape of
-            the returned arrays matches the spatial shape of the
-            datacube.
-        """
-        if center_coo is not None and offset is not None:
-            warnings.warn('Center coordinates provided directly.  Ignore other offset requests.')
-        if offset is not None and offset.upper() not in ['OBJ', 'IFU']:
-            raise ValueError('Offset must be None, obj or ifu.')
-        _center_coo = (self.prihdr['{0}RA'.format(offset.upper())],
-                       self.prihdr['{0}DEC'.format(offset.upper())]) \
-                           if center_coo is None and offset is not None else center_coo
-        return super().mean_sky_coordinates(center_coo=_center_coo)
 
     def approximate_correlation_matrix(self, sigma_rho=1.92, rlim=None, rho_tol=None, redo=False):
         """

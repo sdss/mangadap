@@ -579,8 +579,10 @@ class DataCube:
 
         # Add in any masked data
         if use_mask:
-            mask |= self.mask if self.bitmask is None \
-                    else self.bitmask.flagged(self.mask.reshape(nspec,-1), flag=flag)
+            ## KHRR -- can we reshape self.mask??????
+            #mask |= self.mask if self.bitmask is None \
+            mask |= self.mask.reshape(nspec,-1) if self.bitmask is None \
+                else self.bitmask.flagged(self.mask.reshape(nspec,-1), flag=flag)
 
         # Create the output MaskedArray
         # TODO: Handle when attr is None

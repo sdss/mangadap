@@ -808,7 +808,13 @@ class SpatiallyBinnedSpectra:
         """
         # Get the unique bins and the number of spectra in each bin
         # TODO: Below assumes that the first unique value is always -1!!
-        unique_bins, bin_count = map(lambda x : x[1:], numpy.unique(bin_indx, return_counts=True))
+
+        ## KHRR adding to relax this assumption
+        if(numpy.min(numpy.unique(bin_indx))==-1):
+            unique_bins, bin_count = map(lambda x : x[1:], numpy.unique(bin_indx, return_counts=True))
+            ## KHRR -- the above line was original
+        else:
+            unique_bins, bin_count = numpy.unique(bin_indx, return_counts=True)
 
         # Get the number of returned bins:
         # - The number of returned bins MAY NOT BE THE SAME as the
@@ -866,7 +872,12 @@ class SpatiallyBinnedSpectra:
         # Sort the list of bin ids and determine if any spectra jump
         # between bins
         srt = numpy.argsort(bin_indx)
-        bin_change = numpy.where(numpy.diff(bin_indx[srt]) > 0)[0] + 1
+
+        ## KHRR adding to relax assumption that bin_indx starts with -1
+        if(numpy.min(numpy.unique(bin_indx)) == -1):
+            bin_change = numpy.where(numpy.diff(bin_indx[srt]) > 0)[0] + 1
+        elif(numpy.min(numpy.unique(bin_indx)) == 0):
+            bin_change = numpy.where(numpy.diff(bin_indx[srt], prepend=-1) > 0)[0]
 
         # Some convenience reference variables
         x = self.rdxqa['SPECTRUM'].data['SKY_COO'][:,0]
@@ -1051,19 +1062,27 @@ class SpatiallyBinnedSpectra:
         # Marginalize the DRP spectra over wavelength
         # TODO: This needs to be abstracted for a general datacube, and
         # allow for that datacube to have no defined bitmask.
-        map_mask = DAPFitsUtil.marginalize_mask(self.cube.mask, ['NOCOV', 'LOWCOV', 'DEADFIBER',
-                                                                 'FORESTAR', 'DONOTUSE'],
-                                                self.cube.bitmask, self.bitmask,
-                                                out_flag='DIDNOTUSE')
-        map_mask = DAPFitsUtil.marginalize_mask(self.cube.mask, ['FORESTAR'], self.cube.bitmask,
-                                                self.bitmask, out_mask=map_mask)
+        if(self.cube.bitmask==None):
+            map_mask = numpy.zeros(self.spatial_shape)
+            ### KHRR -- need to fix this!!!
+
+        else:
+            map_mask = DAPFitsUtil.marginalize_mask(self.cube.mask, ['NOCOV', 'LOWCOV', 'DEADFIBER',
+                                                                     'FORESTAR', 'DONOTUSE'],
+                                                    self.cube.bitmask, self.bitmask,
+                                                    out_flag='DIDNOTUSE')
+            map_mask = DAPFitsUtil.marginalize_mask(self.cube.mask, ['FORESTAR'], self.cube.bitmask,
+                                                    self.bitmask, out_mask=map_mask)
         drp_bad = (map_mask > 0)
         # Add the spectra with low spectral coverage
-        indx = numpy.invert(good_fgoodpix.reshape(self.spatial_shape)) & numpy.invert(drp_bad)
-        map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'LOW_SPECCOV')
-        # Add the spectra with low S/N
-        indx = numpy.invert(good_snr.reshape(self.spatial_shape)) & numpy.invert(drp_bad)
-        map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'LOW_SNR')
+
+        ### KHRR added this if
+        if(self.cube.bitmask):
+            indx = numpy.invert(good_fgoodpix.reshape(self.spatial_shape)) & numpy.invert(drp_bad)
+            map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'LOW_SPECCOV')
+            # Add the spectra with low S/N
+            indx = numpy.invert(good_snr.reshape(self.spatial_shape)) & numpy.invert(drp_bad)
+            map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'LOW_SNR')
 
         # Fill the covariance HDUs
         if self.covariance is not None:

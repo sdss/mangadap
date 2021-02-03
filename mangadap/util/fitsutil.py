@@ -185,9 +185,10 @@ class DAPFitsUtil:
         w = WCS(header=hdr)
         hdr = w.to_header().copy()
 
-        # Fix the DATE-OBS keyword:
-        hdr.comments['DATE-OBS'] = 'Date of median exposure'
-        hdr.comments['MJD-OBS'] = '[d] MJD for DATE-OBS'
+        # KHRR - the DATE-OBS keyword is not in MUSE
+        if('DATE-OBS' in hdr):
+            hdr.comments['DATE-OBS'] = 'Date of median exposure'
+            hdr.comments['MJD-OBS'] = '[d] MJD for DATE-OBS'
 
         # Add back in the BSCALE and BZERO values
         hdr['BSCALE'] = 1.
