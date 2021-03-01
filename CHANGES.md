@@ -1,6 +1,6 @@
 
-3.1.1dev
---------
+3.1.1 (1 Mar 2021)
+------------------
 
  - Updated documentation for MPL-11 release.
 
