@@ -32,6 +32,7 @@ from scipy import sparse, spatial, interpolate
 from astropy.io import fits
 
 from ..datacube import DataCube
+from ..datacube import MaNGADataCube, MUSEDataCube
 from ..par.parset import KeywordParSet, ParSet
 from ..util.datatable import DataTable
 from ..util.fitsutil import DAPFitsUtil
@@ -687,13 +688,15 @@ class SpatiallyBinnedSpectra:
         good_fgoodpix = self.check_fgoodpix()
         good_snr = self._check_snr()
 
-        # Turn on the flag stating that the pixel wasn't used
-        indx = self.cube.bitmask.flagged(self.cube.mask, flag=self.cube.do_not_stack_flags())
-        mask[indx] = self.bitmask.turn_on(mask[indx], 'DIDNOTUSE')
+        ## KHRR added if statement:
+        if isinstance(self.cube, MaNGADataCube):
+            # Turn on the flag stating that the pixel wasn't used
+            indx = self.cube.bitmask.flagged(self.cube.mask, flag=self.cube.do_not_stack_flags())
+            mask[indx] = self.bitmask.turn_on(mask[indx], 'DIDNOTUSE')
 
-        # Turn on the flag stating that the pixel has a foreground star
-        indx = self.cube.bitmask.flagged(self.cube.mask, flag='FORESTAR')
-        mask[indx] = self.bitmask.turn_on(mask[indx], 'FORESTAR')
+            # Turn on the flag stating that the pixel has a foreground star
+            indx = self.cube.bitmask.flagged(self.cube.mask, flag='FORESTAR')
+            mask[indx] = self.bitmask.turn_on(mask[indx], 'FORESTAR')
 
         # Turn on the flag stating that the number of valid channels in
         # the spectrum was below the input fraction.
@@ -809,12 +812,7 @@ class SpatiallyBinnedSpectra:
         # Get the unique bins and the number of spectra in each bin
         # TODO: Below assumes that the first unique value is always -1!!
 
-        ## KHRR adding to relax this assumption
-        if(numpy.min(numpy.unique(bin_indx))==-1):
-            unique_bins, bin_count = map(lambda x : x[1:], numpy.unique(bin_indx, return_counts=True))
-            ## KHRR -- the above line was original
-        else:
-            unique_bins, bin_count = numpy.unique(bin_indx, return_counts=True)
+        unique_bins, bin_count = map(lambda x : x[1:], numpy.unique(bin_indx, return_counts=True))
 
         # Get the number of returned bins:
         # - The number of returned bins MAY NOT BE THE SAME as the
@@ -873,11 +871,7 @@ class SpatiallyBinnedSpectra:
         # between bins
         srt = numpy.argsort(bin_indx)
 
-        ## KHRR adding to relax assumption that bin_indx starts with -1
-        if(numpy.min(numpy.unique(bin_indx)) == -1):
-            bin_change = numpy.where(numpy.diff(bin_indx[srt]) > 0)[0] + 1
-        elif(numpy.min(numpy.unique(bin_indx)) == 0):
-            bin_change = numpy.where(numpy.diff(bin_indx[srt], prepend=-1) > 0)[0]
+        bin_change = numpy.where(numpy.diff(bin_indx[srt]) > 0)[0] + 1
 
         # Some convenience reference variables
         x = self.rdxqa['SPECTRUM'].data['SKY_COO'][:,0]
@@ -1063,7 +1057,7 @@ class SpatiallyBinnedSpectra:
         # TODO: This needs to be abstracted for a general datacube, and
         # allow for that datacube to have no defined bitmask.
         if(self.cube.bitmask==None):
-            map_mask = numpy.zeros(self.spatial_shape)
+            map_mask = numpy.zeros(self.spatial_shape, dtype=int)
             ### KHRR -- need to fix this!!!
 
         else:

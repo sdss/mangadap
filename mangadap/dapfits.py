@@ -33,6 +33,7 @@ import astropy.units
 from astropy.cosmology import FlatLambdaCDM
 
 from .datacube import DataCube
+from .datacube import MaNGADataCube, MUSEDataCube
 from .util.constants import DAPConstants
 from .util.drpfits import DRPQuality3DBitMask
 from .util.fitsutil import DAPFitsUtil
@@ -664,6 +665,7 @@ class construct_maps_file:
 
         extensions = [ h.name for h in self.hdu ]
 
+
         #---------------------------------------------------------------
         # TEMPORARY FLAGS:
         # Flag the Gaussian-fitted flux as unreliable if the summed flux
@@ -793,6 +795,7 @@ class construct_maps_file:
         
         # Return the mask after consolidating flags into DONOTUSE
         return self._consolidate_donotuse(mask)
+
 
 
     def _stellar_continuum_mask_to_map_mask(self, stellar_continuum, sc_mask, for_dispersion=False):
@@ -2054,7 +2057,10 @@ class construct_cube_file:
         # Save the original extension from the DRP file used to
         # construct the datacube spectral resolution data.
         lsfhdr = self.base_cubehdr.copy()
-        lsfhdr['DRPEXT'] = (binned_spectra.cube.sres_ext, 'Source ext from DRP file')
+
+        ## KHRR added if statement:
+        if ('DRPEXT' in lsfhdr):
+            lsfhdr['DRPEXT'] = (binned_spectra.cube.sres_ext, 'Source ext from DRP file')
 
         #---------------------------------------------------------------
         # Get the extension headers; The WAVE and REDCORR extensions
@@ -2240,10 +2246,13 @@ def finalize_dap_primary_header(prihdr, cube, metadata, binned_spectra, stellar_
     dapqualbm = DAPQualityBitMask()
     drp3qualbm = DRPQuality3DBitMask()
     dapqual = dapqualbm.minimum_dtype()(0)          # Type casting original flag to 0
-    if drp3qualbm.flagged(cube.prihdr['DRP3QUAL'], flag='CRITICAL'):
-        if not quiet:
-            log_output(loggers, 1, logging.INFO, 'DRP File is flagged CRITICAL!')
-        dapqual = dapqualbm.turn_on(dapqual, ['CRITICAL', 'DRPCRIT'])
+
+    ## KHRR added if statement:
+    if isinstance(cube, MaNGADataCube):
+        if drp3qualbm.flagged(cube.prihdr['DRP3QUAL'], flag='CRITICAL'):
+            if not quiet:
+                log_output(loggers, 1, logging.INFO, 'DRP File is flagged CRITICAL!')
+            dapqual = dapqualbm.turn_on(dapqual, ['CRITICAL', 'DRPCRIT'])
 
     # Flag the file as CRITICAL if the stellar continuum fits are bad
     # for all spectra
@@ -2269,8 +2278,10 @@ def finalize_dap_primary_header(prihdr, cube, metadata, binned_spectra, stellar_
         dapqual = dapqualbm.turn_on(dapqual, 'BADGEOM')
 
     # Determine if there's a foreground star
-    if numpy.sum(cube.bitmask.flagged(cube.mask, flag='FORESTAR')) > 0:
-        dapqual = dapqualbm.turn_on(dapqual, 'FORESTAR')
+    ## KHRR added if statement:
+    if isinstance(cube, MaNGADataCube):
+        if numpy.sum(cube.bitmask.flagged(cube.mask, flag='FORESTAR')) > 0:
+            dapqual = dapqualbm.turn_on(dapqual, 'FORESTAR')
 
     # Commit the quality flag to the header
     if dapqualbm.flagged(dapqual, 'CRITICAL'):

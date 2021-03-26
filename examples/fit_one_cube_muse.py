@@ -10,27 +10,14 @@ from mangadap.datacube import MaNGADataCube
 from mangadap.datacube import MUSEDataCube
 from mangadap.survey.manga_dap import manga_dap
 from mangadap.par.analysisplan import AnalysisPlan, AnalysisPlanSet
+from mangadap.proc.reductionassessments import available_reduction_assessments
+from mangadap.scripts.spotcheck_dap_maps import spotcheck_images
+from mangadap.scripts.ppxffit_qa import ppxffit_qa_plot
+from mangadap.scripts.fit_residuals_muse import fit_residuals_muse
+from mangadap.scripts.manga_dap_inspector import manga_dap_inspector
 from IPython import embed
 
 #-----------------------------------------------------------------------------
-#def get_config(plt, ifu, config_file, drpall_file=None):
-#    if drpall_file is None:
-#        drpall_file = os.path.join(os.environ['MANGA_SPECTRO_REDUX'], os.environ['MANGADRP_VER'],
-#                                   'drpall-{0}.fits'.format(os.environ['MANGADRP_VER']))
-#
-#    # Use the DRPall file
-#    with fits.open(drpall_file) as hdu:
-#        indx = numpy.where(hdu['MANGA'].data['PLATEIFU'] == '{0}-{1}'.format(plt, ifu))[0]
-#        if len(indx) != 1:
-#            raise ValueError('{0}-{1} either does not exist or has more than one match!'.format(
-#                             plt, ifu))
-#
-#        MaNGADataCube.write_config(config_file, plt, ifu, z=hdu[1].data['z'][indx[0]],
-#                                   ell=1-hdu[1].data['nsa_elpetro_ba'][indx[0]],
-#                                   pa=hdu[1].data['nsa_elpetro_phi'][indx[0]],
-#                                   reff=hdu[1].data['nsa_elpetro_th50_r'][indx[0]],
-#                                   overwrite=True)
-
 
 
 def test_read_muse(cubefil, sresfil, directory_path=None, analysis_path=None,
@@ -41,7 +28,7 @@ def test_read_muse(cubefil, sresfil, directory_path=None, analysis_path=None,
     # Read the datacube
     cube = MUSEDataCube(ifile, z=redshift, vdisp=vdisp, ell=ellipticity, pa=pa,
                         reff=reff, sres_ifile=sresfil, sres_fill=True, covar_ext=None)
-    #cube = MaNGADataCube.from_plateifu(7815, 3702, directory_path=remote_data_file())
+
 
     #assert cube.file_name == MaNGADataCube.build_file_name(cube.plate, cube.ifudesign,
     #                log=cube.log), 'Name mismatch'
@@ -50,35 +37,55 @@ def test_read_muse(cubefil, sresfil, directory_path=None, analysis_path=None,
     assert cube.shape[:2] == cube.spatial_shape, 'Spatial shape should be first two axes.'
     assert cube.nspec == numpy.prod(cube.spatial_shape), 'Definition of number of spectra changed.'
     assert cube.sres is not None, 'Spectral resolution data was not constructed.'
+    # Is it ok to ignore this? -- yes, but probably we're using pixelized LSF
     assert cube.sres_ext == 'LSFPRE', 'Should default to LSFPRE extension.'
     assert abs(cube.pixelscale - cube._get_pixelscale()) < 1e-6, 'Bad match in pixel scale.'
     # NOTE: This is worse than it should be because of how the WCS in MaNGA is defined.
+
+    # MUSE is failing this!!!!
     assert numpy.all(numpy.absolute(cube.wave - cube._get_wavelength_vector(cube.nwave)) < 2e-4), \
             'Bad calculation of wavelength vector.'
     assert cube.covar is None, 'Covariance should not have been read'
 
-    embed()
 
 
+def test_wcs_muse(cubefil, sresfil, directory_path=None, analysis_path=None,
+                      redshift=None, objra=None, objdec=None, vdisp=None, ellipticity=None, pa=None, reff=None):
+    ifile = directory_path + cubefil
 
+    # Read the datacube
+    cube = MUSEDataCube(ifile, objra=objra, objdec=objdec, z=redshift, vdisp=vdisp, ell=ellipticity, pa=pa,
+                        reff=reff, sres_ifile=sresfil, sres_fill=True, covar_ext=None)
 
-
-def test_wcs_muse():
-    cube = MaNGADataCube.from_plateifu(7815, 3702, directory_path=remote_data_file())
     x, y = cube.mean_sky_coordinates(offset=None)
     assert x[0,0] > x[-1,0], 'RA should increase from large to small indices'
     assert y[0,0] < y[0,-1], 'DEC should increase from small to small indices'
+
+    print(numpy.unravel_index(numpy.argmin( numpy.square(x - cube.prihdr['OBJRA'])
+                                            + numpy.square(y - cube.prihdr['OBJDEC'])), x.shape))
     assert numpy.unravel_index(numpy.argmin( numpy.square(x - cube.prihdr['OBJRA'])
                                             + numpy.square(y - cube.prihdr['OBJDEC'])), x.shape) \
-                == (21,21), 'Object should be at cube center.'
+                == (14,14), 'Object should be at cube center.'
     x, y = cube.mean_sky_coordinates(center_coo=(x[0,0], y[0,0]))
     assert numpy.isclose(x[0,0], 0.0) and numpy.isclose(y[0,0], 0.0), 'Offset incorrect'
     x, y = cube.mean_sky_coordinates()
-    assert abs(x[21,21]) < 1e-2 and abs(y[21,21]) < 1e-2, 'Offset incorrect'
+
+    ## The below breaks with my by-eye estimated object centroid
+    print(abs(x[14,14]) < 1e-2 and abs(y[14,14]))
+    embed()
+    assert abs(x[14,14]) < 1e-2 and abs(y[14,14]) < 1e-2, 'Offset incorrect'
 
 
-def test_copyto_muse():
-    cube = MaNGADataCube.from_plateifu(7815, 3702, directory_path=remote_data_file())
+
+
+def test_copyto_muse(cubefil, sresfil, directory_path=None, analysis_path=None,
+                      redshift=None, objra=None, objdec=None, vdisp=None, ellipticity=None, pa=None, reff=None):
+    ifile = directory_path + cubefil
+
+    # Read the datacube
+    cube = MUSEDataCube(ifile, objra=objra, objdec=objdec, z=redshift, vdisp=vdisp, ell=ellipticity, pa=pa,
+                        reff=reff, sres_ifile=sresfil, sres_fill=True, covar_ext=None)
+
     flux = cube.copy_to_array()
     assert not isinstance(flux, numpy.ma.MaskedArray), 'Should output normal array'
     assert flux.shape[0] == cube.nspec, 'Should be flattened into a 2D array.'
@@ -94,6 +101,8 @@ def test_copyto_muse():
     methods = available_reduction_assessments()
     i = numpy.where([m['key'] == 'SNRG' for m in methods])[0]
     assert len(i) == 1, 'Could not find correct reduction assessment definition.'
+
+    ## Issue here with datacube.py, in copy_to_masked_array
     sig, var, snr = cube.flux_stats(response_func=methods[i[0]]['response_func'])
     indx = ((sig > 0) & numpy.invert(numpy.ma.getmaskarray(sig))).data.ravel()
     ngood = numpy.sum(indx)
@@ -127,8 +136,13 @@ def test_copyto_muse():
 
 
 
-def test_stats_muse():
-    cube = MaNGADataCube.from_plateifu(7815, 3702, directory_path=remote_data_file())
+def test_stats_muse(cubefil, sresfil, directory_path=None, analysis_path=None,
+                      redshift=None, objra=None, objdec=None, vdisp=None, ellipticity=None, pa=None, reff=None):
+    ifile = directory_path + cubefil
+
+    # Read the datacube
+    cube = MUSEDataCube(ifile, objra=objra, objdec=objdec, z=redshift, vdisp=vdisp, ell=ellipticity, pa=pa,
+                        reff=reff, sres_ifile=sresfil, sres_fill=True, covar_ext=None)
 
     # Create a fake bin map
     bin_indx = numpy.arange(cube.nspec/4, dtype=int).reshape(cube.spatial_shape[0]//2,
@@ -140,23 +154,27 @@ def test_stats_muse():
     bins, area = cube.binned_on_sky_area(bin_indx)
 
     assert numpy.array_equal(bins, numpy.arange(cube.nspec/4)), 'Bad bin list'
-    assert numpy.allclose(area, 1.), 'Bad area calculation'
+
+
+    assert numpy.allclose(area, 0.16), 'Bad area calculation'
 
     methods = available_reduction_assessments()
     i = numpy.where([m['key'] == 'SNRG' for m in methods])[0]
     assert len(i) == 1, 'Could not find correct reduction assessment definition.'
 
+    # These numbers need to be adjusted for individual cubes
+    # KHRR -- they kind of make sense for MUSE test cube, but I didn't check them in detail
     cen_wave = cube.central_wavelength(response_func=methods[i[0]]['response_func'],
                                        flag=cube.do_not_use_flags())
-    assert numpy.isclose(cen_wave, 4638.0), 'Central wavelength changed.'
+    #assert numpy.isclose(cen_wave, 4638.0), 'Central wavelength changed.'
 
     cen_wave = cube.central_wavelength(waverange=[4000,8000], flag=cube.do_not_use_flags(),
                                        fluxwgt=True)
-    assert numpy.isclose(cen_wave, 5895.7), 'Central wavelength changed.'
+    #assert numpy.isclose(cen_wave, 5895.7), 'Central wavelength changed.'
 
     cen_wave = cube.central_wavelength(waverange=[4000,8000], flag=cube.do_not_use_flags(),
                                        per_pixel=False)
-    assert numpy.isclose(cen_wave, 6044.9), 'Central wavelength changed.'
+    #assert numpy.isclose(cen_wave, 6044.9), 'Central wavelength changed.'
 
     sig, var, snr = cube.flux_stats(response_func=methods[i[0]]['response_func'])
     assert sig.shape == cube.spatial_shape, 'Should be shaped as a map.'
@@ -164,49 +182,53 @@ def test_stats_muse():
     assert numpy.ma.amax(snr) > 60, 'S/N changed'
 
     # Try it with the linear cube
-    cube = MaNGADataCube.from_plateifu(7815, 3702, directory_path=remote_data_file(), log=False)
-    _sig, _var, _snr = cube.flux_stats(response_func=methods[i[0]]['response_func'])
+    #cube = MaNGADataCube.from_plateifu(7815, 3702, directory_path=remote_data_file(), log=False)
+    #_sig, _var, _snr = cube.flux_stats(response_func=methods[i[0]]['response_func'])
     # TODO: Not sure why these are not closer.
-    assert numpy.absolute(numpy.ma.median((sig-_sig)/_sig)) < 0.01, \
-            'Signal should be the same to better than 1%.'
-    assert numpy.absolute(numpy.ma.median((var-_var)/_var)) < 0.03, \
-            'Variance should be the same to better than 3%.'
-    assert numpy.absolute(numpy.ma.median((snr-_snr)/_snr)) < 0.02, \
-            'S/N should be the same to better than 2%.'
-
-
-def test_read_lin_muse():
-    cube = MaNGADataCube.from_plateifu(7815, 3702, directory_path=remote_data_file(), log=False)
-    assert not cube.log, 'Wavelength sampling should be linear'
-    assert numpy.isclose(numpy.std(numpy.diff(cube.wave)), 0.), \
-                'Wavelength sampling should be linear'
+    #assert numpy.absolute(numpy.ma.median((sig-_sig)/_sig)) < 0.01, \
+    #        'Signal should be the same to better than 1%.'
+    #assert numpy.absolute(numpy.ma.median((var-_var)/_var)) < 0.03, \
+    #        'Variance should be the same to better than 3%.'
+    #assert numpy.absolute(numpy.ma.median((snr-_snr)/_snr)) < 0.02, \
+    #        'S/N should be the same to better than 2%.'
 
 
 
-def fit_one_cube_muse(cubefil, sresfil, directory_path=None, analysis_path=None,
-                      redshift=None, vdisp=None, ellipticity=None, pa=None, reff=None):
+
+
+#def fit_one_cube_muse(cubefil, sresfil, directory_path=None, analysis_path=None,
+#                      redshift=None, objra=None, objdec=None, vdisp=None,
+#                      ellipticity=None, pa=None, reff=None, plate=None, ifudesign=None, ebvgal=None):
+def fit_one_cube_muse(config_file, directory_path=None, analysis_path=None):
+
+
     # Grab the required input parameters
     #config_file = '{0}-{1}.cfg'.format(plt, ifu)
     #get_config(plt, ifu, config_file, drpall_file=drpall_file)
 
-    ifile = directory_path + cubefil
+    #ifile = directory_path + cubefil
 
     # Read the datacube
-    cube = MUSEDataCube(ifile, z=redshift, vdisp=vdisp, ell=ellipticity, pa=pa,
-                        reff=reff, sres_ifile=sresfil, sres_fill=True, covar_ext=None)
+    #cube = MUSEDataCube(ifile, z=redshift, objra=objra, objdec=objdec, vdisp=vdisp, ell=ellipticity, pa=pa,
+    #                    reff=reff, sres_ifile=sresfil, sres_fill=True, covar_ext=None,
+    #                    plate=plate, ifudesign=ifudesign, ebvgal=ebvgal)
+    cube = MUSEDataCube.from_config(config_file)
+    cube.mask[0,0,:] = True
 
-    embed()
-
-
-    # Stop here for now
 
     # Define how you want to analyze the data
     plan = AnalysisPlanSet([ AnalysisPlan(drpqa_key='SNRG',
+                                          drpqa_clobber=False,
                                           bin_key='VOR10', #'HYB10',
-                                          continuum_key='MILESHCMPL10',
-                                          elmom_key='EMOMMPL10',
-                                          elfit_key='EFITMPL10', #'EFITMPL9DB',
-                                          spindex_key='INDXEN') ])
+                                          bin_clobber=False,
+                                          continuum_key='MILESHCMPL11',
+                                          continuum_clobber=False,
+                                          elmom_key='EMOMMPL11',
+                                          elmom_clobber=False,
+                                          elfit_key='EFITMPL11SSP', #'EFITMPL9DB',
+                                          elfit_clobber=False,
+                                          spindex_key='INDXEN',
+                                          spindex_clobber=False) ])
 
     # Run it!
     return manga_dap(cube, plan, verbose=2, directory_path=directory_path,
@@ -215,28 +237,72 @@ def fit_one_cube_muse(cubefil, sresfil, directory_path=None, analysis_path=None,
 
 
 if __name__ == '__main__':
-    #drpver = 'v3_0_1'
-    #directory_path = os.path.join(os.environ['MANGADAP_DIR'], 'mangadap', 'data', 'remote')
-    #drpall_file = os.path.join(directory_path, 'drpall-{0}.fits'.format(drpver))
-    #fit_one_cube(7815, 3702, drpall_file=drpall_file, directory_path=directory_path,
-    #             analysis_path='./output')
 
     directory_path = '/Users/rubin/Research/MUSE/gistwork/Tutorial/gistTutorial/inputData/'
-    cubefil = 'NGC0000.fits'
-    redshift = 0.008764
+    #cubefil = 'NGC0000.fits'
+    #redshift = 0.008764
 
-    sresfil = '/Users/rubin/Research/MUSE/gistwork/Tutorial/gistTutorial/configFiles/LSF-Config_MUSE_WFM'
+    #sresfil = '/Users/rubin/Research/MUSE/gistwork/Tutorial/gistTutorial/configFiles/LSF-Config_MUSE_WFM'
 
     # inclination = 35deg
-    ell = 1.0
-    pa = 145.0
-    reff = 59.7 # this is 95% radius for HII regions; Crocker+96
-    vdisp = 200.0
+    #ell = 0.0
+    #pa = 145.0
+    #reff = 59.7 # this is 95% radius for HII regions; Crocker+96
+    #vdisp = 200.0
+    #objra = 334.1301507   # move this into meta
+    #objdec = -21.43893547
 
-    # What about flux units?
+    # Need to make up plate and ifudesign numbers
+    #plate = 999999
+    #ifudesign = 999999
+    #ebvgal = 0.0
 
-    test_read_muse(cubefil, sresfil, directory_path=directory_path, analysis_path='./output',
-                      redshift=redshift, vdisp=vdisp, ellipticity=ell, pa=pa, reff=reff)
 
-    fit_one_cube_muse(cubefil, sresfil, directory_path=directory_path, analysis_path='./output',
-                      redshift=redshift, vdisp=vdisp, ellipticity=ell, pa=pa, reff=reff)
+    config_file = '/Users/rubin/Repo/manga/mangadap/examples/mangadap-100000-1-LINCUBE.ini'
+
+
+    #test_read_muse(cubefil, sresfil, directory_path=directory_path, analysis_path='./output',
+    #                  redshift=redshift, objra=objra, objdec=objdec, vdisp=vdisp, ellipticity=ell, pa=pa, reff=reff)
+
+    # Need to add OBJRA and OBJDEC to prihdr -- issues with centering
+    #test_wcs_muse(cubefil, sresfil, directory_path=directory_path, analysis_path='./output',
+    #               redshift=redshift, objra=objra, objdec=objdec, vdisp=vdisp, ellipticity=ell, pa=pa, reff=reff)
+
+    #test_copyto_muse(cubefil, sresfil, directory_path=directory_path, analysis_path='./output',
+    #                    redshift=redshift, objra=objra, objdec=objdec, vdisp=vdisp, ellipticity=ell, pa=pa, reff=reff)
+    #test_stats_muse(cubefil, sresfil, directory_path=directory_path, analysis_path='./output',
+    #                    redshift=redshift, objra=objra, objdec=objdec, vdisp=vdisp, ellipticity=ell, pa=pa, reff=reff)
+
+    #fit_one_cube_muse(cubefil, sresfil, directory_path=directory_path, analysis_path='./output',
+    #                  redshift=redshift, objra=objra, objdec=objdec, vdisp=vdisp,
+    #                  ellipticity=ell, pa=pa, reff=reff, plate=plate, ifudesign=ifudesign,
+    #                  ebvgal=ebvgal)
+
+    fit_one_cube_muse(config_file, directory_path=directory_path, analysis_path='./output')
+
+
+
+    # Run QA -- note that these plate-ifu numbers do not match those in new config file
+    daptype='VOR10-MILESHC-MASTARSSP'
+    dapver='2.2.3dev'
+    maps_file = '/Users/rubin/Repo/manga/mangadap/examples/output/VOR10-MILESHC-MASTARSSP/999999/999999/manga-999999-999999-MAPS-VOR10-MILESHC-MASTARSSP.fits.gz'
+    model_file = '/Users/rubin/Repo/manga/mangadap/examples/output/VOR10-MILESHC-MASTARSSP/999999/999999/manga-999999-999999-LOGCUBE-VOR10-MILESHC-MASTARSSP.fits.gz'
+
+    #spotcheck_images('./output', daptype, plate, ifudesign, ofile=None, drpver=None,
+    #                 dapver=None)
+
+    plan = AnalysisPlanSet([AnalysisPlan(drpqa_key='SNRG',
+                                         drpqa_clobber=False,
+                                         bin_key='VOR10',  # 'HYB10',
+                                         bin_clobber=False,
+                                         continuum_key='MILESHCMPL11',
+                                         continuum_clobber=False,
+                                         elmom_key='EMOMMPL11',
+                                         elmom_clobber=False,
+                                         elfit_key='EFITMPL11SSP',  # 'EFITMPL9DB',
+                                         spindex_key='INDXEN')])
+
+    #ppxffit_qa_plot(plate, ifudesign, plan, drpver=None, redux_path=directory_path, dapver=None, analysis_path='./output',
+    #                tpl_flux_renorm=None)
+    #fit_residuals_muse(dapver, './output', daptype, plate, ifudesign)
+    manga_dap_inspector(maps_file, model_file, ext=None, masked_spectra=True)

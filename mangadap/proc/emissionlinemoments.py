@@ -1335,7 +1335,7 @@ class EmissionLineMoments:
             map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'DIDNOTUSE')
             # Isolate any spaxels with foreground stars
             indx = self.binned_spectra.bitmask.flagged(self.binned_spectra['MAPMASK'].data,
-                                                       'FORESTAR')
+                                                        'FORESTAR')
             map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'FORESTAR')
             # Get the bins that were below the S/N limit
             indx = numpy.invert(DAPFitsUtil.reconstruct_map(self.spatial_shape,

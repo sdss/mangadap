@@ -21,10 +21,12 @@ Base class for a datacube
 from IPython import embed
 
 import numpy
+import warnings
 
 from scipy import sparse, interpolate
 
 from astropy.io import fits
+
 
 from ..util.bitmask import BitMask
 from ..util.mapping import permute_wcs_axes
@@ -312,6 +314,12 @@ class DataCube:
         # Allocate attributes for primary and flux array fits headers
         self.prihdr = fits.Header() if prihdr is None else prihdr
         self.fluxhdr = self.prihdr.deepcopy() if fluxhdr is None else fluxhdr
+
+        ## KHRR added this
+        if not ('OBJRA' in self.prihdr):
+            prihdr['OBJRA'] = self.meta['OBJRA']
+            prihdr['OBJDEC'] = self.meta['OBJDEC']
+
 
         # Allow for a RowStackedSpectrum counterpart
         self.rss = None

@@ -162,6 +162,7 @@ class DAPFitsUtil:
     @staticmethod
     def clean_map_header(hdr, multichannel=False):
 
+        # KHRR made some changes here
         # Change header keywords to the default values for the third axis
         if multichannel:
             hdr['NAXIS'] = 3
@@ -172,18 +173,24 @@ class DAPFitsUtil:
             hdr['CRPIX3'] = 1
             hdr['CRVAL3'] = 1.
             hdr['CD3_3']  = 1.
+            w = WCS(header=hdr)
+
         else:
-            hdr['NAXIS'] = 2
+            #hdr['NAXIS'] = 2
             #hdr.remove('NAXIS3')
-            hdr.remove('CTYPE3')
-            hdr.remove('CUNIT3')
-            hdr.remove('CRPIX3')
-            hdr.remove('CRVAL3')
-            hdr.remove('CD3_3')
+            #hdr.remove('CTYPE3')
+            #hdr.remove('CUNIT3')
+            #hdr.remove('CRPIX3')
+            #hdr.remove('CRVAL3')
+            #hdr.remove('CD3_3')
+            w_tmp = WCS(header=hdr)
+            w = w_tmp.dropaxis(2)
+
 
         # Remove everything but the WCS information
-        w = WCS(header=hdr)
+        #w = WCS(header=hdr)
         hdr = w.to_header().copy()
+
 
         # KHRR - the DATE-OBS keyword is not in MUSE
         if('DATE-OBS' in hdr):
@@ -236,8 +243,12 @@ class DAPFitsUtil:
         hdr = w.to_header().copy()
 
         # Fix the DATE-OBS keyword:
-        hdr.comments['DATE-OBS'] = 'Date of median exposure'
-        hdr.comments['MJD-OBS'] = '[d] MJD for DATE-OBS'
+        # KHRR added if
+        if ('DATE-OBS' in hdr):
+            hdr.comments['DATE-OBS'] = 'Date of median exposure'
+
+        if('MJD-OBS' in hdr):
+            hdr.comments['MJD-OBS'] = '[d] MJD for DATE-OBS'
 
         # Add back in the BSCALE and BZERO values; BUNIT added during
         # "finalize"

@@ -14,6 +14,7 @@ Defines some utility routines used to map a provided set of quantities.
 .. include:: ../include/links.rst
 """
 import numpy
+import warnings
 from scipy import ndimage
 
 from astropy.wcs import WCS
