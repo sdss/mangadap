@@ -725,7 +725,7 @@ class SquareBinning(SpatialBinning):
                     ctbin = ctbin + 1
 
         # Quadrant 3
-        # changed line 729,730 from numpy.floor((maxx) / binsz) to numpy.int(numpy.floor((maxx) / binsz)) -E.A
+        # changed line 729,730 from numpy.floor((maxx) / binsz) to numpy.int(numpy.floor((maxx) / binsz)) - E.A
         nslicex = numpy.int(numpy.floor((minx) / binsz))
         nslicey = numpy.int(numpy.ceil((maxy) / binsz))
         # changed line 732 and 733 from 1.0 to 1 in the last argument (E.A)
