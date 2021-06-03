@@ -690,7 +690,7 @@ class SquareBinning(SpatialBinning):
         ctbin = 0
 
         # Start from the center, work out to edge of each quadrant
-        # changed line 695,696 from numpy.ceil((maxx) / binsz) to numpy.int(numpy.ceil((maxx) / binsz)) -E.A
+        # changed line 695,696 from numpy.ceil((maxx) / binsz) to numpy.int(numpy.ceil((maxx) / binsz)) - E.A
         # Quadrant 1
         nslicex = numpy.int(numpy.ceil((maxx) / binsz))
         nslicey = numpy.int(numpy.ceil((maxy) / binsz))
