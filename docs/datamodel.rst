@@ -269,7 +269,7 @@ The ``MAPS`` files contain the following extensions:
 |     |                     |          |                                                      | astrophysical velocity dispersion; see :ref:`corrections` for how  |
 |     |                     |          |                                                      | to use this extension with the ``STELLAR_SIGMA`` extension to      |
 |     |                     |          |                                                      | obtain the *astrophysical* stellar velocity dispersion.            |
-|     |                     |          |                                                      | **Use the first extension.**                                       |
+|     |                     |          |                                                      | **Use the first channel.**                                         |
 +-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
 |  22 | STELLAR_FOM         |        9 |                                                      | Figures-of-merit for the stellar-continuum fit in 9 channels: (1)  |
 |     |                     |          |                                                      | RMS of residuals (in                                               |
@@ -407,7 +407,7 @@ The ``MAPS`` files contain the following extensions:
 |  59 | SPECINDEX_WGT       |       46 |       :math:`10^{-17} {\rm erg/s/cm}^2`/|ang|/spaxel | Weights to use when aggregating spectral-index                     |
 |     |                     |          |                                                      | measurements.  See :ref:`spectralindices` and :ref:`aggregation`.  |
 +-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  60 | SPECINDEX_WGT_IVAR  |       46 |                                                      | nverse variance in the spectral index weights.                     |
+|  60 | SPECINDEX_WGT_IVAR  |       46 |                                                      | Inverse variance in the spectral index weights.                    |
 +-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
 |  61 | SPECINDEX_WGT_MASK  |       46 |                                                      | Data quality mask for spectral index weights.                      |
 +-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
