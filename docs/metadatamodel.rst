@@ -629,7 +629,7 @@ Each subsequent extension, named after the :ref:`datamodel-daptype`
 |      ``STELLAR_SIGMA_1RE`` |          double |                                               km/s | Flux-weighted mean stellar velocity dispersion of all spaxels within 1        |
 |                            |                 |                                                    | :math:`R_e`.                                                                  |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
-| ``STELLAR_CONT_RCHI2_1RE`` |          double |                                                    | Median reduced :math:`chi^2` of the stellar-continuum fit within 1            |
+| ``STELLAR_RCHI2_1RE``      |          double |                                                    | Median reduced :math:`chi^2` of the stellar-continuum fit within 1            |
 |                            |                 |                                                    | :math:`R_e`.                                                                  |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
 |                   ``HA_Z`` |          double |                                                    | Flux-weighted mean redshift of the Hα line within a 2.5 arcsec aperture at    |

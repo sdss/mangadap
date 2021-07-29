@@ -254,18 +254,36 @@ the following method:
     # Declare a function that creates a dictionary for the columns in the
     # multi-channel extensions
     def channel_dictionary(hdu, ext, prefix='C'):
-    """
-    Construct a dictionary of the channels in a MAPS file.
-    """
-    channel_dict = {}
-    for k, v in hdu[ext].header.items():
-        if k[:len(prefix)] == prefix:
-            try:
-                i = int(k[len(prefix):])-1
-            except ValueError:
-                continue
-            channel_dict[v] = i
-    return channel_dict
+        """
+        Construct a dictionary of the channels in a MAPS file.
+        """
+        channel_dict = {}
+        for k, v in hdu[ext].header.items():
+            if k[:len(prefix)] == prefix:
+                try:
+                    i = int(k[len(prefix):])-1
+                except ValueError:
+                    continue
+                channel_dict[v] = i
+        return channel_dict
+
+    def channel_units(hdu, ext, prefix='U'):
+        """
+        Construct an array with the channel units.
+        """
+        cu = {}
+        for k, v in hdu[ext].header.items():
+            if k[:len(prefix)] == prefix:
+                try:
+                    i = int(k[len(prefix):])-1
+                except ValueError:
+                    continue
+                cu[i] = v.strip()
+        channel_units = numpy.empty(max(cu.keys())+1, dtype=object)
+        for k, v in cu.items():
+            channel_units[k] = v
+        return channel_units.astype(str)
+
 
 This is identical to :func:`~mangadap.util.fileio.channel_dictionary`,
 such that you can do the following:
