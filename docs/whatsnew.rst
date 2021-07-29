@@ -359,7 +359,7 @@ High-level changes
 
  * Three additional emission-lines are fit: He I at 3889 angstroms, and
    the [N I] doublet at 5200 angstroms.  The He I line has its
-   dispersion tied to H:math:`\zeta` at 3890, and the dispersions of the
+   dispersion tied to :math:`{\rm H}\zeta` at 3890, and the dispersions of the
    [N I] doublet are tied.
 
  * The ``MAPS`` file extensions were modified:
