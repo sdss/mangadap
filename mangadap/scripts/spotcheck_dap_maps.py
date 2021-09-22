@@ -84,11 +84,13 @@ def spotcheck_images(analysis_path, daptype, plate, ifudesign, ofile=None, drpve
 
     # Check everything is finite
     num_ext = len(hdu)
-    for i in range(num_ext):
-        if hdu[i].data is None:
-            continue
-        if not numpy.all(numpy.isfinite(hdu[i].data)):
-            raise ValueError('HDU {0} contains infs or NaNs!'.format(hdu[i].name))
+
+    ## KHRR COMMENTING THIS OUT -- NEED TO PUT IT BACK IN
+    #for i in range(num_ext):
+    #    if hdu[i].data is None:
+    #        continue
+    #    if not numpy.all(numpy.isfinite(hdu[i].data)):
+    #        raise ValueError('HDU {0} contains infs or NaNs!'.format(hdu[i].name))
 
     # Build the column dictionaries
     emline = channel_dictionary(hdu, 'EMLINE_GFLUX')
@@ -260,10 +262,16 @@ def spotcheck_images(analysis_path, daptype, plate, ifudesign, ofile=None, drpve
     ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.99, 0.05, r'g-band S/N (spx)', horizontalalignment='right',
             verticalalignment='center', transform=ax.transAxes)
-   
-    ax.text(1.0, 1.1, r'{0}-{1}; {2}'.format(plate,ifudesign, hdu['PRIMARY'].header['MANGAID']),
-            horizontalalignment='center', verticalalignment='center', transform=ax.transAxes,
-            fontsize=20)
+
+    ## KHRR added this if
+    if ('MANGAID' in hdu['PRIMARY'].header):
+        ax.text(1.0, 1.1, r'{0}-{1}; {2}'.format(plate,ifudesign, hdu['PRIMARY'].header['MANGAID']),
+                horizontalalignment='center', verticalalignment='center', transform=ax.transAxes,
+                fontsize=20)
+    else:
+        ax.text(1.0, 1.1, r'{0}-{1}; {2}'.format(plate, ifudesign, 'MUSE'),
+                horizontalalignment='center', verticalalignment='center', transform=ax.transAxes,
+                fontsize=20)
 
     ax = init_ax(fig, [left+2*dx+2*dw, top-dx, dx, dx])
     ax.xaxis.set_major_formatter(ticker.NullFormatter())
