@@ -15,7 +15,7 @@ Stack some spectra!
 .. include:: ../include/links.rst
 """
 
-from IPython import embed
+
 
 import numpy
 from scipy import sparse, interpolate
@@ -28,6 +28,8 @@ from ..util.filter import interpolate_masked_vector
 from ..util.sampling import Resample, spectral_coordinate_step
 
 from matplotlib import pyplot, rc
+import time
+from IPython import embed
 
 # Add strict versioning
 # from distutils.version import StrictVersion
@@ -395,6 +397,147 @@ class SpectralStack:
         if self.ivar is not None:
             self.ivar[self.npix == 0] = numpy.ma.masked
 
+    def _stack_without_covariance_muse(self, flux, ivar=None, sres=None, linear_sres=False):
+        """
+        Stack the spectra, ignoring any covariance that may or may not
+        exist.
+
+        This method calculates the sum of the flux, flux^2, and
+        determines the number of pixels in the sum. Sets
+        :attr:`flux`, :attr:`fluxsqr`, :attr:`npix`, :attr:`ivar`,
+        :attr:`sres`. The stored data is always based on the **sum**
+        of the spectra in the stack.
+
+        Args:
+            flux (`numpy.ma.MaskedArray`_):
+                Flux array.
+            ivar (:obj:`numpy.ma.MaskedArray`, optional):
+                The inverse variance array.
+            sres (`numpy.ma.MaskedArray`_, optional):
+                1D or 2D spectral resolution as a function of
+                wavelength for all or each input spectrum. Default is
+                to ignore any spectral resolution data.
+            linear_sres (:obj:`bool`, optional):
+                Construct the combined resolution as the mean of the
+                input instrumental FWHM (1/sres). If False, the
+                quadratic mean is used (i.e., rms =
+                sqrt(mean(square))); this mode is formally correct
+                for the second moment of the combined LSF (however,
+                note that this not the same as the accuracy of a
+                Gaussian fit to the combined line profile; cf. Law et
+                al. 2020).
+        """
+        # Convert the stack transform matrix to a dense array
+        rt = self.rebin_T.toarray()
+        # Relevant shapes
+        nstack, nspec = rt.shape
+        nwave = flux.shape[-1]
+        # Get the number of pixels included in the stack of each spectrum.
+        gpm = numpy.logical_not(numpy.ma.getmaskarray(flux)).astype(int)
+        self.npix = numpy.dot(rt, gpm)
+
+        # The gymnastics below are done primarily to ensure that stacks
+        # that only include a single spectrum do *not* lose their
+        # masked values in the array with the stacked spectra. I.e.,
+        # these spectra are simply copied to the stacked array,
+        # whereas numpy.dot is used for the stack calculations. NOTE:
+        # numpy.ma.dot was abandoned because it is *much* slower than
+        # the simple multiplication by the gpm done below.
+
+        # Calculate the number of spectra in each stack
+        nspec_per_stack = numpy.sum((rt > 0).astype(int), axis=1)
+
+        # Find the stacked spectra that include more than one input
+        # spectrum
+        stacki, speci = numpy.where((nspec_per_stack[:, None] > 1) & (rt > 0))
+
+        # include only the unique spectral bins from stacki
+        uniq_stacki = numpy.unique(stacki)
+
+        # Construct the output vectors
+        self.flux = numpy.ma.zeros((nstack, nwave), dtype=float)
+        new_flux = numpy.ma.zeros((len(stacki),nwave), dtype=float)
+        self.fluxsqr = numpy.ma.zeros((nstack, nwave), dtype=float)
+        new_fluxsqr = numpy.ma.zeros((len(stacki),nwave), dtype=float)
+        self.ivar = None
+        if ivar is not None:
+            self.ivar = numpy.ma.zeros((nstack, nwave), dtype=float)
+            new_ivar = numpy.ma.zeros((len(stacki),nwave), dtype=float)
+        self.sres = None
+        if sres is not None:
+            Tc = numpy.sum(rt, axis=1)
+            Tc[numpy.logical_not(Tc > 0)] = 1.0
+            self.sres = numpy.ma.zeros((nstack, nwave), dtype=float)
+            new_sres = numpy.ma.zeros((len(stacki),nwave), dtype=float)
+
+        # Do the stacking
+        # For-loop was implemented due to memory allocation issue where
+        # rt[stacki, :][:, speci] was much too large to store in memory
+        # as a result of the large dataset that MUSE cubes contain.
+        start = time.time()
+        for i in uniq_stacki:
+            spec_bin = numpy.where(stacki == i)
+            new_flux[spec_bin] = numpy.dot(rt[[i], :][:, speci], gpm[speci] * flux.data[speci])
+            new_fluxsqr[spec_bin] = numpy.dot(rt[[i], :][:, speci],
+                                         numpy.square(gpm[speci] * flux.data[speci]))
+            if self.ivar is not None:
+                new_ivar[spec_bin] = numpy.ma.power(numpy.dot(numpy.square(rt[[i], :][:, speci]),
+                                                         numpy.ma.divide(gpm[speci], ivar[speci]).filled(0.0)), -1.)
+            if self.sres is not None:
+                new_sres[spec_bin] = numpy.ma.power(numpy.dot(rt[[i], :][:, speci],
+                                                     numpy.ma.power(sres[speci], -1).filled(0.0))
+                                           / Tc[[i], None], -1) if linear_sres \
+                    else numpy.ma.power(numpy.dot(rt[[i], :][:, speci],
+                                                  numpy.ma.power(sres[speci], -2).filled(0.0))
+                                        / Tc[[i], None], -0.5)
+
+        end = time.time()
+        embed()
+        print('Time elapsed for my code: {}'.format(end-start))
+
+        start1 = time.time()
+        #self.flux[stacki] = numpy.dot(rt[stacki, :][:, speci], gpm[speci] * flux.data[speci])
+        self.flux[stacki] = new_flux
+        # self.fluxsqr[stacki] = numpy.dot(rt[stacki, :][:, speci],
+        #                                  numpy.square(gpm[speci] * flux.data[speci]))
+        self.fluxsqr[stacki] = new_fluxsqr
+        if self.ivar is not None:
+            self.ivar[stacki] = new_ivar
+            # self.ivar[stacki] = numpy.ma.power(numpy.dot(numpy.square(rt[stacki, :][:, speci]),
+            #                                              numpy.ma.divide(gpm[speci], ivar[speci]).filled(0.0)), -1.)
+        if self.sres is not None:
+            # self.sres[stacki] = numpy.ma.power(numpy.dot(rt[stacki, :][:, speci],
+            #                                               numpy.ma.power(sres[speci], -1).filled(0.0))
+            #                                     / Tc[stacki, None], -1) if linear_sres \
+            #      else numpy.ma.power(numpy.dot(rt[stacki, :][:, speci],
+            #                                    numpy.ma.power(sres[speci], -2).filled(0.0))
+            #                          / Tc[stacki, None], -0.5)
+            self.sres[stacki] = new_sres
+        end1 = time.time()
+        print('Time elapsed for original code: {}'.format(end1 - start1))
+
+        # Copy over the data from the "stacks" that only include single
+        # spectra
+        stacki, speci = numpy.where((nspec_per_stack[:, None] == 1) & (rt > 0))
+        self.flux[stacki] = flux[speci]
+        self.fluxsqr[stacki] = numpy.square(flux[speci])
+        if self.ivar is not None:
+            self.ivar[stacki] = ivar[speci]
+        if self.sres is not None:
+            self.sres[stacki] = sres[speci]
+
+        # Ensure that pixels with zero contributions are masked;
+        # spectral resolution vectors are *not* masked.
+        self.flux[self.npix == 0] = numpy.ma.masked
+        # Ensure that any pixels with NaN values are masked
+        nan_val = numpy.where(numpy.isfinite(self.flux.data) == False)
+        self.flux[nan_val] = numpy.ma.masked
+        self.fluxsqr[self.npix == 0] = numpy.ma.masked
+        self.fluxsqr[nan_val] = numpy.ma.masked
+        if self.ivar is not None:
+            self.ivar[self.npix == 0] = numpy.ma.masked
+            self.ivar[nan_val] = numpy.ma.masked
+
     def _stack_with_covariance(self, flux, covariance_mode, covar, ivar=None, sres=None):
         """
         Stack the spectra and incorporate covariance.
@@ -419,7 +562,6 @@ class SpectralStack:
         # First stack without covariance. This sets self.flux,
         # self.fluxsqr, self.npix, self.ivar, self.sres.
         self._stack_without_covariance(flux, ivar=ivar, sres=sres)
-
         # If calibrating the noise based on the equation,
         #   Noise_corrected = Noise_nocovar * (1 + f * log10(N))
         # apply it and return
@@ -992,7 +1134,7 @@ class SpectralStack:
 
     def stack(self, wave, flux, operation='mean', binid=None, binwgt=None, ivar=None, mask=None,
               sres=None, cz=None, log=False, base=10.0, covariance_mode=None, covar=None,
-              keep_range=False):
+              keep_range=False, muse_mode=True): # added a MUSE varaible for now
         r"""
         Stack a set of spectra.
 
@@ -1116,6 +1258,8 @@ class SpectralStack:
             raise ValueError('Unrecognized method for covariance: {0}'.format(covariance_mode))
         if covariance_mode is None:
             covariance_mode = 'none'
+        if muse_mode is True:
+            muse_mode = 'true'
         if not SpectralStack._check_covariance_type(covariance_mode, covar, ivar):
             raise TypeError('Incorrect covariance and/or inverse variance object type for input ' \
                             'mode:\n mode: {0}\n input covar type: {1}\n input ivar' \
@@ -1145,7 +1289,10 @@ class SpectralStack:
 
         # Stack the spectra with or without covariance
         if covariance_mode == 'none':
-            self._stack_without_covariance(_flux, ivar=_ivar, sres=_sres)
+            if muse_mode == 'true':
+                self._stack_without_covariance_muse(_flux, ivar=_ivar, sres=_sres)
+            else:
+                self._stack_without_covariance(_flux, ivar=_ivar, sres=_sres)
         else:
             self._stack_with_covariance(_flux, covariance_mode, covar, ivar=_ivar, sres=_sres)
 
@@ -1171,6 +1318,3 @@ class SpectralStack:
         if operation == 'sum':
             return self.wave, self.flux, self.fluxsdev, self.npix, self.ivar, self.sres, self.covar
         return self._get_stack_mean()
-
-
-        

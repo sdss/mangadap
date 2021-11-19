@@ -260,10 +260,6 @@ def spotcheck_images(analysis_path, daptype, plate, ifudesign, ofile=None, drpve
     ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.99, 0.05, r'g-band S/N (spx)', horizontalalignment='right',
             verticalalignment='center', transform=ax.transAxes)
-   
-    ax.text(1.0, 1.1, r'{0}-{1}; {2}'.format(plate,ifudesign, hdu['PRIMARY'].header['MANGAID']),
-            horizontalalignment='center', verticalalignment='center', transform=ax.transAxes,
-            fontsize=20)
 
     ax = init_ax(fig, [left+2*dx+2*dw, top-dx, dx, dx])
     ax.xaxis.set_major_formatter(ticker.NullFormatter())

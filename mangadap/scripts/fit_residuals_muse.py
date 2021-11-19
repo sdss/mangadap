@@ -530,7 +530,7 @@ def fom_maps(plt, ifu, snr, color, rms, frms, rchi2, chi_grw, extent=None,
     rms_lim = numpy.power(10., growth_lim(numpy.ma.log10(rms), 0.90, fac=1.05))
     frm_lim = numpy.power(10., growth_lim(numpy.ma.log10(frms), 0.90, fac=1.05))
 
-    chi_lim = [1/4, 4]
+    chi_lim = [1/4, 100]
     #chi_lim = [1/4,1000]
     c68_lim = [1/4, 4]
     c99_lim = [2.6/4, 2.6*4]
