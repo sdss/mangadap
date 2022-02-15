@@ -33,7 +33,7 @@ class Pointer(AxesWidget):
         self.cursor = Cursor(ax, useblit=True, **kwargs)
 
         self.connect_event('button_press_event', self._update)
-#        self.connect_event('button_release_event', self._update)
+        self.connect_event('button_release_event', self._update)
         self.cnt = 0
         self.observers = {}
         self.drag_active = False
