@@ -75,8 +75,13 @@ def compile_data(dapver, analysis_path, daptype, plt):
         hdu = fits.open(maps_file)
 
         # Get the stellar data
-        uniq, indx = map(lambda x: x[1:], numpy.unique(hdu['BINID'].data[1,:,:].ravel(),
-                                                       return_index=True))
+#        uniq, indx = map(lambda x: x[1:], numpy.unique(hdu['BINID'].data[1,:,:].ravel(),
+#                                                       return_index=True))
+        uniq, indx = numpy.unique(hdu['BINID'].data[1,:,:].ravel(), return_index=True)
+        if uniq[0] == -1:
+            uniq = uniq[1:]
+            indx = indx[1:]
+
         mask = hdu['STELLAR_VEL_MASK'].data.ravel()[indx] > 0
         indx = indx[numpy.invert(mask)]
 
@@ -88,8 +93,12 @@ def compile_data(dapver, analysis_path, daptype, plt):
 
         # Get the emission-line data
         eml = channel_dictionary(hdu, 'EMLINE_GFLUX')
-        uniq, indx = map(lambda x: x[1:], numpy.unique(hdu['BINID'].data[3,:,:].ravel(),
-                                                       return_index=True))
+#        uniq, indx = map(lambda x: x[1:], numpy.unique(hdu['BINID'].data[3,:,:].ravel(),
+#                                                       return_index=True))
+        uniq, indx = numpy.unique(hdu['BINID'].data[3,:,:].ravel(), return_index=True)
+        if uniq[0] == -1:
+            uniq = uniq[1:]
+            indx = indx[1:]
         mask = hdu['EMLINE_GFLUX_MASK'].data[eml['Ha-6564'],:,:].ravel()[indx] > 0
         indx = indx[numpy.invert(mask)]
 

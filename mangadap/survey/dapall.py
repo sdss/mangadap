@@ -548,8 +548,9 @@ class DAPall:
         # Unique bins
         # TODO: Select the BINID channel using the channel dictionary
         unique, indx = numpy.unique(dapmaps['BINID'].data[0,:,:].ravel(), return_index=True)
-        unique = unique[1:]
-        unique_indx = indx[1:]
+        if unique[0] == -1:
+            unique = unique[1:]
+            unique_indx = indx[1:]
 
         # Get the radii (in units of Re) of the unmasked, unique
         # bins constructed during the spatial binning
@@ -579,8 +580,9 @@ class DAPall:
         # Unique bins
         # TODO: Select the BINID channel using the channel dictionary
         unique, indx = numpy.unique(dapmaps['BINID'].data[1,:,:].ravel(), return_index=True)
-        unique = unique[1:]
-        unique_indx = indx[1:]
+        if unique[0] == -1:
+            unique = unique[1:]
+            unique_indx = indx[1:]
 
         # Pull the data from the maps file
         r_re = dapmaps['BIN_LWELLCOO'].data.copy()[1,:,:].ravel()[unique_indx]
@@ -645,8 +647,9 @@ class DAPall:
         # Unique bins
         # TODO: Select the BINID channel using the channel dictionary
         unique, indx = numpy.unique(dapmaps['BINID'].data[3,:,:].ravel(), return_index=True)
-        unique = unique[1:]
-        unique_indx = indx[1:]
+        if unique[0] == -1:
+            unique = unique[1:]
+            unique_indx = indx[1:]
 
         # Channel dictionary
         emline = channel_dictionary(dapmaps, 'EMLINE_GFLUX')
@@ -748,8 +751,9 @@ class DAPall:
         # Unique bins
         # TODO: Select the BINID channel using the channel dictionary
         unique, indx = numpy.unique(dapmaps['BINID'].data[3,:,:].ravel(), return_index=True)
-        unique = unique[1:]
-        unique_indx = indx[1:]
+        if unique[0] == -1:
+            unique = unique[1:]
+            unique_indx = indx[1:]
 
         flux_ext = 'EMLINE_SFLUX' if moment0 else 'EMLINE_GFLUX'
         neml = dapmaps[flux_ext].shape[0]
@@ -806,8 +810,9 @@ class DAPall:
         # Unique bins
         # TODO: Select the BINID channel using the channel dictionary
         unique, indx = numpy.unique(dapmaps['BINID'].data[4,:,:].ravel(), return_index=True)
-        unique = unique[1:]
-        unique_indx = indx[1:]
+        if unique[0] == -1:
+            unique = unique[1:]
+            unique_indx = indx[1:]
 
         nindx = dapmaps['SPECINDEX'].shape[0]
 

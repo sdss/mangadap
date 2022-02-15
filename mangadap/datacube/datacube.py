@@ -18,6 +18,8 @@ Base class for a datacube
 
 # TODO: Force the datacube data arrays to be read-only?
 
+import warnings
+
 from IPython import embed
 
 import numpy
@@ -292,6 +294,10 @@ class DataCube:
         if self.bitmask is None:
             # Ensure mask is a boolean array
             self.mask = self.mask.astype(bool)
+
+        self.redux_bitmask = None
+        self.redux_qual_key = None
+        self.redux_qual_flag = None
         
         self.sres = None
         if sres is not None:
@@ -311,7 +317,7 @@ class DataCube:
 
         # Allocate attributes for primary and flux array fits headers
         self.prihdr = fits.Header() if prihdr is None else prihdr
-        self.fluxhdr = self.prihdr.deepcopy() if fluxhdr is None else fluxhdr
+        self.fluxhdr = self.prihdr.copy() if fluxhdr is None else fluxhdr
 
         # Allow for a RowStackedSpectrum counterpart
         self.rss = None
@@ -366,7 +372,7 @@ class DataCube:
         x = (x - x[0])*numpy.cos(numpy.radians(y[0]))
         return numpy.sqrt(polygon_area(x, y))*3600
 
-    def _get_wavelength_vector(self, nwave):
+    def _get_wavelength_vector(self):
         """
         Use the `astropy.wcs.WCS`_ attribute (:attr:`wcs`) to
         generate the datacube wavelength vector.
@@ -380,17 +386,29 @@ class DataCube:
 
         Raises:
             ValueError:
-                Raised if :attr:`wcs` is not defined.
+                Raised if :attr:`wcs` or :attr:`nwave` is not defined.
         """
+        if self.nwave is None:
+            raise ValueError('Length of the spectral axis (nwave) must be defined.')
         if self.wcs is None:
             raise ValueError('World coordinate system required to construct wavelength vector.')
-        coo = numpy.array([numpy.ones(nwave), numpy.ones(nwave), numpy.arange(nwave)+1]).T
+        coo = numpy.array([numpy.ones(self.nwave), numpy.ones(self.nwave),
+                           numpy.arange(self.nwave)+1]).T
         return self.wcs.all_pix2world(coo, 1)[:,2]*self.wcs.wcs.cunit[2].to('angstrom')
 
     @property
     def nspec(self):
         """Number of spectra in the datacube."""
         return numpy.prod(self.spatial_shape)
+
+    @staticmethod
+    def propagate_flags():
+        """
+        Flags that should be propagated from the observed data to the analyzed data.
+
+        The base class returns ``None``.
+        """
+        return None
 
     @staticmethod
     def do_not_use_flags():
@@ -579,7 +597,7 @@ class DataCube:
 
         # Add in any masked data
         if use_mask:
-            mask |= self.mask if self.bitmask is None \
+            mask |= self.mask.reshape(nspec,-1) if self.bitmask is None \
                     else self.bitmask.flagged(self.mask.reshape(nspec,-1), flag=flag)
 
         # Create the output MaskedArray
@@ -690,6 +708,7 @@ class DataCube:
             # Not offsetting, so we're done
             return x, y
 
+        # TODO: Use astropy.coordinates.SkyOffset 
         # Offset and return
         if len(center_coo) != 2:
             raise ValueError('Provided coordinates are expected to be a single x,y pair.')

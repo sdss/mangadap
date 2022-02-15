@@ -836,18 +836,22 @@ def manga_dap_inspector(maps_file, model_file, ext=None, masked_spectra=True):
             map_zmin, map_zmax = build_maps(hdu, ext=ext)
 
     # Get the MaNGA ID
-    mangaid = hdu['PRIMARY'].header['MANGAID']
+    mangaid = hdu['PRIMARY'].header['MANGAID'] if 'MANGAID' in hdu['PRIMARY'].header else None
 
     # Determine the sample flags
-    trg_flags = MaNGATargetBitMask().flagged_bits(hdu['PRIMARY'].header['MNGTARG1'])
+    if 'MNGTARG1' in hdu['PRIMARY'].header:
+        trg_flags = MaNGATargetBitMask().flagged_bits(hdu['PRIMARY'].header['MNGTARG1'])
+    else:
+        trg_flags = None
 
-    target_type='None'
-    if 'SECONDARY_v1_2_0' in trg_flags:
-        target_type = 'S'
-    if 'PRIMARY_v1_2_0' in trg_flags:
-        target_type = 'P'
-    if 'COLOR_ENHANCED_v1_2_0' in trg_flags:
-        target_type = 'P+'
+    target_type = 'None'
+    if trg_flags is not None:
+        if 'SECONDARY_v1_2_0' in trg_flags:
+            target_type = 'S'
+        if 'PRIMARY_v1_2_0' in trg_flags:
+            target_type = 'P'
+        if 'COLOR_ENHANCED_v1_2_0' in trg_flags:
+            target_type = 'P+'
 
     # ELSE?
     hdu.close()

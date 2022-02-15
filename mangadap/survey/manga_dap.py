@@ -131,7 +131,7 @@ def get_manga_dap_meta(cube):
     else:
         metadata['pa'] = cube.meta['pa']
     # Impose expected range
-    if metadata['pa'] is not None and metadata['pa'] < 0 or metadata['pa'] >= 360:
+    if metadata['pa'] is not None and (metadata['pa'] < 0 or metadata['pa'] >= 360):
         warnings.warn('Imposing 0-360 range on position angle.')
         while metadata['pa'] < 0:
             metadata['pa'] += 360
