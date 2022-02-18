@@ -14,12 +14,10 @@ from matplotlib.ticker import NullFormatter
 from matplotlib.widgets import Button, AxesWidget, Cursor, RangeSlider
 
 from mangadap.dapfits import DAPCubeBitMask
-from mangadap.par.analysisplan import AnalysisPlanSet
 from mangadap.util.bitmask import BitMask
 from mangadap.config import defaults
-from mangadap.proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
-from mangadap.proc.stellarcontinuummodel import StellarContinuumModel
-from mangadap.proc.emissionlinemodel import EmissionLineModel
+
+from mangadap.scripts import scriptbase
 
 
 #-----------------------------------------------------------------------
@@ -608,31 +606,39 @@ def manga_dap_inspector(maps_file, model_file, ext=None, masked_spectra=True):
 
     pyplot.show()
 
-def parse_args(options=None, return_parser=False):
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument('--maps_file', type=str, default=None, help='Output MAPS file')
-    parser.add_argument('--model_file', type=str, default=None, help='Output LOGCUBE model file')
+class MangaDapInspector(scriptbase.ScriptBase):
 
-    parser.add_argument('--ext', type=str, nargs='*', help='List of map extensions to include',
-                        default=None)
+    @classmethod
+    def name(cls):
+        """
+        Return the name of the executable.
+        """
+        return 'manga_dap_inspector'
 
-    parser.add_argument('--maskspec', action='store_true', default=False,
-                        help='Use masks for spectra.')
+    @classmethod
+    def get_parser(cls, width=None):
 
-    if return_parser:
+        parser = super().get_parser(description='Inspect results of the MaNGA DAP', width=width)
+
+        parser.add_argument('--maps_file', type=str, default=None, help='Output MAPS file')
+        parser.add_argument('--model_file', type=str, default=None, help='Output LOGCUBE model file')
+
+        parser.add_argument('--ext', type=str, nargs='*', help='List of map extensions to include',
+                            default=None)
+
+        parser.add_argument('--maskspec', action='store_true', default=False,
+                            help='Use masks for spectra.')
         return parser
 
-    return parser.parse_args() if options is None else parser.parse_args(options)
+    @staticmethod
+    def main(args):
 
+        # Can it proceed?
+        maps_file, model_file = args.maps_file, args.model_file
+        if maps_file is None or model_file is None:
+            raise ValueError('Must provide both a MAPS file and a model LOGCUBE file.')
 
-def main(args):
-
-    # Can it proceed?
-    maps_file, model_file = args.maps_file, args.model_file
-    if maps_file is None or model_file is None:
-        raise ValueError('Must provide both a MAPS file and a model LOGCUBE file.')
-
-    manga_dap_inspector(maps_file, model_file, ext=args.ext, masked_spectra=args.maskspec)
+        manga_dap_inspector(maps_file, model_file, ext=args.ext, masked_spectra=args.maskspec)
 
 

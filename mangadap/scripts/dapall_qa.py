@@ -22,6 +22,8 @@ from mangadap.proc.emissionlinemodel import EmissionLineModel
 from mangadap.par.analysisplan import AnalysisPlanSet
 from mangadap.util.fileio import channel_dictionary
 
+from mangadap.scripts import scriptbase
+
 #-----------------------------------------------------------------------------
 def init_ax(fig, pos, facecolor=None, grid=False):
     ax = fig.add_axes(pos, facecolor=facecolor)
@@ -681,68 +683,77 @@ def redshift_distribution(dapall, daptype, ofile=None):
     pyplot.close(fig)
 
 
-def parse_args(options=None, return_parser=False):
+class DapAllQA(scriptbase.ScriptBase):
 
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    @classmethod
+    def name(cls):
+        """
+        Return the name of the executable.
+        """
+        return 'dapall_qa'
 
-    parser.add_argument('--drpver', type=str, help='DRP version', default=None)
-    parser.add_argument('--dapver', type=str, help='DAP version', default=None)
-    parser.add_argument('--dap_src', type=str, help='Top-level directory with the DAP source code;'
-                        ' defaults to $MANGADAP_DIR', default=None)
-    parser.add_argument("--redux_path", type=str, help="main DRP output path", default=None)
-    parser.add_argument("--analysis_path", type=str, help="main DAP output path", default=None)
+    @classmethod
+    def get_parser(cls, width=None):
 
-    parser.add_argument("--plan_file", type=str, help="parameter file with the MaNGA DAP "
-                        "execution plan to use instead of the default" , default=None)
+        parser = super().get_parser(description='Construct QA plots using the DAPall metadata',
+                                    width=width)
 
-    parser.add_argument('--daptype', type=str, help='DAP processing type', default=None)
-    parser.add_argument('--normal_backend', dest='bgagg', action='store_false', default=True)
+        parser.add_argument('--drpver', type=str, help='DRP version', default=None)
+        parser.add_argument('--dapver', type=str, help='DAP version', default=None)
+        parser.add_argument('--dap_src', type=str, default=None,
+                            help='Top-level directory with the DAP source code; defaults to '
+                                 '$MANGADAP_DIR')
+        parser.add_argument("--redux_path", type=str, help="main DRP output path", default=None)
+        parser.add_argument("--analysis_path", type=str, help="main DAP output path", default=None)
 
-    if return_parser:
+        parser.add_argument("--plan_file", type=str, help="parameter file with the MaNGA DAP "
+                            "execution plan to use instead of the default" , default=None)
+
+        parser.add_argument('--daptype', type=str, help='DAP processing type', default=None)
+        parser.add_argument('--normal_backend', dest='bgagg', action='store_false', default=True)
+
         return parser
 
-    return parser.parse_args() if options is None else parser.parse_args(options)
+    @staticmethod
+    def main(args):
+        t = time.perf_counter()
 
+        if args.bgagg:
+            pyplot.switch_backend('agg')
 
-def main(args):
-    t = time.perf_counter()
+        # Set the paths
+        redux_path = defaults.drp_redux_path(drpver=args.drpver) \
+                            if args.redux_path is None else args.redux_path
+        analysis_path = defaults.dap_analysis_path(drpver=args.drpver, dapver=args.dapver) \
+                                if args.analysis_path is None else args.analysis_path
 
-    if args.bgagg:
-        pyplot.switch_backend('agg')
+        daptypes = []
+        if args.daptype is None:
+            analysisplan = AnalysisPlanSet.default() if args.plan_file is None \
+                                else AnalysisPlanSet.from_par_file(args.plan_file)
+            for p in analysisplan:
+                bin_method = SpatiallyBinnedSpectra.define_method(p['bin_key'])
+                sc_method = StellarContinuumModel.define_method(p['continuum_key'])
+                el_method = EmissionLineModel.define_method(p['elfit_key'])
+                daptypes += [defaults.dap_method(bin_method['key'],
+                                                 sc_method['fitpar']['template_library_key'],
+                                                 el_method['continuum_tpl_key'])]
+        else:
+            daptypes = [args.daptype]
 
-    # Set the paths
-    redux_path = defaults.drp_redux_path(drpver=args.drpver) \
-                        if args.redux_path is None else args.redux_path
-    analysis_path = defaults.dap_analysis_path(drpver=args.drpver, dapver=args.dapver) \
-                            if args.analysis_path is None else args.analysis_path
+        drpall_file = defaults.drpall_file(drpver=args.drpver, redux_path=redux_path)
+        dapall_file = defaults.dapall_file(drpver=args.drpver, dapver=args.dapver,
+                                           analysis_path=analysis_path)
 
-    daptypes = []
-    if args.daptype is None:
-        analysisplan = AnalysisPlanSet.default() if args.plan_file is None \
-                            else AnalysisPlanSet.from_par_file(args.plan_file)
-        for p in analysisplan:
-            bin_method = SpatiallyBinnedSpectra.define_method(p['bin_key'])
-            sc_method = StellarContinuumModel.define_method(p['continuum_key'])
-            el_method = EmissionLineModel.define_method(p['elfit_key'])
-            daptypes += [defaults.dap_method(bin_method['key'],
-                                             sc_method['fitpar']['template_library_key'],
-                                             el_method['continuum_tpl_key'])]
-    else:
-        daptypes = [args.daptype]
+        drpall_hdu = fits.open(drpall_file)
+        dapall_hdu = fits.open(dapall_file)
 
-    drpall_file = defaults.drpall_file(drpver=args.drpver, redux_path=redux_path)
-    dapall_file = defaults.dapall_file(drpver=args.drpver, dapver=args.dapver,
-                                       analysis_path=analysis_path)
+        eml = channel_dictionary(dapall_hdu, 0, prefix='ELG')
+        spi = channel_dictionary(dapall_hdu, 0, prefix='SPI')
 
-    drpall_hdu = fits.open(drpall_file)
-    dapall_hdu = fits.open(dapall_file)
+        for daptype in daptypes:
+            dapall_qa(drpall_hdu['MANGA'].data, dapall_hdu[daptype].data, analysis_path,
+                      daptype, eml, spi)
 
-    eml = channel_dictionary(dapall_hdu, 0, prefix='ELG')
-    spi = channel_dictionary(dapall_hdu, 0, prefix='SPI')
-
-    for daptype in daptypes:
-        dapall_qa(drpall_hdu['MANGA'].data, dapall_hdu[daptype].data, analysis_path,
-                  daptype, eml, spi)
-
-    print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
+        print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
 

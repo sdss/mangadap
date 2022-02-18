@@ -23,6 +23,8 @@ from mangadap.util.fitsutil import DAPFitsUtil
 from mangadap.util.mapping import map_extent, map_beam_patch
 from mangadap.config import defaults
 
+from mangadap.scripts import scriptbase
+
 
 def init_image_ax(fig, pos):
     ax = fig.add_axes(pos, facecolor='0.9')
@@ -670,69 +672,72 @@ def ppxffit_qa_plot(plt, ifu, plan, drpver=None, redux_path=None, dapver=None, a
                            svel_map, ssigo_map, ssigcor_map, ssigc_map, extent=extent, ofile=ofile)
 
 
-def parse_args(options=None, return_parser=False):
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+class PpxfFitQA(scriptbase.ScriptBase):
 
-    parser.add_argument('plate', type=int, help='plate ID to process')
-    parser.add_argument('ifudesign', type=int, help='IFU design to process')
+    @classmethod
+    def get_parser(cls, width=None):
 
-    parser.add_argument('--drpver', type=str, help='DRP version', default=None)
-    parser.add_argument('--redux_path', type=str, help='main DRP output path', default=None)
-    parser.add_argument('--dapver', type=str, help='DAP version', default=None)
-    parser.add_argument('--dap_src', type=str, help='Top-level directory with the DAP source code;'
-                        ' defaults to $MANGADAP_DIR', default=None)
-    parser.add_argument('--analysis_path', type=str, help='main DAP output path', default=None)
+        parser = super().get_parser(description='Construct QA plots for pPXF fit', width=width)
 
-    parser.add_argument('--plan_file', type=str, help='parameter file with the MaNGA DAP '
-                        'execution plan to use instead of the default' , default=None)
+        parser.add_argument('plate', type=int, help='plate ID to process')
+        parser.add_argument('ifudesign', type=int, help='IFU design to process')
 
-    parser.add_argument('--normal_backend', dest='bgagg', action='store_false', default=True)
+        parser.add_argument('--drpver', type=str, help='DRP version', default=None)
+        parser.add_argument('--redux_path', type=str, help='main DRP output path', default=None)
+        parser.add_argument('--dapver', type=str, help='DAP version', default=None)
+        parser.add_argument('--dap_src', type=str, default=None,
+                            help='Top-level directory with the DAP source code; defaults to '
+                                 '$MANGADAP_DIR')
+        parser.add_argument('--analysis_path', type=str, help='main DAP output path', default=None)
 
-    parser.add_argument('--template_flux_file', type=str, default=None,
-                        help='template renormalization flux file.  Will attempt to read default '
-                             'if not provided.  If no file is provided and the default file does '
-                             'not exist, no renormalization of the templates is performed.')
+        parser.add_argument('--plan_file', type=str, help='parameter file with the MaNGA DAP '
+                            'execution plan to use instead of the default' , default=None)
 
-    if return_parser:
+        parser.add_argument('--normal_backend', dest='bgagg', action='store_false', default=True)
+
+        parser.add_argument('--template_flux_file', type=str, default=None,
+                            help='template renormalization flux file.  Will attempt to read '
+                                 'default if not provided.  If no file is provided and the '
+                                 'default file does not exist, no renormalization of the '
+                                 'templates is performed.')
         return parser
 
-    return parser.parse_args() if options is None else parser.parse_args(options)
+    @staticmethod
+    def main(args):
+        t = time.perf_counter()
 
+        if args.bgagg:
+            pyplot.switch_backend('agg')
 
-def main(args):
-    t = time.perf_counter()
+        # Get the DAP method types to plot
+        analysisplan = AnalysisPlanSet.default() if args.plan_file is None \
+                            else AnalysisPlanSet.from_par_file(args.plan_file)
 
-    if args.bgagg:
-        pyplot.switch_backend('agg')
+        # Construct the plot for each analysis plan
+        for plan in analysisplan:
 
-    # Get the DAP method types to plot
-    analysisplan = AnalysisPlanSet.default() if args.plan_file is None \
-                        else AnalysisPlanSet.from_par_file(args.plan_file)
+            # Get the template library keyword
+            tpl_renorm_file = args.template_flux_file
+            if tpl_renorm_file is None:
+                sc_method = StellarContinuumModel.define_method(plan['continuum_key'])
+                tpl_key = sc_method['fitpar']['template_library_key']
+                library = TemplateLibrary.define_library(tpl_key)
+                library_root = os.path.split(library['file_search'])[0]
+                tpl_renorm_file = os.path.join(library_root,
+                                               '{0}_fluxes.db'.format(tpl_key.lower()))
+                if not os.path.isfile(tpl_renorm_file):
+                    warnings.warn('Could not find file: {0}'.format(tpl_renorm_file))
+                    tpl_renorm_file = None
 
-    # Construct the plot for each analysis plan
-    for plan in analysisplan:
+            tpl_flux_renorm = None if tpl_renorm_file is None \
+                                else numpy.genfromtxt(tpl_renorm_file, dtype=float)[:,2]
 
-        # Get the template library keyword
-        tpl_renorm_file = args.template_flux_file
-        if tpl_renorm_file is None:
-            sc_method = StellarContinuumModel.define_method(plan['continuum_key'])
-            tpl_key = sc_method['fitpar']['template_library_key']
-            library = TemplateLibrary.define_library(tpl_key)
-            library_root = os.path.split(library['file_search'])[0]
-            tpl_renorm_file = os.path.join(library_root, '{0}_fluxes.db'.format(tpl_key.lower()))
-            if not os.path.isfile(tpl_renorm_file):
-                warnings.warn('Could not find file: {0}'.format(tpl_renorm_file))
-                tpl_renorm_file = None
+            # Construct the plot
+            ppxffit_qa_plot(args.plate, args.ifudesign, plan, drpver=args.drpver,
+                            redux_path=args.redux_path, dapver=args.dapver,
+                            analysis_path=args.analysis_path, tpl_flux_renorm=tpl_flux_renorm)
 
-        tpl_flux_renorm = None if tpl_renorm_file is None \
-                            else numpy.genfromtxt(tpl_renorm_file, dtype=float)[:,2]
-
-        # Construct the plot
-        ppxffit_qa_plot(args.plate, args.ifudesign, plan, drpver=args.drpver,
-                        redux_path=args.redux_path, dapver=args.dapver,
-                        analysis_path=args.analysis_path, tpl_flux_renorm=tpl_flux_renorm)
-
-    print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
+        print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
 
 
 

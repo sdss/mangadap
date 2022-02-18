@@ -1,53 +1,14 @@
-import os
-import time
-import sys
 
 from IPython import embed
 
-import numpy
-
-import argparse
-
-from mangadap.spectra import MaNGARSS
-
-def parse_args(options=None, return_parser=False):
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-
-    parser.add_argument('plate', type=int, help='plate ID to process')
-    parser.add_argument('ifudesign', type=int, help='IFU design to process')
-    parser.add_argument('output_file', type=str, help='Name for output file')
-
-    mode = parser.add_mutually_exclusive_group(required=False)
-    mode.add_argument('-n', '--numchannels', type=int,
-                      help='Number of channels spread across the wavelength range for which '
-                           'to compute the covariance matrix.  A value of 0 forces construction '
-                           'of the full covariance cube.  The default is to calculate the '
-                           'covariance matrix for a single channel at the central wavelength',
-                      default=1)
-    mode.add_argument('-w', '--wavelength', type=float,
-                      help='Wavelength at which to compute a single covariance matrix; default '
-                           'is the central wavelength', default=None)
-
-    parser.add_argument('-d', '--directory_path', type=str,
-                        help='Directory with the DRP produced RSS file; default uses environmental '
-                             'variables to define the default MaNGA DRP redux path', default=None)
-
-    if return_parser:
-        return parser
-
-    return parser.parse_args() if options is None else parser.parse_args(options)
+from mangadap.scripts import scriptbase
 
 
-def main(args):
-    t = time.perf_counter()
-    if os.path.isfile(args.output_file):
-        print('WARNING: Overwriting existing file {0}!'.format(args.output_file))
-    calculate_covariance_cube(args.plate, args.ifudesign, args.output_file, nc=args.numchannels,
-                              wave=args.wavelength, directory_path=args.directory_path)
-    print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
-
-
+# TODO: Move this somewhere that can be more generally accessed?
 def calculate_covariance_cube(plate, ifudesign, ofile, nc=1, wave=None, directory_path=None):
+
+    import numpy
+    from mangadap.spectra import MaNGARSS
 
     print('     PLATE: {0}'.format(plate))
     print(' IFUDESIGN: {0}'.format(ifudesign))
@@ -78,3 +39,47 @@ def calculate_covariance_cube(plate, ifudesign, ofile, nc=1, wave=None, director
 
     print('Writing data to {0}.'.format(ofile))
     C.write(ofile, clobber=True)            # Write the data
+
+
+class CalculateCovariance(scriptbase.ScriptBase):
+
+    @classmethod
+    def get_parser(cls, width=None):
+
+        parser = super().get_parser(description='Calculate datacube covariance', width=width)
+
+        parser.add_argument('plate', type=int, help='plate ID to process')
+        parser.add_argument('ifudesign', type=int, help='IFU design to process')
+        parser.add_argument('output_file', type=str, help='Name for output file')
+
+        mode = parser.add_mutually_exclusive_group(required=False)
+        mode.add_argument('-n', '--numchannels', type=int,
+                        help='Number of channels spread across the wavelength range for which '
+                            'to compute the covariance matrix.  A value of 0 forces construction '
+                            'of the full covariance cube.  The default is to calculate the '
+                            'covariance matrix for a single channel at the central wavelength',
+                        default=1)
+        mode.add_argument('-w', '--wavelength', type=float,
+                        help='Wavelength at which to compute a single covariance matrix; default '
+                            'is the central wavelength', default=None)
+
+        parser.add_argument('-d', '--directory_path', type=str, default=None,
+                            help='Directory with the DRP produced RSS file; default uses '
+                                 'environmental variables to define the default MaNGA DRP '
+                                 'redux path')
+        return parser
+
+    @classmethod
+    def main(args):
+
+        import os
+        import time
+
+        t = time.perf_counter()
+        if os.path.isfile(args.output_file):
+            print('WARNING: Overwriting existing file {0}!'.format(args.output_file))
+        calculate_covariance_cube(args.plate, args.ifudesign, args.output_file, nc=args.numchannels,
+                                wave=args.wavelength, directory_path=args.directory_path)
+        print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
+
+

@@ -1,19 +1,13 @@
 import os
-import time
 import datetime
 import glob
 import mmap
-import numpy
-
-import argparse
 
 from IPython import embed
 
-from mangadap.config import defaults
-from mangadap.par.analysisplan import AnalysisPlanSet
-from mangadap.proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
-from mangadap.proc.stellarcontinuummodel import StellarContinuumModel
-from mangadap.proc.emissionlinemodel import EmissionLineModel
+import numpy
+
+from mangadap.scripts import scriptbase
 
 
 def has_error(log_file):
@@ -243,41 +237,59 @@ def dap_status(analysis_path, daptypes, logdir=None):
                 f.write('{0:>5} {1:>5}\n'.format(*err.split('-')))
 
 
-def parse_args(options=None, return_parser=False):
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('plan_file', type=str, help='parameter file with the MaNGA DAP '
-                        'execution plan to use instead of the default')
+class DapStatus(scriptbase.ScriptBase):
 
-    parser.add_argument('--logdir', type=str, help='Log path (e.g., 31Jan2019T19.16.28UTC)')
+    @classmethod
+    def name(cls):
+        """
+        Return the name of the executable.
+        """
+        return 'dap_status'
 
-    parser.add_argument('--drpver', type=str, help='DRP version', default=None)
-    parser.add_argument('--dapver', type=str, help='DAP version', default=None)
-    parser.add_argument('--analysis_path', type=str, help='main DAP output path', default=None)
+    @classmethod
+    def get_parser(cls, width=None):
 
-    if return_parser:
+        parser = super().get_parser(description='Check status and log files for DAP progress',
+                                    width=width)
+
+        parser.add_argument('plan_file', type=str, help='parameter file with the MaNGA DAP '
+                            'execution plan to use instead of the default')
+
+        parser.add_argument('--logdir', type=str, help='Log path (e.g., 31Jan2019T19.16.28UTC)')
+
+        parser.add_argument('--drpver', type=str, help='DRP version', default=None)
+        parser.add_argument('--dapver', type=str, help='DAP version', default=None)
+        parser.add_argument('--analysis_path', type=str, help='main DAP output path', default=None)
+
         return parser
 
-    return parser.parse_args() if options is None else parser.parse_args(options)
+    @staticmethod
+    def main(args):
 
+        import time
+        from mangadap.config import defaults
+        from mangadap.par.analysisplan import AnalysisPlanSet
+        from mangadap.proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
+        from mangadap.proc.stellarcontinuummodel import StellarContinuumModel
+        from mangadap.proc.emissionlinemodel import EmissionLineModel
 
-def main(args):
-    t = time.perf_counter()
+        t = time.perf_counter()
 
-    # Set the the analysis path and make sure it exists
-    analysis_path = defaults.dap_analysis_path(drpver=args.drpver, dapver=args.dapver) \
-                            if args.analysis_path is None else args.analysis_path
+        # Set the the analysis path and make sure it exists
+        analysis_path = defaults.dap_analysis_path(drpver=args.drpver, dapver=args.dapver) \
+                                if args.analysis_path is None else args.analysis_path
 
-    analysisplan = AnalysisPlanSet.from_par_file(args.plan_file)
-    daptypes = []
-    for p in analysisplan:
-        bin_method = SpatiallyBinnedSpectra.define_method(p['bin_key'])
-        sc_method = StellarContinuumModel.define_method(p['continuum_key'])
-        el_method = EmissionLineModel.define_method(p['elfit_key'])
-        daptypes += [defaults.dap_method(bin_method['key'],
-                                         sc_method['fitpar']['template_library_key'],
-                                         el_method['continuum_tpl_key'])]
+        analysisplan = AnalysisPlanSet.from_par_file(args.plan_file)
+        daptypes = []
+        for p in analysisplan:
+            bin_method = SpatiallyBinnedSpectra.define_method(p['bin_key'])
+            sc_method = StellarContinuumModel.define_method(p['continuum_key'])
+            el_method = EmissionLineModel.define_method(p['elfit_key'])
+            daptypes += [defaults.dap_method(bin_method['key'],
+                                            sc_method['fitpar']['template_library_key'],
+                                            el_method['continuum_tpl_key'])]
 
-    dap_status(analysis_path, daptypes, logdir=args.logdir)
+        dap_status(analysis_path, daptypes, logdir=args.logdir)
 
-    print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
+        print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
 
