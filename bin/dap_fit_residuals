@@ -1,6 +1,0 @@
-#!/usr/bin/env python3
-
-from mangadap.scripts import fit_residuals
-
-if __name__ == '__main__':
-    fit_residuals.main(fit_residuals.parse_args())

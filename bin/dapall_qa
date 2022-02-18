@@ -1,6 +1,0 @@
-#!/usr/bin/env python3
-
-from mangadap.scripts import dapall_qa
-
-if __name__ == '__main__':
-    dapall_qa.main(dapall_qa.parse_args())
