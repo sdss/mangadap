@@ -1,10 +1,19 @@
-include *.md
+include README.md
+include LICENSE.md
+include pyproject.toml
 include setup.cfg
 
+recursive-include mangadap *.pyx *.c *.pxd *.h
 recursive-include mangadap/data *.fits*
 recursive-include mangadap/data *.par
 recursive-include mangadap/data README
-recursive-include python/mangadap/config *.ini
+recursive-include mangadap/config *.ini
+recursive-include docs *
 
-global-exclude *.pyc *.o
+prune build
+prune docs/_build
+print docs/api
+
+global-exclude *.pyc *.o *.so *.DS_Store
+
 
