@@ -52,6 +52,7 @@ from .util import select_proc_method, replace_with_data_from_nearest_coo
 
 from matplotlib import pyplot
 
+
 class SpatiallyBinnedSpectraDef(KeywordParSet):
     """
     A class that holds the two parameter sets and the key designator
@@ -687,13 +688,25 @@ class SpatiallyBinnedSpectra:
         good_fgoodpix = self.check_fgoodpix()
         good_snr = self._check_snr()
 
-        # Turn on the flag stating that the pixel wasn't used
-        indx = self.cube.bitmask.flagged(self.cube.mask, flag=self.cube.do_not_stack_flags())
-        mask[indx] = self.bitmask.turn_on(mask[indx], 'DIDNOTUSE')
+        if self.cube.bitmask is not None:
 
-        # Turn on the flag stating that the pixel has a foreground star
-        indx = self.cube.bitmask.flagged(self.cube.mask, flag='FORESTAR')
-        mask[indx] = self.bitmask.turn_on(mask[indx], 'FORESTAR')
+            # Turn on the flag stating that the pixel wasn't used
+            indx = self.cube.bitmask.flagged(self.cube.mask, flag=self.cube.do_not_stack_flags())
+            mask[indx] = self.bitmask.turn_on(mask[indx], 'DIDNOTUSE')
+
+            # Turn on the flag stating that the pixel has a foreground star
+            if self.cube.propagate_flags() is not None:
+                flags = self.cube.propagate_flags()
+                # TODO: This will barf if flags is a numpy array
+                flags = flags if isinstance(flags, list) else [flags]
+                for flag in flags:
+                    indx = self.cube.bitmask.flagged(self.cube.mask, flag=flag)
+                    if numpy.any(indx):
+                        if flag in self.bitmask.keys():
+                            mask[indx] = self.bitmask.turn_on(mask[indx], 'FORESTAR')
+                        warnings.warn(f'{flag} is not a flag in {self.bitmask.__class__.__name__} '
+                                      'and cannot be propagated!')
+
 
         # Turn on the flag stating that the number of valid channels in
         # the spectrum was below the input fraction.
@@ -807,8 +820,10 @@ class SpatiallyBinnedSpectra:
             ``BINS`` extension of :attr:`hdu`.
         """
         # Get the unique bins and the number of spectra in each bin
-        # TODO: Below assumes that the first unique value is always -1!!
-        unique_bins, bin_count = map(lambda x : x[1:], numpy.unique(bin_indx, return_counts=True))
+        unique_bins, bin_count = numpy.unique(bin_indx, return_counts=True)
+        if unique_bins[0] == -1:
+            unique_bins = unique_bins[1:]
+            bin_count = bin_count[1:]
 
         # Get the number of returned bins:
         # - The number of returned bins MAY NOT BE THE SAME as the
@@ -867,6 +882,8 @@ class SpatiallyBinnedSpectra:
         # between bins
         srt = numpy.argsort(bin_indx)
         bin_change = numpy.where(numpy.diff(bin_indx[srt]) > 0)[0] + 1
+        if bin_change.size != self.nbins:
+            bin_change = numpy.append([0], bin_change)
 
         # Some convenience reference variables
         x = self.rdxqa['SPECTRUM'].data['SKY_COO'][:,0]
@@ -1048,16 +1065,18 @@ class SpatiallyBinnedSpectra:
                                                'K Westfall <westfall@ucolick.org>')
 
         # Get the spatial map mask
-        # Marginalize the DRP spectra over wavelength
-        # TODO: This needs to be abstracted for a general datacube, and
-        # allow for that datacube to have no defined bitmask.
-        map_mask = DAPFitsUtil.marginalize_mask(self.cube.mask, ['NOCOV', 'LOWCOV', 'DEADFIBER',
-                                                                 'FORESTAR', 'DONOTUSE'],
-                                                self.cube.bitmask, self.bitmask,
-                                                out_flag='DIDNOTUSE')
-        map_mask = DAPFitsUtil.marginalize_mask(self.cube.mask, ['FORESTAR'], self.cube.bitmask,
-                                                self.bitmask, out_mask=map_mask)
-        drp_bad = (map_mask > 0)
+        # Marginalize the spectral masks over wavelength
+        map_mask = DAPFitsUtil.marginalize_mask(self.cube.mask,
+                                                inp_flags=self.cube.do_not_use_flags(),
+                                                inp_bitmask=self.cube.bitmask, 
+                                                out_flag='DIDNOTUSE', out_bitmask=self.bitmask)
+        if self.cube.propagate_flags() is not None:
+            for flag in self.cube.propagate_flags():
+                map_mask = DAPFitsUtil.marginalize_mask(self.cube.mask, inp_flags=flag,
+                                                        inp_bitmask=self.cube.bitmask,
+                                                        out_flag=flag, out_bitmask=self.bitmask,
+                                                        out_mask=map_mask)
+        drp_bad = map_mask > 0
         # Add the spectra with low spectral coverage
         indx = numpy.invert(good_fgoodpix.reshape(self.spatial_shape)) & numpy.invert(drp_bad)
         map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'LOW_SPECCOV')

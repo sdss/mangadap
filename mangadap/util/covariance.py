@@ -1422,12 +1422,35 @@ class Covariance:
         # unique set
         unique_bins, reconstruct = numpy.unique(bin_indx, return_inverse=True)
 
-        # Need to handle missing bins
-        if unique_bins.size != unique_bins[-1]+2 \
-                or numpy.any((unique_bins - numpy.arange(-1,unique_bins.size-1)) != 0):
-            warnings.warn('Bin numbers and indices do not match.  Spectra are expected '
-                          'to be sorted by their bin number.')
-            unique_bins = numpy.arange(-1,unique_bins.size-1)
+        # Handle missing bins by changing from the bin id to the bin index.
+        # Detecting whether or not there is a need for handling missing bins is
+        # done by comparing the unique array to a full string of all indices up
+        # to the maximum index in the unique array.  **This assumes bins can
+        # only either be -1, to indicate that the spaxel/bin was not analyzed,
+        # or a non-negative index number** (i.e., all bin IDs must be >= -1).
+        # The code handles cases both with and without any ignored bins.
+        warn = False
+        if numpy.any(unique_bins < 0):
+            # Includes ignored bins/spaxels
+            if unique_bins.size != unique_bins[-1]+2 \
+                    or numpy.any((unique_bins - numpy.arange(-1,unique_bins.size-1)) != 0):
+                warn = True
+                unique_bins = numpy.arange(-1,unique_bins.size-1)
+        else:
+            # All bins/spaxels have valid bin numbers
+            if unique_bins.size != unique_bins[-1]+1 \
+                    or numpy.any((unique_bins - numpy.arange(unique_bins.size)) != 0):
+                warn = True
+                unique_bins = numpy.arange(unique_bins.size)
+        if warn and not quiet:
+            warnings.warn('Bin numbers and indices do not match.  Map values are expected to be '
+                          'sorted by their bin number.')
+
+#        if unique_bins.size != unique_bins[-1]+2 \
+#                or numpy.any((unique_bins - numpy.arange(-1,unique_bins.size-1)) != 0):
+#            warnings.warn('Bin numbers and indices do not match.  Spectra are expected '
+#                          'to be sorted by their bin number.')
+#            unique_bins = numpy.arange(-1,unique_bins.size-1)
 
         # Get the valid bins
         indx = bin_indx > -1
@@ -1486,12 +1509,34 @@ class Covariance:
         # Get the unique bins and their first occurrence in the bin list
         unique_bins, unique_indx = numpy.unique(bin_indx, return_index=True)
 
-        # Need to handle missing bins
-        if unique_bins.size != unique_bins[-1]+2 \
-                or numpy.any((unique_bins - numpy.arange(-1,unique_bins.size-1)) != 0):
-            warnings.warn('Bin numbers and indices do not match.  Spectra are expected '
-                          'to be sorted by their bin number.')
-            unique_bins = numpy.arange(-1,unique_bins.size-1)
+        # Handle missing bins by changing from the bin id to the bin index.
+        # Detecting whether or not there is a need for handling missing bins is
+        # done by comparing the unique array to a full string of all indices up
+        # to the maximum index in the unique array.  **This assumes bins can
+        # only either be -1, to indicate that the spaxel/bin was not analyzed,
+        # or a non-negative index number** (i.e., all bin IDs must be >= -1).
+        # The code handles cases both with and without any ignored bins.
+        warn = False
+        if numpy.any(unique_bins < 0):
+            # Includes ignored bins/spaxels
+            if unique_bins.size != unique_bins[-1]+2 \
+                    or numpy.any((unique_bins - numpy.arange(-1,unique_bins.size-1)) != 0):
+                warn = True
+                unique_bins = numpy.arange(-1,unique_bins.size-1)
+        else:
+            # All bins/spaxels have valid bin numbers
+            if unique_bins.size != unique_bins[-1]+1 \
+                    or numpy.any((unique_bins - numpy.arange(unique_bins.size)) != 0):
+                warn = True
+                unique_bins = numpy.arange(unique_bins.size)
+        if warn and not quiet:
+            warnings.warn('Bin numbers and indices do not match.  Map values are expected to be '
+                          'sorted by their bin number.')
+#        if unique_bins.size != unique_bins[-1]+2 \
+#                or numpy.any((unique_bins - numpy.arange(-1,unique_bins.size-1)) != 0):
+#            warnings.warn('Bin numbers and indices do not match.  Spectra are expected '
+#                          'to be sorted by their bin number.')
+#            unique_bins = numpy.arange(-1,unique_bins.size-1)
 
         # Total number of bins
         nbins = len(unique_bins)-1

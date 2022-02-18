@@ -506,7 +506,8 @@ def continuum_component_data(plt, ifu, plan, drpver, dapver, analysis_path, sign
     else:
         # Find the unique indices in the map with valid bins
         unique, unique_indx = numpy.unique(binid_map.ravel(), return_index=True)
-        unique_indx = unique_indx[1:]
+        if unique[0] == -1:
+            unique_indx = unique_indx[1:]
         # .. and pull these out of the signal map
         signal = signal_map.ravel()[unique_indx]
 

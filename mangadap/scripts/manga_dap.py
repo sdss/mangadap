@@ -1,8 +1,10 @@
-import os
-import time
+
+from pathlib import Path
 import importlib
 
 import argparse
+
+from IPython import embed
 
 from mangadap.par.analysisplan import AnalysisPlanSet
 from mangadap.survey.manga_dap import manga_dap
@@ -53,15 +55,44 @@ def parse_args(options=None, return_parser=False):
 
     return parser.parse_args() if options is None else parser.parse_args(options)
 
+
+def load_cube_object(cube_module, cube_object):
+    """
+    Load the module and object used to read the datacube to analyze.
+
+    Thanks to: https://stackoverflow.com/questions/67631/how-to-import-a-module-given-the-full-path?rq=1
+
+    Args:
+        cube_module (:obj:`str`):
+            The name of a global python module, or the root name of a local file
+            with the :class:`~mangadap.datacube.datacube.DataCube` subclass.
+        cube_object (:obj:`str`):
+            The name of the subclass
+
+    Return:
+        :obj:`type`: The object used to read the data to analyze.
+
+    Raises:
+        ImportError:
+            Raised if unable to import ``cube_module``.
+    """
+    try:
+        CubeModule = importlib.import_module(cube_module)
+    except (ModuleNotFoundError, ImportError) as e:
+        p = Path(cube_module + '.py').resolve()
+        if not p.exists():
+            raise ImportError(f'Unable to load module {cube_module}!') from e
+        spec = importlib.util.spec_from_file_location(cube_module, str(p))
+        CubeModule = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(CubeModule)
+
+    return getattr(CubeModule, cube_object)
+
+
 def main(args):
     # Instantiate the DataCube
     #   - Try to import the module
-    try:
-        CubeModule = importlib.import_module(args.cube_module)
-    except (ModuleNotFoundError, ImportError) as e:
-        raise ImportError('Cube module {0} import failed!'.format(args.cube_module)) from e
-    #   - Try to import the class
-    UserDataCube = getattr(CubeModule, args.cube_object)
+    UserDataCube = load_cube_object(args.cube_module, args.cube_object)
     #   - Check that the class is derived from DataCube
     if not issubclass(UserDataCube, DataCube):
         raise TypeError('Defined cube object must subclass from mangadap.datacube.DataCube.')

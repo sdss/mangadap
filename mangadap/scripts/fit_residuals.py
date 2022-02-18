@@ -89,7 +89,11 @@ def get_stellar_continuum_data(dapmaps, dapcube):
 
     # Find the unique bins and get rid of -1 bins
     binid = cube_hdu['BINID'].data[1,:,:].ravel()
-    uniq, indx = map(lambda x: x[1:], numpy.unique(binid, return_index=True))
+#    uniq, indx = map(lambda x: x[1:], numpy.unique(binid, return_index=True))
+    uniq, indx = numpy.unique(binid, return_index=True)
+    if uniq[0] == -1:
+        uniq = uniq[1:]
+        indx = indx[1:]
 
     # Get the unique fluxes, errors, and models
     npix = cube_hdu['FLUX'].data.shape[0]
@@ -170,7 +174,11 @@ def get_emission_line_data(drpcube, daptype, dapmaps, dapcube):
    
     # Find the unique bins and get rid of -1 bins
     binid = cube_hdu['BINID'].data[3,:,:].ravel()
-    uniq, indx = map(lambda x: x[1:], numpy.unique(binid, return_index=True))
+#    uniq, indx = map(lambda x: x[1:], numpy.unique(binid, return_index=True))
+    uniq, indx = numpy.unique(binid, return_index=True)
+    if uniq[0] == -1:
+        uniq = uniq[1:]
+        indx = indx[1:]
 
     flux = flux[:,indx]
     error = error[:,indx]

@@ -351,12 +351,17 @@ class EmissionLineFit(SpectralFitting):
         if not debug:
             return binned_spectra.check_fgoodpix()
 
-#        warnings.warn('DEBUG!!')
+        warnings.warn('DEBUG!!')
 
-        uniq, indx = map(lambda x : x[1:], numpy.unique(binned_spectra['BINID'].data.ravel(),
-                                                        return_index=True))
+        uniq, indx = numpy.unique(binned_spectra['BINID'].data.ravel(), return_index=True)
+        if uniq[0] == -1:
+            uniq = uniq[1:]
+            indx = indx[1:]
         spaxels_to_fit = numpy.zeros(numpy.prod(binned_spectra['BINID'].data.shape), dtype=bool)
-        spaxels_to_fit[indx[bins_to_fit]] = True
+        if bins_to_fit is None:
+            spaxels_to_fit[indx] = True
+        else:
+            spaxels_to_fit[indx[bins_to_fit]] = True
         return spaxels_to_fit
 
 #        spaxels_to_fit = binned_spectra.check_fgoodpix()
