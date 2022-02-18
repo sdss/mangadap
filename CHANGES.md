@@ -2,6 +2,14 @@
 3.1.3dev
 --------
 
+ - Update to custom datacube class implementation.  Previous version
+   required a file within the mangadap/ directory structure; new code
+   allows for imports from a local user file.
+ - Deal with cubes where all the spaxels have valid data.
+ - Updates to `manga_dap_inspector` to use a cursor on the map selector
+   and a range slider for the vmin,vmax in the map.
+
+
 3.1.2 (29 Jul 2021)
 -------------------
 
