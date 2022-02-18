@@ -251,9 +251,7 @@ class UpdateableRangeSlider(RangeSlider):
         self.label.set_horizontalalignment('center')
         self.label.set_weight('bold')
 
-
     def update_range(self, rng, label):
-        self.ax.set_xlim(rng)
         self._active_handle = None
         xy = self.poly.get_xy()
         xy[:,0] = numpy.roll(numpy.repeat(rng, 3)[:-1],-1)
@@ -262,6 +260,7 @@ class UpdateableRangeSlider(RangeSlider):
         self.valinit = numpy.array(rng)
         self._handles[0].set_xdata(numpy.array([rng[0]]))
         self._handles[1].set_xdata(numpy.array([rng[1]]))
+        self.ax.set_xlim(rng)
         self.label.set_text(label)
         self.set_val(rng)
 

@@ -52,6 +52,7 @@ from .util import select_proc_method, replace_with_data_from_nearest_coo
 
 from matplotlib import pyplot
 
+
 class SpatiallyBinnedSpectraDef(KeywordParSet):
     """
     A class that holds the two parameter sets and the key designator
@@ -695,7 +696,7 @@ class SpatiallyBinnedSpectra:
 
             # Turn on the flag stating that the pixel has a foreground star
             if self.cube.propagate_flags() is not None:
-                flags = cube.propagate_flags()
+                flags = self.cube.propagate_flags()
                 # TODO: This will barf if flags is a numpy array
                 flags = flags if isinstance(flags, list) else [flags]
                 for flag in flags:
@@ -1070,10 +1071,11 @@ class SpatiallyBinnedSpectra:
                                                 inp_bitmask=self.cube.bitmask, 
                                                 out_flag='DIDNOTUSE', out_bitmask=self.bitmask)
         if self.cube.propagate_flags() is not None:
-            map_mask = DAPFitsUtil.marginalize_mask(self.cube.mask,
-                                                    inp_flags=self.cube.propagate_flags(),
-                                                    inp_bitmask=self.cube.bitmask,
-                                                    out_bimask=self.bitmask, out_mask=map_mask)
+            for flag in self.cube.propagate_flags():
+                map_mask = DAPFitsUtil.marginalize_mask(self.cube.mask, inp_flags=flag,
+                                                        inp_bitmask=self.cube.bitmask,
+                                                        out_flag=flag, out_bitmask=self.bitmask,
+                                                        out_mask=map_mask)
         drp_bad = map_mask > 0
         # Add the spectra with low spectral coverage
         indx = numpy.invert(good_fgoodpix.reshape(self.spatial_shape)) & numpy.invert(drp_bad)

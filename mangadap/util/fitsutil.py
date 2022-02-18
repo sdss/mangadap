@@ -830,10 +830,11 @@ class DAPFitsUtil:
             raise ValueError('Input mask array must have more than one dimension.')
 
         itype = bool if inp_bitmask is None else inp_bitmask.minimum_dtype()
-        # TODO: May need to use 'same_kind' instead of 'equiv'
-        if not numpy.can_cast(mask.dtype, numpy.dtype(itype), casting='equiv'):
-            raise TypeError(f'Input mask has incorrect type; expected {numpy.dtype(itype)}, '
-                            f'found {mask.dtype}.')
+        # TODO: Need to use 'same_kind' here instead of 'equiv' because MaNGA
+        # DRP doesn't necessarily use the minimum dtype for the masks.
+        if not numpy.can_cast(mask.dtype, numpy.dtype(itype), casting='same_kind'):
+            raise TypeError(f'Cannot cast input mask with type {mask.dtype} to expected type '
+                            f'{numpy.dtype(itype)}.')
 
         spatial_shape = DAPFitsUtil.get_spatial_shape(mask.shape, dispaxis)
 

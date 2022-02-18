@@ -87,15 +87,6 @@ def main():
     except Exception as e:
         print(str(e))
 
-    # Get the v3_0_1 drpcomplete until a v3_1_1 version is ready!
-    f = 'drpcomplete_v3_0_1.fits'
-    url_root = 'https://{0}/sas/mangawork/manga/spectro/analysis/{1}/{2}/common/'.format(
-                    HOST, 'v3_0_1', '3.0.1')
-    try:
-        download_file(url_root, usr, passwd, local_root, f, overwrite=overwrite)
-    except Exception as e:
-        print(str(e))
-
     # Get the DRPall file
     f = 'drpall-{0}.fits'.format(drp_test_version)
     url_root = 'https://{0}/sas/mangawork/manga/spectro/redux/{1}/'.format(HOST, drp_test_version)
