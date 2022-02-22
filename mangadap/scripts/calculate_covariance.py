@@ -69,7 +69,7 @@ class CalculateCovariance(scriptbase.ScriptBase):
                                  'redux path')
         return parser
 
-    @classmethod
+    @staticmethod
     def main(args):
 
         import os
