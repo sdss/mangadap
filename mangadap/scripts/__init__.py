@@ -8,8 +8,8 @@ from . import calculate_covariance
 from . import construct_dapall
 from . import dap_status
 from . import dapall_qa
-from . import dap_find_repeat_observations
-from . import dap_fit_residuals
+from . import find_repeat_observations
+from . import fit_residuals
 from . import manga_dap_inspector
 from . import manga_dap
 from . import plate_fit_qa
