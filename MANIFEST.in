@@ -12,7 +12,6 @@ recursive-include docs *
 
 prune build
 prune docs/_build
-print docs/api
 
 global-exclude *.pyc *.o *.so *.DS_Store
 
