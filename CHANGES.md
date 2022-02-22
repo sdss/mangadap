@@ -8,6 +8,12 @@
  - Deal with cubes where all the spaxels have valid data.
  - Updates to `manga_dap_inspector` to use a cursor on the map selector
    and a range slider for the vmin,vmax in the map.
+ - Refactor installation details inspired by `pypeit` package.
+    - Installation dependencies and setup moved into `setup.cfg`
+    - Versioning now done automatically
+    - Change scripting protocol
+    - tox testing CI    
+    - Updated MANIFEST
 
 
 3.1.2 (29 Jul 2021)
