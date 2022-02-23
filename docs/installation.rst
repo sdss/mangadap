@@ -77,21 +77,19 @@ To test the installation, make sure you have `pytest` installed and then
     cd mangadap/tests
     pytest .
 
-Some tests requires a set of "remote" data that are not located in
-the repo for space considerations. Downloading the data used by these
-tests currently requires `SDSS Collaboration Access`_. The link in
-the last sentence points to a description of how this access is
-granted for Marvin using a ``~\.netrc`` file. The DAP uses the same
-``~\.netrc`` file to authenticate access to the ``data.sdss.org``
-host for downloading the test data. Once you have your ``~\.netrc``
-file, you can download the necessary test data and rerun the tests to
-include usage of that data like this:
+Some tests require a set of "remote" data that are not located in the repo for
+space considerations. You can download these data by running the following
+script:
 
 .. code-block:: console
 
     python download_test_data.py
-    cd mangadap/tests
-    pytest .
+
+And then executing the tests with the same commands above.
+
+Note that, if you have `SDSS Collaboration Access`_ and you have a `~/.netrc`
+file (e.g., from using collaboration access with Marvin), this script will pull
+the data from the (still public) `mangawork` directory on the SAS.
 
 
 Local Environment Setup

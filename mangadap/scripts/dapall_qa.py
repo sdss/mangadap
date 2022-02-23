@@ -700,9 +700,6 @@ class DapAllQA(scriptbase.ScriptBase):
 
         parser.add_argument('--drpver', type=str, help='DRP version', default=None)
         parser.add_argument('--dapver', type=str, help='DAP version', default=None)
-        parser.add_argument('--dap_src', type=str, default=None,
-                            help='Top-level directory with the DAP source code; defaults to '
-                                 '$MANGADAP_DIR')
         parser.add_argument("--redux_path", type=str, help="main DRP output path", default=None)
         parser.add_argument("--analysis_path", type=str, help="main DAP output path", default=None)
 
