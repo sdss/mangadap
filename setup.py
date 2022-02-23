@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
+
 # Adapted from pypeit
 
 # NOTE: The configuration for the package, including the name, version, and

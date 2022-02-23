@@ -24,18 +24,15 @@ import numpy
 from ..util.exception_tools import check_environment_variable
 from mangadap import __version__
 
+
 def dap_data_root():
     """Return the root directory with the DAP data."""
     return resource_filename('mangadap', 'data')
 
+
 def dap_config_root():
     """Return the root directory with the DAP config data."""
     return resource_filename('mangadap', 'config')
-
-def idlutils_dir():
-    """Return the default IDLUTILS directory."""
-    check_environment_variable('IDLUTILS_DIR')
-    return os.environ['IDLUTILS_DIR']
 
 
 def sdss_maskbits_file():
@@ -43,13 +40,6 @@ def sdss_maskbits_file():
     maskbits_file = os.path.join(dap_data_root(), 'sdss', 'sdssMaskbits.par')
     if os.path.isfile(maskbits_file):
         return maskbits_file
-
-    try:
-        maskbits_file = os.path.join(idlutils_dir(), 'data', 'sdss', 'sdssMaskbits.par')
-        if os.path.isfile(maskbits_file):
-            return maskbits_file
-    except:
-        return None
 
 
 def drp_version():
@@ -401,47 +391,6 @@ def dap_file_root(plate, ifudesign, mode=None):
     """
     return 'mangadap-{0}-{1}'.format(plate, ifudesign) if mode is None else \
                     'mangadap-{0}-{1}-LOG{2}'.format(plate, ifudesign, mode)
-
-## TODO: This method should be obsolete now.
-#def dap_par_file(plate, ifudesign, mode, partype='input', drpver=None, dapver=None,
-#                 analysis_path=None, directory_path=None):
-#    """
-#    Return the full path to a par file used by the DAP to analyze the
-#    specified DRP output file.
-#
-#    Args:
-#        plate (:obj:`int`):
-#            Plate number
-#        ifudesign (:obj:`int`):
-#            IFU design number
-#        mode (:obj:`str`):
-#            Mode of the DRP reduction; either ``RSS`` or ``CUBE``.
-#        partype (:obj:`str`):
-#            An "unregulated" type for the parameter file. The default
-#            is ``'input'``, signifying the input set of observational
-#            parameters; see
-#            :class:`mangadap.par.obsinput.ObsInputPar`.
-#        drpver (:obj:`str`, optional):
-#            DRP version. Default is to use :func:`drp_version`.
-#        dapver (:obj:`str`, optional):
-#            DAP version. Default is to use :func:`dap_version`.
-#        analysis_path (:obj:`str`, optional): 
-#            Path to the root analysis directory. Default is to use
-#            :func:`dap_analysis_path`.
-#        directory_path (:obj:`str`, optional):
-#            Path to the directory with the DAP output files. Default
-#            is to use :func:`dap_common_path`
-#
-#    Returns:
-#        :obj:`str`: Full path to the DAP par file
-#    """
-#    # Make sure the directory path is defined
-#    _directory_path = dap_common_path(plate=plate, ifudesign=ifudesign, drpver=drpver,
-#                                             dapver=dapver, analysis_path=analysis_path) \
-#                            if directory_path is None else os.path.abspath(directory_path)
-#    # Set the name of the par file; put this in its own function?
-#    par_file = '{0}-{1}.par'.format(dap_file_root(plate, ifudesign, mode), partype)
-#    return os.path.join(_directory_path, par_file)
 
     
 def dap_config(plate, ifudesign, drpver=None, dapver=None, analysis_path=None,

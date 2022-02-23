@@ -39,7 +39,6 @@ from .util.fitsutil import DAPFitsUtil
 from .util.dapbitmask import DAPBitMask
 from .util.log import log_output
 from .util.fileio import channel_dictionary
-from .util.exception_tools import print_frame
 from .util.geometry import SemiMajorAxisCoo
 from .util.covariance import Covariance
 from .config import defaults
