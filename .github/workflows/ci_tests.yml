@@ -51,7 +51,7 @@ jobs:
       matrix:
         os: [windows-latest, macos-latest]
         python: [3.8, 3.9]
-        toxenv: [test-alldeps]
+        toxenv: [test]
     steps:
     - name: Check out repository
       uses: actions/checkout@v2
