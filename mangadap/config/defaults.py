@@ -239,7 +239,7 @@ def dap_common_path(plate=None, ifudesign=None, drpver=None, dapver=None, analys
         ValueError:
             Raised if IFU design is provided and plate is not.
     """
-    # For heirarchy, if ifudesign is given, plate must also be given
+    # For hierarchy, if ifudesign is given, plate must also be given
     if plate is None and ifudesign is not None:
         raise ValueError('For IFU design subdirectory, must provide plate number.')
 
