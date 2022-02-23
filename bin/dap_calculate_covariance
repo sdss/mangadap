@@ -1,6 +1,0 @@
-#!/usr/bin/env python3
-
-from mangadap.scripts import calculate_covariance
-
-if __name__ == '__main__':
-    calculate_covariance.main(calculate_covariance.parse_args())

@@ -21,6 +21,8 @@ from mangadap.tests.util import requires_remote, remote_data_file
 #-----------------------------------------------------------------------------
 
 def test_samples():
+
+    rng = numpy.random.default_rng(seed=8001)
     
     # Build a bogus covariance matrix
     m = numpy.zeros(10, dtype=float)
@@ -31,7 +33,7 @@ def test_samples():
             + numpy.diag(numpy.full(10-2, 0.2, dtype=float), k=2)
 
     # Draw samples
-    s = numpy.random.multivariate_normal(m, c, size=100000)
+    s = rng.multivariate_normal(m, c, size=100000)
 
     # Instantiate
     covar = Covariance.from_samples(s.T, cov_tol=0.1)
@@ -125,6 +127,8 @@ def test_array():
 
 def test_io():
 
+    rng = numpy.random.default_rng(seed=8001)
+    
     # Clean up in case of a failure
     ofile = 'test_covar_io.fits'
     if os.path.isfile(ofile):
@@ -139,7 +143,7 @@ def test_io():
             + numpy.diag(numpy.full(10-2, 0.2, dtype=float), k=2)
 
     # Draw samples
-    s = numpy.random.multivariate_normal(m, c, size=100000)
+    s = rng.multivariate_normal(m, c, size=100000)
 
     # Instantiate
     covar = Covariance.from_samples(s.T, cov_tol=0.1)

@@ -13,12 +13,14 @@ from mangadap.tests.util import drp_test_version, dap_test_version
 try:
     NETRC = netrc.netrc()
 except Exception as e:
-    raise FileNotFoundError('Could not load ~/.netrc file.') from e
+    NETRC = None
+    warnings.warn('Could not load ~/.netrc file.  Attempting to pull from DR17.')
 
 HOST = 'data.sdss.org'
-if HOST not in NETRC.hosts:
-    raise ValueError('Host data.sdss.org is not defined in your ~/.netrc file.')
-
+if NETRC is not None and HOST not in NETRC.hosts:
+    NETRC = None
+    warnings.warn('Host data.sdss.org is not defined in your ~/.netrc file.  '
+                  'Attempting to pull from DR17.')
 
 def download_file(remote_root, usr, passwd, local_root, file, overwrite=False):
     """
@@ -26,18 +28,18 @@ def download_file(remote_root, usr, passwd, local_root, file, overwrite=False):
     https://stackoverflow.com/questions/37573483/progress-bar-while-download-file-over-http-with-requests/37573701
     """
     #Beware of how this is joined!
-    url = '{0}{1}'.format(remote_root, file)
+    url = f'{remote_root}{file}'
     ofile = os.path.join(local_root, file)
 
     if os.path.isfile(ofile):
         if overwrite:
-            warnings.warn('Overwriting existing file: {0}'.format(ofile))
+            warnings.warn(f'Overwriting existing file: {ofile}')
             os.remove(ofile)
         else:
-            warnings.warn('{0} exists.  To overwrite, set overwrite=True.'.format(ofile))
+            warnings.warn('{ofile} exists.  To overwrite, set overwrite=True.')
             return
 
-    print('Downloading: {0}'.format(url))
+    print(f'Downloading: {url}')
     # Streaming, so we can iterate over the response.
     r = requests.get(url, stream=True, auth=(usr, passwd))
     if r.status_code == 404:
@@ -58,7 +60,13 @@ def download_file(remote_root, usr, passwd, local_root, file, overwrite=False):
 def main():
 
     overwrite = False
-    usr, acc, passwd = NETRC.authenticators(HOST)
+    if NETRC is None:
+        usr, acc, passwd = None, None, None
+    else:
+        usr, acc, passwd = NETRC.authenticators(HOST)
+
+    sas_dir = 'dr17' if NETRC is None else 'mangawork'
+    sas_root = f'https://{HOST}/sas/{sas_dir}/manga/spectro'
 
     version = drp_test_version
     files = remote_data_files()
@@ -70,8 +78,7 @@ def main():
 
     # Get the spectral data
     for plate, f in zip(plates, files):
-        url_root = 'https://{0}/sas/mangawork/manga/spectro/redux/{1}/{2}/stack/'.format(
-                        HOST, drp_test_version, plate)
+        url_root = f'{sas_root}/redux/{drp_test_version}/{plate}/stack/'
         try:
             download_file(url_root, usr, passwd, local_root, f, overwrite=overwrite)
         except Exception as e:
@@ -79,17 +86,16 @@ def main():
             continue
 
     # Get the DRPComplete file
-    f = 'drpcomplete_{0}.fits'.format(drp_test_version)
-    url_root = 'https://{0}/sas/mangawork/manga/spectro/analysis/{1}/{2}/common/'.format(
-                    HOST, drp_test_version, dap_test_version)
+    f = f'drpcomplete_{drp_test_version}.fits'
+    url_root = f'{sas_root}/analysis/{drp_test_version}/{dap_test_version}/common/'
     try:
         download_file(url_root, usr, passwd, local_root, f, overwrite=overwrite)
     except Exception as e:
         print(str(e))
 
     # Get the DRPall file
-    f = 'drpall-{0}.fits'.format(drp_test_version)
-    url_root = 'https://{0}/sas/mangawork/manga/spectro/redux/{1}/'.format(HOST, drp_test_version)
+    f = f'drpall-{drp_test_version}.fits'
+    url_root = f'{sas_root}/redux/{drp_test_version}/'
     try:
         download_file(url_root, usr, passwd, local_root, f, overwrite=overwrite)
     except Exception as e:

@@ -1,6 +1,0 @@
-#!/usr/bin/env python3
-
-from mangadap.scripts import find_repeat_observations
-
-if __name__ == '__main__':
-    find_repeat_observations.main(find_repeat_observations.parse_args())

@@ -14,6 +14,8 @@ from astropy import constants
 from mangadap.util.bitmask import BitMask
 from mangadap.config import defaults
 
+from mangadap.scripts import scriptbase
+
 
 def double_print(ostream, line, **kwargs):
     if ostream is not None:
@@ -71,38 +73,43 @@ def find_repeat_observations(dapall_file, ofile=None):
     if f is not None:
         f.close()
 
-def parse_args(options=None, return_parser=False):
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--drpver', type=str, help='DRP version', default=None)
-    parser.add_argument('--dapver', type=str, help='DAP version', default=None)
-    parser.add_argument('--analysis_path', type=str, help='main DAP output path', default=None)
-    parser.add_argument('--dapall', type=str, help='full path to DAPall file', default=None)
-    parser.add_argument('--output_file', type=str, default=None,
-                        help='output file name, including path; no file is written by default')
-    parser.add_argument('-o', '--overwrite', default=False, action='store_true',
-                        help='Overwrite any existing files.')
-    if return_parser:
+
+class FindRepeatObservations(scriptbase.ScriptBase):
+
+    @classmethod
+    def get_parser(cls, width=None):
+
+        parser = super().get_parser(description='Use the DRPall file to find repeat observations',
+                                    width=width)
+        parser.add_argument('--drpver', type=str, help='DRP version', default=None)
+        parser.add_argument('--dapver', type=str, help='DAP version', default=None)
+        parser.add_argument('--analysis_path', type=str, help='main DAP output path', default=None)
+        parser.add_argument('--dapall', type=str, help='full path to DAPall file', default=None)
+        parser.add_argument('--output_file', type=str, default=None,
+                            help='output file name, including path; no file is written by default')
+        parser.add_argument('-o', '--overwrite', default=False, action='store_true',
+                            help='Overwrite any existing files.')
         return parser
-    return parser.parse_args() if options is None else parser.parse_args(options)
 
-def main(args):
+    @staticmethod
+    def main(args):
 
-    t = time.perf_counter()
+        t = time.perf_counter()
 
-    dapall_file = defaults.dapall_file(drpver=args.drpver, dapver=args.dapver,
-                                  analysis_path=args.analysis_path) \
-                    if args.dapall is None else args.dapall
-    if not os.path.isfile(dapall_file):
-        raise FileNotFoundError(f'File does not exist: {dapall_file}')
+        dapall_file = defaults.dapall_file(drpver=args.drpver, dapver=args.dapver,
+                                           analysis_path=args.analysis_path) \
+                        if args.dapall is None else args.dapall
+        if not os.path.isfile(dapall_file):
+            raise FileNotFoundError(f'File does not exist: {dapall_file}')
 
-    if args.output_file is not None and os.path.isfile(args.output_file):
-        if not overwrite:
-            raise FileExistsError('Output file already exists, use the -o option to overwrite.')
-        warnings.warn('Output file already exists and will be overwritten.')
+        if args.output_file is not None and os.path.isfile(args.output_file):
+            if not overwrite:
+                raise FileExistsError('Output file already exists, use the -o option to overwrite.')
+            warnings.warn('Output file already exists and will be overwritten.')
 
-    find_repeat_observations(dapall_file, ofile=args.output_file)
+        find_repeat_observations(dapall_file, ofile=args.output_file)
 
-    print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
+        print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
 
 
 

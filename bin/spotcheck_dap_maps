@@ -1,6 +1,0 @@
-#!/usr/bin/env python3
-
-from mangadap.scripts import spotcheck_dap_maps
-
-if __name__ == '__main__':
-    spotcheck_dap_maps.main(spotcheck_dap_maps.parse_args())

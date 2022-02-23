@@ -1,8 +1,0 @@
-# MaNGA DAP developer requirements
-
--r requirements.txt
-
-pytest>=6.1
-pytest-cov>=2.10
-coveralls>=2.2
-
