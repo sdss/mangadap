@@ -20,10 +20,9 @@ Provides a set of parsing utility functions.
 """
 from pathlib import Path
 from os import environ
+import warnings
 from IPython import embed
 from configparser import ConfigParser, ExtendedInterpolation
-
-from .exception_tools import print_frame
 
 def arginp_to_list(inp, evaluate=False, quiet=True):
     """
@@ -65,10 +64,9 @@ def arginp_to_list(inp, evaluate=False, quiet=True):
         for i in range(0,n):
             try:
                 tmp = eval(out[i])
-            except (NameError, TypeError):
+            except (NameError, TypeError) as e:
                 if not quiet:
-                    print_frame('NameError/TypeError')
-                    print('Could not evaluate value {0}. Skipping.'.format(out[i]))
+                    warnings.warn(f'Could not evaluate value {out[i]}. Skipping.')
             else:
                 out[i] = tmp
 

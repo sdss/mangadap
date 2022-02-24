@@ -89,7 +89,6 @@ from mangadap import __version__
 from mangadap.config import defaults
 from mangadap.survey.drpcomplete import DRPComplete
 from mangadap.survey.mangampl import MaNGAMPL
-from mangadap.util.exception_tools import print_frame
 from mangadap.util.parser import arginp_to_list
 from mangadap.util.fileio import create_symlink
 from mangadap.par.analysisplan import AnalysisPlanSet
@@ -529,10 +528,12 @@ class rundap:
         # Make sure the selected MPL version is available
         try:
             self.mpl = MaNGAMPL(version=self.mpl, strictver=self.strictver)
-        except:
-            e = sys.exc_info()
-            print_frame(e[0])
-            raise ValueError('MPL is undefined: {0}'.format(e[1]))
+        except Exception as e:
+#            e = sys.exc_info()
+#            print_frame(e[0])
+#            raise ValueError('MPL is undefined: {0}'.format(e[1]))
+            raise ValueError('MPL is undefined!') from e
+
         self.dapver = defaults.dap_version() if self.dapver is None else self.dapver
 
         # Set the output paths

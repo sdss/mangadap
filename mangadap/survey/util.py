@@ -17,7 +17,6 @@ survey-level execution of the DAP**.
 import subprocess
 import os
 
-from ..util.exception_tools import print_frame
 
 def product_version(product='mangadap', simple=False):
     """
@@ -38,8 +37,8 @@ def product_version(product='mangadap', simple=False):
             version = version.decode('utf-8')
         version = version.split(' ')[0].rstrip('\n') if simple else version.rstrip('\n')
     except Exception as e:
-        print_frame('Exception')
-        print(e)
+#        print_frame('Exception')
+#        print(e)
         version = None
 
     return version
@@ -59,8 +58,8 @@ def module_version(product='mangadap'):
     try:
         modules = os.environ['LOADEDMODULES']
     except:
-        print_frame('Exception')
-        modules = None
+#        print_frame('Exception')
+#        modules = None
         return None
     # TODO: Re-raise the exception?
   
