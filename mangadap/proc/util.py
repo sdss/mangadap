@@ -174,7 +174,7 @@ def select_database(key, directory_path):
         raise NotADirectoryError('{0} not found!'.format(directory_path))
 
     files = glob.glob(os.path.join(directory_path, '*.par'))
-    keys = [ get_database_key(f) for f in files]
+    keys = [get_database_key(f) for f in files]
     if key not in keys:
         raise KeyError('No database found to associate with {0}.'.format(key))
 

@@ -1,13 +1,7 @@
-
-import pytest
-import os
-
 from IPython import embed
 
 import numpy
-from scipy import interpolate
 from astropy.io import fits
-import astropy.constants
 
 from mangadap.datacube import MaNGADataCube
 

@@ -1,6 +1,3 @@
-
-import pytest
-
 from IPython import embed
 
 import numpy

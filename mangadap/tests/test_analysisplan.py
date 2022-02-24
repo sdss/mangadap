@@ -1,6 +1,3 @@
-import os
-import subprocess
-
 from IPython import embed
 
 from mangadap.tests.util import data_test_file

@@ -1,5 +1,3 @@
-
-import pytest
 import numpy
 
 from mangadap.util.extinction import GalacticExtinction

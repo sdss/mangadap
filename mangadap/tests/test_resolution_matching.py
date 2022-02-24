@@ -1,5 +1,3 @@
-import pytest
-
 import numpy
 
 from mangadap.util.resolution import match_spectral_resolution

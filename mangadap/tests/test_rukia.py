@@ -1,14 +1,9 @@
-import pytest
-import os
-
 from IPython import embed
 
 import numpy
 from scipy import special
-from matplotlib import pyplot
 
 from astropy.io import fits
-import astropy.constants
 
 from mangadap.util.constants import DAPConstants
 from mangadap.tests.util import data_test_file

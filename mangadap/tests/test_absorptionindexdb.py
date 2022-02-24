@@ -1,7 +1,4 @@
 
-import pytest
-import os
-
 from IPython import embed
 
 from mangadap.par.absorptionindexdb import AbsorptionIndexDB

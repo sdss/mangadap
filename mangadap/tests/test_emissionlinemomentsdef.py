@@ -1,6 +1,3 @@
-
-import pytest
-import os
 from IPython import embed
 
 from mangadap.proc.emissionlinemoments import available_emission_line_moment_databases

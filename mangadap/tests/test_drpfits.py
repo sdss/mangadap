@@ -1,9 +1,5 @@
-
-import pytest
-
 import numpy
 from astropy.io import fits
-import astropy.constants
 
 from mangadap.datacube import MaNGADataCube
 from mangadap.util.drpfits import DRPFitsBitMask

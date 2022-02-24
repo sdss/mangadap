@@ -1,5 +1,3 @@
-import pytest
-
 import os
 
 from IPython import embed
@@ -7,8 +5,6 @@ from IPython import embed
 import numpy
 
 from astropy.io import fits
-
-from matplotlib import pyplot
 
 from mangadap.datacube import MaNGADataCube
 from mangadap.util.covariance import Covariance
@@ -211,6 +207,7 @@ def test_rectification_recovery():
     assert numpy.ma.median(cube.sres[...,channel].ravel() - sres) < 0.1, \
             'Bad spectral resolution rectification'
 
+#    from matplotlib import pyplot
 #    zoom = 12
 #    xs = int(C.shape[0]/2 - C.shape[0]/2/zoom)
 #    xe = xs + int(C.shape[0]/zoom) + 1

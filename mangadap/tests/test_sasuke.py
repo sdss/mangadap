@@ -1,13 +1,7 @@
-
-import pytest
-import os
-
 from IPython import embed
 
 import numpy
-from scipy import interpolate
 from astropy.io import fits
-import astropy.constants
 
 from mangadap.datacube import MaNGADataCube
 
@@ -19,7 +13,7 @@ from mangadap.util.pixelmask import SpectralPixelMask
 
 from mangadap.proc.templatelibrary import TemplateLibrary
 from mangadap.proc.ppxffit import PPXFFit
-from mangadap.proc.stellarcontinuummodel import StellarContinuumModel, StellarContinuumModelBitMask
+from mangadap.proc.stellarcontinuummodel import StellarContinuumModelBitMask
 
 from mangadap.tests.util import data_test_file
 

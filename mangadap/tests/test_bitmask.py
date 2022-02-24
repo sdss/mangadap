@@ -1,5 +1,3 @@
-import pytest
-
 from collections import OrderedDict
 
 import numpy

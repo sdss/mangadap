@@ -1,6 +1,3 @@
-
-import pytest
-
 from mangadap.proc.spectralindices import available_spectral_index_databases
 from mangadap.par.artifactdb import ArtifactDB
 from mangadap.par.absorptionindexdb import AbsorptionIndexDB

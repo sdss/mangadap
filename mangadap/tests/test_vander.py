@@ -1,12 +1,6 @@
-
-import pytest
-import os
-
 from IPython import embed
 
 import numpy
-
-from matplotlib import pyplot
 
 from mangadap.util.vander import Legendre1D
 

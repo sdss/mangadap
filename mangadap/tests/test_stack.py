@@ -1,9 +1,7 @@
-
 from IPython import embed
 
 import numpy
 from scipy import special
-from matplotlib import pyplot
 
 import astropy.constants
 
@@ -71,6 +69,7 @@ def test_register():
         model_flux += f * pixelated_gaussian(rx, c=c, s=sigma)
 
     # Compare the stacks against truth
+#    from matplotlib import pyplot
 #    pyplot.plot(swave, sflux[0])            # Stacked using stacker.stack (blue)
 #    pyplot.plot(rwave, reg_stack_flux)      # Stacked by hand after registration (orange)
 #    pyplot.plot(rwave, model_flux)          # Truth (green)

@@ -49,9 +49,4 @@ def check_environment():
 
 check_environment()
 
-#def dap_source_dir():
-#    from pkg_resources import resource_filename
-#    return resource_filename('mangadap', '')
-#
-#os.environ['MANGADAP_DIR'] = dap_source_dir()
 

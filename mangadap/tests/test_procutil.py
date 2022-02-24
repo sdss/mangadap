@@ -1,6 +1,5 @@
-
-import pytest
 import os
+from IPython import embed
 
 from mangadap.proc import util
 from mangadap.config import defaults
@@ -13,6 +12,6 @@ def test_database_key():
 
 
 def test_select_database():
-    d = os.path.join(defaults.dap_data_root(), 'emission_lines')
+    d = defaults.dap_data_root() / 'emission_lines'
     assert os.path.split(util.select_database('ELPMPL11', d))[1] == 'elpmpl11.par'
 
