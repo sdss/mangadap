@@ -74,7 +74,6 @@ def drp_version():
     Return the DRP version defined by the environmental variable
     MANGADRP_VER.
     """
-#    check_environment_variable('MANGADRP_VER')
     return manga_environ['MANGADRP_VER']
 
 
@@ -93,7 +92,6 @@ def drp_redux_path(drpver=None):
     # Make sure the DRP version is set
     if drpver is None:
         drpver = drp_version()
-#    check_environment_variable('MANGA_SPECTRO_REDUX')
     return Path(manga_environ['MANGA_SPECTRO_REDUX']).resolve() / drpver
 
 
@@ -209,13 +207,6 @@ def dap_version():
     `mangadap.__version__` is returned.
     """
     return manga_environ['MANGADAP_VER']
-#    no_environ_var=False
-#    try:
-#        check_environment_variable('MANGADAP_VER')
-#    except EnvironmentError as e:
-#        warnings.warn('$MANGADAP_VER undefined in environment; returning internal version')
-#        no_environ_var = True
-#    return __version__ if no_environ_var else environ['MANGADAP_VER']
 
 
 def dap_analysis_path(drpver=None, dapver=None):
@@ -238,7 +229,6 @@ def dap_analysis_path(drpver=None, dapver=None):
     # Make sure the DAP version is set
     if dapver is None:
         dapver = dap_version()
-#    check_environment_variable('MANGA_SPECTRO_ANALYSIS')
     return Path(manga_environ['MANGA_SPECTRO_ANALYSIS']).resolve() / drpver / dapver
 
 
@@ -524,10 +514,11 @@ def plate_target_files():
         determined for each file.
     """
     # Default search string
-#    check_environment_variable('MANGACORE_DIR')
     search_str = Path(manga_environ['MANGACORE_DIR']).resolve() / 'platedesign' / 'platetargets'
     file_list = sorted(list(search_path.glob('plateTargets*.par')))
     nfiles = len(file_list)
+    if nfiles == 0:
+        raise ValueError('Unable to find any plateTargets files!')
     trgid = numpy.zeros(nfiles, dtype=numpy.int)            # Array to hold indices
     for i in range(nfiles):
         suffix = file_list[i].split('-')[1]                 # Strip out the '{i}.par'

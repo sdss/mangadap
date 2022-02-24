@@ -57,12 +57,12 @@ class MangaDap(scriptbase.ScriptBase):
 
         group = parser.add_mutually_exclusive_group(required=True)
         group.add_argument('-c', '--config', type=str, default=None,
-                        help='Configuration file used to instantiate the relevant DataCube '
-                             'derived class.')
+                           help='Configuration file used to instantiate the relevant DataCube '
+                                'derived class.')
         group.add_argument('-f', '--cubefile', type=str, default=None,
-                        help='Name of the file with the datacube data.  Must be possible to '
-                             'instantiate the relevant DataCube derived class directly from the '
-                             'file only.')
+                           help='Name of the file with the datacube data.  Must be possible to '
+                                'instantiate the relevant DataCube derived class directly from '
+                                'the file only.')
         parser.add_argument('-p', '--plan', type=str,
                             help='SDSS parameter file with analysis plan.  If not provided, a '
                                  'default plan is used.')
@@ -85,12 +85,12 @@ class MangaDap(scriptbase.ScriptBase):
         parser.add_argument('-r', '--redux_path', type=str,
                             help='Top-level directory with the DRP products; defaults to '
                                 '$MANGA_SPECTRO_REDUX/$MANGADRP_VER', default=None)
-        parser.add_argument('-d', '--directory_path', type=str,
-                            help='Path directly to directory with DRP file to analyze', default=None)
+        parser.add_argument('-d', '--directory_path', type=str, default=None,
+                            help='Path directly to directory with DRP file to analyze')
         parser.add_argument('--dapver', type=str, help='DAP version', default=None)
-        parser.add_argument('-a', '--analysis_path', type=str,
+        parser.add_argument('-a', '--analysis_path', type=str, default=None,
                             help='Top-level output directory for the DAP results; defaults to '
-                                '$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER', default=None)
+                                '$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER')
         return parser
 
     @staticmethod
@@ -110,8 +110,8 @@ class MangaDap(scriptbase.ScriptBase):
         #     configuration file
         cube = UserDataCube(args.cubefile) if args.config is None \
                     else UserDataCube.from_config(args.config, drpver=args.drpver,
-                                                 redux_path=args.redux_path,
-                                                 directory_path=args.directory_path)
+                                                  redux_path=args.redux_path,
+                                                  directory_path=args.directory_path)
 
         # Read the analysis plan
         analysisplan = AnalysisPlanSet.default() if args.plan is None \

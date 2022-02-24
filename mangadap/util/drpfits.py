@@ -6,8 +6,6 @@ the MaNGA Data Reduction Pipeline (DRP).
 
 .. todo::
 
-    - Calculation in :func:`DRPFits._cube_dimensions` will only be
-      correct if the WCS coordinates have no rotation.
     - Further optimize calculation of transfer matrix
     - Make DRP file class flexible to linear or log-linear wavelength
       sampling?  Incorporate into MODE?
@@ -134,16 +132,16 @@ class DRPFits:
         """
         return ['CUBE', 'RSS']
 
-    @staticmethod
-    def sampling_options():
-        """
-        Return the allowed wavelength sampling modes.
-
-        Returns:
-            :obj:`list`: List of the allowed DRP fits wavelength
-            sampling modes.
-        """
-        return ['LIN', 'LOG']
+#    @staticmethod
+#    def sampling_options():
+#        """
+#        Return the allowed wavelength sampling modes.
+#
+#        Returns:
+#            :obj:`list`: List of the allowed DRP fits wavelength
+#            sampling modes.
+#        """
+#        return ['LIN', 'LOG']
 
     @staticmethod
     def spectral_resolution_extension(hdu, ext=None):

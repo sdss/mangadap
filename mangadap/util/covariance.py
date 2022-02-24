@@ -4,9 +4,11 @@ r"""
 Defines a class used to store and interface with covariance matrices.
 
 .. todo::
+
     - Allow for calculation of the inverse of the covariance matrix.
     - Instead of 3D covariance cubes being an array of sparse objects,
       make the whole thing a sparse array.
+    - The usage examples need to be updated!
 
 Usage examples
 --------------
