@@ -15,6 +15,7 @@ once per DRP data file.
 .. include common links, assuming primary doc root is up one directory
 .. include:: ../include/links.rst
 """
+from pathlib import Path
 import os
 import time
 import glob
@@ -140,15 +141,26 @@ def validate_reduction_assessment_config(cnfg):
     def_range = cnfg.keyword_specified('wave_limits')
     def_response = cnfg.keyword_specified('response_function_file')
 
-    if numpy.sum([ def_range, def_response] ) != 1:
-        raise ValueError('Method undefined.  Must provide either \'waverange\' or '
-                         '\'response_function_file\'.')
+    if def_range and def_response:
+        warnings.warn('You have defined both a wavelength range and a response function for the '
+                      'reduction assessments; the latter takes precedence, the former is ignored!')
+        def_range = False
+    elif not def_range and not def_response:
+        raise ValueError('Reduction assessment method undefined.  Must provide either '
+                         '\'waverange\' or \'response_function_file\'.')
 
-    if def_response and not os.path.isfile(cnfg['response_function_file']):
-        raise FileNotFoundError('response_function_file does not exist: {0}'.format(
-                                cnfg['response_function_file']))
+    response_file = None
+    if def_response:
+        response_file = Path(cnfg['response_function_file']).resolve()
+        if not response_file.exists():
+            # File not found, so try to find it in the configuration directory
+            response_file = defaults.dap_data_root() / 'filter_response' \
+                                / cnfg['response_function_file']
+            if not response_file.exists():
+                raise FileNotFoundError(f'Could not find {cnfg["response_function_file"]} '
+                                        'in the local directory or the DAP source distribution.')
 
-    return def_range, def_response
+    return def_range, response_file
 
 
 def available_reduction_assessments():
@@ -185,8 +197,8 @@ def available_reduction_assessments():
             not defined by any of the methods.
     """
     # Check the configuration files exist
-    search_dir = os.path.join(defaults.dap_config_root(), 'reduction_assessments')
-    ini_files = glob.glob(os.path.join(search_dir, '*.ini'))
+    search_dir = defaults.dap_config_root() / 'reduction_assessments'
+    ini_files = sorted(list(search_dir.glob('*.ini')))
     if len(ini_files) == 0:
         raise IOError('Could not find any configuration files in {0} !'.format(search_dir))
 
@@ -197,7 +209,7 @@ def available_reduction_assessments():
         cnfg = DefaultConfig(f=f, interpolate=True)
         # Ensure it has the necessary elements to define the template
         # library
-        def_range, def_response = validate_reduction_assessment_config(cnfg)
+        def_range, response_file = validate_reduction_assessment_config(cnfg)
         in_vacuum = cnfg.getbool('in_vacuum', default=False)
         if def_range:
             waverange = cnfg.getlist('wave_limits', evaluate=True)
@@ -206,8 +218,8 @@ def available_reduction_assessments():
             assessment_methods += [ReductionAssessmentDef(key=cnfg['key'], waverange=waverange,
                                         covariance=cnfg.getbool('covariance', default=False),
                                         minimum_frac=cnfg.getfloat('minimum_frac', default=0.8))]
-        elif def_response:
-            response = numpy.genfromtxt(cnfg['response_function_file'])[:,:2]
+        elif response_file is not None:
+            response = numpy.genfromtxt(str(response_file))[:,:2]
             if not in_vacuum:
                 response[:,0] = airtovac(response[:,0])
             assessment_methods += [ReductionAssessmentDef(key=cnfg['key'], response_func=response,

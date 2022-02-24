@@ -886,9 +886,6 @@ class SpectralIndices:
             Path to the directory with bandhead index parameter files.
             If None, defined by
             :attr:`mangadap.par.bandheadindexdb.BandheadIndexDB.default_data_dir`.
-        dapsrc (str): (**Optional**) Root path to the DAP source
-            directory.  If not provided, the default is defined by
-            :func:`mangadap.config.defaults.dap_source_dir`.
         dapver (str): (**Optional**) The DAP version to use for the
             analysis, used to override the default defined by
             :func:`mangadap.config.defaults.dap_version`.
@@ -925,7 +922,7 @@ class SpectralIndices:
     """
     def __init__(self, database_key, binned_spectra, redshift=None, stellar_continuum=None,
                  emission_line_model=None, database_list=None, artifact_path=None,
-                 absorption_index_path=None, bandhead_index_path=None, dapsrc=None, dapver=None,
+                 absorption_index_path=None, bandhead_index_path=None, dapver=None,
                  analysis_path=None, directory_path=None, output_file=None, hardcopy=True,
                  tpl_symlink_dir=None, clobber=False, checksum=False, loggers=None, quiet=False):
 

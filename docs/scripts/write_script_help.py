@@ -25,9 +25,9 @@ def write_help(script_mod, opath, prepend_dap=False):
 if __name__ == '__main__':
     t = time.perf_counter()
 
-    import mangadap
-
-    path = os.path.join(os.environ['MANGADAP_DIR'], 'docs', 'help')
+    from pkg_resources import resource_filename
+    root = os.path.dirname(resource_filename('mangadap', ''))
+    path = os.path.join(root, 'docs', 'help')
     if not os.path.isdir(path):
         os.makedirs(path)
 

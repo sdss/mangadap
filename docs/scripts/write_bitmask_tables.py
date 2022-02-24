@@ -9,8 +9,6 @@ import time
 import textwrap
 import numpy
 
-from pkg_resources import resource_filename
-
 #-----------------------------------------------------------------------------
 
 def write_bitmask(bitmask_class, opath, class_link=True):
@@ -22,10 +20,9 @@ def write_bitmask(bitmask_class, opath, class_link=True):
 if __name__ == '__main__':
     t = time.perf_counter()
 
-    # Needed to define $MANGADAP_DIR
-    import mangadap
-
-    path = os.path.join(os.environ['MANGADAP_DIR'], 'docs', 'tables')
+    from pkg_resources import resource_filename
+    root = os.path.dirname(resource_filename('mangadap', ''))
+    path = os.path.join(root, 'docs', 'tables')
     if not os.path.isdir(path):
         os.makedirs(path)
 

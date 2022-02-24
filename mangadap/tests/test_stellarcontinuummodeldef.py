@@ -4,6 +4,7 @@ import pytest
 from mangadap.proc.stellarcontinuummodel import available_stellar_continuum_modeling_methods
 from mangadap.proc.templatelibrary import TemplateLibrary
 
+
 def test_avail():
     methods_list = available_stellar_continuum_modeling_methods()
     assert len(methods_list) > 0, 'No stellar-continuum modeling methods available'

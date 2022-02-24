@@ -3,15 +3,12 @@ import pytest
 import os
 from IPython import embed
 
-import warnings
-warnings.simplefilter("ignore", UserWarning)
-warnings.simplefilter("ignore", RuntimeWarning)
-
 from mangadap.proc.emissionlinemodel import available_emission_line_modeling_methods
 
 from mangadap.par.artifactdb import ArtifactDB
 from mangadap.par.emissionlinedb import EmissionLineDB
 from mangadap.proc.templatelibrary import TemplateLibrary
+
 
 def test_avail():
     # Get the available methods

@@ -12,9 +12,6 @@ from mangadap.util import sampling
 from mangadap.proc.bandpassfilter import passband_integral
 from mangadap.tests.util import data_test_file
 
-import warnings
-warnings.simplefilter("ignore", UserWarning)
-warnings.simplefilter("ignore", RuntimeWarning)
 
 def test_resample():
     delt = 100

@@ -13,9 +13,9 @@ import numpy
 if __name__ == '__main__':
     t = time.perf_counter()
 
-    import mangadap
-
-    path = os.path.join(os.environ['MANGADAP_DIR'], 'docs', 'tables')
+    from pkg_resources import resource_filename
+    root = os.path.dirname(resource_filename('mangadap', ''))
+    path = os.path.join(root, 'docs', 'tables')
     if not os.path.isdir(path):
         os.makedirs(path)
 

@@ -9,6 +9,7 @@ import astropy.constants
 
 from mangadap.proc.spectralstack import SpectralStack
 
+
 def pixelated_gaussian(x, c=0.0, s=1.0):
     """
     x must be linearly sampled
@@ -19,6 +20,7 @@ def pixelated_gaussian(x, c=0.0, s=1.0):
     d = numpy.asarray(x)-c
     dx = numpy.mean(numpy.diff(x))
     return (special.erf((d+dx/2.)/n) - special.erf((d-dx/2.)/n))/2.
+
 
 def test_register():
 

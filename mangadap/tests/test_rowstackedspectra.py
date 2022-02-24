@@ -12,10 +12,6 @@ from mangadap.datacube import MaNGADataCube
 from mangadap.spectra import MaNGARSS
 from mangadap.tests.util import remote_data_file, requires_remote
 
-import warnings
-warnings.simplefilter("ignore", UserWarning)
-warnings.simplefilter("ignore", RuntimeWarning)
-
 
 @requires_remote
 def test_sres_ext():

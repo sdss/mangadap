@@ -26,9 +26,6 @@ from mangadap.proc.emissionlinemoments import EmissionLineMoments, EmissionLineM
 
 from mangadap.tests.util import data_test_file
 
-import warnings
-warnings.simplefilter("ignore", UserWarning)
-warnings.simplefilter("ignore", RuntimeWarning)
 
 def test_moments():
 

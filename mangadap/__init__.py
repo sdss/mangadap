@@ -1,10 +1,12 @@
 
-__version__ = '3.1.3dev'
+from .version import version
+
+__version__ = version
 __license__ = 'BSD3'
 __author__ = 'Kyle B. Westfall'
 __maintainer__ = 'Kyle B. Westfall'
 __email__ = 'westfall@ucolick.org'
-__copyright__ = '(c) 2014-2020, SDSS-IV/MaNGA Pipeline Group'
+__copyright__ = '(c) 2014-2022, SDSS-IV/MaNGA Pipeline Group'
 __credits__ = ['Kyle B. Westfall', 'Brett H. Andrews', 'Jorge Barrera-Ballesteros',
                'Francesco Belfiore', 'Matthew A. Bershady', 'Kevin Bundy', 'Joel R. Brownstein',
                'Michele Cappellari', 'Brian Cherinka', 'Lodovico Coccato', 'Niv Drory',
@@ -47,10 +49,9 @@ def check_environment():
 
 check_environment()
 
-def dap_source_dir():
-    """Return the root path to the DAP source directory."""
-    dirlist = os.path.dirname(os.path.abspath(__file__)).split('/')[:-1]
-    return os.path.join(os.sep, *dirlist) if dirlist[0] == '' else os.path.join(*dirlist)
-
-os.environ['MANGADAP_DIR'] = dap_source_dir()
+#def dap_source_dir():
+#    from pkg_resources import resource_filename
+#    return resource_filename('mangadap', '')
+#
+#os.environ['MANGADAP_DIR'] = dap_source_dir()
 

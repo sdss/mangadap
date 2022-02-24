@@ -1,5 +1,4 @@
 
-import pytest
 import os
 
 from IPython import embed
@@ -14,9 +13,6 @@ from mangadap.proc.templatelibrary import TemplateLibrary, available_template_li
 from mangadap.util.sampling import spectrum_velocity_scale, spectral_coordinate_step
 from mangadap.tests.util import requires_remote, remote_data_file
 
-import warnings
-warnings.simplefilter("ignore", UserWarning)
-warnings.simplefilter("ignore", RuntimeWarning)
 
 def test_read():
     tpl_list = available_template_libraries()
@@ -63,3 +59,4 @@ def test_match_resolution():
     indx = tpl['MASK'].data == 0
     assert numpy.std(tpl.sres(tpl['WAVE'].data[indx[0]]) - tpl['SPECRES'].data[0,indx[0]]) < 0.1, \
                 'Spectral resolution difference is above tolerance.'
+

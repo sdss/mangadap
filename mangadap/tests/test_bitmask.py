@@ -2,10 +2,6 @@ import pytest
 
 from collections import OrderedDict
 
-import warnings
-warnings.simplefilter("ignore", UserWarning)
-warnings.simplefilter("ignore", RuntimeWarning)
-
 import numpy
 
 from astropy.io import fits

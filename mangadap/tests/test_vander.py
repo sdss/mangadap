@@ -276,3 +276,5 @@ def test_ew_glbrej_1d_fit():
     # Fewer points should be rejected when accounting for errors
     assert numpy.sum(_rej) > numpy.sum(rej), \
             'Should not have rejected as many points when accounting for error'
+
+

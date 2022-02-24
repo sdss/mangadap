@@ -12,6 +12,7 @@ from mangadap.par.emissionlinedb import EmissionLineDB
 from mangadap.util.pixelmask import SpectralPixelMask
 from mangadap.tests.util import data_test_file
 
+
 def test_pixelmask():
     specfile = data_test_file('MaNGA_test_spectra.fits.gz')
     hdu = fits.open(specfile)

@@ -6,6 +6,7 @@ import numpy
 import astropy.constants
 from astropy.io import fits
 
+from mangadap.config.defaults import dap_source_dir
 from mangadap.datacube import MaNGADataCube
 from mangadap.survey.manga_dap import manga_dap
 from mangadap.par.analysisplan import AnalysisPlan, AnalysisPlanSet
@@ -54,7 +55,7 @@ def fit_one_cube(plt, ifu, drpall_file=None, directory_path=None, analysis_path=
 
 if __name__ == '__main__':
     drpver = 'v3_0_1'
-    directory_path = os.path.join(os.environ['MANGADAP_DIR'], 'mangadap', 'data', 'remote')
+    directory_path = os.path.join(dap_source_dir(), 'data', 'remote')
     drpall_file = os.path.join(directory_path, 'drpall-{0}.fits'.format(drpver))
     fit_one_cube(7815, 3702, drpall_file=drpall_file, directory_path=directory_path,
                  analysis_path='./output')

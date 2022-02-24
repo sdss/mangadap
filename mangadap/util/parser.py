@@ -18,7 +18,9 @@ Provides a set of parsing utility functions.
 .. include common links, assuming primary doc root is up one directory
 .. include:: ../include/links.rst
 """
-import os
+from pathlib import Path
+from os import environ
+from IPython import embed
 from configparser import ConfigParser, ExtendedInterpolation
 
 from .exception_tools import print_frame
@@ -183,7 +185,8 @@ class DefaultConfig:
     provides some convenience functions.
     """
     def __init__(self, f=None, interpolate=False):
-        self.cnfg = ConfigParser(os.environ, allow_no_value=True,
+        # TODO: May not need extended interpolation anymore...
+        self.cnfg = ConfigParser(environ, allow_no_value=True,
                                  interpolation=ExtendedInterpolation()) \
                         if interpolate else ConfigParser(allow_no_value=True)
         if f is None:
@@ -197,8 +200,9 @@ class DefaultConfig:
         return self.cnfg.options('default').__iter__()
 
     def read(self, f):
-        if not os.path.isfile(f):
-            raise FileNotFoundError('Configuration file not found: {0}'.format(f))
+        _f = Path(f).resolve()
+        if not _f.exists():
+            raise FileNotFoundError(f'Configuration file not found: {_f}')
         self.cnfg.read(f)
 
     def keyword_specified(self, key):

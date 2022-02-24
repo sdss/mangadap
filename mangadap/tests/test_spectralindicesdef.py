@@ -6,6 +6,7 @@ from mangadap.par.artifactdb import ArtifactDB
 from mangadap.par.absorptionindexdb import AbsorptionIndexDB
 from mangadap.par.bandheadindexdb import BandheadIndexDB
 
+
 def test_avail():
     database_list = available_spectral_index_databases()
     assert len(database_list) > 0, 'No spectral index databases available'

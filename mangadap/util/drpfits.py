@@ -36,8 +36,10 @@ the MaNGA Data Reduction Pipeline (DRP).
 .. include:: ../include/links.rst
 """
 import time
-import os
+from pathlib import Path
 import warnings
+
+from IPython import embed
 
 from configparser import ConfigParser
 
@@ -59,8 +61,8 @@ class DRPFitsBitMask(BitMask):
     def __init__(self, sdss_maskbits=None, mode='CUBE'):
         DRPFits.check_mode(mode)
         _sdss_maskbits = defaults.sdss_maskbits_file() if sdss_maskbits is None else sdss_maskbits
-        tmp = BitMask.from_par_file(_sdss_maskbits, 'MANGA_DRP3PIXMASK' if mode == 'CUBE' else 
-                                                    'MANGA_DRP2PIXMASK')
+        tmp = BitMask.from_par_file(str(_sdss_maskbits),
+                                    'MANGA_DRP3PIXMASK' if mode == 'CUBE' else 'MANGA_DRP2PIXMASK')
         keys, descr = tmp._init_objs()
         super(DRPFitsBitMask, self).__init__(keys, descr=descr)
 
@@ -73,7 +75,7 @@ class DRPQuality3DBitMask(BitMask):
     """
     def __init__(self, sdss_maskbits=None):
         _sdss_maskbits = defaults.sdss_maskbits_file() if sdss_maskbits is None else sdss_maskbits
-        tmp = BitMask.from_par_file(_sdss_maskbits, 'MANGA_DRP3QUAL')
+        tmp = BitMask.from_par_file(str(_sdss_maskbits), 'MANGA_DRP3QUAL')
         keys, descr = tmp._init_objs()
         super(DRPQuality3DBitMask, self).__init__(keys, descr=descr)
 
@@ -167,7 +169,7 @@ class DRPFits:
         """
         allowed = ['LSFPRE', 'LSFPOST', 'PRESPECRES', 'SPECRES']
         if ext is not None and ext not in allowed:
-            warnings.warn('{0} is not a viable spectral resolution extension.'.format(ext))
+            warnings.warn(f'{ext} is not a viable spectral resolution extension.')
             return None
         available = [h.name for h in hdu if h.name in allowed]
         _ext = ext
@@ -318,17 +320,19 @@ class DRPFits:
                 ``drpver`` or ``redux_path``.
 
         Returns:
-            :obj:`tuple`: Two strings with the default path to and
-            name of the DRP data file.
+            :obj:`tuple`: A `Path`_ object with the root directory of the DRP file
+            and a string with the DRP file name.
         """
         _directory_path = defaults.drp_directory_path(plate, drpver=drpver,
                                                       redux_path=redux_path) \
                                 if directory_path is None else directory_path
+        if not isinstance(_directory_path, Path):
+            _directory_path = Path(_directory_path).resolve()
         return _directory_path, DRPFits.build_file_name(plate, ifudesign, mode, log=log)
 
     def file_path(self):
         """Return the full path to the DRP file"""
-        return os.path.join(self.directory_path, self.file_name)
+        return self.directory_path / self.file_name
 
     def finding_chart_path(self):
         """
@@ -338,7 +342,7 @@ class DRPFits:
         .. todo::
             - Move this to the defaults file?
         """
-        return os.path.join(self.directory_path, 'images', str(self.ifudesign)+'.png')
+        return self.directory_path / 'images' / f'{self.ifudesign}.png'
 
     @classmethod
     def from_config(cls, cfgfile, drpver=None, redux_path=None, directory_path=None):
@@ -390,6 +394,7 @@ class DRPFits:
         _drpver = cfg.get('drpver') if drpver is None else drpver
         _redux_path = cfg.get('redux_path') if redux_path is None else redux_path
         _directory_path = cfg.get('directory_path') if directory_path is None else directory_path
+        _directory_path = Path(_directory_path).resolve()
 
         # Get the other possible keywords
         # TODO: Come up with a better way to do this
@@ -477,8 +482,9 @@ class DRPFits:
             overwrite (:obj:`bool`, optional):
                 Overwrite any existing parameter file.
         """
-        if os.path.exists(ofile) and not overwrite:
-            raise FileExistsError('Configuration file already exists; to overwrite, set '
+        _ofile = Path(ofile).resolve()
+        if _ofile.exists() and not overwrite:
+            raise FileExistsError(f'{_ofile} already exists; to overwrite, set '
                                   'overwrite=True.')
 
         # Build the configuration data
@@ -499,7 +505,7 @@ class DRPFits:
                           'reff': None if reff is None else '{0:.7e}'.format(reff)}
 
         # Write the configuration file
-        with open(ofile, 'w') as f:
+        with _ofile.open('w') as f:
             f.write('# Auto-generated configuration file\n')
             f.write('# {0}\n'.format(time.strftime("%a %d %b %Y %H:%M:%S",time.localtime())))
             f.write('\n')

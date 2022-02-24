@@ -94,7 +94,7 @@ if __name__ == '__main__':
 
     # For testing
     drpver = 'v3_0_1'
-    directory_path = os.path.join(os.environ['MANGADAP_DIR'], 'mangadap', 'data', 'remote')
+    directory_path = os.path.join(defaults.dap_source_dir(), 'data', 'remote')
 
     #-------------------------------------------------------------------
     # Read spectra to fit. The following reads a single MaNGA spectrum.

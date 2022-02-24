@@ -26,10 +26,6 @@ from mangadap.tests.util import data_test_file
 from mangadap.proc.sasuke import Sasuke
 from mangadap.proc.emissionlinemodel import EmissionLineModelBitMask
 
-import warnings
-warnings.simplefilter("ignore", UserWarning)
-warnings.simplefilter("ignore", RuntimeWarning)
-
 
 def test_sasuke():
     # Read the data

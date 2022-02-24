@@ -10,12 +10,14 @@ from mangadap.util.datatable import DataTable
 from mangadap.proc.spectralfitting import StellarKinematicsFitDataTable
 from mangadap.proc.spectralfitting import EmissionLineFitDataTable
 
+
 def test_empty():
     keys = ['TEST', 'THIS']
     types = [ int, float]
     descr = ['This is a test', 'And so is this']
     db = DataTable(keys, types, descr=descr)
     assert db.data is None, 'No data should be defined'
+
 
 def test_init():
     keys = ['TEST', 'THIS']
@@ -33,6 +35,7 @@ def test_init():
     assert db.data is not None, 'Data should have been instantiated'
     assert db.shape == (10,), 'Shape is incorrect'
 
+
 def test_dtype():
     keys = ['TEST', 'THIS']
     types = [ int, float]
@@ -41,6 +44,7 @@ def test_dtype():
 
     _dtype = numpy.dtype([(k,t) for k,t in zip(keys,types)])
     assert db.dtype == _dtype, 'dtype is wrong'
+
 
 def test_access():
     keys = ['TEST', 'THIS']
@@ -61,6 +65,7 @@ def test_access():
     db[5]['THIS'] = 100.
     assert db['THIS'][5] == 100., 'Assignment of single value went wrong.'
 
+
 def test_tohdu():
     keys = ['TEST', 'THIS']
     types = [ int, float]
@@ -73,6 +78,7 @@ def test_tohdu():
     assert numpy.array_equal(hdu['TABLE'].data['TEST'], db['TEST']), 'Arrays are different.'
     assert numpy.array_equal(hdu['TABLE'].data['THIS'], db['THIS']), 'Arrays are different.'
 
+
 def test_torst():
     keys = ['TEST', 'THIS']
     types = [ int, float]
@@ -80,6 +86,7 @@ def test_torst():
     db = DataTable(keys, types, descr=descr, shape=10)
     # Just test for success of the method
     lines = db.to_rst_table()
+
 
 def test_stellarkin_dt():
     db = StellarKinematicsFitDataTable(ntpl=20, nadd=8, nmult=8, nkin=2, mask_dtype=numpy.int16,
@@ -89,6 +96,7 @@ def test_stellarkin_dt():
     assert db['ADDCOEF'].shape == (10,8), 'Number of additive polynomial coefficients is wrong'
     assert db['KIN'][0].shape == (2,), 'Number of kinematic moments is wrong.'
 
+
 def test_emission_dt():
     db = EmissionLineFitDataTable(20, 2, numpy.int16, shape=10)
     assert db.shape == (10,), 'Shape is wrong.'
@@ -97,5 +105,4 @@ def test_emission_dt():
     assert db['MASK'][0].shape == (20,), 'Number of maskbits is wrong'
     assert db['KIN'].shape == (10,20,2), 'Number of kinematic moments is wrong.'
 
-if __name__ == '__main__':
-    test_emission_dt()
+

@@ -5,9 +5,6 @@ import numpy
 from mangadap.util.resolution import match_spectral_resolution
 from mangadap.util.constants import DAPConstants
 
-import warnings
-warnings.simplefilter("ignore", UserWarning)
-warnings.simplefilter("ignore", RuntimeWarning)
 
 def test_match_spec_res():
 

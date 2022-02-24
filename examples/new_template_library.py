@@ -8,6 +8,7 @@ from astropy.io import fits
 from matplotlib import pyplot
 from matplotlib.ticker import NullFormatter
 
+from mangadap.config.defaults import dap_source_dir
 from mangadap.datacube import MaNGADataCube
 from mangadap.util.constants import DAPConstants
 from mangadap.util.fitsutil import DAPFitsUtil
@@ -79,8 +80,8 @@ if __name__ == '__main__':
     # Create a library based on a subset of an existing one
 
     # Add a new library that only has 10 Gyr SSPs from MIUSCAT
-    file_search = os.path.join(os.environ['MANGADAP_DIR'], 'data', 'spectral_templates',
-                               'miuscat', '*T10.0000.fits')
+    file_search = os.path.join(dap_source_dir(), 'data', 'spectral_templates', 'miuscat',
+                               '*T10.0000.fits')
 
     # Define the template library
     tpllib_list += [ TemplateLibraryDef('OLD',
@@ -120,7 +121,7 @@ if __name__ == '__main__':
 
     # Get the redshift
     drpver = 'v2_7_1'
-    directory_path = os.path.join(os.environ['MANGADAP_DIR'], 'mangadap', 'data', 'remote')
+    directory_path = os.path.join(dap_source_dir(), 'data', 'remote')
     drpall_file = os.path.join(directory_path, 'drpall-{0}.fits'.format(drpver))
     z = numpy.array([get_redshift(plt, ifu, drpall_file)])
     print('Redshift: {0}'.format(z[0]))

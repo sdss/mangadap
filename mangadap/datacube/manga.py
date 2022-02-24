@@ -12,7 +12,7 @@ Implement the derived class for MaNGA datacubes.
 .. include:: ../include/links.rst
 """
 import time
-import os
+from pathlib import Path
 import warnings
 
 from IPython import embed
@@ -47,7 +47,7 @@ class MaNGADataCube(DRPFits, DataCube):
     dictionary.
 
     Args:
-        ifile (:obj:`str`):
+        ifile (:obj:`str`, `Path`_):
             The file with the MaNGA datacube. The name is expected to
             follow the nominal naming convention, which is used to
             parse the plate, ifudesign, and whether or not the
@@ -88,15 +88,15 @@ class MaNGADataCube(DRPFits, DataCube):
     def __init__(self, ifile, z=None, vdisp=None, ell=None, pa=None, reff=None, sres_ext=None,
                  sres_fill=True, covar_ext=None):
 
-        if not os.path.isfile(ifile):
-            raise FileNotFoundError('File does not exist: {0}'.format(ifile))
+        _ifile = Path(ifile).resolve()
+        if not _ifile.exists():
+            raise FileNotFoundError(f'File does not exist: {_ifile}')
 
         # Parse the relevant information from the filename
-        directory_path = os.path.split(os.path.abspath(ifile))[0]
-        plate, ifudesign, log = ifile.split('-')[1:4]
+        plate, ifudesign, log = _ifile.name.split('-')[1:4]
         # Instantiate the DRPFits base
         DRPFits.__init__(self, int(plate), int(ifudesign), 'CUBE', log='LOG' in log,
-                         directory_path=directory_path)
+                         directory_path=_ifile.parent)
 
         # Collect the metadata into a dictionary
         meta = {}
@@ -268,7 +268,7 @@ class MaNGADataCube(DRPFits, DataCube):
         """
         path, file_name = cls.default_paths(int(plate), int(ifudesign), log=log, drpver=drpver,
                                             redux_path=redux_path, directory_path=directory_path)
-        return cls(os.path.join(path, file_name), **kwargs)
+        return cls(str(path / file_name), **kwargs)
 
     def load_rss(self, force=False):
         """
@@ -300,18 +300,17 @@ class MaNGADataCube(DRPFits, DataCube):
             return
 
         rss_file = DRPFits.build_file_name(self.plate, self.ifudesign, 'RSS', log=self.log)
-        rss_file_path = os.path.join(self.directory_path, rss_file)
-        if not os.path.isfile(rss_file_path):
+        rss_file_path = self.directory_path / rss_file
+        if not rss_file_path.exists():
             # Not in this directory.  Check the nominal directory
-            warnings.warn('Could not find: {0}'.format(rss_file_path))
-            rss_file_path = os.path.join(
-                    defaults.drp_directory_path(self.plate, drpver=self.drpver,
-                                                redux_path=self.redux_path), rss_file)
-        if not os.path.isfile(rss_file_path):
-            warnings.warn('Could not find: {0}'.format(rss_file_path))
-            raise FileNotFoundError('Could not find RSS file.')
+            warnings.warn(f'Could not find: {rss_file_path}')
+            _directory_path = defaults.drp_directory_path(self.plate, drpver=self.drpver,
+                                                          redux_path=self.redux_path)
+            rss_file_path = directory_path / rss_file
+        if not rss_file_path.exists():
+            raise FileNotFoundError(f'Could not find: {rss_file_path}')
 
-        self.rss = MaNGARSS(rss_file_path, sres_ext=self.sres_ext, sres_fill=self.sres_fill)
+        self.rss = MaNGARSS(str(rss_file_path), sres_ext=self.sres_ext, sres_fill=self.sres_fill)
 
     def mean_sky_coordinates(self, center_coo=None, offset='OBJ'):
         """

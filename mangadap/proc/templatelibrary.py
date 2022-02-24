@@ -140,9 +140,8 @@ instantiation arguments for :class:`TemplateLibrary`.
 .. include common links, assuming primary doc root is up one directory
 .. include:: ../include/links.rst
 """
-
+from pathlib import Path
 import os
-import glob
 import time
 import warnings
 import logging
@@ -227,9 +226,9 @@ def validate_spectral_template_config(cnfg):
     # Check for required keywords
     required_keywords = ['key', 'file_search']
     if not cnfg.all_required(required_keywords):
-        raise KeyError('Keywords {0} must all have valid values.'.format(required_keywords))
-    
+        raise KeyError(f'Keywords {required_keywords} must all have valid values.')
     if not cnfg.keyword_specified('fwhm') and not cnfg.keyword_specified('sres_ext'):
+        # TODO: Which takes precedence?
         raise KeyError('Must provide either \'fwhm\' or \'sres_ext\'.')
 
 
@@ -264,8 +263,8 @@ def available_template_libraries():
             of wavelength limits.
     """
     # Check the configuration files exist
-    search_dir = os.path.join(defaults.dap_config_root(), 'spectral_templates')
-    ini_files = glob.glob(os.path.join(search_dir, '*.ini'))
+    search_dir = defaults.dap_config_root() / 'spectral_templates'
+    ini_files = sorted(list(search_dir.glob('*.ini')))
     if len(ini_files) == 0:
         raise IOError('Could not find any configuration files in {0} !'.format(search_dir))
 
@@ -687,10 +686,18 @@ class TemplateLibrary:
             ValueError:
                 Raised if no files are found.
         """
-        files = glob.glob(self.library['file_search'])
+        # Try the DAP directory first
+        root = defaults.dap_data_root() / 'spectral_templates' / self.library["file_search"]
+        if not root.parent.exists():
+            # Then try the provided path directly
+            root = Path(self.library["file_search"]).resolve()
+            if not root.parent.exists():
+                raise FileNotFoundError('Unable to find template library directory as given or in '
+                                        'the DAP source distribution.')
+        files = sorted(list(root.parent.glob(root.name)))
         if len(files) == 0:
             raise ValueError('Library search string did not find any files!')
-        return numpy.sort(files)
+        return files
 
     def _get_nchannels(self):
         """
@@ -712,7 +719,7 @@ class TemplateLibrary:
         """
         max_npix = 0
         for f in self.file_list:
-            if fits.getval(f, 'NAXIS') != 1:
+            if fits.getval(str(f), 'NAXIS') != 1:
                 raise ValueError('{0} is not one dimensional!'.format(f))
             npix = fits.getval(f, 'NAXIS1')
             if max_npix < npix:
@@ -769,14 +776,14 @@ class TemplateLibrary:
         # wavelengths
         for i in range(0,self.ntpl):
             if self.library['sres_ext'] is None:
-                wave_, flux_ = read_template_spectrum(self.file_list[i],
+                wave_, flux_ = read_template_spectrum(str(self.file_list[i]),
                                                       log10=self.library['log10'])
                 # TODO: Are the copies here needed?
                 wave[i,:wave_.size] = numpy.copy(wave_)
                 flux[i,:wave_.size] = numpy.copy(flux_)
                 sres = wave/self.library['fwhm']
             else:
-                wave_, flux_, sres_ = read_template_spectrum(self.file_list[i],
+                wave_, flux_, sres_ = read_template_spectrum(str(self.file_list[i]),
                                                              sres_ext=self.library['sres_ext'],
                                                              log10=self.library['log10'])
                 wave[i,:wave_.size] = numpy.copy(wave_)

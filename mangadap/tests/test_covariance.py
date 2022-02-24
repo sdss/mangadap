@@ -1,9 +1,6 @@
 import pytest
 
 import os
-import warnings
-warnings.simplefilter("ignore", UserWarning)
-warnings.simplefilter("ignore", RuntimeWarning)
 
 from IPython import embed
 

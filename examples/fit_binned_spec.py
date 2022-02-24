@@ -8,6 +8,7 @@ import numpy
 from astropy.io import fits
 from matplotlib import pyplot
 
+from mangadap.config.defaults import dap_source_dir
 from mangadap.datacube import MaNGADataCube
 from mangadap.util.fitsutil import DAPFitsUtil
 from mangadap.util.resolution import SpectralResolution
@@ -83,9 +84,12 @@ if __name__ == '__main__':
     # Template pixel scale a factor of 4 smaller than galaxy data
     velscale_ratio = 4
 
+    # DAP source directory
+    dapsrc = dap_source_dir()
+
     # Get the redshift
     drpver = 'v2_7_1'
-    directory_path = os.path.join(os.environ['MANGADAP_DIR'], 'mangadap', 'data', 'remote')
+    directory_path = os.path.join(dapsrc, 'data', 'remote')
     drpall_file = os.path.join(directory_path, 'drpall-{0}.fits'.format(drpver))
     z = numpy.array([get_redshift(plt, ifu, drpall_file)]*nspec)
     print('Redshift: {0}'.format(z[0]))
@@ -93,7 +97,7 @@ if __name__ == '__main__':
 
     # Read the spectra
     print('reading spectra')
-    directory_path = os.path.join(os.environ['MANGADAP_DIR'], 'mangadap', 'data', 'remote')
+    directory_path = os.path.join(dapsrc, 'data', 'remote')
     wave, flux, ivar, sres = get_spectra(plt, ifu, x, y, directory_path=directory_path)
     ferr = numpy.ma.power(ivar, -0.5)
 

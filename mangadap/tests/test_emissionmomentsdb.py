@@ -6,9 +6,6 @@ from IPython import embed
 
 from mangadap.par.emissionmomentsdb import EmissionMomentsDB
 
-import warnings
-warnings.simplefilter("ignore", UserWarning)
-warnings.simplefilter("ignore", RuntimeWarning)
 
 def test_read():
     dbs = EmissionMomentsDB.available_databases()
@@ -16,6 +13,7 @@ def test_read():
     for key in dbs.keys():
         print(key)
         emomdb = EmissionMomentsDB.from_key(key)
+
 
 def test_mpl9():
     emomdb = EmissionMomentsDB.from_key('ELBMPL9')
