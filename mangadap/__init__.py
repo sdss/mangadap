@@ -25,28 +25,3 @@ def short_warning(message, category, filename, lineno, file=None, line=None):
 import warnings
 warnings.formatwarning = short_warning
 
-_MANGADRP_VER = 'v3_1_1'
-_MANGACORE_VER = 'v1_9_1'
-
-# WARNING: This has to be kept in sync with setup.py
-# TODO: Put these in a config file
-import os
-def default_paths():
-    return { 'MANGADRP_VER': _MANGADRP_VER,
-             'MANGA_SPECTRO_REDUX': os.path.join(os.environ['HOME'], 'MaNGA', 'redux'),
-             'MANGADAP_VER': __version__,
-             'MANGA_SPECTRO_ANALYSIS': os.path.join(os.environ['HOME'], 'MaNGA', 'analysis'),
-             'MANGACORE_VER': _MANGACORE_VER,
-             'MANGACORE_DIR': os.path.join(os.environ['HOME'], 'MaNGA', 'core', _MANGACORE_VER)
-           }
-
-def check_environment():
-    ev = default_paths()
-    for k in ev.keys():
-        if k not in os.environ and 'MANGACORE' not in k:
-            warnings.warn('{0} environmental variable undefined.  Using: {1}'.format(k,ev[k]))
-            os.environ[k] = ev[k]
-
-check_environment()
-
-

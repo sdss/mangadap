@@ -33,19 +33,19 @@ def print_frame(prefix):
           info.lineno))
 
 
-def check_environment_variable(name):
-    """
-    Check for the existence of an environment variable.
-
-    Args:
-        name (:obj:`str`):
-            Name of a required environmental variable
-
-    Raises:
-        EnvironmentError: Raised if *name* is not defined.
-    """
-    if name not in os.environ:
-        raise EnvironmentError('{0} not defined in current environment!')
+#def check_environment_variable(name):
+#    """
+#    Check for the existence of an environment variable.
+#
+#    Args:
+#        name (:obj:`str`):
+#            Name of a required environmental variable
+#
+#    Raises:
+#        EnvironmentError: Raised if *name* is not defined.
+#    """
+#    if name not in os.environ:
+#        raise EnvironmentError('{0} not defined in current environment!')
 
 
 
