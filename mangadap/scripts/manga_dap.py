@@ -58,14 +58,14 @@ class MangaDap(scriptbase.ScriptBase):
         group = parser.add_mutually_exclusive_group(required=True)
         group.add_argument('-c', '--config', type=str, default=None,
                         help='Configuration file used to instantiate the relevant DataCube '
-                                'derived class.')
+                             'derived class.')
         group.add_argument('-f', '--cubefile', type=str, default=None,
                         help='Name of the file with the datacube data.  Must be possible to '
-                                'instantiate the relevant DataCube derived class directly from the '
-                                'file only.')
+                             'instantiate the relevant DataCube derived class directly from the '
+                             'file only.')
         parser.add_argument('-p', '--plan', type=str,
                             help='SDSS parameter file with analysis plan.  If not provided, a '
-                                'default plan is used.')
+                                 'default plan is used.')
         parser.add_argument('-m', '--cube_module', type=str, default='mangadap.datacube',
                             help='The name of the module that contains the DataCube derived class.')
         parser.add_argument('-o', '--cube_object', type=str, default='MaNGADataCube',
@@ -74,8 +74,8 @@ class MangaDap(scriptbase.ScriptBase):
         parser.add_argument('--dbg', help='Run manga_dap in debug mode', action='store_true',
                             default=False)
         parser.add_argument('--log', type=str, help='File name for runtime log', default=None)
-        parser.add_argument('-v', '--verbose', action='count',
-                            help='Set verbosity level; can be omitted and set up to -vv', default=0)
+        parser.add_argument('-v', '--verbose', action='count', default=0,
+                            help='Set verbosity level; can be omitted and set up to -vv')
 
         # TODO: Given the config file and the write_dap_config script,
         # should I continue to allow for these? They won't be meaningful
@@ -110,8 +110,8 @@ class MangaDap(scriptbase.ScriptBase):
         #     configuration file
         cube = UserDataCube(args.cubefile) if args.config is None \
                     else UserDataCube.from_config(args.config, drpver=args.drpver,
-                                                redux_path=args.redux_path,
-                                                directory_path=args.directory_path)
+                                                 redux_path=args.redux_path,
+                                                 directory_path=args.directory_path)
 
         # Read the analysis plan
         analysisplan = AnalysisPlanSet.default() if args.plan is None \
@@ -119,7 +119,7 @@ class MangaDap(scriptbase.ScriptBase):
 
         # Run the pipeline
         status = manga_dap(cube, analysisplan, dbg=args.dbg, log=args.log, verbose=args.verbose,
-                        drpver=args.drpver, redux_path=args.redux_path,
-                        directory_path=args.directory_path, dapver=args.dapver,
-                        analysis_path=args.analysis_path)
+                           drpver=args.drpver, redux_path=args.redux_path,
+                           directory_path=args.directory_path, dapver=args.dapver,
+                           analysis_path=args.analysis_path)
 

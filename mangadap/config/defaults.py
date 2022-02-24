@@ -21,7 +21,6 @@ from pkg_resources import resource_filename
 
 import numpy
 
-#from ..util.exception_tools import check_environment_variable
 from ..version import version
 
 def get_environ():

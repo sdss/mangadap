@@ -4,6 +4,8 @@ import time
 import os
 import astropy.constants
 from astropy.io import fits
+
+from mangadap.config import defaults
 from mangadap.survey.manga_dap import manga_dap
 from mangadap.par.obsinput import ObsInputPar
 from mangadap.par.analysisplan import AnalysisPlan, AnalysisPlanSet
@@ -14,9 +16,9 @@ def get_obsinput(plt, ifu, drpall_file=None):
     Grab the input parameters the DAP requires for each observation to
     fit a cube.  If the drpall file is None, use the default path.
     """
-    hdu = fits.open(os.path.join(os.environ['MANGA_SPECTRO_REDUX'], os.environ['MANGADRP_VER'],
-                                 'drpall-{0}.fits'.format(os.environ['MANGADRP_VER']))) \
-                if drpall_file is None else fits.open(drpall_file)
+    if drpall_file is None:
+        drpall_file = defaults.drpall_file()
+    hdu = fits.open(drpall_file)
     indx = hdu[1].data['PLATEIFU'] == '{0}-{1}'.format(plt, ifu)
 
     return ObsInputPar(plate=plt, ifudesign=ifu, mode='CUBE',

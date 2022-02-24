@@ -8,6 +8,7 @@ from matplotlib import pyplot
 
 from astropy.io import fits
 
+from mangadap.config import defaults
 from mangadap.util.sampling import Resample, _pixel_borders
 from mangadap.proc.bandpassfilter import passband_integral
 
@@ -16,13 +17,13 @@ import spectres
 #-----------------------------------------------------------------------------
 
 def resample_test():
-    root = os.path.join(os.environ['MANGA_SPECTRO_REDUX'], os.environ['MANGADRP_VER'])
+    root = defaults.drp_redux_path()
+    drpall_file = defaults.drpall_file()
    
     pltifu = '7815-1901'
     hdu = fits.open(os.path.join(root, pltifu.split('-')[0], 'stack',
                                  'manga-{0}-LOGCUBE.fits.gz'.format(pltifu)))
 
-    drpall_file = os.path.join(root, 'drpall-{0}.fits'.format(os.environ['MANGADRP_VER']))
     drpall = fits.open(drpall_file)[1].data
 
     indx = drpall['PLATEIFU'] == pltifu

@@ -30,11 +30,11 @@ from mangadap.proc.emissionlinemodel import EmissionLineModelBitMask
 
 #-----------------------------------------------------------------------------
 def get_redshift(plt, ifu, drpall_file=None):
-    hdu = fits.open(os.path.join(os.environ['MANGA_SPECTRO_REDUX'], os.environ['MANGADRP_VER'],
-                                 'drpall-{0}.fits'.format(os.environ['MANGADRP_VER']))) \
-                if drpall_file is None else fits.open(drpall_file)
-    indx = hdu[1].data['PLATEIFU'] == '{0}-{1}'.format(plt, ifu)
-    return hdu[1].data['NSA_Z'][indx][0]
+    if drpall_file is None:
+        drpall_file = defaults.drpall_file()
+    with fits.open(drpall_file) as hdu:
+        indx = hdu[1].data['PLATEIFU'] == '{0}-{1}'.format(plt, ifu)
+        return hdu[1].data['NSA_Z'][indx][0]
 
 
 def get_spectrum(plt, ifu, x, y, directory_path=None):
