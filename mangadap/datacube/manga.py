@@ -311,7 +311,7 @@ class MaNGADataCube(MaNGAConfig, DataCube):
         self.rss = MaNGARSS(str(rss_cfg.file_path), sres_ext=self.sres_ext,
                             sres_fill=self.sres_fill)
 
-# Is this more broadly useful?
+# TODO: Is this more broadly useful?  Restore it if so, otherwise remove it. 
 #    def get_config(self):
 #        """
 #        """

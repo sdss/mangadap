@@ -254,6 +254,12 @@ def dap_analysis_path(drpver=None, dapver=None):
     return Path(manga_environ['MANGA_SPECTRO_ANALYSIS']).resolve() / drpver / dapver
 
 
+
+
+
+
+
+
 def dap_common_path(plate=None, ifudesign=None, drpver=None, dapver=None, analysis_path=None):
     """
     Return the path to the path to the directory with data common to

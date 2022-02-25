@@ -18,6 +18,10 @@ import os
 from pydl.pydlutils.yanny import yanny
 
 from .parset import KeywordParSet, ParDatabase
+from ..config import defaults
+from ..proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
+from ..proc.stellarcontinuummodel import StellarContinuumModel
+from ..proc.emissionlinemodel import EmissionLineModel
 
 class AnalysisPlan(KeywordParSet):
     """
@@ -40,16 +44,19 @@ class AnalysisPlan(KeywordParSet):
         _elfit_key = None if elfit_key == 'None' or elfit_key is None else elfit_key
         _spindex_key = None if spindex_key == 'None' or spindex_key is None else spindex_key
 
-        pars =   [ 'drpqa_key', 'drpqa_clobber', 'bin_key', 'bin_clobber', 'continuum_key',
-                   'continuum_clobber', 'elmom_key', 'elmom_clobber', 'elfit_key', 'elfit_clobber',
-                   'spindex_key', 'spindex_clobber' ]
-        values = [ _drpqa_key, drpqa_clobber, _bin_key, bin_clobber, _continuum_key,
-                   continuum_clobber, _elmom_key, elmom_clobber, _elfit_key, elfit_clobber,
-                   _spindex_key, spindex_clobber ]
-        dtypes = [ str, bool, str, bool, str, bool, str, bool, str, bool, str, bool ]
-        defaults = [ None, False, None, False, None, False, None, False, None, False, None, False ]
+        key = AnalysisPlan.unique_plan_key(_bin_key, _continuum_key, _elfit_key)
 
-        descr = ['Data reduction quality assessment method keyword',
+        pars =   ['key', 'drpqa_key', 'drpqa_clobber', 'bin_key', 'bin_clobber', 'continuum_key',
+                  'continuum_clobber', 'elmom_key', 'elmom_clobber', 'elfit_key', 'elfit_clobber',
+                  'spindex_key', 'spindex_clobber']
+        values = [key, _drpqa_key, drpqa_clobber, _bin_key, bin_clobber, _continuum_key,
+                  continuum_clobber, _elmom_key, elmom_clobber, _elfit_key, elfit_clobber,
+                  _spindex_key, spindex_clobber]
+        dtypes = [str, str, bool, str, bool, str, bool, str, bool, str, bool, str, bool]
+        defaults = [None, None, False, None, False, None, False, None, False, None, False, None,
+                    False]
+        descr = ['Unique key used to identify this plan',
+                 'Data reduction quality assessment method keyword',
                  'Overwrite any existing data-quality assessment reference files',
                  'Spatial binning method keyword',
                  'Overwrite any existing spatial binning reference files',
@@ -93,6 +100,14 @@ class AnalysisPlan(KeywordParSet):
             raise ValueError('To measure the emission-line moments, must provide a binning key.')
         if self.data['spindex_key'] is not None and self.data['bin_key'] is None:
             raise ValueError('To measure the spectral indices, must provide a binning key.')
+
+    @staticmethod
+    def unique_plan_key(bin_key, continuum_key, elfit_key):
+        bin_method = SpatiallyBinnedSpectra.define_method(bin_key)
+        sc_method = StellarContinuumModel.define_method(continuum_key)
+        el_method = EmissionLineModel.define_method(elfit_key)
+        return defaults.dap_method(bin_method['key'], sc_method['fitpar']['template_library_key'],
+                                   el_method['continuum_tpl_key'])
 
         
 class AnalysisPlanSet(ParDatabase):
