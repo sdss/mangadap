@@ -2,7 +2,7 @@ import numpy
 from astropy.io import fits
 
 from mangadap.datacube import MaNGADataCube
-from mangadap.util.drpfits import DRPFitsBitMask
+from mangadap.util.drpbitmask import DRPFitsBitMask
 from mangadap.tests.util import data_test_file
 
 def test_drpfitsbitmask():

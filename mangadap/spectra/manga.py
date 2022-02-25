@@ -22,12 +22,12 @@ from astropy.io import fits
 
 from ..config import defaults
 from ..config.manga import MaNGAConfig
-from ..util.drpfits import DRPFits, DRPFitsBitMask
+from ..util.drpbitmask import DRPFitsBitMask
 from ..util.constants import DAPConstants
 from ..util.filter import interpolate_masked_vector
 from .rowstackedspectra import RowStackedSpectra
 
-class MaNGARSS(DRPFits, RowStackedSpectra):
+class MaNGARSS(MaNGAConfig, RowStackedSpectra):
     r"""
     Container class for MaNGA row-stacked spectra.
 
@@ -53,11 +53,16 @@ class MaNGARSS(DRPFits, RowStackedSpectra):
     """
     def __init__(self, ifile, sres_ext=None, sres_fill=True):
 
-        self.cfg = MaNGAConfig.from_file(ifile)
-
-        # Instantiate the DRPFits base
-        DRPFits.__init__(self, self.cfg.plate, self.cfg.ifudesign, 'RSS', log=self.cfg.log,
-                         directory_path=self.cfg.directory_path)
+        # Use the configuration class method to construct the configuration
+        # based on the input data file
+        cfg = MaNGAConfig.from_file(ifile)
+        # and then use the parent class init to set it to self.  NOTE: This is
+        # round about, but the way I got it to work.  There must be a better way
+        # to do this...
+        MaNGAConfig.__init__(self, cfg.plate, cfg.ifudesign, mode=cfg.mode, log=cfg.log,
+                             drpver=cfg.drpver, redux_path=cfg.redux_path,
+                             chart_path=cfg.chart_path, directory_path=cfg.directory_path,
+                             analysis_path=cfg.analysis_path)
 
         # Define the relevant BitMask object
         bitmask = DRPFitsBitMask(mode='RSS')
@@ -67,7 +72,7 @@ class MaNGARSS(DRPFits, RowStackedSpectra):
             print('Reading MaNGA row-stacked spectra data ...', end='\r')
             prihdr = hdu[0].header
             fluxhdr = hdu['FLUX'].header
-            self.sres_ext, sres = DRPFits.spectral_resolution(hdu, ext=sres_ext, fill=sres_fill)
+            self.sres_ext, sres = MaNGAConfig.spectral_resolution(hdu, ext=sres_ext, fill=sres_fill)
             self.sres_fill = sres_fill
             sres = sres.filled(0.0)
 
@@ -80,74 +85,8 @@ class MaNGARSS(DRPFits, RowStackedSpectra):
                                        ivar=hdu['IVAR'].data, mask=hdu['MASK'].data,
                                        bitmask=bitmask, sres=sres, xpos=-hdu['XPOS'].data,
                                        ypos=hdu['YPOS'].data, area=numpy.pi,
-                                       log=self.cfg.log, prihdr=prihdr, fluxhdr=fluxhdr)
+                                       log=self.log, prihdr=prihdr, fluxhdr=fluxhdr)
         print('Reading MaNGA row-stacked spectra data ... DONE')
-
-#    @staticmethod
-#    def build_file_name(plate, ifudesign, log=True):
-#        """
-#        Return the name of the DRP file with the row-stacked spectra.
-#
-#        This is a simple wrapper for
-#        :func:`mangadap.util.drpfits.DRPFits.build_file_name`,
-#        specific to the RSS.
-#
-#        Args:
-#            plate (:obj:`int`):
-#                Plate number
-#            ifudesign (:obj:`int`):
-#                IFU design
-#            log (:obj:`bool`, optional):
-#                Use the spectra that are logarithmically sampled in
-#                wavelength. If False, sampling is linear in
-#                wavelength.
-#
-#        Returns:
-#            :obj:`str`: The relevant file name.
-#        """
-#        return DRPFits.build_file_name(plate, ifudesign, 'RSS', log=log)
-#
-#    @staticmethod
-#    def default_paths(plate, ifudesign, log=True, drpver=None, redux_path=None,
-#                      directory_path=None):
-#        """
-#        Construct the default path and file name with the MaNGA
-#        row-stacked spectra.
-#
-#        This is a simple wrapper for
-#        :func:`mangadap.util.drpfits.DRPFits.default_paths`, specific
-#        to the RSS files.
-#
-#        Args:
-#            plate (:obj:`int`):
-#                Plate number
-#            ifudesign (:obj:`int`):
-#                IFU design
-#            log (:obj:`bool`, optional):
-#                Use the spectra that are logarithmically sampled in
-#                wavelength. If False, sampling is linear in
-#                wavelength.
-#            drpver (:obj:`str`, optional):
-#                DRP version, which is used to define the default DRP
-#                redux path. Default is defined by
-#                :func:`mangadap.config.defaults.drp_version`
-#            redux_path (:obj:`str`, optional):
-#                The path to the top level directory containing the
-#                DRP output files for a given DRP version. Default is
-#                defined by
-#                :func:`mangadap.config.defaults.drp_redux_path`.
-#            directory_path (:obj:`str`, optional):
-#                The exact path to the DRP file. Default is defined by
-#                :func:`mangadap.config.defaults.drp_directory_path`.
-#                Providing this ignores anything provided for
-#                ``drpver`` or ``redux_path``.
-#
-#        Returns:
-#            :obj:`tuple`: Two strings with the default path to and
-#            name of the DRP data file.
-#        """
-#        return DRPFits.default_paths(plate, ifudesign, 'RSS', log=log, drpver=drpver,
-#                                     redux_path=redux_path, directory_path=directory_path)
 
     @classmethod
     def from_plateifu(cls, plate, ifudesign, log=True, drpver=None, redux_path=None,
@@ -191,9 +130,63 @@ class MaNGARSS(DRPFits, RowStackedSpectra):
                 instantiation method; see
                 :class:`mangadap.spectra.manga.MaNGARSS`.
         """
+        # Use the input to instantiate the configuration
         cfg = MaNGAConfig(plate, ifudesign, mode='RSS', log=log, drpver=drpver,
                           redux_path=redux_path, chart_path=chart_path,
                           directory_path=directory_path)
+        # Then use the configuration to instantiate the object
+        return cls(str(cfg.directory_path / cfg.file_name), **kwargs)
+
+    @classmethod
+    def from_config(cls, cfgfile):
+        """
+        Construct a :class:`mangadap.datacube.manga.MaNGADataCube` or
+        :class:`mangadap.spectra.manga.MaNGARSS` object from a
+        configuration file.
+
+        Using the data read from the configuration file, the method
+        instantiates the class using
+        :func:`mangadap.spectra.manga.MaNGARSS.from_plateifu` or
+        :func:`mangadap.datacube.manga.MaNGADataCube.from_plateifu`.
+        This method will therefore fault for this base class!
+
+        The format of the configuration file is:
+
+        .. todo::
+
+            Fill this in.
+
+        Args:
+            cfgfile (:obj:`str`):
+                Configuration file
+            drpver (:obj:`str`, optional):
+                DRP version, which is used to define the default DRP
+                redux path. Overrides any value in the configuration
+                file.
+            redux_path (:obj:`str`, optional):
+                The path to the top level directory containing the
+                DRP output files for a given DRP version. Overrides
+                any value in the configuration file.
+            directory_path (:obj:`str`, optional):
+                The exact path to the DRP file. Providing this
+                ignores anything provided for ``drpver`` or
+                ``redux_path``. Overrides any value in the
+                configuration file.
+        """
+        # First use the base class method to instantiate the configuration
+        cfg = MaNGAConfig.from_config(cfgfile, mode='RSS')
+
+        # Then read the file (again...) to get the relevant keyword arguments
+        full_cfg = DefaultConfig(cfgfile, interpolate=True)
+        kwargs = {}
+        kwargs['z'] = full_cfg.getfloat('z')
+        kwargs['vdisp'] = full_cfg.getfloat('vdisp')
+        kwargs['ell'] = full_cfg.getfloat('ell')
+        kwargs['pa'] = full_cfg.getfloat('pa')
+        kwargs['reff'] = full_cfg.getfloat('reff')
+        kwargs['sres_ext'] = full_cfg.get('sres_ext')
+        kwargs['sres_fill'] = full_cfg.getbool('sres_fill', default=True)
+        kwargs['covar_ext'] = full_cfg.get('covar_ext')
         return cls(str(cfg.directory_path / cfg.file_name), **kwargs)
 
     def pointing_offset(self):

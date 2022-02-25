@@ -3,13 +3,14 @@ Class defining the I/O configuration for MaNGA files in the DAP.
 """
 import warnings
 from pathlib import Path
+import numpy
 from astropy.io import fits
 
 from . import defaults
 from ..util.parser import DefaultConfig
 from ..util.drpbitmask import DRPQuality3DBitMask
-from .constants import DAPConstants
-from .filter import interpolate_masked_vector
+from ..util.constants import DAPConstants
+from ..util.filter import interpolate_masked_vector
 
 class MaNGAConfig:
 
@@ -52,7 +53,6 @@ class MaNGAConfig:
         self.qual_key = 'DRP3QUAL'
         self.qual_flag = 'CRITICAL'
 
-
     @classmethod
     def from_config(cls, cfgfile, mode='CUBE'):
         """
@@ -70,6 +70,15 @@ class MaNGAConfig:
         drpver = cfg.get('drpver')
         redux_path = cfg.get('redux_path')
         directory_path = cfg.get('directory_path')
+
+#        # NOTE: Instead of simply calling cls(...), I use this round about way
+#        # to make sure that I'm using the instantiation method of the base
+#        # class.  This works if MaNGAConfig is defined as an instance on its
+#        # own, and if its used as a base class (cf. MaNGADataCube).
+#        self = super().__new__(cls)
+#        MaNGAConfig.__init__(self, plate, ifu, mode=mode, log=log, drpver=drpver,
+#                             redux_path=redux_path, directory_path=directory_path)
+#        return self
         return cls(plate, ifu, mode=mode, log=log, drpver=drpver, redux_path=redux_path,
                    directory_path=directory_path)
 
@@ -89,6 +98,15 @@ class MaNGAConfig:
         with fits.open(str(ifile)) as hdu:
             drpver = hdu[0].header['VERSDRP3']
 
+        # NOTE: Instead of simply calling cls(...), I use this round about way
+        # to make sure that I'm using the instantiation method of the base
+        # class.  This works if MaNGAConfig is defined as an instance on its
+        # own, and if its used as a base class (cf. MaNGADataCube).
+#        self = super().__new__(cls)
+#        MaNGAConfig.__init__(self, int(plate), int(ifudesign),
+#                             mode='CUBE' if 'CUBE' in log else 'RSS', log='LOG' in log,
+#                             drpver=drpver, directory_path=ifile.parent)
+#        return self
         return cls(int(plate), int(ifudesign), mode='CUBE' if 'CUBE' in log else 'RSS',
                    log='LOG' in log, drpver=drpver, directory_path=ifile.parent)
 
@@ -277,7 +295,7 @@ class MaNGAConfig:
         return _ext, sres
 
 
-sort this out
+# SORT THIS OUT
 
 
     @staticmethod

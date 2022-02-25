@@ -348,7 +348,7 @@ class DataCube:
                 scripts.
         """
         raise NotImplementedError('No from_config method is available for {0}.'.format(
-                                  self.__class__.__name__))
+                                  cls.__name__))
 
     # TODO: write a from_rss classmethod
 

@@ -18,11 +18,11 @@ def test_sres_ext():
     cfg = MaNGAConfig(7815, 3702)
     file = remote_data_file(filename=cfg.file_name)
     hdu = fits.open(file)
-    assert MaNGADataCube.spectral_resolution_extension(hdu) == 'LSFPRE', \
+    assert MaNGAConfig.spectral_resolution_extension(hdu) == 'LSFPRE', \
                 'Bad spectral resolution extension selection'
-    assert MaNGADataCube.spectral_resolution_extension(hdu, ext='SPECRES') == 'SPECRES', \
+    assert MaNGAConfig.spectral_resolution_extension(hdu, ext='SPECRES') == 'SPECRES', \
                 'Bad spectral resolution extension selection'
-    assert MaNGADataCube.spectral_resolution_extension(hdu, ext='junk') is None, \
+    assert MaNGAConfig.spectral_resolution_extension(hdu, ext='junk') is None, \
                 'Should return None for a bad extension name.'
 
 
