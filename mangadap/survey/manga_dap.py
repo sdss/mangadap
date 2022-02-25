@@ -242,8 +242,6 @@ def manga_dap(cube, plan, dbg=False, log=None, verbose=0, drpver=None, redux_pat
     if not os.path.isdir(_analysis_path):
         os.makedirs(_analysis_path)
 
-    cube_root, cube_file = os.path.split(cube.file_path())
-
     log_output(loggers, 1, logging.INFO, '-'*50)
     log_output(loggers, 1, logging.INFO, '{0:^50}'.format('MaNGA Data Analysis Pipeline'))
     log_output(loggers, 1, logging.INFO, '-'*50)
@@ -251,8 +249,8 @@ def manga_dap(cube, plan, dbg=False, log=None, verbose=0, drpver=None, redux_pat
     log_output(loggers, 1, logging.INFO, '       START: {0}'.format(
                                     time.strftime('%a %d %b %Y %H:%M:%S',time.localtime())))
     t = time.perf_counter()
-    log_output(loggers, 1, logging.INFO, '  INPUT ROOT: {0}'.format(cube_root))
-    log_output(loggers, 1, logging.INFO, '   CUBE FILE: {0}'.format(cube_file))
+    log_output(loggers, 1, logging.INFO, '  INPUT ROOT: {0}'.format(cube.directory_path))
+    log_output(loggers, 1, logging.INFO, '   CUBE FILE: {0}'.format(cube.file_name))
     log_output(loggers, 1, logging.INFO, '     N PLANS: {0}'.format(plan.nplans))
     log_output(loggers, 1, logging.INFO, ' OUTPUT ROOT: {0}'.format(_analysis_path))
     log_output(loggers, 1, logging.INFO, '-'*50)

@@ -175,7 +175,7 @@ def test_rectification_recovery():
                                        covar_ext='GCORREL')
     cube.load_rss()
 
-    hdu = fits.open(cube.file_path())
+    hdu = fits.open(str(cube.file_path))
     channel = hdu['GCORREL'].header['BBINDEX']
 
     gcorrel = numpy.zeros(eval(hdu['GCORREL'].header['COVSHAPE']), dtype=float)

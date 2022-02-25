@@ -1101,11 +1101,11 @@ class SpectralIndices:
         extension.
         """
         return [ ('TYPE','<U10'),
-                 ('ID',numpy.int),
+                 ('ID',int),
                  ('NAME','<U{0:d}'.format(name_len)),
-                 ('PASSBAND', numpy.float, (2,)),
-                 ('BLUEBAND', numpy.float, (2,)),
-                 ('REDBAND', numpy.float, (2,)),
+                 ('PASSBAND', float, (2,)),
+                 ('BLUEBAND', float, (2,)),
+                 ('REDBAND', float, (2,)),
                  ('UNIT', '<U3'),
                  ('COMPONENT', numpy.uint8),
                  ('INTEGRAND', '<U7'),
@@ -1720,44 +1720,6 @@ class SpectralIndices:
         Count the total number (absorption-line and bandhead) indices.
         """
         return 0 if absdb is None else absdb.size, 0 if bhddb is None else bhddb.size
-
-#    @staticmethod
-#    def output_dtype(nindx, bitmask=None):
-#        r"""
-#        Construct the record array data type for the output fits
-#        extension.
-#        """
-#        return [ ('BINID', numpy.int),
-#                 ('BINID_INDEX',numpy.int),
-#                 ('REDSHIFT', numpy.float),
-#                 ('MASK', numpy.bool if bitmask is None else bitmask.minimum_dtype(), (nindx,)),
-#                 ('BCEN', numpy.float, (nindx,)), 
-#                 ('BCONT', numpy.float, (nindx,)), 
-#                 ('BCONT_ERR', numpy.float, (nindx,)),
-#                 ('BCONT_MOD', numpy.float, (nindx,)),
-#                 ('BCONT_CORR', numpy.float, (nindx,)),
-#                 ('RCEN', numpy.float, (nindx,)), 
-#                 ('RCONT', numpy.float, (nindx,)), 
-#                 ('RCONT_ERR', numpy.float, (nindx,)),
-#                 ('RCONT_MOD', numpy.float, (nindx,)),
-#                 ('RCONT_CORR', numpy.float, (nindx,)),
-#                 ('MCONT', numpy.float, (nindx,)), 
-#                 ('MCONT_ERR', numpy.float, (nindx,)),
-#                 ('MCONT_MOD', numpy.float, (nindx,)), 
-#                 ('MCONT_CORR', numpy.float, (nindx,)),
-#                 ('AWGT', numpy.float, (nindx,)), 
-#                 ('AWGT_ERR', numpy.float, (nindx,)),
-#                 ('AWGT_MOD', numpy.float, (nindx,)), 
-#                 ('AWGT_CORR', numpy.float, (nindx,)),
-#                 ('INDX', numpy.float, (nindx,)), 
-#                 ('INDX_ERR', numpy.float, (nindx,)),
-#                 ('INDX_MOD', numpy.float, (nindx,)), 
-#                 ('INDX_CORR', numpy.float, (nindx,)),
-#                 ('INDX_BF', numpy.float, (nindx,)), 
-#                 ('INDX_BF_ERR', numpy.float, (nindx,)),
-#                 ('INDX_BF_MOD', numpy.float, (nindx,)), 
-#                 ('INDX_BF_CORR', numpy.float, (nindx,))
-#               ]
 
     @staticmethod
     def check_and_prep_input(wave, flux, ivar=None, mask=None, redshift=None, bitmask=None):

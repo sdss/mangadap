@@ -34,7 +34,7 @@ from astropy.cosmology import FlatLambdaCDM
 
 from .datacube import DataCube
 from .util.constants import DAPConstants
-from .util.drpfits import DRPQuality3DBitMask
+from .util.drpbitmask import DRPQuality3DBitMask
 from .util.fitsutil import DAPFitsUtil
 from .util.dapbitmask import DAPBitMask
 from .util.log import log_output

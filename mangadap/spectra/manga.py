@@ -135,7 +135,7 @@ class MaNGARSS(MaNGAConfig, RowStackedSpectra):
                           redux_path=redux_path, chart_path=chart_path,
                           directory_path=directory_path)
         # Then use the configuration to instantiate the object
-        return cls(str(cfg.directory_path / cfg.file_name), **kwargs)
+        return cls(str(cfg.file_path), **kwargs)
 
     @classmethod
     def from_config(cls, cfgfile):
@@ -187,7 +187,7 @@ class MaNGARSS(MaNGAConfig, RowStackedSpectra):
         kwargs['sres_ext'] = full_cfg.get('sres_ext')
         kwargs['sres_fill'] = full_cfg.getbool('sres_fill', default=True)
         kwargs['covar_ext'] = full_cfg.get('covar_ext')
-        return cls(str(cfg.directory_path / cfg.file_name), **kwargs)
+        return cls(str(cfg.file_path), **kwargs)
 
     def pointing_offset(self):
         """

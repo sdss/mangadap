@@ -236,7 +236,7 @@ def flux_to_fnu(wave, flambda, unit_norm=1e-17):
 
         # TODO: Requires a spectrum in each bin!
 #        if any(numpy.diff(bin_indx[srt]) > 1):
-#            rep = numpy.ones(bin_change.size, dtype=numpy.int)
+#            rep = numpy.ones(bin_change.size, dtype=int)
 #            i = 1
 #            while any(numpy.diff(bin_indx[srt]) > i):
 #                rep[ numpy.where(numpy.diff(bin_indx[srt]) > i)[0]+1 == bin_change ] += 1
@@ -251,7 +251,7 @@ def flux_to_fnu(wave, flambda, unit_norm=1e-17):
 #    minimum and maximum.
 #    """
 #    np = resid.size
-#    grw = numpy.arange(np).astype(numpy.float)/np
+#    grw = numpy.arange(np).astype(float)/np
 #    resid_sort = numpy.sort(numpy.absolute(resid))
 #    interp = interpolate.interp1d(grw, resid_sort, fill_value='extrapolate')
 #    return numpy.append(numpy.append(resid_sort[0], interp(growth_samples)), resid_sort[-1])

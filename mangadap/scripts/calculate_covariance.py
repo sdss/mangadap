@@ -16,7 +16,7 @@ def calculate_covariance_cube(plate, ifudesign, ofile, nc=1, wave=None, director
     # Access the DRP RSS file
     print('Attempting to open RSS file:')
     rss = MaNGARSS.from_plateifu(plate, ifudesign, directory_path=directory_path)
-    print('     FOUND: {0}'.format(rss.file_path()))
+    print(f'     FOUND: {rss.file_path}')
 
     if wave is not None:
         channel = numpy.argsort(numpy.absolute(rss.wave - wave))[0]

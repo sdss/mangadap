@@ -710,7 +710,7 @@ class Sasuke(EmissionLineFit):
         
         """
         _rng = numpy.square(rng)
-        _fit_eml = numpy.zeros(model_eml_par['SIGMACORR'].shape, dtype=numpy.bool)
+        _fit_eml = numpy.zeros(model_eml_par['SIGMACORR'].shape, dtype=bool)
         _fit_eml[:,self.fit_eml] = True
         sigcor = numpy.square(model_eml_par['KIN'][:,:,1]) \
                         - numpy.square(model_eml_par['SIGMACORR'][:,:])
@@ -2001,7 +2001,7 @@ class Sasuke(EmissionLineFit):
         if self.nstpl == 0:
             self.gas_tpl = numpy.ones(etpl.ntpl, dtype=bool)
             self.tpl_flux = etpl.flux
-            self.tpl_to_use = numpy.ones((self.nobj,etpl.ntpl), dtype=numpy.bool)
+            self.tpl_to_use = numpy.ones((self.nobj,etpl.ntpl), dtype=bool)
             self.tpl_comp = etpl.comp
             self.tpl_vgrp = etpl.vgrp
             self.tpl_sgrp = etpl.sgrp
@@ -2013,7 +2013,7 @@ class Sasuke(EmissionLineFit):
                                         numpy.ones(etpl.ntpl)).astype(bool)
             self.tpl_flux = numpy.append(self.tpl_flux, etpl.flux, axis=0)
             self.tpl_to_use = numpy.append(self.tpl_to_use,
-                                           numpy.ones((self.nobj,etpl.ntpl), dtype=numpy.bool),
+                                           numpy.ones((self.nobj,etpl.ntpl), dtype=bool),
                                            axis=1)
             self.tpl_comp = numpy.append(numpy.zeros(self.nstpl, dtype=int), etpl.comp+1)
             self.tpl_vgrp = numpy.append(numpy.zeros(self.nstpl, dtype=int), etpl.vgrp+1)
@@ -2402,7 +2402,7 @@ class Sasuke(EmissionLineFit):
         skip = numpy.zeros(nobj, dtype=bool) if select is None else numpy.invert(select)
 
         # Instantiate the output model array
-        models = numpy.ma.zeros(_obj_flux.shape, dtype=numpy.float)
+        models = numpy.ma.zeros(_obj_flux.shape, dtype=float)
         # Initially mask everything
         models[:,:] = numpy.ma.masked
 

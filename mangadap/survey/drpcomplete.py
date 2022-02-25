@@ -187,7 +187,7 @@ class DRPComplete:
         self.platetargets = None
         if platetargets is not None:
             self.platetargets = numpy.array( arginp_to_list(platetargets) )
-            self.catid = numpy.array( arginp_to_list(catid) ).astype(numpy.int)
+            self.catid = numpy.array( arginp_to_list(catid) ).astype(int)
         else:
             try:
                 self.platetargets, self.catid = defaults.plate_target_files()

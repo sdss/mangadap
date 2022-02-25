@@ -766,11 +766,11 @@ class TemplateLibrary:
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, 'Attempting to build raw data ...')
         # Allocate the vectors
-        wave = numpy.zeros((self.ntpl, npix), dtype=numpy.float64)
-        flux = numpy.zeros((self.ntpl, npix), dtype=numpy.float64)
-        sres = numpy.zeros((self.ntpl, npix), dtype=numpy.float64)
+        wave = numpy.zeros((self.ntpl, npix), dtype=float)
+        flux = numpy.zeros((self.ntpl, npix), dtype=float)
+        sres = numpy.zeros((self.ntpl, npix), dtype=float)
         mask = numpy.zeros((self.ntpl, npix), dtype=self.bitmask.minimum_dtype())
-        soff = numpy.zeros(self.ntpl, dtype=numpy.float64)
+        soff = numpy.zeros(self.ntpl, dtype=float)
 
         # Read and save each spectrum and mask the unobserved
         # wavelengths
@@ -1103,8 +1103,8 @@ class TemplateLibrary:
         no_data = self.bitmask.flagged(self.hdu['MASK'].data, flag='NO_DATA')
 
         # Now resample the spectra.  First allocate the arrays
-        flux = numpy.zeros((self.ntpl, npix), dtype=numpy.float64)
-        sres = numpy.zeros((self.ntpl, npix), dtype=numpy.float64)
+        flux = numpy.zeros((self.ntpl, npix), dtype=float)
+        sres = numpy.zeros((self.ntpl, npix), dtype=float)
         mask = numpy.zeros((self.ntpl, npix), dtype=self.bitmask.minimum_dtype())
 
         for i in range(self.ntpl):

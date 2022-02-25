@@ -566,7 +566,7 @@ class Covariance:
                     ivar = ivar.reshape(-1, shape[-1])
             var = numpy.ones(shape[1:], dtype=float) if ivar is None \
                     else numpy.ma.power(ivar, -1).filled(0.0)
-            cov = numpy.empty(shape[-1], dtype=sparse.csr.csr_matrix)
+            cov = numpy.empty(shape[-1], dtype=sparse.csr_matrix)
             for ii, uk in enumerate(input_indx):
                 indx = k == uk
                 cij = rhoij[indx] * numpy.sqrt( var[i[indx],ii]*var[j[indx],ii] )
@@ -631,11 +631,11 @@ class Covariance:
             raise ValueError('Shape of input variance matrix must be either '
                              '({0},{0}) or ({0},).'.format(nx))
         # If it isn't already, convert T to a csr_matrix
-        _T = T if isinstance(T, sparse.csr.csr_matrix) else sparse.csr_matrix(T)
+        _T = T if isinstance(T, sparse.csr_matrix) else sparse.csr_matrix(T)
         # Set the covariance matrix in X
         _Sigma = sparse.coo_matrix( (Sigma, (numpy.arange(nx),numpy.arange(nx))),
                                    shape=(nx,nx)).tocsr() if len(Sigma.shape) == 1 \
-                    else (Sigma if isinstance(Sigma, sparse.csr.csr_matrix) \
+                    else (Sigma if isinstance(Sigma, sparse.csr_matrix) \
                                 else sparse.csr_matrix(Sigma))
         # Construct the covariance matrix
         return cls(sparse.triu(_T.dot(_Sigma.dot(_T.transpose()))).tocsr())
@@ -652,7 +652,7 @@ class Covariance:
                 Upon instantiation, convert the :class:`Covariance`
                 object to a correlation matrix.
         """
-        return cls(sparse.csr.csr_matrix(numpy.diagflat(variance)), correlation=correlation)
+        return cls(sparse.csr_matrix(numpy.diagflat(variance)), correlation=correlation)
 
     def _grab_true_index(self, inp):
         """
@@ -813,7 +813,7 @@ class Covariance:
         jt = numpy.ravel_multi_index((j_c2, j_c1), raw_shape_t)
 
         # TODO: Copied from `from_fits`.  Put this stuff into a method.
-        cov = numpy.empty(self.shape[-1], dtype=sparse.csr.csr_matrix)
+        cov = numpy.empty(self.shape[-1], dtype=sparse.csr_matrix)
         for ii, uk in enumerate(self.input_indx):
             indx = k == uk
             cij = rhoij[indx] * numpy.sqrt(var[i[indx],ii] * var[j[indx],ii])
@@ -853,7 +853,7 @@ class Covariance:
             new_cov = sparse.coo_matrix( (c*numpy.sqrt(var[i]*var[j]), (i,j)),
                                            shape=self.shape).tocsr()
         else:
-            new_cov = numpy.empty(self.shape[-1], dtype=sparse.csr.csr_matrix)
+            new_cov = numpy.empty(self.shape[-1], dtype=sparse.csr_matrix)
             for p in range(self.shape[-1]):
                 i, j, c = sparse.find(self.cov[p])
                 new_cov[p] = sparse.coo_matrix((c*numpy.sqrt(var[i,p]*var[j,p]), (i,j)),
@@ -903,7 +903,7 @@ class Covariance:
         if self.dim == 2 or channel is not None:
             return self.full(channel=channel).toarray()
         
-        arr = numpy.empty(self.shape, dtype=numpy.float)
+        arr = numpy.empty(self.shape, dtype=float)
         for k in range(self.shape[-1]):
             indx = k if self.input_indx is None else self.input_indx[k]
             arr[:,:,k] = self.full(channel=indx).toarray()
@@ -999,7 +999,7 @@ class Covariance:
 #           return self.inv
 
 #       if self.dim > 2:
-#           self.inv = numpy.empty(self.shape[:self.dim-2], dtype=sparse.csr.csr_matrix)
+#           self.inv = numpy.empty(self.shape[:self.dim-2], dtype=sparse.csr_matrix)
 #           print(self.inv.shape)
 #           print(type(self.inv[0]))
 #           for cov, inv in zip(self.cov.ravel(), self.inv.ravel()):
@@ -1331,7 +1331,7 @@ class Covariance:
             self.var = numpy.diag(self.cov.toarray()).copy()
             return self.var
 
-        self.var = numpy.empty(self.shape[1:], dtype=numpy.float)
+        self.var = numpy.empty(self.shape[1:], dtype=float)
         for p in range(self.shape[-1]):
             self.var[:,p] = numpy.diag(self.cov[p].toarray()).copy()
 
@@ -1460,7 +1460,7 @@ class Covariance:
         # Expand the covariance matrix by repeating the full matrix
         # elements for repeated bin values in different spaxels
         nchan = self.shape[-1]
-        spaxel_covar = numpy.empty(nchan, dtype=sparse.csr.csr_matrix)
+        spaxel_covar = numpy.empty(nchan, dtype=sparse.csr_matrix)
         for i in range(nchan):
             j = self.input_indx[i]
 
@@ -1472,7 +1472,7 @@ class Covariance:
             oi = numpy.arange(nspec)[indx]
             oi_i, oi_j = map( lambda x: x.ravel(), numpy.meshgrid(oi, oi) )
 
-            _covar = numpy.zeros((nspec, nspec), dtype=numpy.float)
+            _covar = numpy.zeros((nspec, nspec), dtype=float)
             _covar[oi_i, oi_j] = self.toarray(channel=j)[ii_i,ii_j]
             spaxel_covar[i] = sparse.triu(_covar).tocsr()
 
@@ -1544,7 +1544,7 @@ class Covariance:
         nbins = len(unique_bins)-1
 
         nchan = self.shape[-1]
-        bin_covar = numpy.empty(nchan, dtype=sparse.csr.csr_matrix)
+        bin_covar = numpy.empty(nchan, dtype=sparse.csr_matrix)
         for i in range(nchan):
             j = self.input_indx[i]
 
@@ -1556,7 +1556,7 @@ class Covariance:
             oi = unique_bins[1:]
             oi_i, oi_j = map( lambda x: x.ravel(), numpy.meshgrid(oi, oi) )
 
-            _covar = numpy.zeros((nbins, nbins), dtype=numpy.float)
+            _covar = numpy.zeros((nbins, nbins), dtype=float)
             _covar[oi_i, oi_j] = self.toarray(channel=j)[ii_i,ii_j]
             bin_covar[i] = sparse.triu(_covar).tocsr()
         return Covariance(bin_covar, input_indx=self.input_indx)

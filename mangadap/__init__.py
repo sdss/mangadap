@@ -16,12 +16,12 @@ __credits__ = ['Kyle B. Westfall', 'Brett H. Andrews', 'Jorge Barrera-Ballestero
                'Adam Schaefer', 'Shravan Shetty', 'Daniel Thomas', 'Christy A. Tremonti',
                'Anne-Marie Weijmans', 'Renbin Yan', 'Meng Yang', 'Zheng Zheng', 'Shuang Zhou']
 
-def short_warning(message, category, filename, lineno, file=None, line=None):
-    """
-    Return the format for a short warning message.
-    """
-    return ' %s: %s\n' % (category.__name__, message)
-
-import warnings
-warnings.formatwarning = short_warning
+#def short_warning(message, category, filename, lineno, file=None, line=None):
+#    """
+#    Return the format for a short warning message.
+#    """
+#    return ' %s: %s\n' % (category.__name__, message)
+#
+#import warnings
+#warnings.formatwarning = short_warning
 

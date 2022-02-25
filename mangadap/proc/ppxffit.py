@@ -732,7 +732,7 @@ class PPXFFit(StellarKinematicsFit):
                 and usetpl.shape != (ntpl,):
             raise ValueError('Provided template selection object does not have the correct shape!')
         if usetpl is None:
-            _usetpl = numpy.ones((nobj,ntpl), dtype=numpy.bool)
+            _usetpl = numpy.ones((nobj,ntpl), dtype=bool)
         else:
             _usetpl = usetpl.astype(bool)
             if _usetpl.shape == (ntpl,):
@@ -747,12 +747,12 @@ class PPXFFit(StellarKinematicsFit):
         if len(_guess_redshift) != 1 and len(_guess_redshift) != nobj:
             raise ValueError('Must provide a single redshift or one per object spectrum.')
         if len(_guess_redshift) == 1:
-            _guess_redshift = numpy.full(nobj, _guess_redshift[0], dtype=numpy.float)
+            _guess_redshift = numpy.full(nobj, _guess_redshift[0], dtype=float)
         _guess_dispersion = numpy.atleast_1d(guess_dispersion)
         if len(_guess_dispersion) != 1 and len(_guess_dispersion) != nobj:
             raise ValueError('Must provide a single dispersion or one per object spectrum.')
         if len(_guess_dispersion) == 1:
-            _guess_dispersion = numpy.full(nobj, _guess_dispersion[0], dtype=numpy.float)
+            _guess_dispersion = numpy.full(nobj, _guess_dispersion[0], dtype=float)
 
         # Set the input redshifts
         input_cz = _guess_redshift*astropy.constants.c.to('km/s').value
@@ -1594,7 +1594,7 @@ class PPXFFit(StellarKinematicsFit):
         done in log space.
         """
 
-        near_bounds = numpy.zeros(self.moments, dtype=numpy.bool)
+        near_bounds = numpy.zeros(self.moments, dtype=bool)
         near_lower_sigma_bound = False
 
         # Velocity
@@ -2291,7 +2291,7 @@ class PPXFFit(StellarKinematicsFit):
 
         #---------------------------------------------------------------
         # Initialize the output data
-        model_flux = numpy.zeros(self.obj_flux.shape, dtype=numpy.float)
+        model_flux = numpy.zeros(self.obj_flux.shape, dtype=float)
         model_par = self.init_datatable(self.ntpl,
                                         0 if self._mode_uses_filter() else self.degree+1,
                                         0 if self._mode_uses_filter() else max(self.mdegree,0),
@@ -2351,7 +2351,7 @@ class PPXFFit(StellarKinematicsFit):
         # Initialize the template set according to the iteration mode
         if self._mode_uses_global_template():
             templates = numpy.dot(global_fit_result.tplwgt, self.tpl_flux).reshape(1,-1)
-            tpl_to_use = numpy.ones((self.nobj,1), dtype=numpy.bool)
+            tpl_to_use = numpy.ones((self.nobj,1), dtype=bool)
             templates_rfft = numpy.fft.rfft(templates, self.tpl_npad, axis=1)
         elif self._mode_uses_nonzero_templates():
             templates = self.tpl_flux
@@ -2498,7 +2498,7 @@ class PPXFFit(StellarKinematicsFit):
             if numpy.sum(fit_indx) == 0:
                 raise ValueError('Selected wavelength range for analysis contains no pixels!')
         else:
-            fit_indx = numpy.full(now, True, dtype=numpy.bool)
+            fit_indx = numpy.full(now, True, dtype=bool)
         waverange_mask = numpy.invert(fit_indx)
 
         # Minimum and maximum redshift about primary offsets
@@ -2906,7 +2906,7 @@ class PPXFFit(StellarKinematicsFit):
 #        pyplot.show()
 
         # Construct the output models
-        model = numpy.ma.zeros(obj_wave.size, dtype=numpy.float)
+        model = numpy.ma.zeros(obj_wave.size, dtype=float)
         if _redshift_only:
             # Resample the redshifted template to the wavelength grid of
             # the binned spectra
@@ -3045,7 +3045,7 @@ class PPXFFit(StellarKinematicsFit):
         skip = numpy.zeros(nobj, dtype=bool) if select is None else numpy.invert(select)
 
         # Instantiate the output model array
-        models = numpy.ma.zeros(_obj_flux.shape, dtype=numpy.float)
+        models = numpy.ma.zeros(_obj_flux.shape, dtype=float)
         # Initially mask everything
         models[:,:] = numpy.ma.masked
 

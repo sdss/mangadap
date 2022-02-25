@@ -893,7 +893,7 @@ class DAPFitsUtil:
             return ('FLAG16BIT', '16-bit mask')
         if bit_type in [numpy.uint8, numpy.int8]:
             return ('FLAG8BIT', '8-bit mask')
-        if bit_type == numpy.bool:
+        if bit_type in [bool, numpy.bool_]:
             return ('MASKZERO', 'Binary mask; zero values are good/unmasked')
         raise ValueError('Invalid bit_type: {0}!'.format(str(bit_type)))
 

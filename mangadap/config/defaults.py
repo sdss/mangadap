@@ -541,7 +541,7 @@ def plate_target_files():
     nfiles = len(file_list)
     if nfiles == 0:
         raise ValueError('Unable to find any plateTargets files!')
-    trgid = numpy.zeros(nfiles, dtype=numpy.int)            # Array to hold indices
+    trgid = numpy.zeros(nfiles, dtype=int)                  # Array to hold indices
     for i in range(nfiles):
         suffix = file_list[i].split('-')[1]                 # Strip out the '{i}.par'
         trgid[i] = int(suffix[:suffix.find('.')])           # Strip out '{i}'

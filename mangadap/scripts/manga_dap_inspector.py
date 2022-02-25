@@ -118,7 +118,7 @@ def pull_maps(hdu, ext, toerr=False):
         maps_err = numpy.ma.power(hdu[err_ext].data, -0.5) if toerr else hdu[err_ext].data
         bits = bm.turn_on(bits, 'ERRORS')
     except:
-        maps_err = numpy.zeros(maps.shape, dtype=numpy.float)
+        maps_err = numpy.zeros(maps.shape, dtype=float)
 
     try:
         msk_ext = hdu[ext].header['QUALDATA']

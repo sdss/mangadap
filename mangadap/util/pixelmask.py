@@ -59,7 +59,7 @@ class PixelMask:
             numpy.ndarray : Boolean mask of the correct shape.
         """
         self._set_shape(x, ny=ny)
-        return numpy.full(self.shape, False, dtype=numpy.bool)
+        return numpy.full(self.shape, False, dtype=bool)
 
 
     def _mask_coordinate_ranges(self, x, rng, ny=None):
@@ -189,11 +189,11 @@ class SpectralPixelMask(PixelMask):
             return None
 
         if isinstance(kin, (int,float)):
-            return numpy.full(self.emldb.size, kin, dtype=numpy.float)
+            return numpy.full(self.emldb.size, kin, dtype=float)
         if isinstance(kin, (list, numpy.ndarray)):
             if len(kin) != self.emldb.size:
                 raise ValueError('Provided vector does not have a matching length.')
-            return numpy.atleast_1d(kin).astype(numpy.float)
+            return numpy.atleast_1d(kin).astype(float)
        
 
     def _get_emission_line_bands(self, velocity_offsets=0.0, sigma=250.0):   #, nsigma=3.0):

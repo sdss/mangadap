@@ -6,7 +6,7 @@ import warnings
 import numpy
 import astropy.constants
 
-from mangadap.drpfits import DRPFits
+from mangadap.datacube.manga import MaNGADataCube
 from mangadap.proc.reductionassessments import ReductionAssessment
 from mangadap.proc.spectralstack import SpectralStackPar, SpectralStack
 from mangadap.proc.spatiallybinnedspectra import SpatiallyBinnedSpectra, SpatiallyBinnedSpectraDef
@@ -83,10 +83,10 @@ if __name__ == '__main__':
     analysis_path = os.path.join(os.getcwd(), 'test_binning_output')
 
     # Read the DRP LOGCUBE file
-    drpf = DRPFits(plate, ifu, 'CUBE', read=True)
+    cube = MaNGADataCube(plate, ifu)
 
     # Calculate the S/N and coordinates
-    rdxqa = ReductionAssessment('SNRG', drpf, analysis_path=analysis_path)
+    rdxqa = ReductionAssessment('SNRG', cube, analysis_path=analysis_path)
 
     # Setup the aperture binning class
     ax = numpy.array([0.0, 3.0, 6.0])
@@ -133,7 +133,7 @@ if __name__ == '__main__':
 
     # Bin the spectra using the new binning method
     binned_spectra = SpatiallyBinnedSpectra('Aperture',     # Key for binning method
-                                            drpf,           # DRP data to bin
+                                            cube,           # DRP data to bin
                                             rdxqa,          # Cube coordinates and S/N assessments
                                             method_list=binning_method, # Methods to select from
                                             analysis_path=analysis_path)
@@ -160,14 +160,14 @@ if __name__ == '__main__':
                                        emission_line_model=emission_line_model,
                                        analysis_path=analysis_path)
 
-    construct_maps_file(drpf, rdxqa=rdxqa, binned_spectra=binned_spectra,
+    construct_maps_file(cube, rdxqa=rdxqa, binned_spectra=binned_spectra,
                         stellar_continuum=stellar_continuum,
                         emission_line_moments=emission_line_moments,
                         emission_line_model=emission_line_model,
                         spectral_indices=spectral_indices, nsa_redshift=nsa_redshift,
                         analysis_path=analysis_path)
 
-    construct_cube_file(drpf, binned_spectra=binned_spectra, stellar_continuum=stellar_continuum,
+    construct_cube_file(cube, binned_spectra=binned_spectra, stellar_continuum=stellar_continuum,
                         emission_line_model=emission_line_model, analysis_path=analysis_path)
 
     print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))

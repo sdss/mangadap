@@ -5,7 +5,7 @@ from mangadap.datacube import MaNGADataCube
 from mangadap.util.drpbitmask import DRPFitsBitMask
 from mangadap.tests.util import data_test_file
 
-def test_drpfitsbitmask():
+def test_drpbitmask():
     # Read the data
     specfile = data_test_file('MaNGA_test_spectra.fits.gz')
     hdu = fits.open(specfile)

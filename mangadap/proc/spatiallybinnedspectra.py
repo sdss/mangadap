@@ -1395,7 +1395,7 @@ class SpatiallyBinnedSpectra:
                            'No binning requested; analyzing DRP spaxel data directly.')
 
             # Generate pseudo bin index
-            bin_indx = numpy.full(self.cube.spatial_shape, -1, dtype=numpy.int)
+            bin_indx = numpy.full(self.cube.spatial_shape, -1, dtype=int)
             i = numpy.asarray(tuple(self.cube.spatial_index[good_spec]))
             bin_indx[i[:,0],i[:,1]] = numpy.arange(numpy.sum(good_spec))
 
@@ -1405,7 +1405,7 @@ class SpatiallyBinnedSpectra:
             sdev = numpy.ma.zeros(flux.shape, dtype=float)
             ivar = self.cube.copy_to_masked_array(attr='ivar', flag=flags)[good_spec,:]
             sres = self.cube.copy_to_array(attr='sres')[good_spec,:]
-            npix = numpy.ones(flux.shape, dtype=numpy.int)
+            npix = numpy.ones(flux.shape, dtype=int)
             npix[numpy.ma.getmaskarray(flux)] = 0
 
             # Build the mask, converting from the DRP bits to the
@@ -1503,7 +1503,7 @@ class SpatiallyBinnedSpectra:
         # selections made above.
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, 'Binning spectra ...')
-        bin_indx = numpy.full(self.nspec, -1, dtype=numpy.int)
+        bin_indx = numpy.full(self.nspec, -1, dtype=int)
         bin_indx[good_spec] \
                 = self.method['binfunc'](self.rdxqa['SPECTRUM'].data['SKY_COO'][good_spec,0],
                                          self.rdxqa['SPECTRUM'].data['SKY_COO'][good_spec,1],

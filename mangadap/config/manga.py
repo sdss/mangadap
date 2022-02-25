@@ -1,8 +1,11 @@
 """
 Class defining the I/O configuration for MaNGA files in the DAP.
 """
+import time
 import warnings
 from pathlib import Path
+from configparser import ConfigParser
+
 import numpy
 from astropy.io import fits
 
@@ -71,14 +74,6 @@ class MaNGAConfig:
         redux_path = cfg.get('redux_path')
         directory_path = cfg.get('directory_path')
 
-#        # NOTE: Instead of simply calling cls(...), I use this round about way
-#        # to make sure that I'm using the instantiation method of the base
-#        # class.  This works if MaNGAConfig is defined as an instance on its
-#        # own, and if its used as a base class (cf. MaNGADataCube).
-#        self = super().__new__(cls)
-#        MaNGAConfig.__init__(self, plate, ifu, mode=mode, log=log, drpver=drpver,
-#                             redux_path=redux_path, directory_path=directory_path)
-#        return self
         return cls(plate, ifu, mode=mode, log=log, drpver=drpver, redux_path=redux_path,
                    directory_path=directory_path)
 
@@ -98,15 +93,6 @@ class MaNGAConfig:
         with fits.open(str(ifile)) as hdu:
             drpver = hdu[0].header['VERSDRP3']
 
-        # NOTE: Instead of simply calling cls(...), I use this round about way
-        # to make sure that I'm using the instantiation method of the base
-        # class.  This works if MaNGAConfig is defined as an instance on its
-        # own, and if its used as a base class (cf. MaNGADataCube).
-#        self = super().__new__(cls)
-#        MaNGAConfig.__init__(self, int(plate), int(ifudesign),
-#                             mode='CUBE' if 'CUBE' in log else 'RSS', log='LOG' in log,
-#                             drpver=drpver, directory_path=ifile.parent)
-#        return self
         return cls(int(plate), int(ifudesign), mode='CUBE' if 'CUBE' in log else 'RSS',
                    log='LOG' in log, drpver=drpver, directory_path=ifile.parent)
 
@@ -293,10 +279,6 @@ class MaNGAConfig:
             sres = numpy.ma.median(sres, axis=0) if mode == 'RSS' \
                         else numpy.ma.median(sres.reshape(sres.shape[0],-1), axis=1)
         return _ext, sres
-
-
-# SORT THIS OUT
-
 
     @staticmethod
     def write_config(ofile, plate, ifudesign, log=True, z=None, vdisp=None, ell=None, pa=None,

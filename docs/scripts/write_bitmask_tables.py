@@ -28,9 +28,9 @@ if __name__ == '__main__':
 
     # Tables to write:
     #
-    from mangadap.util.drpfits import DRPQuality3DBitMask
+    from mangadap.util.drpbitmask import DRPQuality3DBitMask
     write_bitmask(DRPQuality3DBitMask, path)
-    from mangadap.util.drpfits import DRPFitsBitMask
+    from mangadap.util.drpbitmask import DRPFitsBitMask
     write_bitmask(DRPFitsBitMask, path)
 
     from mangadap.dapfits import DAPQualityBitMask

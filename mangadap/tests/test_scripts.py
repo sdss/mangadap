@@ -106,7 +106,6 @@ def test_manga_dap():
     # Clean up
     shutil.rmtree(odir)
 
-
 # TODO: Add some remote data?
 def test_plate_fit_qa():
     assert script_help_okay('dap_plate_fit_qa'), 'Basic help call failed'

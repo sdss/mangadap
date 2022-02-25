@@ -19,6 +19,9 @@ import warnings
 import gzip
 import shutil
 import logging
+
+from IPython import embed
+
 import numpy
 
 from astropy.io import fits
@@ -173,8 +176,8 @@ def init_record_array(shape, dtype):
     Utility function that initializes a record array using a provided
     input data type.  For example::
 
-        dtype = [ ('INDX', numpy.int, (2,) ),
-                  ('VALUE', numpy.float) ]
+        dtype = [ ('INDX', int, (2,) ),
+                  ('VALUE', float) ]
 
     Defines two columns, one named `INDEX` with two integers per row and
     the one named `VALUE` with a single float element per row.  See
@@ -200,7 +203,7 @@ def rec_to_fits_type(rec_element):
     based on the provided record array element.
     """
     n = 1 if len(rec_element[0].shape) == 0 else rec_element[0].size
-    if rec_element.dtype == numpy.bool:
+    if rec_element.dtype in [bool, numpy.bool_]:
         return '{0}L'.format(n)
     if rec_element.dtype == numpy.uint8:
         return '{0}B'.format(n)

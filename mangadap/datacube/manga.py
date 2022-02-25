@@ -7,8 +7,7 @@ Implement the derived class for MaNGA datacubes.
     - Make DRP file class flexible to linear or log-linear wavelength
       sampling?  Incorporate into MODE?
     - Reconstructed broad-band images and PSFs are *not* restructured in
-      the CUBE files!  This is why the are transposed in
-      :func:`mangadap.drpfits.DRPFits.gri_composite`.
+      the CUBE files!  
     - Image reconstruction has transpose sense wrt DRP output!
     - Add logging
     - Need to be clear about which functions use the RSS spectra to
@@ -216,7 +215,7 @@ class MaNGADataCube(MaNGAConfig, DataCube):
         cfg = MaNGAConfig(plate, ifudesign, log=log, drpver=drpver, redux_path=redux_path,
                           chart_path=chart_path, directory_path=directory_path)
         # Then use the configuration to instantiate the object
-        return cls(str(cfg.directory_path / cfg.file_name), **kwargs)
+        return cls(str(cfg.file_path), **kwargs)
 
     @classmethod
     def from_config(cls, cfgfile):
@@ -268,7 +267,7 @@ class MaNGADataCube(MaNGAConfig, DataCube):
         kwargs['sres_ext'] = full_cfg.get('sres_ext')
         kwargs['sres_fill'] = full_cfg.getbool('sres_fill', default=True)
         kwargs['covar_ext'] = full_cfg.get('covar_ext')
-        return cls(str(cfg.directory_path / cfg.file_name), **kwargs)
+        return cls(str(cfg.file_path), **kwargs)
 
     def load_rss(self, force=False):
         """
@@ -302,16 +301,15 @@ class MaNGADataCube(MaNGAConfig, DataCube):
         # Get the RSS counterpart
         rss_cfg = MaNGAConfig(self.plate, self.ifudesign, mode='RSS', log=self.log,
                               directory_path=self.directory_path)
-        rss_file_path = rss_cfg.directory_path / rss_cfg.file_name
-        if not rss_file_path.exists():
+        if not rss_cfg.file_path.exists():
             # Not in this directory.  Check the nominal directory
             warnings.warn(f'Could not find: {rss_file_path}.  Trying the default path.')
             rss_cfg = MaNGAConfig(self.plate, self.ifudesign, mode='RSS', log=self.log)
-            rss_file_path = rss_cfg.directory_path / rss_cfg.file_name
-        if not rss_file_path.exists():
+        if not rss_cfg.file_path.exists():
             raise FileNotFoundError(f'Could not find: {rss_file_path}')
 
-        self.rss = MaNGARSS(str(rss_file_path), sres_ext=self.sres_ext, sres_fill=self.sres_fill)
+        self.rss = MaNGARSS(str(rss_cfg.file_path), sres_ext=self.sres_ext,
+                            sres_fill=self.sres_fill)
 
 # Is this more broadly useful?
 #    def get_config(self):

@@ -96,6 +96,8 @@ class MangaDap(scriptbase.ScriptBase):
     @staticmethod
     def main(args):
 
+#        import warnings
+#        warnings.simplefilter('error', DeprecationWarning)
         from mangadap.par.analysisplan import AnalysisPlanSet
         from mangadap.survey.manga_dap import manga_dap
         from mangadap.datacube import DataCube
@@ -109,9 +111,9 @@ class MangaDap(scriptbase.ScriptBase):
         #   - Instantiate using either the datacube file directly or a
         #     configuration file
         cube = UserDataCube(args.cubefile) if args.config is None \
-                    else UserDataCube.from_config(args.config, drpver=args.drpver,
-                                                  redux_path=args.redux_path,
-                                                  directory_path=args.directory_path)
+                    else UserDataCube.from_config(args.config) #, drpver=args.drpver,
+                                                  #redux_path=args.redux_path,
+                                                  #directory_path=args.directory_path)
 
         # Read the analysis plan
         analysisplan = AnalysisPlanSet.default() if args.plan is None \

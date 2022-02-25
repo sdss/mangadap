@@ -696,13 +696,13 @@ def emission_line_equivalent_width(wave, flux, bluebands, redbands, line_centroi
         raise ValueError('Line flux error array must have shape: {0}'.format(expected_shape))
 
     # Check the input band flags
-    _include_band = numpy.ones(expected_shape, dtype=numpy.bool) \
+    _include_band = numpy.ones(expected_shape, dtype=bool) \
                         if include_band is None else include_band
     if _include_band.shape != expected_shape:
         raise ValueError('Bands flags array must have shape: {0}'.format(expected_shape))
 
     # Check the input redshifts
-    _redshift = numpy.zeros(expected_shape, dtype=numpy.float) if redshift is None else redshift
+    _redshift = numpy.zeros(expected_shape, dtype=float) if redshift is None else redshift
     if _redshift.ndim == 1:
         if len(_redshift) != nspec:
             raise ValueError('Must provide at least one redshift per input spectrum.')

@@ -8,7 +8,7 @@ from mangadap.datacube import MaNGADataCube
 from mangadap.par.artifactdb import ArtifactDB
 from mangadap.par.emissionlinedb import EmissionLineDB
 
-from mangadap.util.drpfits import DRPFitsBitMask
+from mangadap.util.drpbitmask import DRPFitsBitMask
 from mangadap.util.pixelmask import SpectralPixelMask
 
 from mangadap.proc.templatelibrary import TemplateLibrary
