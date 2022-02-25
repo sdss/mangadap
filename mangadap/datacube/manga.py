@@ -1,6 +1,23 @@
 """
 Implement the derived class for MaNGA datacubes.
 
+.. todo::
+
+    - Further optimize calculation of transfer matrix/
+    - Make DRP file class flexible to linear or log-linear wavelength
+      sampling?  Incorporate into MODE?
+    - Reconstructed broad-band images and PSFs are *not* restructured in
+      the CUBE files!  This is why the are transposed in
+      :func:`mangadap.drpfits.DRPFits.gri_composite`.
+    - Image reconstruction has transpose sense wrt DRP output!
+    - Add logging
+    - Need to be clear about which functions use the RSS spectra to
+      create CUBE related data, like the covariance matrix and
+      instrumental dispersion calculations.
+    - Computing the approximate covariance cube is currently not
+      possible with only the CUBE on disk.  There's a logic problem that
+      needs to be fixed.
+
 ----
 
 .. include license and copyright
@@ -24,14 +41,14 @@ from astropy.wcs import WCS
 
 from ..config import defaults
 from ..config.manga import MaNGAConfig
-from ..util.drpfits import DRPFits, DRPFitsBitMask
+from ..util.drpbitmask import DRPFitsBitMask
 from ..util.parser import DefaultConfig
 from ..util.constants import DAPConstants
 from ..util.covariance import Covariance
 from ..spectra import MaNGARSS
 from .datacube import DataCube
 
-class MaNGADataCube(DRPFits, DataCube):
+class MaNGADataCube(MaNGAConfig, DataCube):
     r"""
     Container class for a MaNGA datacube.
 
@@ -142,6 +159,73 @@ class MaNGADataCube(DRPFits, DataCube):
                               pixelscale=0.5, log=self.cfg.log, meta=meta, prihdr=prihdr,
                               fluxhdr=fluxhdr)
         print('Reading MaNGA datacube data ... DONE')
+
+    @classmethod
+    def from_config(cls, cfgfile):
+        """
+        Construct a :class:`mangadap.datacube.manga.MaNGADataCube` or
+        :class:`mangadap.spectra.manga.MaNGARSS` object from a
+        configuration file.
+
+        Using the data read from the configuration file, the method
+        instantiates the class using
+        :func:`mangadap.spectra.manga.MaNGARSS.from_plateifu` or
+        :func:`mangadap.datacube.manga.MaNGADataCube.from_plateifu`.
+        This method will therefore fault for this base class!
+
+        The format of the configuration file is:
+
+        .. todo::
+
+            Fill this in.
+
+        Args:
+            cfgfile (:obj:`str`):
+                Configuration file
+            drpver (:obj:`str`, optional):
+                DRP version, which is used to define the default DRP
+                redux path. Overrides any value in the configuration
+                file.
+            redux_path (:obj:`str`, optional):
+                The path to the top level directory containing the
+                DRP output files for a given DRP version. Overrides
+                any value in the configuration file.
+            directory_path (:obj:`str`, optional):
+                The exact path to the DRP file. Providing this
+                ignores anything provided for ``drpver`` or
+                ``redux_path``. Overrides any value in the
+                configuration file.
+        """
+        # Read the configuration file
+        cfg = DefaultConfig(cfgfile, interpolate=True)
+
+        # Set the attributes, forcing a known type
+        plate = cfg.getint('plate')
+        ifu = cfg.getint('ifu')
+        if plate is None or ifu is None:
+            raise ValueError('Configuration file must define the plate and IFU.')
+        log = cfg.getbool('log', default=True)
+
+        # Overwrite what's in the file with the method keyword arguments
+        _drpver = cfg.get('drpver') if drpver is None else drpver
+        _redux_path = cfg.get('redux_path') if redux_path is None else redux_path
+        _directory_path = cfg.get('directory_path') if directory_path is None else directory_path
+        _directory_path = Path(_directory_path).resolve()
+
+        # Get the other possible keywords
+        # TODO: Come up with a better way to do this
+        kwargs = {}
+        kwargs['sres_ext'] = cfg.get('sres_ext')
+        kwargs['sres_fill'] = cfg.getbool('sres_fill', default=True)
+        kwargs['covar_ext'] = cfg.get('covar_ext')
+        kwargs['z'] = cfg.getfloat('z')
+        kwargs['vdisp'] = cfg.getfloat('vdisp')
+        kwargs['ell'] = cfg.getfloat('ell')
+        kwargs['pa'] = cfg.getfloat('pa')
+        kwargs['reff'] = cfg.getfloat('reff')
+
+        return cls.from_plateifu(plate, ifu, log=log, drpver=_drpver, redux_path=_redux_path,
+                                 directory_path=_directory_path, **kwargs)
 
 #    @staticmethod
 #    def build_file_name(plate, ifudesign, log=True):

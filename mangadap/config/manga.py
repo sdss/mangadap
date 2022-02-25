@@ -8,6 +8,8 @@ from astropy.io import fits
 from . import defaults
 from ..util.parser import DefaultConfig
 from ..util.drpbitmask import DRPQuality3DBitMask
+from .constants import DAPConstants
+from .filter import interpolate_masked_vector
 
 class MaNGAConfig:
 
@@ -87,7 +89,6 @@ class MaNGAConfig:
         with fits.open(str(ifile)) as hdu:
             drpver = hdu[0].header['VERSDRP3']
 
-        # Instantiate the DRPFits base
         return cls(int(plate), int(ifudesign), mode='CUBE' if 'CUBE' in log else 'RSS',
                    log='LOG' in log, drpver=drpver, directory_path=ifile.parent)
 
@@ -137,5 +138,246 @@ class MaNGAConfig:
     @property
     def output_root(self):
         return f'{self.instrument}-{self.key}'
+
+    @staticmethod
+    def propagate_flags():
+        """Flags that should be propagated from the observed data to the analysis data."""
+        return ['FORESTAR']
+
+    @staticmethod
+    def do_not_use_flags():
+        """Return the maskbit names that should not be used."""
+        return ['DONOTUSE', 'FORESTAR']
+
+    @staticmethod
+    def do_not_fit_flags():
+        """Return the maskbit names that should not be fit."""
+        return ['DONOTUSE', 'FORESTAR']
+
+    @staticmethod
+    def do_not_stack_flags():
+        """Return the maskbit names that should not be stacked."""
+        return ['DONOTUSE', 'FORESTAR']
+
+    @staticmethod
+    def spectral_resolution_extension(hdu, ext=None):
+        """
+        Determine the spectral resolution channel to use.
+
+        Precedence follows this order: ``LSFPRE``, ``PRESPECRES``,
+        ``LSFPOST``, ``SPECRES``.
+
+        Args:
+            hdu (`astropy.io.fits.HDUList`):
+                The opened MaNGA DRP file.
+            ext (:obj:`str`, optional):
+                Specify the extension with the spectral estimate to
+                use. Should be in None, ``LSFPRE``, ``PRESPECRES``,
+                ``LSFPOST``, or ``SPECRES``. The default is None,
+                which means it will return the extension found first
+                in the order above. None is returned if none of the
+                extensions are present.
+
+        Returns:
+            :obj:`str`: The name of the preferred extension to use.
+        """
+        allowed = ['LSFPRE', 'LSFPOST', 'PRESPECRES', 'SPECRES']
+        if ext is not None and ext not in allowed:
+            warnings.warn(f'{ext} is not a viable spectral resolution extension.')
+            return None
+        available = [h.name for h in hdu if h.name in allowed]
+        _ext = ext
+        if ext is None:
+            _ext = 'LSFPRE'
+            if _ext not in available:
+                _ext = 'PRESPECRES'
+            if _ext not in available:
+                _ext = 'LSFPOST'
+            if _ext not in available:
+                _ext = 'SPECRES'
+        return _ext
+
+    @staticmethod
+    def spectral_resolution(hdu, ext=None, fill=False, median=False):
+        """
+        Return the spectral resolution for all spectra.
+
+        See :func:`spectral_resolution_extension` for a description
+        of the precedence used when ``ext`` is None.
+
+        Args:
+            hdu (`astropy.io.fits.HDUList`):
+                The opened MaNGA DRP file.
+            ext (:obj:`str`, optional):
+                Specify the extension with the spectral estimate to
+                use. See :func:`spectral_resolution_extension`.
+            fill (:obj:`bool`, optional):
+                Fill masked values by interpolation.  Default is to
+                leave masked pixels in returned array.
+            median (:obj:`bool`, optional):
+                Return a single vector with the median spectral
+                resolution instead of a per spectrum array. When using
+                the ``SPECRES`` extension, this just returns the vector
+                provided by the DRP file; when using either of the
+                ``LSF`` extensions, this performs a masked median across
+                the array and then interpolates any wavelengths that
+                were masked in all vectors.
+
+        Returns:
+            :obj:`tuple`: Returns a :obj:`str` with the name of the
+            extension used for the spectral-resolution measurements
+            and a `numpy.ma.MaskedArray`_ with the spectral
+            resolution data. Even if interpolated such that there
+            should be no masked values, the function returns a masked
+            array. Array contains the spectral resolution (:math:`R =
+            \lambda/\Delta\lambda`) pulled from the DRP file.
+        """
+        # Determine which spectral resolution element to use
+        _ext = MaNGAConfig.spectral_resolution_extension(hdu, ext=ext)
+        # If no valid extension, raise an exception
+        if ext is None and _ext is None:
+            raise ValueError('No valid spectral resolution extension.')
+        if ext is not None and _ext is None:
+            raise ValueError('No extension: {0}'.format(ext))
+        warnings.warn('Extension {0} used to define spectral resolution.'.format(_ext))
+            
+        # Set the mode based on the shape of the flux extension
+        mode = 'CUBE' if hdu['FLUX'].data.ndim == 3 else 'RSS'
+
+        # Build the spectral resolution vectors
+        if 'SPECRES' in _ext:
+            sres = numpy.ma.MaskedArray(hdu[_ext].data, mask=numpy.invert(hdu[_ext].data > 0))
+            if fill:
+                sres = numpy.ma.MaskedArray(interpolate_masked_vector(sres))
+            if not median:
+                sres = numpy.tile(sres, (hdu['FLUX'].data.shape[0],1)) if mode == 'RSS' \
+                         else numpy.tile(sres, (*hdu['FLUX'].data.shape[1:][::-1],1)).T
+            return _ext, sres
+
+        # Otherwise dealing with the DISP data
+        sres = numpy.ma.MaskedArray(hdu[_ext].data)
+        # Mask any non-positive value
+        sres[numpy.invert(sres > 0)] = numpy.ma.masked
+        # Convert from sigma in angstroms to spectral resolution (based
+        # on FWHM). Make sure to treat array shapes correctly for the
+        # different modes.
+        if mode == 'RSS':
+            sres = numpy.ma.divide(hdu['WAVE'].data[None,:], sres) / DAPConstants.sig2fwhm
+        else:
+            # Mode is 'CUBE'
+            sres = numpy.ma.divide(hdu['WAVE'].data[:,None,None], sres) / DAPConstants.sig2fwhm
+        # Interpolate over any masked values
+        if fill:
+            axis = 1 if mode == 'RSS' else 0
+            sres = numpy.ma.MaskedArray(
+                        numpy.ma.apply_along_axis(interpolate_masked_vector, axis, sres))
+        if median:
+            sres = numpy.ma.median(sres, axis=0) if mode == 'RSS' \
+                        else numpy.ma.median(sres.reshape(sres.shape[0],-1), axis=1)
+        return _ext, sres
+
+
+sort this out
+
+
+    @staticmethod
+    def write_config(ofile, plate, ifudesign, log=True, z=None, vdisp=None, ell=None, pa=None,
+                     reff=None, sres_ext=None, sres_fill=None, covar_ext=None, drpver=None,
+                     redux_path=None, directory_path=None, overwrite=True):
+        """
+        Write the configuration file that can be used to instantiate
+        a MaNGA data object
+        (:class:`mangadap.datacube.manga.MaNGADataCube` or
+        :class:`mangadap.spectra.manga.MaNGARSS`).
+        
+        See :func:`from_config`.
+
+        Args:
+            ofile (:obj:`str`, optional):
+                Name of the configuration file.
+            plate (:obj:`int`):
+                Plate number
+            ifudesign (:obj:`int`):
+                IFU design
+            log (:obj:`bool`, optional):
+                Use the datacube that is logarithmically binned in
+                wavelength.
+            z (:obj:`float`, optional):
+                Estimated bulk redshift. If None, some of the DAP
+                analysis modules will fault.
+            vdisp (:obj:`float`, optional):
+                Estimated velocity dispersion. If None, some of the
+                DAP analysis modules will assume an initial guess of
+                100 km/s.
+            ell (:obj:`float`, optional):
+                Characteristic isophotal ellipticity (1-b/a). If
+                None, some of the DAP modules will issue a warning
+                and continue by assuming ``ell=0``.
+            pa (:obj:`float`, optional):
+                Characteristic isophotal position angle (through E
+                from N). If None, some of the DAP modules will issue
+                a warning and continue by assuming ``pa=0``.
+            reff (:obj:`float`, optional):
+                Effective (half-light) radius in arcsec. If None,
+                some of the DAP modules will issue a warning and
+                continue by assuming ``reff=1``.
+            sres_ext (:obj:`str`, optional):
+                The extension to use when constructing the spectral
+                resolution vectors. See :func:`spectral_resolution`.
+            sres_fill (:obj:`bool`, optional):
+                Fill masked values by interpolation. Default is to
+                leave masked pixels in returned array.
+            covar_ext (:obj:`str`, optional):
+                Extension to use as the single spatial correlation
+                matrix for all wavelength channels, read from the DRP
+                file. For generating the covariance matrix directly
+                for an arbitrary wavelength channel using the RSS
+                file, see
+                :func:`mangadap.datacube.datacube.DataCube.covariance_matrix`.
+            drpver (:obj:`str`, optional):
+                DRP version, which is used to define the default DRP
+                redux path. Default is defined by
+                :func:`mangadap.config.defaults.drp_version`
+            redux_path (:obj:`str`, optional):
+                The path to the top level directory containing the
+                DRP output files for a given DRP version. Default is
+                defined by
+                :func:`mangadap.config.defaults.drp_redux_path`.
+            directory_path (:obj:`str`, optional):
+                The exact path to the DRP file. Default is defined by
+                :func:`mangadap.config.defaults.drp_directory_path`.
+                Providing this ignores anything provided for
+                ``drpver`` or ``redux_path``.
+            overwrite (:obj:`bool`, optional):
+                Overwrite any existing parameter file.
+        """
+        _ofile = Path(ofile).resolve()
+        if _ofile.exists() and not overwrite:
+            raise FileExistsError(f'{_ofile} already exists; to overwrite, set '
+                                  'overwrite=True.')
+
+        # Build the configuration data
+        cfg = ConfigParser(allow_no_value=True)
+        cfg['default'] = {'drpver': drpver,
+                          'redux_path': redux_path,
+                          'directory_path': directory_path,
+                          'plate': str(plate),
+                          'ifu': str(ifudesign),
+                          'log': str(log),
+                          'sres_ext': sres_ext,
+                          'sres_fill': sres_fill,
+                          'covar_ext': covar_ext,
+                          'z': None if z is None else '{0:.7e}'.format(z),
+                          'vdisp': None if vdisp is None else '{0:.7e}'.format(vdisp),
+                          'ell': None if ell is None else '{0:.7e}'.format(ell),
+                          'pa': None if pa is None else '{0:.7e}'.format(pa),
+                          'reff': None if reff is None else '{0:.7e}'.format(reff)}
+
+        # Write the configuration file
+        with _ofile.open('w') as f:
+            f.write('# Auto-generated configuration file\n')
+            f.write('# {0}\n'.format(time.strftime("%a %d %b %Y %H:%M:%S",time.localtime())))
+            f.write('\n')
+            cfg.write(f)
 
 
