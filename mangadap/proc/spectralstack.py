@@ -429,6 +429,7 @@ class SpectralStack:
         """
         # Convert the stack transform matrix to a dense array
         rt = self.rebin_T.toarray()
+        rt = rt.astype('float32')
         # Relevant shapes
         nstack, nspec = rt.shape
         nwave = flux.shape[-1]
@@ -455,66 +456,65 @@ class SpectralStack:
         uniq_stacki = numpy.unique(stacki)
 
         # Construct the output vectors
-        self.flux = numpy.ma.zeros((nstack, nwave), dtype=float)
-        new_flux = numpy.ma.zeros((len(stacki),nwave), dtype=float)
-        self.fluxsqr = numpy.ma.zeros((nstack, nwave), dtype=float)
-        new_fluxsqr = numpy.ma.zeros((len(stacki),nwave), dtype=float)
+        self.flux = numpy.ma.zeros((nstack, nwave), dtype='float32')
+        new_flux = numpy.ma.zeros((len(stacki),nwave), dtype='float32')
+        self.fluxsqr = numpy.ma.zeros((nstack, nwave), dtype='float32')
+        new_fluxsqr = numpy.ma.zeros((len(stacki),nwave), dtype='float32')
         self.ivar = None
         if ivar is not None:
-            self.ivar = numpy.ma.zeros((nstack, nwave), dtype=float)
-            new_ivar = numpy.ma.zeros((len(stacki),nwave), dtype=float)
+            self.ivar = numpy.ma.zeros((nstack, nwave), dtype='float32')
+            new_ivar = numpy.ma.zeros((len(stacki),nwave), dtype='float32')
         self.sres = None
         if sres is not None:
             Tc = numpy.sum(rt, axis=1)
             Tc[numpy.logical_not(Tc > 0)] = 1.0
-            self.sres = numpy.ma.zeros((nstack, nwave), dtype=float)
-            new_sres = numpy.ma.zeros((len(stacki),nwave), dtype=float)
+            self.sres = numpy.ma.zeros((nstack, nwave), dtype='float32')
+            new_sres = numpy.ma.zeros((len(stacki),nwave), dtype='float32')
+
+        # convert each array into a csr_matrix for
+        # efficient dot product computation
+        gpm_speci = gpm[speci].astype('float32')
+        flux_speci = flux.data[speci].astype('float32')
+        gpm_flux_csr_matrix = sparse.csr_matrix(gpm_speci * flux_speci)
+        gpm_fluxsqr_csr_marix = sparse.csr_matrix(numpy.square(gpm_speci * flux_speci))
+
+        ivar_speci = ivar[speci].astype('float32')
+        gpm_ivar_csr_matrix = sparse.csr_matrix(numpy.ma.divide(gpm_speci, ivar_speci).filled(0.0))
+
+        sres_speci = sres[speci].astype('float32')
+        sres_csr_matrix = sparse.csr_matrix(numpy.ma.power(sres_speci, -1).filled(0.0))
+        sres_csr_matrix_else = sparse.csr_matrix(numpy.ma.power(sres_speci, -2).filled(0.0))
 
         # Do the stacking
         # For-loop was implemented due to memory allocation issue where
         # rt[stacki, :][:, speci] was much too large to store in memory
         # as a result of the large dataset that MUSE cubes contain.
-        start = time.time()
+        start2 = time.time()
         for i in uniq_stacki:
             spec_bin = numpy.where(stacki == i)
-            new_flux[spec_bin] = numpy.dot(rt[[i], :][:, speci], gpm[speci] * flux.data[speci])
-            new_fluxsqr[spec_bin] = numpy.dot(rt[[i], :][:, speci],
-                                         numpy.square(gpm[speci] * flux.data[speci]))
+            rt_csr_matrix = sparse.csr_matrix(rt[[i], :][:, speci])
+            rt_csr_matrix_sq = sparse.csr_matrix(numpy.square(rt[[i], :][:, speci]))
+
+            new_flux[spec_bin] = sparse.csr_matrix.dot(rt_csr_matrix,
+                                                       gpm_flux_csr_matrix).toarray()
+            new_fluxsqr[spec_bin] = sparse.csr_matrix.dot(rt_csr_matrix,
+                                               gpm_fluxsqr_csr_marix).toarray()
             if self.ivar is not None:
-                new_ivar[spec_bin] = numpy.ma.power(numpy.dot(numpy.square(rt[[i], :][:, speci]),
-                                                         numpy.ma.divide(gpm[speci], ivar[speci]).filled(0.0)), -1.)
+                new_ivar[spec_bin] = numpy.ma.power(sparse.csr_matrix.dot(rt_csr_matrix_sq,
+                                                         gpm_ivar_csr_matrix).toarray(), -1.)
             if self.sres is not None:
-                new_sres[spec_bin] = numpy.ma.power(numpy.dot(rt[[i], :][:, speci],
-                                                     numpy.ma.power(sres[speci], -1).filled(0.0))
+                new_sres[spec_bin] = numpy.ma.power(sparse.csr_matrix.dot(rt_csr_matrix,
+                                                     sres_csr_matrix).toarray()
                                            / Tc[[i], None], -1) if linear_sres \
-                    else numpy.ma.power(numpy.dot(rt[[i], :][:, speci],
-                                                  numpy.ma.power(sres[speci], -2).filled(0.0))
+                    else numpy.ma.power(sparse.csr_matrix.dot(rt_csr_matrix,
+                                                  sres_csr_matrix_else).toarray()
                                         / Tc[[i], None], -0.5)
-
-        end = time.time()
-        embed()
-        print('Time elapsed for my code: {}'.format(end-start))
-
-        start1 = time.time()
-        #self.flux[stacki] = numpy.dot(rt[stacki, :][:, speci], gpm[speci] * flux.data[speci])
         self.flux[stacki] = new_flux
-        # self.fluxsqr[stacki] = numpy.dot(rt[stacki, :][:, speci],
-        #                                  numpy.square(gpm[speci] * flux.data[speci]))
         self.fluxsqr[stacki] = new_fluxsqr
         if self.ivar is not None:
             self.ivar[stacki] = new_ivar
-            # self.ivar[stacki] = numpy.ma.power(numpy.dot(numpy.square(rt[stacki, :][:, speci]),
-            #                                              numpy.ma.divide(gpm[speci], ivar[speci]).filled(0.0)), -1.)
         if self.sres is not None:
-            # self.sres[stacki] = numpy.ma.power(numpy.dot(rt[stacki, :][:, speci],
-            #                                               numpy.ma.power(sres[speci], -1).filled(0.0))
-            #                                     / Tc[stacki, None], -1) if linear_sres \
-            #      else numpy.ma.power(numpy.dot(rt[stacki, :][:, speci],
-            #                                    numpy.ma.power(sres[speci], -2).filled(0.0))
-            #                          / Tc[stacki, None], -0.5)
             self.sres[stacki] = new_sres
-        end1 = time.time()
-        print('Time elapsed for original code: {}'.format(end1 - start1))
 
         # Copy over the data from the "stacks" that only include single
         # spectra
@@ -530,13 +530,9 @@ class SpectralStack:
         # spectral resolution vectors are *not* masked.
         self.flux[self.npix == 0] = numpy.ma.masked
         # Ensure that any pixels with NaN values are masked
-        nan_val = numpy.where(numpy.isfinite(self.flux.data) == False)
-        self.flux[nan_val] = numpy.ma.masked
         self.fluxsqr[self.npix == 0] = numpy.ma.masked
-        self.fluxsqr[nan_val] = numpy.ma.masked
         if self.ivar is not None:
             self.ivar[self.npix == 0] = numpy.ma.masked
-            self.ivar[nan_val] = numpy.ma.masked
 
     def _stack_with_covariance(self, flux, covariance_mode, covar, ivar=None, sres=None):
         """
