@@ -21,6 +21,7 @@ import numpy
 from astropy.io import fits
 
 from ..config import defaults
+from ..config.manga import MaNGAConfig
 from ..util.drpfits import DRPFits, DRPFitsBitMask
 from ..util.constants import DAPConstants
 from ..util.filter import interpolate_masked_vector
@@ -52,24 +53,14 @@ class MaNGARSS(DRPFits, RowStackedSpectra):
     """
     def __init__(self, ifile, sres_ext=None, sres_fill=True):
 
-        if not os.path.isfile(ifile):
-            raise FileNotFoundError('File does not exist: {0}'.format(ifile))
+        self.cfg = MaNGAConfig.from_file(ifile)
 
-        # Parse the relevant information from the filename
-        directory_path = os.path.split(os.path.abspath(ifile))[0]
-        plate, ifudesign, log = ifile.split('-')[1:4]
         # Instantiate the DRPFits base
-        DRPFits.__init__(self, int(plate), int(ifudesign), 'RSS', log='LOG' in log,
-                         directory_path=directory_path)
+        DRPFits.__init__(self, self.cfg.plate, self.cfg.ifudesign, 'RSS', log=self.cfg.log,
+                         directory_path=self.cfg.directory_path)
 
-        # Try to define the BitMask object
-        try:
-            bitmask = DRPFitsBitMask(mode='RSS')
-        except:
-            warnings.warn('Unable to define bit mask for MaNGA row-stacked spectra.  Can only '
-                          'distinguish between masked (values greater than 0) and unmasked '
-                          '(values of 0).')
-            bitmask = None
+        # Define the relevant BitMask object
+        bitmask = DRPFitsBitMask(mode='RSS')
 
         # Open the file and initialize the base class
         with fits.open(ifile) as hdu:
@@ -89,90 +80,78 @@ class MaNGARSS(DRPFits, RowStackedSpectra):
                                        ivar=hdu['IVAR'].data, mask=hdu['MASK'].data,
                                        bitmask=bitmask, sres=sres, xpos=-hdu['XPOS'].data,
                                        ypos=hdu['YPOS'].data, area=numpy.pi,
-                                       log=self.samp == 'LOG', prihdr=prihdr, fluxhdr=fluxhdr)
+                                       log=self.cfg.log, prihdr=prihdr, fluxhdr=fluxhdr)
         print('Reading MaNGA row-stacked spectra data ... DONE')
 
-        # Try to use the header to set the DRP version
-        self.drpver = self.prihdr['VERSDRP3'] if 'VERSDRP3' in self.prihdr \
-                        else defaults.drp_version()
-        # Reduction path is always set to the default. A warning is
-        # thrown if the default reduction path is not the same as the
-        # path expected for the file.
-        self.redux_path = defaults.drp_redux_path(drpver=self.drpver)
-        if self.directory_path != defaults.drp_directory_path(self.plate, drpver=self.drpver,
-                                                              redux_path=self.redux_path):
-            warnings.warn('Default reduction path does not match file path.  May not be able to '
-                          'find paired RSS file if requested.')
-
-    @staticmethod
-    def build_file_name(plate, ifudesign, log=True):
-        """
-        Return the name of the DRP file with the row-stacked spectra.
-
-        This is a simple wrapper for
-        :func:`mangadap.util.drpfits.DRPFits.build_file_name`,
-        specific to the RSS.
-
-        Args:
-            plate (:obj:`int`):
-                Plate number
-            ifudesign (:obj:`int`):
-                IFU design
-            log (:obj:`bool`, optional):
-                Use the spectra that are logarithmically sampled in
-                wavelength. If False, sampling is linear in
-                wavelength.
-
-        Returns:
-            :obj:`str`: The relevant file name.
-        """
-        return DRPFits.build_file_name(plate, ifudesign, 'RSS', log=log)
-
-    @staticmethod
-    def default_paths(plate, ifudesign, log=True, drpver=None, redux_path=None,
-                      directory_path=None):
-        """
-        Construct the default path and file name with the MaNGA
-        row-stacked spectra.
-
-        This is a simple wrapper for
-        :func:`mangadap.util.drpfits.DRPFits.default_paths`, specific
-        to the RSS files.
-
-        Args:
-            plate (:obj:`int`):
-                Plate number
-            ifudesign (:obj:`int`):
-                IFU design
-            log (:obj:`bool`, optional):
-                Use the spectra that are logarithmically sampled in
-                wavelength. If False, sampling is linear in
-                wavelength.
-            drpver (:obj:`str`, optional):
-                DRP version, which is used to define the default DRP
-                redux path. Default is defined by
-                :func:`mangadap.config.defaults.drp_version`
-            redux_path (:obj:`str`, optional):
-                The path to the top level directory containing the
-                DRP output files for a given DRP version. Default is
-                defined by
-                :func:`mangadap.config.defaults.drp_redux_path`.
-            directory_path (:obj:`str`, optional):
-                The exact path to the DRP file. Default is defined by
-                :func:`mangadap.config.defaults.drp_directory_path`.
-                Providing this ignores anything provided for
-                ``drpver`` or ``redux_path``.
-
-        Returns:
-            :obj:`tuple`: Two strings with the default path to and
-            name of the DRP data file.
-        """
-        return DRPFits.default_paths(plate, ifudesign, 'RSS', log=log, drpver=drpver,
-                                     redux_path=redux_path, directory_path=directory_path)
+#    @staticmethod
+#    def build_file_name(plate, ifudesign, log=True):
+#        """
+#        Return the name of the DRP file with the row-stacked spectra.
+#
+#        This is a simple wrapper for
+#        :func:`mangadap.util.drpfits.DRPFits.build_file_name`,
+#        specific to the RSS.
+#
+#        Args:
+#            plate (:obj:`int`):
+#                Plate number
+#            ifudesign (:obj:`int`):
+#                IFU design
+#            log (:obj:`bool`, optional):
+#                Use the spectra that are logarithmically sampled in
+#                wavelength. If False, sampling is linear in
+#                wavelength.
+#
+#        Returns:
+#            :obj:`str`: The relevant file name.
+#        """
+#        return DRPFits.build_file_name(plate, ifudesign, 'RSS', log=log)
+#
+#    @staticmethod
+#    def default_paths(plate, ifudesign, log=True, drpver=None, redux_path=None,
+#                      directory_path=None):
+#        """
+#        Construct the default path and file name with the MaNGA
+#        row-stacked spectra.
+#
+#        This is a simple wrapper for
+#        :func:`mangadap.util.drpfits.DRPFits.default_paths`, specific
+#        to the RSS files.
+#
+#        Args:
+#            plate (:obj:`int`):
+#                Plate number
+#            ifudesign (:obj:`int`):
+#                IFU design
+#            log (:obj:`bool`, optional):
+#                Use the spectra that are logarithmically sampled in
+#                wavelength. If False, sampling is linear in
+#                wavelength.
+#            drpver (:obj:`str`, optional):
+#                DRP version, which is used to define the default DRP
+#                redux path. Default is defined by
+#                :func:`mangadap.config.defaults.drp_version`
+#            redux_path (:obj:`str`, optional):
+#                The path to the top level directory containing the
+#                DRP output files for a given DRP version. Default is
+#                defined by
+#                :func:`mangadap.config.defaults.drp_redux_path`.
+#            directory_path (:obj:`str`, optional):
+#                The exact path to the DRP file. Default is defined by
+#                :func:`mangadap.config.defaults.drp_directory_path`.
+#                Providing this ignores anything provided for
+#                ``drpver`` or ``redux_path``.
+#
+#        Returns:
+#            :obj:`tuple`: Two strings with the default path to and
+#            name of the DRP data file.
+#        """
+#        return DRPFits.default_paths(plate, ifudesign, 'RSS', log=log, drpver=drpver,
+#                                     redux_path=redux_path, directory_path=directory_path)
 
     @classmethod
     def from_plateifu(cls, plate, ifudesign, log=True, drpver=None, redux_path=None,
-                      directory_path=None, **kwargs):
+                      chart_path=None, directory_path=None, **kwargs):
         """
         Construct a :class:`mangadap.datacube.manga.MaNGARSS`
         object based on its plate-ifu designation.
@@ -198,6 +177,10 @@ class MaNGARSS(DRPFits, RowStackedSpectra):
                 DRP output files for a given DRP version. Default is
                 defined by
                 :func:`mangadap.config.defaults.drp_redux_path`.
+            chart_path (:obj:`str`, optional):
+                The path to the directory containing the finding chart images
+                for this plate.  Default is defined by
+                :func:`mangadap.config.defaults.drp_finding_chart_path`.
             directory_path (:obj:`str`, optional):
                 The exact path to the DRP file. Default is defined by
                 :func:`mangadap.config.defaults.drp_directory_path`.
@@ -208,9 +191,10 @@ class MaNGARSS(DRPFits, RowStackedSpectra):
                 instantiation method; see
                 :class:`mangadap.spectra.manga.MaNGARSS`.
         """
-        path, file_name = cls.default_paths(int(plate), int(ifudesign), log=log, drpver=drpver,
-                                            redux_path=redux_path, directory_path=directory_path)
-        return cls(os.path.join(path, file_name), **kwargs)
+        cfg = MaNGAConfig(plate, ifudesign, mode='RSS', log=log, drpver=drpver,
+                          redux_path=redux_path, chart_path=chart_path,
+                          directory_path=directory_path)
+        return cls(str(cfg.directory_path / cfg.file_name), **kwargs)
 
     def pointing_offset(self):
         """

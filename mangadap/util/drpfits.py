@@ -44,6 +44,7 @@ from configparser import ConfigParser
 import numpy
 
 from .parser import DefaultConfig
+from ..config.manga import MaNGAConfig
 from .bitmask import BitMask
 from .constants import DAPConstants
 from .filter import interpolate_masked_vector
@@ -90,47 +91,49 @@ class DRPFits:
     """
     def __init__(self, plate, ifudesign, mode, log=True, drpver=None, redux_path=None,
                  directory_path=None):
-        DRPFits.check_mode(mode)
-        self.plate = plate
-        self.ifudesign = ifudesign
-        self.mode = mode
-        self.samp = 'LOG' if log else 'LIN'
-        self.directory_path, self.file_name \
-                = DRPFits.default_paths(self.plate, self.ifudesign, self.mode, log=log,
-                                        drpver=drpver, redux_path=redux_path,
-                                        directory_path=directory_path)
+        self.cfg = MaNGAConfig(plate, ifudesign, mode=mode, log=log, drpver=drpver,
+                               redux_path=redux_path, directory_path=directory_path)
+#        DRPFits.check_mode(mode)
+#        self.plate = plate
+#        self.ifudesign = ifudesign
+#        self.mode = mode
+#        self.samp = 'LOG' if log else 'LIN'
+#        self.directory_path, self.file_name \
+#                = DRPFits.default_paths(self.plate, self.ifudesign, self.mode, log=log,
+#                                        drpver=drpver, redux_path=redux_path,
+#                                        directory_path=directory_path)
         self.redux_bitmask = DRPQuality3DBitMask()
         self.redux_qual_key = 'DRP3QUAL'
         self.redux_qual_flag = 'CRITICAL'
 
-    @staticmethod
-    def check_mode(mode):
-        """
-        Check that the mode is valid.
-
-        Valide modes are set by :func:`mode_options`.
-
-        Args:
-            mode (:obj:`str`):
-                Mode value to check.
-
-        Raises:
-            ValueError:
-                Raised if the mode is undefined.
-        """
-        options = DRPFits.mode_options()
-        if mode not in options:
-            raise ValueError('Unknown mode {0}.  Must be in: {1}'.format(mode, options))
-
-    @staticmethod
-    def mode_options():
-        """
-        Return the allowed modes.
-
-        Returns:
-            :obj:`list`: List of the allowed DRP fits file modes.
-        """
-        return ['CUBE', 'RSS']
+#    @staticmethod
+#    def check_mode(mode):
+#        """
+#        Check that the mode is valid.
+#
+#        Valide modes are set by :func:`mode_options`.
+#
+#        Args:
+#            mode (:obj:`str`):
+#                Mode value to check.
+#
+#        Raises:
+#            ValueError:
+#                Raised if the mode is undefined.
+#        """
+#        options = DRPFits.mode_options()
+#        if mode not in options:
+#            raise ValueError('Unknown mode {0}.  Must be in: {1}'.format(mode, options))
+#
+#    @staticmethod
+#    def mode_options():
+#        """
+#        Return the allowed modes.
+#
+#        Returns:
+#            :obj:`list`: List of the allowed DRP fits file modes.
+#        """
+#        return ['CUBE', 'RSS']
 
 #    @staticmethod
 #    def sampling_options():
@@ -260,87 +263,87 @@ class DRPFits:
                         else numpy.ma.median(sres.reshape(sres.shape[0],-1), axis=1)
         return _ext, sres
 
-    @staticmethod
-    def build_file_name(plate, ifudesign, mode, log=True):
-        """
-        Return the name of the DRP row-stacked spectra file.
+#    @staticmethod
+#    def build_file_name(plate, ifudesign, mode, log=True):
+#        """
+#        Return the name of the DRP row-stacked spectra file.
+#
+#        Args:
+#            plate (:obj:`int`):
+#                Plate number
+#            ifudesign (:obj:`int`):
+#                IFU design
+#            mode (:obj:`str`):
+#                Format mode (CUBE or RSS)
+#            log (:obj:`bool`, optional):
+#                Use the spectra that are logarithmically sampled in
+#                wavelength. If False, sampling is linear in
+#                wavelength.
+#
+#        Returns:
+#            :obj:`str`: The relevant file name.
+#        """
+#        DRPFits.check_mode(mode)
+#        return '{0}.fits.gz'.format(defaults.manga_fits_root(plate, ifudesign,
+#                                             '{0}{1}'.format('LOG' if log else 'LIN', mode)))
+#
+#    @staticmethod
+#    def default_paths(plate, ifudesign, mode, log=True, drpver=None, redux_path=None,
+#                      directory_path=None):
+#        """
+#        Return the primary directory and file name with the DRP fits
+#        LOG-binned file.
+#
+#        Args:
+#            plate (:obj:`int`):
+#                Plate number
+#            ifudesign (:obj:`int`):
+#                IFU design
+#            mode (:obj:`str`):
+#                Format mode (CUBE or RSS)
+#            log (:obj:`bool`, optional):
+#                Use the spectra that are logarithmically sampled in
+#                wavelength. If False, sampling is linear in
+#                wavelength.
+#            drpver (:obj:`str`, optional):
+#                DRP version, which is used to define the default DRP
+#                redux path. Default is defined by
+#                :func:`mangadap.config.defaults.drp_version`
+#            redux_path (:obj:`str`, optional):
+#                The path to the top level directory containing the
+#                DRP output files for a given DRP version. Default is
+#                defined by
+#                :func:`mangadap.config.defaults.drp_redux_path`.
+#            directory_path (:obj:`str`, optional):
+#                The exact path to the DRP file. Default is defined by
+#                :func:`mangadap.config.defaults.drp_directory_path`.
+#                Providing this ignores anything provided for
+#                ``drpver`` or ``redux_path``.
+#
+#        Returns:
+#            :obj:`tuple`: A `Path`_ object with the root directory of the DRP file
+#            and a string with the DRP file name.
+#        """
+#        _directory_path = defaults.drp_directory_path(plate, drpver=drpver,
+#                                                      redux_path=redux_path) \
+#                                if directory_path is None else directory_path
+#        if not isinstance(_directory_path, Path):
+#            _directory_path = Path(_directory_path).resolve()
+#        return _directory_path, DRPFits.build_file_name(plate, ifudesign, mode, log=log)
 
-        Args:
-            plate (:obj:`int`):
-                Plate number
-            ifudesign (:obj:`int`):
-                IFU design
-            mode (:obj:`str`):
-                Format mode (CUBE or RSS)
-            log (:obj:`bool`, optional):
-                Use the spectra that are logarithmically sampled in
-                wavelength. If False, sampling is linear in
-                wavelength.
+#    def file_path(self):
+#        """Return the full path to the DRP file"""
+#        return self.cfg.directory_path / self.cfg.file_name
 
-        Returns:
-            :obj:`str`: The relevant file name.
-        """
-        DRPFits.check_mode(mode)
-        return '{0}.fits.gz'.format(defaults.manga_fits_root(plate, ifudesign,
-                                             '{0}{1}'.format('LOG' if log else 'LIN', mode)))
-
-    @staticmethod
-    def default_paths(plate, ifudesign, mode, log=True, drpver=None, redux_path=None,
-                      directory_path=None):
-        """
-        Return the primary directory and file name with the DRP fits
-        LOG-binned file.
-
-        Args:
-            plate (:obj:`int`):
-                Plate number
-            ifudesign (:obj:`int`):
-                IFU design
-            mode (:obj:`str`):
-                Format mode (CUBE or RSS)
-            log (:obj:`bool`, optional):
-                Use the spectra that are logarithmically sampled in
-                wavelength. If False, sampling is linear in
-                wavelength.
-            drpver (:obj:`str`, optional):
-                DRP version, which is used to define the default DRP
-                redux path. Default is defined by
-                :func:`mangadap.config.defaults.drp_version`
-            redux_path (:obj:`str`, optional):
-                The path to the top level directory containing the
-                DRP output files for a given DRP version. Default is
-                defined by
-                :func:`mangadap.config.defaults.drp_redux_path`.
-            directory_path (:obj:`str`, optional):
-                The exact path to the DRP file. Default is defined by
-                :func:`mangadap.config.defaults.drp_directory_path`.
-                Providing this ignores anything provided for
-                ``drpver`` or ``redux_path``.
-
-        Returns:
-            :obj:`tuple`: A `Path`_ object with the root directory of the DRP file
-            and a string with the DRP file name.
-        """
-        _directory_path = defaults.drp_directory_path(plate, drpver=drpver,
-                                                      redux_path=redux_path) \
-                                if directory_path is None else directory_path
-        if not isinstance(_directory_path, Path):
-            _directory_path = Path(_directory_path).resolve()
-        return _directory_path, DRPFits.build_file_name(plate, ifudesign, mode, log=log)
-
-    def file_path(self):
-        """Return the full path to the DRP file"""
-        return self.directory_path / self.file_name
-
-    def finding_chart_path(self):
-        """
-        Return the full path to the PNG finding chart for the targetted
-        object.
-
-        .. todo::
-            - Move this to the defaults file?
-        """
-        return self.directory_path / 'images' / f'{self.ifudesign}.png'
+#    def finding_chart_path(self):
+#        """
+#        Return the full path to the PNG finding chart for the targetted
+#        object.
+#
+#        .. todo::
+#            - Move this to the defaults file?
+#        """
+#        return self.cfg.directory_path / 'images' / f'{self.cfg.ifudesign}.png'
 
     @classmethod
     def from_config(cls, cfgfile, drpver=None, redux_path=None, directory_path=None):
@@ -409,6 +412,7 @@ class DRPFits:
         return cls.from_plateifu(plate, ifu, log=log, drpver=_drpver, redux_path=_redux_path,
                                  directory_path=_directory_path, **kwargs)
 
+    # TODO: Move this to MaNGAConfig
     @staticmethod
     def write_config(ofile, plate, ifudesign, log=True, z=None, vdisp=None, ell=None, pa=None,
                      reff=None, sres_ext=None, sres_fill=None, covar_ext=None, drpver=None,

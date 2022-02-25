@@ -15,6 +15,14 @@ def test_init():
     assert cfg.file_name == 'manga-7815-3702-LOGCUBE.fits.gz'
 
 
+def test_copy():
+    cfg = MaNGAConfig(7815, 3702)
+    _cfg = cfg.copy()
+    assert cfg.file_name == _cfg.file_name, 'Bad name copy'
+    _cfg.mode = 'RSS'
+    assert cfg.file_name != _cfg.file_name, 'Bad name change'
+
+
 def test_from_config():
     cfg = MaNGAConfig.from_config(data_test_file("datacube.ini"))
 

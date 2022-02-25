@@ -6,6 +6,7 @@ import numpy
 
 from astropy.io import fits
 
+from mangadap.config.manga import MaNGAConfig
 from mangadap.datacube import MaNGADataCube
 from mangadap.util.covariance import Covariance
 from mangadap.util.constants import DAPConstants
@@ -152,8 +153,8 @@ def test_io():
 
 @requires_remote
 def test_read_drp():
-    drpfile = os.path.join(remote_data_file(), MaNGADataCube.build_file_name(7815, 3702))
-    
+    cfg = MaNGAConfig(7815, 3702)
+    drpfile = remote_data_file(cfg.file_name)
     assert os.path.isfile(drpfile), 'Did not find file'
 
     with fits.open(drpfile) as hdu:

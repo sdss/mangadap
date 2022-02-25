@@ -118,6 +118,28 @@ def drp_directory_path(plate, drpver=None, redux_path=None):
     return _redux_path / str(plate) / 'stack'
 
 
+def drp_finding_chart_path(plate, drpver=None, redux_path=None):
+    """
+    Return the exact directory path with the finding charts for a given plate.
+
+    Args:
+        plate (:obj:`int`):
+            Plate number
+        drpver (:obj:`str`, optional):
+            DRP version. Default is to use :func:`drp_version`.
+        redux_path (:obj:`str`, optional):
+            Path to the root reduction directory. Default is to use
+            :func:`drp_redux_path`.
+
+    Returns:
+        :obj:`str`: Path to the directory with the finding charts.
+    """
+    # Make sure the redux path is set
+    _redux_path = drp_redux_path(drpver=drpver) \
+                        if redux_path is None else Path(redux_path).resolve()
+    return _redux_path / str(plate) / 'images'
+
+
 def drpall_file(drpver=None, redux_path=None):
     """
     Return the path to the DRPall file.
