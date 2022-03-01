@@ -20,7 +20,7 @@ class MaNGAConfig:
     instrument = 'manga'
 
     def __init__(self, plate, ifudesign, mode='CUBE', log=True, drpver=None, redux_path=None,
-                 chart_path=None, directory_path=None, analysis_path=None):
+                 chart_path=None, directory_path=None):
         """
         Initialize the I/O configuration using the same file as used to read
         MaNGA data.
@@ -48,8 +48,6 @@ class MaNGAConfig:
             warnings.warn('Paths do not match MaNGA defaults.  May not be able to find paired '
                           'CUBE & RSS files, if requested.')
 
-        self.analysis_path = defaults.dap_analysis_path(drpver=self.drpver) \
-                                if analysis_path is None else Path(analysis_path).resolve()
         # TODO: Turn these all into meta
         self.ebv_key = 'EBVGAL'
         self.qual_bitmask = DRPQuality3DBitMask()
@@ -101,7 +99,7 @@ class MaNGAConfig:
         Create a deep copy.
         """
         return MaNGAConfig(self.plate, self.ifudesign, log=self.log, drpver=self.drpver,
-                           directory_path=self.directory_path, analysis_path=self.analysis_path)
+                           directory_path=self.directory_path)
 
     @property
     def file_name(self):

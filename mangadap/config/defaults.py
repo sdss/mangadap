@@ -48,6 +48,7 @@ def get_environ():
 manga_environ = get_environ()
 
 
+# TODO: Move this to util/pkg.py?
 def dap_source_dir():
     from pkg_resources import resource_filename
     return resource_filename('mangadap', '')

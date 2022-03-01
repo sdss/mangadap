@@ -114,7 +114,7 @@ class AnalysisPlanSet(ParDatabase):
     """
     Container class for a set of analysis plans.
     """
-    def __init__(self, planlist):
+    def __init__(self, planlist, analysis_path=None):
         _planlist = planlist if isinstance(planlist, list) else [planlist]
         self.nplans = len(planlist)
         for i in range(self.nplans):
@@ -122,9 +122,10 @@ class AnalysisPlanSet(ParDatabase):
                 raise TypeError('Input must be a single or list of AnalysisPlan objects.')
 
         super(AnalysisPlanSet, self).__init__(_planlist)
+        self.analysis_path = os.getcwd() if analysis_path is None else analysis_path
 
     @classmethod
-    def from_par_file(cls, f):
+    def from_par_file(cls, f, **kwargs):
         """
         Instantiate the plan set from a par file
         """
@@ -142,28 +143,28 @@ class AnalysisPlanSet(ParDatabase):
 
         # Setup the array of emission line database parameters
         nplan = len(par['DAPPLAN']['drpqa_key'])
-        planlist = []
-        for i in range(nplan):
-            planlist += [ AnalysisPlan(par['DAPPLAN']['drpqa_key'][i],
-                                       bool(par['DAPPLAN']['drpqa_clobber'][i]),
-                                       par['DAPPLAN']['bin_key'][i],
-                                       bool(par['DAPPLAN']['bin_clobber'][i]),
-                                       par['DAPPLAN']['continuum_key'][i],
-                                       bool(par['DAPPLAN']['continuum_clobber'][i]),
-                                       par['DAPPLAN']['elmom_key'][i],
-                                       bool(par['DAPPLAN']['elmom_clobber'][i]),
-                                       par['DAPPLAN']['elfit_key'][i],
-                                       bool(par['DAPPLAN']['elfit_clobber'][i]),
-                                       par['DAPPLAN']['spindex_key'][i],
-                                       bool(par['DAPPLAN']['spindex_clobber'][i])) ]
-        return cls(planlist)
+        planlist = [AnalysisPlan(par['DAPPLAN']['drpqa_key'][i],
+                                 bool(par['DAPPLAN']['drpqa_clobber'][i]),
+                                 par['DAPPLAN']['bin_key'][i],
+                                 bool(par['DAPPLAN']['bin_clobber'][i]),
+                                 par['DAPPLAN']['continuum_key'][i],
+                                 bool(par['DAPPLAN']['continuum_clobber'][i]),
+                                 par['DAPPLAN']['elmom_key'][i],
+                                 bool(par['DAPPLAN']['elmom_clobber'][i]),
+                                 par['DAPPLAN']['elfit_key'][i],
+                                 bool(par['DAPPLAN']['elfit_clobber'][i]),
+                                 par['DAPPLAN']['spindex_key'][i],
+                                 bool(par['DAPPLAN']['spindex_clobber'][i]))
+                        for i in range(nplan)]
+        return cls(planlist, **kwargs)
 
     @classmethod
-    def default(cls):
+    def default(cls, **kwargs):
         """
         Return the default analysis plan set.
         """
         return cls([AnalysisPlan(drpqa_key='SNRG', bin_key='HYB10', continuum_key='MILESHCMPL11',
                                  elmom_key='EMOMMPL11', elfit_key='EFITMPL11HCDB',
-                                 spindex_key='INDXEN')])
+                                 spindex_key='INDXEN')], **kwargs)
+
 
