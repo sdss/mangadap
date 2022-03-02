@@ -120,10 +120,11 @@ def validate_reduction_assessment_config(cnfg):
             :class:`mangadap.proc.reductionassessments.ReductionAssessmentDef`.
 
     Returns:
-        :obj:`bool`: Booleans that specify how the reduction
-        assessment should be constructed. The flags specify to use
-        (1) the wavelength range, (2) a bandpass filter parameter
-        file, or (3) a file with a filter response function.
+        :obj:`tuple`: A boolean indicating that the S/N band has been defined by
+        a range in wavelengths and a `Path`_ object pointing to the file with a
+        broad-band response function for the S/N calculation.  If the latter is
+        provided, the first should be False; if the boolean is True, the second
+        object should be None.
 
     Raises:
         KeyError:
@@ -156,9 +157,9 @@ def validate_reduction_assessment_config(cnfg):
             # File not found, so try to find it in the configuration directory
             response_file = defaults.dap_data_root() / 'filter_response' \
                                 / cnfg['response_function_file']
-            if not response_file.exists():
-                raise FileNotFoundError(f'Could not find {cnfg["response_function_file"]} '
-                                        'in the local directory or the DAP source distribution.')
+        if not response_file.exists():
+            raise FileNotFoundError(f'Could not find {cnfg["response_function_file"]} '
+                                    'in the local directory or the DAP source distribution.')
 
     return def_range, response_file
 

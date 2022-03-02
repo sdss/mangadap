@@ -5,7 +5,7 @@ import os
 import astropy.constants
 from astropy.io import fits
 
-from mangadap.config import defaults
+from mangadap.config import manga
 from mangadap.survey.manga_dap import manga_dap
 from mangadap.par.obsinput import ObsInputPar
 from mangadap.par.analysisplan import AnalysisPlan, AnalysisPlanSet
@@ -17,7 +17,7 @@ def get_obsinput(plt, ifu, drpall_file=None):
     fit a cube.  If the drpall file is None, use the default path.
     """
     if drpall_file is None:
-        drpall_file = defaults.drpall_file()
+        drpall_file = manga.drpall_file()
     hdu = fits.open(drpall_file)
     indx = hdu[1].data['PLATEIFU'] == '{0}-{1}'.format(plt, ifu)
 

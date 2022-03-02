@@ -17,8 +17,8 @@ Classes to handle MaNGA DAP analysis plans.
 import os
 from pydl.pydlutils.yanny import yanny
 
-from .parset import KeywordParSet, ParDatabase
-from ..config import defaults
+from ..par.parset import KeywordParSet, ParDatabase
+from . import defaults
 from ..proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
 from ..proc.stellarcontinuummodel import StellarContinuumModel
 from ..proc.emissionlinemodel import EmissionLineModel
@@ -106,8 +106,9 @@ class AnalysisPlan(KeywordParSet):
         bin_method = SpatiallyBinnedSpectra.define_method(bin_key)
         sc_method = StellarContinuumModel.define_method(continuum_key)
         el_method = EmissionLineModel.define_method(elfit_key)
-        return defaults.dap_method(bin_method['key'], sc_method['fitpar']['template_library_key'],
-                                   el_method['continuum_tpl_key'])
+        eltpl = sc_method["fitpar"]["template_library_key"] \
+                    if el_method['continuum_tpl_key'] is None else el_method['continuum_tpl_key']
+        return f'{bin_method["key"]}-{sc_method["fitpar"]["template_library_key"]}-{eltpl}'
 
         
 class AnalysisPlanSet(ParDatabase):

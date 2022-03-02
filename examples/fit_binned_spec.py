@@ -8,7 +8,8 @@ import numpy
 from astropy.io import fits
 from matplotlib import pyplot
 
-from mangadap.config.defaults import dap_source_dir, manga_environ
+from mangadap.config import defaults
+from mangadap.config import manga
 from mangadap.datacube import MaNGADataCube
 from mangadap.util.fitsutil import DAPFitsUtil
 from mangadap.util.resolution import SpectralResolution
@@ -31,7 +32,7 @@ from mangadap.proc.spectralfitting import EmissionLineFit
 
 def get_redshift(plt, ifu, drpall_file=None):
     if drpall_file is None:
-        drpall_file = defaults.drpall_file()
+        drpall_file = manga.drpall_file()
     with fits.open(drpall_file) as hdu:
         indx = hdu[1].data['PLATEIFU'] == '{0}-{1}'.format(plt, ifu)
         return hdu[1].data['NSA_Z'][indx][0]

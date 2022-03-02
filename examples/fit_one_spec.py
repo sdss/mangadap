@@ -11,6 +11,7 @@ from astropy.io import fits
 from matplotlib import pyplot
 
 from mangadap.datacube import MaNGADataCube
+from mangadap.config import manga
 from mangadap.config import defaults
 from mangadap.util.sampling import spectral_coordinate_step
 
@@ -50,7 +51,7 @@ def get_redshift(plt, ifu, drpall_file=None):
         provided PLATEIFU.
     """
     if drpall_file is None:
-        drpall_file = defaults.drpall_file()
+        drpall_file = manga.drpall_file()
     hdu = fits.open(drpall_file)
     indx = hdu[1].data['PLATEIFU'] == '{0}-{1}'.format(plt, ifu)
     return hdu[1].data['NSA_Z'][indx][0]

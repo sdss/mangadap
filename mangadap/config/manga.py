@@ -9,11 +9,179 @@ from configparser import ConfigParser
 import numpy
 from astropy.io import fits
 
-from . import defaults
+#from . import defaults
+from . import manga_environ
 from ..util.parser import DefaultConfig
 from ..util.drpbitmask import DRPQuality3DBitMask
 from ..util.constants import DAPConstants
 from ..util.filter import interpolate_masked_vector
+
+def drp_version():
+    """
+    Return the DRP version defined by the environmental variable
+    MANGADRP_VER.
+    """
+    return manga_environ['MANGADRP_VER']
+
+
+def drp_redux_path(drpver=None):
+    """
+    Return the main output path for the DRP products using the
+    environmental variable MANGA_SPECTRO_REDUX.
+
+    Args:
+        drpver (:obj:`str`, optional):
+            DRP version. Default is to use :func:`drp_version`.
+
+    Returns:
+        :obj:`str`: Path to reduction directory
+    """
+    # Make sure the DRP version is set
+    if drpver is None:
+        drpver = drp_version()
+    return Path(manga_environ['MANGA_SPECTRO_REDUX']).resolve() / drpver
+
+
+def drp_directory_path(plate, drpver=None, redux_path=None):
+    """
+    Return the exact directory path with the DRP file.
+
+    Args:
+        plate (:obj:`int`):
+            Plate number
+        drpver (:obj:`str`, optional):
+            DRP version. Default is to use :func:`drp_version`.
+        redux_path (:obj:`str`, optional):
+            Path to the root reduction directory. Default is to use
+            :func:`drp_redux_path`.
+
+    Returns:
+        :obj:`str`: Path to the directory with the 3D products of the
+        DRP
+    """
+    # Make sure the redux path is set
+    _redux_path = drp_redux_path(drpver=drpver) \
+                        if redux_path is None else Path(redux_path).resolve()
+    return _redux_path / str(plate) / 'stack'
+
+
+def drp_finding_chart_path(plate, drpver=None, redux_path=None):
+    """
+    Return the exact directory path with the finding charts for a given plate.
+
+    Args:
+        plate (:obj:`int`):
+            Plate number
+        drpver (:obj:`str`, optional):
+            DRP version. Default is to use :func:`drp_version`.
+        redux_path (:obj:`str`, optional):
+            Path to the root reduction directory. Default is to use
+            :func:`drp_redux_path`.
+
+    Returns:
+        :obj:`str`: Path to the directory with the finding charts.
+    """
+    # Make sure the redux path is set
+    _redux_path = drp_redux_path(drpver=drpver) \
+                        if redux_path is None else Path(redux_path).resolve()
+    return _redux_path / str(plate) / 'images'
+
+
+def drpall_file(drpver=None, redux_path=None):
+    """
+    Return the path to the DRPall file.
+
+    Args:
+        drpver (:obj:`str`, optional):
+            DRP version.  Default is to use :func:`drp_version`.
+        redux_path (:obj:`str`, optional):
+            Path to the root reduction directory. Default is to use
+            :func:`drp_redux_path`.
+
+    Returns:
+        :obj:`str`: Full path to the DRPall fits file.
+    """
+    _drpver = drp_version() if drpver is None else drpver
+    _redux_path = drp_redux_path(drpver=_drpver) \
+                        if redux_path is None else Path(redux_path).resolve()
+    return _redux_path / f'drpall-{_drpver}.fits'
+
+
+def manga_fits_root(plate, ifudesign, mode=None):
+    """
+    Generate the main root name for the output MaNGA fits files for a
+    given plate/ifudesign/mode.
+
+    Args:
+        plate (:obj:`int`):
+            Plate number
+        ifudesign (:obj:`int`):
+            IFU design number
+        mode (:obj:`str`, optional):
+            Mode of the output fits file. Options are: ``'LINCUBE'``,
+            ``'LINRSS'``, ``'LOGCUBE'``, ``'LOGRSS'``, or ``'MAPS'``.
+            Default is that no mode is included in the name.
+
+    Returns:
+        :obj:`str`: Root name for a MaNGA fits file:
+        ``manga-[PLATE]-[IFUDESIGN]-[MODE]``
+
+    Raises:
+        ValueError:
+            Raised if mode is not a valid option.
+    """
+    if mode not in [ None, 'LINCUBE', 'LINRSS', 'LOGCUBE', 'LOGRSS', 'MAPS' ]:
+        raise ValueError('Do not understand mode={0}.'.format(mode))
+    return f'manga-{plate}-{ifudesign}' if mode is None else f'manga-{plate}-{ifudesign}-{mode}'
+
+
+def plate_target_files():
+    """
+    Return the default plateTarget files in mangacore and their
+    associated catalog indices. The catalog indices are determined
+    assuming the file names are of the form::
+
+        'plateTargets-{0}.par'.format(catalog_id)
+
+    Returns:
+        `numpy.ndarray`_: Two arrays: the first contains the
+        identified plateTargets files found using the default search
+        string, the second provides the integer catalog index
+        determined for each file.
+    """
+    # Default search string
+    search_str = Path(manga_environ['MANGACORE_DIR']).resolve() / 'platedesign' / 'platetargets'
+    file_list = sorted(list(search_path.glob('plateTargets*.par')))
+    nfiles = len(file_list)
+    if nfiles == 0:
+        raise ValueError('Unable to find any plateTargets files!')
+    trgid = numpy.zeros(nfiles, dtype=int)                  # Array to hold indices
+    for i in range(nfiles):
+        suffix = file_list[i].split('-')[1]                 # Strip out the '{i}.par'
+        trgid[i] = int(suffix[:suffix.find('.')])           # Strip out '{i}'
+    
+    return numpy.array(file_list), trgid
+
+
+def redshift_fix_file():
+    """
+    Return the path to the default redshift fix file.
+
+    Returns:
+        :obj:`str`: Expected path to the redshift-fix parameter file.
+    """
+    return dap_data_root() / 'fix' / 'redshift_fix.par'
+
+
+def photometry_fix_file():
+    """
+    Return the path to the default photometry fix file.
+
+    Returns:
+        :obj:`str`: Expected path to the photometry-fix parameter file.
+    """
+    return dap_data_root() / 'fix' / 'photometry_fix.par'
+
 
 class MaNGAConfig:
 
@@ -31,20 +199,20 @@ class MaNGAConfig:
         MaNGAConfig.check_mode(mode)
         self.mode = mode
         self.log = log
-        self.drpver = defaults.drp_version() if drpver is None else drpver
+        self.drpver = drp_version() if drpver is None else drpver
         # TODO: Depending on what is provided to the function, redux path, chart
         # path, and directory path can all be inconsistent.
-        self.redux_path = defaults.drp_redux_path(drpver=self.drpver) \
+        self.redux_path = drp_redux_path(drpver=self.drpver) \
                             if redux_path is None else Path(redux_path).resolve()
-        self.chart_path = defaults.drp_finding_chart_path(self.plate, drpver=self.drpver,
+        self.chart_path = drp_finding_chart_path(self.plate, drpver=self.drpver,
                                                           redux_path=self.redux_path) \
                                 if chart_path is None else Path(chart_path).resolve()
-        self.directory_path = defaults.drp_directory_path(self.plate, drpver=self.drpver,
+        self.directory_path = drp_directory_path(self.plate, drpver=self.drpver,
                                                           redux_path=self.redux_path) \
                                 if directory_path is None else Path(directory_path).resolve()
         # TODO: This is only relevant the CUBE data
-        if self.directory_path != defaults.drp_directory_path(self.plate, drpver=self.drpver,
-                                                              redux_path=redux_path):
+        if self.directory_path != drp_directory_path(self.plate, drpver=self.drpver,
+                                                     redux_path=redux_path):
             warnings.warn('Paths do not match MaNGA defaults.  May not be able to find paired '
                           'CUBE & RSS files, if requested.')
 
@@ -103,8 +271,8 @@ class MaNGAConfig:
 
     @property
     def file_name(self):
-        root = defaults.manga_fits_root(self.plate, self.ifudesign,
-                                        mode=f'{"LOG" if self.log else "LIN"}{self.mode}')
+        root = manga_fits_root(self.plate, self.ifudesign,
+                               mode=f'{"LOG" if self.log else "LIN"}{self.mode}')
         return f'{root}.fits.gz'
 
     @property
@@ -335,15 +503,15 @@ class MaNGAConfig:
             drpver (:obj:`str`, optional):
                 DRP version, which is used to define the default DRP
                 redux path. Default is defined by
-                :func:`mangadap.config.defaults.drp_version`
+                :func:`mangadap.config.manga.drp_version`
             redux_path (:obj:`str`, optional):
                 The path to the top level directory containing the
                 DRP output files for a given DRP version. Default is
                 defined by
-                :func:`mangadap.config.defaults.drp_redux_path`.
+                :func:`mangadap.config.manga.drp_redux_path`.
             directory_path (:obj:`str`, optional):
                 The exact path to the DRP file. Default is defined by
-                :func:`mangadap.config.defaults.drp_directory_path`.
+                :func:`mangadap.config.manga.drp_directory_path`.
                 Providing this ignores anything provided for
                 ``drpver`` or ``redux_path``.
             overwrite (:obj:`bool`, optional):

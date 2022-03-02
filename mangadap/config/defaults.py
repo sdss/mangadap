@@ -21,31 +21,7 @@ from pkg_resources import resource_filename
 
 import numpy
 
-from ..version import version
-
-def get_environ():
-
-    # Default versions
-    _MANGADRP_VER = 'v3_1_1'
-    _MANGACORE_VER = 'v1_9_1'
-
-    # First set the default environment
-    environ = {'MANGADRP_VER': _MANGADRP_VER,
-               'MANGA_SPECTRO_REDUX': os.path.join(os.getcwd(), 'MaNGA', 'redux'),
-               'MANGADAP_VER': version,
-               'MANGA_SPECTRO_ANALYSIS': os.path.join(os.getcwd(), 'MaNGA', 'analysis'),
-               'MANGACORE_VER': _MANGACORE_VER,
-               'MANGACORE_DIR': os.path.join(os.getcwd(), 'MaNGA', 'core', _MANGACORE_VER)}
-
-    # Replace with variables from working environment if they exist
-    for key in environ.keys():
-        if key in os.environ:
-            environ[key] = os.environ[key]
-
-    return environ
-
-
-manga_environ = get_environ()
+from . import manga_environ
 
 
 # TODO: Move this to util/pkg.py?
@@ -70,95 +46,95 @@ def sdss_maskbits_file():
     return maskbits_file if maskbits_file.exists() else None
 
 
-def drp_version():
-    """
-    Return the DRP version defined by the environmental variable
-    MANGADRP_VER.
-    """
-    return manga_environ['MANGADRP_VER']
-
-
-def drp_redux_path(drpver=None):
-    """
-    Return the main output path for the DRP products using the
-    environmental variable MANGA_SPECTRO_REDUX.
-
-    Args:
-        drpver (:obj:`str`, optional):
-            DRP version. Default is to use :func:`drp_version`.
-
-    Returns:
-        :obj:`str`: Path to reduction directory
-    """
-    # Make sure the DRP version is set
-    if drpver is None:
-        drpver = drp_version()
-    return Path(manga_environ['MANGA_SPECTRO_REDUX']).resolve() / drpver
-
-
-def drp_directory_path(plate, drpver=None, redux_path=None):
-    """
-    Return the exact directory path with the DRP file.
-
-    Args:
-        plate (:obj:`int`):
-            Plate number
-        drpver (:obj:`str`, optional):
-            DRP version. Default is to use :func:`drp_version`.
-        redux_path (:obj:`str`, optional):
-            Path to the root reduction directory. Default is to use
-            :func:`drp_redux_path`.
-
-    Returns:
-        :obj:`str`: Path to the directory with the 3D products of the
-        DRP
-    """
-    # Make sure the redux path is set
-    _redux_path = drp_redux_path(drpver=drpver) \
-                        if redux_path is None else Path(redux_path).resolve()
-    return _redux_path / str(plate) / 'stack'
-
-
-def drp_finding_chart_path(plate, drpver=None, redux_path=None):
-    """
-    Return the exact directory path with the finding charts for a given plate.
-
-    Args:
-        plate (:obj:`int`):
-            Plate number
-        drpver (:obj:`str`, optional):
-            DRP version. Default is to use :func:`drp_version`.
-        redux_path (:obj:`str`, optional):
-            Path to the root reduction directory. Default is to use
-            :func:`drp_redux_path`.
-
-    Returns:
-        :obj:`str`: Path to the directory with the finding charts.
-    """
-    # Make sure the redux path is set
-    _redux_path = drp_redux_path(drpver=drpver) \
-                        if redux_path is None else Path(redux_path).resolve()
-    return _redux_path / str(plate) / 'images'
-
-
-def drpall_file(drpver=None, redux_path=None):
-    """
-    Return the path to the DRPall file.
-
-    Args:
-        drpver (:obj:`str`, optional):
-            DRP version.  Default is to use :func:`drp_version`.
-        redux_path (:obj:`str`, optional):
-            Path to the root reduction directory. Default is to use
-            :func:`drp_redux_path`.
-
-    Returns:
-        :obj:`str`: Full path to the DRPall fits file.
-    """
-    _drpver = drp_version() if drpver is None else drpver
-    _redux_path = drp_redux_path(drpver=_drpver) \
-                        if redux_path is None else Path(redux_path).resolve()
-    return _redux_path / f'drpall-{_drpver}.fits'
+#def drp_version():
+#    """
+#    Return the DRP version defined by the environmental variable
+#    MANGADRP_VER.
+#    """
+#    return manga_environ['MANGADRP_VER']
+#
+#
+#def drp_redux_path(drpver=None):
+#    """
+#    Return the main output path for the DRP products using the
+#    environmental variable MANGA_SPECTRO_REDUX.
+#
+#    Args:
+#        drpver (:obj:`str`, optional):
+#            DRP version. Default is to use :func:`drp_version`.
+#
+#    Returns:
+#        :obj:`str`: Path to reduction directory
+#    """
+#    # Make sure the DRP version is set
+#    if drpver is None:
+#        drpver = drp_version()
+#    return Path(manga_environ['MANGA_SPECTRO_REDUX']).resolve() / drpver
+#
+#
+#def drp_directory_path(plate, drpver=None, redux_path=None):
+#    """
+#    Return the exact directory path with the DRP file.
+#
+#    Args:
+#        plate (:obj:`int`):
+#            Plate number
+#        drpver (:obj:`str`, optional):
+#            DRP version. Default is to use :func:`drp_version`.
+#        redux_path (:obj:`str`, optional):
+#            Path to the root reduction directory. Default is to use
+#            :func:`drp_redux_path`.
+#
+#    Returns:
+#        :obj:`str`: Path to the directory with the 3D products of the
+#        DRP
+#    """
+#    # Make sure the redux path is set
+#    _redux_path = drp_redux_path(drpver=drpver) \
+#                        if redux_path is None else Path(redux_path).resolve()
+#    return _redux_path / str(plate) / 'stack'
+#
+#
+#def drp_finding_chart_path(plate, drpver=None, redux_path=None):
+#    """
+#    Return the exact directory path with the finding charts for a given plate.
+#
+#    Args:
+#        plate (:obj:`int`):
+#            Plate number
+#        drpver (:obj:`str`, optional):
+#            DRP version. Default is to use :func:`drp_version`.
+#        redux_path (:obj:`str`, optional):
+#            Path to the root reduction directory. Default is to use
+#            :func:`drp_redux_path`.
+#
+#    Returns:
+#        :obj:`str`: Path to the directory with the finding charts.
+#    """
+#    # Make sure the redux path is set
+#    _redux_path = drp_redux_path(drpver=drpver) \
+#                        if redux_path is None else Path(redux_path).resolve()
+#    return _redux_path / str(plate) / 'images'
+#
+#
+#def drpall_file(drpver=None, redux_path=None):
+#    """
+#    Return the path to the DRPall file.
+#
+#    Args:
+#        drpver (:obj:`str`, optional):
+#            DRP version.  Default is to use :func:`drp_version`.
+#        redux_path (:obj:`str`, optional):
+#            Path to the root reduction directory. Default is to use
+#            :func:`drp_redux_path`.
+#
+#    Returns:
+#        :obj:`str`: Full path to the DRPall fits file.
+#    """
+#    _drpver = drp_version() if drpver is None else drpver
+#    _redux_path = drp_redux_path(drpver=_drpver) \
+#                        if redux_path is None else Path(redux_path).resolve()
+#    return _redux_path / f'drpall-{_drpver}.fits'
 
 
 def dapall_file(drpver=None, dapver=None, analysis_path=None):
@@ -302,31 +278,31 @@ def dap_common_path(plate=None, ifudesign=None, drpver=None, dapver=None, analys
     return output_path if ifudesign is None else output_path / str(ifudesign)
 
 
-def dap_method(binning_method, stellar_continuum_templates, emission_line_model_templates):
-    """
-    Construct the ``DAPTYPE`` based on the analysis plan.
-
-    .. include:: ../include/daptype.rst
-
-    Args:
-        binning_method (:obj:`str`):
-            String used to define the binning method.
-        stellar_continuum_templates (:obj:`str`):
-            String defining the template library used in the stellar
-            continuum (stellar kinematics) modeling.
-        emission_line_model_templates (:obj:`str`):
-            String defining the template library used in the
-            emission-line modeling.  Can be None, meaning that the
-            continuum templates are the same as used for the
-            stellar-continuum modeling.
-
-    Returns:
-        :obj:`str`: The string representation of the analysis method.
-
-    """
-    _eltpl = stellar_continuum_templates if emission_line_model_templates is None \
-                                                else emission_line_model_templates
-    return f'{binning_method}-{stellar_continuum_templates}-{_eltpl}'
+#def dap_method(binning_method, stellar_continuum_templates, emission_line_model_templates):
+#    """
+#    Construct the ``DAPTYPE`` based on the analysis plan.
+#
+#    .. include:: ../include/daptype.rst
+#
+#    Args:
+#        binning_method (:obj:`str`):
+#            String used to define the binning method.
+#        stellar_continuum_templates (:obj:`str`):
+#            String defining the template library used in the stellar
+#            continuum (stellar kinematics) modeling.
+#        emission_line_model_templates (:obj:`str`):
+#            String defining the template library used in the
+#            emission-line modeling.  Can be None, meaning that the
+#            continuum templates are the same as used for the
+#            stellar-continuum modeling.
+#
+#    Returns:
+#        :obj:`str`: The string representation of the analysis method.
+#
+#    """
+#    _eltpl = stellar_continuum_templates if emission_line_model_templates is None \
+#                                                else emission_line_model_templates
+#    return f'{binning_method}-{stellar_continuum_templates}-{_eltpl}'
 
 
 def dap_method_path(method, plate=None, ifudesign=None, qa=False, ref=False, drpver=None,
@@ -528,50 +504,50 @@ def dap_file_name(plate, ifudesign, output_mode, mode=None, compressed=True):
     return ('{0}-{1}.fits.gz' if compressed else '{0}-{1}.fits').format(root, output_mode)
 
 
-def plate_target_files():
-    """
-    Return the default plateTarget files in mangacore and their
-    associated catalog indices. The catalog indices are determined
-    assuming the file names are of the form::
-
-        'plateTargets-{0}.par'.format(catalog_id)
-
-    Returns:
-        `numpy.ndarray`_: Two arrays: the first contains the
-        identified plateTargets files found using the default search
-        string, the second provides the integer catalog index
-        determined for each file.
-    """
-    # Default search string
-    search_str = Path(manga_environ['MANGACORE_DIR']).resolve() / 'platedesign' / 'platetargets'
-    file_list = sorted(list(search_path.glob('plateTargets*.par')))
-    nfiles = len(file_list)
-    if nfiles == 0:
-        raise ValueError('Unable to find any plateTargets files!')
-    trgid = numpy.zeros(nfiles, dtype=int)                  # Array to hold indices
-    for i in range(nfiles):
-        suffix = file_list[i].split('-')[1]                 # Strip out the '{i}.par'
-        trgid[i] = int(suffix[:suffix.find('.')])           # Strip out '{i}'
-    
-    return numpy.array(file_list), trgid
-
-
-def redshift_fix_file():
-    """
-    Return the path to the default redshift fix file.
-
-    Returns:
-        :obj:`str`: Expected path to the redshift-fix parameter file.
-    """
-    return dap_data_root() / 'fix' / 'redshift_fix.par'
-
-
-def photometry_fix_file():
-    """
-    Return the path to the default photometry fix file.
-
-    Returns:
-        :obj:`str`: Expected path to the photometry-fix parameter file.
-    """
-    return dap_data_root() / 'fix' / 'photometry_fix.par'
+#def plate_target_files():
+#    """
+#    Return the default plateTarget files in mangacore and their
+#    associated catalog indices. The catalog indices are determined
+#    assuming the file names are of the form::
+#
+#        'plateTargets-{0}.par'.format(catalog_id)
+#
+#    Returns:
+#        `numpy.ndarray`_: Two arrays: the first contains the
+#        identified plateTargets files found using the default search
+#        string, the second provides the integer catalog index
+#        determined for each file.
+#    """
+#    # Default search string
+#    search_str = Path(manga_environ['MANGACORE_DIR']).resolve() / 'platedesign' / 'platetargets'
+#    file_list = sorted(list(search_path.glob('plateTargets*.par')))
+#    nfiles = len(file_list)
+#    if nfiles == 0:
+#        raise ValueError('Unable to find any plateTargets files!')
+#    trgid = numpy.zeros(nfiles, dtype=int)                  # Array to hold indices
+#    for i in range(nfiles):
+#        suffix = file_list[i].split('-')[1]                 # Strip out the '{i}.par'
+#        trgid[i] = int(suffix[:suffix.find('.')])           # Strip out '{i}'
+#    
+#    return numpy.array(file_list), trgid
+#
+#
+#def redshift_fix_file():
+#    """
+#    Return the path to the default redshift fix file.
+#
+#    Returns:
+#        :obj:`str`: Expected path to the redshift-fix parameter file.
+#    """
+#    return dap_data_root() / 'fix' / 'redshift_fix.par'
+#
+#
+#def photometry_fix_file():
+#    """
+#    Return the path to the default photometry fix file.
+#
+#    Returns:
+#        :obj:`str`: Expected path to the photometry-fix parameter file.
+#    """
+#    return dap_data_root() / 'fix' / 'photometry_fix.par'
 

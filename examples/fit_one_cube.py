@@ -7,6 +7,7 @@ import astropy.constants
 from astropy.io import fits
 
 from mangadap.config import defaults
+from mangadap.config import manga
 from mangadap.datacube import MaNGADataCube
 from mangadap.survey.manga_dap import manga_dap
 from mangadap.par.analysisplan import AnalysisPlan, AnalysisPlanSet
@@ -14,7 +15,7 @@ from mangadap.par.analysisplan import AnalysisPlan, AnalysisPlanSet
 #-----------------------------------------------------------------------------
 def get_config(plt, ifu, config_file, drpall_file=None):
     if drpall_file is None:
-        drpall_file = defaults.drpall_file()
+        drpall_file = manga.drpall_file()
 
     # Use the DRPall file
     with fits.open(drpall_file) as hdu:

@@ -3,41 +3,7 @@
 from IPython import embed
 
 from mangadap.scripts import scriptbase
-
-def load_cube_object(cube_module, cube_object):
-    """
-    Load the module and object used to read the datacube to analyze.
-
-    Thanks to: https://stackoverflow.com/questions/67631/how-to-import-a-module-given-the-full-path?rq=1
-
-    Args:
-        cube_module (:obj:`str`):
-            The name of a global python module, or the root name of a local file
-            with the :class:`~mangadap.datacube.datacube.DataCube` subclass.
-        cube_object (:obj:`str`):
-            The name of the subclass
-
-    Return:
-        :obj:`type`: The object used to read the data to analyze.
-
-    Raises:
-        ImportError:
-            Raised if unable to import ``cube_module``.
-    """
-    import importlib
-    from pathlib import Path
-
-    try:
-        CubeModule = importlib.import_module(cube_module)
-    except (ModuleNotFoundError, ImportError) as e:
-        p = Path(cube_module + '.py').resolve()
-        if not p.exists():
-            raise ImportError(f'Unable to load module {cube_module}!') from e
-        spec = importlib.util.spec_from_file_location(cube_module, str(p))
-        CubeModule = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(CubeModule)
-
-    return getattr(CubeModule, cube_object)
+from mangadap.util.pkg import load_object
 
 
 class MangaDap(scriptbase.ScriptBase):
@@ -66,10 +32,11 @@ class MangaDap(scriptbase.ScriptBase):
         parser.add_argument('-p', '--plan', type=str,
                             help='SDSS parameter file with analysis plan.  If not provided, a '
                                  'default plan is used.')
-        parser.add_argument('-m', '--cube_module', type=str, default='mangadap.datacube',
-                            help='The name of the module that contains the DataCube derived class.')
-        parser.add_argument('-o', '--cube_object', type=str, default='MaNGADataCube',
-                            help='The name of the DataCube derived class object.')
+        parser.add_argument('-m', '--cube_module', nargs='*',
+                            default='mangadap.datacube.MaNGADataCube',
+                            help='The name of the module that contains the DataCube derived class used to read the data.')
+#        parser.add_argument('-o', '--cube_object', type=str, default='MaNGADataCube',
+#                            help='The name of the DataCube derived class object.')
 
         parser.add_argument('--dbg', help='Run manga_dap in debug mode', action='store_true',
                             default=False)
@@ -103,17 +70,15 @@ class MangaDap(scriptbase.ScriptBase):
         from mangadap.datacube import DataCube
 
         # Instantiate the DataCube
-        #   - Try to import the module
-        UserDataCube = load_cube_object(args.cube_module, args.cube_object)
+        #   - Try to import the module used to read the datacube
+        UserDataCube = load_object(args.cube_module, args.cube_object)
         #   - Check that the class is derived from DataCube
         if not issubclass(UserDataCube, DataCube):
             raise TypeError('Defined cube object must subclass from mangadap.datacube.DataCube.')
         #   - Instantiate using either the datacube file directly or a
         #     configuration file
         cube = UserDataCube(args.cubefile) if args.config is None \
-                    else UserDataCube.from_config(args.config) #, drpver=args.drpver,
-                                                  #redux_path=args.redux_path,
-                                                  #directory_path=args.directory_path)
+                    else UserDataCube.from_config(args.config)
 
         # Read the analysis plan
         analysisplan = AnalysisPlanSet.default() if args.plan is None \

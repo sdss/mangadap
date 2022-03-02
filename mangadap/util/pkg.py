@@ -26,3 +26,39 @@ def all_subclasses(cls):
     return set(cls.__subclasses__()).union(
             [s for c in cls.__subclasses__() for s in all_subclasses(c)])
 
+
+def load_object(module, object):
+    """
+    Load an abstracted module and object.
+
+    Thanks to: https://stackoverflow.com/questions/67631/how-to-import-a-module-given-the-full-path?rq=1
+
+    Args:
+        module (:obj:`str`):
+            The name of a global python module, or the root name of a local file
+            with the object to import.
+        object (:obj:`str`):
+            The name of the object to import
+
+    Return:
+        :obj:`type`: The imported object.
+
+    Raises:
+        ImportError:
+            Raised if unable to import ``module``.
+    """
+    import importlib
+    from pathlib import Path
+
+    try:
+        CubeModule = importlib.import_module(cube_module)
+    except (ModuleNotFoundError, ImportError) as e:
+        p = Path(cube_module + '.py').resolve()
+        if not p.exists():
+            raise ImportError(f'Unable to load module {cube_module}!') from e
+        spec = importlib.util.spec_from_file_location(cube_module, str(p))
+        CubeModule = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(CubeModule)
+
+    return getattr(CubeModule, cube_object)
+
