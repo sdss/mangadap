@@ -115,15 +115,15 @@ class AnalysisPlanSet(ParDatabase):
     """
     Container class for a set of analysis plans.
     """
-    def __init__(self, planlist, analysis_path=None):
+    def __init__(self, planlist, cube=None, analysis_path=None):
         _planlist = planlist if isinstance(planlist, list) else [planlist]
         self.nplans = len(planlist)
         for i in range(self.nplans):
             if not isinstance(_planlist[i], AnalysisPlan):
                 raise TypeError('Input must be a single or list of AnalysisPlan objects.')
-
-        super(AnalysisPlanSet, self).__init__(_planlist)
-        self.analysis_path = os.getcwd() if analysis_path is None else analysis_path
+        super().__init__(_planlist)
+        self.root_path = Path('.' if analysis_path is None else analysis_path).resolve()
+        self.cube = cube
 
     @classmethod
     def from_par_file(cls, f, **kwargs):
@@ -167,5 +167,90 @@ class AnalysisPlanSet(ParDatabase):
         return cls([AnalysisPlan(drpqa_key='SNRG', bin_key='HYB10', continuum_key='MILESHCMPL11',
                                  elmom_key='EMOMMPL11', elfit_key='EFITMPL11HCDB',
                                  spindex_key='INDXEN')], **kwargs)
+
+    def common_path(self):
+        """
+        Return the path for data common to all plans.
+
+        Args:
+            cube (:class:`~mangadap.datacube.datacube.DataCube`, optional):
+                Cube being analyzed.  Passed for cube-specific path
+                specification.  Not used by this base class.
+
+        Returns:
+            `Path`_: Path object for the "common" output
+        """
+        return self.root_path / 'common'
+
+    def method_path(self, plan_index=0, qa=False, ref=False):
+        """
+        Return the path for method-specific output.
+
+        Args:
+            cube (:class:`~mangadap.datacube.datacube.DataCube`, optional):
+                Cube being analyzed.  Passed for cube-specific path
+                specification.  Not used by this base class.
+            plan_index (:obj:`int`, optional):
+                The index of the plan.  This is used to select the 'key' of the
+                analysis plan being used, which is used as the subdirectory for
+                the output.
+            qa (:obj:`bool`, optional):
+                Flag that the output is specifically quality assessment plots.
+            ref (:obj:`bool`, optional):
+                Flag that the output is specifically reference data.
+
+        Returns:
+            `Path`_: Path object for the method-specific output
+
+        Raises:
+            ValueError:
+                Raised if the plan index is invalid or if both qa and ref are true.
+
+        """
+        if plan_index < 0 or plan_index >= self.nplan:
+            raise ValueError(f'Invalid index ({plan_index}); must be 0 < index < {self.nplan}.')
+        if qa and ref:
+            raise ValueError('Cannot provide path for both qa and ref directory.  Pick one.')
+        root = self.root_path / self['key'][plan_index]
+        if not qa and not ref:
+            return root
+        if qa:
+            return root / 'qa'
+        return root / 'ref'
+
+    def dap_file_root(self, cube, mode=None, plan_index=None):
+        """
+        Return the general root name for an output file.
+
+        The default returned by this base class is::
+
+        {cube.output_root}-{mode}-{self['key'][plan_index]}
+        
+        where ``mode`` and ``self['key'][plan_index]`` are only included if
+        ``mode`` or ``plan_index`` are provided.
+
+        Args:
+            cube (:class:`~mangadap.datacube.datacube.DataCube`):
+                Cube being analyzed.  This is used to provide the primary root
+                of the output name.
+            mode (:obj:`str`, optional):
+                An optional "mode" included in the file name.  If None, not
+                include in the output string.
+            plan_index (:obj:`int`, optional):
+                The index of the plan.  This is used to select the 'key' of the
+                analysis plan being used, which is included in the file name.
+                If None, this is not included in the file name.
+    
+        Returns:
+            :obj:`str`: General root for output DAP file names.
+        """
+        root = cube.output_root
+        if mode is not None:
+            root = f'{root}-{mode}'
+        if plan_index is not None:
+            if plan_index < 0 or plan_index >= self.nplan:
+                raise ValueError(f'Invalid index ({plan_index}); must be 0 < index < {self.nplan}.')
+            root = f'{root}-{self["key"][plan_index]}'
+        return root
 
 

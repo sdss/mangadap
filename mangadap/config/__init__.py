@@ -24,3 +24,5 @@ def get_environ():
 
 manga_environ = get_environ()
 
+from .manga import MaNGAAnalysisPlan
+

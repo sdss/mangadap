@@ -107,6 +107,38 @@ def drpall_file(drpver=None, redux_path=None):
     return _redux_path / f'drpall-{_drpver}.fits'
 
 
+def dap_version():
+    """
+    Return the DAP version defined by the environmental variable
+    MANGADAP_VER.  If that environmental variable does not exist,
+    `mangadap.__version__` is returned.
+    """
+    return manga_environ['MANGADAP_VER']
+
+
+def dap_analysis_path(drpver=None, dapver=None):
+    """
+    Return the main output path for the DAP using the environmental
+    variable MANGA_SPECTRO_ANALYSIS.
+
+    Args:
+        drpver (:obj:`str`, optional):
+            DRP version. Default is to use :func:`drp_version`.
+        dapver (:obj:`str`, optional):
+            DAP version. Default is to use :func:`dap_version`.
+
+    Returns:
+        :obj:`str`: Path to analysis directory
+    """
+    # Make sure the DRP version is set
+    if drpver is None:
+        drpver = drp_version()
+    # Make sure the DAP version is set
+    if dapver is None:
+        dapver = dap_version()
+    return Path(manga_environ['MANGA_SPECTRO_ANALYSIS']).resolve() / drpver / dapver
+
+
 def manga_fits_root(plate, ifudesign, mode=None):
     """
     Generate the main root name for the output MaNGA fits files for a
@@ -546,4 +578,70 @@ class MaNGAConfig:
             f.write('\n')
             cfg.write(f)
 
+
+class MaNGAAnalysisPlan(AnalysisPlanSet):
+    """
+    Define the analysis plan and output paths for MaNGA data.
+
+    This class only redefines the output paths from the base class.
+    """
+    def __init__(self, planlist, cube=None, analysis_path=None):
+        if cube is None:
+            raise ValueError('For a MaNGA analysis plan, you must provide the cube because it '
+                             'is used to define the output paths.')
+        if analysis_path is None:
+            analysis_path = dap_analysis_path(drpver=cube.drpver)
+        super().__init__(planlist, cube=cube, analysis_path=analysis_path)
+
+    def common_path(self):
+        """
+        Return the path for data common to all plans.
+
+        Args:
+            cube (:class:`~mangadap.datacube.datacube.DataCube`, optional):
+                Cube being analyzed.  Passed for cube-specific path
+                specification.  Not used by this base class.
+
+        Returns:
+            `Path`_: Path object for the "common" output
+        """
+        return self.root_path / 'common' / str(self.cube.plate) / str(self.cube.ifudesign)
+
+    def method_path(self, plan_index=0, qa=False, ref=False):
+        """
+        Return the path for method-specific output.
+
+        Args:
+            cube (:class:`~mangadap.datacube.datacube.DataCube`, optional):
+                Cube being analyzed.  Passed for cube-specific path
+                specification.  Not used by this base class.
+            plan_index (:obj:`int`, optional):
+                The index of the plan.  This is used to select the 'key' of the
+                analysis plan being used, which is used as the subdirectory for
+                the output.
+            qa (:obj:`bool`, optional):
+                Flag that the output is specifically quality assessment plots.
+            ref (:obj:`bool`, optional):
+                Flag that the output is specifically reference data.
+
+        Returns:
+            `Path`_: Path object for the method-specific output
+
+        Raises:
+            ValueError:
+                Raised if the plan index is invalid or if both qa and ref are true.
+
+        """
+        if plan_index < 0 or plan_index >= self.nplan:
+            raise ValueError(f'Invalid index ({plan_index}); must be 0 < index < {self.nplan}.')
+        if qa and ref:
+            raise ValueError('Cannot provide path for both qa and ref directory.  Pick one.')
+
+        return self.root_path / self['key'][plan_index] / str(self.cube.plate) \
+                    / str(self.cube.ifudesign)
+        if not qa and not ref:
+            return root
+        if qa:
+            return root / 'qa'
+        return root / 'ref'
 

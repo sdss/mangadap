@@ -29,14 +29,19 @@ class MangaDap(scriptbase.ScriptBase):
                            help='Name of the file with the datacube data.  Must be possible to '
                                 'instantiate the relevant DataCube derived class directly from '
                                 'the file only.')
-        parser.add_argument('-p', '--plan', type=str,
-                            help='SDSS parameter file with analysis plan.  If not provided, a '
-                                 'default plan is used.')
-        parser.add_argument('-m', '--cube_module', nargs='*',
+        parser.add_argument('--cube_module', nargs='*',
                             default='mangadap.datacube.MaNGADataCube',
                             help='The name of the module that contains the DataCube derived class used to read the data.')
 #        parser.add_argument('-o', '--cube_object', type=str, default='MaNGADataCube',
 #                            help='The name of the DataCube derived class object.')
+
+        parser.add_argument('--plan_module', nargs='*',
+                            default='mangadap.config.MaNGAAnalysisPlan',
+                            help='The name of the module used to define the analysis plan and the output paths.')
+
+        parser.add_argument('-p', '--plan', type=str,
+                            help='SDSS parameter file with analysis plan.  If not provided, a '
+                                 'default plan is used.')
 
         parser.add_argument('--dbg', help='Run manga_dap in debug mode', action='store_true',
                             default=False)

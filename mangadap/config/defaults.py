@@ -199,85 +199,79 @@ def regrid_sigma():
     return 0.7
 
 
-def dap_version():
-    """
-    Return the DAP version defined by the environmental variable
-    MANGADAP_VER.  If that environmental variable does not exist,
-    `mangadap.__version__` is returned.
-    """
-    return manga_environ['MANGADAP_VER']
-
-
-def dap_analysis_path(drpver=None, dapver=None):
-    """
-    Return the main output path for the DAP using the environmental
-    variable MANGA_SPECTRO_ANALYSIS.
-
-    Args:
-        drpver (:obj:`str`, optional):
-            DRP version. Default is to use :func:`drp_version`.
-        dapver (:obj:`str`, optional):
-            DAP version. Default is to use :func:`dap_version`.
-
-    Returns:
-        :obj:`str`: Path to analysis directory
-    """
-    # Make sure the DRP version is set
-    if drpver is None:
-        drpver = drp_version()
-    # Make sure the DAP version is set
-    if dapver is None:
-        dapver = dap_version()
-    return Path(manga_environ['MANGA_SPECTRO_ANALYSIS']).resolve() / drpver / dapver
-
-
-
-
-
-
-
-
-def dap_common_path(plate=None, ifudesign=None, drpver=None, dapver=None, analysis_path=None):
-    """
-    Return the path to the path to the directory with data common to
-    multiple binning schemes.
-
-    Args:
-        plate (:obj:`int`, optional):
-            Plate number, for reference directory of a specific
-            plate.
-        ifudesign (:obj:`int`, optional):
-            IFU design number.
-        drpver (:obj:`str`, optional):
-            DRP version. Default is to use :func:`drp_version`.
-        dapver (:obj:`str`, optional):
-            DAP version.  Default is to use :func:`dap_version`.
-        analysis_path (:obj:`str`, optional):
-            Path to the root analysis directory. Default is to use
-            :func:`dap_analysis_path`.
-
-    Returns:
-        :obj:`str`: Path to the directory with DAP reference files
-
-    Raises:
-        ValueError:
-            Raised if IFU design is provided and plate is not.
-    """
-    # For hierarchy, if ifudesign is given, plate must also be given
-    if plate is None and ifudesign is not None:
-        raise ValueError('For IFU design subdirectory, must provide plate number.')
-
-    # Get the main analysis path
-    _analysis_path = dap_analysis_path(drpver=drpver, dapver=dapver) \
-                        if analysis_path is None else Path(analysis_path).resolve()
-
-    output_path = _analysis_path / 'common'
-    if plate is None:
-        return output_path
-    output_path = output_path / str(plate)
-    return output_path if ifudesign is None else output_path / str(ifudesign)
-
-
+#def dap_version():
+#    """
+#    Return the DAP version defined by the environmental variable
+#    MANGADAP_VER.  If that environmental variable does not exist,
+#    `mangadap.__version__` is returned.
+#    """
+#    return manga_environ['MANGADAP_VER']
+#
+#
+#def dap_analysis_path(drpver=None, dapver=None):
+#    """
+#    Return the main output path for the DAP using the environmental
+#    variable MANGA_SPECTRO_ANALYSIS.
+#
+#    Args:
+#        drpver (:obj:`str`, optional):
+#            DRP version. Default is to use :func:`drp_version`.
+#        dapver (:obj:`str`, optional):
+#            DAP version. Default is to use :func:`dap_version`.
+#
+#    Returns:
+#        :obj:`str`: Path to analysis directory
+#    """
+#    # Make sure the DRP version is set
+#    if drpver is None:
+#        drpver = drp_version()
+#    # Make sure the DAP version is set
+#    if dapver is None:
+#        dapver = dap_version()
+#    return Path(manga_environ['MANGA_SPECTRO_ANALYSIS']).resolve() / drpver / dapver
+#
+#
+#def dap_common_path(plate=None, ifudesign=None, drpver=None, dapver=None, analysis_path=None):
+#    """
+#    Return the path to the path to the directory with data common to
+#    multiple binning schemes.
+#
+#    Args:
+#        plate (:obj:`int`, optional):
+#            Plate number, for reference directory of a specific
+#            plate.
+#        ifudesign (:obj:`int`, optional):
+#            IFU design number.
+#        drpver (:obj:`str`, optional):
+#            DRP version. Default is to use :func:`drp_version`.
+#        dapver (:obj:`str`, optional):
+#            DAP version.  Default is to use :func:`dap_version`.
+#        analysis_path (:obj:`str`, optional):
+#            Path to the root analysis directory. Default is to use
+#            :func:`dap_analysis_path`.
+#
+#    Returns:
+#        :obj:`str`: Path to the directory with DAP reference files
+#
+#    Raises:
+#        ValueError:
+#            Raised if IFU design is provided and plate is not.
+#    """
+#    # For hierarchy, if ifudesign is given, plate must also be given
+#    if plate is None and ifudesign is not None:
+#        raise ValueError('For IFU design subdirectory, must provide plate number.')
+#
+#    # Get the main analysis path
+#    _analysis_path = dap_analysis_path(drpver=drpver, dapver=dapver) \
+#                        if analysis_path is None else Path(analysis_path).resolve()
+#
+#    output_path = _analysis_path / 'common'
+#    if plate is None:
+#        return output_path
+#    output_path = output_path / str(plate)
+#    return output_path if ifudesign is None else output_path / str(ifudesign)
+#
+#
 #def dap_method(binning_method, stellar_continuum_templates, emission_line_model_templates):
 #    """
 #    Construct the ``DAPTYPE`` based on the analysis plan.
@@ -303,94 +297,94 @@ def dap_common_path(plate=None, ifudesign=None, drpver=None, dapver=None, analys
 #    _eltpl = stellar_continuum_templates if emission_line_model_templates is None \
 #                                                else emission_line_model_templates
 #    return f'{binning_method}-{stellar_continuum_templates}-{_eltpl}'
-
-
-def dap_method_path(method, plate=None, ifudesign=None, qa=False, ref=False, drpver=None,
-                    dapver=None, analysis_path=None):
-    """
-    Return the path to the designated subdirectory built using the plan
-    key identifiers or directly using the provided method.
-
-    The "method" identifying each plan is currently build using the
-    keywords for the binning type and the continuum-fitting key.
-    Nominally, the latter should include the template set used.
-
-    Args:
-        method (:obj:`str`):
-            String defining the method identifier for a set of DAP
-            output files. These should be built using
-            :func:`dap_method`.
-        plate (:obj:`int`, optional):
-            Plate number.
-        ifudesign (:obj:`int`, optional):
-            IFU design number.
-        qa (:obj:`bool`, optional):
-            Give the path to the qa/ subdirectory
-        ref (:obj:`bool`, optional):
-            Give the path to the ``ref/`` subdirectory.
-        drpver (:obj:`str`, optional):
-            DRP version. Default is to use :func:`drp_version`.
-        dapver (:obj:`str`, optional):
-            DAP version. Default is to use :func:`dap_version`.
-        analysis_path (:obj:`str`, optional):
-            Path to the root analysis directory. Default is to use
-            :func:`dap_analysis_path`.
-
-    Returns:
-        :obj:`str`: Path to the plan subdirectory
-
-    Raises:
-        ValueError:
-            Raised if IFU design is provided and plate is not, or if
-            either qa or ref are true and one or both of plate and
-            IFU design are not provided..
-    """
-    # For heirarchy, if ifudesign is given, plate must also be given
-    if (plate is not None and ifudesign is None) or (plate is None and ifudesign is not None):
-        raise ValueError('Must provide both plate and ifudesign, if providing either.')
-    if qa and ref:
-        raise ValueError('Cannot provide path for both qa and ref directory.  Pick one.')
-
-    # Get the main analysis path
-    _analysis_path = dap_analysis_path(drpver=drpver, dapver=dapver) \
-                        if analysis_path is None else Path(analysis_path).resolve()
-
-    # Build the plan subirectory
-    output_path = _analysis_path / method
-    if plate is None:
-        return output_path
-    output_path = output_path / str(plate) / str(ifudesign)
-    if not qa and not ref:
-        return output_path
-    return output_path / ('qa' if qa else 'ref')
-
-
-def manga_fits_root(plate, ifudesign, mode=None):
-    """
-    Generate the main root name for the output MaNGA fits files for a
-    given plate/ifudesign/mode.
-
-    Args:
-        plate (:obj:`int`):
-            Plate number
-        ifudesign (:obj:`int`):
-            IFU design number
-        mode (:obj:`str`, optional):
-            Mode of the output fits file. Options are: ``'LINCUBE'``,
-            ``'LINRSS'``, ``'LOGCUBE'``, ``'LOGRSS'``, or ``'MAPS'``.
-            Default is that no mode is included in the name.
-
-    Returns:
-        :obj:`str`: Root name for a MaNGA fits file:
-        ``manga-[PLATE]-[IFUDESIGN]-[MODE]``
-
-    Raises:
-        ValueError:
-            Raised if mode is not a valid option.
-    """
-    if mode not in [ None, 'LINCUBE', 'LINRSS', 'LOGCUBE', 'LOGRSS', 'MAPS' ]:
-        raise ValueError('Do not understand mode={0}.'.format(mode))
-    return f'manga-{plate}-{ifudesign}' if mode is None else f'manga-{plate}-{ifudesign}-{mode}'
+#
+#
+#def dap_method_path(method, plate=None, ifudesign=None, qa=False, ref=False, drpver=None,
+#                    dapver=None, analysis_path=None):
+#    """
+#    Return the path to the designated subdirectory built using the plan
+#    key identifiers or directly using the provided method.
+#
+#    The "method" identifying each plan is currently build using the
+#    keywords for the binning type and the continuum-fitting key.
+#    Nominally, the latter should include the template set used.
+#
+#    Args:
+#        method (:obj:`str`):
+#            String defining the method identifier for a set of DAP
+#            output files. These should be built using
+#            :func:`dap_method`.
+#        plate (:obj:`int`, optional):
+#            Plate number.
+#        ifudesign (:obj:`int`, optional):
+#            IFU design number.
+#        qa (:obj:`bool`, optional):
+#            Give the path to the qa/ subdirectory
+#        ref (:obj:`bool`, optional):
+#            Give the path to the ``ref/`` subdirectory.
+#        drpver (:obj:`str`, optional):
+#            DRP version. Default is to use :func:`drp_version`.
+#        dapver (:obj:`str`, optional):
+#            DAP version. Default is to use :func:`dap_version`.
+#        analysis_path (:obj:`str`, optional):
+#            Path to the root analysis directory. Default is to use
+#            :func:`dap_analysis_path`.
+#
+#    Returns:
+#        :obj:`str`: Path to the plan subdirectory
+#
+#    Raises:
+#        ValueError:
+#            Raised if IFU design is provided and plate is not, or if
+#            either qa or ref are true and one or both of plate and
+#            IFU design are not provided..
+#    """
+#    # For heirarchy, if ifudesign is given, plate must also be given
+#    if (plate is not None and ifudesign is None) or (plate is None and ifudesign is not None):
+#        raise ValueError('Must provide both plate and ifudesign, if providing either.')
+#    if qa and ref:
+#        raise ValueError('Cannot provide path for both qa and ref directory.  Pick one.')
+#
+#    # Get the main analysis path
+#    _analysis_path = dap_analysis_path(drpver=drpver, dapver=dapver) \
+#                        if analysis_path is None else Path(analysis_path).resolve()
+#
+#    # Build the plan subirectory
+#    output_path = _analysis_path / method
+#    if plate is None:
+#        return output_path
+#    output_path = output_path / str(plate) / str(ifudesign)
+#    if not qa and not ref:
+#        return output_path
+#    return output_path / ('qa' if qa else 'ref')
+#
+#
+#def manga_fits_root(plate, ifudesign, mode=None):
+#    """
+#    Generate the main root name for the output MaNGA fits files for a
+#    given plate/ifudesign/mode.
+#
+#    Args:
+#        plate (:obj:`int`):
+#            Plate number
+#        ifudesign (:obj:`int`):
+#            IFU design number
+#        mode (:obj:`str`, optional):
+#            Mode of the output fits file. Options are: ``'LINCUBE'``,
+#            ``'LINRSS'``, ``'LOGCUBE'``, ``'LOGRSS'``, or ``'MAPS'``.
+#            Default is that no mode is included in the name.
+#
+#    Returns:
+#        :obj:`str`: Root name for a MaNGA fits file:
+#        ``manga-[PLATE]-[IFUDESIGN]-[MODE]``
+#
+#    Raises:
+#        ValueError:
+#            Raised if mode is not a valid option.
+#    """
+#    if mode not in [ None, 'LINCUBE', 'LINRSS', 'LOGCUBE', 'LOGRSS', 'MAPS' ]:
+#        raise ValueError('Do not understand mode={0}.'.format(mode))
+#    return f'manga-{plate}-{ifudesign}' if mode is None else f'manga-{plate}-{ifudesign}-{mode}'
 
 
 def dap_file_root(plate, ifudesign, mode=None):
