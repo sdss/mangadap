@@ -11,7 +11,7 @@ from astropy.io import fits
 
 from mangadap.dapfits import DAPMapsBitMask
 from mangadap.config import defaults
-from mangadap.par.analysisplan import AnalysisPlanSet
+from mangadap.config.analysisplan import AnalysisPlanSet
 from mangadap.util.fileio import channel_dictionary
 from mangadap.proc.util import growth_lim
 from mangadap.proc.spatiallybinnedspectra import SpatiallyBinnedSpectra

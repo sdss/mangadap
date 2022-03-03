@@ -31,7 +31,7 @@ from scipy import sparse, spatial, interpolate
 
 from astropy.io import fits
 
-from ..datacube import DataCube
+#from ..datacube import DataCube
 from ..par.parset import KeywordParSet, ParSet
 from ..util.datatable import DataTable
 from ..util.fitsutil import DAPFitsUtil
@@ -1297,8 +1297,8 @@ class SpatiallyBinnedSpectra:
         # DataCube always needed
         if cube is None:
             raise ValueError('Must provide datacube object!')
-        if not isinstance(cube, DataCube):
-            raise TypeError('Must provide a valid DataCube object!')
+#        if not isinstance(cube, DataCube):
+#            raise TypeError('Must provide a valid DataCube object!')
 
         # Test if the RSS file exists; cannot compute covariance if not
         # TODO: this will break for a different stacking class

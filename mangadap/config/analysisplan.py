@@ -14,7 +14,7 @@ Classes to handle MaNGA DAP analysis plans.
 .. include:: ../include/links.rst
 """
 
-import os
+from pathlib import Path
 from pydl.pydlutils.yanny import yanny
 
 from ..par.parset import KeywordParSet, ParDatabase
@@ -106,7 +106,7 @@ class AnalysisPlan(KeywordParSet):
         bin_method = SpatiallyBinnedSpectra.define_method(bin_key)
         sc_method = StellarContinuumModel.define_method(continuum_key)
         el_method = EmissionLineModel.define_method(elfit_key)
-        eltpl = sc_method["fitpar"]["template_library_key"] \
+        eltpl = sc_method['fitpar']['template_library_key'] \
                     if el_method['continuum_tpl_key'] is None else el_method['continuum_tpl_key']
         return f'{bin_method["key"]}-{sc_method["fitpar"]["template_library_key"]}-{eltpl}'
 
@@ -134,11 +134,11 @@ class AnalysisPlanSet(ParDatabase):
         # TODO: The approach here (read using yanny, set to par
         # individually, then covert back to record array using
         # ParDatabase) is stupid...
-
-        if not os.path.isfile(f):
+        _f = Path(f).resolve()
+        if not _f.exists():
             raise FileNotFoundError('No file {0}.'.format(f))
     
-        par = yanny(filename=f, raw=True)
+        par = yanny(filename=str(_f), raw=True)
         if len(par['DAPPLAN']['drpqa_key']) == 0:
             raise ValueError('Could not find DAPPLAN entries in {0}!'.format(f))
 
@@ -207,8 +207,8 @@ class AnalysisPlanSet(ParDatabase):
                 Raised if the plan index is invalid or if both qa and ref are true.
 
         """
-        if plan_index < 0 or plan_index >= self.nplan:
-            raise ValueError(f'Invalid index ({plan_index}); must be 0 < index < {self.nplan}.')
+        if plan_index < 0 or plan_index >= self.nplans:
+            raise ValueError(f'Invalid index ({plan_index}); 0 <= index < {self.nplans}.')
         if qa and ref:
             raise ValueError('Cannot provide path for both qa and ref directory.  Pick one.')
         root = self.root_path / self['key'][plan_index]
@@ -218,6 +218,7 @@ class AnalysisPlanSet(ParDatabase):
             return root / 'qa'
         return root / 'ref'
 
+    # TODO: Restrict mode?
     def dap_file_root(self, cube, mode=None, plan_index=None):
         """
         Return the general root name for an output file.
@@ -248,8 +249,8 @@ class AnalysisPlanSet(ParDatabase):
         if mode is not None:
             root = f'{root}-{mode}'
         if plan_index is not None:
-            if plan_index < 0 or plan_index >= self.nplan:
-                raise ValueError(f'Invalid index ({plan_index}); must be 0 < index < {self.nplan}.')
+            if plan_index < 0 or plan_index >= self.nplans:
+                raise ValueError(f'Invalid index ({plan_index}): 0 <= index < {self.nplans}.')
             root = f'{root}-{self["key"][plan_index]}'
         return root
 

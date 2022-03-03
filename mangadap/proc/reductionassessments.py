@@ -33,7 +33,7 @@ from astropy.io import fits
 
 from pydl.goddard.astro import airtovac
 
-from ..datacube import DataCube
+#from ..datacube import DataCube
 from ..par.parset import KeywordParSet
 
 from ..config import defaults
@@ -663,8 +663,8 @@ class ReductionAssessment:
         self.quiet = quiet
 
         # Check the input cube
-        if not isinstance(cube, DataCube):
-            raise TypeError('Must provide a valid DataCube object!')
+#        if not isinstance(cube, DataCube):
+#            raise TypeError('Must provide a valid DataCube object!')
         self.cube = cube
 
         # Test if the RSS file exists; cannot compute covariance if not

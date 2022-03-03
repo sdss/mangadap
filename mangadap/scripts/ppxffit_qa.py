@@ -12,7 +12,7 @@ from matplotlib import pyplot, colors, rc, colorbar, ticker, cm
 from astropy.io import fits
 
 from mangadap.datacube import MaNGADataCube
-from mangadap.par.analysisplan import AnalysisPlanSet
+from mangadap.config.analysisplan import AnalysisPlanSet
 from mangadap.proc.templatelibrary import TemplateLibrary
 from mangadap.proc.reductionassessments import ReductionAssessment
 from mangadap.proc.spatiallybinnedspectra import SpatiallyBinnedSpectra

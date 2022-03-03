@@ -30,7 +30,7 @@ from mangadap import __version__
 from ..config import defaults
 from ..util.log import init_DAP_logging, module_logging, log_output
 from ..datacube import DataCube
-from ..par.analysisplan import AnalysisPlanSet
+from ..config.analysisplan import AnalysisPlanSet
 from ..proc.reductionassessments import ReductionAssessment
 from ..proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
 from ..proc.stellarcontinuummodel import StellarContinuumModel

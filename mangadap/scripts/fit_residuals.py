@@ -16,7 +16,7 @@ from mangadap.proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
 from mangadap.proc.stellarcontinuummodel import StellarContinuumModel
 from mangadap.proc.emissionlinemodel import EmissionLineModel
 
-from mangadap.par.analysisplan import AnalysisPlanSet
+from mangadap.config.analysisplan import AnalysisPlanSet
 from mangadap.util.filter import BoxcarFilter
 from mangadap.util.sampling import spectral_coordinate_step
 from mangadap.util.mapping import map_extent, map_beam_patch

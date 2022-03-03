@@ -11,6 +11,7 @@ from astropy.io import fits
 
 #from . import defaults
 from . import manga_environ
+from .analysisplan import AnalysisPlanSet
 from ..util.parser import DefaultConfig
 from ..util.drpbitmask import DRPQuality3DBitMask
 from ..util.constants import DAPConstants
@@ -632,12 +633,12 @@ class MaNGAAnalysisPlan(AnalysisPlanSet):
                 Raised if the plan index is invalid or if both qa and ref are true.
 
         """
-        if plan_index < 0 or plan_index >= self.nplan:
-            raise ValueError(f'Invalid index ({plan_index}); must be 0 < index < {self.nplan}.')
+        if plan_index < 0 or plan_index >= self.nplans:
+            raise ValueError(f'Invalid index ({plan_index}); 0 <= index < {self.nplans}.')
         if qa and ref:
             raise ValueError('Cannot provide path for both qa and ref directory.  Pick one.')
 
-        return self.root_path / self['key'][plan_index] / str(self.cube.plate) \
+        root = self.root_path / self['key'][plan_index] / str(self.cube.plate) \
                     / str(self.cube.ifudesign)
         if not qa and not ref:
             return root

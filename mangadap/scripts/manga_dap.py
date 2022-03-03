@@ -3,7 +3,6 @@
 from IPython import embed
 
 from mangadap.scripts import scriptbase
-from mangadap.util.pkg import load_object
 
 
 class MangaDap(scriptbase.ScriptBase):
@@ -35,13 +34,12 @@ class MangaDap(scriptbase.ScriptBase):
 #        parser.add_argument('-o', '--cube_object', type=str, default='MaNGADataCube',
 #                            help='The name of the DataCube derived class object.')
 
-        parser.add_argument('--plan_module', nargs='*',
-                            default='mangadap.config.MaNGAAnalysisPlan',
-                            help='The name of the module used to define the analysis plan and the output paths.')
-
         parser.add_argument('-p', '--plan', type=str,
                             help='SDSS parameter file with analysis plan.  If not provided, a '
                                  'default plan is used.')
+        parser.add_argument('--plan_module', nargs='*',
+                            default='mangadap.config.manga.MaNGAAnalysisPlan',
+                            help='The name of the module used to define the analysis plan and the output paths.')
 
         parser.add_argument('--dbg', help='Run manga_dap in debug mode', action='store_true',
                             default=False)
@@ -70,28 +68,48 @@ class MangaDap(scriptbase.ScriptBase):
 
 #        import warnings
 #        warnings.simplefilter('error', DeprecationWarning)
-        from mangadap.par.analysisplan import AnalysisPlanSet
+        from mangadap.config.analysisplan import AnalysisPlanSet
         from mangadap.survey.manga_dap import manga_dap
         from mangadap.datacube import DataCube
+        from mangadap.util.pkg import load_object
 
         # Instantiate the DataCube
-        #   - Try to import the module used to read the datacube
-        UserDataCube = load_object(args.cube_module, args.cube_object)
+        #   - Import the module used to read the datacube
+        if isinstance(args.cube_module, list) and len(args.cube_module) > 2:
+            raise ValueError('Provided cube module must be one or two strings.')
+        if isinstance(args.cube_module, str) or len(args.cube_module) == 1:
+            UserDataCube = load_object(args.cube_module if isinstance(args.cube_module, str) 
+                                       else args.cube_module[0])
+        else:
+            UserDataCube = load_object(args.cube_module[0], obj=args.cube_module[1])
         #   - Check that the class is derived from DataCube
         if not issubclass(UserDataCube, DataCube):
             raise TypeError('Defined cube object must subclass from mangadap.datacube.DataCube.')
+
+        #   - Import the module used to set the analysis plan
+        if isinstance(args.plan_module, list) and len(args.plan_module) > 2:
+            raise ValueError('Provided plan module must be one or two strings.')
+        if isinstance(args.plan_module, str) or len(args.plan_module) == 1:
+            UserPlan = load_object(args.plan_module if isinstance(args.plan_module, str) 
+                                       else args.plan_module[0])
+        else:
+            UserPlan = load_object(args.plan_module[0], obj=args.plan_module[1])
+        #   - Check that the class is derived from AnalysisPlanSet
+        if not issubclass(UserPlan, AnalysisPlanSet):
+            raise TypeError('Defined plan object must subclass from '
+                            'mangadap.config.analysisplan.AnalysisPlanSet')
+
         #   - Instantiate using either the datacube file directly or a
         #     configuration file
         cube = UserDataCube(args.cubefile) if args.config is None \
                     else UserDataCube.from_config(args.config)
 
         # Read the analysis plan
-        analysisplan = AnalysisPlanSet.default() if args.plan is None \
-                            else AnalysisPlanSet.from_par_file(args.plan)
+        plan = UserPlan.default(cube=cube, analysis_path=args.analysis_path) if args.plan is None \
+                    else UserPlan.from_par_file(args.plan, cube=cube,
+                                                analysis_path=args.analysis_path)
 
         # Run the pipeline
-        status = manga_dap(cube, analysisplan, dbg=args.dbg, log=args.log, verbose=args.verbose,
-                           drpver=args.drpver, redux_path=args.redux_path,
-                           directory_path=args.directory_path, dapver=args.dapver,
-                           analysis_path=args.analysis_path)
+        status = manga_dap(cube, plan, dbg=args.dbg, log=args.log, verbose=args.verbose)
+
 

@@ -91,7 +91,7 @@ from mangadap.survey.drpcomplete import DRPComplete
 from mangadap.survey.mangampl import MaNGAMPL
 from mangadap.util.parser import arginp_to_list
 from mangadap.util.fileio import create_symlink
-from mangadap.par.analysisplan import AnalysisPlanSet
+from mangadap.config.analysisplan import AnalysisPlanSet
 from mangadap.proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
 from mangadap.proc.stellarcontinuummodel import StellarContinuumModel
 from mangadap.proc.emissionlinemodel import EmissionLineModel

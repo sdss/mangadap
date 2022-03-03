@@ -27,7 +27,7 @@ def all_subclasses(cls):
             [s for c in cls.__subclasses__() for s in all_subclasses(c)])
 
 
-def load_object(module, object):
+def load_object(module, obj=None):
     """
     Load an abstracted module and object.
 
@@ -35,10 +35,12 @@ def load_object(module, object):
 
     Args:
         module (:obj:`str`):
-            The name of a global python module, or the root name of a local file
-            with the object to import.
-        object (:obj:`str`):
-            The name of the object to import
+            The name of a global python module, the root name of a local file
+            with the object to import, or the full module + object type.  If
+            ``obj`` is None, this *must* be the latter.
+        obj (:obj:`str`, optional):
+            The name of the object to import.  If None, ``module`` must be the
+            full module + object type name.
 
     Return:
         :obj:`type`: The imported object.
@@ -50,15 +52,21 @@ def load_object(module, object):
     import importlib
     from pathlib import Path
 
+    if obj is None:
+        _module = '.'.join(module.split('.')[:-1])
+        obj = module.split('.')[-1]
+    else:
+        _module = module
+
     try:
-        CubeModule = importlib.import_module(cube_module)
+        CubeModule = importlib.import_module(_module)
     except (ModuleNotFoundError, ImportError) as e:
-        p = Path(cube_module + '.py').resolve()
+        p = Path(module + '.py').resolve()
         if not p.exists():
-            raise ImportError(f'Unable to load module {cube_module}!') from e
-        spec = importlib.util.spec_from_file_location(cube_module, str(p))
+            raise ImportError(f'Unable to load module {_module}!') from e
+        spec = importlib.util.spec_from_file_location(_module, str(p))
         CubeModule = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(CubeModule)
 
-    return getattr(CubeModule, cube_object)
+    return getattr(CubeModule, obj)
 
