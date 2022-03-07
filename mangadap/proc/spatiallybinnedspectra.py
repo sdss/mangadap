@@ -1,5 +1,3 @@
-# Licensed under a 3-clause BSD style license - see LICENSE.rst
-# -*- coding: utf-8 -*-
 """
 A class hierarchy that perform that spatially bins a set of
 two-dimensional data.
@@ -17,17 +15,15 @@ procedures.
 .. include common links, assuming primary doc root is up one directory
 .. include:: ../include/links.rst
 """
-import os
-import glob
+from pathlib import Path
 import warnings
-import time
 import logging
 
 from IPython import embed
 
 import numpy
 
-from scipy import sparse, spatial, interpolate
+from scipy import sparse, spatial
 
 from astropy.io import fits
 
@@ -41,11 +37,11 @@ from ..util.dapbitmask import DAPBitMask
 from ..util.pixelmask import SpectralPixelMask
 from ..util.sampling import angstroms_per_pixel
 from ..util.covariance import Covariance
-from ..util.geometry import SemiMajorAxisCoo
 from ..util.extinction import GalacticExtinction
 from ..util.log import log_output
 from ..config import defaults
 from . import spatialbinning
+# TODO: Maybe don't need this?  I.e., only used for type checking
 from .reductionassessments import ReductionAssessment
 from .spectralstack import SpectralStackPar, SpectralStack
 from .util import select_proc_method, replace_with_data_from_nearest_coo
@@ -203,10 +199,10 @@ def available_spatial_binning_methods():
         
     """
     # Check the configuration files exist
-    search_dir = os.path.join(defaults.dap_config_root(), 'spatial_binning')
-    ini_files = glob.glob(os.path.join(search_dir, '*.ini'))
+    search_dir = defaults.dap_config_root() / 'spatial_binning'
+    ini_files = sorted(list(search_dir.glob('*.ini')))
     if len(ini_files) == 0:
-        raise IOError('Could not find any configuration files in {0} !'.format(search_dir))
+        raise IOError(f'Could not find any configuration files in {search_dir} !')
 
     # TODO: Can most of this stuff move to the relevant classes
     # themselves? Seems like the binning method should be agnostic
@@ -364,22 +360,16 @@ class SpatiallyBinnedSpectra:
             binning. Default is to use the config files in the DAP
             source directory to construct the available methods using
             :func:`available_spatial_binning_methods`.
-        dapver (:obj:`str`, optional):
-            The DAP version. Used to construct the output paths,
-            overriding the default defined by
-            :func:`mangadap.config.defaults.dap_version`. Does
-            **not** select the version of the code to use.
-        analysis_path (:obj:`str`, optional):
-            The top-level path for the DAP output files, used to
-            override the default defined by
-            :func:`mangadap.config.defaults.dap_analysis_path`.
-        directory_path (:obj:`str`, optional):
-            The exact path to the directory with DAP output that is
-            common to the DAP "methods". Default is defined by
-            :func:`mangadap.confgi.defaults.dap_common_path`.
+        output_path (:obj:`str`, `Path`_, optional):
+            The path for the output file.  If None, the current working
+            directory is used.
         output_file (:obj:`str`, optional):
-            Exact name for the output file. The default is to use
-            :func:`mangadap.config.defaults.dap_file_name`.
+            The name of the output "reference" file. The full path of the output
+            file will be :attr:`directory_path`/:attr:`output_file`.  If None,
+            the default is to combine ``cube.output_root`` and the method keys
+            of both ``rdxqa`` and the one for this class.  The order of the keys
+            is the order of operations (rdxqa key, then the binning key).  See
+            :func:`~mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra.default_paths`.
         hardcopy (:obj:`bool`, optional):
             Flag to write the `astropy.io.fits.HDUList`_
             (:attr:`hdu`) to disk. If False, the object data is only
@@ -387,7 +377,7 @@ class SpatiallyBinnedSpectra:
         symlink_dir (:obj:`str`, optional):
             Create a symbolic link to the created file in the
             supplied directory. If None, no symbolic link is created.
-        clobber (:obj:`bool`, optional):
+        overwrite (:obj:`bool`, optional):
             Overwrite any existing files. If False, any existing
             files will be used. If True, the analysis is redone and
             any existing output is overwritten.
@@ -416,9 +406,9 @@ class SpatiallyBinnedSpectra:
         - Fill in attributes.
    
     """
-    def __init__(self, method_key, cube, rdxqa, reff=None, method_list=None, dapver=None,
-                 analysis_path=None, directory_path=None, output_file=None, hardcopy=True,
-                 symlink_dir=None, clobber=False, checksum=False, loggers=None, quiet=False):
+    def __init__(self, method_key, cube, rdxqa, reff=None, ebv=None, method_list=None,
+                 output_path=None, output_file=None, hardcopy=True, symlink_dir=None,
+                 overwrite=False, checksum=False, loggers=None, quiet=False):
 
         self.loggers = None
         self.quiet = False
@@ -429,10 +419,11 @@ class SpatiallyBinnedSpectra:
         self.cube = None
         self.rdxqa = None
         self.reff = None
+        self.ebv = None
         self.galext = None
 
         # Define the output directory and file
-        self.directory_path = None      # Set in _set_paths
+        self.directory_path = None      # Set in default__paths
         self.output_file = None
         self.hardcopy = None
         self.symlink_dir = None
@@ -459,9 +450,9 @@ class SpatiallyBinnedSpectra:
         self.covariance = None
 
         # Bin the spectra
-        self.bin_spectra(cube, rdxqa, reff=reff, dapver=dapver, analysis_path=analysis_path,
-                         directory_path=directory_path, output_file=output_file, hardcopy=hardcopy,
-                         symlink_dir=symlink_dir, clobber=clobber, loggers=loggers, quiet=quiet)
+        self.bin_spectra(cube, rdxqa, reff=reff, ebv=ebv, output_path=output_path,
+                         output_file=output_file, hardcopy=hardcopy, symlink_dir=symlink_dir,
+                         overwrite=overwrite, loggers=loggers, quiet=quiet)
 
     def __getitem__(self, key):
         return self.hdu[key]
@@ -529,45 +520,40 @@ class SpatiallyBinnedSpectra:
         # Nothing to add for binning types 'none' or 'global', or
         # user-defined function!
 
-    def _set_paths(self, directory_path, dapver, analysis_path, output_file):
+    @staticmethod
+    def default_paths(cube, method_key, rdxqa_method, output_path=None, output_file=None):
         """
-        Construct the main output paths.
-
-        This method sets :attr:`directory_path` and
-        :attr:`output_file`. If not provided as arguments, the
-        defaults are set using, respectively,
-        :func:`mangadap.config.defaults.dap_common_path` and
-        :func:`mangadap.config.defaults.dap_file_name`.
+        Set the default directory and file name for the output file.
 
         Args:
-            dapver (:obj:`str`, optional):
-                The DAP version. Used to construct the output paths,
-                overriding the default defined by
-                :func:`mangadap.config.defaults.dap_version`. Does
-                **not** select the version of the code to use.
-            analysis_path (:obj:`str`, optional):
-                The top-level path for the DAP output files, used to
-                override the default defined by
-                :func:`mangadap.config.defaults.dap_analysis_path`.
-            directory_path (:obj:`str`, optional):
-                The exact path to the directory with DAP output that
-                is common to the DAP "methods". Default is defined by
-                :func:`mangadap.confgi.defaults.dap_common_path`.
+            cube (:class:`mangadap.datacube.datacube.DataCube`):
+                Datacube to analyze.
+            method_key (:obj:`str`):
+                Keyword designating the method used for the reduction
+                assessments.
+            rdxqa_method (:obj:`str`):
+                The method key for the basic assessments of the datacube.
+            output_path (:obj:`str`, `Path`_, optional):
+                The path for the output file.  If None, the current working
+                directory is used.
             output_file (:obj:`str`, optional):
-                Exact name for the output file. The default is to use
-                :func:`mangadap.config.defaults.dap_file_name`.
-        """
-        # Set the output directory path
-        self.directory_path = defaults.dap_common_path(plate=self.cube.plate,
-                                                       ifudesign=self.cube.ifudesign,
-                                                       drpver=self.cube.drpver, dapver=dapver,
-                                                       analysis_path=analysis_path) \
-                                        if directory_path is None else str(directory_path)
+                The name of the output "reference" file. The full path of the
+                output file will be :attr:`directory_path`/:attr:`output_file`.
+                If None, the default is to combine ``cube.output_root`` and the
+                method keys of both ``rdxqa`` and the one for this class.  The
+                order of the keys is the order of operations (rdxqa key, then
+                the binning key).
 
-        # Set the output file
-        method = '{0}-{1}'.format(self.rdxqa.method['key'], self.method['key'])
-        self.output_file = defaults.dap_file_name(self.cube.plate, self.cube.ifudesign, method) \
-                                        if output_file is None else str(output_file)
+        Returns:
+            :obj:`tuple`: Returns a `Path`_ with the output directory and a
+            :obj:`str` with the output file name.
+        """
+        directory_path = Path('.').resolve() if output_path is None \
+                                else Path(output_path).resolve()
+        method = f'{rdxqa_method}-{method_key}'
+        _output_file = f'{cube.output_root}-{method}.fits.gz' if output_file is None \
+                            else output_file
+        return directory_path, _output_file
 
     def _initialize_primary_header(self, hdr=None):
         """
@@ -653,7 +639,7 @@ class SpatiallyBinnedSpectra:
         Returns:
             `astropy.io.fits.Header`_: Edited header object.
         """
-        hdr['EBVGAL'] = (self.cube.prihdr['EBVGAL'], 'Galactic reddening E(B-V)')
+        hdr['EBVGAL'] = (self.galext.ebv, 'Galactic reddening E(B-V)')
         hdr['GEXTLAW'] = (str(self.galext.form), 'Galactic extinction law')
         hdr['RVGAL'] = (self.galext.rv, 'Ratio of total to selective extinction, R(V)')
         return hdr
@@ -1115,7 +1101,7 @@ class SpatiallyBinnedSpectra:
         """Return the full path to the output file."""
         if self.directory_path is None or self.output_file is None:
             return None
-        return os.path.join(self.directory_path, self.output_file)
+        return self.directory_path / self.output_file
 
     def info(self):
         return self.hdu.info()
@@ -1216,9 +1202,8 @@ class SpatiallyBinnedSpectra:
 
         return mask
 
-    def bin_spectra(self, cube, rdxqa, reff=None, dapver=None, analysis_path=None,
-                    directory_path=None, output_file=None, hardcopy=True, symlink_dir=None,
-                    clobber=False, loggers=None, quiet=False):
+    def bin_spectra(self, cube, rdxqa, reff=None, ebv=None, output_path=None, output_file=None,
+                    hardcopy=True, symlink_dir=None, overwrite=False, loggers=None, quiet=False):
         """
         Bin and stack the spectra.
 
@@ -1236,22 +1221,19 @@ class SpatiallyBinnedSpectra:
                 for the binning procedures.
             reff (:obj:`float`, optional):
                 The effective radius of the galaxy in arcsec.
-            dapver (:obj:`str`, optional):
-                The DAP version. Used to construct the output paths,
-                overriding the default defined by
-                :func:`mangadap.config.defaults.dap_version`. Does
-                **not** select the version of the code to use.
-            analysis_path (:obj:`str`, optional):
-                The top-level path for the DAP output files, used to
-                override the default defined by
-                :func:`mangadap.config.defaults.dap_analysis_path`.
-            directory_path (:obj:`str`, optional):
-                The exact path to the directory with DAP output that
-                is common to the DAP "methods". Default is defined by
-                :func:`mangadap.confgi.defaults.dap_common_path`.
+            ebv (:obj:`float`, optional):
+                The E(B-V) Galactic reddening to be removed
+            output_path (:obj:`str`, `Path`_, optional):
+                The path for the output file.  If None, the current working
+                directory is used.
             output_file (:obj:`str`, optional):
-                Exact name for the output file. The default is to use
-                :func:`mangadap.config.defaults.dap_file_name`.
+                The name of the output "reference" file. The full path of the
+                output file will be :attr:`directory_path`/:attr:`output_file`.
+                If None, the default is to combine ``cube.output_root`` and the
+                method keys of both ``rdxqa`` and the one for this class.  The
+                order of the keys is the order of operations (rdxqa key, then
+                the binning key).  See
+                :func:`~mangadap.proc.spatiallybinnedspectra.SpatiallyBinnedSpectra.default_paths`.
             hardcopy (:obj:`bool`, optional):
                 Flag to write the `astropy.io.fits.HDUList`_
                 (:attr:`hdu`) to disk. If False, the object data is
@@ -1260,7 +1242,7 @@ class SpatiallyBinnedSpectra:
                 Create a symbolic link to the created file in the
                 supplied directory. If None, no symbolic link is
                 created.
-            clobber (:obj:`bool`, optional):
+            overwrite (:obj:`bool`, optional):
                 Overwrite any existing files. If False, any existing
                 files will be used. If True, the analysis is redone
                 and any existing output is overwritten.
@@ -1322,18 +1304,19 @@ class SpatiallyBinnedSpectra:
             raise TypeError('Must provide a valid ReductionAssessment object!')
         self.rdxqa = rdxqa
 
-        # Set the Galactic extinction correction defined by the method
-        # TODO: Abstract this to allow ebvgal to be input directly or
-        # be part of the datacube metadata
-        self.galext = GalacticExtinction(form=self.method['galactic_reddening'],
-                                         wave=self.cube.wave, ebv=self.cube.prihdr['EBVGAL'],
-                                         rv=self.method['galactic_rv'])
-
         # Save the effective radius if provided.  Only used if/when
         # scaling the radii by the effective radius in the radial
         # binning approach
         if reff is not None:
             self.reff = reff
+        if ebv is not None:
+            self.ebv = ebv
+
+        # Set the Galactic extinction correction defined by the method
+        self.galext = GalacticExtinction(form=self.method['galactic_reddening'],
+                                         wave=self.cube.wave,
+                                         ebv=0.0 if self.ebv is None else self.ebv,
+                                         rv=self.method['galactic_rv'])
 
         #---------------------------------------------------------------
         # Get the good spectra
@@ -1377,7 +1360,12 @@ class SpatiallyBinnedSpectra:
         self._fill_method_par(good_spec)
 
         # (Re)Set the output paths
-        self._set_paths(directory_path, dapver, analysis_path, output_file)
+        # Reset the output paths if necessary
+        self.directory_path, self.output_file \
+                = SpatiallyBinnedSpectra.default_paths(self.cube, self.method['key'],
+                                                       self.rdxqa.method['key'],
+                                                       output_path=output_path,
+                                                       output_file=output_file)
 
         #---------------------------------------------------------------
         # No binning so just fill the hdu with the appropriate data from
@@ -1473,26 +1461,24 @@ class SpatiallyBinnedSpectra:
 
         # Report
         if not self.quiet:
-            log_output(self.loggers, 1, logging.INFO,
-                       'Output path: {0}'.format(self.directory_path))
-            log_output(self.loggers, 1, logging.INFO,
-                       'Output file: {0}'.format(self.output_file))
+            log_output(self.loggers, 1, logging.INFO, f'Output path: {self.directory_path}')
+            log_output(self.loggers, 1, logging.INFO, f'Output file: {self.output_file}')
 
         #---------------------------------------------------------------
-        # If the file already exists, and not clobbering, just read the
+        # If the file already exists, and not overwriting, just read the
         # file
         self.symlink_dir = symlink_dir
-        if os.path.isfile(ofile) and not clobber:
+        if ofile.exists() and not overwrite:
             self.hardcopy = True
             if not self.quiet:
                 log_output(self.loggers, 1, logging.INFO, 'Reading existing file')
             self.read(checksum=self.checksum)
             if not self.quiet and reff is not None and self.reff != reff:
                 warnings.warn('Provided effective radius different from available file; set ' \
-                              'clobber=True to overwrite.')
+                              'overwrite=True to overwrite.')
             # Make sure the symlink exists
             if self.symlink_dir is not None:
-                create_symlink(ofile, self.symlink_dir, clobber=clobber)
+                create_symlink(str(ofile), self.symlink_dir, overwrite=overwrite)
             if not self.quiet:
                 log_output(self.loggers, 1, logging.INFO, '-'*50)
             return
@@ -1555,9 +1541,9 @@ class SpatiallyBinnedSpectra:
         #---------------------------------------------------------------
         # Write the data, if requested
         if self.hardcopy:
-            if not os.path.isdir(self.directory_path):
-                os.makedirs(self.directory_path)
-            self.write(clobber=clobber)
+            if not self.directory_path.exists():
+                self.directory_path.mkdir(parents=True)
+            self.write(overwrite=overwrite)
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '-'*50)
 
@@ -1623,7 +1609,7 @@ class SpatiallyBinnedSpectra:
 
         return hdu
 
-    def write(self, match_datacube=False, clobber=False):
+    def write(self, match_datacube=False, overwrite=False):
         """
         Write the hdu object to the file.
 
@@ -1632,18 +1618,18 @@ class SpatiallyBinnedSpectra:
                 Match the shape of the data arrays to the input
                 datacube. I.e., convert them to 3D and replicate the
                 binned spectrum to each spaxel in the bin.
-            clobber (:obj:`bool`, optional):
+            overwrite (:obj:`bool`, optional):
                 Overwrite any existing file.
         """
         # Convert the spectral arrays in the HDU to a 3D cube and write
         # it
         if match_datacube:
             hdu = self.construct_3d_hdu()
-            DAPFitsUtil.write(hdu, self.file_path(), clobber=clobber, checksum=True,
+            DAPFitsUtil.write(hdu, str(self.file_path()), overwrite=overwrite, checksum=True,
                               symlink_dir=self.symlink_dir, loggers=self.loggers, quiet=self.quiet)
             return
         # Just write the unique (2D) data
-        DAPFitsUtil.write(self.hdu, self.file_path(), clobber=clobber, checksum=True,
+        DAPFitsUtil.write(self.hdu, str(self.file_path()), overwrite=overwrite, checksum=True,
                           symlink_dir=self.symlink_dir, loggers=self.loggers, quiet=self.quiet) 
 
     def read(self, ifile=None, strict=True, checksum=False):
@@ -1673,13 +1659,13 @@ class SpatiallyBinnedSpectra:
         """
         if ifile is None:
             ifile = self.file_path()
-        if not os.path.isfile(ifile):
+        if not ifile.exists():
             raise FileNotFoundError('File does not exist!: {0}'.format(ifile))
 
         if self.hdu is not None:
             self.hdu.close()
 
-        self.hdu = DAPFitsUtil.read(ifile, checksum=checksum)
+        self.hdu = DAPFitsUtil.read(str(ifile), checksum=checksum)
 
         # Confirm that the internal method is the same as the method
         # that was used in writing the file

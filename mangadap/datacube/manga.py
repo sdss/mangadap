@@ -117,8 +117,7 @@ class MaNGADataCube(MaNGAConfig, DataCube):
         # to do this...
         MaNGAConfig.__init__(self, cfg.plate, cfg.ifudesign, mode=cfg.mode, log=cfg.log,
                              drpver=cfg.drpver, redux_path=cfg.redux_path,
-                             chart_path=cfg.chart_path, directory_path=cfg.directory_path,
-                             analysis_path=cfg.analysis_path)
+                             chart_path=cfg.chart_path, directory_path=cfg.directory_path)
 
         # Collect the metadata into a dictionary
         meta = {}
@@ -310,15 +309,6 @@ class MaNGADataCube(MaNGAConfig, DataCube):
 
         self.rss = MaNGARSS(str(rss_cfg.file_path), sres_ext=self.sres_ext,
                             sres_fill=self.sres_fill)
-
-# TODO: Is this more broadly useful?  Restore it if so, otherwise remove it. 
-#    def get_config(self):
-#        """
-#        """
-#        return MaNGAConfig(self.plate, self.ifudesign, mode=self.mode, log=self.log,
-#                           drpver=self.drpver, redux_path=self.redux_path,
-#                           chart_path=self.chart_path, directory_path=self.directory_path,
-#                           analysis_path=self.analysis_path)
 
     def mean_sky_coordinates(self, center_coo=None, offset='OBJ'):
         """

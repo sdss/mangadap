@@ -141,15 +141,13 @@ instantiation arguments for :class:`TemplateLibrary`.
 .. include:: ../include/links.rst
 """
 from pathlib import Path
-import os
-import time
 import warnings
 import logging
 
 from IPython import embed
 
 import numpy
-from scipy import sparse, interpolate
+from scipy import interpolate
 
 from astropy.io import fits
 import astropy.constants
@@ -158,20 +156,15 @@ from pydl.goddard.astro import airtovac
 
 from ..par.parset import KeywordParSet
 from ..config import defaults
-from ..util.bitmask import BitMask
 from ..util.dapbitmask import DAPBitMask
 from ..util.log import log_output
-from ..util.fileio import readfits_1dspec, read_template_spectrum, writefits_1dspec, create_symlink
+from ..util.fileio import read_template_spectrum, writefits_1dspec, create_symlink
 from ..util.fitsutil import DAPFitsUtil
 from ..util import sampling
 from ..util.resolution import SpectralResolution, match_spectral_resolution
 from ..util.parser import DefaultConfig
 from .util import select_proc_method, HDUList_mask_wavelengths
 
-from matplotlib import pyplot
-
-# Add strict versioning
-# from distutils.version import StrictVersion
 
 class TemplateLibraryDef(KeywordParSet):
     """
@@ -266,7 +259,7 @@ def available_template_libraries():
     search_dir = defaults.dap_config_root() / 'spectral_templates'
     ini_files = sorted(list(search_dir.glob('*.ini')))
     if len(ini_files) == 0:
-        raise IOError('Could not find any configuration files in {0} !'.format(search_dir))
+        raise IOError(f'Could not find any configuration files in {search_dir} !')
 
     # Build the list of library definitions
     template_libraries = []
@@ -354,7 +347,7 @@ class TemplateLibrary:
     for the resolution matched fits file; if it doesn't exist and
     read is ``True``, it will prepare the template library for use in
     analyzing the datacube and write the prepared library file (if
-    hardcopy is True). If clobber=True, the preparation and writing
+    hardcopy is True). If overwrite=True, the preparation and writing
     of the template library will be done even if the library already
     exists.
 
@@ -415,36 +408,25 @@ class TemplateLibrary:
             After processing, renormalize the flux of the full
             library to unity. The relative fluxes of the templates
             are maintained.
-        dapver (:obj:`str`, optional):
-            DAP version, which is used to define the default DAP
-            analysis path.  Default is defined by
-            :func:`mangadap.config.defaults.dap_version`
-        analysis_path (:obj:`str`, optional):
-            The path to the top-level directory for the DAP output
-            files. Default is defined by
-            :func:`mangadap.config.defaults.dap_analysis_path`.
-        directory_path (:obj:`str`, optional):
-            The exact path to the processed template library file.
-            Default is defined by
-            :func:`mangadap.config.defaults.dap_common_path`.
-        processed_file (:obj:`str`, optional):
-            The name of the file containing the prepared template
-            library output file. The file should be found at
-            :attr:`directory_path`/:attr:`processed_file`. Default is
-            defined by
-            :func:`mangadap.config.defaults.dap_file_name`.
+        output_path (:obj:`str`, `Path`_, optional):
+            The path for the output file.  If None, the current working
+            directory is used.
+        output_file (:obj:`str`, optional):
+            The name of the output file. The full path of the
+            output file will be :attr:`directory_path`/:attr:`output_file`.
+            If None, the default is to combine ``cube.output_root`` and the
+            library key; if ``cube`` is None, it is simply the library key.
         read (:obj:`bool`, optional):
             Flag to read the template library data.
         process (:obj:`bool`, optional):
             Process (spectral resolution and sampling operations) the
-            template library in preparation for use in fitting the
-            provided datacube.
+            template library.  See :func:`process_template_library`.
         hardcopy (:obj:`bool`, optional):
             Flag to keep a hardcopy of the processed template library.
         symlink_dir (:obj:`str`, optional):
             Create a symlink to the file in this directory. If None,
             no symbolic link is created.
-        clobber (:obj:`bool`, optional):
+        overwrite (:obj:`bool`, optional):
             Overwrite any saved, processed template library file.
         checksum (:obj:`bool`, optional):
             Use the checksum in the fits header to confirm that the
@@ -489,10 +471,10 @@ class TemplateLibrary:
             sampled in wavelength.
         directory_path (:obj:`str`):
             The exact path to the processed template library file.
-        processed_file (:obj:`str`):
+        output_file (:obj:`str`):
             The name of the file containing (to contain) the prepared
             template library output file.  The file should be found at
-            :attr:`directory_path`/:attr:`processed_file`.
+            :attr:`directory_path`/:attr:`output_file`.
         processed (:obj:`bool`):
             Flag that the template library has been prepared for use in
             the DAP.
@@ -513,9 +495,9 @@ class TemplateLibrary:
     def __init__(self, library_key, tpllib_list=None, cube=None, match_resolution=True,
                  velscale_ratio=None, sres=None, velocity_offset=0.0, min_sig_pix=0.0,
                  no_offset=True, spectral_step=None, log=True, wavelength_range=None,
-                 renormalize=True, dapver=None, analysis_path=None, directory_path=None,
-                 processed_file=None, read=True, process=True, hardcopy=True, symlink_dir=None,
-                 clobber=False, checksum=False, loggers=None, quiet=False):
+                 renormalize=True, output_path=None, output_file=None, read=True, process=True,
+                 hardcopy=True, symlink_dir=None, overwrite=False, checksum=False, loggers=None,
+                 quiet=False):
 
         self.loggers = loggers
         self.quiet = quiet
@@ -534,15 +516,14 @@ class TemplateLibrary:
         self.log10_sampling = None
 
         # Define the library
-        self.library = None
+        self.library = self.define_library(library_key, tpllib_list=tpllib_list)
         self.file_list = None
         self.ntpl = None
-        self.library = self.define_library(library_key, tpllib_list=tpllib_list)
 
         # Define the processed file and flag, and the HDUList used to
         # keep the data
         self.directory_path = None
-        self.processed_file = None
+        self.output_file = None
         self.processed = False
         self.hardcopy = True
         self.symlink_dir = None
@@ -568,10 +549,9 @@ class TemplateLibrary:
                                       velocity_offset=velocity_offset, min_sig_pix=min_sig_pix,
                                       no_offset=no_offset, spectral_step=spectral_step, log=log,
                                       wavelength_range=wavelength_range, renormalize=renormalize,
-                                      dapver=dapver, analysis_path=analysis_path,
-                                      directory_path=directory_path, processed_file=processed_file,
-                                      hardcopy=hardcopy, symlink_dir=symlink_dir, clobber=clobber,
-                                      loggers=loggers, quiet=quiet)
+                                      output_path=output_path, output_file=output_file,
+                                      hardcopy=hardcopy, symlink_dir=symlink_dir,
+                                      overwrite=overwrite, loggers=loggers, quiet=quiet)
 
     def __getitem__(self, key):
         return self.hdu[key]
@@ -596,80 +576,37 @@ class TemplateLibrary:
         return select_proc_method(library_key, TemplateLibraryDef, method_list=tpllib_list,
                                   available_func=available_template_libraries)
 
-    def _can_set_paths(self, directory_path, cube, processed_file, quiet=False):
+    @staticmethod
+    def default_paths(library_key, cube=None, output_path=None, output_file=None):
         """
-        Determine if the paths are fully defined.
+        Set the default directory and file name for the output file.
 
         Args:
-            directory_path (:obj:`str`):
-                The exact path to the processed template library
-                file.
-            cube (:class:`mangadap.datacube.datacube.DataCube`):
-                The datacube to be analyzed using the template library.
-            processed_file (:obj:`str`):
-                The name of the file containing (to contain) the
-                prepared template library output file. The file
-                should be found at ``directory_path/processed_file``.
-            quiet (:obj:`bool`, optional):
-                Suppress terminal output.
+            library_key (:obj:`str`):
+                Unique library keyword.
+            cube (:class:`mangadap.datacube.datacube.DataCube`, optional):
+                Datacube to analyze.  The output is specific to the cube if the
+                spectral resolution and spectral sampling are matched to the
+                cube data.  If None, the output file name is simply the library
+                key.
+            output_path (:obj:`str`, `Path`_, optional):
+                The path for the output file.  If None, the current working
+                directory is used.
+            output_file (:obj:`str`, optional):
+                The name of the output file. The full path of the
+                output file will be :attr:`directory_path`/:attr:`output_file`.
+                If None, the default is to combine ``cube.output_root`` and the
+                library key.
 
         Returns:
-            :obj:`bool`: True if the paths can be set.
+            :obj:`tuple`: Returns a `Path`_ with the output directory and a
+            :obj:`str` with the output file name.
         """
-        # Check that the directory_path can be set
-        if cube is None and directory_path is None:
-            if not quiet:
-                raise ValueError('Cannot define the default directory path without a DRP file; ' \
-                                 'provide a directory path.')
-            return False
-        # Check that the processed file can be set
-        if cube is None and processed_file is None:
-            if not quiet:
-                raise ValueError('Cannot define the default output file name without a DRP file; ' \
-                                 'provide a file name for the processed template library.')
-            return False
-        return True
-
-    # TODO: Need to abstract for non-DRP cube
-    def _set_paths(self, directory_path, dapver, analysis_path, cube, processed_file):
-        """
-        Set the I/O path to the processed template library.
-
-        Used to set :attr:`directory_path` and
-        :attr:`processed_file`. If not provided, the defaults are set
-        using, respectively,
-        :func:`mangadap.config.defaults.dap_common_path` and
-        :func:`mangadap.config.defaults.dap_file_name`.
-
-        Args:
-            directory_path (:obj:`str`):
-                The exact path to the DAP template library file. See
-                :attr:`directory_path`.
-            dapver (:obj:`str`):
-                DAP version.
-            analysis_path (:obj:`str`):
-                The path to the top-level directory containing the
-                DAP output files for a given DRP and DAP version.
-            cube (:class:`mangadap.datacube.datacube.DataCube`):
-                The datacube to be analyzed using the template library.
-            processed_file (:obj:`str`):
-                The name of the file containing (to contain) the
-                prepared template library output file. The file
-                should be found at ``directory_path/processed_file``.
-        """
-        # Use this to raise the necessary exceptions
-        self._can_set_paths(directory_path, cube, processed_file)
-
-        # Set the output directory path
-        self.directory_path = defaults.dap_common_path(plate=cube.plate, ifudesign=cube.ifudesign,
-                                                       drpver=cube.drpver, dapver=dapver,
-                                                       analysis_path=analysis_path) \
-                                        if directory_path is None else str(directory_path)
-
-        # Set the output file
-        self.processed_file = defaults.dap_file_name(cube.plate, cube.ifudesign,
-                                                     self.library['key']) \
-                                        if processed_file is None else str(processed_file)
+        directory_path = Path('.').resolve() if output_path is None \
+                                else Path(output_path).resolve()
+        root = f'{library_key}' if cube is None else f'{cube.output_root}-{library_key}'
+        _output_file = f'{root}.fits.gz' if output_file is None else output_file
+        return directory_path, _output_file
     
     def _get_file_list(self):
         """
@@ -1211,13 +1148,13 @@ class TemplateLibrary:
 
     def file_name(self):
         """Return the name of the processed file."""
-        return self.processed_file
+        return self.output_file
 
     def file_path(self):
         """Return the full path to the processed file."""
-        if self.directory_path is None or self.processed_file is None:
+        if self.directory_path is None or self.output_file is None:
             return None
-        return os.path.join(self.directory_path, self.processed_file)
+        return self.directory_path / self.output_file
 
     def read_raw_template_library(self, library_key=None, tpllib_list=None):
         """
@@ -1242,9 +1179,9 @@ class TemplateLibrary:
                                  match_resolution=True, velscale_ratio=None, sres=None,
                                  velocity_offset=0.0, min_sig_pix=0.0, no_offset=True,
                                  spectral_step=None, log=True, wavelength_range=None,
-                                 renormalize=True, dapver=None, analysis_path=None,
-                                 directory_path=None, processed_file=None, hardcopy=True,
-                                 symlink_dir=None, clobber=False, loggers=None, quiet=False):
+                                 renormalize=True, output_path=None, output_file=None,
+                                 hardcopy=True, symlink_dir=None, overwrite=False, loggers=None,
+                                 quiet=False):
         r"""
         Process the template library for use in analyzing spectra.
 
@@ -1289,7 +1226,7 @@ class TemplateLibrary:
             The routine **does not** check that that an existing
             processed file or the existing object has been processed
             using the same datacube, velocity_offset, velscale, or
-            sres input. If unsure, use clobber=True.
+            sres input. If unsure, use overwrite=True.
         
         Args:
             library_key (:obj:`str`):
@@ -1344,30 +1281,20 @@ class TemplateLibrary:
                 After processing, renormalize the flux of the full
                 library to unity. The relative fluxes of the templates
                 are maintained.
-            dapver (:obj:`str`, optional):
-                DAP version, which is used to define the default DAP
-                analysis path.  Default is defined by
-                :func:`mangadap.config.defaults.dap_version`
-            analysis_path (:obj:`str`, optional):
-                The path to the top-level directory for the DAP output
-                files. Default is defined by
-                :func:`mangadap.config.defaults.dap_analysis_path`.
-            directory_path (:obj:`str`, optional):
-                The exact path to the processed template library file.
-                Default is defined by
-                :func:`mangadap.config.defaults.dap_common_path`.
-            processed_file (:obj:`str`, optional):
-                The name of the file containing the prepared template
-                library output file. The file should be found at
-                :attr:`directory_path`/:attr:`processed_file`. Default is
-                defined by
-                :func:`mangadap.config.defaults.dap_file_name`.
+            output_path (:obj:`str`, `Path`_, optional):
+                The path for the output file.  If None, the current working
+                directory is used.
+            output_file (:obj:`str`, optional):
+                The name of the output file. The full path of the
+                output file will be :attr:`directory_path`/:attr:`output_file`.
+                If None, the default is to combine ``cube.output_root`` and the
+                library key; if ``cube`` is None, it is simply the library key.
             hardcopy (:obj:`bool`, optional):
                 Flag to keep a hardcopy of the processed template library.
             symlink_dir (:obj:`str`, optional):
                 Create a symlink to the file in this directory. If None,
                 no symbolic link is created.
-            clobber (:obj:`bool`, optional):
+            overwrite (:obj:`bool`, optional):
                 Overwrite any saved, processed template library file.
             loggers (:obj:`list`, optional):
                 List of `logging.Logger`_ objects to log progress;
@@ -1386,6 +1313,12 @@ class TemplateLibrary:
         if loggers is not None:
             self.loggers = loggers
         self.quiet = quiet
+
+        # TODO: Not sure we should allow the library key to change in this
+        # way...
+        if library_key is not None:
+            # Redefine the library
+            self.library = self.define_library(library_key, tpllib_list=tpllib_list)
 
         # Ignore velscale_ratio if it is set to unity
         if velscale_ratio is not None and velscale_ratio == 1:
@@ -1427,20 +1360,19 @@ class TemplateLibrary:
         if velscale_ratio is not None:
             self.spectral_step /= velscale_ratio
 
-        # Set the paths if possible
-        directory_path = self.directory_path if directory_path is None else directory_path
-        processed_file = self.processed_file if processed_file is None else processed_file
-        if self._can_set_paths(directory_path, cube, processed_file, quiet=True):
-            self._set_paths(directory_path, dapver, analysis_path, cube, processed_file)
+        # (Re)Set the output paths
+        self.directory_path, self.output_file \
+                = TemplateLibrary.default_paths(self.library['key'], cube=cube,
+                                                output_path=output_path, output_file=output_file)
         self.hardcopy = hardcopy
         self.symlink_dir = symlink_dir
 
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '-'*50)
-            log_output(self.loggers, 1, logging.INFO, 'Template library output path: {0}'.format(
-                                                                            self.directory_path))
-            log_output(self.loggers, 1, logging.INFO, 'Template library output file: {0}'.format(
-                                                                            self.processed_file))
+            log_output(self.loggers, 1, logging.INFO,
+                       f'Template library output path: {self.directory_path}')
+            log_output(self.loggers, 1, logging.INFO,
+                       f'Template library output file: {self.output_file}')
 
         # Check that the path for or to the file is defined
         ofile = self.file_path()
@@ -1448,7 +1380,7 @@ class TemplateLibrary:
             raise ValueError('File path for output file is undefined!')
 
         # Read and use a pre-existing file
-        if self.hardcopy and os.path.isfile(ofile) and not clobber:
+        if self.hardcopy and ofile.exists() and not overwrite:
             if not self.quiet:
                 log_output(self.loggers, 1, logging.INFO, 'Reading existing file')
             self.hdu = DAPFitsUtil.read(ofile, checksum=self.checksum)
@@ -1457,34 +1389,30 @@ class TemplateLibrary:
             self.processed = True
             # Make sure the symlink exists
             if self.symlink_dir is not None:
-                create_symlink(ofile, self.symlink_dir, clobber=clobber)
+                create_symlink(str(ofile), self.symlink_dir, overwrite=overwrite)
             if not self.quiet:
                 log_output(self.loggers, 1, logging.INFO, '-'*50)
             return
 
         # Warn the user that the file will be overwritten
-        if self.hardcopy and os.path.isfile(ofile):
+        if self.hardcopy and ofile.exists():
             if not self.quiet:
-                warnings.warn('Overwriting existing file: {0}'.format(self.processed_file))
-            os.remove(ofile)
+                warnings.warn(f'Overwriting existing file: {ofile}')
 
         # Read the raw data
         self._read_raw()
-
-#        wave_inp = self.hdu['WAVE'].data.copy()
-#        flux_inp = self.hdu['FLUX'].data.copy()
 
         # Process the library
         self._process_library(wavelength_range=wavelength_range, renormalize=renormalize)
 
         # Write the fits file
         if self.hardcopy:
-            DAPFitsUtil.write(self.hdu, self.file_path(), clobber=clobber, checksum=True,
+            DAPFitsUtil.write(self.hdu, str(ofile), overwrite=overwrite, checksum=True,
                               symlink_dir=self.symlink_dir, loggers=self.loggers, quiet=self.quiet)
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '-'*50)
 
-    def single_spec_to_fits(self, i, ofile, clobber=True):
+    def single_spec_to_fits(self, i, ofile, overwrite=True):
         """
         Write one of the template spectra to a 1D fits file.
 
@@ -1497,7 +1425,7 @@ class TemplateLibrary:
                 Index of the spectrum in the avaiable list to output.
             ofile (:obj:`str`):
                 Name of the file to write
-            clobber (:obj:`bool`, optional):
+            overwrite (:obj:`bool`, optional):
                 Overwrite any existing file.
 
         Raises:
@@ -1510,5 +1438,6 @@ class TemplateLibrary:
         wave = self.hdu['WAVE'].data if self.processed else self.hdu['WAVE'].data[i,:]
         log = self.log10_sampling if self.processed else self.library['log10']
         writefits_1dspec(ofile, numpy.log10(wave[0]) if log else wave[0], self.spectral_step,
-                         self.hdu['FLUX'].data[i,:], clobber=clobber)
+                         self.hdu['FLUX'].data[i,:], overwrite=overwrite)
+
 

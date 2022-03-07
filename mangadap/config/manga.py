@@ -606,7 +606,7 @@ class MaNGAAnalysisPlan(AnalysisPlanSet):
         Returns:
             `Path`_: Path object for the "common" output
         """
-        return self.root_path / 'common' / str(self.cube.plate) / str(self.cube.ifudesign)
+        return self.analysis_path / 'common' / str(self.cube.plate) / str(self.cube.ifudesign)
 
     def method_path(self, plan_index=0, qa=False, ref=False):
         """
@@ -638,7 +638,7 @@ class MaNGAAnalysisPlan(AnalysisPlanSet):
         if qa and ref:
             raise ValueError('Cannot provide path for both qa and ref directory.  Pick one.')
 
-        root = self.root_path / self['key'][plan_index] / str(self.cube.plate) \
+        root = self.analysis_path / self['key'][plan_index] / str(self.cube.plate) \
                     / str(self.cube.ifudesign)
         if not qa and not ref:
             return root

@@ -11,6 +11,8 @@ import argparse
 import textwrap
 from functools import reduce
 
+from IPython import embed
+
 class SmartFormatter(argparse.HelpFormatter):
     r"""
     Enable a combination of both fixed-format and wrapable lines to be formatted

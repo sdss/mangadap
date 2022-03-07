@@ -61,8 +61,7 @@ class MaNGARSS(MaNGAConfig, RowStackedSpectra):
         # to do this...
         MaNGAConfig.__init__(self, cfg.plate, cfg.ifudesign, mode=cfg.mode, log=cfg.log,
                              drpver=cfg.drpver, redux_path=cfg.redux_path,
-                             chart_path=cfg.chart_path, directory_path=cfg.directory_path,
-                             analysis_path=cfg.analysis_path)
+                             chart_path=cfg.chart_path, directory_path=cfg.directory_path)
 
         # Define the relevant BitMask object
         bitmask = DRPFitsBitMask(mode='RSS')

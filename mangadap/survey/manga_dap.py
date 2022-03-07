@@ -43,6 +43,7 @@ from ..dapfits import construct_maps_file, construct_cube_file
 from ..util.fitsutil import DAPFitsUtil
 from matplotlib import pyplot
 
+# TODO: Move this into DataCube?
 def get_manga_dap_meta(cube):
     r"""
     Get the metadata required to run the DAP.
@@ -147,13 +148,12 @@ def get_manga_dap_meta(cube):
     return metadata
 
 
-def manga_dap(cube, plan, dbg=False, log=None, verbose=0, drpver=None, redux_path=None,
-              directory_path=None, dapver=None, analysis_path=None):
+def manga_dap(cube, plan, dbg=False, log=None, verbose=0):
     r"""
     Main wrapper function for the MaNGA DAP.
 
     This function is designed to be called once per datacube. The
-    :class:`mangadap.par.analysisplan.AnalysisPlanSet` instance sets
+    :class:`mangadap.config.analysisplan.AnalysisPlanSet` instance sets
     the types of analyses to perform on this observation. Each
     analysis plan results in a MAPS and model LOGCUBE file.
 
@@ -187,8 +187,9 @@ def manga_dap(cube, plan, dbg=False, log=None, verbose=0, drpver=None, redux_pat
     Args:
         cube (:class:`mangadap.datacube.datacube.DataCube`):
             Datacube to analyze.
-        plan (:class:`mangadap.par.analysisplan.AnalysisPlanSet`):
-            Object with the analysis plans to implement.
+        plan (:class:`mangadap.config.analysisplan.AnalysisPlanSet`):
+            Object that sets the analysis plans to implement and the output
+            paths for DAP files.
         dbg (:obj:`bool`, optional):
             Flag to run the DAP in debug mode, see above; default is
             False. Limited use; still under development.
@@ -197,24 +198,6 @@ def manga_dap(cube, plan, dbg=False, log=None, verbose=0, drpver=None, redux_pat
             produced by default.
         verbose (:obj:`int`, optional):
             Verbosity level, see above; default is 0.
-        drpver (:obj:`str`, optional):
-            DRP version. Default determined by
-            :func:`mangadap.config.defaults.drp_version`.
-        redux_path (:obj:`str`, optional):
-            Top-level directory with the DRP products; default is
-            defined by
-            :func:`mangadap.config.defaults.drp_redux_path`.
-        directory_path (:obj:`str`, optional):
-            Direct path to directory containing the DRP output file;
-            default is defined by
-            :func:`mangadap.config.defaults.drp_directory_path`
-        dapver (:obj:`str`, optional):
-            DAP version. Default determined by
-            :func:`mangadap.config.defaults.dap_version`.
-        analysis_path (:obj:`str`, optional):
-            Top-level directory for the DAP output data; default is
-            defined by
-            :func:`mangadap.config.defaults.dap_analysis_path`.
 
     Returns:
         :obj:`int`: Status flag (under development; currently always
@@ -234,13 +217,9 @@ def manga_dap(cube, plan, dbg=False, log=None, verbose=0, drpver=None, redux_pat
     # Start log
     loggers = module_logging(__name__, verbose)
 
-    _drpver = defaults.drp_version() if drpver is None else drpver
-    _dapver = defaults.dap_version() if dapver is None else dapver
-    # Set the the analysis path and make sure it exists
-    _analysis_path = defaults.dap_analysis_path(drpver=_drpver, dapver=_dapver) \
-                            if analysis_path is None else analysis_path
-    if not os.path.isdir(_analysis_path):
-        os.makedirs(_analysis_path)
+    # Check the root output path exists, and create it if not.
+    if not plan.analysis_path.exists():
+        plan.analysis_path.mkdir(parents=True)
 
     log_output(loggers, 1, logging.INFO, '-'*50)
     log_output(loggers, 1, logging.INFO, '{0:^50}'.format('MaNGA Data Analysis Pipeline'))
@@ -252,7 +231,7 @@ def manga_dap(cube, plan, dbg=False, log=None, verbose=0, drpver=None, redux_pat
     log_output(loggers, 1, logging.INFO, '  INPUT ROOT: {0}'.format(cube.directory_path))
     log_output(loggers, 1, logging.INFO, '   CUBE FILE: {0}'.format(cube.file_name))
     log_output(loggers, 1, logging.INFO, '     N PLANS: {0}'.format(plan.nplans))
-    log_output(loggers, 1, logging.INFO, ' OUTPUT ROOT: {0}'.format(_analysis_path))
+    log_output(loggers, 1, logging.INFO, ' OUTPUT ROOT: {0}'.format(plan.analysis_path))
     log_output(loggers, 1, logging.INFO, '-'*50)
 
     status = 0
@@ -271,57 +250,43 @@ def manga_dap(cube, plan, dbg=False, log=None, verbose=0, drpver=None, redux_pat
         #   common directory)
         #   - EmissionLineModel
         #   - SpectralIndices
-        bin_method = SpatiallyBinnedSpectra.define_method(plan['bin_key'][i])
-        sc_method = StellarContinuumModel.define_method(plan['continuum_key'][i])
-        el_method = None if plan['elfit_key'][i] is None \
-                            else EmissionLineModel.define_method(plan['elfit_key'][i])
-
-        method = defaults.dap_method(bin_method['key'],
-                                     sc_method['fitpar']['template_library_key'],
-                                     'None' if el_method is None
-                                        else el_method['continuum_tpl_key'])
-        method_dir = defaults.dap_method_path(method, plate=cube.plate, ifudesign=cube.ifudesign,
-                                              drpver=_drpver, dapver=_dapver,
-                                              analysis_path=_analysis_path)
-        method_ref_dir = defaults.dap_method_path(method, plate=cube.plate,
-                                                  ifudesign=cube.ifudesign, ref=True,
-                                                  drpver=_drpver, dapver=_dapver,
-                                                  analysis_path=_analysis_path)
+        common_dir = plan.common_path()
+        method_dir = plan.method_path(plan_index=i)
+        method_ref_dir = plan.method_path(plan_index=i, ref=True)
 
         log_output(loggers, 1, logging.INFO, '-'*50)
-        log_output(loggers, 1, logging.INFO, '{0:^50}'.format('Plan {0}'.format(i+1)))
+        log_output(loggers, 1, logging.INFO, f'{f"Plan {i+1}":^50}')
         log_output(loggers, 1, logging.INFO, '-'*50)
-        log_output(loggers, 1, logging.INFO, '    METHOD: {0}'.format(method))
-        log_output(loggers, 1, logging.INFO, '    OUTPUT: {0}'.format(method_dir))
-        log_output(loggers, 1, logging.INFO, 'REF OUTPUT: {0}'.format(method_ref_dir))
+        log_output(loggers, 1, logging.INFO, f' METHOD KEY: {plan[i]["key"]}')
+        log_output(loggers, 1, logging.INFO, f'COMMON PATH: {common_dir}')
+        log_output(loggers, 1, logging.INFO, f'METHOD PATH: {method_dir}')
 
         #---------------------------------------------------------------
         # S/N Assessments: placed in the common/ directory
         #---------------------------------------------------------------
         rdxqa = None if plan['drpqa_key'][i] is None else \
                     ReductionAssessment(plan['drpqa_key'][i], cube, pa=metadata['pa'],
-                                        ell=metadata['ell'], analysis_path=_analysis_path,
+                                        ell=metadata['ell'], output_path=common_dir,
                                         symlink_dir=method_ref_dir,
-                                        clobber=plan['drpqa_clobber'][i], loggers=loggers)
+                                        overwrite=plan['drpqa_clobber'][i], loggers=loggers)
 
         #---------------------------------------------------------------
         # Spatial Binning: placed in the common/ directory
         #---------------------------------------------------------------
         binned_spectra = None if plan['bin_key'][i] is None else \
                     SpatiallyBinnedSpectra(plan['bin_key'][i], cube, rdxqa, reff=metadata['reff'],
-                                           analysis_path=_analysis_path,
-                                           symlink_dir=method_ref_dir,
-                                           clobber=plan['bin_clobber'][i], loggers=loggers)
+                                           output_path=common_dir, symlink_dir=method_ref_dir,
+                                           overwrite=plan['bin_clobber'][i], loggers=loggers)
 
         #---------------------------------------------------------------
         # Stellar Continuum Fit: placed in the common/ directory
         #---------------------------------------------------------------
+        # TODO: Allow tpl_hardcopy to be an input parameter?
         stellar_continuum = None if plan['continuum_key'][i] is None else \
                     StellarContinuumModel(plan['continuum_key'][i], binned_spectra,
                                           guess_vel=metadata['vel'], guess_sig=metadata['vdisp'],
-                                          analysis_path=_analysis_path, symlink_dir=method_ref_dir,
-                                          tpl_symlink_dir=method_ref_dir,
-                                          clobber=plan['continuum_clobber'][i], loggers=loggers)
+                                          output_path=common_dir, symlink_dir=method_ref_dir,
+                                          overwrite=plan['continuum_clobber'][i], loggers=loggers)
 
         #---------------------------------------------------------------
         # For both the emission-line measurements (moments and model):
@@ -334,12 +299,12 @@ def manga_dap(cube, plan, dbg=False, log=None, verbose=0, drpver=None, redux_pat
         # directory
         #---------------------------------------------------------------
 #        warnings.filterwarnings('error', message='Warning: converting a masked element to nan.')
+        # TODO: enable artifact_path and bandpass_path?
         emission_line_moments = None if plan['elmom_key'][i] is None else \
                     EmissionLineMoments(plan['elmom_key'][i], binned_spectra,
                                         stellar_continuum=stellar_continuum,
-                                        redshift=metadata['z'], analysis_path=_analysis_path,
-                                        directory_path=method_ref_dir,
-                                        clobber=plan['elmom_clobber'][i], loggers=loggers)
+                                        redshift=metadata['z'], output_path=method_ref_dir,
+                                        overwrite=plan['elmom_clobber'][i], loggers=loggers)
 
         #---------------------------------------------------------------
         # Emission-line Fit: placed in the DAPTYPE/ref/ directory
@@ -356,72 +321,8 @@ def manga_dap(cube, plan, dbg=False, log=None, verbose=0, drpver=None, redux_pat
                                      stellar_continuum=stellar_continuum,
                                      emission_line_moments=emission_line_moments, dispersion=100.0,
                                      minimum_error=numpy.finfo(numpy.float32).eps,
-                                     analysis_path=_analysis_path, directory_path=method_ref_dir,
-                                     clobber=plan['elfit_clobber'][i], loggers=loggers)
-
-#        model_flux = emission_line_model['FLUX'].data
-#        model_base = emission_line_model['BASE'].data
-#        model_mask = emission_line_model['MASK'].data
-#        model_binid = emission_line_model['BINID'].data
-#        eml_par = emission_line_model['EMLDATA'].data
-#
-#        test = emission_line_model._get_line_fit_metrics(model_flux, model_base, model_mask, eml_par, model_binid)
-#
-
-#        cen = drpf.spatial_shape[0]//2
-#        indx = emission_line_model['BINID'].data[cen,cen]
-#        indx = numpy.arange(len(emission_line_model['EMLDATA'].data['BINID']))[emission_line_model['EMLDATA'].data['BINID'] == indx][0]
-#        print(indx)
-#        pyplot.plot(emission_line_model['WAVE'].data, emission_line_model['FLUX'].data[indx,:])
-#        pyplot.show()
-#
-#        el_continuum = emission_line_model.fill_continuum_to_match(
-#                                            emission_line_model['BINID'].data,
-#                                            missing=emission_line_model.missing_models)
-#        el_continuum_dcnvlv = emission_line_model.fill_continuum_to_match(
-#                                            emission_line_model['BINID'].data,
-#                                            missing=emission_line_model.missing_models,
-#                                            redshift_only=True)
-#        el_continuum_dcnvlv_rest = emission_line_model.fill_continuum_to_match(
-#                                            emission_line_model['BINID'].data,
-#                                            missing=emission_line_model.missing_models,
-#                                            redshift_only=True, deredshift=True)
-#
-#        pyplot.imshow(el_continuum, origin='lower', interpolation='nearest', aspect='auto')
-#        pyplot.colorbar()
-#        pyplot.show()
-#
-#        pyplot.imshow(el_continuum_dcnvlv, origin='lower', interpolation='nearest', aspect='auto')
-#        pyplot.colorbar()
-#        pyplot.show()
-#
-#        pyplot.imshow(el_continuum_dcnvlv_rest, origin='lower', interpolation='nearest', aspect='auto')
-#        pyplot.colorbar()
-#        pyplot.show()
-#
-#        pyplot.plot(binned_spectra['WAVE'].data, el_continuum[indx,:])
-#        pyplot.plot(binned_spectra['WAVE'].data, el_continuum_dcnvlv[indx,:])
-#        pyplot.plot(binned_spectra['WAVE'].data, el_continuum_dcnvlv_rest[indx,:])
-#        pyplot.show()
-
-#        model_flux = emission_line_model['FLUX'].data
-#        model_base = emission_line_model['BASE'].data
-#        model_mask = emission_line_model['MASK'].data
-#        model_eml_par = emission_line_model['EMLDATA'].data
-#        model_binid = emission_line_model['BINID'].data \
-#                        if emission_line_model.method['deconstruct_bins'] else None
-#        test_eml_par = emission_line_model._get_line_fit_metrics(model_flux, model_base,
-#                                                                 model_mask, model_eml_par,
-#                                                                 model_binid)
-
-#        el_continuum = emission_line_model.fill_continuum_to_match(binned_spectra['BINID'].data,
-#                                                        missing=binned_spectra.missing_bins)
-#        sc_continuum = stellar_continuum.fill_to_match(binned_spectra['BINID'].data,
-#                                               missing=binned_spectra.missing_bins)
-#        pyplot.plot(binned_spectra['WAVE'].data, binned_spectra['FLUX'].data[0,:])
-#        pyplot.plot(binned_spectra['WAVE'].data, el_continuum[0,:])
-#        pyplot.plot(binned_spectra['WAVE'].data, sc_continuum[0,:])
-#        pyplot.show()
+                                     output_path=method_ref_dir,
+                                     overwrite=plan['elfit_clobber'][i], loggers=loggers)
 
         #---------------------------------------------------------------
         # If requested by the emission-line moments method, remeasure
@@ -434,27 +335,8 @@ def manga_dap(cube, plan, dbg=False, log=None, verbose=0, drpver=None, redux_pat
                 and emission_line_moments.database['redo_postmodeling']:
             emission_line_moments.measure(binned_spectra, stellar_continuum=stellar_continuum,
                                           emission_line_model=emission_line_model,
-                                          analysis_path=_analysis_path,
-                                          directory_path=method_ref_dir,
-                                          clobber=plan['elmom_clobber'][i], loggers=loggers)
-
-#        print(emission_line_moments['ELMMNTS'].data['FLUX'].shape)
-#
-#        pyplot.scatter(ha_flux,
-#                       numpy.ma.divide(emission_line_moments['ELMMNTS'].data['FLUX'][:,18],ha_flux),
-#                       marker='.', s=20, lw=0)
-#        pyplot.show()
-#
-#        pyplot.scatter(emission_line_model['EMLDATA'].data['FLUX'][:,18],
-#                       numpy.ma.divide(ha_flux,emission_line_model['EMLDATA'].data['FLUX'][:,18]),
-#                       marker='.', s=20, lw=0)
-#        pyplot.show()
-#
-#        pyplot.scatter(emission_line_model['EMLDATA'].data['FLUX'][:,18],
-#                       numpy.ma.divide(emission_line_moments['ELMMNTS'].data['FLUX'][:,18],
-#                                       emission_line_model['EMLDATA'].data['FLUX'][:,18]),
-#                       marker='.', s=20, lw=0)
-#        pyplot.show()
+                                          output_path=method_ref_dir,
+                                          overwrite=plan['elmom_clobber'][i], loggers=loggers)
 
         #---------------------------------------------------------------
         # Spectral-Index Measurements: placed in the DAPTYPE/ref/
@@ -464,26 +346,26 @@ def manga_dap(cube, plan, dbg=False, log=None, verbose=0, drpver=None, redux_pat
                     SpectralIndices(plan['spindex_key'][i], binned_spectra,
                                     redshift=metadata['z'], stellar_continuum=stellar_continuum,
                                     emission_line_model=emission_line_model,
-                                    analysis_path=_analysis_path, directory_path=method_ref_dir,
-                                    tpl_symlink_dir=method_ref_dir,
-                                    clobber=plan['spindex_clobber'][i], loggers=loggers)
+                                    output_path=method_ref_dir,
+                                    overwrite=plan['spindex_clobber'][i], loggers=loggers)
 
         #-------------------------------------------------------------------
         # Construct the main output file(s)
         #-------------------------------------------------------------------
-        construct_maps_file(cube, metadata, rdxqa=rdxqa, binned_spectra=binned_spectra,
-                            stellar_continuum=stellar_continuum,
+        construct_maps_file(cube, metadata, method=plan[i]['key'], rdxqa=rdxqa,
+                            binned_spectra=binned_spectra, stellar_continuum=stellar_continuum,
                             emission_line_moments=emission_line_moments,
                             emission_line_model=emission_line_model,
                             spectral_indices=spectral_indices, redshift=metadata['z'],
-                            analysis_path=_analysis_path, clobber=True, loggers=loggers,
+                            output_path=method_dir, overwrite=True, loggers=loggers,
                             single_precision=True)
 
-        construct_cube_file(cube, metadata, binned_spectra=binned_spectra,
-                            stellar_continuum=stellar_continuum,
+        construct_cube_file(cube, metadata, method=plan[i]['key'], rdxqa=rdxqa,
+                            binned_spectra=binned_spectra, stellar_continuum=stellar_continuum,
+                            emission_line_moments=emission_line_moments,
                             emission_line_model=emission_line_model,
-                            analysis_path=_analysis_path, clobber=True, loggers=loggers,
-                            single_precision=True)
+                            spectral_indices=spectral_indices, output_path=method_dir,
+                            overwrite=True, loggers=loggers, single_precision=True)
 
         # Mark for next garbage collection.
         # TODO: Not sure this is useful because these variables may
@@ -501,27 +383,26 @@ def manga_dap(cube, plan, dbg=False, log=None, verbose=0, drpver=None, redux_pat
     log_output(loggers, 1, logging.INFO, '-'*50)
     log_output(loggers, 1, logging.INFO, 'EXECUTION SUMMARY')
     log_output(loggers, 1, logging.INFO, '-'*50)
-    log_output(loggers, 1, logging.INFO, '    FINISH: {0}'.format(
-                                    time.strftime("%a %d %b %Y %H:%M:%S",time.localtime())))
+    log_output(loggers, 1, logging.INFO,
+               f'    FINISH: {time.strftime("%a %d %b %Y %H:%M:%S",time.localtime())}')
     if time.perf_counter() - t < 60:
-        tstr = '  DURATION: {0:.5f} sec'.format((time.perf_counter() - t))
+        tstr = f'  DURATION: {time.perf_counter() - t:.5f} sec'
     elif time.perf_counter() - t < 3600:
-        tstr = '  DURATION: {0:.5f} min'.format((time.perf_counter() - t)/60.)
+        tstr = f'  DURATION: {(time.perf_counter() - t)/60.:.5f} min'
     else:
-        tstr = '  DURATION: {0:.5f} hr'.format((time.perf_counter() - t)/3600.)
+        tstr = f'  DURATION: {(time.perf_counter() - t)/3600.:.5f} hr'
     log_output(loggers, 1, logging.INFO, tstr)
-
 
     mem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss \
             + resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss
     if mem < 1024:
-        mstr = 'MAX MEMORY: {0:.4f} bytes'.format(mem)
+        mstr = f'MAX MEMORY: {mem:.4f} bytes'
     elif mem < 1024*1024:
-        mstr = 'MAX MEMORY: {0:.4f} Kbytes'.format(mem/1024)
+        mstr = f'MAX MEMORY: {mem/1024:.4f} Kbytes'
     elif mem < 1024*1024*1024:
-        mstr = 'MAX MEMORY: {0:.4f} Mbytes'.format(mem/1024/1024)
+        mstr = f'MAX MEMORY: {mem/1024/1024:.4f} Mbytes'
     else:
-        mstr = 'MAX MEMORY: {0:.4f} Gbytes'.format(mem/1024/1024/1024)
+        mstr = f'MAX MEMORY: {mem/1024/1024/1024:.4f} Gbytes'
     log_output(loggers, 1, logging.INFO, mstr)
     log_output(loggers, 1, logging.INFO, '-'*50)
     log_output(loggers, 1, logging.INFO, '-'*50)

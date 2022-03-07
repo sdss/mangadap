@@ -38,7 +38,7 @@ def calculate_covariance_cube(plate, ifudesign, ofile, nc=1, wave=None, director
             C = rss.covariance_cube(channels=channels)
 
     print('Writing data to {0}.'.format(ofile))
-    C.write(ofile, clobber=True)            # Write the data
+    C.write(ofile, overwrite=True)            # Write the data
 
 
 class CalculateCovariance(scriptbase.ScriptBase):

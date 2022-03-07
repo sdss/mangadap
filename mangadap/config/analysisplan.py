@@ -122,7 +122,7 @@ class AnalysisPlanSet(ParDatabase):
             if not isinstance(_planlist[i], AnalysisPlan):
                 raise TypeError('Input must be a single or list of AnalysisPlan objects.')
         super().__init__(_planlist)
-        self.root_path = Path('.' if analysis_path is None else analysis_path).resolve()
+        self.analysis_path = Path('.' if analysis_path is None else analysis_path).resolve()
         self.cube = cube
 
     @classmethod
@@ -180,7 +180,7 @@ class AnalysisPlanSet(ParDatabase):
         Returns:
             `Path`_: Path object for the "common" output
         """
-        return self.root_path / 'common'
+        return self.analysis_path / 'common'
 
     def method_path(self, plan_index=0, qa=False, ref=False):
         """
@@ -211,7 +211,7 @@ class AnalysisPlanSet(ParDatabase):
             raise ValueError(f'Invalid index ({plan_index}); 0 <= index < {self.nplans}.')
         if qa and ref:
             raise ValueError('Cannot provide path for both qa and ref directory.  Pick one.')
-        root = self.root_path / self['key'][plan_index]
+        root = self.analysis_path / self['key'][plan_index]
         if not qa and not ref:
             return root
         if qa:

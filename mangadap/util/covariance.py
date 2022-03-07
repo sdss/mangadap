@@ -35,8 +35,8 @@ channel in a :class:`mangadap.drpfits.DRPFits` object::
     # Get the triplets of the non-zero elements
     i, j, v = C.find()
 
-    # Write it to disk (clobber existing file)
-    C.write('test_covariance.fits', clobber=True)
+    # Write it to disk (overwrite existing file)
+    C.write('test_covariance.fits', overwrite=True)
 
 The covariance matrix is stored in "coordinate" format in a fits
 binary table. Since the covariance matrix is symmetric by definition,
@@ -109,7 +109,7 @@ can be written and read in without issue. See
 
     Cov.to_correlation()
     Cov.show(channel=2000)
-    Cov.write('correlation_matrix.fits', clobber=True)
+    Cov.write('correlation_matrix.fits', overwrite=True)
     Cov.revert_correlation()
 
     Corr = Covariance(ifile='correlation_matrix.fits')
@@ -1244,7 +1244,7 @@ class Covariance:
         ivar_hdu = fits.ImageHDU(data=numpy.ma.power(var,-1.).filled(0.0), name='IVAR')
         return _hdr, ivar_hdu, covar_hdu
 
-    def write(self, ofile, reshape=False, hdr=None, clobber=False):
+    def write(self, ofile, reshape=False, hdr=None, overwrite=False):
         r"""
         Write the covariance object to a fits file.
 
@@ -1298,23 +1298,23 @@ class Covariance:
             hdr (`astropy.io.fits.Header`_, optional):
                 A header object to include in the PRIMARY extension.
                 The SHAPE keyword will be added/overwritten.
-            clobber (:obj:`bool`, optional):
+            overwrite (:obj:`bool`, optional):
                 Overwrite any existing file.
 
         Raises:
             FileExistsError:
-                Raised if the output file already exists and clobber is False.
+                Raised if the output file already exists and overwrite is False.
             TypeError:
                 Raised if the input ``hdr`` does not have the correct
                 type.
         """
-        if os.path.isfile(ofile) and not clobber:
-            raise FileExistsError('{0} exists!  Use \'clobber=True\' to overwrite.'.format(ofile))
+        if os.path.isfile(ofile) and not overwrite:
+            raise FileExistsError(f'{ofile} exists!  Use \'overwrite=True\' to overwrite.')
 
         # Construct HDUList and write the fits file
         _hdr, ivar_hdu, covar_hdu = self.output_hdus(reshape=reshape, hdr=hdr)
         DAPFitsUtil.write(fits.HDUList([fits.PrimaryHDU(header=_hdr), ivar_hdu, covar_hdu]),
-                          ofile, clobber=clobber, checksum=True)
+                          ofile, overwrite=overwrite, checksum=True)
 
     def variance(self, copy=True):
         """

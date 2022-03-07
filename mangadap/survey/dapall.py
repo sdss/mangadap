@@ -1227,7 +1227,7 @@ class DAPall:
         self.hdu = fits.HDUList(self.hdu)
 
         # Write the file (use of this function is probably overkill)
-        DAPFitsUtil.write(self.hdu, self.file_path(), clobber=True, checksum=True,
+        DAPFitsUtil.write(self.hdu, self.file_path(), overwrite=True, checksum=True,
                           loggers=self.loggers)
         
 

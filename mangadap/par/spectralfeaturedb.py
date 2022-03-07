@@ -31,6 +31,8 @@ from .parset import ParDatabase
 from ..util.parser import DefaultConfig
 from ..proc import util
 
+# TODO: Enable searching of local directory
+
 class SpectralFeatureDB(ParDatabase):
     """
     Basic container class for the parameters databases of spectral

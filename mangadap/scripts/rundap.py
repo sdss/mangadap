@@ -103,7 +103,7 @@ def parse_args(options=None, return_parser=False):
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     # Read the optional run-mode arguments
-    parser.add_argument("--clobber",
+    parser.add_argument("--overwrite",
                         help="if all selected, will run dap for all plates/ifudesigns/modes "
                         " regardless of state", action="store_true", default=False)
     parser.add_argument('-v', '--verbose', action='count',
@@ -230,8 +230,8 @@ class rundap:
           more typical ``parser`` and ``main`` pairing.
 
     Args:
-        clobber (:obj:`bool`, optional):
-            Clobber and redo any existing analysis.
+        overwrite (:obj:`bool`, optional):
+            Overwrite and redo any existing analysis.
         console (:obj:`bool`, optional):
             The class has been executed from the terminal with
             command-line arguments that should be parsed.
@@ -355,7 +355,7 @@ class rundap:
             sciama3.q.
 
     Attributes:
-        clobber (bool): **Only used with :attr:`all`**.  Clobber and
+        overwrite (bool): **Only used with :attr:`all`**.  Overwrite and
             redo any existing analysis.
         quiet (bool): Suppress output
         print_version (bool): Print the version and then return
@@ -414,7 +414,7 @@ class rundap:
             during a redo mode or if they are provided with any other
             mode.
     """
-    def __init__(self, clobber=None, console=None, quiet=False, print_version=False,
+    def __init__(self, overwrite=None, console=None, quiet=False, print_version=False,
                  strictver=True, mplver=None, redux_path=None, dapver=None, analysis_path=None,
                  plan_file=None, platelist=None, ifudesignlist=None, combinatorics=False,
                  list_file=None, sres_ext=None, sres_fill=None, covar_ext=None,
@@ -425,7 +425,7 @@ class rundap:
                  queue=None):
 
         # Save run-mode options
-        self.clobber = clobber
+        self.overwrite = overwrite
         self.quiet = quiet
         self.print_version = print_version
 
@@ -689,8 +689,8 @@ class rundap:
 
         # Run-mode options
         # Will OVERWRITE existing input from __init__()
-        if arg.clobber is not None:
-            self.clobber = arg.clobber
+        if arg.overwrite is not None:
+            self.overwrite = arg.overwrite
         if arg.quiet is not None:
             self.quiet = arg.quiet
         if arg.print_version is not None:
@@ -936,7 +936,7 @@ class rundap:
             # the path exists!)
             scriptfile, stdoutfile, stderrfile \
                     = self.write_compute_script(index, dapproc=self.dapproc,
-                                                plots=self.pltifu_plots, clobber=self.clobber)
+                                                plots=self.pltifu_plots, overwrite=self.overwrite)
 
             # Set the status to ready
             plate = self.drpc['PLATE'][index]
@@ -966,7 +966,7 @@ class rundap:
         if self.post_process:
             # Write the DAPall script and set its status
             dapall_scr, dapall_out, dapall_err \
-                    = self.write_dapall_script(plots=self.post_plots, clobber=self.clobber)
+                    = self.write_dapall_script(plots=self.post_plots, overwrite=self.overwrite)
             self.set_status(dapall_scr, status='ready')
             if self.create:
                 # Add it to the queue
@@ -981,7 +981,7 @@ class rundap:
             for plt in plates:
                 # Write the plot script for this plate
                 scriptfile, stdoutfile, stderrfile \
-                        = self.write_plate_qa_script(plt, clobber=self.clobber)
+                        = self.write_plate_qa_script(plt, overwrite=self.overwrite)
                 self.set_status(scriptfile, status='ready')
                 
                 if self.create:
@@ -1052,7 +1052,7 @@ class rundap:
             raise ValueError('Should be able to find all plates and ifus.')
         return rows
 
-    def write_compute_script(self, index, dapproc=True, plots=True, clobber=False,
+    def write_compute_script(self, index, dapproc=True, plots=True, overwrite=False,
                               relative_symlink=True):
         """
         Write the MaNGA DAP script file that is sent to a single CPU to
@@ -1067,8 +1067,8 @@ class rundap:
                 Flag to execute the main DAP processing.
             plots (:obj:`bool`, optional):
                 Create the QA plots.
-            clobber (:obj:`bool`, optional):
-                Flag to clobber any existing files.
+            overwrite (:obj:`bool`, optional):
+                Flag to overwrite any existing files.
             relative_symlink (:obj:`bool`, optional):
                 Set the symlink to the par file to be a relative path
                 instead of the absolute path.
@@ -1095,10 +1095,8 @@ class rundap:
                                       analysis_path=self.analysis_path)
 
         # Write the par file if it doesn't exist
-#        if not os.path.isfile(parfile) or clobber:
-        if not os.path.isfile(cfgfile) or clobber:
-            # clobber defaults to True
-#            self.drpc.write_par(parfile, mode, index=index)
+        if not os.path.isfile(cfgfile) or overwrite:
+            # overwrite defaults to True
             self.drpc.write_config(cfgfile, index=index, sres_ext=self.sres_ext,
                                    sres_fill=self.sres_fill, covar_ext=self.covar_ext)
             # and create symlinks to it
@@ -1108,10 +1106,8 @@ class rundap:
                                                 ref=True, drpver=self.mpl.drpver,
                                                 dapver=self.dapver,
                                                 analysis_path=self.analysis_path)
-#                create_symlink(parfile, path, relative_symlink=relative_symlink, clobber=clobber,
-#                               quiet=True)
-                create_symlink(cfgfile, path, relative_symlink=relative_symlink, clobber=clobber,
-                               quiet=True)
+                create_symlink(cfgfile, path, relative_symlink=relative_symlink,
+                               overwrite=overwrite, quiet=True)
 
         # Set the root path for the scripts, inputs, outputs, and logs
         _calling_path = os.path.join(self.calling_path, str(plate), str(ifudesign))
@@ -1124,7 +1120,7 @@ class rundap:
 
         ################################################################
         # Script file already exists, so just return
-        if os.path.exists(scriptfile) and not clobber:
+        if os.path.exists(scriptfile) and not overwrite:
             return scriptfile, stdoutfile, stderrfile
 
         # Main script components are:
@@ -1193,7 +1189,7 @@ class rundap:
         # Return the script file, file for stdout, and file for stderr
         return scriptfile, stdoutfile, stderrfile
     
-    def write_dapall_script(self, plots=True, clobber=False):
+    def write_dapall_script(self, plots=True, overwrite=False):
         """
         Write the script used to construct the DAPall file and its
         associated quality assessment plots.
@@ -1201,8 +1197,8 @@ class rundap:
         Args:
             plots (:obj:`bool`, optional):
                 Create the QA plots. Default is True.
-            clobber (:obj:`bool`, optional):
-                Flag to clobber any existing files.
+            overwrite (:obj:`bool`, optional):
+                Flag to overwrite any existing files.
 
         Returns:
             :obj:`str`: Three strings with the name of the written
@@ -1219,7 +1215,7 @@ class rundap:
         stderrfile = '{0}.err'.format(scriptfile)
 
         # Script file already exists, so just return
-        if os.path.exists(scriptfile) and not clobber:
+        if os.path.exists(scriptfile) and not overwrite:
             return scriptfile, stdoutfile, stderrfile
 
         # Open the script file and write the date as a commented header
@@ -1267,15 +1263,15 @@ class rundap:
         # Return the script file, file for stdout, and file for stderr
         return scriptfile, stdoutfile, stderrfile
     
-    def write_plate_qa_script(self, plate, clobber=False):
+    def write_plate_qa_script(self, plate, overwrite=False):
         """
         Write the script used to create the plate fit QA plot.
 
         Args:
             plate (:obj:`int`):
                 The plate number for the plot.
-            clobber (:obj:`bool`, optional):
-                Flag to clobber any existing files.
+            overwrite (:obj:`bool`, optional):
+                Flag to overwrite any existing files.
 
         Returns:
             :obj:`str`: Three strings with the name of the written
@@ -1293,7 +1289,7 @@ class rundap:
         stderrfile = '{0}.err'.format(scriptfile)
 
         # Script file already exists, so just return
-        if os.path.exists(scriptfile) and not clobber:
+        if os.path.exists(scriptfile) and not overwrite:
             return scriptfile, stdoutfile, stderrfile
 
         # Open the script file and write the date as a commented header

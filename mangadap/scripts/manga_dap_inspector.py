@@ -1,4 +1,4 @@
-
+from pathlib import Path
 import os
 import time
 import argparse
@@ -428,15 +428,25 @@ class UpdateSpectrumPlot:
         pyplot.draw()
         
 
-def parse_plt_ifu(maps_file):
-    file_name = maps_file.split('/')[-1]
-    return tuple([ int(n) for n in file_name.split('-')[1:3] ])
+#def parse_plt_ifu(maps_file):
+#    file_name = maps_file.split('/')[-1]
+#    return tuple([ int(n) for n in file_name.split('-')[1:3] ])
+
+def parse_name_method(maps_file):
+    f = Path(maps_file).resolve()
+    if not f.exists():
+        raise FileNotFoundError(f'{f} does not exist!')
+    file_name = f.name
+    components = f.name.split('-')
+    components[-1] = components[-1].split('.')[0]
+    i = components.index('MAPS')
+    return '-'.join(components[:i]), '-'.join(components[i+1:])
 
 
 def manga_dap_inspector(maps_file, model_file, ext=None, masked_spectra=True):
 
-    # Get the plate and ifu numbers
-    plt, ifu = parse_plt_ifu(maps_file)
+    # Try to get the file identifier and DAP method
+    name, method = parse_name_method(maps_file)
 
     #-------------------------------------------------------------------
     # Read the maps to plot
@@ -490,8 +500,13 @@ def manga_dap_inspector(maps_file, model_file, ext=None, masked_spectra=True):
     im = image_ax.imshow(map_cube[0], origin='lower', interpolation='nearest',
                          cmap='RdBu_r', vmin=map_zmin[0], vmax=map_zmax[0], zorder=3)
     cbar = pyplot.colorbar(im, cax=image_cax)
-    image_ax.text(0.5, 1.03, '{0}-{1}; MaNGA ID={2}; {3}'.format(plt, ifu, mangaid, target_type),
-            horizontalalignment='center', verticalalignment='center', transform=image_ax.transAxes)
+
+    if mangaid is None:
+        image_ax.text(0.5, 1.03, f'{name} {method}', ha='center', va='center',
+                      transform=image_ax.transAxes)
+    else:
+        image_ax.text(0.5, 1.03, f'{name}; MaNGA ID={mangaid}; {target_type}', ha='center',
+                      va='center', transform=image_ax.transAxes)
     image_ax.set_ylabel('Y [pix]')
     image_ax.set_xlabel('X [pix]')
 
