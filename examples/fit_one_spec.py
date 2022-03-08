@@ -9,6 +9,8 @@ import numpy
 from astropy.io import fits
 from matplotlib import pyplot
 
+from mangadap.tests.util import drp_test_version
+
 from mangadap.datacube import MaNGADataCube
 from mangadap.config import manga
 from mangadap.config import defaults
@@ -93,10 +95,6 @@ def get_spectra(plt, ifu, x, y, directory_path=None):
 if __name__ == '__main__':
     t = time.perf_counter()
 
-    # For testing
-    drpver = 'v3_1_1'
-    directory_path = defaults.dap_source_dir() / 'data' / 'remote'
-
     #-------------------------------------------------------------------
     # Read spectra to fit. The following reads a single MaNGA spectrum.
     # This is where you should read in your own spectrum to fit.
@@ -106,6 +104,10 @@ if __name__ == '__main__':
     # Spaxel coordinates
     x = 25 #30
     y = 25 #37
+    # Where to find the relevant datacube.  This example accesses the test data
+    # that can be downloaded by executing the script here:
+    # https://github.com/sdss/mangadap/blob/master/download_test_data.py
+    directory_path = defaults.dap_source_dir() / 'data' / 'remote'
     # Read a spectrum
     wave, flux, ivar, sres = get_spectra(plt, ifu, x, y, directory_path=directory_path)
     # In general, the DAP fitting functions expect data to be in 2D
@@ -136,7 +138,10 @@ if __name__ == '__main__':
     # (within +/- 2000 km/s). In this example, I'm pulling the redshift
     # from the DRPall file. There must be one redshift estimate per
     # spectrum to fit.  Here that means it's a single element array
-    drpall_file = directory_path / f'drpall-{drpver}.fits'
+    # This example accesses the test data
+    # that can be downloaded by executing the script here:
+    # https://github.com/sdss/mangadap/blob/master/download_test_data.py
+    drpall_file = directory_path / f'drpall-{drp_test_version}.fits'
     z = numpy.array([get_redshift(plt, ifu, drpall_file)])
     print('Redshift: {0}'.format(z[0]))
     # The DAP also requires an initial guess for the velocity
