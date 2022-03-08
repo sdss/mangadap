@@ -13,6 +13,10 @@ Defines some utility routines used to map a provided set of quantities.
 .. include common links, assuming primary doc root is up one directory
 .. include:: ../include/links.rst
 """
+import warnings
+
+from IPython import embed
+
 import numpy
 from scipy import ndimage
 
@@ -219,7 +223,7 @@ def map_quantity(x, y, z, zmin=None, zmax=None, ncolors=64, dots=False, cmap='co
 
     return cs
 
-
+# TODO: Move this into datacube?
 def map_extent(hdu, ext, offset=True):
     """
     Get the on-sky extent of a map using the provided WCS coordinates.
@@ -247,9 +251,9 @@ def map_extent(hdu, ext, offset=True):
             objdec = hdu['PRIMARY'].header['OBJDEC']
         except Exception as e:
             print(e)
-            warnings.warn('Cannot find OBJRA and/or OBJDEC in the header of extension PRIMARY.'
-                          '  No offset applied.')
-            offset = False
+            warnings.warn('OBJRA and/or OBJDEC in the header of the PRIMARY extension.  '
+                          'Offseting to the center pixel.')
+            objra, objdec = None, None
 
     # Does the extension contain a cube or a single map image
     cube = len(hdu[ext].data.shape) > 2
@@ -271,6 +275,9 @@ def map_extent(hdu, ext, offset=True):
 
     # Read the World Coordinate System information from the fits header
     wcs = WCS(header=hdu[ext].header, fix=False)
+    if wcs.naxis == 3 and not cube:
+        warnings.warn('WCS is for 3D, but provided data is 2D.  Attempting to drop the last axis.')
+        wcs = wcs.dropaxis(-1)
 
     # Convert the pixel coordinates into world coordinates
     XY = wcs.all_pix2world(xy, 1)
@@ -284,9 +291,12 @@ def map_extent(hdu, ext, offset=True):
     if not offset:
         return [ numpy.amax(x), numpy.amin(x), numpy.amin(y), numpy.amax(y) ]
 
+    if objra is None or objdec is None:
+        center = tuple([_n // 2 for _n in x.shape])
+        objra = x[center]
+        objdec = y[center]
+
     # Convert the world coordinates to offset from center in arcsec
-    objra = hdu['PRIMARY'].header['OBJRA']
-    objdec = hdu['PRIMARY'].header['OBJDEC']
     x = (x-objra)*numpy.cos(numpy.radians(objdec))*3600.
     y = (y-objdec)*3600.
 
@@ -456,9 +466,9 @@ def _match_map_arrays_integer_pixel_shift(arr1, ext1, arr2, ext2, dx, dy, swap=F
     return (_arr, arr1, ext1) if swap else (arr1, _arr, ext1) 
 
 
-def map_beam_patch(extent, ax, pos=(0.1,0.1), **kwargs):
+def map_beam_patch(extent, ax, fwhm=2.5, pos=(0.1,0.1), **kwargs):
     width = extent[0]-extent[1]
-    return patches.Circle(pos, 2.5/width/2, transform=ax.transAxes, **kwargs)
+    return patches.Circle(pos, fwhm/width/2, transform=ax.transAxes, **kwargs)
 
 
 

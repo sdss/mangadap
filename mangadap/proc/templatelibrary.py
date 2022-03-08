@@ -200,6 +200,36 @@ class TemplateLibraryDef(KeywordParSet):
 
         super(TemplateLibraryDef, self).__init__(pars, values=values, dtypes=dtypes, descr=descr)
 
+    def get_file_list(self):
+        """
+        Use the search string to find the template library fits files.
+
+        The search string must be via the default location in the DAP
+        distribution or the full path to a local library.
+
+        The file list read by the search key is sorted for
+        consistency.
+
+        Returns:
+            :obj:`list`: The sorted list of files.
+
+        Raises:
+            ValueError:
+                Raised if no files are found.
+        """
+        # Try the DAP directory first
+        root = defaults.dap_data_root() / 'spectral_templates' / self['file_search']
+        if not root.parent.exists():
+            # Then try the provided path directly
+            root = Path(self['file_search']).resolve()
+            if not root.parent.exists():
+                raise FileNotFoundError('Unable to find template library directory as given or in '
+                                        'the DAP source distribution.')
+        files = sorted(list(root.parent.glob(root.name)))
+        if len(files) == 0:
+            raise ValueError('Library search string did not find any files!')
+        return files
+
 
 def validate_spectral_template_config(cnfg):
     """ 
@@ -608,33 +638,33 @@ class TemplateLibrary:
         _output_file = f'{root}.fits.gz' if output_file is None else output_file
         return directory_path, _output_file
     
-    def _get_file_list(self):
-        """
-        Use the search string to find the template library fits files.
-
-        The file list read by the search key is sorted for
-        consistency.
-
-        Returns:
-            :obj:`list`: The sorted list of files found with
-            `glob.glob`_.
-
-        Raises:
-            ValueError:
-                Raised if no files are found.
-        """
-        # Try the DAP directory first
-        root = defaults.dap_data_root() / 'spectral_templates' / self.library["file_search"]
-        if not root.parent.exists():
-            # Then try the provided path directly
-            root = Path(self.library["file_search"]).resolve()
-            if not root.parent.exists():
-                raise FileNotFoundError('Unable to find template library directory as given or in '
-                                        'the DAP source distribution.')
-        files = sorted(list(root.parent.glob(root.name)))
-        if len(files) == 0:
-            raise ValueError('Library search string did not find any files!')
-        return files
+#    def _get_file_list(self):
+#        """
+#        Use the search string to find the template library fits files.
+#
+#        The file list read by the search key is sorted for
+#        consistency.
+#
+#        Returns:
+#            :obj:`list`: The sorted list of files found with
+#            `glob.glob`_.
+#
+#        Raises:
+#            ValueError:
+#                Raised if no files are found.
+#        """
+#        # Try the DAP directory first
+#        root = defaults.dap_data_root() / 'spectral_templates' / self.library['file_search']
+#        if not root.parent.exists():
+#            # Then try the provided path directly
+#            root = Path(self.library['file_search']).resolve()
+#            if not root.parent.exists():
+#                raise FileNotFoundError('Unable to find template library directory as given or in '
+#                                        'the DAP source distribution.')
+#        files = sorted(list(root.parent.glob(root.name)))
+#        if len(files) == 0:
+#            raise ValueError('Library search string did not find any files!')
+#        return files
 
     def _get_nchannels(self):
         """
@@ -757,10 +787,11 @@ class TemplateLibrary:
         The "raw" library is the data before its sampling or
         resolution have been altered.
 
-        This is a simple wrapper for :func:`_get_file_list`,
+        This is a simple wrapper for
+        :func:`~mangadap.proc.templatelibrary.TemplateLibraryDef._get_file_list`,
         :func:`_get_channels` and :func:`_build_raw_hdu`.
         """
-        self.file_list = self._get_file_list()
+        self.file_list = self.library.get_file_list()
         self.ntpl = len(self.file_list)
         npix = self._get_nchannels()
         if not self.quiet:
@@ -1384,7 +1415,7 @@ class TemplateLibrary:
             if not self.quiet:
                 log_output(self.loggers, 1, logging.INFO, 'Reading existing file')
             self.hdu = DAPFitsUtil.read(ofile, checksum=self.checksum)
-            self.file_list = self._get_file_list()
+            self.file_list = self.library.get_file_list()
             self.ntpl = self.hdu['FLUX'].data.shape[0]
             self.processed = True
             # Make sure the symlink exists

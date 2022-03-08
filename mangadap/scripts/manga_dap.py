@@ -30,16 +30,16 @@ class MangaDap(scriptbase.ScriptBase):
                                 'the file only.')
         parser.add_argument('--cube_module', nargs='*',
                             default='mangadap.datacube.MaNGADataCube',
-                            help='The name of the module that contains the DataCube derived class used to read the data.')
-#        parser.add_argument('-o', '--cube_object', type=str, default='MaNGADataCube',
-#                            help='The name of the DataCube derived class object.')
+                            help='The name of the module that contains the DataCube derived '
+                                 'class used to read the data.')
 
         parser.add_argument('-p', '--plan', type=str,
                             help='SDSS parameter file with analysis plan.  If not provided, a '
                                  'default plan is used.')
         parser.add_argument('--plan_module', nargs='*',
                             default='mangadap.config.manga.MaNGAAnalysisPlan',
-                            help='The name of the module used to define the analysis plan and the output paths.')
+                            help='The name of the module used to define the analysis plan and '
+                                 'the output paths.')
 
         parser.add_argument('--dbg', help='Run manga_dap in debug mode', action='store_true',
                             default=False)
@@ -47,20 +47,9 @@ class MangaDap(scriptbase.ScriptBase):
         parser.add_argument('-v', '--verbose', action='count', default=0,
                             help='Set verbosity level; can be omitted and set up to -vv')
 
-        # TODO: Given the config file and the write_dap_config script,
-        # should I continue to allow for these? They won't be meaningful
-        # for other datacubes
-
-        parser.add_argument('--drpver', type=str, help='DRP version', default=None)
-        parser.add_argument('-r', '--redux_path', type=str,
-                            help='Top-level directory with the DRP products; defaults to '
-                                '$MANGA_SPECTRO_REDUX/$MANGADRP_VER', default=None)
-        parser.add_argument('-d', '--directory_path', type=str, default=None,
-                            help='Path directly to directory with DRP file to analyze')
-        parser.add_argument('--dapver', type=str, help='DAP version', default=None)
-        parser.add_argument('-a', '--analysis_path', type=str, default=None,
-                            help='Top-level output directory for the DAP results; defaults to '
-                                '$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER')
+        parser.add_argument('-o', '--output_path', type=str, default=None,
+                            help='Top-level directory for the DAP output files; default path is '
+                                 'set by the provided analysis plan object (see plan_module).')
         return parser
 
     @staticmethod
@@ -105,9 +94,9 @@ class MangaDap(scriptbase.ScriptBase):
                     else UserDataCube.from_config(args.config)
 
         # Read the analysis plan
-        plan = UserPlan.default(cube=cube, analysis_path=args.analysis_path) if args.plan is None \
+        plan = UserPlan.default(cube=cube, analysis_path=args.output_path) if args.plan is None \
                     else UserPlan.from_par_file(args.plan, cube=cube,
-                                                analysis_path=args.analysis_path)
+                                                analysis_path=args.output_path)
 
         # Run the pipeline
         status = manga_dap(cube, plan, dbg=args.dbg, log=args.log, verbose=args.verbose)

@@ -436,7 +436,6 @@ def parse_name_method(maps_file):
     f = Path(maps_file).resolve()
     if not f.exists():
         raise FileNotFoundError(f'{f} does not exist!')
-    file_name = f.name
     components = f.name.split('-')
     components[-1] = components[-1].split('.')[0]
     i = components.index('MAPS')

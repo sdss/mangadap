@@ -46,7 +46,8 @@ class CalculateCovariance(scriptbase.ScriptBase):
     @classmethod
     def get_parser(cls, width=None):
 
-        parser = super().get_parser(description='Calculate datacube covariance', width=width)
+        parser = super().get_parser(description='Calculate covariance in a MaNGA datacube',
+                                    width=width)
 
         parser.add_argument('plate', type=int, help='plate ID to process')
         parser.add_argument('ifudesign', type=int, help='IFU design to process')
