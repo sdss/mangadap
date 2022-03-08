@@ -14,7 +14,19 @@
     - Change scripting protocol
     - tox testing CI    
     - Updated MANIFEST
-
+- Major overhaul of how paths and output files are defined, needed to complete
+  abstraction and move away from MaNGA-specific code.
+    - Input paths and file names now defined as part of the DataCube subclass.
+      For MaNGA, this is done by subclassing the `MaNGADataCube` from the
+      `mangadap.config.manga.MaNGAConfig` class.  For user-defined DataCube
+      subclasses, these paths can be defined directly.
+    - Output paths for primary output files now defined by the `AnalysisPlanSet`
+      object or a relevant subclass.  For MaNGA, a subclass is necessary to put
+      all the files in a subdirectory using the plate and ifu, but likely most
+      other implementations can use `AnalysisPlanSet` directly.  Reference file
+      names adjusted and defined by each main analysis class.
+ - Remove all instances of `numpy.float`, `numpy.int`, `numpy.bool`, given
+   impending numpy deprecation of these types.
 
 3.1.2 (29 Jul 2021)
 -------------------
