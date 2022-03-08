@@ -1,6 +1,5 @@
 
 # Imports
-import os
 import time
 
 from IPython import embed
@@ -15,7 +14,6 @@ from mangadap.config import manga
 from mangadap.config import defaults
 from mangadap.util.sampling import spectral_coordinate_step
 
-from mangadap.util.fitsutil import DAPFitsUtil
 from mangadap.util.resolution import SpectralResolution
 from mangadap.util.pixelmask import SpectralPixelMask
 
@@ -52,23 +50,25 @@ def get_redshift(plt, ifu, drpall_file=None):
     """
     if drpall_file is None:
         drpall_file = manga.drpall_file()
-    hdu = fits.open(drpall_file)
+    if not drpall_file.exists():
+        raise FileNotFoundError(f'Could not find DRPall file: {drpall_file}')
+    hdu = fits.open(str(drpall_file))
     indx = hdu[1].data['PLATEIFU'] == '{0}-{1}'.format(plt, ifu)
     return hdu[1].data['NSA_Z'][indx][0]
 
 
-def get_spectrum(plt, ifu, x, y, directory_path=None):
+def get_spectra(plt, ifu, x, y, directory_path=None):
     """
-    Extract a single spectrum from a MaNGA observation.
+    Extract spectra from a MaNGA observation.
 
     Args:
         plt (:obj:`int`):
             Plate number
         ifu (:obj:`int`):
             IFU identifier
-        x (:obj:`int`):
+        x (:obj:`int`, `numpy.ndarray`_):
             The spaxel coordinate along the RA axis.
-        y (:obj:`int`):
+        y (:obj:`int`, `numpy.ndarray`_):
             The spaxel coordinate along the DEC axis.
         directory_path (:obj:`str`, optional):
             Directory with the DRP LOGCUBE file. If None, uses the
@@ -87,27 +87,27 @@ def get_spectrum(plt, ifu, x, y, directory_path=None):
     ivar = cube.copy_to_masked_array(attr='ivar', flag=cube.do_not_fit_flags())
     sres = cube.copy_to_array(attr='sres')
     return cube.wave, flux[flat_indx,:], ivar[flat_indx,:], sres[flat_indx,:]
-        
+
 
 #-----------------------------------------------------------------------------
 if __name__ == '__main__':
     t = time.perf_counter()
 
     # For testing
-    drpver = 'v3_0_1'
-    directory_path = os.path.join(defaults.dap_source_dir(), 'data', 'remote')
+    drpver = 'v3_1_1'
+    directory_path = defaults.dap_source_dir() / 'data' / 'remote'
 
     #-------------------------------------------------------------------
     # Read spectra to fit. The following reads a single MaNGA spectrum.
     # This is where you should read in your own spectrum to fit.
     # Plate-IFU to use
     plt = 7815
-    ifu = 6101
+    ifu = 3702
     # Spaxel coordinates
     x = 25 #30
     y = 25 #37
     # Read a spectrum
-    wave, flux, ivar, sres = get_spectrum(plt, ifu, x, y, directory_path=directory_path)
+    wave, flux, ivar, sres = get_spectra(plt, ifu, x, y, directory_path=directory_path)
     # In general, the DAP fitting functions expect data to be in 2D
     # arrays with shape (N-spectra,N-wave). So if you only have one
     # spectrum, you need to expand the dimensions:
@@ -136,7 +136,7 @@ if __name__ == '__main__':
     # (within +/- 2000 km/s). In this example, I'm pulling the redshift
     # from the DRPall file. There must be one redshift estimate per
     # spectrum to fit.  Here that means it's a single element array
-    drpall_file = os.path.join(directory_path, 'drpall-{0}.fits'.format(drpver))
+    drpall_file = directory_path / f'drpall-{drpver}.fits'
     z = numpy.array([get_redshift(plt, ifu, drpall_file)])
     print('Redshift: {0}'.format(z[0]))
     # The DAP also requires an initial guess for the velocity
@@ -178,7 +178,7 @@ if __name__ == '__main__':
     # See
     # https://sdss-mangadap.readthedocs.io/en/latest/emissionlines.html.
     elmom_key = 'ELBMPL9'
-    elfit_key = 'ELPMPL9'
+    elfit_key = 'ELPMPL11'
 
     # If you want to also calculate the spectral indices, you can
     # provide a keyword that indicates the database with the passband
@@ -196,7 +196,6 @@ if __name__ == '__main__':
     # Show summary plots
     usr_plots = True
     #-------------------------------------------------------------------
-
 
 
     #-------------------------------------------------------------------
@@ -228,7 +227,7 @@ if __name__ == '__main__':
     # by the ELPMPL8 keyword) can be different from the list of
     # emission lines fit below.
     sc_pixel_mask = SpectralPixelMask(artdb=ArtifactDB.from_key('BADSKY'),
-                                      emldb=EmissionLineDB.from_key('ELPMPL8'))
+                                      emldb=EmissionLineDB.from_key('ELPMPL11'))
 
     # Instantiate the fitting class, including the mask that it should
     # use to flag the data. [[This mask should just be default...]]

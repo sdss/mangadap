@@ -27,7 +27,7 @@ from . import manga_environ
 # TODO: Move this to util/pkg.py?
 def dap_source_dir():
     from pkg_resources import resource_filename
-    return resource_filename('mangadap', '')
+    return Path(resource_filename('mangadap', '')).resolve()
 
 
 def dap_data_root():

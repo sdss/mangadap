@@ -31,14 +31,54 @@ from mangadap.proc.spectralfitting import EmissionLineFit
 #-----------------------------------------------------------------------------
 
 def get_redshift(plt, ifu, drpall_file=None):
+    """
+    Get the redshift of a galaxy from the DRPall file.
+
+    Args:
+        plt (:obj:`int`):
+            Plate number
+        ifu (:obj:`int`):
+            IFU identifier
+        drapall_file (:obj:`str`, optional):
+            DRPall file. If None, attempts to use the default path to
+            the file using environmental variables.
+    
+    Returns:
+        :obj:`float`: The redshift to the galaxy observed by the
+        provided PLATEIFU.
+    """
     if drpall_file is None:
         drpall_file = manga.drpall_file()
-    with fits.open(drpall_file) as hdu:
-        indx = hdu[1].data['PLATEIFU'] == '{0}-{1}'.format(plt, ifu)
-        return hdu[1].data['NSA_Z'][indx][0]
+    if not drpall_file.exists():
+        raise FileNotFoundError(f'Could not find DRPall file: {drpall_file}')
+    hdu = fits.open(str(drpall_file))
+    indx = hdu[1].data['PLATEIFU'] == '{0}-{1}'.format(plt, ifu)
+    return hdu[1].data['NSA_Z'][indx][0]
 
 
 def get_spectra(plt, ifu, x, y, directory_path=None):
+    """
+    Extract spectra from a MaNGA observation.
+
+    Args:
+        plt (:obj:`int`):
+            Plate number
+        ifu (:obj:`int`):
+            IFU identifier
+        x (:obj:`int`, `numpy.ndarray`_):
+            The spaxel coordinate along the RA axis.
+        y (:obj:`int`, `numpy.ndarray`_):
+            The spaxel coordinate along the DEC axis.
+        directory_path (:obj:`str`, optional):
+            Directory with the DRP LOGCUBE file. If None, uses the
+            default directory path based on the environmental
+            variables.
+
+    Returns:
+        :obj:`tuple`: Returns 4 numpy vectors: The wavelength, flux,
+        flux inverse variance, and spectral resolution extracted from
+        the datacube.
+    """
     cube = MaNGADataCube.from_plateifu(plt, ifu, directory_path=directory_path)
     flat_indx = cube.spatial_shape[1]*x+y
     # This function always returns as masked array
@@ -46,7 +86,6 @@ def get_spectra(plt, ifu, x, y, directory_path=None):
     ivar = cube.copy_to_masked_array(attr='ivar', flag=cube.do_not_fit_flags())
     sres = cube.copy_to_array(attr='sres')
     return cube.wave, flux[flat_indx,:], ivar[flat_indx,:], sres[flat_indx,:]
-        
 
 #-----------------------------------------------------------------------------
 
@@ -89,16 +128,16 @@ if __name__ == '__main__':
     dapsrc = defaults.dap_source_dir()
 
     # Get the redshift
-    drpver = 'v2_7_1'
-    directory_path = os.path.join(dapsrc, 'data', 'remote')
-    drpall_file = os.path.join(directory_path, 'drpall-{0}.fits'.format(drpver))
+    drpver = 'v3_1_1'
+    directory_path = dapsrc / 'data' / 'remote'
+    drpall_file = directory_path / f'drpall-{drpver}.fits'
+    # Assume all spectra have the same redshift
     z = numpy.array([get_redshift(plt, ifu, drpall_file)]*nspec)
     print('Redshift: {0}'.format(z[0]))
     dispersion = numpy.full_like(z, 100.)
 
     # Read the spectra
     print('reading spectra')
-    directory_path = os.path.join(dapsrc, 'data', 'remote')
     wave, flux, ivar, sres = get_spectra(plt, ifu, x, y, directory_path=directory_path)
     ferr = numpy.ma.power(ivar, -0.5)
 

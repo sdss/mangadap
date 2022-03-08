@@ -1,6 +1,13 @@
-#!/usr/bin/env python3
+"""
+WARNING:
 
-import os
+    This is not a viable script, but is given as an example of what *could* be done.
+
+    See https://sdss-mangadap.readthedocs.io/en/latest/development.html#adding-a-new-binning-scheme
+
+"""
+
+from pathlib import Path
 import time
 import warnings
 import numpy
@@ -15,6 +22,7 @@ from mangadap.proc.emissionlinemoments import EmissionLineMoments
 from mangadap.proc.emissionlinemodel import EmissionLineModel
 from mangadap.proc.spectralindices import SpectralIndices
 from mangadap.dapfits import construct_maps_file, construct_cube_file
+from mangadap.survey.manga_dap import get_manga_dap_meta
 
 #-----------------------------------------------------------------------------
 
@@ -80,13 +88,15 @@ if __name__ == '__main__':
     nsa_redshift = 0.0280161
     vel = nsa_redshift * astropy.constants.c.to('km/s').value
 
-    analysis_path = os.path.join(os.getcwd(), 'test_binning_output')
+    input_path = Path('.').resolve()
+    output_path = Path('.').resolve() / 'test_binning_output'
 
     # Read the DRP LOGCUBE file
-    cube = MaNGADataCube(plate, ifu)
+    cube = MaNGADataCube.from_plateifu(plate, ifu, directory_path=input_path)
+    metadata = get_manga_dap_meta(cube)
 
     # Calculate the S/N and coordinates
-    rdxqa = ReductionAssessment('SNRG', cube, analysis_path=analysis_path)
+    rdxqa = ReductionAssessment('SNRG', cube, output_path=output_path)
 
     # Setup the aperture binning class
     ax = numpy.array([0.0, 3.0, 6.0])
@@ -136,7 +146,7 @@ if __name__ == '__main__':
                                             cube,           # DRP data to bin
                                             rdxqa,          # Cube coordinates and S/N assessments
                                             method_list=binning_method, # Methods to select from
-                                            analysis_path=analysis_path)
+                                            output_path=output_path)
 
     # The rest of this is just a single execution of the remaining
     # analysis steps in
@@ -144,31 +154,34 @@ if __name__ == '__main__':
     # simplifications
 
     stellar_continuum = StellarContinuumModel('GAU-MILESHC', binned_spectra, guess_vel=vel,
-                                              guess_sig=100., analysis_path=analysis_path)
+                                              guess_sig=100., output_path=output_path)
 
     emission_line_moments = EmissionLineMoments('EMOMM', binned_spectra,
                                                 stellar_continuum=stellar_continuum,
-                                                redshift=nsa_redshift, analysis_path=analysis_path)
+                                                redshift=nsa_redshift, output_path=output_path)
 
     emission_line_model = EmissionLineModel('EFITM', binned_spectra,
                                             stellar_continuum=stellar_continuum,
                                             redshift=nsa_redshift, dispersion=100.0,
-                                            analysis_path=analysis_path)
+                                            output_path=output_path)
         
     spectral_indices = SpectralIndices('INDXEN', binned_spectra, redshift=nsa_redshift,
                                        stellar_continuum=stellar_continuum,
                                        emission_line_model=emission_line_model,
-                                       analysis_path=analysis_path)
+                                       output_path=output_path)
 
-    construct_maps_file(cube, rdxqa=rdxqa, binned_spectra=binned_spectra,
+    construct_maps_file(cube, metadata, rdxqa=rdxqa, binned_spectra=binned_spectra,
                         stellar_continuum=stellar_continuum,
                         emission_line_moments=emission_line_moments,
                         emission_line_model=emission_line_model,
-                        spectral_indices=spectral_indices, nsa_redshift=nsa_redshift,
-                        analysis_path=analysis_path)
+                        spectral_indices=spectral_indices, redshift=nsa_redshift,
+                        output_path=output_path, overwrite=True)
 
-    construct_cube_file(cube, binned_spectra=binned_spectra, stellar_continuum=stellar_continuum,
-                        emission_line_model=emission_line_model, analysis_path=analysis_path)
+    construct_cube_file(cube, metadata, rdxqa=rdxqa, binned_spectra=binned_spectra,
+                        stellar_continuum=stellar_continuum,
+                        emission_line_moments=emission_line_moments,
+                        emission_line_model=emission_line_model,
+                        spectral_indices=spectral_indices, output_path=output_path, overwrite=True)
 
     print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
 

@@ -219,15 +219,16 @@ class TemplateLibraryDef(KeywordParSet):
         """
         # Try the DAP directory first
         root = defaults.dap_data_root() / 'spectral_templates' / self['file_search']
-        if not root.parent.exists():
+        if root.parent.exists():
+            files = sorted(list(root.parent.glob(root.name)))
+        if not root.parent.exists() or len(files) == 0:
             # Then try the provided path directly
             root = Path(self['file_search']).resolve()
-            if not root.parent.exists():
-                raise FileNotFoundError('Unable to find template library directory as given or in '
-                                        'the DAP source distribution.')
-        files = sorted(list(root.parent.glob(root.name)))
-        if len(files) == 0:
-            raise ValueError('Library search string did not find any files!')
+            if root.parent.exists():
+                files = sorted(list(root.parent.glob(root.name)))
+        if not root.parent.exists() or len(files) == 0:
+            raise FileNotFoundError('Unable to find template library directory or any valid files '
+                                    'as given or in the DAP source distribution.')
         return files
 
 

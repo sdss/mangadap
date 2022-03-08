@@ -62,7 +62,8 @@ class MangaDap(scriptbase.ScriptBase):
         from mangadap.datacube import DataCube
         from mangadap.util.pkg import load_object
 
-        # Instantiate the DataCube
+        # Execute the MaNGA DAP for a single datacube
+
         #   - Import the module used to read the datacube
         if isinstance(args.cube_module, list) and len(args.cube_module) > 2:
             raise ValueError('Provided cube module must be one or two strings.')
@@ -88,17 +89,17 @@ class MangaDap(scriptbase.ScriptBase):
             raise TypeError('Defined plan object must subclass from '
                             'mangadap.config.analysisplan.AnalysisPlanSet')
 
-        #   - Instantiate using either the datacube file directly or a
-        #     configuration file
+        #   - Instantiate the datacube object using either the datacube file
+        #     directly or a configuration file
         cube = UserDataCube(args.cubefile) if args.config is None \
                     else UserDataCube.from_config(args.config)
 
-        # Read the analysis plan
+        #   - Read the analysis plan
         plan = UserPlan.default(cube=cube, analysis_path=args.output_path) if args.plan is None \
                     else UserPlan.from_par_file(args.plan, cube=cube,
                                                 analysis_path=args.output_path)
 
-        # Run the pipeline
+        #   - Run the pipeline
         status = manga_dap(cube, plan, dbg=args.dbg, log=args.log, verbose=args.verbose)
 
 
