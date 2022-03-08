@@ -9,7 +9,8 @@ from matplotlib import pyplot, rc, colors, colorbar, ticker, cm
 
 from astropy.io import fits
 
-from mangadap.dapfits import DAPMapsBitMask
+from mangadap import dapfits
+from mangadap.datacube import DataCube
 from mangadap.config import defaults
 from mangadap.config.analysisplan import AnalysisPlanSet
 from mangadap.util.fileio import channel_dictionary
@@ -18,6 +19,7 @@ from mangadap.proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
 from mangadap.proc.stellarcontinuummodel import StellarContinuumModel
 from mangadap.proc.emissionlinemodel import EmissionLineModel
 from mangadap.util.mapping import map_extent, map_beam_patch
+from mangadap.util.pkg import load_object
 
 from mangadap.scripts import scriptbase
 
@@ -69,20 +71,54 @@ def masked_imshow(fig, ax, cax, data, extent=None, norm=None, vmin=None, vmax=No
 #  - STELLAR_CONT_FRESID, STELLAR_CONT_CHI2, STELLAR_VEL, STELLAR_SIGMA
 #  - EMLINE_SFLUX, EMLINE_GFLUX, EMLINE_GVEL, EMLINE_GSIGMA - all H-alpha
 #  - EMLINE_SFLUX (H-beta), EMLINE_GFLUX (H-beta), D4000, Dn4000
-def spotcheck_images(analysis_path, daptype, plate, ifudesign, ofile=None, drpver=None,
-                     dapver=None):
+#def spotcheck_images(analysis_path, daptype, plate, ifudesign, ofile=None, drpver=None,
+#                     dapver=None):
+def spotcheck_images(cube, plan, method_dir, ref_dir, qa_dir, fwhm=None):
+    """
+    Construct a QA plot for the PPXFFit results.
 
-    bm = DAPMapsBitMask()
+    Args:
+        cube (:class:`~mangadap.datacube.datacube.DataCube`):
+            Analyzed data cube
+        plan (:obj:`dict`, :class:`~mangadap.par.parset.ParSet`):
+            Object with analysis plan keywords.
+        method_dir (`Path`_):
+            Top-level "method" directory with all the DAP files.
+        ref_dir (`Path`_):
+            Directory with all the DAP reference files.
+        qa_dir (`Path`_):
+            Directory for the QA figures
+        fwhm (:obj:`float`, optional):
+            The FWHM in arcsec of the beam.  If None, no beam included in the
+            plot.
+    """
+    # Check that the paths exists
+    if not method_dir.exists():
+        raise NotADirectoryError(f'{method_dir} does not exist; run the DAP first!')
+    if not ref_dir.exists():
+        raise NotADirectoryError(f'{ref_dir} does not exist; run the DAP first!')
+    if not qa_dir.exists():
+        qa_dir.mkdir(parents=True)
 
-    plan_dir = defaults.dap_method_path(daptype, plate=plate, ifudesign=ifudesign, drpver=drpver,
-                                        dapver=dapver, analysis_path=analysis_path)
-    ifile = os.path.join(plan_dir, 'manga-{0}-{1}-MAPS-{2}.fits.gz'.format(plate, ifudesign,
-                                                                           daptype))
-    if not os.path.isfile(ifile):
-        raise FileNotFoundError('No file: {0}'.format(ifile))
+    # Get the name of the output file
+    ofile = qa_dir / f'{cube.output_root}-MAPS-{plan["key"]}-spotcheck.png'
 
-    print('Reading: {0}'.format(ifile))
-    hdu = fits.open(ifile)
+    bm = dapfits.DAPMapsBitMask()
+
+    _, directory, file = dapfits.default_paths(cube, method=plan['key'], output_path=method_dir)
+    ifile = directory / file
+    if not ifile.exists():
+        raise FileNotFoundError(f'No file: {ifile}')
+
+#    plan_dir = defaults.dap_method_path(daptype, plate=plate, ifudesign=ifudesign, drpver=drpver,
+#                                        dapver=dapver, analysis_path=analysis_path)
+#    ifile = os.path.join(plan_dir, 'manga-{0}-{1}-MAPS-{2}.fits.gz'.format(plate, ifudesign,
+#                                                                           daptype))
+#    if not os.path.isfile(ifile):
+#        raise FileNotFoundError('No file: {0}'.format(ifile))
+
+    print(f'Reading: {ifile}')
+    hdu = fits.open(str(ifile))
 
     # Check everything is finite
     num_ext = len(hdu)
@@ -90,7 +126,7 @@ def spotcheck_images(analysis_path, daptype, plate, ifudesign, ofile=None, drpve
         if hdu[i].data is None:
             continue
         if not numpy.all(numpy.isfinite(hdu[i].data)):
-            raise ValueError('HDU {0} contains infs or NaNs!'.format(hdu[i].name))
+            raise ValueError(f'HDU {hdu[i].name} contains infs or NaNs!')
 
     # Build the column dictionaries
     emline = channel_dictionary(hdu, 'EMLINE_GFLUX')
@@ -200,7 +236,18 @@ def spotcheck_images(analysis_path, daptype, plate, ifudesign, ofile=None, drpve
         udn4000 = numpy.ma.masked_all(output_shape)
 
     # Get the limits to apply
-    flux_lim = numpy.power(10,growth_lim(numpy.ma.log10(spxflx), 0.90, fac=1.05))
+    x_order = 1 if extent[0] < extent[1] else -1
+    Dx = x_order*(extent[1] - extent[0])
+    y_order = 1 if extent[2] < extent[3] else -1
+    Dy = y_order*(extent[3] - extent[2])
+    # Force the image panels to be square; assumes extent has the same units in
+    # both dimensions.
+    D = max(Dx, Dy)
+
+    x_lim = (extent[0]+extent[1])/2 + D * x_order * numpy.array([-1,1])/2
+    y_lim = (extent[2]+extent[3])/2 + D * y_order * numpy.array([-1,1])/2
+
+    flux_lim = numpy.power(10, growth_lim(numpy.ma.log10(spxflx), 0.90, fac=1.05))
     t = numpy.ma.append(numpy.ma.log10(spxsnr), numpy.ma.log10(binsnr))
     snr_lim = numpy.power(10, growth_lim(t, 0.90, fac=1.05))
     bin_lim = [ numpy.ma.amin(binid), numpy.ma.amax(binid) ]
@@ -239,6 +286,8 @@ def spotcheck_images(analysis_path, daptype, plate, ifudesign, ofile=None, drpve
     snr_levels = [0.5, 1.0, 1.5, 2.0 ]
 
     ax = init_ax(fig, [left, top-dx, dx, dx])
+    ax.set_xlim(x_lim)
+    ax.set_ylim(y_lim)
     ax.xaxis.set_major_formatter(ticker.NullFormatter())
     cax = fig.add_axes([left+dx*0.65, top-0.07*dx, 0.27*dx, 0.01])
     cbticks = [flux_lim[0]*1.1, flux_lim[1]/1.1]
@@ -246,11 +295,14 @@ def spotcheck_images(analysis_path, daptype, plate, ifudesign, ofile=None, drpve
                   norm=colors.LogNorm(vmin=flux_lim[0], vmax=flux_lim[1]), cmap='YlGnBu_r',
                   zorder=4, orientation='horizontal', contour_data=numpy.ma.log10(spxsnr),
                   levels=snr_levels, cbticks=cbticks, cbformat=ticker.ScalarFormatter())
-    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
+    if fwhm is not None:
+        ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.99, 0.05, r'g-band S (spx)', horizontalalignment='right',
             verticalalignment='center', transform=ax.transAxes)
 
     ax = init_ax(fig, [left+dx+dw, top-dx, dx, dx])
+    ax.set_xlim(x_lim)
+    ax.set_ylim(y_lim)
     ax.xaxis.set_major_formatter(ticker.NullFormatter())
     ax.yaxis.set_major_formatter(ticker.NullFormatter())
     cax = fig.add_axes([left+dx+dw+dx*0.65, top-0.07*dx, 0.27*dx, 0.01])
@@ -259,15 +311,20 @@ def spotcheck_images(analysis_path, daptype, plate, ifudesign, ofile=None, drpve
                   norm=colors.LogNorm(vmin=snr_lim[0], vmax=snr_lim[1]), cmap='YlGnBu_r',
                   zorder=4, orientation='horizontal', contour_data=numpy.ma.log10(spxsnr),
                   levels=snr_levels, cbticks=cbticks, cbformat=ticker.ScalarFormatter()) #'%.0f')
-    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
+    if fwhm is not None:
+        ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.99, 0.05, r'g-band S/N (spx)', horizontalalignment='right',
             verticalalignment='center', transform=ax.transAxes)
    
-    ax.text(1.0, 1.1, r'{0}-{1}; {2}'.format(plate,ifudesign, hdu['PRIMARY'].header['MANGAID']),
-            horizontalalignment='center', verticalalignment='center', transform=ax.transAxes,
-            fontsize=20)
+#    ax.text(1.0, 1.1, r'{0}-{1}; {2}'.format(plate,ifudesign, hdu['PRIMARY'].header['MANGAID']),
+#            horizontalalignment='center', verticalalignment='center', transform=ax.transAxes,
+#            fontsize=20)
+    ax.text(1.0, 1.1, f'{cube.name}; {plan["key"]}', ha='center', va='center',
+            transform=ax.transAxes, fontsize=20)
 
     ax = init_ax(fig, [left+2*dx+2*dw, top-dx, dx, dx])
+    ax.set_xlim(x_lim)
+    ax.set_ylim(y_lim)
     ax.xaxis.set_major_formatter(ticker.NullFormatter())
     ax.yaxis.set_major_formatter(ticker.NullFormatter())
     cax = fig.add_axes([left+2*dx+2*dw+dx*0.65, top-0.07*dx, 0.27*dx, 0.01])
@@ -276,11 +333,14 @@ def spotcheck_images(analysis_path, daptype, plate, ifudesign, ofile=None, drpve
                   zorder=4, orientation='horizontal', contour_data=numpy.ma.log10(spxsnr),
                   levels=snr_levels, cbformat=ticker.ScalarFormatter(),
                   cbticks=bin_lim) 
-    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
+    if fwhm is not None:
+        ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.99, 0.05, r'bin ID', horizontalalignment='right',
             verticalalignment='center', transform=ax.transAxes)
  
     ax = init_ax(fig, [left+3*dx+3*dw, top-dx, dx, dx])
+    ax.set_xlim(x_lim)
+    ax.set_ylim(y_lim)
     ax.xaxis.set_major_formatter(ticker.NullFormatter())
     ax.yaxis.set_major_formatter(ticker.NullFormatter())
     cax = fig.add_axes([left+3*dx+3*dw+dx*0.65, top-0.07*dx, 0.27*dx, 0.01])
@@ -289,12 +349,15 @@ def spotcheck_images(analysis_path, daptype, plate, ifudesign, ofile=None, drpve
                   norm=colors.LogNorm(vmin=snr_lim[0], vmax=snr_lim[1]), cmap='YlGnBu_r',
                   zorder=4, orientation='horizontal', contour_data=numpy.ma.log10(spxsnr),
                   levels=snr_levels, cbticks=cbticks, cbformat=ticker.ScalarFormatter()) #'%.0f')
-    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
+    if fwhm is not None:
+        ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.99, 0.05, r'g-band S/N (bin)', horizontalalignment='right',
             verticalalignment='center', transform=ax.transAxes)
 
 
     ax = init_ax(fig, [left, top-2*dx-dw, dx, dx])
+    ax.set_xlim(x_lim)
+    ax.set_ylim(y_lim)
     ax.xaxis.set_major_formatter(ticker.NullFormatter())
     cax = fig.add_axes([left+dx*0.65, top-dx-dw-0.07*dx, 0.27*dx, 0.01])
     cbticks = [res_lim[0]*1.1, res_lim[1]/1.1]
@@ -302,11 +365,14 @@ def spotcheck_images(analysis_path, daptype, plate, ifudesign, ofile=None, drpve
                   norm=colors.LogNorm(vmin=res_lim[0], vmax=res_lim[1]), cmap='inferno',
                   zorder=4, orientation='horizontal', contour_data=numpy.ma.log10(spxsnr),
                   levels=snr_levels, cbticks=cbticks, cbformat=ticker.ScalarFormatter()) #'%.0f')
-    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
+    if fwhm is not None:
+        ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.99, 0.05, r'pPXF Frac. Resid.', horizontalalignment='right',
             verticalalignment='center', transform=ax.transAxes)
 
     ax = init_ax(fig, [left+dx+dw,  top-2*dx-dw, dx, dx])
+    ax.set_xlim(x_lim)
+    ax.set_ylim(y_lim)
     ax.xaxis.set_major_formatter(ticker.NullFormatter())
     ax.yaxis.set_major_formatter(ticker.NullFormatter())
     cax = fig.add_axes([left+dx+dw+dx*0.65, top-dx-dw-0.07*dx, 0.27*dx, 0.01])
@@ -315,11 +381,14 @@ def spotcheck_images(analysis_path, daptype, plate, ifudesign, ofile=None, drpve
                   vmin=chi_lim[0], vmax=chi_lim[1], cmap='inferno',
                   zorder=4, orientation='horizontal', contour_data=numpy.ma.log10(spxsnr),
                   levels=snr_levels, cbticks=cbticks, cbformat=ticker.ScalarFormatter()) #'%.0f')
-    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
+    if fwhm is not None:
+        ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.99, 0.05, r'${\rm pPXF}\ \chi^2_\nu$', horizontalalignment='right',
             verticalalignment='center', transform=ax.transAxes)
     
     ax = init_ax(fig, [left+2*dx+2*dw,  top-2*dx-dw, dx, dx])
+    ax.set_xlim(x_lim)
+    ax.set_ylim(y_lim)
     ax.xaxis.set_major_formatter(ticker.NullFormatter())
     ax.yaxis.set_major_formatter(ticker.NullFormatter())
     cax = fig.add_axes([left+2*dx+2*dw+dx*0.65, top-dx-dw-0.07*dx, 0.27*dx, 0.01])
@@ -336,11 +405,14 @@ def spotcheck_images(analysis_path, daptype, plate, ifudesign, ofile=None, drpve
 #                     colors='0.5', levels=snr_levels, linewidths=1.5, zorder=6)
 #    pyplot.colorbar(im, cax=cax, orientation='horizontal',
 #                    ticks=[numpy.round(vel_lim[0]+1), numpy.round(vel_lim[1]-1)], format='%.0f')
-    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
+    if fwhm is not None:
+        ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.99, 0.05, r'$V_\ast$', horizontalalignment='right',
             verticalalignment='center', transform=ax.transAxes)
     
     ax = init_ax(fig, [left+3*dx+3*dw,  top-2*dx-dw, dx, dx])
+    ax.set_xlim(x_lim)
+    ax.set_ylim(y_lim)
     ax.xaxis.set_major_formatter(ticker.NullFormatter())
     ax.yaxis.set_major_formatter(ticker.NullFormatter())
     cax = fig.add_axes([left+3*dx+3*dw+dx*0.65, top-dx-dw-0.07*dx, 0.27*dx, 0.01])
@@ -358,13 +430,16 @@ def spotcheck_images(analysis_path, daptype, plate, ifudesign, ofile=None, drpve
 #    pyplot.colorbar(im, cax=cax, orientation='horizontal',
 #                    ticks=[numpy.round(sig_lim[0]+0.1, decimals=1),
 #                           numpy.round(sig_lim[1]-0.1, decimals=1)], format='%.1f')
-    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
+    if fwhm is not None:
+        ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.99, 0.05, r'$\sigma_\ast$', horizontalalignment='right',
             verticalalignment='center', transform=ax.transAxes)
 
 
 
     ax = init_ax(fig, [left, top-3*dx-2*dw, dx, dx])
+    ax.set_xlim(x_lim)
+    ax.set_ylim(y_lim)
     ax.xaxis.set_major_formatter(ticker.NullFormatter())
     cax = fig.add_axes([left+dx*0.65, top-2*dx-2*dw-0.07*dx, 0.27*dx, 0.01])
     cbticks = [hflx_lim[0]*1.1, hflx_lim[1]/1.1]
@@ -381,11 +456,14 @@ def spotcheck_images(analysis_path, daptype, plate, ifudesign, ofile=None, drpve
 #    pyplot.colorbar(im, cax=cax, orientation='horizontal',
 #                    ticks=[numpy.round(hflx_lim[0]+0.1, decimals=1),
 #                           numpy.round(hflx_lim[1]-0.1, decimals=1)], format='%.1f')
-    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
+    if fwhm is not None:
+        ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.99, 0.05, r'${\rm H}\alpha\ {\rm flux}$ (sum)', horizontalalignment='right',
             verticalalignment='center', transform=ax.transAxes)
 
     ax = init_ax(fig, [left+dx+dw,  top-3*dx-2*dw, dx, dx])
+    ax.set_xlim(x_lim)
+    ax.set_ylim(y_lim)
     ax.xaxis.set_major_formatter(ticker.NullFormatter())
     ax.yaxis.set_major_formatter(ticker.NullFormatter())
     cax = fig.add_axes([left+dx+dw+dx*0.65, top-2*dx-2*dw-0.07*dx, 0.27*dx, 0.01])
@@ -403,11 +481,14 @@ def spotcheck_images(analysis_path, daptype, plate, ifudesign, ofile=None, drpve
 #    pyplot.colorbar(im, cax=cax, orientation='horizontal',
 #                    ticks=[numpy.round(hflx_lim[0]+0.1, decimals=1),
 #                           numpy.round(hflx_lim[1]-0.1, decimals=1)], format='%.1f')
-    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
+    if fwhm is not None:
+        ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.99, 0.05, r'${\rm H}\alpha\ {\rm flux}$ (Gauss)', horizontalalignment='right',
             verticalalignment='center', transform=ax.transAxes)
     
     ax = init_ax(fig, [left+2*dx+2*dw,  top-3*dx-2*dw, dx, dx])
+    ax.set_xlim(x_lim)
+    ax.set_ylim(y_lim)
     ax.xaxis.set_major_formatter(ticker.NullFormatter())
     ax.yaxis.set_major_formatter(ticker.NullFormatter())
     cax = fig.add_axes([left+2*dx+2*dw+dx*0.65, top-2*dx-2*dw-0.07*dx, 0.27*dx, 0.01])
@@ -424,11 +505,14 @@ def spotcheck_images(analysis_path, daptype, plate, ifudesign, ofile=None, drpve
 #                     colors='0.5', levels=snr_levels, linewidths=1.5, zorder=6)
 #    pyplot.colorbar(im, cax=cax, orientation='horizontal',
 #                    ticks=[numpy.round(vel_lim[0]+1), numpy.round(vel_lim[1]-1)], format='%.0f')
-    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
+    if fwhm is not None:
+        ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.99, 0.05, r'$V_{{\rm H}\alpha}$', horizontalalignment='right',
             verticalalignment='center', transform=ax.transAxes)
     
     ax = init_ax(fig, [left+3*dx+3*dw,  top-3*dx-2*dw, dx, dx])
+    ax.set_xlim(x_lim)
+    ax.set_ylim(y_lim)
     ax.xaxis.set_major_formatter(ticker.NullFormatter())
     ax.yaxis.set_major_formatter(ticker.NullFormatter())
     cax = fig.add_axes([left+3*dx+3*dw+dx*0.65, top-2*dx-2*dw-0.07*dx, 0.27*dx, 0.01])
@@ -446,13 +530,16 @@ def spotcheck_images(analysis_path, daptype, plate, ifudesign, ofile=None, drpve
 #    pyplot.colorbar(im, cax=cax, orientation='horizontal',
 #                    ticks=[numpy.round(sig_lim[0]+0.1, decimals=1),
 #                           numpy.round(sig_lim[1]-0.1, decimals=1)], format='%.1f')
-    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
+    if fwhm is not None:
+        ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.99, 0.05, r'$\sigma_{{\rm H}\alpha}$', horizontalalignment='right',
             verticalalignment='center', transform=ax.transAxes)
 
 
 
     ax = init_ax(fig, [left, top-4*dx-3*dw, dx, dx])
+    ax.set_xlim(x_lim)
+    ax.set_ylim(y_lim)
     cax = fig.add_axes([left+dx*0.65, top-3*dx-3*dw-0.07*dx, 0.27*dx, 0.01])
     cbticks = [hflx_lim[0]*1.1, hflx_lim[1]/1.1]
     masked_imshow(fig, ax, cax, hbsflx, extent=extent,
@@ -468,11 +555,14 @@ def spotcheck_images(analysis_path, daptype, plate, ifudesign, ofile=None, drpve
 #    pyplot.colorbar(im, cax=cax, orientation='horizontal',
 #                    ticks=[numpy.round(hflx_lim[0]+0.1, decimals=1),
 #                           numpy.round(hflx_lim[1]-0.1, decimals=1)], format='%.1f')
-    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
+    if fwhm is not None:
+        ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.99, 0.05, r'${\rm H}\beta\ {\rm flux}$ (sum)', horizontalalignment='right',
             verticalalignment='center', transform=ax.transAxes)
 
     ax = init_ax(fig, [left+dx+dw,  top-4*dx-3*dw, dx, dx])
+    ax.set_xlim(x_lim)
+    ax.set_ylim(y_lim)
     ax.yaxis.set_major_formatter(ticker.NullFormatter())
     cax = fig.add_axes([left+dx+dw+dx*0.65, top-3*dx-3*dw-0.07*dx, 0.27*dx, 0.01])
     cbticks = [hflx_lim[0]*1.1, hflx_lim[1]/1.1]
@@ -489,11 +579,14 @@ def spotcheck_images(analysis_path, daptype, plate, ifudesign, ofile=None, drpve
 #    pyplot.colorbar(im, cax=cax, orientation='horizontal',
 #                    ticks=[numpy.round(hflx_lim[0]+0.1, decimals=1),
 #                           numpy.round(hflx_lim[1]-0.1, decimals=1)], format='%.1f')
-    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
+    if fwhm is not None:
+        ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.99, 0.05, r'${\rm H}\beta\ {\rm flux}$ (Gauss)', horizontalalignment='right',
             verticalalignment='center', transform=ax.transAxes)
 
     ax = init_ax(fig, [left+2*dx+2*dw,  top-4*dx-3*dw, dx, dx])
+    ax.set_xlim(x_lim)
+    ax.set_ylim(y_lim)
     ax.yaxis.set_major_formatter(ticker.NullFormatter())
     cax = fig.add_axes([left+2*dx+2*dw+dx*0.65, top-3*dx-3*dw-0.07*dx, 0.27*dx, 0.01])
     masked_imshow(fig, ax, cax, d4000, extent=extent,
@@ -507,11 +600,14 @@ def spotcheck_images(analysis_path, daptype, plate, ifudesign, ofile=None, drpve
 #    cnt = ax.contour(numpy.ma.log10(spxsnr), origin='lower', extent=im.get_extent(),
 #                     colors='0.5', levels=snr_levels, linewidths=1.5, zorder=6)
 #    pyplot.colorbar(im, cax=cax, orientation='horizontal', ticks=d4000_lim, format='%.1f')
-    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
+    if fwhm is not None:
+        ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.99, 0.05, r'D4000', horizontalalignment='right',
             verticalalignment='center', transform=ax.transAxes)
     
     ax = init_ax(fig, [left+3*dx+3*dw,  top-4*dx-3*dw, dx, dx])
+    ax.set_xlim(x_lim)
+    ax.set_ylim(y_lim)
     ax.yaxis.set_major_formatter(ticker.NullFormatter())
     cax = fig.add_axes([left+3*dx+3*dw+dx*0.65, top-3*dx-3*dw-0.07*dx, 0.27*dx, 0.01])
     masked_imshow(fig, ax, cax, dn4000, extent=extent,
@@ -525,7 +621,8 @@ def spotcheck_images(analysis_path, daptype, plate, ifudesign, ofile=None, drpve
 #    cnt = ax.contour(numpy.ma.log10(spxsnr), origin='lower', extent=im.get_extent(),
 #                     colors='0.5', levels=snr_levels, linewidths=1.5, zorder=6)
 #    pyplot.colorbar(im, cax=cax, orientation='horizontal', ticks=d4000_lim, format='%.1f')
-    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
+    if fwhm is not None:
+        ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.99, 0.05, r'Dn4000', horizontalalignment='right',
             verticalalignment='center', transform=ax.transAxes)
 
@@ -554,17 +651,44 @@ class SpotcheckDapMaps(scriptbase.ScriptBase):
         parser = super().get_parser(description='Construct a QA plot to spotcheck DAP results',
                                     width=width)
 
-        parser.add_argument('plate', type=int, help='plate ID to process')
-        parser.add_argument('ifudesign', type=int, help='IFU design to process')
+        group = parser.add_mutually_exclusive_group(required=True)
+        group.add_argument('-c', '--config', type=str, default=None,
+                           help='Configuration file used to instantiate the relevant DataCube '
+                                'derived class.')
+        group.add_argument('-f', '--cubefile', type=str, default=None,
+                           help='Name of the file with the datacube data.  Must be possible to '
+                                'instantiate the relevant DataCube derived class directly from '
+                                'the file only.')
+        parser.add_argument('--cube_module', nargs='*',
+                            default='mangadap.datacube.MaNGADataCube',
+                            help='The name of the module that contains the DataCube derived '
+                                 'class used to read the data.')
 
-        parser.add_argument('--drpver', type=str, help='DRP version', default=None)
-        parser.add_argument('--dapver', type=str, help='DAP version', default=None)
-        parser.add_argument("--analysis_path", type=str, help="main DAP output path", default=None)
+        parser.add_argument('-p', '--plan', type=str,
+                            help='SDSS parameter file with analysis plan.  If not provided, a '
+                                 'default plan is used.')
+        parser.add_argument('--plan_module', nargs='*',
+                            default='mangadap.config.manga.MaNGAAnalysisPlan',
+                            help='The name of the module used to define the analysis plan and '
+                                 'the output paths.')
 
-        parser.add_argument("--plan_file", type=str, help="parameter file with the MaNGA DAP "
-                            "execution plan to use instead of the default" , default=None)
+        parser.add_argument('-o', '--output_path', type=str, default=None,
+                            help='Top-level directory for the DAP output files; default path is '
+                                 'set by the provided analysis plan object (see plan_module).')
 
-        parser.add_argument('--daptype', type=str, help='DAP processing type', default=None)
+        parser.add_argument('-b', '--beam', type=float, default=None, help='Beam FWHM for plot.')
+
+#        parser.add_argument('plate', type=int, help='plate ID to process')
+#        parser.add_argument('ifudesign', type=int, help='IFU design to process')
+#
+#        parser.add_argument('--drpver', type=str, help='DRP version', default=None)
+#        parser.add_argument('--dapver', type=str, help='DAP version', default=None)
+#        parser.add_argument("--analysis_path", type=str, help="main DAP output path", default=None)
+#
+#        parser.add_argument("--plan_file", type=str, help="parameter file with the MaNGA DAP "
+#                            "execution plan to use instead of the default" , default=None)
+
+#        parser.add_argument('--daptype', type=str, help='DAP processing type', default=None)
         parser.add_argument('--normal_backend', dest='bgagg', action='store_false', default=True)
 
         return parser
@@ -577,35 +701,58 @@ class SpotcheckDapMaps(scriptbase.ScriptBase):
         if args.bgagg:
             pyplot.switch_backend('agg')
 
-        # Set the the analysis path and make sure it exists
-        analysis_path = defaults.dap_analysis_path(drpver=args.drpver, dapver=args.dapver) \
-                                if args.analysis_path is None else args.analysis_path
-
-        daptypes = []
-        if args.daptype is None:
-            analysisplan = AnalysisPlanSet.default() if args.plan_file is None \
-                                else AnalysisPlanSet.from_par_file(args.plan_file)
-            for p in analysisplan:
-                bin_method = SpatiallyBinnedSpectra.define_method(p['bin_key'])
-                sc_method = StellarContinuumModel.define_method(p['continuum_key'])
-                el_method = EmissionLineModel.define_method(p['elfit_key'])
-                daptypes += [defaults.dap_method(bin_method['key'],
-                                                 sc_method['fitpar']['template_library_key'],
-                                                 el_method['continuum_tpl_key'])]
+        # Instantiate the DataCube
+        #   - Import the module used to read the datacube
+        if isinstance(args.cube_module, list) and len(args.cube_module) > 2:
+            raise ValueError('Provided cube module must be one or two strings.')
+        if isinstance(args.cube_module, str) or len(args.cube_module) == 1:
+            UserDataCube = load_object(args.cube_module if isinstance(args.cube_module, str) 
+                                       else args.cube_module[0])
         else:
-            daptypes = [args.daptype]
+            UserDataCube = load_object(args.cube_module[0], obj=args.cube_module[1])
+        #   - Check that the class is derived from DataCube
+        if not issubclass(UserDataCube, DataCube):
+            raise TypeError('Defined cube object must subclass from mangadap.datacube.DataCube.')
 
-        for daptype in daptypes:
-            plan_qa_dir = defaults.dap_method_path(daptype, plate=args.plate,
-                                                   ifudesign=args.ifudesign, qa=True,
-                                                   drpver=args.drpver, dapver=args.dapver,
-                                                   analysis_path=analysis_path)
-            ofile = os.path.join(plan_qa_dir,
-                            f'manga-{args.plate}-{args.ifudesign}-MAPS-{daptype}-spotcheck.png')
-            if not os.path.isdir(plan_qa_dir):
-                os.makedirs(plan_qa_dir)
+        #   - Import the module used to set the analysis plan
+        if isinstance(args.plan_module, list) and len(args.plan_module) > 2:
+            raise ValueError('Provided plan module must be one or two strings.')
+        if isinstance(args.plan_module, str) or len(args.plan_module) == 1:
+            UserPlan = load_object(args.plan_module if isinstance(args.plan_module, str) 
+                                       else args.plan_module[0])
+        else:
+            UserPlan = load_object(args.plan_module[0], obj=args.plan_module[1])
+        #   - Check that the class is derived from AnalysisPlanSet
+        if not issubclass(UserPlan, AnalysisPlanSet):
+            raise TypeError('Defined plan object must subclass from '
+                            'mangadap.config.analysisplan.AnalysisPlanSet')
 
-            spotcheck_images(analysis_path, daptype, args.plate, args.ifudesign, ofile=ofile)
+        #   - Instantiate using either the datacube file directly or a
+        #     configuration file
+        cube = UserDataCube(args.cubefile) if args.config is None \
+                    else UserDataCube.from_config(args.config)
+
+        # Read the analysis plan
+        plan = UserPlan.default(cube=cube, analysis_path=args.output_path) if args.plan is None \
+                    else UserPlan.from_par_file(args.plan, cube=cube,
+                                                analysis_path=args.output_path)
+
+        # Construct the plot for each analysis plan
+        for i in range(plan.nplans):
+
+#            plan_qa_dir = defaults.dap_method_path(daptype, plate=args.plate,
+#                                                   ifudesign=args.ifudesign, qa=True,
+#                                                   drpver=args.drpver, dapver=args.dapver,
+#                                                   analysis_path=analysis_path)
+#            ofile = os.path.join(plan_qa_dir,
+#                            f'manga-{args.plate}-{args.ifudesign}-MAPS-{daptype}-spotcheck.png')
+#            if not os.path.isdir(plan_qa_dir):
+#                os.makedirs(plan_qa_dir)
+
+#            spotcheck_images(analysis_path, daptype, args.plate, args.ifudesign, ofile=ofile)
+            spotcheck_images(cube, plan[i], plan.method_path(plan_index=i),
+                             plan.method_path(plan_index=i, ref=True),
+                             plan.method_path(plan_index=i, qa=True), fwhm=args.beam)
 
         print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
 

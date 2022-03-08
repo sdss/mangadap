@@ -1,4 +1,3 @@
-import os
 import time
 import warnings
 
@@ -14,9 +13,7 @@ from mangadap.datacube import DataCube
 from mangadap.config.analysisplan import AnalysisPlanSet
 from mangadap.proc.templatelibrary import TemplateLibrary
 from mangadap.proc.reductionassessments import ReductionAssessment
-from mangadap.proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
 from mangadap.proc.stellarcontinuummodel import StellarContinuumModel
-from mangadap.proc.emissionlinemodel import EmissionLineModel
 from mangadap.proc.util import growth_lim
 from mangadap.util.fitsutil import DAPFitsUtil
 from mangadap.util.mapping import map_extent, map_beam_patch
@@ -130,7 +127,9 @@ def masked_imshow(fig, ax, cax, data, extent=None, norm=None, vmin=None, vmax=No
         _norm = colors.Normalize(vmin=vmin, vmax=vmax) if norm is None else norm
         cb = colorbar.ColorbarBase(cax, cmap=cm.get_cmap(cmap), norm=_norm)
 
-
+# TODO:
+#   - Add a buffer keyword that increases the size of the image panels
+#   - Use astropy image plotting (with wcs) tools instead?
 def stellar_continuum_maps(name, method, snr, r68, r99, rchi2, signal, a, da, an, dan,
                            gmr, t, dt, tn, dtn, svel, ssigo, ssigcor, ssigc, extent=None,
                            fwhm=2.5, ofile=None):
@@ -141,12 +140,16 @@ def stellar_continuum_maps(name, method, snr, r68, r99, rchi2, signal, a, da, an
     w,h = pyplot.figaspect(1)
     fig = pyplot.figure(figsize=(2*w,2*h))
 
-#    Dx = (extent[0]-extent[1])*1.1
-#    x_lim = (extent[0]+extent[1])/2 + Dx*numpy.array([1,-1])/2
-#    Dy = (extent[2]-extent[3])*1.1
-#    y_lim = (extent[2]+extent[3])/2 + Dy*numpy.array([-1,1])/2
-#    ax.set_xlim(x_lim)
-#    ax.set_ylim(y_lim)
+    x_order = 1 if extent[0] < extent[1] else -1
+    Dx = x_order*(extent[1] - extent[0])
+    y_order = 1 if extent[2] < extent[3] else -1
+    Dy = y_order*(extent[3] - extent[2])
+    # Force the image panels to be square; assumes extent has the same units in
+    # both dimensions.
+    D = max(Dx, Dy)
+
+    x_lim = (extent[0]+extent[1])/2 + D * x_order * numpy.array([-1,1])/2
+    y_lim = (extent[2]+extent[3])/2 + D * y_order * numpy.array([-1,1])/2
 
     snr_lim = numpy.power(10., growth_lim(numpy.ma.log10(snr), 0.90, fac=1.05))
     snr_lim[0] = max(0.1, snr_lim[0])
@@ -197,8 +200,8 @@ def stellar_continuum_maps(name, method, snr, r68, r99, rchi2, signal, a, da, an
     masked_imshow(fig, ax, cax, snr, extent=extent,
                   norm=colors.LogNorm(vmin=snr_lim[0], vmax=snr_lim[1]), cmap='viridis',
                   zorder=3, cbformat='%.1f', subs=(1.,2.,4.))
-    ax.set_xlim(extent[:2])
-    ax.set_ylim(extent[2:])
+    ax.set_xlim(x_lim) #extent[:2])
+    ax.set_ylim(y_lim) #extent[2:])
     if fwhm is not None:
         ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.1, 0.95, r'S/N', horizontalalignment='left', verticalalignment='center',
@@ -214,8 +217,8 @@ def stellar_continuum_maps(name, method, snr, r68, r99, rchi2, signal, a, da, an
     masked_imshow(fig, ax, cax, r68, extent=extent,
                   norm=colors.LogNorm(vmin=r68_lim[0], vmax=r68_lim[1]), cmap='viridis_r',
                   zorder=3, cbformat='%.2f', subs=(1.,2.,4.))
-    ax.set_xlim(extent[:2])
-    ax.set_ylim(extent[2:])
+    ax.set_xlim(x_lim) #extent[:2])
+    ax.set_ylim(y_lim) #extent[2:])
     if fwhm is not None:
         ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.1, 0.95, r'68% Frac. Resid', horizontalalignment='left', verticalalignment='center',
@@ -236,8 +239,8 @@ def stellar_continuum_maps(name, method, snr, r68, r99, rchi2, signal, a, da, an
     masked_imshow(fig, ax, cax, r99, extent=extent,
                   norm=colors.LogNorm(vmin=r99_lim[0], vmax=r99_lim[1]), cmap='viridis_r',
                   zorder=3, cbformat='%.2f', subs=(1.,2.,4.))
-    ax.set_xlim(extent[:2])
-    ax.set_ylim(extent[2:])
+    ax.set_xlim(x_lim) #extent[:2])
+    ax.set_ylim(y_lim) #extent[2:])
     if fwhm is not None:
         ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.1, 0.95, r'99% Frac. Resid', horizontalalignment='left', verticalalignment='center',
@@ -253,8 +256,8 @@ def stellar_continuum_maps(name, method, snr, r68, r99, rchi2, signal, a, da, an
 #          numpy.sum(rchi2.mask)/numpy.prod(rchi2.shape))
     masked_imshow(fig, ax, cax, rchi2, extent=extent, vmin=chi_lim[0], vmax=chi_lim[1],
                   cmap='viridis_r', zorder=3, cbformat='%.2f')
-    ax.set_xlim(extent[:2])
-    ax.set_ylim(extent[2:])
+    ax.set_xlim(x_lim) #extent[:2])
+    ax.set_ylim(y_lim) #extent[2:])
     if fwhm is not None:
         ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.1, 0.95, r'$\chi^2_\nu$', horizontalalignment='left', verticalalignment='center',
@@ -271,8 +274,8 @@ def stellar_continuum_maps(name, method, snr, r68, r99, rchi2, signal, a, da, an
     masked_imshow(fig, ax, cax, signal, extent=extent,
                   norm=colors.LogNorm(vmin=s_lim[0], vmax=s_lim[1]), cmap='viridis',
                   zorder=3, cbformat='%.1f', subs=(1.,2.,4.))
-    ax.set_xlim(extent[:2])
-    ax.set_ylim(extent[2:])
+    ax.set_xlim(x_lim) #extent[:2])
+    ax.set_ylim(y_lim) #extent[2:])
     if fwhm is not None:
         ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.1, 0.95, r'$I_g$', horizontalalignment='left', verticalalignment='center',
@@ -288,8 +291,8 @@ def stellar_continuum_maps(name, method, snr, r68, r99, rchi2, signal, a, da, an
 #    print(numpy.sum(lga.mask), numpy.prod(lga.shape), numpy.sum(lga.mask)/numpy.prod(lga.shape))
     masked_imshow(fig, ax, cax, lga, extent=extent, vmin=a_lim[0], vmax=a_lim[1], cmap='viridis',
                   zorder=3, cbformat='%.1f')
-    ax.set_xlim(extent[:2])
-    ax.set_ylim(extent[2:])
+    ax.set_xlim(x_lim) #extent[:2])
+    ax.set_ylim(y_lim) #extent[2:])
     if fwhm is not None:
         ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.1, 0.95, r'$\log A$', horizontalalignment='left', verticalalignment='center',
@@ -305,8 +308,8 @@ def stellar_continuum_maps(name, method, snr, r68, r99, rchi2, signal, a, da, an
 #    print(numpy.sum(lgan.mask), numpy.prod(lgan.shape), numpy.sum(lgan.mask)/numpy.prod(lgan.shape))
     masked_imshow(fig, ax, cax, lgan, extent=extent, vmin=an_lim[0], vmax=an_lim[1],
                   cmap='viridis_r', zorder=3, cbformat='%.1f')
-    ax.set_xlim(extent[:2])
-    ax.set_ylim(extent[2:])
+    ax.set_xlim(x_lim) #extent[:2])
+    ax.set_ylim(y_lim) #extent[2:])
     if fwhm is not None:
         ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.1, 0.95, r'$\log A_n$', horizontalalignment='left', verticalalignment='center',
@@ -323,8 +326,8 @@ def stellar_continuum_maps(name, method, snr, r68, r99, rchi2, signal, a, da, an
 #          numpy.sum(lgdan.mask)/numpy.prod(lgdan.shape))
     masked_imshow(fig, ax, cax, lgdan, extent=extent, vmin=dan_lim[0], vmax=dan_lim[1],
                   cmap='viridis_r', zorder=3, cbformat='%.1f')
-    ax.set_xlim(extent[:2])
-    ax.set_ylim(extent[2:])
+    ax.set_xlim(x_lim) #extent[:2])
+    ax.set_ylim(y_lim) #extent[2:])
     if fwhm is not None:
         ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.1, 0.95, r'$\log(\delta A_n)$', horizontalalignment='left',
@@ -334,15 +337,15 @@ def stellar_continuum_maps(name, method, snr, r68, r99, rchi2, signal, a, da, an
     # g-r Color
     i,j=0,1
     ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
-    cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
 #    print(numpy.sum(gmr.mask), numpy.prod(gmr.shape), numpy.sum(gmr.mask)/numpy.prod(gmr.shape))
     if gmr is not None:
+        cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
         masked_imshow(fig, ax, cax, gmr, extent=extent, vmin=gmr_lim[0], vmax=gmr_lim[1],
                       cmap='RdBu_r', zorder=3, cbformat='%.1f')
     else:
         ax.text(0.5, 0.5, 'No g-r data', ha='center', va='center', transform=ax.transAxes)
-    ax.set_xlim(extent[:2])
-    ax.set_ylim(extent[2:])
+    ax.set_xlim(x_lim) #extent[:2])
+    ax.set_ylim(y_lim) #extent[2:])
     if fwhm is not None:
         ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.1, 0.95, r'$g-r$', horizontalalignment='left', verticalalignment='center',
@@ -358,8 +361,8 @@ def stellar_continuum_maps(name, method, snr, r68, r99, rchi2, signal, a, da, an
 #    print(numpy.sum(lgt.mask), numpy.prod(lgt.shape), numpy.sum(lgt.mask)/numpy.prod(lgt.shape))
     masked_imshow(fig, ax, cax, lgt, extent=extent, vmin=t_lim[0], vmax=t_lim[1],
                   cmap='viridis', zorder=3, cbformat='%.1f')
-    ax.set_xlim(extent[:2])
-    ax.set_ylim(extent[2:])
+    ax.set_xlim(x_lim) #extent[:2])
+    ax.set_ylim(y_lim) #extent[2:])
     if fwhm is not None:
         ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.1, 0.95, r'$\log T$', horizontalalignment='left', verticalalignment='center',
@@ -375,8 +378,8 @@ def stellar_continuum_maps(name, method, snr, r68, r99, rchi2, signal, a, da, an
 #    print(numpy.sum(lgtn.mask), numpy.prod(lgtn.shape), numpy.sum(lgtn.mask)/numpy.prod(lgtn.shape))
     masked_imshow(fig, ax, cax, lgtn, extent=extent, vmin=tn_lim[0], vmax=tn_lim[1],
                   cmap='viridis_r', zorder=3, cbformat='%.1f')
-    ax.set_xlim(extent[:2])
-    ax.set_ylim(extent[2:])
+    ax.set_xlim(x_lim) #extent[:2])
+    ax.set_ylim(y_lim) #extent[2:])
     if fwhm is not None:
         ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.1, 0.95, r'$\log T_n$', horizontalalignment='left', verticalalignment='center',
@@ -393,8 +396,8 @@ def stellar_continuum_maps(name, method, snr, r68, r99, rchi2, signal, a, da, an
 #            numpy.sum(lgdtn.mask)/numpy.prod(lgdtn.shape))
     masked_imshow(fig, ax, cax, lgdtn, extent=extent, vmin=dtn_lim[0], vmax=dtn_lim[1],
                   cmap='viridis_r', zorder=3, cbformat='%.1f')
-    ax.set_xlim(extent[:2])
-    ax.set_ylim(extent[2:])
+    ax.set_xlim(x_lim) #extent[:2])
+    ax.set_ylim(y_lim) #extent[2:])
     if fwhm is not None:
         ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.1, 0.95, r'$\log \delta T_n$', horizontalalignment='left',
@@ -408,8 +411,8 @@ def stellar_continuum_maps(name, method, snr, r68, r99, rchi2, signal, a, da, an
 #    print(numpy.sum(svel.mask), numpy.prod(svel.shape), numpy.sum(svel.mask)/numpy.prod(svel.shape))
     masked_imshow(fig, ax, cax, svel, extent=extent, vmin=sv_lim[0], vmax=sv_lim[1],
                   cmap='RdBu_r', zorder=3, cbformat='%.0f')
-    ax.set_xlim(extent[:2])
-    ax.set_ylim(extent[2:])
+    ax.set_xlim(x_lim) #extent[:2])
+    ax.set_ylim(y_lim) #extent[2:])
     if fwhm is not None:
         ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.1, 0.95, r'$V_\ast$ (km/s)', horizontalalignment='left',
@@ -426,8 +429,8 @@ def stellar_continuum_maps(name, method, snr, r68, r99, rchi2, signal, a, da, an
     masked_imshow(fig, ax, cax, ssigo, extent=extent,
                   norm=colors.LogNorm(vmin=so_lim[0], vmax=so_lim[1]),
                   cmap='viridis', zorder=3, cbformat='%.0f', subs=(1.,2.,4.))
-    ax.set_xlim(extent[:2])
-    ax.set_ylim(extent[2:])
+    ax.set_xlim(x_lim) #extent[:2])
+    ax.set_ylim(y_lim) #extent[2:])
     if fwhm is not None:
         ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.1, 0.95, r'$\sigma_{\rm obs}$ (km/s)', horizontalalignment='left',
@@ -443,8 +446,8 @@ def stellar_continuum_maps(name, method, snr, r68, r99, rchi2, signal, a, da, an
 #            numpy.sum(ssigcor.mask)/numpy.prod(ssigcor.shape))
     masked_imshow(fig, ax, cax, ssigcor, extent=extent, vmin=sc_lim[0], vmax=sc_lim[1],
                   cmap='viridis', zorder=3, cbformat='%.0f')
-    ax.set_xlim(extent[:2])
-    ax.set_ylim(extent[2:])
+    ax.set_xlim(x_lim) #extent[:2])
+    ax.set_ylim(y_lim) #extent[2:])
     if fwhm is not None:
         ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.1, 0.95, r'$\sigma_{\rm corr}$ (km/s)', horizontalalignment='left',
@@ -461,8 +464,8 @@ def stellar_continuum_maps(name, method, snr, r68, r99, rchi2, signal, a, da, an
     masked_imshow(fig, ax, cax, ssigo, extent=extent,
                   norm=colors.LogNorm(vmin=ss_lim[0], vmax=ss_lim[1]),
                   cmap='viridis', zorder=3, cbformat='%.0f', subs=(1.,2.,4.))
-    ax.set_xlim(extent[:2])
-    ax.set_ylim(extent[2:])
+    ax.set_xlim(x_lim) #extent[:2])
+    ax.set_ylim(y_lim) #extent[2:])
     if fwhm is not None:
         ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.1, 0.95, r'$\sigma_\ast$ (km/s)', horizontalalignment='left',
@@ -763,19 +766,8 @@ class PpxfFitQA(scriptbase.ScriptBase):
                             help='Top-level directory for the DAP output files; default path is '
                                  'set by the provided analysis plan object (see plan_module).')
 
+        # TODO: For MaNGA, pull fwhm from the header.  Put FWHM in cube.meta?
         parser.add_argument('-b', '--beam', type=float, default=None, help='Beam FWHM for plot.')
-
-
-#        parser.add_argument('plate', type=int, help='plate ID to process')
-#        parser.add_argument('ifudesign', type=int, help='IFU design to process')
-#
-#        parser.add_argument('--drpver', type=str, help='DRP version', default=None)
-#        parser.add_argument('--redux_path', type=str, help='main DRP output path', default=None)
-#        parser.add_argument('--dapver', type=str, help='DAP version', default=None)
-#        parser.add_argument('--analysis_path', type=str, help='main DAP output path', default=None)
-#
-#        parser.add_argument('--plan_file', type=str, help='parameter file with the MaNGA DAP '
-#                            'execution plan to use instead of the default' , default=None)
 
         parser.add_argument('--normal_backend', dest='bgagg', action='store_false', default=True)
 
@@ -792,7 +784,6 @@ class PpxfFitQA(scriptbase.ScriptBase):
 
         if args.bgagg:
             pyplot.switch_backend('agg')
-
 
         # Instantiate the DataCube
         #   - Import the module used to read the datacube
@@ -829,10 +820,6 @@ class PpxfFitQA(scriptbase.ScriptBase):
         plan = UserPlan.default(cube=cube, analysis_path=args.output_path) if args.plan is None \
                     else UserPlan.from_par_file(args.plan, cube=cube,
                                                 analysis_path=args.output_path)
-
-#        # Get the DAP method types to plot
-#        analysisplan = AnalysisPlanSet.default() if args.plan_file is None \
-#                            else AnalysisPlanSet.from_par_file(args.plan_file)
 
         # Construct the plot for each analysis plan
         for i in range(plan.nplans):
