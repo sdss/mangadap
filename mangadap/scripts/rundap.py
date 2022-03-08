@@ -85,7 +85,6 @@ except:
 
 import numpy
 
-from mangadap import __version__
 from mangadap.config import defaults
 from mangadap.survey.drpcomplete import DRPComplete
 from mangadap.survey.mangampl import MaNGAMPL
