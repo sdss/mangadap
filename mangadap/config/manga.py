@@ -312,6 +312,10 @@ class MaNGAConfig:
     def file_path(self):
         return self.directory_path / self.file_name
 
+    @property
+    def image_path(self):
+        return self.chart_path / f'{self.ifudesign}.png'
+
     @staticmethod
     def check_mode(mode):
         """

@@ -1,7 +1,4 @@
-import os
-import glob
 import time
-import argparse
 
 import numpy
 
@@ -11,13 +8,9 @@ from astropy.io import fits
 
 from mangadap import dapfits
 from mangadap.datacube import DataCube
-from mangadap.config import defaults
 from mangadap.config.analysisplan import AnalysisPlanSet
 from mangadap.util.fileio import channel_dictionary
 from mangadap.proc.util import growth_lim
-from mangadap.proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
-from mangadap.proc.stellarcontinuummodel import StellarContinuumModel
-from mangadap.proc.emissionlinemodel import EmissionLineModel
 from mangadap.util.mapping import map_extent, map_beam_patch
 from mangadap.util.pkg import load_object
 
@@ -71,8 +64,6 @@ def masked_imshow(fig, ax, cax, data, extent=None, norm=None, vmin=None, vmax=No
 #  - STELLAR_CONT_FRESID, STELLAR_CONT_CHI2, STELLAR_VEL, STELLAR_SIGMA
 #  - EMLINE_SFLUX, EMLINE_GFLUX, EMLINE_GVEL, EMLINE_GSIGMA - all H-alpha
 #  - EMLINE_SFLUX (H-beta), EMLINE_GFLUX (H-beta), D4000, Dn4000
-#def spotcheck_images(analysis_path, daptype, plate, ifudesign, ofile=None, drpver=None,
-#                     dapver=None):
 def spotcheck_images(cube, plan, method_dir, ref_dir, qa_dir, fwhm=None):
     """
     Construct a QA plot for the PPXFFit results.
@@ -110,13 +101,6 @@ def spotcheck_images(cube, plan, method_dir, ref_dir, qa_dir, fwhm=None):
     if not ifile.exists():
         raise FileNotFoundError(f'No file: {ifile}')
 
-#    plan_dir = defaults.dap_method_path(daptype, plate=plate, ifudesign=ifudesign, drpver=drpver,
-#                                        dapver=dapver, analysis_path=analysis_path)
-#    ifile = os.path.join(plan_dir, 'manga-{0}-{1}-MAPS-{2}.fits.gz'.format(plate, ifudesign,
-#                                                                           daptype))
-#    if not os.path.isfile(ifile):
-#        raise FileNotFoundError('No file: {0}'.format(ifile))
-
     print(f'Reading: {ifile}')
     hdu = fits.open(str(ifile))
 
@@ -139,13 +123,6 @@ def spotcheck_images(cube, plan, method_dir, ref_dir, qa_dir, fwhm=None):
     spxsnr = numpy.ma.MaskedArray(hdu['SPX_SNR'].data.copy())
     binid = numpy.ma.MaskedArray(hdu['BINID'].data.copy(), mask=hdu['BINID'].data<0)
     binsnr = numpy.ma.MaskedArray(hdu['BIN_SNR'].data.copy(), mask=hdu['BIN_MFLUX_MASK'].data>0)
-
-#    scfres = numpy.ma.MaskedArray(hdu['STELLAR_CONT_FRESID'].data.copy()[0,:,:],
-#                                  mask=numpy.invert(hdu['STELLAR_CONT_FRESID'].data[0,:,:] > 0))
-#                                  #bm.flagged(hdu['STELLAR_VEL_MASK'].data, 'DONOTUSE'))
-#    scrchi = numpy.ma.MaskedArray(hdu['STELLAR_CONT_RCHI2'].data.copy(),
-#                                  mask=numpy.invert(hdu['STELLAR_CONT_RCHI2'].data > 0))
-#                                  #mask=bm.flagged(hdu['STELLAR_VEL_MASK'].data, 'DONOTUSE'))
 
     # 68% growth of the absolute value of the fractional residuals
     scfres = numpy.ma.MaskedArray(hdu['STELLAR_FOM'].data.copy()[3,:,:],
@@ -397,14 +374,6 @@ def spotcheck_images(cube, plan, method_dir, ref_dir, qa_dir, fwhm=None):
                   vmin=vel_lim[0], vmax=vel_lim[1], cmap='RdBu_r',
                   zorder=4, orientation='horizontal', contour_data=numpy.ma.log10(spxsnr),
                   levels=snr_levels, cbticks=cbticks, cbformat=ticker.ScalarFormatter()) #'%.0f')
-#    im = ax.imshow(strvel, origin='lower', interpolation='nearest', cmap='RdBu_r',
-#                   zorder=4, extent=extent, vmin=vel_lim[0], vmax=vel_lim[1])
-#    im2 = ax.imshow(ustrvel, origin='lower', interpolation='nearest', cmap='Greens_r',
-#                    vmin=0, vmax=1, zorder=5, alpha=0.3, extent=extent)
-#    cnt = ax.contour(numpy.ma.log10(spxsnr), origin='lower', extent=im.get_extent(),
-#                     colors='0.5', levels=snr_levels, linewidths=1.5, zorder=6)
-#    pyplot.colorbar(im, cax=cax, orientation='horizontal',
-#                    ticks=[numpy.round(vel_lim[0]+1), numpy.round(vel_lim[1]-1)], format='%.0f')
     if fwhm is not None:
         ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.99, 0.05, r'$V_\ast$', horizontalalignment='right',
@@ -421,15 +390,6 @@ def spotcheck_images(cube, plan, method_dir, ref_dir, qa_dir, fwhm=None):
                   norm=colors.LogNorm(vmin=sig_lim[0], vmax=sig_lim[1]), cmap='viridis',
                   zorder=4, orientation='horizontal', contour_data=numpy.ma.log10(spxsnr),
                   levels=snr_levels, cbticks=cbticks, cbformat=ticker.ScalarFormatter()) #'%.0f')
-#    im = ax.imshow(numpy.ma.log10(strsig), origin='lower', interpolation='nearest',
-#                   cmap='viridis', zorder=4, extent=extent, vmin=sig_lim[0], vmax=sig_lim[1])
-#    im2 = ax.imshow(ustrsig, origin='lower', interpolation='nearest', cmap='Reds_r',
-#                    vmin=0, vmax=1, zorder=5, alpha=0.3, extent=extent)
-#    cnt = ax.contour(numpy.ma.log10(spxsnr), origin='lower', extent=im.get_extent(),
-#                     colors='0.5', levels=snr_levels, linewidths=1.5, zorder=6)
-#    pyplot.colorbar(im, cax=cax, orientation='horizontal',
-#                    ticks=[numpy.round(sig_lim[0]+0.1, decimals=1),
-#                           numpy.round(sig_lim[1]-0.1, decimals=1)], format='%.1f')
     if fwhm is not None:
         ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.99, 0.05, r'$\sigma_\ast$', horizontalalignment='right',
@@ -447,15 +407,6 @@ def spotcheck_images(cube, plan, method_dir, ref_dir, qa_dir, fwhm=None):
                   norm=colors.LogNorm(vmin=hflx_lim[0], vmax=hflx_lim[1]), cmap='inferno',
                   zorder=4, orientation='horizontal', contour_data=numpy.ma.log10(spxsnr),
                   levels=snr_levels, cbticks=cbticks, cbformat=ticker.ScalarFormatter()) #'%.0f')
-#    im = ax.imshow(hasflx, origin='lower', interpolation='nearest', cmap='inferno',
-#                   zorder=4, extent=extent, vmin=hflx_lim[0], vmax=hflx_lim[1])
-#    im2 = ax.imshow(uhasflx, origin='lower', interpolation='nearest', cmap='Greens_r',
-#              vmin=0, vmax=1, zorder=5, alpha=0.3, extent=extent)
-#    cnt = ax.contour(numpy.ma.log10(spxsnr), origin='lower', extent=im.get_extent(),
-#                     colors='0.5', levels=snr_levels, linewidths=1.5, zorder=6)
-#    pyplot.colorbar(im, cax=cax, orientation='horizontal',
-#                    ticks=[numpy.round(hflx_lim[0]+0.1, decimals=1),
-#                           numpy.round(hflx_lim[1]-0.1, decimals=1)], format='%.1f')
     if fwhm is not None:
         ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.99, 0.05, r'${\rm H}\alpha\ {\rm flux}$ (sum)', horizontalalignment='right',
@@ -472,15 +423,6 @@ def spotcheck_images(cube, plan, method_dir, ref_dir, qa_dir, fwhm=None):
                   norm=colors.LogNorm(vmin=hflx_lim[0], vmax=hflx_lim[1]), cmap='inferno',
                   zorder=4, orientation='horizontal', contour_data=numpy.ma.log10(spxsnr),
                   levels=snr_levels, cbticks=cbticks, cbformat=ticker.ScalarFormatter()) #'%.0f')
-#    im = ax.imshow(hagflx, origin='lower', interpolation='nearest', cmap='inferno',
-#                   zorder=4, extent=extent, vmin=hflx_lim[0], vmax=hflx_lim[1])
-#    im2 = ax.imshow(uhagflx, origin='lower', interpolation='nearest', cmap='Greens_r',
-#              vmin=0, vmax=1, zorder=5, alpha=0.3, extent=extent)
-#    cnt = ax.contour(numpy.ma.log10(spxsnr), origin='lower', extent=im.get_extent(),
-#                     colors='0.5', levels=snr_levels, linewidths=1.5, zorder=6)
-#    pyplot.colorbar(im, cax=cax, orientation='horizontal',
-#                    ticks=[numpy.round(hflx_lim[0]+0.1, decimals=1),
-#                           numpy.round(hflx_lim[1]-0.1, decimals=1)], format='%.1f')
     if fwhm is not None:
         ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.99, 0.05, r'${\rm H}\alpha\ {\rm flux}$ (Gauss)', horizontalalignment='right',
@@ -497,14 +439,6 @@ def spotcheck_images(cube, plan, method_dir, ref_dir, qa_dir, fwhm=None):
                   vmin=vel_lim[0], vmax=vel_lim[1], cmap='RdBu_r',
                   zorder=4, orientation='horizontal', contour_data=numpy.ma.log10(spxsnr),
                   levels=snr_levels, cbticks=cbticks, cbformat=ticker.ScalarFormatter()) #'%.0f')
-#    im = ax.imshow(hagvel, origin='lower', interpolation='nearest', cmap='RdBu_r',
-#                   zorder=4, extent=extent, vmin=vel_lim[0], vmax=vel_lim[1])
-#    im2 = ax.imshow(uhagvel, origin='lower', interpolation='nearest', cmap='Greens_r',
-#              vmin=0, vmax=1, zorder=5, alpha=0.3, extent=extent)
-#    cnt = ax.contour(numpy.ma.log10(spxsnr), origin='lower', extent=im.get_extent(),
-#                     colors='0.5', levels=snr_levels, linewidths=1.5, zorder=6)
-#    pyplot.colorbar(im, cax=cax, orientation='horizontal',
-#                    ticks=[numpy.round(vel_lim[0]+1), numpy.round(vel_lim[1]-1)], format='%.0f')
     if fwhm is not None:
         ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.99, 0.05, r'$V_{{\rm H}\alpha}$', horizontalalignment='right',
@@ -521,15 +455,6 @@ def spotcheck_images(cube, plan, method_dir, ref_dir, qa_dir, fwhm=None):
                   norm=colors.LogNorm(vmin=sig_lim[0], vmax=sig_lim[1]), cmap='viridis',
                   zorder=4, orientation='horizontal', contour_data=numpy.ma.log10(spxsnr),
                   levels=snr_levels, cbticks=cbticks, cbformat=ticker.ScalarFormatter()) #'%.0f')
-#    im = ax.imshow(numpy.ma.log10(hagsig), origin='lower', interpolation='nearest',
-#                   cmap='viridis', zorder=4, extent=extent, vmin=sig_lim[0], vmax=sig_lim[1])
-#    im2 = ax.imshow(uhagsig, origin='lower', interpolation='nearest', cmap='Reds_r',
-#                    vmin=0, vmax=1, zorder=5, alpha=0.3, extent=extent)
-#    cnt = ax.contour(numpy.ma.log10(spxsnr), origin='lower', extent=im.get_extent(),
-#                     colors='0.5', levels=snr_levels, linewidths=1.5, zorder=6)
-#    pyplot.colorbar(im, cax=cax, orientation='horizontal',
-#                    ticks=[numpy.round(sig_lim[0]+0.1, decimals=1),
-#                           numpy.round(sig_lim[1]-0.1, decimals=1)], format='%.1f')
     if fwhm is not None:
         ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.99, 0.05, r'$\sigma_{{\rm H}\alpha}$', horizontalalignment='right',
@@ -546,15 +471,6 @@ def spotcheck_images(cube, plan, method_dir, ref_dir, qa_dir, fwhm=None):
                   norm=colors.LogNorm(vmin=hflx_lim[0], vmax=hflx_lim[1]), cmap='inferno',
                   zorder=4, orientation='horizontal', contour_data=numpy.ma.log10(spxsnr),
                   levels=snr_levels, cbticks=cbticks, cbformat=ticker.ScalarFormatter()) #'%.0f')
-#    im = ax.imshow(hbsflx, origin='lower', interpolation='nearest', cmap='inferno',
-#                   zorder=4, extent=extent, vmin=hflx_lim[0], vmax=hflx_lim[1])
-#    im2 = ax.imshow(uhbsflx, origin='lower', interpolation='nearest', cmap='Greens_r',
-#              vmin=0, vmax=1, zorder=5, alpha=0.3, extent=extent)
-#    cnt = ax.contour(numpy.ma.log10(spxsnr), origin='lower', extent=im.get_extent(),
-#                     colors='0.5', levels=snr_levels, linewidths=1.5, zorder=6)
-#    pyplot.colorbar(im, cax=cax, orientation='horizontal',
-#                    ticks=[numpy.round(hflx_lim[0]+0.1, decimals=1),
-#                           numpy.round(hflx_lim[1]-0.1, decimals=1)], format='%.1f')
     if fwhm is not None:
         ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.99, 0.05, r'${\rm H}\beta\ {\rm flux}$ (sum)', horizontalalignment='right',
@@ -570,15 +486,6 @@ def spotcheck_images(cube, plan, method_dir, ref_dir, qa_dir, fwhm=None):
                   norm=colors.LogNorm(vmin=hflx_lim[0], vmax=hflx_lim[1]), cmap='inferno',
                   zorder=4, orientation='horizontal', contour_data=numpy.ma.log10(spxsnr),
                   levels=snr_levels, cbticks=cbticks, cbformat=ticker.ScalarFormatter()) #'%.0f')
-#    im = ax.imshow(hbgflx, origin='lower', interpolation='nearest', cmap='inferno',
-#                   zorder=4, extent=extent, vmin=hflx_lim[0], vmax=hflx_lim[1])
-#    im2 = ax.imshow(uhbgflx, origin='lower', interpolation='nearest', cmap='Greens_r',
-#              vmin=0, vmax=1, zorder=5, alpha=0.3, extent=extent)
-#    cnt = ax.contour(numpy.ma.log10(spxsnr), origin='lower', extent=im.get_extent(),
-#                     colors='0.5', levels=snr_levels, linewidths=1.5, zorder=6)
-#    pyplot.colorbar(im, cax=cax, orientation='horizontal',
-#                    ticks=[numpy.round(hflx_lim[0]+0.1, decimals=1),
-#                           numpy.round(hflx_lim[1]-0.1, decimals=1)], format='%.1f')
     if fwhm is not None:
         ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.99, 0.05, r'${\rm H}\beta\ {\rm flux}$ (Gauss)', horizontalalignment='right',
@@ -593,13 +500,6 @@ def spotcheck_images(cube, plan, method_dir, ref_dir, qa_dir, fwhm=None):
                   vmin=d4000_lim[0], vmax=d4000_lim[1], cmap='RdBu_r',
                   zorder=4, orientation='horizontal', contour_data=numpy.ma.log10(spxsnr),
                   levels=snr_levels, cbticks=d4000_lim, cbformat=ticker.ScalarFormatter())
-#    im = ax.imshow(d4000, origin='lower', interpolation='nearest', cmap='RdBu_r',
-#                   zorder=4, extent=extent, vmin=d4000_lim[0], vmax=d4000_lim[1])
-#    im2 = ax.imshow(ud4000, origin='lower', interpolation='nearest', cmap='Greens_r',
-#                    vmin=0, vmax=1, zorder=5, alpha=0.3, extent=extent)
-#    cnt = ax.contour(numpy.ma.log10(spxsnr), origin='lower', extent=im.get_extent(),
-#                     colors='0.5', levels=snr_levels, linewidths=1.5, zorder=6)
-#    pyplot.colorbar(im, cax=cax, orientation='horizontal', ticks=d4000_lim, format='%.1f')
     if fwhm is not None:
         ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.99, 0.05, r'D4000', horizontalalignment='right',
@@ -614,13 +514,6 @@ def spotcheck_images(cube, plan, method_dir, ref_dir, qa_dir, fwhm=None):
                   vmin=d4000_lim[0], vmax=d4000_lim[1], cmap='RdBu_r',
                   zorder=4, orientation='horizontal', contour_data=numpy.ma.log10(spxsnr),
                   levels=snr_levels, cbticks=d4000_lim, cbformat=ticker.ScalarFormatter())
-#    im = ax.imshow(dn4000, origin='lower', interpolation='nearest', cmap='RdBu_r',
-#                   zorder=4, extent=extent, vmin=d4000_lim[0], vmax=d4000_lim[1])
-#    im2 = ax.imshow(udn4000, origin='lower', interpolation='nearest', cmap='Greens_r',
-#                    vmin=0, vmax=1, zorder=5, alpha=0.3, extent=extent)
-#    cnt = ax.contour(numpy.ma.log10(spxsnr), origin='lower', extent=im.get_extent(),
-#                     colors='0.5', levels=snr_levels, linewidths=1.5, zorder=6)
-#    pyplot.colorbar(im, cax=cax, orientation='horizontal', ticks=d4000_lim, format='%.1f')
     if fwhm is not None:
         ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.99, 0.05, r'Dn4000', horizontalalignment='right',
@@ -678,17 +571,6 @@ class SpotcheckDapMaps(scriptbase.ScriptBase):
 
         parser.add_argument('-b', '--beam', type=float, default=None, help='Beam FWHM for plot.')
 
-#        parser.add_argument('plate', type=int, help='plate ID to process')
-#        parser.add_argument('ifudesign', type=int, help='IFU design to process')
-#
-#        parser.add_argument('--drpver', type=str, help='DRP version', default=None)
-#        parser.add_argument('--dapver', type=str, help='DAP version', default=None)
-#        parser.add_argument("--analysis_path", type=str, help="main DAP output path", default=None)
-#
-#        parser.add_argument("--plan_file", type=str, help="parameter file with the MaNGA DAP "
-#                            "execution plan to use instead of the default" , default=None)
-
-#        parser.add_argument('--daptype', type=str, help='DAP processing type', default=None)
         parser.add_argument('--normal_backend', dest='bgagg', action='store_false', default=True)
 
         return parser
@@ -739,17 +621,6 @@ class SpotcheckDapMaps(scriptbase.ScriptBase):
 
         # Construct the plot for each analysis plan
         for i in range(plan.nplans):
-
-#            plan_qa_dir = defaults.dap_method_path(daptype, plate=args.plate,
-#                                                   ifudesign=args.ifudesign, qa=True,
-#                                                   drpver=args.drpver, dapver=args.dapver,
-#                                                   analysis_path=analysis_path)
-#            ofile = os.path.join(plan_qa_dir,
-#                            f'manga-{args.plate}-{args.ifudesign}-MAPS-{daptype}-spotcheck.png')
-#            if not os.path.isdir(plan_qa_dir):
-#                os.makedirs(plan_qa_dir)
-
-#            spotcheck_images(analysis_path, daptype, args.plate, args.ifudesign, ofile=ofile)
             spotcheck_images(cube, plan[i], plan.method_path(plan_index=i),
                              plan.method_path(plan_index=i, ref=True),
                              plan.method_path(plan_index=i, qa=True), fwhm=args.beam)
