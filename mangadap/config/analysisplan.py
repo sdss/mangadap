@@ -15,6 +15,8 @@ Classes to handle MaNGA DAP analysis plans.
 """
 
 from pathlib import Path
+import warnings
+
 from pydl.pydlutils.yanny import yanny
 
 from ..par.parset import KeywordParSet, ParDatabase
@@ -103,6 +105,9 @@ class AnalysisPlan(KeywordParSet):
 
     @staticmethod
     def unique_plan_key(bin_key, continuum_key, elfit_key):
+        if None in [bin_key, continuum_key, elfit_key]:
+            warnings.warn('Unable to define unique plan key.')
+            return None
         bin_method = SpatiallyBinnedSpectra.define_method(bin_key)
         sc_method = StellarContinuumModel.define_method(continuum_key)
         el_method = EmissionLineModel.define_method(elfit_key)

@@ -1,5 +1,15 @@
-"""
+r"""
 Class defining the I/O configuration for MaNGA files in the DAP.
+
+----        
+
+.. include license and copyright
+.. include:: ../include/copy.rst
+
+----
+
+.. include common links, assuming primary doc root is up one directory
+.. include:: ../include/links.rst
 """
 import time
 import warnings

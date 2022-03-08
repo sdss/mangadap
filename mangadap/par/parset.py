@@ -1047,6 +1047,9 @@ class ParDatabase:
     def __len__(self):
         return self.nsets
 
+    def keys(self):
+        return list(self.data.dtype.names)
+
     @staticmethod
     def _set_dtypes(inp, i):
         keys = inp[i].keys()

@@ -26,7 +26,7 @@ if __name__ == '__main__':
 
     # Tables to write:
     #
-    from mangadap.par.analysisplan import AnalysisPlan
+    from mangadap.config.analysisplan import AnalysisPlan
     write_parset(AnalysisPlan, path, class_link=False)
 
     from mangadap.par.artifactdb import ArtifactPar

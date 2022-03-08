@@ -1,7 +1,7 @@
-mangadap.util.drpfits module
+mangadap.config.manga module
 ============================
 
-.. automodule:: mangadap.util.drpfits
+.. automodule:: mangadap.config.manga
    :members:
    :private-members:
    :undoc-members:

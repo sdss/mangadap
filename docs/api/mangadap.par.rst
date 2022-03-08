@@ -8,7 +8,6 @@ Submodules
    :maxdepth: 4
 
    mangadap.par.absorptionindexdb
-   mangadap.par.analysisplan
    mangadap.par.artifactdb
    mangadap.par.bandheadindexdb
    mangadap.par.emissionlinedb

@@ -45,7 +45,7 @@ from ..config import defaults
 from ..util.fileio import init_record_array, rec_to_fits_type, channel_dictionary, channel_units
 from ..util.fitsutil import DAPFitsUtil
 from ..util.log import init_DAP_logging, module_logging, log_output
-from ..par.analysisplan import AnalysisPlanSet
+from ..config.analysisplan import AnalysisPlanSet
 from ..par.absorptionindexdb import AbsorptionIndexDB
 from ..par.bandheadindexdb import BandheadIndexDB
 from ..par.emissionlinedb import EmissionLineDB

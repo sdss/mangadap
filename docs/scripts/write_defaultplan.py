@@ -19,7 +19,7 @@ if __name__ == '__main__':
     if not os.path.isdir(path):
         os.makedirs(path)
 
-    from mangadap.par.analysisplan import AnalysisPlanSet
+    from mangadap.config.analysisplan import AnalysisPlanSet
     from mangadap.par.parset import ParSet
 
     ap = AnalysisPlanSet.default()
@@ -27,8 +27,8 @@ if __name__ == '__main__':
     data = numpy.empty((ap.npar//2+1,2), dtype=object)
     data[0] = ['Key', 'Value']
     j = 0
-    for n in ap.data.dtype.names:
-        if 'clobber' in n:
+    for n in ap.keys():
+        if n == 'key' or 'clobber' in n:
             continue
         data[j+1,0] = n
         data[j+1,1] = str(ap[0][n])
