@@ -82,6 +82,7 @@
 .. misc
 
 .. _requests: https://pypi.org/project/requests/
+.. _IPython.embed: https://ipython.readthedocs.io/en/stable/interactive/reference.html#embedding
 .. _ppxf: https://pypi.org/project/ppxf/
 .. _vorbin: https://pypi.org/project/vorbin/
 

@@ -1491,7 +1491,7 @@ class EmissionLineModel:
             nsc = self.stellar_continuum['PAR'].data['BINID'].size
             indx = [ numpy.arange(nsc)[self.stellar_continuum['PAR'].data['BINID'] == nb][0]
                         for nb in self.hdu['FIT'].data['NEAREST_BIN'] ]
-            dispersion_corrections = self.stellar_continuum['PAR'].data['SIGMACORR_EMP'][indx]
+            dispersion_corrections = self.stellar_continuum['PAR'].data['SIGMACORR_SRES'][indx]
 
         # Get the continuum models
         best_fit_continuum = self.construct_continuum_models(

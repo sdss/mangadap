@@ -86,13 +86,13 @@ class BandPassFilterPar(KeywordParSet):
 
         descr = ['An index used to refer to the bandpass filter',
                  'A name for the bandpass filter',
+                 'The rest wavelength of the line in the primary passband in angstroms **in ' \
+                    'vacuum**.  This is used to convert the first and second moments to ' \
+                    'velocity (km/s) for emission lines.',
                  'A two-element vector with the starting and ending wavelength (angstroms in ' \
                     '**vacuum**) for a passband to the blue of the primary spectral feature.',
                  'A two-element vector with the starting and ending wavelength (angstroms in ' \
                     '**vacuum**) for a passband to the red of the primary spectral feature.',
-                 'The rest wavelength of the line in the primary passband in angstroms **in ' \
-                    'vacuum**.  This is used to convert the first and second moments to ' \
-                    'velocity (km/s) for emission lines.',
                  'A two-element vector with the starting and ending wavelength (angstroms in ' \
                     '**vacuum**) for the primary passband surrounding the spectral feature of ' \
                     'interest.  This is used by ' \

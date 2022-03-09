@@ -7,6 +7,7 @@ from IPython import embed
 import numpy
 
 from astropy.io import fits
+import astropy.constants
 from matplotlib import pyplot
 
 from mangadap.tests.util import drp_test_version
@@ -22,6 +23,8 @@ from mangadap.util.pixelmask import SpectralPixelMask
 from mangadap.par.artifactdb import ArtifactDB
 from mangadap.par.emissionmomentsdb import EmissionMomentsDB
 from mangadap.par.emissionlinedb import EmissionLineDB
+from mangadap.par.absorptionindexdb import AbsorptionIndexDB
+from mangadap.par.bandheadindexdb import BandheadIndexDB
 
 from mangadap.proc.templatelibrary import TemplateLibrary
 from mangadap.proc.emissionlinemoments import EmissionLineMoments
@@ -30,6 +33,7 @@ from mangadap.proc.ppxffit import PPXFFit
 from mangadap.proc.stellarcontinuummodel import StellarContinuumModel, StellarContinuumModelBitMask
 from mangadap.proc.emissionlinemodel import EmissionLineModelBitMask
 from mangadap.proc.spectralfitting import EmissionLineFit
+from mangadap.proc.spectralindices import SpectralIndices
 
 #-----------------------------------------------------------------------------
 
@@ -92,7 +96,8 @@ def get_spectra(plt, ifu, x, y, directory_path=None):
 
 
 #-----------------------------------------------------------------------------
-if __name__ == '__main__':
+def main():
+
     t = time.perf_counter()
 
     #-------------------------------------------------------------------
@@ -114,7 +119,8 @@ if __name__ == '__main__':
     # arrays with shape (N-spectra,N-wave). So if you only have one
     # spectrum, you need to expand the dimensions:
     flux = flux.reshape(1,-1)
-    ferr = numpy.ma.power(ivar, -0.5).reshape(1,-1)
+    ivar = ivar.reshape(1,-1)
+    ferr = numpy.ma.power(ivar, -0.5)
     sres = sres.reshape(1,-1)
 
     # The majority (if not all) of the DAP methods expect that your
@@ -191,8 +197,19 @@ if __name__ == '__main__':
     # indices to measure. The script allows these to be None, if you
     # don't want to calculate the spectral indices. See
     # https://sdss-mangadap.readthedocs.io/en/latest/spectralindices.html
-    absindx_key = ''
-    bhdindx_key = ''
+    absindx_key = 'EXTINDX'
+    bhdindx_key = 'BHBASIC'
+
+    # Now we want to construct a pixel mask that excludes regions with
+    # known artifacts and emission lines. The 'BADSKY' artifact
+    # database only masks the 5577, which can have strong left-over
+    # residuals after sky-subtraction. The list of emission lines (set
+    # by the ELPMPL8 keyword) can be different from the list of
+    # emission lines fit below.
+    sc_pixel_mask = SpectralPixelMask(artdb=ArtifactDB.from_key('BADSKY'),
+                                      emldb=EmissionLineDB.from_key('ELPMPL11'))
+    # Mask the 5577 sky line
+    el_pixel_mask = SpectralPixelMask(artdb=ArtifactDB.from_key('BADSKY'))
 
     # Finally, you can set whether or not to show a set of plots.
     #
@@ -225,15 +242,6 @@ if __name__ == '__main__':
     # template spectrum (i.e., sc_tpl['SPECRES'].data[0])
     sc_tpl_sres = numpy.mean(sc_tpl['SPECRES'].data, axis=0).ravel()
 
-    # Now we want to construct a pixel mask that excludes regions with
-    # known artifacts and emission lines. The 'BADSKY' artifact
-    # database only masks the 5577, which can have strong left-over
-    # residuals after sky-subtraction. The list of emission lines (set
-    # by the ELPMPL8 keyword) can be different from the list of
-    # emission lines fit below.
-    sc_pixel_mask = SpectralPixelMask(artdb=ArtifactDB.from_key('BADSKY'),
-                                      emldb=EmissionLineDB.from_key('ELPMPL11'))
-
     # Instantiate the fitting class, including the mask that it should
     # use to flag the data. [[This mask should just be default...]]
     ppxf = PPXFFit(StellarContinuumModelBitMask())
@@ -255,13 +263,6 @@ if __name__ == '__main__':
     # parameters. The datamodel of the best-fitting model parameters is
     # set by:
     # https://sdss-mangadap.readthedocs.io/en/latest/api/mangadap.proc.spectralfitting.html#mangadap.proc.spectralfitting.StellarKinematicsFit._per_stellar_kinematics_dtype
-
-#    mod_dcnvlv = PPXFFit.construct_models(sc_tpl['WAVE'].data.copy(), sc_tpl['FLUX'].data.copy(),
-#                                          wave, flux.shape, cont_par, redshift_only=True)
-#
-#    pyplot.plot(wave, cont_flux[0])
-#    pyplot.plot(wave, mod_dcnvlv[0])
-#    pyplot.show()
 
     # Remask the continuum fit
     sc_continuum = StellarContinuumModel.reset_continuum_mask_window(
@@ -312,9 +313,6 @@ if __name__ == '__main__':
         stellar_kinematics = cont_par['KIN']
         stellar_kinematics[:,1] = numpy.ma.sqrt(numpy.square(cont_par['KIN'][:,1]) -
                                                     numpy.square(cont_par['SIGMACORR_EMP']))
-
-    # Mask the 5577 sky line
-    el_pixel_mask = SpectralPixelMask(artdb=ArtifactDB.from_key('BADSKY'))
 
     # Read the emission line fitting database
     emldb = EmissionLineDB.from_key(elfit_key)
@@ -371,6 +369,87 @@ if __name__ == '__main__':
         pyplot.xlabel('Wavelength')
         pyplot.ylabel('Summed-Gaussian Difference')
         pyplot.show()
+    #-------------------------------------------------------------------
+
+    #-------------------------------------------------------------------
+    # Measure the spectral indices
+    if absindx_key is None or bhdindx_key is None:
+        # Neither are defined, so we're done
+        print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
+        return
+
+    # Setup the databases that define the indices to measure
+    absdb = None if absindx_key is None else AbsorptionIndexDB.from_key(absindx_key)
+    bhddb = None if bhdindx_key is None else BandheadIndexDB.from_key(bhdindx_key)
+
+    # Remove the modeled emission lines from the spectra
+    flux_noeml = flux - eml_flux
+    redshift = stellar_kinematics[:,0] / astropy.constants.c.to('km/s').value
+    sp_indices = SpectralIndices.measure_indices(absdb, bhddb, wave, flux_noeml, ivar=ivar,
+                                                 redshift=redshift)
+
+    # Calculate the velocity dispersion corrections
+    #   - Construct versions of the best-fitting model spectra with and without
+    #     the included dispersion
+    continuum = Sasuke.construct_continuum_models(emldb, el_tpl['WAVE'].data, el_tpl['FLUX'].data,
+                                                  wave, flux.shape, eml_fit_par)
+    continuum_dcnvlv = Sasuke.construct_continuum_models(emldb, el_tpl['WAVE'].data,
+                                                         el_tpl['FLUX'].data, wave, flux.shape,
+                                                         eml_fit_par, redshift_only=True)
+
+    #   - Get the dispersion corrections and fill the relevant columns of the
+    #     index table
+    sp_indices['BCONT_MOD'], sp_indices['BCONT_CORR'], sp_indices['RCONT_MOD'], \
+        sp_indices['RCONT_CORR'], sp_indices['MCONT_MOD'], sp_indices['MCONT_CORR'], \
+        sp_indices['AWGT_MOD'], sp_indices['AWGT_CORR'], \
+        sp_indices['INDX_MOD'], sp_indices['INDX_CORR'], \
+        sp_indices['INDX_BF_MOD'], sp_indices['INDX_BF_CORR'], \
+        good_les, good_ang, good_mag, is_abs \
+                = SpectralIndices.calculate_dispersion_corrections(absdb, bhddb, wave, flux,
+                                                                   continuum, continuum_dcnvlv,
+                                                                   redshift=redshift,
+                                                                   redshift_dcnvlv=redshift)
+
+    # Apply the index corrections.  This is only done here for the
+    # Worthey/Trager definition of the indices, as an example
+    corrected_indices = numpy.zeros(sp_indices['INDX'].shape, dtype=float)
+    corrected_indices_err = numpy.zeros(sp_indices['INDX'].shape, dtype=float)
+    # Unitless indices
+    corrected_indices[good_les], corrected_indices_err[good_les] \
+            = SpectralIndices.apply_dispersion_corrections(sp_indices['INDX'][good_les],
+                                                           sp_indices['INDX_CORR'][good_les],
+                                                           err=sp_indices['INDX_ERR'][good_les])
+    # Indices in angstroms
+    corrected_indices[good_ang], corrected_indices_err[good_ang] \
+            = SpectralIndices.apply_dispersion_corrections(sp_indices['INDX'][good_ang],
+                                                           sp_indices['INDX_CORR'][good_ang],
+                                                           err=sp_indices['INDX_ERR'][good_ang],
+                                                           unit='ang')
+    # Indices in magnitudes
+    corrected_indices[good_mag], corrected_indices_err[good_mag] \
+            = SpectralIndices.apply_dispersion_corrections(sp_indices['INDX'][good_mag],
+                                                           sp_indices['INDX_CORR'][good_mag],
+                                                           err=sp_indices['INDX_ERR'][good_mag],
+                                                           unit='mag')
+
+    # Print the results for a few indices
+    index_names = numpy.append(absdb['name'], bhddb['name'])
+    print('-'*73)
+    print(f'{"NAME":<8} {"Raw Index":>12} {"err":>12} {"Index Corr":>12} {"Index":>12} {"err":>12}')
+    print(f'{"-"*8:<8} {"-"*12:<12} {"-"*12:<12} {"-"*12:<12} {"-"*12:<12} {"-"*12:<12}')
+    for name in ['Hb', 'HDeltaA', 'Mgb', 'Dn4000']:
+        i = numpy.where(index_names == name)[0][0]
+        print(f'{name:<8} {sp_indices["INDX"][0,i]:12.4f} {sp_indices["INDX_ERR"][0,i]:12.4f} '
+              f'{sp_indices["INDX_CORR"][0,i]:12.4f} {corrected_indices[0,i]:12.4f} '
+              f'{corrected_indices_err[0,i]:12.4f}')
+    print('-'*73)
+
+    embed()
 
     print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
+
+
+if __name__ == '__main__':
+    main()
+
 

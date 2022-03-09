@@ -240,7 +240,8 @@ def test_sasuke_mpl11():
                                axis=1)), 'All velocities should be the same'
 
     # Test velocity values
-    # TODO: Need some better examples!
+    # TODO: Need some better examples!  This skips over the 4th spectrum because
+    # of system-dependent variability in the result.
     assert numpy.all(numpy.absolute(numpy.append(el_par['KIN'][:3,0,0], el_par['KIN'][4:,0,0]) -
                                     numpy.array([14655.1, 14390.3, 14768.2, 9259.7, 0.0,
                                                   5132.6,  5428.7])) < 0.1), \

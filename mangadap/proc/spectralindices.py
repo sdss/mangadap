@@ -1551,9 +1551,12 @@ class SpectralIndices:
 
         # Do not compute corrections if any of the bands were empty or
         # would have had to divide by zero
-        bad_flags = ['MAIN_EMPTY', 'BLUE_EMPTY', 'RED_EMPTY', 'DIVBYZERO']
-        bad_indx = bitmask.flagged(indx['MASK'], flag=bad_flags)
-        bad_indx |= bitmask.flagged(dcnvlv_indx['MASK'], flag=bad_flags)
+        if bitmask is not None:
+            bad_flags = ['MAIN_EMPTY', 'BLUE_EMPTY', 'RED_EMPTY', 'DIVBYZERO']
+            bad_indx = bitmask.flagged(indx['MASK'], flag=bad_flags)
+            bad_indx |= bitmask.flagged(dcnvlv_indx['MASK'], flag=bad_flags)
+        else:
+            bad_indx = indx['MASK'] | dcnvlv_indx['MASK']
 
         print('Number of indices: ', bad_indx.size)
         print('Bad indices: ', numpy.sum(bad_indx))
