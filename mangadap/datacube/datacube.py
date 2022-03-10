@@ -27,6 +27,7 @@ import numpy
 from scipy import sparse, interpolate
 
 from astropy.io import fits
+import astropy.constants
 
 from ..util.bitmask import BitMask
 from ..util.mapping import permute_wcs_axes
@@ -86,12 +87,8 @@ class DataCube:
     flattened row-major memory block); see
     :func:`~mangadap.util.covariance.Covariance.transpose_raw_shape`.
     
-    Derived classes should, in particular, provide the read methods.
-    The critical components of the derived classes are:
-
-    .. todo::
-
-        Fill this in.
+    See :ref:`datacube_subclass` for instructions on subclassing this object for
+    non-MaNGA datacubes.
 
     Args:
         flux (`numpy.ndarray`_):
@@ -262,6 +259,7 @@ class DataCube:
         self.meta = {} if meta is None else meta
         if not isinstance(self.meta, dict):
             raise TypeError('Metadata must be provided as a dictionary.')
+        self._populate_metadata()
 
         self.wave = None if wave is None else numpy.atleast_1d(wave)
         if self.wave is None:
@@ -326,6 +324,96 @@ class DataCube:
         self.sigma_rho = None
         self.correl_rlim = None
         self.approx_correl = None
+
+    def _populate_metadata(self):
+        r"""
+        Populate and validate the :class:`DataCube` metadata (in :attr:`meta`)
+        to ensure the it can be analyzed by the DAP.
+
+        The only required metadata keyword is ``z``, which sets the initial
+        guess for the bulk redshift of the galaxy.  If this key is not available
+        or its value doesn't meet the criterion below, this function will raise
+        an exception, meaning the DAP will fault before it starts processing the
+        DataCube.
+
+        The metadata provided must meet the following **critical criteria** or
+        the method will fault:
+
+            - Velocity (:math:`cz`) must be greater than -500.
+
+        For the remainder of the metadata, if the keyword does not exist, if the
+        value is None, or if the value is outside the accepted range, a default
+        is chosen. The metadata keywords, acceptable ranges, and defaults are
+        provided below.
+
+        +-----------+--------------------------------+---------+
+        |   Keyword |                          Range | Default |
+        +===========+================================+=========+
+        | ``vdisp`` |             :math:`\sigma > 0` |     100 |
+        +-----------+--------------------------------+---------+
+        | ``ell``   | :math:`0 \leq \varepsilon < 1` |    None |
+        +-----------+--------------------------------+---------+
+        | ``pa``    |    :math:`0 \leq \phi_0 < 360` |    None |
+        +-----------+--------------------------------+---------+
+        | ``reff``  |        :math:`R_{\rm eff} > 0` |    None |
+        +-----------+--------------------------------+---------+
+
+        All other metadata in :attr:`meta` are ignored.
+
+        If they do not already exist in :attr:`meta`, this method adds the
+        following keywords:
+
+            - ``z``: The bulk redshift of the galaxy, used to calculate
+              :math:`cz`.
+
+            - ``vel``: The initial guess velocity (:math:`cz`) in km/s.
+
+            - ``vdisp``: The initial guess velocity dispersion in km/s.
+
+            - ``ell``: The isophotal ellipticity (:math:`1-b/a`) to use when
+                calculating semi-major axis coordinates.
+
+            - ``pa``: The isophotal position angle in deg from N through E, used
+              when calculating semi-major axis coordinates.
+
+            - ``reff``: The effective radius in arcsec (DataCube WCS coordinates
+              are expected to be in deg), used as a normalization of the
+              semi-major axis radius in various output data.
+
+        """
+        keys = self.meta.keys()
+        if 'z' not in keys or self.meta['z'] is None:
+            raise ValueError('DataCube must provide bulk redshift metadata.')
+        self.meta['vel'] = astropy.constants.c.to('km/s').value * self.meta['z']
+        if self.meta['vel'] < -500:
+            raise ValueError('Velocity must be > -500 km/s!')
+
+        if 'vdisp' not in keys or self.meta['vdisp'] is None or not self.meta['vdisp'] > 0:
+            warnings.warn('Velocity dispersion not provided or not greater than 0 km/s.  '
+                        'Adopting initial guess of 100 km/s.')
+            self.meta['vdisp'] = 100.0
+
+        if 'ell' not in keys or self.meta['ell'] is None or self.meta['ell'] < 0 \
+                or self.meta['ell'] > 1:
+            warnings.warn('Ellipticity not provided or not in the range 0 <= ell <= 1.  '
+                        'Setting to None.')
+            self.meta['ell'] = None
+
+        if 'pa' not in keys or self.meta['pa'] is None:
+            warnings.warn('Position angle not provided. Setting to None.')
+            self.meta['pa'] = None
+
+        # Impose expected range
+        if self.meta['pa'] is not None and (self.meta['pa'] < 0 or self.meta['pa'] >= 360):
+            warnings.warn('Imposing 0-360 range on position angle.')
+            while self.meta['pa'] < 0:
+                self.meta['pa'] += 360
+            while self.meta['pa'] >= 360:
+                self.meta['pa'] -= 360
+
+        if 'reff' not in keys or self.meta['reff'] is None or not self.meta['reff'] > 0:
+            warnings.warn('Effective radius not provided or not greater than 0. Setting to None.')
+            self.meta['reff'] = None
 
     @classmethod
     def from_config(cls, cfgfile, **kwargs):
@@ -1026,9 +1114,8 @@ class DataCube:
             C_{ij} = \rho_{ij}(V_{i} V_{j})^{1/2}
 
         where :math:`\rho_{ij}` is approximated by
-        :func:`approximate_correlation_matrix` and
-        :math:`V_i\equivC_{ii}` are the variances provided by the
-        inverse of :attr:`ivar`.
+        :func:`approximate_correlation_matrix` and :math:`V_i\equiv C_{ii}` are
+        the variances provided by the inverse of :attr:`ivar`.
 
         The method first calculates :math:`\rho_{ij}` if it hasn't
         been yet or the provided ``sigma_rho`` and/or ``rlim`` values

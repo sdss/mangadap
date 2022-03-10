@@ -109,7 +109,7 @@ If you use the DAP software and/or its output products, please cite the followin
    :maxdepth: 1
 
    fitonespec
-   fitonecube
+   fitdatacube
 
 The MaNGA DAP software was written to be more broadly useful. The
 pages above provide some examples of how the code can be used more

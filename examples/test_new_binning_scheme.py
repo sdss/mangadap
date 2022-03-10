@@ -22,7 +22,6 @@ from mangadap.proc.emissionlinemoments import EmissionLineMoments
 from mangadap.proc.emissionlinemodel import EmissionLineModel
 from mangadap.proc.spectralindices import SpectralIndices
 from mangadap.dapfits import construct_maps_file, construct_cube_file
-from mangadap.survey.manga_dap import get_manga_dap_meta
 
 #-----------------------------------------------------------------------------
 
@@ -93,7 +92,6 @@ if __name__ == '__main__':
 
     # Read the DRP LOGCUBE file
     cube = MaNGADataCube.from_plateifu(plate, ifu, directory_path=input_path)
-    metadata = get_manga_dap_meta(cube)
 
     # Calculate the S/N and coordinates
     rdxqa = ReductionAssessment('SNRG', cube, output_path=output_path)
@@ -170,14 +168,14 @@ if __name__ == '__main__':
                                        emission_line_model=emission_line_model,
                                        output_path=output_path)
 
-    construct_maps_file(cube, metadata, rdxqa=rdxqa, binned_spectra=binned_spectra,
+    construct_maps_file(cube, rdxqa=rdxqa, binned_spectra=binned_spectra,
                         stellar_continuum=stellar_continuum,
                         emission_line_moments=emission_line_moments,
                         emission_line_model=emission_line_model,
                         spectral_indices=spectral_indices, redshift=nsa_redshift,
                         output_path=output_path, overwrite=True)
 
-    construct_cube_file(cube, metadata, rdxqa=rdxqa, binned_spectra=binned_spectra,
+    construct_cube_file(cube, rdxqa=rdxqa, binned_spectra=binned_spectra,
                         stellar_continuum=stellar_continuum,
                         emission_line_moments=emission_line_moments,
                         emission_line_model=emission_line_model,

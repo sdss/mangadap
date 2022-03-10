@@ -535,10 +535,10 @@ class construct_maps_file:
     Should force all intermediate objects to be provided.
 
     """
-    def __init__(self, cube, metadata, method=None, rdxqa=None, binned_spectra=None,
-                 stellar_continuum=None, emission_line_moments=None, emission_line_model=None,
-                 spectral_indices=None, redshift=None, output_path=None, output_file=None,
-                 overwrite=True, loggers=None, quiet=False, single_precision=False):
+    def __init__(self, cube, method=None, rdxqa=None, binned_spectra=None, stellar_continuum=None,
+                 emission_line_moments=None, emission_line_model=None, spectral_indices=None,
+                 redshift=None, output_path=None, output_file=None, overwrite=True, loggers=None,
+                 quiet=False, single_precision=False):
 
         #---------------------------------------------------------------
         # Initialize the reporting
@@ -556,7 +556,7 @@ class construct_maps_file:
         #---------------------------------------------------------------
         # Set the output paths
         self.cube = cube
-        self.meta = metadata
+        self.meta = cube.meta
         self.method, self.directory_path, self.output_file \
                 = default_paths(cube, file_type='MAPS',
                         rdxqa_method=None if rdxqa is None else rdxqa.method['key'],
@@ -1735,10 +1735,10 @@ class construct_cube_file:
     Should force all intermediate objects to be provided.
 
     """
-    def __init__(self, cube, metadata, method=None, rdxqa=None, binned_spectra=None,
-                 stellar_continuum=None, emission_line_moments=None, emission_line_model=None,
-                 spectral_indices=None, output_path=None, output_file=None, overwrite=True,
-                 loggers=None, quiet=False, single_precision=False):
+    def __init__(self, cube, method=None, rdxqa=None, binned_spectra=None, stellar_continuum=None,
+                 emission_line_moments=None, emission_line_model=None, spectral_indices=None,
+                 output_path=None, output_file=None, overwrite=True, loggers=None, quiet=False,
+                 single_precision=False):
 
         #---------------------------------------------------------------
         # Initialize the reporting
@@ -1755,7 +1755,7 @@ class construct_cube_file:
         #---------------------------------------------------------------
         # Set the output paths
         self.cube = cube
-        self.meta = metadata
+        self.meta = cube.meta
         self.method, self.directory_path, self.output_file \
                 = default_paths(cube, file_type='LOGCUBE',
                         rdxqa_method=None if rdxqa is None else rdxqa.method['key'],
