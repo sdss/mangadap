@@ -14,8 +14,6 @@ Base class for a datacube
 
 # TODO: Pilfer the pypeit.DataContainer for this.
 
-# TODO: List the required metadata somewhere in here?
-
 # TODO: Force the datacube data arrays to be read-only?
 
 import warnings
@@ -144,10 +142,12 @@ class DataCube:
             Flag that the datacube spectral pixels are binned
             logarithmically in wavelength.
         meta (:obj:`dict`, optional):
-            A free-form dictionary used to hold metadata relevant to
-            the datacube. Metadata required by analysis modules are
-            indicated where relevant. If None, :attr:`meta` is
-            instantiated as an empty dictionary.
+            A free-form dictionary used to hold metadata relevant to the
+            datacube. Metadata required by analysis modules are indicated where
+            relevant. If None, :attr:`meta` is instantiated as an empty
+            dictionary and populated with the bare minimum needed to execute the
+            DAP.  NOTE: Currently this is a required argument because an
+            estimate of the redshift is needed to execute the DAP.
         prihdr (`astropy.io.fits.Header`_, optional):
             Primary header read from datacube fits file. If None,
             instantiated as an empty `astropy.io.fits.Header`_.
