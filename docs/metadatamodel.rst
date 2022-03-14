@@ -294,11 +294,11 @@ the table extension has the following columns:
     * ``OBJRA`` and ``OBJDEC`` are not necessarily located at the center
       of the IFU field of view.  The IFU center coordinates are provided
       in the `DRPall`_ file as ``IFURA`` and ``IFUDEC``.
-    * The MaNGA ID is defined as ``[CATID]-[CATINDX]`` (**link**)
+    * The MaNGA ID is defined as ``[CATID]-[CATINDX]``
     * For the main survey galaxies, ``TRG_VERSION`` and ``TRG_ID`` are
       drawn from the NASA-Sloan atlas and are identical to
-      'nsa_nsa_version' and 'nsa_nsaid' in the DRPall file (**link**).
-    * The targeting bits are defined (**link**).
+      'nsa_nsa_version' and 'nsa_nsaid' in the `DRPall`_ file.
+    * The MaNGA targeting bits; see `MaNGA Bitmasks`_.
     * The redshifts from the NSA and ancillary-program catalogs are
       consolidated into the 'z' column in the DRPall file.  See
       discussion of the "redshift fix file" below.
@@ -422,7 +422,7 @@ DAPall database
 The DAPall file has an empty primary extension and then one extension
 for each ``DAPTYPE`` performed by a given analysis plan. The name of
 the extension is identically the ``DAPTYPE`` and it contains one row
-per analyzed datacube. For example, in MPL-10, the list of extensions
+per analyzed datacube. For example, in MPL-11, the list of extensions
 in the DAPall file are:
 
 +-----------+-----------------------------+
@@ -430,11 +430,13 @@ in the DAPall file are:
 +===========+=============================+
 |         0 | ``PRIMARY``                 |
 +-----------+-----------------------------+
-|         1 | ``SPX-MILESHC-MASTARHC2``   |
+|         1 | ``SPX-MILESHC-MASTARSSP``   |
 +-----------+-----------------------------+
-|         2 | ``VOR10-MILESHC-MASTARHC2`` |
+|         2 | ``VOR10-MILESHC-MASTARSSP`` |
 +-----------+-----------------------------+
-|         3 | ``HYB10-MILESHC-MASTARHC2`` |
+|         3 | ``HYB10-MILESHC-MASTARSSP`` |
++-----------+-----------------------------+
+|         4 | ``HYB10-MILESHC-MASTARHC2`` |
 +-----------+-----------------------------+
 
 Header data
@@ -492,7 +494,7 @@ Each subsequent extension, named after the :ref:`datamodel-daptype`
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
 |                   ``MODE`` |             str |                                                    | 3D mode of the DRP file (``CUBE`` or ``RSS``)                                 |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
-|                ``DAPTYPE`` |             str |                                                    | Keyword of the analysis approach used (e.g., ``SPX-MILESHC-MASTARHC2``)       |
+|                ``DAPTYPE`` |             str |                                                    | Keyword of the analysis approach used (e.g., ``SPX-MILESHC-MASTARSSP``)       |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
 |                ``DAPDONE`` |            bool |                                                    | Flag that MAPS file successfully produced                                     |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
@@ -504,11 +506,11 @@ Each subsequent extension, named after the :ref:`datamodel-daptype`
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
 |                 ``IFUDEC`` |          double |                                                deg | Declination of the IFU pointing center (generally the same as  ``OBJDEC``)    |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
-|               ``MNGTARG1`` |             int |                                                    | Main survey targeting bit (**link**)                                          |
+|               ``MNGTARG1`` |             int |                                                    | Main survey targeting bit (see ``MANGA_TARGET1`` in `MaNGA Bitmasks`_)        |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
-|               ``MNGTARG2`` |             int |                                                    | Non-galaxy targeting bit (**link**)                                           |
+|               ``MNGTARG2`` |             int |                                                    | Non-galaxy targeting bit (see ``MANGA_TARGET2`` in `MaNGA Bitmasks`_)         |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
-|               ``MNGTARG3`` |             int |                                                    | Ancillary targeting bit (**link**)                                            |
+|               ``MNGTARG3`` |             int |                                                    | Ancillary targeting bit (see ``MANGA_TARGET3`` in `MaNGA Bitmasks`_)          |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
 |                      ``Z`` |          double |                                                    | Redshift used for initial guess velocity (typically identical to ``NSA_Z``)   |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
@@ -556,9 +558,9 @@ Each subsequent extension, named after the :ref:`datamodel-daptype`
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
 |                ``VERSDAP`` |             str |                                                    | Version of mangadap                                                           |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
-|               ``DRP3QUAL`` |             str |                                                    | DRP 3D quality bit (**link**)                                                 |
+|               ``DRP3QUAL`` |             str |                                                    | DRP 3D quality bit (see :ref:`metadatamodel-drp3qual`)                        |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
-|                ``DAPQUAL`` |             str |                                                    | DAP quality bit (**link**)                                                    |
+|                ``DAPQUAL`` |             str |                                                    | DAP quality bit (see :ref:`metadatamodel-dapqual`)                            |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
 |  **DAP analysis flow information**                                                                                                                                                |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
@@ -627,7 +629,7 @@ Each subsequent extension, named after the :ref:`datamodel-daptype`
 |      ``STELLAR_SIGMA_1RE`` |          double |                                               km/s | Flux-weighted mean stellar velocity dispersion of all spaxels within 1        |
 |                            |                 |                                                    | :math:`R_e`.                                                                  |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
-| ``STELLAR_CONT_RCHI2_1RE`` |          double |                                                    | Median reduced :math:`chi^2` of the stellar-continuum fit within 1            |
+| ``STELLAR_RCHI2_1RE``      |          double |                                                    | Median reduced :math:`chi^2` of the stellar-continuum fit within 1            |
 |                            |                 |                                                    | :math:`R_e`.                                                                  |
 +----------------------------+-----------------+----------------------------------------------------+-------------------------------------------------------------------------------+
 |                   ``HA_Z`` |          double |                                                    | Flux-weighted mean redshift of the Hα line within a 2.5 arcsec aperture at    |

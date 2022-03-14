@@ -43,7 +43,7 @@ def test_read():
     assert cube.sres_ext == 'LSFPRE', 'Should default to LSFPRE extension.'
     assert abs(cube.pixelscale - cube._get_pixelscale()) < 1e-6, 'Bad match in pixel scale.'
     # NOTE: This is worse than it should be because of how the WCS in MaNGA is defined.
-    assert numpy.all(numpy.absolute(cube.wave - cube._get_wavelength_vector(cube.nwave)) < 2e-4), \
+    assert numpy.all(numpy.absolute(cube.wave - cube._get_wavelength_vector()) < 2e-4), \
             'Bad calculation of wavelength vector.'
     assert cube.covar is None, 'Covariance should not have been read'
 

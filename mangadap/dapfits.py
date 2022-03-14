@@ -40,7 +40,6 @@ from .util.fitsutil import DAPFitsUtil
 from .util.dapbitmask import DAPBitMask
 from .util.log import log_output
 from .util.fileio import channel_dictionary
-from .util.exception_tools import print_frame
 from .util.geometry import SemiMajorAxisCoo
 from .util.covariance import Covariance
 from .config import defaults
@@ -783,12 +782,16 @@ class construct_maps_file:
 
         # Marginalize the binned spectra mask just for NONE_IN_STACK and
         # convert it to NOVALUE
-        bin_mask = DAPFitsUtil.marginalize_mask(binned_spectra['MASK'].data, 'NONE_IN_STACK',
-                                                binned_spectra.bitmask, self.bitmask,
-                                                out_flag='NOVALUE', dispaxis=1)
+        bin_mask = DAPFitsUtil.marginalize_mask(binned_spectra['MASK'].data,
+                                                inp_flags='NONE_IN_STACK',
+                                                inp_bitmask=binned_spectra.bitmask, 
+                                                out_flag='NOVALUE', out_bitmask=self.bitmask,
+                                                dispaxis=1)
+
         # Reconstruct the full mask with just this flag
         bin_mask = DAPFitsUtil.reconstruct_map(self.spatial_shape,
                                                binned_spectra['BINID'].data.ravel(), bin_mask)
+
         # Add these bits to the full mask
         indx = self.bitmask.flagged(bin_mask, 'NOVALUE')
         mask[indx] = self.bitmask.turn_on(mask[indx], 'NOVALUE')
@@ -2059,7 +2062,8 @@ class construct_cube_file:
         lsfhdr = self.base_cubehdr.copy()
 
         ## KHRR added if statement:
-        if ('DRPEXT' in lsfhdr):
+#        if ('DRPEXT' in lsfhdr):
+        if hasattr(binned_spectra.cube, 'sres_ext') and binned_spectra.cube.sres_ext is not None:
             lsfhdr['DRPEXT'] = (binned_spectra.cube.sres_ext, 'Source ext from DRP file')
 
         #---------------------------------------------------------------
@@ -2244,15 +2248,21 @@ def finalize_dap_primary_header(prihdr, cube, metadata, binned_spectra, stellar_
 
     # Initialize the DAP quality flag
     dapqualbm = DAPQualityBitMask()
-    drp3qualbm = DRPQuality3DBitMask()
     dapqual = dapqualbm.minimum_dtype()(0)          # Type casting original flag to 0
 
     ## KHRR added if statement:
-    if isinstance(cube, MaNGADataCube):
-        if drp3qualbm.flagged(cube.prihdr['DRP3QUAL'], flag='CRITICAL'):
-            if not quiet:
-                log_output(loggers, 1, logging.INFO, 'DRP File is flagged CRITICAL!')
-            dapqual = dapqualbm.turn_on(dapqual, ['CRITICAL', 'DRPCRIT'])
+#    if isinstance(cube, MaNGADataCube):
+#        if drp3qualbm.flagged(cube.prihdr['DRP3QUAL'], flag='CRITICAL'):
+#            if not quiet:
+#                log_output(loggers, 1, logging.INFO, 'DRP File is flagged CRITICAL!')
+#            dapqual = dapqualbm.turn_on(dapqual, ['CRITICAL', 'DRPCRIT'])
+    # TODO: Move this to the datacube base class?
+    if cube.redux_bitmask is not None and cube.redux_qual_key in cube.prihder \
+            and cube.redux_bitmask.flagged(cube.prihdr[cube.redux_qual_key],
+                                           flag=self.redux_qual_flag):
+        if not quiet:
+            log_output(loggers, 1, logging.INFO, 'DRP File is flagged CRITICAL!')
+        dapqual = dapqualbm.turn_on(dapqual, ['CRITICAL', 'DRPCRIT'])
 
     # Flag the file as CRITICAL if the stellar continuum fits are bad
     # for all spectra
@@ -2277,11 +2287,25 @@ def finalize_dap_primary_header(prihdr, cube, metadata, binned_spectra, stellar_
             'reff' not in metadata.keys() or metadata['reff'] is None:
         dapqual = dapqualbm.turn_on(dapqual, 'BADGEOM')
 
+    # Propagate some flags
+    # TODO: This is a bit of a hack.  I should be more careful about how
+    # "propagated" flags are defined.
+
     # Determine if there's a foreground star
     ## KHRR added if statement:
-    if isinstance(cube, MaNGADataCube):
-        if numpy.sum(cube.bitmask.flagged(cube.mask, flag='FORESTAR')) > 0:
-            dapqual = dapqualbm.turn_on(dapqual, 'FORESTAR')
+#    if isinstance(cube, MaNGADataCube):
+#        if numpy.sum(cube.bitmask.flagged(cube.mask, flag='FORESTAR')) > 0:
+#            dapqual = dapqualbm.turn_on(dapqual, 'FORESTAR')
+    if cube.propagate_flags() is not None:
+        flags = cube.propagate_flags()
+        # TODO: This will barf if flags is a numpy array
+        flags = flags if isinstance(flags, list) else [flags]
+        for flag in flags:
+            if numpy.any(cube.bitmask.flagged(cube.mask, flag=flag)):
+                if flag in dapqual.keys():
+                    dapqual = dapqualbm.turn_on(dapqual, flag)
+                warnings.warn(f'{flag} is not a flag in {dapqualbm.__class__.__name__} and '
+                              'cannot be propagated!')
 
     # Commit the quality flag to the header
     if dapqualbm.flagged(dapqual, 'CRITICAL'):
@@ -2345,7 +2369,8 @@ def add_snr_metrics_to_header(hdr, cube, r_re):
     # Run the S/N calculation; this is the same calculation as done in
     # mangadap.proc.spatialbinning.VoronoiBinning.sn_calculation_covariance_matrix
     nfilter = len(filter_response_file)
-    flags = ['DONOTUSE', 'FORESTAR']
+    flags = cube.do_not_use_flags()
+#    flags = ['DONOTUSE', 'FORESTAR']
     for i in range(nfilter):
         response_func = numpy.genfromtxt(filter_response_file[i])[:,:2]
         signal, variance, snr = [a.ravel() for a in 

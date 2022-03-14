@@ -11,13 +11,13 @@ Persistent
 LSF limitations
 ---------------
 
-The DRP provides both pre- and post-pixelized Gaussian measurements
-of the instrumental line-spread function. Because it makes the most
-sense to use the pre-pixelized versions with pPXF, the DAP uses these
-pre-pixelized measurements for the dispersion calculations in both
-the stellar and ionized-gas velocity dispersions. A more in-depth
-analysis is ongoing to understand how these LSF changes affect the
-results (Law et al. 2020).
+The DRP provides both pre- and post-pixelized Gaussian measurements of the
+instrumental line-spread function. Because it makes the most sense to use the
+pre-pixelized versions with pPXF, the DAP uses these pre-pixelized
+measurements for the dispersion calculations in both the stellar and
+ionized-gas velocity dispersions. See `Law et al. (2021, AJ, 161, 52)`_ for
+an in-depth analysis of the affects of the LSF measurements on the stellar
+and ionized-gas velocity dispersions.
 
 Artifact effects on emission-line fitting
 -----------------------------------------
@@ -41,35 +41,93 @@ measured using the input (NSA) redshift, *not* the fitted stellar
 velocity.  Specifically for the velocity-dispersion corrections, this
 means that there will be a *velocity* dependence of the correction that
 can be more significant that the correction for the velocity dispersion
-itself.  The approach to the velocity dispersion corrections may be
-improved in future releases.
+itself.
 
 Flagging
 --------
 
-There are still severe deficiencies in the flagging, in general.
-Measurements can exhibit pixel-to-pixel variations that are inconsistent
-with random error (because of the strong covariance between neighboring
-spaxels) or fiber-level deviations that are inconsistent with physical
-intuition.  These issues tend to occur at low S/N, however, they might
-not all be caught by a simple S/N cut.  **Please consider the limited
-robustness of the flagging for your science goals.**  These limitations
-apply to essentially all derived products (kinematics, fluxes, indices,
-etc).
+There are still deficiencies in flagging, in general. Measurements can
+exhibit pixel-to-pixel variations that are inconsistent with random error
+(because of the strong covariance between neighboring spaxels) or fiber-level
+deviations that are inconsistent with physical intuition. These issues tend
+to occur at low S/N, however, they might not all be caught by a simple S/N
+cut. **Please consider the limited robustness of the flagging for your
+science goals.** These limitations apply to essentially all derived products
+(kinematics, fluxes, indices, etc).
 
 Uncertainties
 -------------
 
-Errors are generally "formal" errors determined either by the
-covariance (inverse Hessian) matrix provided by the optimization
-algorithm (stellar and emission-line kinematics) or a direct
-propagation of the error based on the inverse variances provided by
-the DRP (as for the emission-line moments and spectral indices).
-Idealized experiments and analysis of repeat observations have shown
-that the formal errors are within a factor of two of the statistical
-error. See the detailed assessments of the DAP uncertainties in the
-two main DAP papers: `Westfall et al. (2019, AJ, 158, 231)`_ and
-`Belfiore et al. (2019, AJ, 158, 160)`_.
+Errors are generally "formal" errors determined either by the covariance
+(inverse Hessian) matrix provided by the optimization algorithm (stellar and
+emission-line kinematics; `ppxf`_) or a direct propagation of the error based
+on the inverse variances provided by the DRP (as for the emission-line
+moments and spectral indices). Idealized experiments and analysis of repeat
+observations have shown that the formal errors are generally within a factor
+of two of the statistical error. See the detailed assessments of the DAP
+uncertainties in the two main DAP papers: `Westfall et al. (2019, AJ, 158,
+231)`_ and `Belfiore et al. (2019, AJ, 158, 160)`_.
+
+MPL-11 (3.1.0)
+==============
+
+Faults
+------
+
+The full report of the observations that faulted and the consolidated
+list of error messages can be found in the `MPL-11 error report`_
+(internal).
+
+In total, there are 11273 DRP-produced data cubes. Of these, 491 did
+not have an input redshift, and were therefore not analyzed by the
+DAP; most (if not all) of these are the result of allocating bundles
+to empty sky for special observations (such as the mosaic of IC342).
+
+Of the 10782 cubes that the DAP attempted to analyze, 47 caused
+faults during the analysis. These failures are mostly because the S/N
+required for either the stellar kinematics or emission-line fit was
+insufficient for *any* spectrum in the datacube. Of these, two cubes
+successfully finished the ``SPX-MILESHC-MASTARSSP`` analysis, but
+were unsuccessful for the other three types. Here are the
+number of completed ``MAPS`` files for each ``DAPTYPE``:
+
++-----------------------------+-----------------------+
+|                 ``DAPTYPE`` | :math:`N_{\rm cubes}` |
++=============================+=======================+
+|  ``SPX-MILESHC-MASTARSSP``  |                 10737 |
++-----------------------------+-----------------------+
+| ``VOR10-MILESHC-MASTARSSP`` |                 10735 |
++-----------------------------+-----------------------+
+| ``HYB10-MILESHC-MASTARSSP`` |                 10735 |
++-----------------------------+-----------------------+
+| ``HYB10-MILESHC-MASTARHC2`` |                 10735 |
++-----------------------------+-----------------------+
+
+The 41 cubes that failed all ``DAPTYPEs`` are::
+
+    8312-6101, 8479-6101, 8479-6102, 8479-12703, 8480-6102, 8480-12703,
+    8587-12701, 8587-12702, 8626-9102, 8953-6104, 9051-3704, 9051-6104,
+    9051-12704, 9673-1901, 9673-1902, 9673-3701, 9673-3702, 9673-3703,
+    9673-3704, 9673-6101, 9673-6103, 9673-6104, 9674-1901, 9674-1902,
+    9674-3701, 9674-3702, 9674-3703, 9674-3704, 9674-6101, 9674-6104,
+    9675-1901, 9675-1902, 9675-3701, 9675-3702, 9675-3703, 9675-3704,
+    9675-6101, 9675-6103, 9675-6104, 11828-1902, 11939-1901, 11949-1901,
+    11950-6102, 11987-1901, 11987-6104
+
+The cubes that passed ``SPX-MILESHC-MASTARSSP``, but failed the other two is::
+
+    8158-3703, 8953-9102
+
+Emission-line fluxes
+--------------------
+
+Not an "issue" necessarily, but the same warning from MPL-10 holds regarding
+differences in the emission-line fluxes between MPL-10 and MPL-11 due to the
+change in the spectra used to fit the underlying stellar continuum. Users are
+encouraged to compare the results from ``HYB10-MILESHC-MASTARHC2`` and
+``HYB10-MILESHC-MASTARSSP`` to assess the systematic errors in, e.g., the
+emission-line equivalent-width measurements driven by the continuum fits.
+
 
 MPL-10 (3.0.1)
 ==============

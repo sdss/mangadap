@@ -751,7 +751,9 @@ class EmissionLineModel:
         else:
             continuum = self.stellar_continuum.fill_to_match(bin_indx,
                                                              missing=self.missing_models).filled(0.)
-            indx = numpy.unique(bin_indx.ravel())[1:]
+            indx = numpy.unique(bin_indx.ravel())
+            if indx[0] == -1:
+                indx = indx[1:]
             continuum = continuum[indx,:] + model_base
 
         # Interpret the input mask as either a boolean or bitmask array
@@ -1302,10 +1304,12 @@ class EmissionLineModel:
                     numpy.amax( numpy.append(binid.ravel(), missing) ).astype(int)+1
 
         # Map the BINID to the spectrum index, assuming bins are sorted
-        # and that the BINID map has -1 BINID values
         u, indx, reconstruct = numpy.unique(self['BINID'].data.ravel(), return_index=True,
                                             return_inverse=True)
-        u_bin_indx = numpy.arange(len(u))-1
+#        u_bin_indx = numpy.arange(len(u))-1
+        u_bin_indx = numpy.arange(u.size)
+        if u[0] == -1:
+            u_bin_indx -= 1
         _bin_indx = u_bin_indx[reconstruct].reshape(self.spatial_shape)
 
         # Fill in bins with no models with masked zeros
@@ -1446,7 +1450,9 @@ class EmissionLineModel:
                     indx = self['BINID'].data.ravel() > -1
                     coo = self.binned_spectra.rdxqa['SPECTRUM'].data['SKY_COO'][indx,:]
                 else:
-                    valid_bins = numpy.unique(self['BINID'].data)[1:]
+                    valid_bins = numpy.unique(self['BINID'].data)
+                    if valid_bins[0] == -1:
+                        valid_bins = valid_bins[1:]
                     coo = self.binned_spectra['BINS'].data['SKY_COO'][valid_bins,:]
                 replace = eml_z.mask | eml_d.mask
                 kinematics = replace_with_data_from_nearest_coo(coo, best_fit_kinematics, replace)
@@ -1461,7 +1467,10 @@ class EmissionLineModel:
         # and that the BINID map has -1 BINID values
         u, indx, reconstruct = numpy.unique(self['BINID'].data.ravel(), return_index=True,
                                             return_inverse=True)
-        u_bin_indx = numpy.arange(len(u))-1
+#        u_bin_indx = numpy.arange(len(u))-1
+        u_bin_indx = numpy.arange(u.size)
+        if u[0] == -1:
+            u_bin_indx -= 1
         _bin_indx = u_bin_indx[reconstruct].reshape(self.spatial_shape)
 
         # Match the kinematics to the output bin ID map
@@ -1534,7 +1543,10 @@ class EmissionLineModel:
         # and that the BINID map has -1 BINID values
         u, indx, reconstruct = numpy.unique(self['BINID'].data.ravel(), return_index=True,
                                             return_inverse=True)
-        u_bin_indx = numpy.arange(len(u))-1
+#        u_bin_indx = numpy.arange(len(u))-1
+        u_bin_indx = numpy.arange(u.size)
+        if u[0] == -1:
+            u_bin_indx -= 1
         _bin_indx = u_bin_indx[reconstruct].reshape(self.spatial_shape)
 
         # Fill in bins with no models with masked zeros

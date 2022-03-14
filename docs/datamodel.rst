@@ -30,13 +30,14 @@ construction of the ``DAPTYPE`` has changed since DR15.
 
 The table below provides relevant ``DAPTYPE`` keywords:
 
-+---------+-------------------------------------------------------------------------------------+
-| Release | ``DAPTYPE``                                                                         |
-+=========+=====================================================================================+
-| DR-15   | ``VOR10-GAU-MILESHC``, ``HYB10-GAU-MILESHC``                                        |
-+---------+-------------------------------------------------------------------------------------+
-| MPL-10  | ``SPX-MILESHC-MASTARHC2``, ``VOR10-MILESHC-MASTARHC2``, ``HYB10-MILESHC-MASTARHC2`` |
-+---------+-------------------------------------------------------------------------------------+
++---------+-----------------------------------------------------------------+
+| Release | ``DAPTYPE``                                                     |
++=========+=================================================================+
+| DR-15   | ``VOR10-GAU-MILESHC``, ``HYB10-GAU-MILESHC``                    |
++---------+-----------------------------------------------------------------+
+| MPL-11  | ``SPX-MILESHC-MASTARSSP``, ``VOR10-MILESHC-MASTARSSP``,         |
+|         | ``HYB10-MILESHC-MASTARSSP``, ``HYB10-MILESHC-MASTARHC2``        |
++---------+-----------------------------------------------------------------+
 
 .. _datamodel-directory-structure:
 
@@ -62,19 +63,22 @@ The top level within a given DAP version contains the following subdirectories:
    multiple ``DAPTYPE`` methods.
 
 Most users will only interact with the ``[DAPTYPE]`` directories.  For
-the MPL-10, these are:
+the MPL-11, these are:
 
- * ``SPX-MILESHC-MASTARHC2/``: Analysis of each individual spaxel;
+ * ``SPX-MILESHC-MASTARSSP/``: Analysis of each individual spaxel;
    spaxels must have a valid continuum fit for an emission-line model to
    be fit.
- * ``VOR10-MILESHC-MASTARHC2/``: Analysis of spectra binned to
+ * ``VOR10-MILESHC-MASTARSSP/``: Analysis of spectra binned to
    :math:`{\rm S/N}\sim 10` using the Voronoi binning algorithm
    (Cappellari & Copin 2003).
- * ``HYB10-MILESHC-MASTARHC2/``: Stellar-continuum analysis of spectra
+ * ``HYB10-MILESHC-MASTARSSP/``: Stellar-continuum analysis of spectra
    binned to :math:`{\rm S/N}\sim 10` for the stellar kinematics (same
    as ``VOR10`` approach); however, the emission-line measurements are
    performed on the individual spaxels.  See a description of the
    :ref:`datamodel-hybrid-binning`.
+ * ``HYB10-MILESHC-MASTARHC2/``: Same as the above except the hierarchically
+   clustered MaStar stellar spectra are used to fit the stellar continuum in
+   the emission-line module.
 
 See the advice for :ref:`gettingstarted-daptype` appropriate for your
 science.
@@ -261,10 +265,11 @@ The ``MAPS`` files contain the following extensions:
 +-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
 |  20 | STELLAR_SIGMA_MASK  |        1 |                                                      | Data quality mask for stellar velocity dispersion.                 |
 +-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  21 | STELLAR_SIGMACORR   |        1 |                                                 km/s | Quadrature correction for STELLAR_SIGMA to obtain the              |
+|  21 | STELLAR_SIGMACORR   |        2 |                                                 km/s | Quadrature correction for STELLAR_SIGMA to obtain the              |
 |     |                     |          |                                                      | astrophysical velocity dispersion; see :ref:`corrections` for how  |
 |     |                     |          |                                                      | to use this extension with the ``STELLAR_SIGMA`` extension to      |
 |     |                     |          |                                                      | obtain the *astrophysical* stellar velocity dispersion.            |
+|     |                     |          |                                                      | **Use the first channel.**                                         |
 +-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
 |  22 | STELLAR_FOM         |        9 |                                                      | Figures-of-merit for the stellar-continuum fit in 9 channels: (1)  |
 |     |                     |          |                                                      | RMS of residuals (in                                               |
@@ -384,39 +389,39 @@ The ``MAPS`` files contain the following extensions:
 |  53 | SPECINDEX_MODEL     |       46 |                                           |ang|, mag | Spectral-index measurements for the best-fitting model spectrum.   |
 |     |                     |          |                                                      | Note the extension number is different from MPL-9.                 |
 +-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  54 | SPECINDEX_BF        |       46 |                                           |ang|, mag | **New in MPL-10**.  Spectral-index measurements calculated using a |
+|  54 | SPECINDEX_BF        |       46 |                                           |ang|, mag | Spectral-index measurements calculated using a                     |
 |     |                     |          |                                                      | definition similar to Burstein et al. (1984) and                   |
 |     |                     |          |                                                      | Faber et al. (1985).  See :ref:`spectralindices`.                  |
 +-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  55 | SPECINDEX_BF_IVAR   |       46 |                                                      | **New in MPL-10**.  Inverse variance in the BF spectral indices.   |
+|  55 | SPECINDEX_BF_IVAR   |       46 |                                                      | Inverse variance in the BF spectral indices.                       |
 +-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  56 | SPECINDEX_BF_MASK   |       46 |                                                      | **New in MPL-10**.  Data quality mask for the BF spectral indices. |
+|  56 | SPECINDEX_BF_MASK   |       46 |                                                      | Data quality mask for the BF spectral indices.                     |
 +-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  57 | SPECINDEX_BF_CORR   |       46 |                                                  mag | **New in MPL-10**.  Corrections to apply to account for the        |
+|  57 | SPECINDEX_BF_CORR   |       46 |                                                  mag | Corrections to apply to account for the                            |
 |     |                     |          |                                                      | velocity dispersion and effectively determine the index without    |
 |     |                     |          |                                                      | Doppler broadening; see :ref:`corrections`.                        | 
 +-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  58 | SPECINDEX_BF_MODEL  |       46 |                                           |ang|, mag | **New in MPL-10**.  Spectral indices with the BF definition        |
+|  58 | SPECINDEX_BF_MODEL  |       46 |                                           |ang|, mag | Spectral indices with the BF definition                            |
 |     |                     |          |                                                      | measured using the best-fitting model spectrum.                    |
 +-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  59 | SPECINDEX_WGT       |       46 |       :math:`10^{-17} {\rm erg/s/cm}^2`/|ang|/spaxel | **New in MPL-10**.  Weights to use when aggregating spectral-index |
+|  59 | SPECINDEX_WGT       |       46 |       :math:`10^{-17} {\rm erg/s/cm}^2`/|ang|/spaxel | Weights to use when aggregating spectral-index                     |
 |     |                     |          |                                                      | measurements.  See :ref:`spectralindices` and :ref:`aggregation`.  |
 +-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  60 | SPECINDEX_WGT_IVAR  |       46 |                                                      | **New in MPL-10**. Inverse variance in the spectral index weights. |
+|  60 | SPECINDEX_WGT_IVAR  |       46 |                                                      | Inverse variance in the spectral index weights.                    |
 +-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  61 | SPECINDEX_WGT_MASK  |       46 |                                                      | **New in MPL-10**.  Data quality mask for spectral index weights.  |
+|  61 | SPECINDEX_WGT_MASK  |       46 |                                                      | Data quality mask for spectral index weights.                      |
 +-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  62 | SPECINDEX_WGT_CORR  |       46 |                                                      | **New in MPL-10**.  Corrections to apply to account for the        |
+|  62 | SPECINDEX_WGT_CORR  |       46 |                                                      | Corrections to apply to account for the                            |
 |     |                     |          |                                                      | effect of the velocity dispersion on the calculation of the index  |
 |     |                     |          |                                                      | weight; see :ref:`corrections`.                                    | 
 +-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
-|  63 | SPECINDEX_WGT_MODEL |       46 |       :math:`10^{-17} {\rm erg/s/cm}^2`/|ang|/spaxel | **New in MPL-10**.  Spectral-index weights determined by the       |
+|  63 | SPECINDEX_WGT_MODEL |       46 |       :math:`10^{-17} {\rm erg/s/cm}^2`/|ang|/spaxel | Spectral-index weights determined by the                           |
 |     |                     |          |                                                      | best-fitting models.                                               |
 +-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
 
 .. _datamodel-emission-line-channels:
 
-The emission-line measurements for MPL-10 are (identical to MPL-9):
+The emission-line measurements for MPL-11 are (identical to MPL-10):
 
 .. code-block:: fortran
 
@@ -479,8 +484,8 @@ The emission-line measurements for MPL-10 are (identical to MPL-9):
 
 .. _datamodel-spectral-index-channels:
 
-The spectral-index measurements for MPL-10 are below (identical to
-MPL-9). Because the spectral-index measurements can be either
+The spectral-index measurements for MPL-11 are below (identical to
+MPL-10). Because the spectral-index measurements can be either
 angstroms, magnitudes, or unitless, the header of the spectral-index
 extensions also include the units using header keywords ``U[n]``. The
 indices and relevant units as included in the relevant extension
@@ -646,8 +651,8 @@ The ``LOGCUBE`` files contain the following extensions:
 |   3 |               MASK |                                                      | Bitmask for the binned spectra.  Note that this mask only applies to  |
 |     |                    |                                                      | the binned spectra.                                                   |
 +-----+--------------------+------------------------------------------------------+-----------------------------------------------------------------------+
-|   4 |                LSF |                                                |ang| | **New in MPL-10**: The dispersion (:math:`\sigma`) of the Gaussian    |
-|     |                    |                                                      | line-spread function of the binned spectra.  For MPL-10, the source   |
+|   4 |                LSF |                                                |ang| | The dispersion (:math:`\sigma`) of the Gaussian                       |
+|     |                    |                                                      | line-spread function of the binned spectra.  For MPL-11, the source   |
 |     |                    |                                                      | DRP extension is ``LSFPRE``.                                          |
 +-----+--------------------+------------------------------------------------------+-----------------------------------------------------------------------+
 |   5 |               WAVE |                                                |ang| | Vacuum-wavelength vector                                              |
@@ -784,8 +789,8 @@ in mind:
    the emission-line model is first subtracted from the data before the
    index measurements.
 
-Usage Guidlines: Stellar velocity dispersions
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Usage Guidelines: Stellar velocity dispersions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Measurement of stellar (and gas!) velocity dispersions in MaNGA is
 complicated by the spectral resolution, particularly at low S/N and
@@ -816,8 +821,8 @@ guidelines to consider when handling the velocity dispersion data:
 
 .. _datamodel-eml-tpl-resolution:
 
-Usage Guidlines: Emission-line template resolution
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Usage Guidelines: Emission-line template resolution
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 When using the recommended emission-line module
 (:class:`~mangadap.proc.sasuke.Sasuke`), the emission lines are fit
