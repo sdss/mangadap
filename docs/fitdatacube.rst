@@ -325,6 +325,11 @@ A few notes:
 
     - I set the top-level directory for the output to be ``./dap/``.
 
+Problems?
+---------
+
+If you have problems, particularly those that you think may be a more general
+problem, please `Submit an issue`_.
 
 
 
