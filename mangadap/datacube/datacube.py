@@ -270,7 +270,7 @@ class DataCube:
         self.meta = {} if meta is None else meta
         if not isinstance(self.meta, dict):
             raise TypeError('Metadata must be provided as a dictionary.')
-        self._populate_metadata()
+        self.populate_metadata()
 
         self.wave = None if wave is None else numpy.atleast_1d(wave)
         if self.wave is None:
@@ -378,7 +378,7 @@ class DataCube:
         """
         return self.meta['vel'] is not None and self.meta['vel'] > -500
 
-    def _populate_metadata(self):
+    def populate_metadata(self):
         r"""
         Populate and validate the :class:`DataCube` metadata (in :attr:`meta`)
         to ensure the it can be analyzed by the DAP.

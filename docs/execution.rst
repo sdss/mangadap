@@ -6,19 +6,16 @@
 Execution
 =========
 
-The MaNGA DAP is, of course, geared toward working at the
-survey-level for data produced by the MaNGA data-reduction pipeline
-(DRP). However, we have begun to generalize the usage of the DAP for
-datacubes from other instruments.
+The MaNGA DAP is, of course, geared toward working at the survey-level for data
+produced by the MaNGA data-reduction pipeline (DRP). However, we have begun to
+generalize the usage of the DAP for datacubes from other instruments.
 
-What follows below describes both how to use the current MaNGA DAP to
-analyze a datacube from the MaNGA survey, as well as how to execute
-the survey-level batch mode that analyzes all the MaNGA datacubes
-within a given directory structure.
+What follows below describes both how to use the current MaNGA DAP to analyze a
+datacube from the MaNGA survey, as well as how to execute the survey-level batch
+mode that analyzes all the MaNGA datacubes within a given directory structure.
 
-Examples are available (or will be soon) that demonstrate
-:ref:`fitonespec` and :ref:`fitonecube` using the DAP software, for
-both MaNGA and other integral-field instruments.
+Examples are available that demonstrate :ref:`fitonespec` and :ref:`fitdatacube`
+using the DAP software, for both MaNGA and other integral-field instruments.
 
 Input files
 -----------
@@ -227,14 +224,11 @@ DAP output (except for the log) set to ``dap_output``.
 Programmatic execution
 ----------------------
 
-Alternatively, ``$MANGADAP_DIR/examples/fit_one_cube.py`` (see
-:ref:`fitonecube`) provides a programmatic approach to running the
-exact same script that is executed by the ``manga_dap`` command-line
-script. The code provides a way to generate :ref:`execution-config`
-directly from the DRPall file, instead of from a file, and it
-directly defines the ``AnalysisPlan`` object with a hard-coded set of
-keywords. Using this script as an example, one could construct a
-script that programmatically analyzes a large set of MaNGA datacubes.
+The ``manga_dap`` executable script is simple, in that it only (1) reads the
+datacube, (2) sets the analysis plan, and (3) executes the main DAP analysis
+wrapper function, :func:`mangadap.survey.manga_dap.manga_dap`.  It is
+straight-forward then to construct a script that executes the DAP
+programmatically for many datacubes.
 
 .. _execution-rundap:
 
