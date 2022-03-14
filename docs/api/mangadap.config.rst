@@ -9,7 +9,6 @@ Submodules
 
    mangadap.config.analysisplan
    mangadap.config.defaults
-   mangadap.config.io
    mangadap.config.manga
 
 Module contents
