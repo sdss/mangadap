@@ -33,7 +33,7 @@ import astropy.units
 from astropy.cosmology import FlatLambdaCDM
 
 from .datacube import DataCube
-from .datacube import MaNGADataCube, MUSEDataCube
+#from .datacube import MaNGADataCube, MUSEDataCube
 from .util.constants import DAPConstants
 from .util.drpfits import DRPQuality3DBitMask
 from .util.fitsutil import DAPFitsUtil
