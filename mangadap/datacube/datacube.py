@@ -230,10 +230,21 @@ class DataCube:
             Approximate correlation matrix; see
             :func:`approximate_correlation_matrix`.
     """
+
+    instrument = None
+    """
+    The name of the instrument used to collect the data.  This is *only* used in
+    construction of the root name for output files.  See
+    :func:`~mangadap.datacube.datacube.DataCube.output_root`.
+    """
+
     # TODO: Add reconstructed PSF?
     def __init__(self, flux, wave=None, ivar=None, mask=None, bitmask=None, sres=None, covar=None,
                  axes=[0,1,2], wcs=None, pixelscale=None, log=True, meta=None, prihdr=None,
-                 fluxhdr=None):
+                 fluxhdr=None, name=None):
+
+        # Set an identifier for the datacube
+        self.name = name
 
         if wcs is None and wave is None:
             raise ValueError('Must either provide a single wavelength vector or a WCS that can '
@@ -325,6 +336,48 @@ class DataCube:
         self.correl_rlim = None
         self.approx_correl = None
 
+    @property
+    def file_path(self):
+        """
+        Return the full path to the input file.
+
+        .. warning::
+
+            The required attributes for this method are *not* defined by the
+            base class.  If the attributes ``directory_path`` or ``file_name``
+            do not exist or if either of them are None, this returns None.
+        """
+        if not hasattr(self, 'directory_path') or not hasattr(self, 'file_path') \
+                or self.directory_path is None or self.file_name is None:
+            return None
+        return self.directory_path / self.file_name
+
+    @property
+    def output_root(self):
+        if self.instrument is None and self.name is None:
+            raise ValueError('Output root is undefined.  Must provide instrument and/or name.')
+        if self.instrument is not None and self.name is not None:
+            return f'{self.instrument}-{self.name}'
+        if self.instrument is not None:
+            return f'{self.instrument}'
+        return f'{self.name}'
+
+    @property
+    def can_analyze(self):
+        """
+        Confirm that the DAP can analyze the datacube.
+
+        The only requirement is:
+
+            - the :math:`cz` velocity (``'vel'`` in :attr:`meta`) must be
+              greater than -500 km/s.
+
+        Returns:
+            :obj:`bool`: Flag whether or not the DAP can analyze the datacube.
+
+        """
+        return self.meta['vel'] is not None and self.meta['vel'] > -500
+
     def _populate_metadata(self):
         r"""
         Populate and validate the :class:`DataCube` metadata (in :attr:`meta`)
@@ -346,17 +399,21 @@ class DataCube:
         is chosen. The metadata keywords, acceptable ranges, and defaults are
         provided below.
 
-        +-----------+--------------------------------+---------+
-        |   Keyword |                          Range | Default |
-        +===========+================================+=========+
-        | ``vdisp`` |             :math:`\sigma > 0` |     100 |
-        +-----------+--------------------------------+---------+
-        | ``ell``   | :math:`0 \leq \varepsilon < 1` |    None |
-        +-----------+--------------------------------+---------+
-        | ``pa``    |    :math:`0 \leq \phi_0 < 360` |    None |
-        +-----------+--------------------------------+---------+
-        | ``reff``  |        :math:`R_{\rm eff} > 0` |    None |
-        +-----------+--------------------------------+---------+
+        +-------------+--------------------------------+---------+
+        |   Keyword   |                          Range | Default |
+        +=============+================================+=========+
+        | ``vdisp``   |             :math:`\sigma > 0` |     100 |
+        +-------------+--------------------------------+---------+
+        | ``ell``     | :math:`0 \leq \varepsilon < 1` |    None |
+        +-------------+--------------------------------+---------+
+        | ``pa``      |    :math:`0 \leq \phi_0 < 360` |    None |
+        +-------------+--------------------------------+---------+
+        | ``reff``    |        :math:`R_{\rm eff} > 0` |    None |
+        +-------------+--------------------------------+---------+
+        | ``ebv``     |          :math:`E(B-V) \geq 0` |    None |
+        +-------------+--------------------------------+---------+
+        | ``drpcrit`` |                  True or False |   False |
+        +-------------+--------------------------------+---------+
 
         All other metadata in :attr:`meta` are ignored.
 
@@ -380,13 +437,23 @@ class DataCube:
               are expected to be in deg), used as a normalization of the
               semi-major axis radius in various output data.
 
+            - ``ebv``: The E(B-V) Galactic reddening along the line-of-sight to
+              the galaxy.
+
+            - ``drpcrit``: A flag that indicates critical failures in the data
+              reduction (True implies poor data quality).  In MaNGA, the DRP will
+              flag datacubes as having CRITICAL failures, but the survey
+              approach was to run the DAP on these datacubes anyway.  This flag
+              is then used to propagate the caution in using the data analysis
+              products to the user.
         """
         keys = self.meta.keys()
         if 'z' not in keys or self.meta['z'] is None:
-            raise ValueError('DataCube must provide bulk redshift metadata.')
-        self.meta['vel'] = astropy.constants.c.to('km/s').value * self.meta['z']
-        if self.meta['vel'] < -500:
-            raise ValueError('Velocity must be > -500 km/s!')
+            warnings.warn('The bulk redshift has not been defined.  The DAP will *not* be able '
+                          'to analyze this datacube.')
+            self.meta['z'] = None
+        self.meta['vel'] = None if self.meta['z'] is None \
+                            else astropy.constants.c.to('km/s').value * self.meta['z']
 
         if 'vdisp' not in keys or self.meta['vdisp'] is None or not self.meta['vdisp'] > 0:
             warnings.warn('Velocity dispersion not provided or not greater than 0 km/s.  '
@@ -414,6 +481,20 @@ class DataCube:
         if 'reff' not in keys or self.meta['reff'] is None or not self.meta['reff'] > 0:
             warnings.warn('Effective radius not provided or not greater than 0. Setting to None.')
             self.meta['reff'] = None
+
+        if 'ebv' not in keys or self.meta['ebv'] is None or self.meta['ebv'] < 0:
+            warnings.warn('Galactic reddening not provided or not >= 0. Setting to None.')
+            self.meta['ebv'] = None
+
+        if 'drpcrit' not in keys or not isinstance(self.meta['drpcrit'], bool):
+            warnings.warn('Data reduction quality flag not provided or not a boolean.  Setting '
+                          'quality flag to False (i.e., data reduction is expected to be high '
+                          'quality).')
+            self.meta['drpcrit'] = False
+
+        if not self.can_analyze:
+            warnings.warn('The DAP will not be able to analyze this datacube.  See '
+                          '"DataCube.can_analyze".')
 
     @classmethod
     def from_config(cls, cfgfile, **kwargs):

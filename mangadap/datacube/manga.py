@@ -40,7 +40,7 @@ from astropy.wcs import WCS
 
 from ..config import defaults
 from ..config.manga import MaNGAConfig
-from ..util.drpbitmask import DRPFitsBitMask
+from ..util.drpbitmask import DRPFitsBitMask, DRPQuality3DBitMask
 from ..util.parser import DefaultConfig
 from ..util.constants import DAPConstants
 from ..util.covariance import Covariance
@@ -147,9 +147,10 @@ class MaNGADataCube(MaNGAConfig, DataCube):
             self.sres_fill = sres_fill
             sres = sres.filled(0.0)
 
-            # TODO: Add EBVGAL to meta here
-            if self.ebv_key is not None:
-                meta['ebv'] = prihdr[self.ebv_key]
+            # Pull the Galactic E(B-V) from the header and add it to the metadata
+            meta['ebv'] = prihdr['EBVGAL']
+            # Determine if the datacube was flagged as having CRITICAL DRP failures
+            meta['drpcrit'] = DRPQuality3DBitMask().flagged(prihdr['DRP3QUAL'], flag='CRITICAL')
 
             # NOTE: Transposes are done here because of how the data is
             # read from the fits file. The covariance is NOT transposed
@@ -164,7 +165,7 @@ class MaNGADataCube(MaNGAConfig, DataCube):
                               ivar=hdu['IVAR'].data.T, mask=hdu['MASK'].data.T, bitmask=bitmask,
                               sres=sres.T, covar=covar, wcs=WCS(header=fluxhdr, fix=True),
                               pixelscale=0.5, log=self.log, meta=meta, prihdr=prihdr,
-                              fluxhdr=fluxhdr)
+                              fluxhdr=fluxhdr, name=f'{self.plate}-{self.ifudesign}')
         print('Reading MaNGA datacube data ... DONE')
 
     @classmethod

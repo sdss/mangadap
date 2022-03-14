@@ -23,7 +23,6 @@ from astropy.io import fits
 from . import manga_environ
 from .analysisplan import AnalysisPlanSet
 from ..util.parser import DefaultConfig
-from ..util.drpbitmask import DRPQuality3DBitMask
 from ..util.constants import DAPConstants
 from ..util.filter import interpolate_masked_vector
 
@@ -259,12 +258,6 @@ class MaNGAConfig:
             warnings.warn('Paths do not match MaNGA defaults.  May not be able to find paired '
                           'CUBE & RSS files, if requested.')
 
-        # TODO: Turn these all into meta
-        self.ebv_key = 'EBVGAL'
-        self.qual_bitmask = DRPQuality3DBitMask()
-        self.qual_key = 'DRP3QUAL'
-        self.qual_flag = 'CRITICAL'
-
     @classmethod
     def from_config(cls, cfgfile, mode='CUBE'):
         """
@@ -345,16 +338,17 @@ class MaNGAConfig:
         if mode not in options:
             raise ValueError(f'Unknown mode {mode}.  Must be in: {options}')
 
-    @property
-    def key(self):
-        """
-        Unique key used to identify the input data.
-        """
-        return f'{self.plate}-{self.ifudesign}'
+#    @property
+#    def key(self):
+#        """
+#        Unique key used to identify the input data.
+#        """
+#        return f'{self.plate}-{self.ifudesign}'
 
     @property
     def output_root(self):
-        return f'{self.instrument}-{self.key}'
+#        return f'{self.instrument}-{self.key}'
+        return f'{self.instrument}-{self.plate}-{self.ifudesign}'
 
     @staticmethod
     def propagate_flags():

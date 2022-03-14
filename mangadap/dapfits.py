@@ -2264,11 +2264,9 @@ def finalize_dap_primary_header(prihdr, cube, metadata, binned_spectra, stellar_
     dapqualbm = DAPQualityBitMask()
     dapqual = dapqualbm.minimum_dtype()(0)          # Type casting original flag to 0
     # TODO: Move this to the datacube base class?
-    if cube.redux_bitmask is not None and cube.redux_qual_key in cube.prihder \
-            and cube.redux_bitmask.flagged(cube.prihdr[cube.redux_qual_key],
-                                           flag=self.redux_qual_flag):
+    if cube.meta['drpcrit']:
         if not quiet:
-            log_output(loggers, 1, logging.INFO, 'DRP File is flagged CRITICAL!')
+            log_output(loggers, 1, logging.INFO, 'DRP file is flagged CRITICAL!')
         dapqual = dapqualbm.turn_on(dapqual, ['CRITICAL', 'DRPCRIT'])
 
     # Flag the file as CRITICAL if the stellar continuum fits are bad

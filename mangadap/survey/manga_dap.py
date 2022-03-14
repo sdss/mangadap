@@ -203,10 +203,13 @@ def manga_dap(cube, plan, dbg=False, log=None, verbose=0):
         0).
     """
     # Check input
+    #  - Check that input cube type
     if not isinstance(cube, DataCube):
         raise TypeError('Input objects must be a subclass of DataCube.')
-#    # Get the needed metadata
-#    metadata = get_manga_dap_meta(cube)
+    # Check that the datacube can be analyzed by the DAP
+    if not cube.can_analyze:
+        raise ValueError('Cube metadata is insufficient for analysis.  See DataCube.can_analyze.')
+    # Check that input plan type
     if not isinstance(plan, AnalysisPlanSet):
         raise TypeError('plan must be of type AnalysisPlanSet')
 
@@ -274,7 +277,8 @@ def manga_dap(cube, plan, dbg=False, log=None, verbose=0):
         #---------------------------------------------------------------
         binned_spectra = None if plan['bin_key'][i] is None else \
                     SpatiallyBinnedSpectra(plan['bin_key'][i], cube, rdxqa, reff=cube.meta['reff'],
-                                           output_path=common_dir, symlink_dir=method_ref_dir,
+                                           ebv=cube.meta['ebv'], output_path=common_dir,
+                                           symlink_dir=method_ref_dir,
                                            overwrite=plan['bin_clobber'][i], loggers=loggers)
 
         #---------------------------------------------------------------
