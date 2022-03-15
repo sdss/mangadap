@@ -20,12 +20,12 @@ import numpy
 
 from astropy.io import fits
 
-from ..config import defaults
 from ..config.manga import MaNGAConfig
 from ..util.drpbitmask import DRPFitsBitMask
 from ..util.constants import DAPConstants
 from ..util.filter import interpolate_masked_vector
 from .rowstackedspectra import RowStackedSpectra
+
 
 class MaNGARSS(MaNGAConfig, RowStackedSpectra):
     r"""
@@ -109,19 +109,19 @@ class MaNGARSS(MaNGAConfig, RowStackedSpectra):
             drpver (:obj:`str`, optional):
                 DRP version, which is used to define the default DRP
                 redux path. Default is defined by
-                :func:`mangadap.config.defaults.drp_version`
+                :func:`mangadap.config.manga.drp_version`
             redux_path (:obj:`str`, optional):
                 The path to the top level directory containing the
                 DRP output files for a given DRP version. Default is
                 defined by
-                :func:`mangadap.config.defaults.drp_redux_path`.
+                :func:`mangadap.config.manga.drp_redux_path`.
             chart_path (:obj:`str`, optional):
                 The path to the directory containing the finding chart images
                 for this plate.  Default is defined by
-                :func:`mangadap.config.defaults.drp_finding_chart_path`.
+                :func:`mangadap.config.manga.drp_finding_chart_path`.
             directory_path (:obj:`str`, optional):
                 The exact path to the DRP file. Default is defined by
-                :func:`mangadap.config.defaults.drp_directory_path`.
+                :func:`mangadap.config.manga.drp_directory_path`.
                 Providing this ignores anything provided for
                 ``drpver`` or ``redux_path``.
             **kwargs:
@@ -287,19 +287,18 @@ class MaNGARSS(MaNGAConfig, RowStackedSpectra):
         """
         Parse the datacube rectification parameters.
 
-        Values that are None are set to their default methods in
-        :mod:`mangadap.config.defaults`.
+        Values that are None are set to their defaults as set by
+        :class:`~mangadap.config.manga.MaNGAConfig`.
 
         Returns:
             :obj:`tuple`: The default or input values of arguments,
             in the same order.
-
         """
-        pixelscale = defaults.cube_pixelscale() if pixelscale is None else pixelscale
-        rlim = defaults.regrid_rlim() if rlim is None else rlim
-        sigma = defaults.regrid_sigma() if sigma is None else sigma
-        recenter = defaults.cube_recenter() if recenter is None else recenter
-        width_buffer = defaults.cube_width_buffer() if width_buffer is None else width_buffer
+        pixelscale = MaNGAConfig.cube_pixelscale() if pixelscale is None else pixelscale
+        rlim = MaNGAConfig.regrid_rlim() if rlim is None else rlim
+        sigma = MaNGAConfig.regrid_sigma() if sigma is None else sigma
+        recenter = MaNGAConfig.cube_recenter() if recenter is None else recenter
+        width_buffer = MaNGAConfig.cube_width_buffer() if width_buffer is None else width_buffer
         return pixelscale, rlim, sigma, recenter, width_buffer
 
     def rectification_transfer_matrix(self, channel, pixelscale=None, rlim=None, sigma=None,
