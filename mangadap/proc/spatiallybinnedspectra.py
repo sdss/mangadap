@@ -1121,13 +1121,11 @@ class SpatiallyBinnedSpectra:
 
         # Turn on the flag stating that the number of valid channels in
         # the spectrum was below the input fraction.
-        indx = numpy.array([numpy.invert(good_fgoodpix).reshape(self.spatial_shape).T]*self.nwave).T
-        mask[indx] = self.bitmask.turn_on(mask[indx], flag='LOW_SPECCOV')
-
-        # Turn on the flag stating that the S/N in the spectrum was
-        # below the requested limit
-        indx = numpy.array([numpy.invert(good_snr).reshape(self.spatial_shape).T]*self.nwave).T
-        mask[indx] = self.bitmask.turn_on(mask[indx], flag='LOW_SNR')
+        indx = numpy.invert(good_fgoodpix.reshape(self.spatial_shape)) & numpy.invert(drp_bad)
+        map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'LOW_SPECCOV')
+        # Add the spectra with low S/N
+        indx = numpy.invert(good_snr.reshape(self.spatial_shape)) & numpy.invert(drp_bad)
+        map_mask[indx] = self.bitmask.turn_on(map_mask[indx], 'LOW_SNR')
 
         # Fill the covariance HDUs
         if self.covariance is not None:

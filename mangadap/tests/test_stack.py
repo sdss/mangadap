@@ -51,7 +51,8 @@ def test_register():
     # Stacking object
     stacker = SpectralStack()
     # Stack the spectra including the offset by the input velocity
-    swave, sflux, sfdev, snpix, sivar, ssres, scovar = stacker.stack(wave, flux, cz=cz, log=True)
+    swave, sflux, sfdev, snpix, sivar, ssres, scovar \
+            = stacker.stack(wave, flux, cz=cz, log=True, muse_mode=False)
 
     # Just register the spectra to make sure the registration works;
     # this is a simple check on the above
