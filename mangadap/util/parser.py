@@ -132,49 +132,49 @@ def parse_drp_file_name(name):
     return plate, ifudesign, mode
 
 
-def parse_dap_file_name(name):
-    """
-    Parse the name of a DAP file and return the plate, ifudesign, mode,
-    binning type, and iteration number.
-
-    Args:
-        name (str): Name of the DAP file.
-
-    Returns:
-        int, int, str, str, int : The plate, ifudesign, mode ('RSS' or
-        'CUBE'), bin type, and iteration number of the DAP file, pulled
-        from the name of the file.
-
-    Raises:
-        TypeError: Raised if *name* is not a string.
-        ValueError: Raised if if the file name does not look like a DRP
-            file because it does not include 'manga-', '-BIN', or
-            '.fits'.
-    """
-    if (type(name) != str):
-        raise TypeError("File name must be a string.")
-    if (str.find(name, 'manga-') == -1 or str.find(name, '-LOG') == -1
-        or str.find(name, 'BIN-') == -1 or str.find(name, '.fits') == -1):
-        raise ValueError("String does not look like a DAP fits file name.")
-
-    plate_start = str.find(name, '-')+1
-    plate_end = str.find(name,'-',plate_start)
-    plate = int(name[plate_start:plate_end])
-
-    ifudesign_end = str.find(name,'-',plate_end+1)
-    ifudesign = int(name[plate_end+1:ifudesign_end])
-
-    mode_start = str.find(name,'LOG')+3
-    mode_end = str.find(name,'_BIN-')
-    mode = name[mode_start:mode_end]
-
-    bintype_end = str.find(name,'-',mode_end+5)
-    bintype = name[mode_end+5:bintype_end]
-
-    niter_end = str.find(name,'.fits',bintype_end)
-    niter = int(name[bintype_end+1:niter_end])
-
-    return plate, ifudesign, mode, bintype, niter
+#def parse_dap_file_name(name):
+#    """
+#    Parse the name of a DAP file and return the plate, ifudesign, mode,
+#    binning type, and iteration number.
+#
+#    Args:
+#        name (str): Name of the DAP file.
+#
+#    Returns:
+#        int, int, str, str, int : The plate, ifudesign, mode ('RSS' or
+#        'CUBE'), bin type, and iteration number of the DAP file, pulled
+#        from the name of the file.
+#
+#    Raises:
+#        TypeError: Raised if *name* is not a string.
+#        ValueError: Raised if if the file name does not look like a DRP
+#            file because it does not include 'manga-', '-BIN', or
+#            '.fits'.
+#    """
+#    if (type(name) != str):
+#        raise TypeError("File name must be a string.")
+#    if (str.find(name, 'manga-') == -1 or str.find(name, '-LOG') == -1
+#        or str.find(name, 'BIN-') == -1 or str.find(name, '.fits') == -1):
+#        raise ValueError("String does not look like a DAP fits file name.")
+#
+#    plate_start = str.find(name, '-')+1
+#    plate_end = str.find(name,'-',plate_start)
+#    plate = int(name[plate_start:plate_end])
+#
+#    ifudesign_end = str.find(name,'-',plate_end+1)
+#    ifudesign = int(name[plate_end+1:ifudesign_end])
+#
+#    mode_start = str.find(name,'LOG')+3
+#    mode_end = str.find(name,'_BIN-')
+#    mode = name[mode_start:mode_end]
+#
+#    bintype_end = str.find(name,'-',mode_end+5)
+#    bintype = name[mode_end+5:bintype_end]
+#
+#    niter_end = str.find(name,'.fits',bintype_end)
+#    niter = int(name[bintype_end+1:niter_end])
+#
+#    return plate, ifudesign, mode, bintype, niter
 
     
 class DefaultConfig:
