@@ -119,11 +119,6 @@ example, the ``MILESHCMPL9`` configuration file looks like this:
     fit_method             = ppxf
     fit_iter               = nonzero_templates
     reject_boxcar          = 100
-    filter_boxcar
-    filter_op
-    filter_iter
-    filter_degree
-    filter_mdegree
     minimum_snr            = 1.0
     waverange
     artifact_mask          = BADSKY
