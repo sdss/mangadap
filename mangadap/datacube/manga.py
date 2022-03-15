@@ -38,7 +38,6 @@ import numpy
 from astropy.io import fits
 from astropy.wcs import WCS
 
-from ..config import defaults
 from ..config.manga import MaNGAConfig
 from ..util.drpbitmask import DRPFitsBitMask, DRPQuality3DBitMask
 from ..util.parser import DefaultConfig
@@ -46,6 +45,7 @@ from ..util.constants import DAPConstants
 from ..util.covariance import Covariance
 from ..spectra import MaNGARSS
 from .datacube import DataCube
+
 
 # NOTE: Because of inheriting from MaNGAConfig and the specific code in the
 # MaNGAConfig.from_file method, beware of adding a `from_file` method to this!
@@ -190,19 +190,19 @@ class MaNGADataCube(MaNGAConfig, DataCube):
             drpver (:obj:`str`, optional):
                 DRP version, which is used to define the default DRP
                 redux path. Default is defined by
-                :func:`mangadap.config.defaults.drp_version`
+                :func:`mangadap.config.manga.drp_version`
             redux_path (:obj:`str`, optional):
                 The path to the top level directory containing the
                 DRP output files for a given DRP version. Default is
                 defined by
-                :func:`mangadap.config.defaults.drp_redux_path`.
+                :func:`mangadap.config.manga.drp_redux_path`.
             chart_path (:obj:`str`, optional):
                 The path to the directory containing the finding chart images
                 for this plate.  Default is defined by
-                :func:`mangadap.config.defaults.drp_finding_chart_path`.
+                :func:`mangadap.config.manga.drp_finding_chart_path`.
             directory_path (:obj:`str`, optional):
                 The exact path to the DRP file. Default is defined by
-                :func:`mangadap.config.defaults.drp_directory_path`.
+                :func:`mangadap.config.manga.drp_directory_path`.
                 Providing this ignores anything provided for
                 ``drpver`` or ``redux_path``.
             **kwargs:
@@ -357,9 +357,9 @@ class MaNGADataCube(MaNGAConfig, DataCube):
         See that method for a description of the arguments. The
         default ``sigma_rho`` is from Westfall et al. (2019, AJ, 158,
         231). The default ``rlim`` is provided by
-        :func:`mangadap.config.defaults.regrid_rlim`.
+        :func:`mangadap.config.manga.MaNGAConfig.regrid_rlim`.
         """
-        _rlim = defaults.regrid_rlim() if rlim is None else rlim
+        _rlim = MaNGAConfig.regrid_rlim() if rlim is None else rlim
         return super().approximate_correlation_matrix(sigma_rho, _rlim, rho_tol=rho_tol, redo=redo)
 
     def approximate_covariance_matrix(self, channel, sigma_rho=1.92, rlim=None, rho_tol=None,
@@ -373,9 +373,9 @@ class MaNGADataCube(MaNGAConfig, DataCube):
         See that method for a description of the arguments. The
         default ``sigma_rho`` is from Westfall et al. (2019, AJ, 158,
         231). The default ``rlim`` is provided by
-        :func:`mangadap.config.defaults.regrid_rlim`.
+        :func:`~mangadap.config.manga.MaNGAConfig.regrid_rlim`.
         """
-        _rlim = defaults.regrid_rlim() if rlim is None else rlim
+        _rlim = MaNGAConfig.regrid_rlim() if rlim is None else rlim
         return super().approximate_covariance_matrix(channel, sigma_rho=sigma_rho, rlim=_rlim,
                                                      rho_tol=rho_tol, csr=csr, quiet=quiet)
 
@@ -390,9 +390,9 @@ class MaNGADataCube(MaNGAConfig, DataCube):
         See that method for a description of the arguments. The
         default ``sigma_rho`` is from Westfall et al. (2019, AJ, 158,
         231). The default ``rlim`` is provided by
-        :func:`mangadap.config.defaults.regrid_rlim`.
+        :func:`mangadap.config.manga.MaNGAConfig.regrid_rlim`.
         """
-        _rlim = defaults.regrid_rlim() if rlim is None else rlim
+        _rlim = MaNGAConfig.regrid_rlim() if rlim is None else rlim
         return super().approximate_covariance_cube(channels=channels, sigma_rho=sigma_rho,
                                                    rlim=_rlim, rho_tol=rho_tol, csr=csr,
                                                    quiet=quiet)

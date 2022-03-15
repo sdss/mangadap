@@ -371,6 +371,45 @@ class MaNGAConfig:
         return ['DONOTUSE', 'FORESTAR']
 
     @staticmethod
+    def cube_pixelscale():
+        """
+        Return the default pixel scale of the DRP CUBE files in arcsec.
+        """
+        return 0.5
+
+    @staticmethod
+    def cube_width_buffer():
+        """
+        Return the default width buffer in pixels used when regridding the DRP
+        RSS spectra into the CUBE format.
+        """
+        return 10
+
+    @staticmethod
+    def cube_recenter():
+        """
+        Return the default recentering flag used when regridding the DRP RSS
+        spectra into the CUBE format.
+        """
+        return False
+
+    @staticmethod
+    def regrid_rlim():
+        """
+        Return the default limiting radius for the Gaussian kernel used when
+        regridding the DRP RSS spectra into the CUBE format.
+        """
+        return 1.6
+
+    @staticmethod
+    def regrid_sigma():
+        """
+        Return the default standard deviation of the Gaussian kernel used when
+        regridding the DRP RSS spectra into the CUBE format.
+        """
+        return 0.7
+
+    @staticmethod
     def spectral_resolution_extension(hdu, ext=None):
         """
         Determine the spectral resolution channel to use.
