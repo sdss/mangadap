@@ -1284,7 +1284,7 @@ class SpatiallyBinnedSpectra:
 
         # Test if the RSS file exists; cannot compute covariance if not
         # TODO: this will break for a different stacking class
-        if self.method['stackpar']['covar_mode'] is not 'none' and not cube.can_compute_covariance:
+        if self.method['stackpar']['covar_mode'] != 'none' and not cube.can_compute_covariance:
             warnings.warn('Cannot determine covariance matrix!  Continuing without!')
             self.method['stackpar']['covar_mode'] = 'none'
 

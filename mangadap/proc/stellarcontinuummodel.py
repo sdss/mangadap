@@ -176,9 +176,6 @@ def available_stellar_continuum_modeling_methods():
             fitpar = PPXFFitPar(template_library_key=cnfg['template_library'],
                                 iteration_mode=cnfg.get('fit_iter', default='global_template'),
                                 reject_boxcar=cnfg.getint('reject_boxcar'),
-                                filter_boxcar=cnfg.getint('filter_boxcar'),
-                                filter_operation=cnfg.get('filter_op', default='subtract'),
-                                filter_iterations=cnfg.getint('filter_iter'),
                                 match_resolution=cnfg.getbool('match_resolution', default=True),
                                 velscale_ratio=cnfg.getint('velscale_ratio', default=1),
                                 minimum_snr=minimum_snr,
@@ -186,8 +183,6 @@ def available_stellar_continuum_modeling_methods():
                                                             waverange=waverange),
                                 bias=cnfg.getfloat('bias'), degree=cnfg.getint('degree'),
                                 mdegree=cnfg.getint('mdegree'),
-                                filt_degree=cnfg.getint('filter_degree'),
-                                filt_mdegree=cnfg.getint('filter_mdegree'),
                                 moments=cnfg.getint('moments'))
             fitclass = PPXFFit(StellarContinuumModelBitMask())
             fitfunc = fitclass.fit_SpatiallyBinnedSpectra

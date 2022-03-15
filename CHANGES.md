@@ -27,6 +27,7 @@
       names adjusted and defined by each main analysis class.
  - Remove all instances of `numpy.float`, `numpy.int`, `numpy.bool`, given
    impending numpy deprecation of these types.
+ - Remove "filtered" fitting from pPXF module
 
 3.1.2 (29 Jul 2021)
 -------------------
