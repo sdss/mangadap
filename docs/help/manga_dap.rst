@@ -21,8 +21,8 @@
                             The name of the module that contains the DataCube
                             derived class used to read the data. (default:
                             mangadap.datacube.MaNGADataCube)
-      -p PLAN, --plan PLAN  SDSS parameter file with analysis plan. If not provided,
-                            a default plan is used. (default: None)
+      -p PLAN, --plan PLAN  TOML file with analysis plan. If not provided, a default
+                            plan is used. (default: None)
       --plan_module [PLAN_MODULE ...]
                             The name of the module used to define the analysis plan
                             and the output paths. (default:

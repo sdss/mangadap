@@ -105,11 +105,10 @@ Default AnalysisPlan
 
 If executed without an ``AnalysisPlan`` parameter file, the command-line
 execution of the DAP will use a default plan; see
-:func:`mangadap.par.analysisplan.AnalysisPlanSet.default`.
+:func:`mangadap.config.analysisplan.AnalysisPlan.default`.
 
-The current default plan uses the following keys:
-
-.. include:: tables/default_analysisplan.rst
+.. The current default plan uses the following keys:
+.. .. include:: tables/default_analysisplan.rst
 
 .. _execution-config:
 
