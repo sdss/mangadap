@@ -34,7 +34,7 @@ class MangaDap(scriptbase.ScriptBase):
                                  'class used to read the data.')
 
         parser.add_argument('-p', '--plan', type=str,
-                            help='SDSS parameter file with analysis plan.  If not provided, a '
+                            help='TOML file with analysis plan.  If not provided, a '
                                  'default plan is used.')
         parser.add_argument('--plan_module', nargs='*',
                             default='mangadap.config.manga.MaNGAAnalysisPlan',
@@ -57,7 +57,7 @@ class MangaDap(scriptbase.ScriptBase):
 
 #        import warnings
 #        warnings.simplefilter('error', DeprecationWarning)
-        from mangadap.config.analysisplan import AnalysisPlanSet
+        from mangadap.config.analysisplan import AnalysisPlan
         from mangadap.survey.manga_dap import manga_dap
         from mangadap.datacube import DataCube
         from mangadap.util.pkg import load_object
@@ -84,10 +84,10 @@ class MangaDap(scriptbase.ScriptBase):
                                        else args.plan_module[0])
         else:
             UserPlan = load_object(args.plan_module[0], obj=args.plan_module[1])
-        #   - Check that the class is derived from AnalysisPlanSet
-        if not issubclass(UserPlan, AnalysisPlanSet):
+        #   - Check that the class is derived from AnalysisPlan
+        if not issubclass(UserPlan, AnalysisPlan):
             raise TypeError('Defined plan object must subclass from '
-                            'mangadap.config.analysisplan.AnalysisPlanSet')
+                            'mangadap.config.analysisplan.AnalysisPlan')
 
         #   - Instantiate the datacube object using either the datacube file
         #     directly or a configuration file
@@ -96,8 +96,7 @@ class MangaDap(scriptbase.ScriptBase):
 
         #   - Read the analysis plan
         plan = UserPlan.default(cube=cube, analysis_path=args.output_path) if args.plan is None \
-                    else UserPlan.from_par_file(args.plan, cube=cube,
-                                                analysis_path=args.output_path)
+                    else UserPlan.from_toml(args.plan, cube=cube, analysis_path=args.output_path)
 
         #   - Run the pipeline
         status = manga_dap(cube, plan, dbg=args.dbg, log=args.log, verbose=args.verbose)

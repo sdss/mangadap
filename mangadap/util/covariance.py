@@ -584,7 +584,11 @@ class Covariance:
                 print('    pseudo-indices: ', input_indx)
             print('   non-zero values: {0}'.format(nnz))
 
-        return cls(cov, input_indx=input_indx, correlation=correlation, raw_shape=raw_shape)
+        try:
+            return cls(cov, input_indx=input_indx, correlation=correlation, raw_shape=raw_shape)
+        except:
+            embed()
+            exit()
 
     @classmethod
     def from_matrix_multiplication(cls, T, Sigma):
@@ -1151,6 +1155,19 @@ class Covariance:
         # If object was originally a covariance matrix, revert it back
         if not is_correlation:
             self.revert_correlation()
+
+        # Check if any of the covariance matrices had all 0 values.  If so, add
+        # values just to maintain the shape of the result when reconstructed
+        # from this output.
+        missing_k = numpy.setdiff1d(numpy.arange(self.shape[-1]) 
+                                        if self.input_indx is None else self.input_indx,
+                                    numpy.unique(k))
+        if len(missing_k) > 0:
+            for _k in missing_k:
+                i = numpy.append(i, [0])
+                j = numpy.append(j, [0])
+                k = numpy.append(k, _k)
+                rhoij = numpy.append(rhoij, [0.])
 
         # Return the data
         if not reshape:

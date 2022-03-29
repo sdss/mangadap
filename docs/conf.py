@@ -69,7 +69,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'mangadap'
-copyright = '2019, SDSS-IV/MaNGA Pipeline Group'
+copyright = '2022, SDSS-IV/MaNGA Pipeline Group'
 author = 'SDSS-IV/MaNGA Pipeline Group'
 
 # The version info for the project you're documenting, acts as replacement for

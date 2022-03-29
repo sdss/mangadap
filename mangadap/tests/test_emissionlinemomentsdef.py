@@ -1,6 +1,6 @@
 from IPython import embed
 
-from mangadap.proc.emissionlinemoments import available_emission_line_moment_databases
+#from mangadap.proc.emissionlinemoments import available_emission_line_moment_databases
 
 from mangadap.par.artifactdb import ArtifactDB
 from mangadap.par.emissionmomentsdb import EmissionMomentsDB

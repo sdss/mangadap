@@ -1,6 +1,6 @@
 # The MaNGA Data Analysis Pipeline
 
-[![Build Status](https://travis-ci.org/sdss/mangadap.svg?branch=master)](https://travis-ci.org/sdss/mangadap)
+[![Build Status](https://github.com/sdss/mangadap/actions/workflows/ci_tests.yml/badge.svg)](https://github.com/sdss/mangadap/actions)
 [![Coverage Status](https://coveralls.io/repos/github/sdss/mangadap/badge.svg?branch=master)](https://coveralls.io/github/sdss/mangadap?branch=master)
 [![Doc Status](https://readthedocs.org/projects/sdss-mangadap/badge/?version=latest)](https://sdss-mangadap.readthedocs.io/en/latest/)
 [![astropy](http://img.shields.io/badge/powered%20by-AstroPy-orange.svg?style=flat)](http://www.astropy.org/)

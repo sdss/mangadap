@@ -3,6 +3,7 @@
 .. _pypi: https://pypi.org/project/sdss-mangadap/
 .. _Anaconda: https://www.continuum.io/DOWNLOADS
 .. _python.org: https://www.python.org/
+.. _toml: https://toml.io/en/
 
 .. core
 
@@ -85,6 +86,7 @@
 .. _IPython.embed: https://ipython.readthedocs.io/en/stable/interactive/reference.html#embedding
 .. _ppxf: https://pypi.org/project/ppxf/
 .. _vorbin: https://pypi.org/project/vorbin/
+.. _tomli: https://pypi.org/project/tomli/
 
 .. SDSS
 

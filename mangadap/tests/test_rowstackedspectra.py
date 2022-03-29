@@ -5,7 +5,7 @@ import numpy
 from astropy.io import fits
 
 from mangadap.config.manga import MaNGAConfig
-from mangadap.proc.reductionassessments import available_reduction_assessments
+#from mangadap.proc.reductionassessments import available_reduction_assessments
 from mangadap.datacube import MaNGADataCube
 from mangadap.spectra import MaNGARSS
 from mangadap.tests.util import remote_data_file, requires_remote

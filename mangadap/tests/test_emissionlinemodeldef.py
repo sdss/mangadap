@@ -1,6 +1,6 @@
 from IPython import embed
 
-from mangadap.proc.emissionlinemodel import available_emission_line_modeling_methods
+#from mangadap.proc.emissionlinemodel import available_emission_line_modeling_methods
 
 from mangadap.par.artifactdb import ArtifactDB
 from mangadap.par.emissionlinedb import EmissionLineDB

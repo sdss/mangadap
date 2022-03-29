@@ -43,8 +43,14 @@ class SpectralStackPar(KeywordParSet):
     The defined parameters are:
 
     .. include:: ../tables/spectralstackpar.rst
+
+    .. warning::
+
+        Velocity registration is currently *not* implemented.
+
     """
-    def __init__(self, operation=None, register=None, cz=None, covar_mode=None, covar_par=None):
+    def __init__(self, operation='mean', register=False, cz=None, covar_mode='none',
+                 covar_par=None):
         in_fl = [ int, float ]
         ar_like = [ numpy.ndarray, list ]
         op_options = SpectralStack.operation_options()
@@ -66,8 +72,8 @@ class SpectralStackPar(KeywordParSet):
                  'The parameter(s) needed to perform a given method of handling the ' \
                     'covariance.  See :func:`SpectralStack.covariance_mode_options` for the ' \
                     'available options.']
-        super(SpectralStackPar, self).__init__(pars, values=values, defaults=defaults,
-                                               options=options, dtypes=dtypes, descr=descr)
+        super().__init__(pars, values=values, defaults=defaults, options=options, dtypes=dtypes,
+                         descr=descr)
 
     def toheader(self, hdr):
         """

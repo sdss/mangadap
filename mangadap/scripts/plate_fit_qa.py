@@ -14,7 +14,7 @@ from mangadap.proc.util import growth_lim
 from mangadap.proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
 from mangadap.proc.stellarcontinuummodel import StellarContinuumModel
 from mangadap.proc.emissionlinemodel import EmissionLineModel
-from mangadap.config.analysisplan import AnalysisPlanSet
+from mangadap.config.analysisplan import AnalysisPlan
 from mangadap.util.fileio import channel_dictionary
 
 from mangadap.scripts import scriptbase

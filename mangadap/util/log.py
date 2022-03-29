@@ -57,6 +57,7 @@ def init_DAP_logging(log, simple_warnings=True, append=False, keep_fits_warnings
     logging.captureWarnings(True)
     if simple_warnings:
         warnings.formatwarning = short_warning
+#    warnings.simplefilter('error', FutureWarning)
 #    import numpy
 #    warnings.simplefilter('error', numpy.VisibleDeprecationWarning)
 #    warnings.simplefilter('error', SyntaxWarning)

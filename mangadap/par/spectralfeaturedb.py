@@ -19,9 +19,10 @@ the base class used by :class:`mangadap.par.artifactdb.ArtifactDB`,
 .. include common links, assuming primary doc root is up one directory
 .. include:: ../include/links.rst
 """
+from pathlib import Path
 
-import os
-import glob
+from IPython import embed
+
 import numpy
 
 from pydl.pydlutils.yanny import yanny
@@ -58,7 +59,7 @@ class SpectralFeatureDB(ParDatabase):
     holds the parameter files), use :func:`from_key`.
 
     Args:
-        parfile (:obj:`str`):
+        parfile (:obj:`str`, `Path`_):
             The SDSS parameter file with the emission-line database.
 
     Attributes:
@@ -74,12 +75,12 @@ class SpectralFeatureDB(ParDatabase):
         # TODO: The approach here (read using yanny, set to par
         # individually, then covert back to record array using
         # ParDatabase) is stupid...
+        _parfile = Path(parfile).resolve()
+        if not _parfile.exists():
+            raise FileNotFoundError(f'{_parfile} does not exist!')
 
-        if not os.path.isfile(parfile):
-            raise FileNotFoundError('{0} does not exist!'.format(parfile))
-
-        self.key = util.get_database_key(parfile)
-        self.file = parfile
+        self.key = util.get_database_key(str(_parfile))
+        self.file = str(_parfile)
         self.size = None
 
         # _parse_yanny() has to set `size` for each subclass.
@@ -87,11 +88,10 @@ class SpectralFeatureDB(ParDatabase):
 
         # Ensure that all indices are unique
         if len(numpy.unique(self.data['index'])) != self.size:
-            raise ValueError('Database indices for {0} are not all unique!'.format(self.key))
+            raise ValueError(f'Database indices for {self.key} are not all unique!')
 
     def _parse_yanny(self):
-        raise NotImplementedError('_parse_yanny not defined for {0}.'.format(
-                                    self.__class__.__name__))
+        raise NotImplementedError(f'_parse_yanny not defined for {self.__class__.__name__}.')
 
     @classmethod
     def default_path(cls):
@@ -99,9 +99,8 @@ class SpectralFeatureDB(ParDatabase):
         Return the default path with the emission-line databases.
         """
         if cls.default_data_dir is None:
-            raise ValueError('Default data directory is not defined for {0} objects.'.format(
-                                cls.__class__.__name__))
-        return os.path.join(defaults.dap_data_root(), cls.default_data_dir)
+            raise ValueError(f'Default data directory undefined for {cls.__class__.__name__}.')
+        return defaults.dap_data_root() / cls.default_data_dir
 
     @classmethod
     def available_databases(cls, directory_path=None):
@@ -127,13 +126,13 @@ class SpectralFeatureDB(ParDatabase):
         """
         if directory_path is None:
             directory_path = cls.default_path()
-        if not os.path.isdir(directory_path):
-            raise NotADirectoryError('{0} not found!'.format(directory_path))
-        files = glob.glob(os.path.join(directory_path, '*.par'))
-        keys = [util.get_database_key(f) for f in files]
+        if not directory_path.exists():
+            raise NotADirectoryError(f'{directory_path} not found!')
+        files = list(directory_path.glob('*.par'))
+        keys = [util.get_database_key(str(f)) for f in files]
         if len(keys) != len(numpy.unique(keys)):
-            raise ValueError('Keys read for par files in {0} are not unique!  Names of par files '
-                             'must be case-insensitive and unique.')
+            raise ValueError(f'Keys read for par files in {directory_path} are not unique!  Names '
+                             'of par files must be case-insensitive and unique.')
         return {k: f for k,f in zip(keys, files)}
 
     @classmethod
@@ -154,8 +153,8 @@ class SpectralFeatureDB(ParDatabase):
         databases = cls.available_databases(directory_path=directory_path)
         available_keys = list(databases.keys())
         if key not in available_keys:
-            raise KeyError('No database found to associate with {0}.'.format(key)
-                            + '  Keywords found are: {0}'.format(available_keys))
+            raise KeyError(f'No database found with key {key}.  Keywords found '
+                           f'are: {available_keys}')
         return cls(databases[key])
 
 

@@ -1,4 +1,4 @@
-from mangadap.proc.reductionassessments import available_reduction_assessments
+#from mangadap.proc.reductionassessments import available_reduction_assessments
 
 
 def test_avail():

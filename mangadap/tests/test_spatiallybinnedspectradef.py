@@ -1,4 +1,4 @@
-from mangadap.proc.spatiallybinnedspectra import available_spatial_binning_methods
+#from mangadap.proc.spatiallybinnedspectra import available_spatial_binning_methods
 
 def test_avail():
     methods_list = available_spatial_binning_methods()

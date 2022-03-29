@@ -10,7 +10,7 @@ from matplotlib import pyplot, colors, rc, colorbar, ticker, cm
 from astropy.io import fits
 
 from mangadap.datacube import DataCube
-from mangadap.config.analysisplan import AnalysisPlanSet
+from mangadap.config.analysisplan import AnalysisPlan
 from mangadap.proc.templatelibrary import TemplateLibrary
 from mangadap.proc.reductionassessments import ReductionAssessment
 from mangadap.proc.stellarcontinuummodel import StellarContinuumModel
@@ -806,10 +806,10 @@ class PpxfFitQA(scriptbase.ScriptBase):
                                        else args.plan_module[0])
         else:
             UserPlan = load_object(args.plan_module[0], obj=args.plan_module[1])
-        #   - Check that the class is derived from AnalysisPlanSet
-        if not issubclass(UserPlan, AnalysisPlanSet):
+        #   - Check that the class is derived from AnalysisPlan
+        if not issubclass(UserPlan, AnalysisPlan):
             raise TypeError('Defined plan object must subclass from '
-                            'mangadap.config.analysisplan.AnalysisPlanSet')
+                            'mangadap.config.analysisplan.AnalysisPlan')
 
         #   - Instantiate using either the datacube file directly or a
         #     configuration file

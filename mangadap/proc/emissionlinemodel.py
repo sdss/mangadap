@@ -11,6 +11,7 @@ A class hierarchy that fits the emission lines.
 .. include common links, assuming primary doc root is up one directory
 .. include:: ../include/links.rst
 """
+import inspect
 from pathlib import Path
 import logging
 import warnings
@@ -50,168 +51,218 @@ class EmissionLineModelDef(KeywordParSet):
 
     .. include:: ../tables/emissionlinemodeldef.rst
     """
-    def __init__(self, key=None, minimum_snr=None, deconstruct_bins=None, mom_vel_name=None,
-                 mom_disp_name=None, waverange=None, artifacts=None, ism_mask=None,
-                 emission_lines=None, continuum_tpl_key=None, fitpar=None, fitclass=None,
-                 fitfunc=None):
-        in_fl = [ int, float ]
-        par_opt = [ ParSet, dict ]
+    def __init__(self, key='EFITMPL11SSPDB', minimum_snr=0.0, mom_vel_name='Ha-6564',
+                 mom_disp_name=None, fitpar=None, fitclass=None, fitfunc=None, overwrite=False):
 
-        pars =     [ 'key', 'minimum_snr', 'deconstruct_bins', 'mom_vel_name', 'mom_disp_name',
-                     'waverange', 'artifacts', 'ism_mask', 'emission_lines', 'continuum_tpl_key', 
-                     'fitpar', 'fitclass', 'fitfunc' ]
-        values =   [ key, minimum_snr, deconstruct_bins, mom_vel_name, mom_disp_name, waverange,
-                     artifacts, ism_mask, emission_lines, continuum_tpl_key, fitpar, fitclass,
-                     fitfunc ]
-        dtypes =   [ str, in_fl, str, str, str, list, str, str, str, str, par_opt, None, None ]
-        can_call = [ False, False, False, False, False, False, False, False, False, False, False,
-                     False, True ]
+        # Use the signature to get the parameters and the default values
+        sig = inspect.signature(self.__class__)
+        pars = list(sig.parameters.keys())
+        defaults = [sig.parameters[key].default for key in pars]
+
+        # Remaining definitions done by hand
+        in_fl = [int, float]
+        par_opt = [ParSet, dict]
+
+        values = [key, minimum_snr, mom_vel_name, mom_disp_name, fitpar, fitclass, fitfunc,
+                  overwrite]
+        dtypes = [str, in_fl, str, str, par_opt, None, None, bool]
+        can_call = [False, False, False, False, False, False, True, False]
 
         descr = ['Keyword used to distinguish between different emission-line moment databases.',
                  'Minimum S/N of spectrum to fit',
-                 'Method to use for deconstructing binned spectra into individual spaxels for ' \
-                    'emission-line fitting.  See ' \
-                    ':func:`~mangadap.proc.sasuke.Sasuke.deconstruct_bins_options`.',
                  'Name of the emission-line moments band used to set the initial velocity guess ' \
                     'for each spaxel.',
                  'Name of the emission-line moments band used to set the initial velocity ' \
                     'dispersion guess for each spaxel.',
-                 'Limited wavelength range to use during the fit',
-                 'String identifying the artifact database to use',
-                 'String identifying an emission-line database used only for **masking** lines ' \
-                    'during the fit.',
-                 'String identifying the emission-line database to use',
-                 'String identifying the continuum templates to use',
                  'Fitting function parameters',
                  'Class used to perform the fit.',
-                 'Function or method that performs the fit; **must** be callable.']
+                 'Function or method that performs the fit; **must** be callable.',
+                 'If the output file already exists, redo all the calculations and overwrite it.']
 
-        super(EmissionLineModelDef, self).__init__(pars, values=values, dtypes=dtypes,
-                                                   can_call=can_call, descr=descr)
+        super().__init__(pars, values=values, defaults=defaults, dtypes=dtypes, can_call=can_call,
+                         descr=descr)
+        self._validate()
+
+    def _validate(self):
+        """
+        Validate the modeling method.
+        """
+        if self['fitfunc'] is None:
+            warnings.warn('No fitting function defined.  Defaulting to use mangadap.proc.ppxffit.')
+            self['fitpar'] = SasukePar()
+            self['fitclass'] = Sasuke(EmissionLineModelBitMask())
+            self['fitfunc'] = self['fitclass'].fit_SpatiallyBinnedSpectra
+
+    @classmethod
+    def from_dict(cls, d):
+        """
+        Instantiate the object from a nested dictionary.
+
+        The dictionary is expected to have keys for all the class keywords; see
+        the class instantiation method.  It should also include the
+        ``'fit_method'`` keyword used to select the type of fit to perform, and
+        a nested dictionary selected by the keyword ``'fit'`` with the 
+        parameters required by the fitting method.  If these are not provided,
+        the default fitter, :class:`~mangadap.proc.sasuke.Sasuke` and parameters
+        will be used.
+
+        .. warning::
+
+            Currently, the only accepted value for ``'fit_method'`` is
+            ``'sasuke'``, and the ``'fit'`` dictionary must provide the
+            parameters defined by :class:`~mangadap.proc.sasuke.SasukePar`.
+
+        Args:
+            d (:obj:`dict`):
+                Dictionary used to instantiate the class.
+        """
+        # Copy over the primary keywords
+        _d = {}
+        for key in ['key', 'minimum_snr', 'mom_vel_name', 'mom_disp_name', 'overwrite']:
+            if key in d.keys():
+                _d[key] = d[key]
+
+        # Set the spatial binning method
+        if 'fit_method' not in d or d['fit_method'] in ['none', None]:
+            # Use the default fitter and default fitting parameters!
+            _d['fitpar'] = None
+            _d['fitclass'] = None
+            _d['fitfunc'] = None
+        elif d['fit_method'] == 'sasuke':
+            # TODO: How do I pass the emission lines to Sasuke?
+            _d['fitpar'] = SasukePar.from_dict(d['fit']) if 'fit' in d else SasukePar()
+            _d['fitclass'] = Sasuke(EmissionLineModelBitMask())
+            _d['fitfunc'] = _d['fitclass'].fit_SpatiallyBinnedSpectra
+        else:
+            raise ValueError('Unrecognized fitting method.  Requires direct instantiation or '
+                             'code alterations.')
+
+        # Return the instantiation
+        return super().from_dict(_d)
 
 
-def validate_emission_line_modeling_method_config(cnfg):
-    """ 
-    Validate the :class:`mangadap.util.parser.DefaultConfig` with the
-    emission-line modeling method parameters.
+#def validate_emission_line_modeling_method_config(cnfg):
+#    """ 
+#    Validate the :class:`mangadap.util.parser.DefaultConfig` with the
+#    emission-line modeling method parameters.
+#
+#    Args:
+#        cnfg (:class:`mangadap.util.parser.DefaultConfig`): Object meant
+#            to contain defining parameters of the emission-line modeling
+#            method needed by :class:`EmissionLineModelDef`
+#
+#    Raises:
+#        KeyError: Raised if any required keywords do not exist.
+#        ValueError: Raised if keys have unacceptable values.
+#    """
+#    # Check for required keywords
+#    if 'key' not in cnfg:
+#        raise KeyError('Keyword \'key\' must be provided.')
 
-    Args:
-        cnfg (:class:`mangadap.util.parser.DefaultConfig`): Object meant
-            to contain defining parameters of the emission-line modeling
-            method needed by :class:`EmissionLineModelDef`
 
-    Raises:
-        KeyError: Raised if any required keywords do not exist.
-        ValueError: Raised if keys have unacceptable values.
-    """
-    # Check for required keywords
-    if 'key' not in cnfg:
-        raise KeyError('Keyword \'key\' must be provided.')
-
-
-def available_emission_line_modeling_methods():
-    """
-    Return the list of available emission-line modeling methods.
-
-    Available methods are:
-
-    .. todo::
-        Fill in
-
-    Returns:
-        :obj:`list`: A list of :class:`EmissionLineModelDef` objects,
-        each defining an emission-line modeling method.
-
-    Raises:
-        IOError:
-            Raised if no emission-line moment configuration files
-            could be found.
-        KeyError:
-            Raised if the emission-line modeling method keywords are
-            not all unique.
-        NotImplementedError:
-            Raised if the method requests the deconstruction of the
-            bins into spaxls for using the Elric fitter.
-
-    .. todo::
-        Possible to add a python call that reads the databases and
-        constructs the table for presentation in sphinx so that the text
-        above doesn't have to be edited with changes in the available
-        databases?
-
-    """
-    # Check the configuration files exist
-    search_dir = defaults.dap_config_root() / 'emission_line_modeling'
-    ini_files = sorted(list(search_dir.glob('*.ini')))
-    if len(ini_files) == 0:
-        raise IOError(f'Could not find any configuration files in {search_dir} !')
-
-    # Build the list of method definitions
-    method_list = []
-    for f in ini_files:
-        # Read the config file
-        cnfg = DefaultConfig(f)
-        # Ensure it has the necessary elements to define the template
-        # library
-        validate_emission_line_modeling_method_config(cnfg)
-        deconstruct_bins = cnfg.get('deconstruct_bins', default='ignore')
-        minimum_snr = cnfg.getfloat('minimum_snr', default=0.0)
-        continuum_tpl_key = cnfg.get('continuum_templates')
-        waverange = cnfg.getlist('waverange', evaluate=True)
-
-        ism_mask = cnfg.get('ism_mask')
-
-        if cnfg['fit_method'] == 'elric':
-            # Chose to use Elric: Parameter set has defaults to handle
-            # missing or None values for baseline_order, window_buffer,
-            # and minimum_snr
-            if deconstruct_bins != 'ignore':
-                raise NotImplementedError('When using Elric, cannot deconstruct bins into spaxels.')
-            if continuum_tpl_key is not None:
-                raise NotImplementedError('When using Elric, cannot change continuum templates.')
-
-            fitpar = ElricPar(base_order=cnfg.getint('baseline_order'),
-                              window_buffer=cnfg.getfloat('window_buffer'),
-                              minimum_snr=minimum_snr)
-            fitclass = Elric(EmissionLineModelBitMask())
-            fitfunc = fitclass.fit_SpatiallyBinnedSpectra
-
-        elif cnfg['fit_method'] == 'sasuke':
-            # Chose to use Sasuke: Parameter set has defaults to handle
-            # missing or None values for reject_boxcar, bias, moments,
-            # degree, mdegree; if provided new continuum templates are
-            # constructed during the _fill_method_par call.
-            fitpar = SasukePar(continuum_templates=continuum_tpl_key,
-                               etpl_line_sigma_mode=cnfg.get('etpl_line_sigma_mode'),
-                               etpl_line_sigma_min=cnfg.getfloat('etpl_line_sigma_min'),
-                               velscale_ratio=cnfg.getint('velscale_ratio'),
-                               guess_redshift=None, guess_dispersion=None, minimum_snr=minimum_snr,
-                               deconstruct_bins=deconstruct_bins, pixelmask=None,
-                               reject_boxcar=cnfg.getint('reject_boxcar'),
-                               bias=cnfg.getfloat('bias'), moments=cnfg.getint('moments'),
-                               degree=cnfg.getint('degree'), mdegree=cnfg.getint('mdegree'),
-                               reddening=cnfg.getfloat('internal_reddening'))
-            fitclass = Sasuke(EmissionLineModelBitMask())
-            fitfunc = fitclass.fit_SpatiallyBinnedSpectra
-
-        method_list += [ EmissionLineModelDef(key=cnfg['key'], minimum_snr=minimum_snr,
-                                              deconstruct_bins=deconstruct_bins,
-                                              mom_vel_name=cnfg.get('mom_vel_name'),
-                                              mom_disp_name=cnfg.get('mom_disp_name'),
-                                              waverange=waverange,
-                                              artifacts=cnfg.get('artifact_mask'),
-                                              ism_mask=ism_mask,
-                                              emission_lines=cnfg['emission_lines'],
-                                              continuum_tpl_key=continuum_tpl_key, fitpar=fitpar,
-                                              fitclass=fitclass, fitfunc=fitfunc) ]
-
-    # Check the keywords of the libraries are all unique
-    if len(numpy.unique(numpy.array([method['key'] for method in method_list]))) \
-                != len(method_list):
-        raise KeyError('Emission-line fitting method keywords are not all unique!')
-
-    # Return the default list of fitting methods
-    return method_list
+#def available_emission_line_modeling_methods():
+#    """
+#    Return the list of available emission-line modeling methods.
+#
+#    Available methods are:
+#
+#    .. todo::
+#        Fill in
+#
+#    Returns:
+#        :obj:`list`: A list of :class:`EmissionLineModelDef` objects,
+#        each defining an emission-line modeling method.
+#
+#    Raises:
+#        IOError:
+#            Raised if no emission-line moment configuration files
+#            could be found.
+#        KeyError:
+#            Raised if the emission-line modeling method keywords are
+#            not all unique.
+#        NotImplementedError:
+#            Raised if the method requests the deconstruction of the
+#            bins into spaxls for using the Elric fitter.
+#
+#    .. todo::
+#        Possible to add a python call that reads the databases and
+#        constructs the table for presentation in sphinx so that the text
+#        above doesn't have to be edited with changes in the available
+#        databases?
+#
+#    """
+#    # Check the configuration files exist
+#    search_dir = defaults.dap_config_root() / 'emission_line_modeling'
+#    ini_files = sorted(list(search_dir.glob('*.ini')))
+#    if len(ini_files) == 0:
+#        raise IOError(f'Could not find any configuration files in {search_dir} !')
+#
+#    # Build the list of method definitions
+#    method_list = []
+#    for f in ini_files:
+#        # Read the config file
+#        cnfg = DefaultConfig(f)
+#        # Ensure it has the necessary elements to define the template
+#        # library
+#        validate_emission_line_modeling_method_config(cnfg)
+#        deconstruct_bins = cnfg.get('deconstruct_bins', default='ignore')
+#        minimum_snr = cnfg.getfloat('minimum_snr', default=0.0)
+#        continuum_tpl_key = cnfg.get('continuum_templates')
+#        waverange = cnfg.getlist('waverange', evaluate=True)
+#
+#        ism_mask = cnfg.get('ism_mask')
+#
+#        if cnfg['fit_method'] == 'elric':
+#            # Chose to use Elric: Parameter set has defaults to handle
+#            # missing or None values for baseline_order, window_buffer,
+#            # and minimum_snr
+#            if deconstruct_bins != 'ignore':
+#                raise NotImplementedError('When using Elric, cannot deconstruct bins into spaxels.')
+#            if continuum_tpl_key is not None:
+#                raise NotImplementedError('When using Elric, cannot change continuum templates.')
+#
+#            fitpar = ElricPar(base_order=cnfg.getint('baseline_order'),
+#                              window_buffer=cnfg.getfloat('window_buffer'),
+#                              minimum_snr=minimum_snr)
+#            fitclass = Elric(EmissionLineModelBitMask())
+#            fitfunc = fitclass.fit_SpatiallyBinnedSpectra
+#
+#        elif cnfg['fit_method'] == 'sasuke':
+#            # Chose to use Sasuke: Parameter set has defaults to handle
+#            # missing or None values for reject_boxcar, bias, moments,
+#            # degree, mdegree; if provided new continuum templates are
+#            # constructed during the _fill_method_par call.
+#            fitpar = SasukePar(continuum_templates=continuum_tpl_key,
+#                               etpl_line_sigma_mode=cnfg.get('etpl_line_sigma_mode'),
+#                               etpl_line_sigma_min=cnfg.getfloat('etpl_line_sigma_min'),
+#                               velscale_ratio=cnfg.getint('velscale_ratio'),
+#                               guess_redshift=None, guess_dispersion=None, minimum_snr=minimum_snr,
+#                               deconstruct_bins=deconstruct_bins, pixelmask=None,
+#                               reject_boxcar=cnfg.getint('reject_boxcar'),
+#                               bias=cnfg.getfloat('bias'), moments=cnfg.getint('moments'),
+#                               degree=cnfg.getint('degree'), mdegree=cnfg.getint('mdegree'),
+#                               reddening=cnfg.getfloat('internal_reddening'))
+#            fitclass = Sasuke(EmissionLineModelBitMask())
+#            fitfunc = fitclass.fit_SpatiallyBinnedSpectra
+#
+#        method_list += [ EmissionLineModelDef(key=cnfg['key'], minimum_snr=minimum_snr,
+#                                              deconstruct_bins=deconstruct_bins,
+#                                              mom_vel_name=cnfg.get('mom_vel_name'),
+#                                              mom_disp_name=cnfg.get('mom_disp_name'),
+#                                              waverange=waverange,
+#                                              artifacts=cnfg.get('artifact_mask'),
+#                                              ism_mask=ism_mask,
+#                                              emission_lines=cnfg['emission_lines'],
+#                                              continuum_tpl_key=continuum_tpl_key, fitpar=fitpar,
+#                                              fitclass=fitclass, fitfunc=fitfunc) ]
+#
+#    # Check the keywords of the libraries are all unique
+#    if len(numpy.unique(numpy.array([method['key'] for method in method_list]))) \
+#                != len(method_list):
+#        raise KeyError('Emission-line fitting method keywords are not all unique!')
+#
+#    # Return the default list of fitting methods
+#    return method_list
 
 
 class EmissionLineModelBitMask(DAPBitMask):
@@ -229,49 +280,50 @@ class EmissionLineModel:
     Class that holds the emission-line model fits.
 
     Args:
-        loggers (list): (**Optional**) List of `logging.Logger`_ objects
-            to log progress; ignored if quiet=True.  Logging is done
-            using :func:`mangadap.util.log.log_output`.  Default is no
-            logging.
-        quiet (bool): (**Optional**) Suppress all terminal and logging
-            output.  Default is False.
-
-    Attributes:
-        loggers (list): List of `logging.Logger`_ objects to log
-            progress; ignored if quiet=True.  Logging is done using
-            :func:`mangadap.util.log.log_output`.
-        quiet (bool): Suppress all terminal and logging output.
-
+        method (:class:`~mangadap.proc.emissionlinemodel.EmissionLineModelDef`):
+            Object that defines the main parameters used for the emission-line
+            model fitting.
+        loggers (:obj:`list`, optional):
+            List of `logging.Logger`_ objects to log progress; ignored if
+            quiet=True.  Logging is done using
+            :func:`~mangadap.util.log.log_output`.
+        quiet (:obj:`bool`, optional):
+            Suppress all terminal and logging output.
     """
-    def __init__(self, method_key, binned_spectra, stellar_continuum=None,
+    def __init__(self, method, binned_spectra, stellar_continuum=None,
                  emission_line_moments=None, redshift=None, dispersion=None, minimum_error=None,
                  method_list=None, artifact_path=None, ism_line_path=None,
                  emission_line_db_path=None, output_path=None, output_file=None, hardcopy=True,
-                 overwrite=False, checksum=False, loggers=None, quiet=False):
+                 overwrite=None, checksum=False, loggers=None, quiet=False):
 
         self.loggers = None
         self.quiet = False
 
         # Define the database properties
-        self.method = self.define_method(method_key, method_list=method_list)
+        self.method = method
+        if not isinstance(self.method, EmissionLineModelDef):
+            raise TypeError('Method must have type EmissionLineModelDef.')
+#        self.method = self.define_method(method_key, method_list=method_list)
 
         # Setup the pixel mask
         # Mask ISM lines if a list is provided -- KHRR
         # use nsigma=2.0 to avoid masking HeI
-        self.pixelmask = SpectralPixelMask(artdb=None if self.method['artifacts'] is None else 
-                                            ArtifactDB.from_key(self.method['artifacts'],
-                                                                directory_path=artifact_path),
-                                           emldb=None if self.method['ism_mask'] is None else
-                                            EmissionLineDB.from_key(self.method['ism_mask'],
-                                                                    directory_path=ism_line_path),
-                                           waverange=self.method['waverange'], nsig=2.0)
+#        self.pixelmask = SpectralPixelMask(artdb=None if self.method['artifacts'] is None else 
+#                                            ArtifactDB.from_key(self.method['artifacts'],
+#                                                                directory_path=artifact_path),
+#                                           emldb=None if self.method['ism_mask'] is None else
+#                                            EmissionLineDB.from_key(self.method['ism_mask'],
+#                                                                    directory_path=ism_line_path),
+#                                           waverange=self.method['waverange'], nsig=2.0)
 
         # Setup the emission-line database
-        self.emldb = None if self.method['emission_lines'] is None else \
-                        EmissionLineDB.from_key(self.method['emission_lines'],
-                                                directory_path=emission_line_db_path)
+#        self.emldb = None if self.method['emission_lines'] is None else \
+#                        EmissionLineDB.from_key(self.method['emission_lines'],
+#                                                directory_path=emission_line_db_path)
+#        self.neml = None if self.emldb is None else self.emldb.size
 
-        self.neml = None if self.emldb is None else self.emldb.size
+#        self.emldb = None
+        self.neml = None
 
         self.binned_spectra = None
         self.redshift = None
@@ -430,8 +482,8 @@ class EmissionLineModel:
         hdr['AUTHOR'] = 'Kyle B. Westfall <westfall@ucolick.org>'
         hdr['ELFKEY'] = (self.method['key'], 'Emission-line modeling method keyword')
         hdr['ELFMINSN'] = (self.method['minimum_snr'], 'Minimum S/N of spectrum to include')
-        hdr['ARTDB'] = (self.method['artifacts'], 'Artifact database keyword')
-        hdr['EMLDB'] = (self.method['emission_lines'], 'Emission-line database keyword')
+#        hdr['ARTDB'] = (self.method['artifacts'], 'Artifact database keyword')
+        hdr['EMLDB'] = (self.method['fitpar']['emission_lines'], 'Emission-line database keyword')
         if self.stellar_continuum is not None:
             hdr['SCKEY'] = (self.stellar_continuum.method['key'], 'Stellar-continuum model keyword')
         hdr['NELMOD'] = (self.nmodels, 'Number of unique emission-line models')
@@ -568,30 +620,30 @@ class EmissionLineModel:
                                 if len(_dispersion) == 1 else _dispersion.copy()
 
 
-    def _fill_method_par(self):
-        """
-        Fill in any remaining modeling parameters.
-
-        .. todo::
-            - Construct the replacement template library here instead of
-              in Sasuke?
-        """
-        # Fit parameters not defined so continue
-        if self.method['fitpar'] is None:
-            return
-
-        # Fill the guess kinematics
-        if 'guess_redshift' in self.method['fitpar'].keys():
-            self.method['fitpar']['guess_redshift'] = self.redshift
-        if 'guess_dispersion' in self.method['fitpar'].keys():
-            self.method['fitpar']['guess_dispersion'] = self.dispersion
-        if 'emission_lines' in self.method['fitpar'].keys():
-            self.method['fitpar']['emission_lines'] = self.emldb
-        if 'pixelmask' in self.method['fitpar'].keys():
-            self.method['fitpar']['pixelmask'] = self.pixelmask
-        if self.stellar_continuum is not None \
-                and 'stellar_continuum' in self.method['fitpar'].keys():
-            self.method['fitpar']['stellar_continuum'] = self.stellar_continuum
+#    def _fill_method_par(self):
+#        """
+#        Fill in any remaining modeling parameters.
+#
+#        .. todo::
+#            - Construct the replacement template library here instead of
+#              in Sasuke?
+#        """
+#        # Fit parameters not defined so continue
+#        if self.method['fitpar'] is None:
+#            return
+#
+#        # Fill the guess kinematics
+#        if 'guess_redshift' in self.method['fitpar'].keys():
+#            self.method['fitpar']['guess_redshift'] = self.redshift
+#        if 'guess_dispersion' in self.method['fitpar'].keys():
+#            self.method['fitpar']['guess_dispersion'] = self.dispersion
+#        if 'emission_lines' in self.method['fitpar'].keys():
+#            self.method['fitpar']['emission_lines'] = self.emldb
+##        if 'pixelmask' in self.method['fitpar'].keys():
+##            self.method['fitpar']['pixelmask'] = self.pixelmask
+#        if self.stellar_continuum is not None \
+#                and 'stellar_continuum' in self.method['fitpar'].keys():
+#            self.method['fitpar']['stellar_continuum'] = self.stellar_continuum
 
 
     def _add_method_header(self, hdr, model_binid=None):
@@ -747,18 +799,22 @@ class EmissionLineModel:
         # Compute the full (continuum + emission lines) model spectra
         model = numpy.ma.MaskedArray(model_flux+continuum, mask=_model_mask>0)
 
+        pixelmask = None if 'pixelmask' not in self.method['fitpar'].keys() \
+                        else self.method['fitpar']['pixelmask']
+
         # Get the fitted spectra
-        if self.method['deconstruct_bins'] != 'ignore':
+        if self.method['fitpar']['deconstruct_bins'] != 'ignore':
             # The models should be for the individual spaxels
             bins_to_fit = EmissionLineFit.select_binned_spectra_to_fit(self.binned_spectra,
                                                         minimum_snr=self.method['minimum_snr'],
                                                         stellar_continuum=self.stellar_continuum,
                                                                        debug=debug)
+            # NOTE: bins_to_fit only used in this spaxel selection if debug=True
             spaxel_to_fit = EmissionLineFit.select_spaxels_to_fit(self.binned_spectra,
-                                                                  bins_to_fit=bins_to_fit,
-                                                                  debug=debug)
+                                                        minimum_snr=self.method['minimum_snr'],
+                                                        bins_to_fit=bins_to_fit, debug=debug)
             wave, flux, ferr, _ = EmissionLineFit.get_spectra_to_fit(self.binned_spectra,
-                                                                     pixelmask=self.pixelmask,
+                                                                     pixelmask=pixelmask,
                                                                      select=spaxel_to_fit,
                                                                      error=True,
                                                                      original_spaxels=True)
@@ -769,12 +825,12 @@ class EmissionLineModel:
                                                         stellar_continuum=self.stellar_continuum,
                                                                        debug=debug)
             wave, flux, ferr, _ = EmissionLineFit.get_spectra_to_fit(self.binned_spectra,
-                                                                     pixelmask=self.pixelmask,
+                                                                     pixelmask=pixelmask,
                                                                      select=bins_to_fit, error=True)
 
         # Get the line metrics
-        return EmissionLineFit.line_metrics(self.emldb, wave, flux, ferr, model, model_eml_par,
-                                            bitmask=self.bitmask, window=window)
+        return EmissionLineFit.line_metrics(self.method['fitpar'].emldb, wave, flux, ferr, model,
+                                            model_eml_par, bitmask=self.bitmask, window=window)
 
     def _construct_2d_hdu(self, good_snr, model_flux, model_base, model_mask, model_eml_par,
                           model_fit_par=None, model_binid=None):
@@ -839,8 +895,8 @@ class EmissionLineModel:
             _model_mask = model_mask
 
         # Save the data to the hdu attribute
-        par_hdu = fits.BinTableHDU(data=None, name='PAR') if self.emldb is None else \
-                        self.emldb.to_datatable().to_hdu(name='PAR')
+        par_hdu = fits.BinTableHDU(data=None, name='PAR') if self.method['fitpar'].emldb is None \
+                        else self.method['fitpar'].emldb.to_datatable().to_hdu(name='PAR')
         fit_hdu = fits.BinTableHDU(data=None, name='FIT') if model_fit_par is None else \
                         model_fit_par.to_hdu(name='FIT', add_dim=True)
 
@@ -868,7 +924,7 @@ class EmissionLineModel:
 
     def fit(self, binned_spectra, stellar_continuum=None, emission_line_moments=None,
             redshift=None, dispersion=None, minimum_error=None, output_path=None, output_file=None,
-            hardcopy=True, overwrite=False, loggers=None, quiet=False):
+            hardcopy=True, overwrite=None, loggers=None, quiet=False):
         """
         Fit the emission lines.
         """
@@ -921,10 +977,18 @@ class EmissionLineModel:
         # Get the good spectra
 #        debug=True
         debug=False
-        good_snr = EmissionLineFit.select_binned_spectra_to_fit(self.binned_spectra,
+#        good_snr = EmissionLineFit.select_binned_spectra_to_fit(self.binned_spectra,
+#                                                        minimum_snr=self.method['minimum_snr'],
+#                                                        stellar_continuum=self.stellar_continuum,
+#                                                        debug=debug)
+        good_bins = EmissionLineFit.select_binned_spectra_to_fit(self.binned_spectra,
                                                         minimum_snr=self.method['minimum_snr'],
                                                         stellar_continuum=self.stellar_continuum,
-                                                                debug=debug)
+                                                        debug=debug)
+        # NOTE: bins_to_fit only used in this spaxel selection if debug=True
+        good_spax = EmissionLineFit.select_spaxels_to_fit(self.binned_spectra,
+                                                        minimum_snr=self.method['minimum_snr'],
+                                                        bins_to_fit=good_bins, debug=debug)
 
         # Report
         if not self.quiet:
@@ -936,17 +1000,29 @@ class EmissionLineModel:
             if len(self.binned_spectra.missing_bins) > 0:
                 log_output(self.loggers, 1, logging.INFO, 'Missing bins: {0}'.format(
                                                             len(self.binned_spectra.missing_bins)))
-            log_output(self.loggers, 1, logging.INFO, 'With good S/N and to fit: {0}'.format(
-                                                            numpy.sum(good_snr)))
-            log_output(self.loggers, 1, logging.INFO, 'Bin deconstruction method: {0}'.format(
-                                                            self.method['deconstruct_bins']))
+            log_output(self.loggers, 1, logging.INFO, 'Bins with good S/N: {0}'.format(
+                                                            numpy.sum(good_bins)))
+            log_output(self.loggers, 1, logging.INFO, 'Spaxels with good S/N: {0}'.format(
+                                                            numpy.sum(good_spax)))
+#            log_output(self.loggers, 1, logging.INFO, 'Bin deconstruction method: {0}'.format(
+#                                                            self.method['deconstruct_bins']))
             
-        if numpy.sum(good_snr) == 0:
+        if numpy.sum(good_bins) == 0:
             raise ValueError('No good spectra to fit!')
 
         #---------------------------------------------------------------
         # Fill in any remaining binning parameters
-        self._fill_method_par()
+#        self._fill_method_par()
+
+        if self.method['fitpar'] is not None and hasattr(self.method['fitpar'], 'fill'):
+            self.method['fitpar'].fill(self.binned_spectra,
+                                       stellar_continuum=self.stellar_continuum,
+                                       guess_vel=self.redshift*astropy.constants.c.to('km/s').value,
+                                       guess_sig=self.dispersion, output_path=self.directory_path,
+                                       #hardcopy=self.tpl_hardcopy, symlink_dir=self.symlink_dir,
+                                       loggers=self.loggers, quiet=self.quiet)
+
+        _overwrite = self.method['overwrite'] if overwrite is None else overwrite
 
         # (Re)Set the output paths
         self.directory_path, self.output_file \
@@ -955,7 +1031,6 @@ class EmissionLineModel:
                         stelcont_method=None if self.stellar_continuum is None
                                         else self.stellar_continuum.method['key'],
                         output_path=output_path, output_file=output_file)
-#        self._set_paths(directory_path, dapver, analysis_path, output_file)
 
         #---------------------------------------------------------------
         # Check that the file path is defined
@@ -971,7 +1046,7 @@ class EmissionLineModel:
         #---------------------------------------------------------------
         # If the file already exists, and not overwriting, just read the
         # file
-        if ofile.exists() and not overwrite:
+        if ofile.exists() and not _overwrite:
             self.hardcopy = True
             if not self.quiet:
                 log_output(self.loggers, 1, logging.INFO, 'Using existing file')
@@ -986,8 +1061,11 @@ class EmissionLineModel:
         # should also add the equivalent widths.  TODO: Shouldn't the
         # equivalent widths be done here?
         model_flux, model_base, model_mask, model_fit_par, model_eml_par, model_binid = \
-                self.method['fitfunc'](self.binned_spectra, par=self.method['fitpar'],
-                                       loggers=self.loggers, quiet=self.quiet, debug=debug)
+                self.method['fitfunc'](self.binned_spectra,
+                                       stellar_continuum=self.stellar_continuum,
+                                       good_bins=good_bins, good_spax=good_spax,
+                                       par=self.method['fitpar'], loggers=self.loggers,
+                                       quiet=self.quiet, debug=debug)
 
         # Impose a minimum error because of the conversion to inverse
         # variance when constructing a MAPS file; applied to the error
@@ -1015,10 +1093,10 @@ class EmissionLineModel:
         # The number of models returned should be the number of "good" binned
         # spectra if the fitter does *not* deconstruct the bins.
         # TODO: This may now cause problems with Elric...
-        if self.method['deconstruct_bins'] == 'ignore' \
-                and model_flux.shape[0] != numpy.sum(good_snr):
+        if self.method['fitpar']['deconstruct_bins'] == 'ignore' \
+                and model_flux.shape[0] != numpy.sum(good_bins):
             print(model_flux.shape[0])
-            print(numpy.sum(good_snr))
+            print(numpy.sum(good_bins))
             raise ValueError('Unexpected returned shape of fitted emission-line models.')
        
         #---------------------------------------------------------------
@@ -1042,7 +1120,7 @@ class EmissionLineModel:
 
         # Construct the 2d hdu list that only contains the fitted models
         self.hardcopy = hardcopy
-        self._construct_2d_hdu(good_snr, model_flux, model_base, model_mask, model_eml_par,
+        self._construct_2d_hdu(good_bins, model_flux, model_base, model_mask, model_eml_par,
                                model_fit_par=model_fit_par, model_binid=model_binid)
 
         #---------------------------------------------------------------
@@ -1050,7 +1128,7 @@ class EmissionLineModel:
         if self.hardcopy:
             if not self.directory_path.exists():
                 self.directory_path.mkdir(parents=True)
-            self.write(overwrite=overwrite)
+            self.write(overwrite=_overwrite)
         if not self.quiet:
             log_output(self.loggers, 1, logging.INFO, '-'*50)
 
@@ -1411,7 +1489,7 @@ class EmissionLineModel:
             elif numpy.any(replace):
                 # Fill masked values with the nearest datum
                 best_fit_kinematics = numpy.ma.append([eml_z], [eml_d], axis=0).T
-                if self.method['deconstruct_bins'] != 'ignore':
+                if self.method['fitpar']['deconstruct_bins'] != 'ignore':
                     indx = self['BINID'].data.ravel() > -1
                     coo = self.binned_spectra.rdxqa['SPECTRUM'].data['SKY_COO'][indx,:]
                 else:
@@ -1541,33 +1619,36 @@ class EmissionLineModel:
         # Only the selected models are constructed, others are masked
         select = numpy.invert(self.bitmask.flagged(self.hdu['FIT'].data['MASK'],
                                             flag=['NO_FIT', 'FIT_FAILED', 'INSUFFICIENT_DATA']))
-        
+
         # Get the template library
         templates = replacement_templates
         if templates is None or not isinstance(templates, TemplateLibrary):
             try:
-                bins_to_fit = EmissionLineFit.select_binned_spectra_to_fit(self.binned_spectra,
-                                            minimum_snr=self.method['fitpar']['minimum_snr'],
-                                            stellar_continuum=self.stellar_continuum)
-                z = numpy.mean(self.method['fitpar']['guess_redshift'][bins_to_fit])
-                templates = self.method['fitclass'].get_stellar_templates(self.method['fitpar'],
-                                                                          self.binned_spectra.cube,
-                                                                          z=z,
-                                                                          loggers=self.loggers,
-                                                                          quiet=self.quiet)[0]
+                templates = self.method['fitpar'].templates
+#
+#                bins_to_fit = EmissionLineFit.select_binned_spectra_to_fit(self.binned_spectra,
+#                                            minimum_snr=self.method['fitpar']['minimum_snr'],
+#                                            stellar_continuum=self.stellar_continuum)
+#                z = numpy.mean(self.method['fitpar']['guess_redshift'][bins_to_fit])
+#                templates = self.method['fitclass'].get_stellar_templates(self.method['fitpar'],
+#                                                                          self.binned_spectra.cube,
+#                                                                          z=z,
+#                                                                          loggers=self.loggers,
+#                                                                          quiet=self.quiet)[0]
             except:
-                templates = self.stellar_continuum.method['fitpar']['template_library']
+                templates = self.stellar_continuum.method['fitpar'].templates
 
         return self.method['fitclass'].construct_continuum_models(
-                                        self.emldb, templates['WAVE'].data, templates['FLUX'].data,
-                                        self.hdu['WAVE'].data, self.hdu['FLUX'].data.shape,
-                                        self.hdu['FIT'].data, select=select,
-                                        redshift_only=redshift_only, deredshift=deredshift,
+                                        self.method['fitpar'].emldb, templates['WAVE'].data,
+                                        templates['FLUX'].data, self.hdu['WAVE'].data,
+                                        self.hdu['FLUX'].data.shape, self.hdu['FIT'].data,
+                                        select=select, redshift_only=redshift_only,
+                                        deredshift=deredshift,
                                         dispersion_corrections=dispersion_corrections, dvtol=1e-9)
 
     # TODO: Use the EmissionMomentsDB.channel_names function!
     def channel_names(self):
-        if self.emldb is None:
+        if self.method['fitpar'].emldb is None:
             raise ValueError('Channel names undefined because line database is not available.')
         
         return numpy.array([ '{0}-{1}'.format(n,int(w)) \

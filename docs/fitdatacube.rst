@@ -17,6 +17,7 @@ Overview
 
 The critical components that the DAP needs to perform its analysis modules are:
 
+    #. wavelengths are in vacuum,
     #. spectra that are geometrically binned in wavelength,
     #. spectral errors, pixel masks, and an estimate of the spectral resolution,
     #. an estimate of the redshift that is accurate to within :math:`\pm 2000` km/s,

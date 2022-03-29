@@ -42,7 +42,7 @@ class SpatialBinning():
         self.par = par
 
     @staticmethod
-    def bin_index(x, y, par=None):
+    def bin_index(x, y, gpm=None, par=None):
         """
         Undefined in base class. Just provides expected calling
         sequence.
@@ -60,7 +60,7 @@ class GlobalBinning(SpatialBinning):
         SpatialBinning.__init__(self, 'global')
 
     @staticmethod
-    def bin_index(x, y, par=None):
+    def bin_index(x, y, gpm=None, par=None):
         """
         Bin the data and return the indices of the bins.
 
@@ -74,15 +74,25 @@ class GlobalBinning(SpatialBinning):
                 returned array.
             y (`numpy.ndarray`_):
                 **Not used.**
+            gpm (`numpy.ndarray`_, optional):
+                Good value (pixel) mask used to select data that should be
+                included in the bin.  If None, all values are considered valid.
+                If provided, masked values (gpm=False) are given a bin index of
+                -1.
             par (object, optional):
                 **Not used.**
 
         Returns:
             `numpy.ndarray`_: An integer bin index for each spectrum.
         """
-        return numpy.zeros(x.shape, dtype=int)
+        binid = numpy.zeros(x.shape, dtype=int)
+        if gpm is not None:
+            if gpm.size != x.size:
+                raise ValueError(f'Provided GPM has incorrect shape; found {gpm.size}, ' \
+                                 f'expected {x.size}.')
+            binid[numpy.logical_not(gpm)] = -1
+        return binid
 # ----------------------------------------------------------------------
-
 
 # RADIAL BINNING -------------------------------------------------------
 class RadialBinningPar(KeywordParSet):
@@ -94,8 +104,8 @@ class RadialBinningPar(KeywordParSet):
 
     .. include:: ../tables/radialbinningpar.rst
     """
-    def __init__(self, center=None, pa=None, ell=None, radius_scale=None, radii=None,
-                 log_step=None):
+    def __init__(self, center=[0., 0.], pa=-1, ell=-1, radius_scale=-1, radii=[-1,-1,10],
+                 log_step=False):
         in_fl = [ int, float ]
         ar_like = [ numpy.ndarray, list ]
         
@@ -107,12 +117,17 @@ class RadialBinningPar(KeywordParSet):
                     'elliptical bins.  This is defined as a sky-right offset in arcseconds from ' \
                     'the nominal center of the object.',
                  'Sets the position angle, defined from N through E of the major axis of the ' \
-                    'isophotal ellipse used to define the elliptical bins.',
+                    'isophotal ellipse used to define the elliptical bins.  Set to <0 to ' \
+                    'indicate that the value should be filled by the metadata in the reduction ' \
+                    'assessment class; see :func:`fill`.',
                  'Sets the ellipticity (1-b/a) of the isophotal ellipse use to define the ' \
-                    'elliptical bins.',
+                    'elliptical bins.  Set to <0 to indicate that the value should be filled by ' \
+                    'the metadata in the reduction assessment class; see :func:`fill`.',
                  'Defines a scale factor to use when defining the radial bins.  For example, ' \
                     'you might want to scale to the a certain number of effective radii or ' \
-                    'physical scale in kpc.  For no scale, use 1.0.',
+                    'physical scale in kpc.  For no scale, use 1.0.  Set to <0 to indicate that ' \
+                    'the value should be filled by the metadata in the reduction assessment ' \
+                    'class; see :func:`fill`.',
                  'A three-element array defining the starting and ending radius for the bin ' \
                     'edges and the number of bins to create.  If the starting radius is -1, ' \
                     'the inner-most radius is set to 0 when not using log bins or 0.1 arcsec ' \
@@ -120,12 +135,11 @@ class RadialBinningPar(KeywordParSet):
                     'outer-most radius is set by the spaxel at the largest radius.',
                  'A flag that the radial bins should be a geometric series.']
 
-        super(RadialBinningPar, self).__init__(pars, values=values, dtypes=dtypes, descr=descr)
+        super().__init__(pars, values=values, dtypes=dtypes, descr=descr)
     
     def toheader(self, hdr):
         """
         Copy some of the parameters to a header.
-
         Args:
             hdr (`astropy.io.fits.Header`_):
                 Header object to write to.
@@ -167,6 +181,19 @@ class RadialBinningPar(KeywordParSet):
         self['radius_scale'] = hdr['BINSCL']
         self['radii'] = eval(hdr['BINRAD'])
         self['log_step'] = bool(hdr['BINLGR'])
+
+    # TODO: This should actually use the cube metadata, not the rdxqa
+    def fill(self, rdxqa):
+        """
+        Use the metadata in the reduction assessment results to fill out the
+        binning parameters.
+        """
+        if self['pa'] < 0:
+            self['pa'] = 0. if rdxqa.pa is None else rdxqa.pa
+        if self['ell'] < 0:
+            self['ell'] = 0. if rdxqa.ell is None else rdxqa.ell
+        if self['radius_scale'] < 0:
+            self['radius_scale'] = 1.0 if rdxqa.reff is None else rdxqa.reff
 
 
 class RadialBinning(SpatialBinning):
@@ -219,7 +246,7 @@ class RadialBinning(SpatialBinning):
         self.rs = self.par['radii'][0]
         self.dr = (self.par['radii'][1] - self.rs)/self.par['radii'][2]
         
-    def bin_index(self, x, y, par=None):
+    def bin_index(self, x, y, gpm=None, par=None):
         """
         Bin the data and return the indices of the bins.
 
@@ -230,6 +257,11 @@ class RadialBinning(SpatialBinning):
             y (`numpy.ndarray`_):
                 Fiducial on-sky Y position of each spectrum. Y
                 increases with DEC.
+            gpm (`numpy.ndarray`_, optional):
+                Good value (pixel) mask used to select data that should be
+                included in the bin.  If None, all values are considered valid.
+                If provided, masked values (gpm=False) are given a bin index of
+                -1.
             par (:class:`RadialBinningPar`, optional):
                 Binning parameters.  Cannot be None.
 
@@ -244,6 +276,9 @@ class RadialBinning(SpatialBinning):
         # Check the input
         if x.size != y.size:
             raise ValueError('Dimensionality of x and y coordinates do not match!')
+        if gpm is not None and gpm.size != x.size:
+            raise ValueError(f'Provided GPM has incorrect shape; found {gpm.size}, ' \
+                             f'expected {x.size}.')
 
         # Perform any necessary initialization
         if par is not None:
@@ -277,6 +312,10 @@ class RadialBinning(SpatialBinning):
         else:
             binid[r<self.rs] = -1            # or not
         binid[binid >= int(self.par['radii'][2])] = -1  # Remove any points outside the last bin
+
+        if gpm is not None:
+            # Remove any masked pixels
+            binid[gpm] = -1
 
         return binid
 
@@ -321,7 +360,7 @@ class VoronoiBinningPar(KeywordParSet):
 
     .. include:: ../tables/voronoibinningpar.rst
     """
-    def __init__(self, target_snr=None, signal=None, noise=None, covar=None):
+    def __init__(self, target_snr=10., signal=None, noise=None, covar=None):
         in_fl = [ int, float ]
         covar_type = [ float, numpy.ndarray, Covariance, sparse.spmatrix ]
         ar_like = [ numpy.ndarray, list ]
@@ -331,15 +370,21 @@ class VoronoiBinningPar(KeywordParSet):
         dtypes = [        in_fl,  ar_like, ar_like, covar_type ]
 
         descr = ['The target S/N for each bin.',
-                 'The array of signal measurements for each on-sky position to bin.',
+                 'The array of signal measurements for each on-sky position to bin.  See ' \
+                    ':func:`fill` to fill this based on the data in the reduction assessments ' \
+                    'object.',
                  'The array of noise measurements for each on-sky position to bin.  If not ' \
-                    'provided, ``covar`` must be provided and be a full covariance matrix.',
+                    'provided, ``covar`` must be provided and be a full covariance matrix.  See ' \
+                    ':func:`fill` to fill this based on the data in the reduction assessments ' \
+                    'object.',
                  r'Covariance matrix or calibration normalization.  For the latter, the value ' \
                     r'is used to renormalize using :math:`n_{\rm calib} = n_{\rm nominal} ' \
                     r'(1 + \alpha\ \log\ N_{\rm bin})`, where :math:`N_{\rm bin}` is the number ' \
-                    r'of binned spaxels and :math:`\alpha` is the value provided.']
+                    r'of binned spaxels and :math:`\alpha` is the value provided. See ' \
+                    r':func:`fill` to fill this based on the data in the reduction assessments ' \
+                    r'object.']
 
-        super(VoronoiBinningPar, self).__init__(pars, values=values, dtypes=dtypes, descr=descr)
+        super().__init__(pars, values=values, dtypes=dtypes, descr=descr)
 
     def toheader(self, hdr):
         """
@@ -384,6 +429,24 @@ class VoronoiBinningPar(KeywordParSet):
         self['target_snr'] = hdr['BINSNR']
         if hdr['BINCOV'] == 'calib':
             self['covar'] = hdr['NCALIB']
+
+    def fill(self, rdxqa):
+        """
+        Use the data in the reduction assessment results to fill out the binning
+        parameters.
+        """
+        self['signal'] = rdxqa['SPECTRUM'].data['SIGNAL']
+        if rdxqa.correlation is None:
+            self['noise'] = numpy.sqrt(rdxqa['SPECTRUM'].data['VARIANCE'])
+            return
+        # Overwrite any existing calibration coefficient
+        rdxqa.correlation.revert_correlation()
+        covar = rdxqa.correlation.toarray()
+        rdxqa.correlation.to_correlation()
+        i, j = numpy.meshgrid(numpy.arange(covar.shape[0]), numpy.arange(covar.shape[1]))
+        self['covar'] = Covariance(inp=sparse.coo_matrix((covar[covar > 0].ravel(),
+                                   (i[covar > 0].ravel(), j[covar > 0].ravel())),
+                                   shape=covar.shape).tocsr())
 
 
 class VoronoiBinning(SpatialBinning):
@@ -469,7 +532,7 @@ class VoronoiBinning(SpatialBinning):
         return numpy.sum(signal[index]) / (numpy.sqrt(numpy.sum(numpy.square(noise[index]))) \
                         * (1.0 + self.covar*numpy.log10(len(signal[index]))))
 
-    def bin_index(self, x, y, par=None):
+    def bin_index(self, x, y, gpm=None, par=None):
         """
         Bin the data and return the indices of the bins.
 
@@ -480,6 +543,11 @@ class VoronoiBinning(SpatialBinning):
             y (`numpy.ndarray`_):
                 Fiducial on-sky Y position of each spectrum. Y
                 increases with DEC.
+            gpm (`numpy.ndarray`_, optional):
+                Good value (pixel) mask used to select data that should be
+                included in the bin.  If None, all values are considered valid.
+                If provided, masked values (gpm=False) are given a bin index of
+                -1.
             par (:class:`RadialBinningPar`, optional):
                 Binning parameters.  Cannot be None.
 
@@ -496,6 +564,9 @@ class VoronoiBinning(SpatialBinning):
         # Check the position input
         if x.size != y.size:
             raise ValueError('Dimensionality of x and y coordinates do not match!')
+        if gpm is not None and gpm.size != x.size:
+            raise ValueError(f'Provided GPM has incorrect shape; found {gpm.size}, ' \
+                             f'expected {x.size}.')
 
         # Initialize the parameter object
         if par is not None:
@@ -542,28 +613,56 @@ class VoronoiBinning(SpatialBinning):
         if _noise.size != self.par['signal'].size:
             raise ValueError('Dimensionality of noise does not match signal.')
 
+        # Down-select to the valid spaxels
+        revert_covar = False
+        if gpm is None:
+            _x = x
+            _y = y
+            _signal = self.par['signal']
+        else:
+            _x = x[gpm]
+            _y = y[gpm]
+            _signal = self.par['signal'][gpm]
+            _noise = _noise[gpm]
+            if self.covar is not None and isinstance(self.covar, numpy.ndarray):
+                revert_covar = True
+                _covar = self.covar.copy()
+                self.covar = self.covar[gpm,:][:,gpm]
+
         # All spaxels have S/N greater than threshold, so return each
         # spaxel in its own "bin"
-        if numpy.min(self.par['signal']/_noise) > self.par['target_snr']:
+        if numpy.min(_signal/_noise) > self.par['target_snr']:
             warnings.warn('All pixels have enough S/N. Binning is not needed')
-            return numpy.arange(self.par['signal'].size)
+            if gpm is None:
+                return numpy.arange(x.size, dtype=int)
+            binid = numpy.full(x.size, -1, dtype=int)
+            binid[gpm] = numpy.arange(numpy.sum(gpm))
+            return binid
 
         # Cannot reach the S/N using all spaxels, so return all spaxels
         # in a single bin
-        sn_total = sn_func(numpy.arange(self.par['signal'].size), self.par['signal'], _noise)
+        sn_total = sn_func(numpy.arange(_signal.size), _signal, _noise)
         if sn_total < self.par['target_snr']:
             warnings.warn('Cannot reach target S/N using all data.')
-            return numpy.zeros(self.par['signal'].size)
+            if gpm is None:
+                return numpy.zeros(x.size, dtype=int)
+            binid = numpy.full(x.size, -1, dtype=int)
+            binid[gpm] = numpy.zeros(numpy.sum(gpm))
+            return binid
 
         # Call the contributed code and return the bin index
         try:
-            binid, xNode, yNode, xBar, yBar, sn, area, scale = \
-                voronoi_2d_binning(x, y, self.par['signal'], _noise, self.par['target_snr'],
+            _binid, xNode, yNode, xBar, yBar, sn, area, scale = \
+                voronoi_2d_binning(_x, _y, _signal, _noise, self.par['target_snr'],
                                    sn_func=sn_func, plot=False) #True, quiet=False)
         except:
             warnings.warn('Binning algorithm has raised an exception.  Assume this is because '
                           'all the spaxels should be in the same bin.')
-            binid = numpy.zeros(self.par['signal'].size)
+            _binid = numpy.zeros(_signal.size)
+        if gpm is None:
+            return _binid
+        binid = numpy.full(x.size, -1, dtype=int)
+        binid[gpm] = _binid
         return binid
 # ----------------------------------------------------------------------
 
@@ -581,15 +680,13 @@ class SquareBinningPar(KeywordParSet):
     .. include:: ../tables/squarebinningpar.rst
 
     """
-    def __init__(self, binsz=None):
-        in_fl = [int, float]
-
+    def __init__(self, binsz=2.0):
         pars = ['binsz']
         values = [binsz]
         dtypes = [float]
         descr = ['Desired bin size in arcsec']
 
-        super(SquareBinningPar, self).__init__(pars, values=values, dtypes=dtypes, descr=descr)
+        super().__init__(pars, values=values, dtypes=dtypes, descr=descr)
 
     def toheader(self, hdr):
         """
@@ -635,7 +732,7 @@ class SquareBinning(SpatialBinning):
         SpatialBinning.__init__(self, 'square', par=par)
         self.binsz = None
 
-    def bin_index(self, x, y, par=None):
+    def bin_index(self, x, y, gpm=None, par=None):
         """
         Bin the data and return the indices of the bins.
 
@@ -646,6 +743,11 @@ class SquareBinning(SpatialBinning):
             y (`numpy.ndarray`_):
                 Fiducial on-sky Y position of each spectrum. Y
                 increases with DEC.
+            gpm (`numpy.ndarray`_, optional):
+                Good value (pixel) mask used to select data that should be
+                included in the bin.  If None, all values are considered valid.
+                If provided, masked values (gpm=False) are given a bin index of
+                -1.
             par (:class:`SquareBinningPar`, optional):
                 Binning parameters.  Cannot be None.
 
@@ -660,11 +762,17 @@ class SquareBinning(SpatialBinning):
         _x = numpy.asarray(x)
         if len(_x.shape) != 1:
             raise ValueError('On-sky coordinates must be one-dimensional.')
-        nspaxels = _x.size
-        if len(y) != nspaxels:
+        if len(y) != _x.size:
             raise ValueError('Input coordinates are of different lengths.')
         _y = numpy.asarray(y)
 
+        binid = numpy.full(_x.size, -1, dtype=int)
+        if gpm is not None:
+            if gpm.size != _x.size:
+                raise ValueError(f'Provided GPM has incorrect shape; found {gpm.size}, ' \
+                                 f'expected {x.size}.')
+            _x = _x[gpm]
+            _y = _y[gpm]
 
         # Perform any necessary initialization
         if par is not None:
@@ -679,7 +787,7 @@ class SquareBinning(SpatialBinning):
 
 
 
-        binid = numpy.full(nspaxels, -1, dtype=int)
+        _binid = numpy.full(_x.size, -1, dtype=int)
         binsz = self.binsz
         minx = numpy.min(_x)-0.25
         maxx = numpy.max(_x)+0.25
@@ -703,7 +811,7 @@ class SquareBinning(SpatialBinning):
             for yj in y_lo:
                 indx = (_x >= xi) & (_x < xi+binsz) & (_y >= yj) & (_y < yj+binsz)
                 if any(indx):
-                    binid[indx] = ctbin
+                    _binid[indx] = ctbin
                     ctbin = ctbin + 1
 
 
@@ -719,7 +827,7 @@ class SquareBinning(SpatialBinning):
             for yj in y_lo:
                 indx = (_x >= xi) & (_x < xi + binsz) & (_y <= yj) & (_y > yj - binsz)
                 if any(indx):
-                    binid[indx] = ctbin
+                    _binid[indx] = ctbin
                     ctbin = ctbin + 1
 
         # Quadrant 3
@@ -734,7 +842,7 @@ class SquareBinning(SpatialBinning):
             for yj in y_lo:
                 indx = (_x <= xi) & (_x > xi - binsz) & (_y >= yj) & (_y < yj + binsz)
                 if any(indx):
-                    binid[indx] = ctbin
+                    _binid[indx] = ctbin
                     ctbin = ctbin + 1
 
         # Quadrant 4
@@ -749,10 +857,12 @@ class SquareBinning(SpatialBinning):
             for yj in y_lo:
                 indx = (_x <= xi) & (_x > xi - binsz) & (_y <= yj) & (_y > yj - binsz)
                 if any(indx):
-                    binid[indx] = ctbin
+                    _binid[indx] = ctbin
                     ctbin = ctbin + 1
 
-
+        if gpm is None:
+            return _binid
+        binid[gpm] = _binid
         return binid
 
 

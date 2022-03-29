@@ -30,121 +30,18 @@ from mangadap import __version__
 from ..config import defaults
 from ..util.log import init_DAP_logging, module_logging, log_output
 from ..datacube import DataCube
-from ..config.analysisplan import AnalysisPlanSet
-from ..proc.reductionassessments import ReductionAssessment
-from ..proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
-from ..proc.stellarcontinuummodel import StellarContinuumModel
-from ..proc.emissionlinemoments import EmissionLineMoments
-from ..proc.emissionlinemodel import EmissionLineModel
-from ..proc.spectralindices import SpectralIndices
+from ..config.analysisplan import AnalysisPlan
+from ..proc.reductionassessments import ReductionAssessmentDef, ReductionAssessment
+from ..proc.spatiallybinnedspectra import SpatiallyBinnedSpectraDef, SpatiallyBinnedSpectra
+from ..proc.stellarcontinuummodel import StellarContinuumModelDef, StellarContinuumModel
+from ..proc.emissionlinemoments import EmissionLineMomentsDef, EmissionLineMoments
+from ..proc.emissionlinemodel import EmissionLineModelDef, EmissionLineModel
+from ..proc.spectralindices import SpectralIndicesDef, SpectralIndices
 from ..dapfits import construct_maps_file, construct_cube_file
 
 # For testing/debugging
 from ..util.fitsutil import DAPFitsUtil
 from matplotlib import pyplot
-
-#def get_manga_dap_meta(cube):
-#    r"""
-#    Get the metadata required to run the DAP.
-#
-#    The metadata is pulled from the provided DataCube and
-#    checked. The only required metadata keyword is ``z``, which
-#    sets the initial guess for the bulk redshift of the galaxy.
-#    If this key is not available or its value doesn't meet the
-#    criterion below, this function will raise an exception,
-#    meaning the DAP will fault before it starts processing the
-#    DataCube.
-#
-#    The metadata provided by the DataCube must meet the following
-#    **critical criteria** or the method will fault:
-#
-#        - Velocity (:math:`cz`) has to be greater than -500.
-#
-#    For the remainder of the metadata, if the keyword does not
-#    exist, if the value is None, or if the value is outside the
-#    accepted range, a default is chosen. The metadata keywords,
-#    acceptable ranges, and defaults are provided below.
-#
-#    +-----------+--------------------------------+---------+
-#    |   Keyword |                          Range | Default |
-#    +===========+================================+=========+
-#    | ``vdisp`` |             :math:`\sigma > 0` |     100 |
-#    +-----------+--------------------------------+---------+
-#    | ``ell``   | :math:`0 \leq \varepsilon < 1` |    None |
-#    +-----------+--------------------------------+---------+
-#    | ``pa``    |    :math:`0 \leq \phi_0 < 360` |    None |
-#    +-----------+--------------------------------+---------+
-#    | ``reff``  |        :math:`R_{\rm eff} > 0` |    None |
-#    +-----------+--------------------------------+---------+
-#
-#    Returns:
-#        :obj:`dict`: Returns a dictionary with the following
-#        keywords:
-#
-#            - ``z``: The bulk redshift of the galaxy, used to
-#              calculate :math:`cz`.
-#            - ``vel``: The initial guess velocity (:math:`cz`) in
-#              km/s.
-#            - ``vdisp``: The initial guess velocity dispersion in
-#              km/s.
-#            - ``ell``: The isophotal ellipticity (:math:`1-b/a`) to
-#              use when calculating semi-major axis coordinates.
-#            - ``pa``: The isophotal position angle in deg from N
-#              through E, used when calculating semi-major axis
-#              coordinates.
-#            - ``reff``: The effective radius in arcsec (DataCube WCS
-#              coordinates are expected to be in deg), used as a
-#              normalization of the semi-major axis radius in various
-#              output data.
-#
-#    Raises:
-#        ValueError:
-#            See **critical criteria** above.
-#    """
-#    metadata = {}
-#    keys = cube.metakeys()
-#    if 'z' not in keys or cube.meta['z'] is None:
-#        raise ValueError('DataCube must provide bulk redshift metadata.')
-#    metadata['z'] = cube.meta['z']
-#    metadata['vel'] = astropy.constants.c.to('km/s').value * cube.meta['z']
-#    if metadata['vel'] < -500:
-#        raise ValueError('Velocity must be > -500 km/s!')
-#
-#    if 'vdisp' not in keys or cube.meta['vdisp'] is None or not cube.meta['vdisp'] > 0:
-#        warnings.warn('Velocity dispersion not provided or not greater than 0 km/s.  '
-#                      'Adopting initial guess of 100 km/s.')
-#        metadata['vdisp'] = 100.0
-#    else:
-#        metadata['vdisp'] = cube.meta['vdisp']
-#
-#    if 'ell' not in keys or cube.meta['ell'] is None or cube.meta['ell'] < 0 \
-#            or cube.meta['ell'] > 1:
-#        warnings.warn('Ellipticity not provided or not in the range 0 <= ell <= 1.  '
-#                      'Setting to None.')
-#        metadata['ell'] = None
-#    else:
-#        metadata['ell'] = cube.meta['ell']
-#
-#    if 'pa' not in keys or cube.meta['pa'] is None:
-#        warnings.warn('Position angle not provided. Setting to None.')
-#        metadata['pa'] = None
-#    else:
-#        metadata['pa'] = cube.meta['pa']
-#    # Impose expected range
-#    if metadata['pa'] is not None and (metadata['pa'] < 0 or metadata['pa'] >= 360):
-#        warnings.warn('Imposing 0-360 range on position angle.')
-#        while metadata['pa'] < 0:
-#            metadata['pa'] += 360
-#        while metadata['pa'] >= 360:
-#            metadata['pa'] -= 360
-#
-#    if 'reff' not in keys or cube.meta['reff'] is None or not cube.meta['reff'] > 0:
-#        warnings.warn('Effective radius not provided or not greater than 0. Setting to None.')
-#        metadata['reff'] = None
-#    else:
-#        metadata['reff'] = cube.meta['reff']
-#
-#    return metadata
 
 
 def manga_dap(cube, plan, dbg=False, log=None, verbose=0):
@@ -152,7 +49,7 @@ def manga_dap(cube, plan, dbg=False, log=None, verbose=0):
     Main wrapper function for the MaNGA DAP.
 
     This function is designed to be called once per datacube. The
-    :class:`mangadap.config.analysisplan.AnalysisPlanSet` instance sets
+    :class:`mangadap.config.analysisplan.AnalysisPlan` instance sets
     the types of analyses to perform on this observation. Each
     analysis plan results in a MAPS and model LOGCUBE file.
 
@@ -186,7 +83,7 @@ def manga_dap(cube, plan, dbg=False, log=None, verbose=0):
     Args:
         cube (:class:`mangadap.datacube.datacube.DataCube`):
             Datacube to analyze.
-        plan (:class:`mangadap.config.analysisplan.AnalysisPlanSet`):
+        plan (:class:`mangadap.config.analysisplan.AnalysisPlan`):
             Object that sets the analysis plans to implement and the output
             paths for DAP files.
         dbg (:obj:`bool`, optional):
@@ -210,8 +107,8 @@ def manga_dap(cube, plan, dbg=False, log=None, verbose=0):
     if not cube.can_analyze:
         raise ValueError('Cube metadata is insufficient for analysis.  See DataCube.can_analyze.')
     # Check that input plan type
-    if not isinstance(plan, AnalysisPlanSet):
-        raise TypeError('plan must be of type AnalysisPlanSet')
+    if not isinstance(plan, AnalysisPlan):
+        raise TypeError('plan must be of type AnalysisPlan')
 
     # Initialize the logging objects
     init_DAP_logging(log)#, simple_warnings=False)
@@ -239,7 +136,7 @@ def manga_dap(cube, plan, dbg=False, log=None, verbose=0):
     status = 0
 
     # Iterate over plans:
-    for i in range(plan.nplans):
+    for i, key in enumerate(plan.keys()):
         # Construct some directories to ensure all the reference files
         # are placed in the same path.  The references files placed in
         # the common directory are:
@@ -257,39 +154,44 @@ def manga_dap(cube, plan, dbg=False, log=None, verbose=0):
         method_ref_dir = plan.method_path(plan_index=i, ref=True)
 
         log_output(loggers, 1, logging.INFO, '-'*50)
-        log_output(loggers, 1, logging.INFO, f'{f"Plan {i+1}":^50}')
+        log_output(loggers, 1, logging.INFO, f'{f"Plan {i+1}: {key}":^50}')
         log_output(loggers, 1, logging.INFO, '-'*50)
-        log_output(loggers, 1, logging.INFO, f' METHOD KEY: {plan[i]["key"]}')
+        log_output(loggers, 1, logging.INFO, f' METHOD KEY: {plan[key]["key"]}')
         log_output(loggers, 1, logging.INFO, f'COMMON PATH: {common_dir}')
         log_output(loggers, 1, logging.INFO, f'METHOD PATH: {method_dir}')
 
         #---------------------------------------------------------------
         # S/N Assessments: placed in the common/ directory
         #---------------------------------------------------------------
-        rdxqa = None if plan['drpqa_key'][i] is None else \
-                    ReductionAssessment(plan['drpqa_key'][i], cube, pa=cube.meta['pa'],
-                                        ell=cube.meta['ell'], output_path=common_dir,
-                                        symlink_dir=method_ref_dir,
-                                        overwrite=plan['drpqa_clobber'][i], loggers=loggers)
+        rdxqa_method = None if plan[key]['rdxqa'] is None \
+                        else ReductionAssessmentDef.from_dict(plan[key]['rdxqa'])
+        rdxqa = None if rdxqa_method is None else \
+                    ReductionAssessment(rdxqa_method, cube, pa=cube.meta['pa'],
+                                        ell=cube.meta['ell'], reff=cube.meta['reff'],
+                                        output_path=common_dir, symlink_dir=method_ref_dir,
+                                        loggers=loggers)
 
         #---------------------------------------------------------------
         # Spatial Binning: placed in the common/ directory
         #---------------------------------------------------------------
-        binned_spectra = None if plan['bin_key'][i] is None else \
-                    SpatiallyBinnedSpectra(plan['bin_key'][i], cube, rdxqa, reff=cube.meta['reff'],
+        bin_method = None if plan[key]['binning'] is None \
+                        else SpatiallyBinnedSpectraDef.from_dict(plan[key]['binning'])
+        binned_spectra = None if bin_method is None else \
+                    SpatiallyBinnedSpectra(bin_method, cube, rdxqa, reff=cube.meta['reff'],
                                            ebv=cube.meta['ebv'], output_path=common_dir,
-                                           symlink_dir=method_ref_dir,
-                                           overwrite=plan['bin_clobber'][i], loggers=loggers)
+                                           symlink_dir=method_ref_dir, loggers=loggers)
 
         #---------------------------------------------------------------
         # Stellar Continuum Fit: placed in the common/ directory
         #---------------------------------------------------------------
         # TODO: Allow tpl_hardcopy to be an input parameter?
-        stellar_continuum = None if plan['continuum_key'][i] is None else \
-                    StellarContinuumModel(plan['continuum_key'][i], binned_spectra,
+        continuum_method = None if plan[key]['continuum'] is None \
+                        else StellarContinuumModelDef.from_dict(plan[key]['continuum'])
+        stellar_continuum = None if continuum_method is None else \
+                    StellarContinuumModel(continuum_method, binned_spectra,
                                           guess_vel=cube.meta['vel'], guess_sig=cube.meta['vdisp'],
                                           output_path=common_dir, symlink_dir=method_ref_dir,
-                                          overwrite=plan['continuum_clobber'][i], loggers=loggers)
+                                          loggers=loggers)
 
         #---------------------------------------------------------------
         # For both the emission-line measurements (moments and model):
@@ -303,11 +205,13 @@ def manga_dap(cube, plan, dbg=False, log=None, verbose=0):
         #---------------------------------------------------------------
 #        warnings.filterwarnings('error', message='Warning: converting a masked element to nan.')
         # TODO: enable artifact_path and bandpass_path?
-        emission_line_moments = None if plan['elmom_key'][i] is None else \
-                    EmissionLineMoments(plan['elmom_key'][i], binned_spectra,
+        elmom_db = None if plan[key]['eline_moments'] is None \
+                        else EmissionLineMomentsDef.from_dict(plan[key]['eline_moments'])
+        emission_line_moments = None if elmom_db is None else \
+                    EmissionLineMoments(elmom_db, binned_spectra,
                                         stellar_continuum=stellar_continuum,
                                         redshift=cube.meta['z'], output_path=method_ref_dir,
-                                        overwrite=plan['elmom_clobber'][i], loggers=loggers)
+                                        loggers=loggers)
 
         #---------------------------------------------------------------
         # Emission-line Fit: placed in the DAPTYPE/ref/ directory
@@ -319,13 +223,14 @@ def manga_dap(cube, plan, dbg=False, log=None, verbose=0):
         # The provided redshift is only the initial guess for the
         # emission-line model (it's FIXED for the moment measurements
         # above).
-        emission_line_model = None if plan['elfit_key'][i] is None else \
-                   EmissionLineModel(plan['elfit_key'][i], binned_spectra,
+        linefit_method = None if plan[key]['eline_fits'] is None \
+                        else EmissionLineModelDef.from_dict(plan[key]['eline_fits'])
+        emission_line_model = None if linefit_method is None else \
+                   EmissionLineModel(linefit_method, binned_spectra,
                                      stellar_continuum=stellar_continuum,
                                      emission_line_moments=emission_line_moments, dispersion=100.0,
                                      minimum_error=numpy.finfo(numpy.float32).eps,
-                                     output_path=method_ref_dir,
-                                     overwrite=plan['elfit_clobber'][i], loggers=loggers)
+                                     output_path=method_ref_dir, loggers=loggers)
 
         #---------------------------------------------------------------
         # If requested by the emission-line moments method, remeasure
@@ -338,24 +243,24 @@ def manga_dap(cube, plan, dbg=False, log=None, verbose=0):
                 and emission_line_moments.database['redo_postmodeling']:
             emission_line_moments.measure(binned_spectra, stellar_continuum=stellar_continuum,
                                           emission_line_model=emission_line_model,
-                                          output_path=method_ref_dir,
-                                          overwrite=plan['elmom_clobber'][i], loggers=loggers)
+                                          output_path=method_ref_dir, loggers=loggers)
 
         #---------------------------------------------------------------
         # Spectral-Index Measurements: placed in the DAPTYPE/ref/
         # directory
         #---------------------------------------------------------------
-        spectral_indices = None if plan['spindex_key'][i] is None else \
-                    SpectralIndices(plan['spindex_key'][i], binned_spectra,
-                                    redshift=cube.meta['z'], stellar_continuum=stellar_continuum,
+        sidef = None if plan[key]['indices'] is None \
+                        else SpectralIndicesDef.from_dict(plan[key]['indices'])
+        spectral_indices = None if sidef is None else \
+                    SpectralIndices(sidef, binned_spectra, redshift=cube.meta['z'],
+                                    stellar_continuum=stellar_continuum,
                                     emission_line_model=emission_line_model,
-                                    output_path=method_ref_dir,
-                                    overwrite=plan['spindex_clobber'][i], loggers=loggers)
+                                    output_path=method_ref_dir, loggers=loggers)
 
         #-------------------------------------------------------------------
         # Construct the main output file(s)
         #-------------------------------------------------------------------
-        construct_maps_file(cube, method=plan[i]['key'], rdxqa=rdxqa,
+        construct_maps_file(cube, method=plan[key]['key'], rdxqa=rdxqa,
                             binned_spectra=binned_spectra, stellar_continuum=stellar_continuum,
                             emission_line_moments=emission_line_moments,
                             emission_line_model=emission_line_model,
@@ -363,7 +268,7 @@ def manga_dap(cube, plan, dbg=False, log=None, verbose=0):
                             output_path=method_dir, overwrite=True, loggers=loggers,
                             single_precision=True)
 
-        construct_cube_file(cube, method=plan[i]['key'], rdxqa=rdxqa,
+        construct_cube_file(cube, method=plan[key]['key'], rdxqa=rdxqa,
                             binned_spectra=binned_spectra, stellar_continuum=stellar_continuum,
                             emission_line_moments=emission_line_moments,
                             emission_line_model=emission_line_model,

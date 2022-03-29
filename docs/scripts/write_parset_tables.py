@@ -11,7 +11,7 @@ import time
 
 def write_parset(parset_class, opath, class_link=True):
     ofile = os.path.join(opath, '{0}.rst'.format(parset_class.__name__.lower()))
-    lines = parset_class().to_rst_table(header=False, class_link=class_link)
+    lines = parset_class().to_rst_table(header=False, class_link=class_link, nested=False)
     with open(ofile, 'w') as f:
         f.write('\n'.join(lines))
 
@@ -26,8 +26,8 @@ if __name__ == '__main__':
 
     # Tables to write:
     #
-    from mangadap.config.analysisplan import AnalysisPlan
-    write_parset(AnalysisPlan, path, class_link=False)
+#    from mangadap.config.analysisplan import AnalysisPlan
+#    write_parset(AnalysisPlan, path, class_link=False)
 
     from mangadap.par.artifactdb import ArtifactPar
     write_parset(ArtifactPar, path, class_link=False)
@@ -60,8 +60,8 @@ if __name__ == '__main__':
 
     from mangadap.proc.emissionlinemodel import EmissionLineModelDef
     write_parset(EmissionLineModelDef, path, class_link=False)
-    from mangadap.proc.elric import ElricPar
-    write_parset(ElricPar, path, class_link=False)
+#    from mangadap.proc.elric import ElricPar
+#    write_parset(ElricPar, path, class_link=False)
     from mangadap.proc.sasuke import SasukePar
     write_parset(SasukePar, path, class_link=False)
 

@@ -1,6 +1,6 @@
 from IPython import embed
 
-from mangadap.proc.stellarcontinuummodel import available_stellar_continuum_modeling_methods
+#from mangadap.proc.stellarcontinuummodel import available_stellar_continuum_modeling_methods
 from mangadap.proc.templatelibrary import TemplateLibrary
 
 

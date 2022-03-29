@@ -16,12 +16,14 @@ import warnings
 from pathlib import Path
 from configparser import ConfigParser
 
+from IPython import embed
+
 import numpy
 from astropy.io import fits
 
 #from . import defaults
 from . import manga_environ
-from .analysisplan import AnalysisPlanSet
+from .analysisplan import AnalysisPlan
 from ..util.parser import DefaultConfig
 from ..util.constants import DAPConstants
 from ..util.filter import interpolate_masked_vector
@@ -627,7 +629,8 @@ class MaNGAConfig:
             cfg.write(f)
 
 
-class MaNGAAnalysisPlan(AnalysisPlanSet):
+# TODO: Need to fix this!
+class MaNGAAnalysisPlan(AnalysisPlan):
     """
     Define the analysis plan and output paths for MaNGA data.
 
@@ -685,8 +688,8 @@ class MaNGAAnalysisPlan(AnalysisPlanSet):
         if qa and ref:
             raise ValueError('Cannot provide path for both qa and ref directory.  Pick one.')
 
-        root = self.analysis_path / self['key'][plan_index] / str(self.cube.plate) \
-                    / str(self.cube.ifudesign)
+        root = self.analysis_path / self.plan[self.plan_keys[plan_index]]['key'] \
+                    / str(self.cube.plate) / str(self.cube.ifudesign)
         if not qa and not ref:
             return root
         if qa:
