@@ -69,7 +69,6 @@ from ..par.parset import KeywordParSet
 from ..par.artifactdb import ArtifactDB
 from ..par.absorptionindexdb import AbsorptionIndexDB
 from ..par.bandheadindexdb import BandheadIndexDB
-from ..config import defaults
 from ..util.datatable import DataTable
 from ..util.resolution import match_spectral_resolution
 from ..util.fitsutil import DAPFitsUtil
@@ -78,7 +77,6 @@ from ..util.log import log_output
 from ..util.bitmask import BitMask
 from ..util.dapbitmask import DAPBitMask
 from ..util.pixelmask import SpectralPixelMask
-from ..util.parser import DefaultConfig
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .stellarcontinuummodel import StellarContinuumModel
 from .emissionlinemodel import EmissionLineModel
@@ -185,92 +183,6 @@ class SpectralIndicesDef(KeywordParSet):
                 # Otherwise, assume this is a keyword selecting a database distributed
                 # with the DAP has been chosen.
                 self.bhddb = BandheadIndexDB.from_key(self['bandhead'])
-
-
-#def validate_spectral_indices_config(cnfg):
-#    """ 
-#    Validate :class:`~mangadap.util.parser.DefaultConfig` object with
-#    spectral-index measurement parameters.
-#
-#    Args:
-#        cnfg (:class:`~mangadap.util.parser.DefaultConfig`):
-#            Object with parameters to validate.
-#
-#    Raises:
-#        KeyError: Raised if any required keywords do not exist.
-#        ValueError: Raised if keys have unacceptable values.
-#        FileNotFoundError: Raised if a file is specified but could not
-#            be found.
-#    """
-#    # Check for required keywords
-#    if not cnfg.keyword_specified('key'):
-#        raise KeyError('Keyword \'key\' must be provided.')
-#
-#    if not cnfg.keyword_specified('absorption_indices') \
-#                and not cnfg.keyword_specified('bandhead_indices'):
-#        raise ValueError('Must provide either an absorption-index database or a bandhead-index ' \
-#                         'database, or both.')
-#
-#
-#def available_spectral_index_databases():
-#    """
-#    Return the list of available spectral index databases
-#
-#    Available database combinations:
-#
-#    .. todo::
-#        Fill in
-#
-#    Returns:
-#        list: A list of :func:`SpectralIndicesDef` objects, each
-#        defining a spectral-index database to measure.
-#
-#    Raises:
-#        IOError:
-#            Raised if no spectral-index configuration files could be
-#            found.
-#        KeyError:
-#            Raised if the spectral-index database keywords are not
-#            all unique.
-#
-#    .. todo::
-#        - Somehow add a python call that reads the databases and
-#          constructs the table for presentation in sphinx so that the
-#          text above doesn't have to be edited with changes in the
-#          available databases.
-#        
-#    """
-#    # Check the configuration files exist
-#    search_dir = defaults.dap_config_root() / 'spectral_indices'
-#    ini_files = sorted(list(search_dir.glob('*.ini')))
-#    if len(ini_files) == 0:
-#        raise IOError(f'Could not find any configuration files in {search_dir} !')
-#
-#    # Build the list of library definitions
-#    index_set_list = []
-#    for f in ini_files:
-#        # Read the config file
-#        cnfg = DefaultConfig(f=f)
-#        # Ensure it has the necessary elements to define the template
-#        # library
-#        validate_spectral_indices_config(cnfg)
-#
-#        index_set_list += [ SpectralIndicesDef(key=cnfg['key'],
-#                                               minimum_snr=cnfg.getfloat('minimum_snr', default=0.), 
-#                                               fwhm=cnfg.getfloat('resolution_fwhm', default=-1),
-#                                    compute_corrections=cnfg.getbool('compute_sigma_correction',
-#                                                                     default=False),
-#                                               artifacts=cnfg['artifact_mask'],
-#                                               absindex=cnfg['absorption_indices'],
-#                                               bandhead=cnfg['bandhead_indices']) ]
-#
-#    # Check the keywords of the libraries are all unique
-#    if len(numpy.unique(numpy.array([index['key'] for index in index_set_list]))) \
-#                != len(index_set_list):
-#        raise KeyError('Spectral-index set keywords are not all unique!')
-#
-#    # Return the default list of assessment methods
-#    return index_set_list
 
 
 class SpectralIndicesBitMask(DAPBitMask):

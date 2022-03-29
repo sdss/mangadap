@@ -18,12 +18,11 @@ from pathlib import Path
 import time
 import warnings
 import logging
-import warnings
 
 from IPython import embed
 
 import numpy
-from scipy import interpolate, fftpack
+from scipy import interpolate
 
 import astropy.constants
 from ppxf import ppxf
@@ -33,25 +32,20 @@ from ..par.parset import KeywordParSet
 from ..par.emissionlinedb import EmissionLineDB
 from ..util.datatable import DataTable
 from ..util.fitsutil import DAPFitsUtil
-from ..util.fileio import init_record_array
-from ..util.filter import interpolate_masked_vector
-from ..util.sampling import spectrum_velocity_scale, spectral_coordinate_step
-from ..util.resolution import SpectralResolution
+from ..util.sampling import spectrum_velocity_scale
 from ..util.log import log_output
 from ..util.pixelmask import SpectralPixelMask
 from ..util.constants import DAPConstants
-from ..util import lineprofiles
+#from ..util import lineprofiles
 from .templatelibrary import TemplateLibraryDef, TemplateLibrary
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .stellarcontinuummodel import StellarContinuumModel
 from .spectralfitting import EmissionLineFit
 from .emissionlinetemplates import EmissionLineTemplates
 from .util import sample_growth
-from .ppxffit import PPXFModel, PPXFFitResult, PPXFFit
+from .ppxffit import PPXFModel, PPXFFit
 from ..contrib.xjmc import emline_fitter_with_ppxf, ppxf_tied_parameters
 
-# For debugging
-from matplotlib import pyplot
 
 class SasukePar(KeywordParSet):
     r"""
@@ -2146,7 +2140,6 @@ class Sasuke(EmissionLineFit):
 
         self.ntpl, self.npix_tpl = self.tpl_flux.shape
         self.tpl_npad = 2**int(numpy.ceil(numpy.log2(self.npix_tpl)))
-#        self.tpl_npad = fftpack.next_fast_len(self.npix_tpl)
         self.tpl_rfft = numpy.fft.rfft(self.tpl_flux, self.tpl_npad, axis=1)
 
         # Total number of kinematics parameters (tied or otherwise)

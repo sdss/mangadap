@@ -164,7 +164,7 @@ from ..util.fitsutil import DAPFitsUtil
 from ..util import sampling
 from ..util.resolution import SpectralResolution, match_spectral_resolution
 from ..util.parser import DefaultConfig
-from .util import select_proc_method, HDUList_mask_wavelengths
+from .util import HDUList_mask_wavelengths
 
 
 class TemplateLibraryDef(KeywordParSet):
@@ -289,98 +289,6 @@ class TemplateLibraryDef(KeywordParSet):
             raise FileNotFoundError('Unable to find template library directory or any valid files '
                                     'as given or in the DAP source distribution.')
         return files
-
-
-#def validate_spectral_template_config(cnfg):
-#    """ 
-#    Validate the :class:`mangadap.util.parser.DefaultConfig` object
-#    with the template library parameters.
-#
-#    Args:
-#        cnfg (:class:`mangadap.util.parser.DefaultConfig`):
-#            Object with the template library parameters to validate.
-#
-#    Raises:
-#        KeyError:
-#            Raised if required keyword does not exist.
-#        ValueError:
-#            Raised if key has unacceptable value.
-#    """
-#    # Check for required keywords
-#    required_keywords = ['key', 'file_search']
-#    if not cnfg.all_required(required_keywords):
-#        raise KeyError(f'Keywords {required_keywords} must all have valid values.')
-#    if not cnfg.keyword_specified('fwhm') and not cnfg.keyword_specified('sres_ext'):
-#        # TODO: Which takes precedence?
-#        raise KeyError('Must provide either \'fwhm\' or \'sres_ext\'.')
-#
-#
-#def available_template_libraries():
-#    r"""
-#    Return the list of available template libraries.
-#
-#    The available libraries are construced by looking for
-#    configuration files in the relevant DAP configuration directory.
-#
-#    .. todo::
-#
-#        - Point to where the library format is described.
-#        - Somehow add a python call that reads the databases and
-#          constructs the table for presentation in sphinx so that the
-#          text above doesn't have to be edited with changes in the
-#          available databases.
-#    
-#    Returns:
-#        :obj:`list`: A list of
-#        :func:`mangadap.proc.templatelibrary.TemplateLibraryDef`
-#        objects, each defining a separate template library.
-#
-#    Raises:
-#        IOError:
-#            Raised if no template configuration files could be found.
-#        KeyError:
-#            Raised if the template-library keywords are not all
-#            unique.
-#        ValueError:
-#            Raised if the configuration file provides an invalid set
-#            of wavelength limits.
-#    """
-#    # Check the configuration files exist
-#    search_dir = defaults.dap_config_root() / 'spectral_templates'
-#    ini_files = sorted(list(search_dir.glob('*.ini')))
-#    if len(ini_files) == 0:
-#        raise IOError(f'Could not find any configuration files in {search_dir} !')
-#
-#    # Build the list of library definitions
-#    template_libraries = []
-#    for f in ini_files:
-#        # Read and validate the config file
-#        cnfg = DefaultConfig(f=f, interpolate=True)
-#        validate_spectral_template_config(cnfg)
-#
-#        # Convert wave_limit and lower_flux_limit to types acceptable by
-#        # TemplateLibraryDef
-#        wave_limit = None if cnfg['wave_limit'] is None \
-#                        else numpy.array(cnfg.getlist('wave_limit', evaluate=True))
-#        if wave_limit is not None and len(wave_limit) != 2:
-#            raise ValueError('Must specify two wavelength limits, can be \'None, None\'.')
-#
-#        # Append the definition of the template library 
-#        template_libraries += \
-#                [TemplateLibraryDef(key=cnfg['key'], file_search=cnfg['file_search'],
-#                                    fwhm=cnfg.getfloat('fwhm'), sres_ext=cnfg['sres_ext'],
-#                                    in_vacuum=cnfg.getbool('in_vacuum', default=False),
-#                                    wave_limit=wave_limit,
-#                                    lower_flux_limit=cnfg.getfloat('lower_flux_limit'),
-#                                    log10=cnfg.getbool('log10', default=False))]
-#
-#    # Check the keywords of the libraries are all unique
-#    if len(numpy.unique(numpy.array([tpl['key'] for tpl in template_libraries]))) \
-#            != len(template_libraries):
-#        raise KeyError('Template-library keywords are not all unique!')
-#
-#    # Return the default list of template libraries
-#    return template_libraries
 
 
 class TemplateLibraryBitMask(DAPBitMask):
@@ -642,26 +550,6 @@ class TemplateLibrary:
     def __getitem__(self, key):
         return self.hdu[key]
 
-#    @staticmethod
-#    def define_library(library_key, tpllib_list=None):
-#        """
-#        Select the library from the provided list.  Used to set
-#        :attr:`library`; see
-#        :func:`mangadap.proc.util.select_proc_method`.
-#
-#        Args:
-#            library_key (:obj:`str`):
-#                Keyword of the selected library.  Available libraries
-#                are proved by :func:`available__template_libraries`
-#            tpllib_list (:obj:`list`, optional):
-#                List of :class:`TemplateLibraryDef` objects that define
-#                the parameters required to read and interpret a template
-#                library.
-#        """
-#        # Get the details of the selected template library
-#        return select_proc_method(library_key, TemplateLibraryDef, method_list=tpllib_list,
-#                                  available_func=available_template_libraries)
-
     @staticmethod
     def default_paths(library_key, cube=None, output_path=None, output_file=None):
         """
@@ -694,34 +582,6 @@ class TemplateLibrary:
         _output_file = f'{root}.fits.gz' if output_file is None else output_file
         return directory_path, _output_file
     
-#    def _get_file_list(self):
-#        """
-#        Use the search string to find the template library fits files.
-#
-#        The file list read by the search key is sorted for
-#        consistency.
-#
-#        Returns:
-#            :obj:`list`: The sorted list of files found with
-#            `glob.glob`_.
-#
-#        Raises:
-#            ValueError:
-#                Raised if no files are found.
-#        """
-#        # Try the DAP directory first
-#        root = defaults.dap_data_root() / 'spectral_templates' / self.library['file_search']
-#        if not root.parent.exists():
-#            # Then try the provided path directly
-#            root = Path(self.library['file_search']).resolve()
-#            if not root.parent.exists():
-#                raise FileNotFoundError('Unable to find template library directory as given or in '
-#                                        'the DAP source distribution.')
-#        files = sorted(list(root.parent.glob(root.name)))
-#        if len(files) == 0:
-#            raise ValueError('Library search string did not find any files!')
-#        return files
-
     def _get_nchannels(self):
         """
         Get the maximum number of wavelength channels needed to store

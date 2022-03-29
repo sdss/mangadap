@@ -20,14 +20,12 @@ import numpy
 from astropy.io import fits
 import astropy.constants
 
-from ..config import defaults
 from ..util.fitsutil import DAPFitsUtil
 from ..util.bitmask import BitMask
 from ..util.dapbitmask import DAPBitMask
 from ..util.datatable import DataTable
 from ..util.pixelmask import SpectralPixelMask
 from ..util.log import log_output
-from ..util.parser import DefaultConfig
 from ..par.parset import KeywordParSet
 from ..par.artifactdb import ArtifactDB
 from ..par.emissionmomentsdb import EmissionMomentsDB
@@ -37,7 +35,6 @@ from .bandpassfilter import passband_integral, passband_integrated_width
 from .bandpassfilter import passband_weighted_mean, passband_weighted_sdev, pseudocontinuum
 from .bandpassfilter import emission_line_equivalent_width
 from .spectralfitting import EmissionLineFit
-from .util import select_proc_method
 
 
 class EmissionLineMomentsDef(KeywordParSet):
@@ -117,88 +114,6 @@ class EmissionLineMomentsDef(KeywordParSet):
         # Otherwise, assume this is a keyword selecting a database distributed
         # with the DAP has been chosen.
         self.momdb = EmissionMomentsDB.from_key(self['passbands'])
-
-
-#def validate_emission_line_moments_config(cnfg):
-#    """ 
-#    Validate the :class:`mangadap.util.parser.DefaultConfig` with the
-#    emission-line moment measurement parameters.
-#
-#    Args:
-#        cnfg (:class:`mangadap.util.parser.DefaultConfig`): Object meant
-#            to contain defining parameters of the emission-line moments
-#            as needed by :class:`EmissionLineMomentsDef`
-#
-#    Raises:
-#        KeyError: Raised if any required keywords do not exist.
-#        ValueError: Raised if keys have unacceptable values.
-#        FileNotFoundError: Raised if a file is specified but could not
-#            be found.
-#    """
-#    # Check for required keywords
-#    required_keywords = ['key', 'emission_passbands']
-#    if not cnfg.all_required(required_keywords):
-#        raise KeyError('Keywords {0} must all have valid values.'.format(required_keywords))
-#
-#
-#def available_emission_line_moment_databases():
-#    """
-#    Return the list of available emission-line moment databases.
-#
-#    Available database combinations:
-#
-#    .. todo::
-#        Fill in
-#
-#    Returns:
-#        list: A list of :func:`EmissionLineMomentsDef` objects, each
-#        defining an emission-line moment database to measure.
-#
-#    Raises:
-#        IOError:
-#            Raised if no emission-line moment configuration files
-#            could be found.
-#        KeyError:
-#            Raised if the emission-line moment database keywords are
-#            not all unique.
-#
-#    .. todo::
-#        - Somehow add a python call that reads the databases and
-#          constructs the table for presentation in sphinx so that the
-#          text above doesn't have to be edited with changes in the
-#          available databases.
-#        
-#    """
-#    # Check the configuration files exist
-#    search_dir = defaults.dap_config_root() / 'emission_line_moments'
-#    ini_files = sorted(list(search_dir.glob('*.ini')))
-#    if len(ini_files) == 0:
-#        raise IOError(f'Could not find any configuration files in {search_dir} !')
-#
-#    # Build the list of library definitions
-#    moment_set_list = []
-#    for f in ini_files:
-#        # Read the config file
-#        cnfg = DefaultConfig(f)
-#        # Ensure it has the necessary elements to define the template
-#        # library
-#        validate_emission_line_moments_config(cnfg)
-#
-#        moment_set_list += [ EmissionLineMomentsDef(key=cnfg['key'],
-#                                            minimum_snr=cnfg.getfloat('minimum_snr', default=0.),
-#                                            artifacts=cnfg.get('artifact_mask'),
-#                                            passbands=cnfg['emission_passbands'],
-#                                            redo_postmodeling=cnfg.getbool('redo_postmodeling',
-#                                                                           default=False),
-#                                            fit_vel_name=cnfg.get('fit_vel_name')) ]
-#
-#    # Check the keywords of the libraries are all unique
-#    if len(numpy.unique(numpy.array([moment['key'] for moment in moment_set_list]))) \
-#                != len(moment_set_list):
-#        raise KeyError('Emission-line moment database keywords are not all unique!')
-#
-#    # Return the default list of assessment methods
-#    return moment_set_list
 
 
 class EmissionLineMomentsBitMask(DAPBitMask):
@@ -363,25 +278,6 @@ class EmissionLineMoments:
 
     def __getitem__(self, key):
         return self.hdu[key]
-
-#    def _define_databases(self, database_key, database_list=None, artifact_path=None,
-#                          bandpass_path=None):
-#        r"""
-#        Select the database of bandpass filters.
-#        """
-#        # Grab the specific database
-#        self.database = select_proc_method(database_key, EmissionLineMomentsDef,
-#                                           method_list=database_list,
-#                                           available_func=available_emission_line_moment_databases)
-#
-#        # Instantiate the artifact and bandpass filter database
-#        self.artdb = None if self.database['artifacts'] is None else \
-#                    ArtifactDB.from_key(self.database['artifacts'], directory_path=artifact_path)
-#        self.pixelmask = SpectralPixelMask(artdb=self.artdb)
-#
-#        self.momdb = None if self.database['passbands'] is None else \
-#                EmissionMomentsDB.from_key(self.database['passbands'],
-#                                           directory_path=bandpass_path)
 
     @staticmethod
     def default_paths(cube, method_key, rdxqa_method, binning_method, stelcont_method=None,

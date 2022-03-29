@@ -37,12 +37,6 @@ from ..util.covariance import Covariance
 from ..util.geometry import SemiMajorAxisCoo
 from ..util.fileio import create_symlink
 from ..util.log import log_output
-from ..util.parser import DefaultConfig
-from .util import select_proc_method
-
-# Add strict versioning
-# from distutils.version import StrictVersion
-
 
 # TODO: Add center coordinates
 #            center_coo (:obj:`tuple`, optional):
@@ -326,26 +320,6 @@ class ReductionAssessment:
 
     def __getitem__(self, key):
         return self.hdu[key]
-
-#    def _define_method(self, method_key, method_list=None):
-#        """
-#        Select the assessment method from the provided list.
-#
-#        Used to set :attr:`method`; see
-#        :func:`mangadap.proc.util.select_proc_method`.
-#
-#        Args:
-#            method_key (:obj:`str`):
-#                Keyword of the selected method. Available methods are
-#                provided by :func:`available_reduction_assessments`
-#            method_list (:obj:`list`, optional):
-#                List of :class:`ReductionAssessmentDef` objects that
-#                define the parameters required to assess the reduced
-#                data.
-#        """
-#        self.method = select_proc_method(method_key, ReductionAssessmentDef,
-#                                         method_list=method_list,
-#                                         available_func=available_reduction_assessments)
 
     def _initialize_primary_header(self, hdr=None):
         """

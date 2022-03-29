@@ -19,7 +19,9 @@ from IPython import embed
 
 import numpy
 from scipy import sparse, interpolate
-from astropy.io import fits
+from matplotlib import pyplot, rc
+
+#from astropy.io import fits
 import astropy.constants
 
 from ..par.parset import KeywordParSet
@@ -27,10 +29,6 @@ from ..util.covariance import Covariance
 from ..util.filter import interpolate_masked_vector
 from ..util.sampling import Resample, spectral_coordinate_step
 
-from matplotlib import pyplot, rc
-
-# Add strict versioning
-# from distutils.version import StrictVersion
 
 class SpectralStackPar(KeywordParSet):
     r"""

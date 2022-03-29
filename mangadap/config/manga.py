@@ -629,7 +629,6 @@ class MaNGAConfig:
             cfg.write(f)
 
 
-# TODO: Need to fix this!
 class MaNGAAnalysisPlan(AnalysisPlan):
     """
     Define the analysis plan and output paths for MaNGA data.

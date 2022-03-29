@@ -24,7 +24,7 @@ from IPython import embed
 
 import numpy
 
-from scipy import sparse, spatial
+from scipy import spatial
 
 from astropy.io import fits
 
@@ -33,7 +33,6 @@ from ..par.parset import KeywordParSet, ParSet
 from ..util.datatable import DataTable
 from ..util.fitsutil import DAPFitsUtil
 from ..util.fileio import create_symlink
-from ..util.parser import DefaultConfig
 from ..util.dapbitmask import DAPBitMask
 from ..util.pixelmask import SpectralPixelMask
 from ..util.sampling import angstroms_per_pixel
@@ -44,9 +43,7 @@ from . import spatialbinning
 # TODO: Maybe don't need this?  I.e., only used for type checking
 from .reductionassessments import ReductionAssessment
 from .spectralstack import SpectralStackPar, SpectralStack
-from .util import select_proc_method, replace_with_data_from_nearest_coo
-
-from matplotlib import pyplot
+from .util import replace_with_data_from_nearest_coo
 
 
 class SpatiallyBinnedSpectraDef(KeywordParSet):
@@ -380,69 +377,6 @@ class SpatiallyBinnedSpectra:
 
     def __getitem__(self, key):
         return self.hdu[key]
-
-#    @staticmethod
-#    def define_method(method_key, method_list=None):
-#        r"""
-#        Select the method
-#        """
-#        # Grab the specific method
-#        return select_proc_method(method_key, SpatiallyBinnedSpectraDef, method_list=method_list,
-#                                  available_func=available_spatial_binning_methods)
-
-#    def _fill_method_par(self, good_spec):
-#        """
-#        Finalize the binning parameters, as needed.
-#
-#        **For the radial binning**, set the ellipticity and position
-#        angle.  Set scale radius to the effective radius if desired.
-#
-#        **For the Voronoi binning**, set the signal and noise.
-#
-#        .. todo::
-#            Abstract this so that this wrapper class doesn't need to
-#            know about the internal constraints of each binning
-#            approach.
-#
-#        Args:
-#            good_spec (`numpy.ndarray`_):
-#                List of spectra to include in the binning. See
-#                :func:`check_fgoodpix` and :func:`_check_snr`.
-#
-#        """
-#        if self.method['binclass'] is None:
-#            return
-#
-#        # For the radial binning, fill in the isophotal and scaling
-#        # parameters, if necessary
-#        if self.method['binclass'].bintype == 'radial':
-#            if self.method['binpar']['pa'] < 0:
-#                self.method['binpar']['pa'] = self.rdxqa.pa
-#            if self.method['binpar']['ell'] < 0:
-#                self.method['binpar']['ell'] = self.rdxqa.ell
-#            if self.method['binpar']['radius_scale'] < 0:
-#                self.method['binpar']['radius_scale'] = 1.0 if self.reff is None else self.reff
-#
-#        # For the Voronoi binning type, add the signal and noise (or
-#        # covariance)
-#        if self.method['binclass'].bintype == 'voronoi':
-#            self.method['binpar']['signal'] = self.rdxqa['SPECTRUM'].data['SIGNAL'][good_spec]
-#            if self.rdxqa.correlation is not None:
-#                # Overwrite any existing calibration coefficient
-#                self.rdxqa.correlation.revert_correlation()
-#                covar = self.rdxqa.correlation.toarray()[good_spec,:][:,good_spec]
-#                self.rdxqa.correlation.to_correlation()
-#                i, j = numpy.meshgrid(numpy.arange(covar.shape[0]), numpy.arange(covar.shape[1]))
-#                self.method['binpar']['covar'] = Covariance(
-#                                inp=sparse.coo_matrix((covar[covar > 0].ravel(),
-#                                                      (i[covar > 0].ravel(), j[covar > 0].ravel())),
-#                                                      shape=covar.shape).tocsr())
-#            else:
-#                self.method['binpar']['noise'] \
-#                        = numpy.sqrt(self.rdxqa['SPECTRUM'].data['VARIANCE'][good_spec])
-#
-#        # Nothing to add for binning types 'none' or 'global', or
-#        # user-defined function!
 
     @staticmethod
     def default_paths(cube, method_key, rdxqa_method, output_path=None, output_file=None):

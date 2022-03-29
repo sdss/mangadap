@@ -20,14 +20,15 @@ Implements a wrapper class for pPXF.
 .. include:: ../include/links.rst
 """
 import inspect
-import time
 import warnings
 import logging
 
 from IPython import embed
 
 import numpy
-from scipy import interpolate, fftpack
+#from scipy import interpolate, fftpack
+from matplotlib import pyplot
+
 import astropy.constants
 
 from ppxf import ppxf, capfit
@@ -45,11 +46,7 @@ from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .templatelibrary import TemplateLibraryDef, TemplateLibrary
 from .spectralfitting import StellarKinematicsFit
 from .util import sample_growth, optimal_scale
-#from .util import residual_growth, optimal_scale
 
-# For debugging
-from matplotlib import pyplot
-#from ..contrib import ppxf_util
 
 class PPXFFitPar(KeywordParSet):
     r"""

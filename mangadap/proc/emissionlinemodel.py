@@ -24,21 +24,15 @@ from astropy.io import fits
 import astropy.constants
 
 from ..par.parset import KeywordParSet, ParSet
-from ..par.artifactdb import ArtifactDB
-from ..par.emissionlinedb import EmissionLineDB
-
-from ..config import defaults
 
 from ..util.fitsutil import DAPFitsUtil
 from ..util.dapbitmask import DAPBitMask
-from ..util.pixelmask import SpectralPixelMask
 from ..util.log import log_output
-from ..util.parser import DefaultConfig
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .stellarcontinuummodel import StellarContinuumModel
-from .elric import Elric, ElricPar
+#from .elric import Elric, ElricPar
 from .sasuke import Sasuke, SasukePar
-from .util import select_proc_method, replace_with_data_from_nearest_coo
+from .util import replace_with_data_from_nearest_coo
 from .spectralfitting import EmissionLineFit
 
 
@@ -141,130 +135,6 @@ class EmissionLineModelDef(KeywordParSet):
         return super().from_dict(_d)
 
 
-#def validate_emission_line_modeling_method_config(cnfg):
-#    """ 
-#    Validate the :class:`mangadap.util.parser.DefaultConfig` with the
-#    emission-line modeling method parameters.
-#
-#    Args:
-#        cnfg (:class:`mangadap.util.parser.DefaultConfig`): Object meant
-#            to contain defining parameters of the emission-line modeling
-#            method needed by :class:`EmissionLineModelDef`
-#
-#    Raises:
-#        KeyError: Raised if any required keywords do not exist.
-#        ValueError: Raised if keys have unacceptable values.
-#    """
-#    # Check for required keywords
-#    if 'key' not in cnfg:
-#        raise KeyError('Keyword \'key\' must be provided.')
-
-
-#def available_emission_line_modeling_methods():
-#    """
-#    Return the list of available emission-line modeling methods.
-#
-#    Available methods are:
-#
-#    .. todo::
-#        Fill in
-#
-#    Returns:
-#        :obj:`list`: A list of :class:`EmissionLineModelDef` objects,
-#        each defining an emission-line modeling method.
-#
-#    Raises:
-#        IOError:
-#            Raised if no emission-line moment configuration files
-#            could be found.
-#        KeyError:
-#            Raised if the emission-line modeling method keywords are
-#            not all unique.
-#        NotImplementedError:
-#            Raised if the method requests the deconstruction of the
-#            bins into spaxls for using the Elric fitter.
-#
-#    .. todo::
-#        Possible to add a python call that reads the databases and
-#        constructs the table for presentation in sphinx so that the text
-#        above doesn't have to be edited with changes in the available
-#        databases?
-#
-#    """
-#    # Check the configuration files exist
-#    search_dir = defaults.dap_config_root() / 'emission_line_modeling'
-#    ini_files = sorted(list(search_dir.glob('*.ini')))
-#    if len(ini_files) == 0:
-#        raise IOError(f'Could not find any configuration files in {search_dir} !')
-#
-#    # Build the list of method definitions
-#    method_list = []
-#    for f in ini_files:
-#        # Read the config file
-#        cnfg = DefaultConfig(f)
-#        # Ensure it has the necessary elements to define the template
-#        # library
-#        validate_emission_line_modeling_method_config(cnfg)
-#        deconstruct_bins = cnfg.get('deconstruct_bins', default='ignore')
-#        minimum_snr = cnfg.getfloat('minimum_snr', default=0.0)
-#        continuum_tpl_key = cnfg.get('continuum_templates')
-#        waverange = cnfg.getlist('waverange', evaluate=True)
-#
-#        ism_mask = cnfg.get('ism_mask')
-#
-#        if cnfg['fit_method'] == 'elric':
-#            # Chose to use Elric: Parameter set has defaults to handle
-#            # missing or None values for baseline_order, window_buffer,
-#            # and minimum_snr
-#            if deconstruct_bins != 'ignore':
-#                raise NotImplementedError('When using Elric, cannot deconstruct bins into spaxels.')
-#            if continuum_tpl_key is not None:
-#                raise NotImplementedError('When using Elric, cannot change continuum templates.')
-#
-#            fitpar = ElricPar(base_order=cnfg.getint('baseline_order'),
-#                              window_buffer=cnfg.getfloat('window_buffer'),
-#                              minimum_snr=minimum_snr)
-#            fitclass = Elric(EmissionLineModelBitMask())
-#            fitfunc = fitclass.fit_SpatiallyBinnedSpectra
-#
-#        elif cnfg['fit_method'] == 'sasuke':
-#            # Chose to use Sasuke: Parameter set has defaults to handle
-#            # missing or None values for reject_boxcar, bias, moments,
-#            # degree, mdegree; if provided new continuum templates are
-#            # constructed during the _fill_method_par call.
-#            fitpar = SasukePar(continuum_templates=continuum_tpl_key,
-#                               etpl_line_sigma_mode=cnfg.get('etpl_line_sigma_mode'),
-#                               etpl_line_sigma_min=cnfg.getfloat('etpl_line_sigma_min'),
-#                               velscale_ratio=cnfg.getint('velscale_ratio'),
-#                               guess_redshift=None, guess_dispersion=None, minimum_snr=minimum_snr,
-#                               deconstruct_bins=deconstruct_bins, pixelmask=None,
-#                               reject_boxcar=cnfg.getint('reject_boxcar'),
-#                               bias=cnfg.getfloat('bias'), moments=cnfg.getint('moments'),
-#                               degree=cnfg.getint('degree'), mdegree=cnfg.getint('mdegree'),
-#                               reddening=cnfg.getfloat('internal_reddening'))
-#            fitclass = Sasuke(EmissionLineModelBitMask())
-#            fitfunc = fitclass.fit_SpatiallyBinnedSpectra
-#
-#        method_list += [ EmissionLineModelDef(key=cnfg['key'], minimum_snr=minimum_snr,
-#                                              deconstruct_bins=deconstruct_bins,
-#                                              mom_vel_name=cnfg.get('mom_vel_name'),
-#                                              mom_disp_name=cnfg.get('mom_disp_name'),
-#                                              waverange=waverange,
-#                                              artifacts=cnfg.get('artifact_mask'),
-#                                              ism_mask=ism_mask,
-#                                              emission_lines=cnfg['emission_lines'],
-#                                              continuum_tpl_key=continuum_tpl_key, fitpar=fitpar,
-#                                              fitclass=fitclass, fitfunc=fitfunc) ]
-#
-#    # Check the keywords of the libraries are all unique
-#    if len(numpy.unique(numpy.array([method['key'] for method in method_list]))) \
-#                != len(method_list):
-#        raise KeyError('Emission-line fitting method keywords are not all unique!')
-#
-#    # Return the default list of fitting methods
-#    return method_list
-
-
 class EmissionLineModelBitMask(DAPBitMask):
     r"""
     Derived class that specifies the mask bits for the emission-line
@@ -303,7 +173,6 @@ class EmissionLineModel:
         self.method = method
         if not isinstance(self.method, EmissionLineModelDef):
             raise TypeError('Method must have type EmissionLineModelDef.')
-#        self.method = self.define_method(method_key, method_list=method_list)
 
         # Setup the pixel mask
         # Mask ISM lines if a list is provided -- KHRR
@@ -361,60 +230,6 @@ class EmissionLineModel:
 
     def __getitem__(self, key):
         return self.hdu[key]
-
-    @staticmethod
-    def define_method(method_key, method_list=None):
-        r"""
-        Select the modeling method
-
-        Args:
-            method_key (str):
-                Description
-            method_list (list):
-
-        """
-        # Grab the specific method
-        return select_proc_method(method_key, EmissionLineModelDef, method_list=method_list,
-                                  available_func=available_emission_line_modeling_methods)
-
-#    def _set_paths(self, directory_path, dapver, analysis_path, output_file):
-#        """
-#        Set the :attr:`directory_path` and :attr:`output_file`.  If not
-#        provided, the defaults are set using, respectively,
-#        :func:`mangadap.config.defaults.dap_method_path` and
-#        :func:`mangadap.config.defaults.dap_file_name`.
-#
-#        Args:
-#            directory_path (str): The exact path to the DAP
-#                emission-line moments file.  See :attr:`directory_path`.
-#            dapver (str): DAP version.
-#            analysis_path (str): The path to the top-level directory
-#                containing the DAP output files for a given DRP and DAP
-#                version.
-#            output_file (str): The name of the file with emission-line
-#                moment measurements.  See :func:`measure`.
-#        """
-#        # Set the output directory path
-#        continuum_templates = 'None' if self.stellar_continuum is None \
-#                            else self.stellar_continuum.method['fitpar']['template_library_key']
-#        method = defaults.dap_method(self.binned_spectra.method['key'], continuum_templates,
-#                                     self.method['continuum_tpl_key'])
-#        self.directory_path \
-#                = defaults.dap_method_path(method, plate=self.binned_spectra.cube.plate,
-#                                           ifudesign=self.binned_spectra.cube.ifudesign, ref=True,
-#                                           drpver=self.binned_spectra.cube.drpver, dapver=dapver,
-#                                           analysis_path=analysis_path) \
-#                            if directory_path is None else str(directory_path)
-#
-#        # Set the output file
-#        ref_method = '{0}-{1}'.format(self.binned_spectra.rdxqa.method['key'],
-#                                      self.binned_spectra.method['key'])
-#        if self.stellar_continuum is not None:
-#            ref_method = '{0}-{1}'.format(ref_method, self.stellar_continuum.method['key'])
-#        ref_method = '{0}-{1}'.format(ref_method, self.method['key'])
-#        self.output_file = defaults.dap_file_name(self.binned_spectra.cube.plate,
-#                                                  self.binned_spectra.cube.ifudesign, ref_method) \
-#                                        if output_file is None else str(output_file)
 
     @staticmethod
     def default_paths(cube, method_key, rdxqa_method, binning_method, stelcont_method=None,
@@ -618,32 +433,6 @@ class EmissionLineModel:
                                  'number of binned spectra.')
             self.dispersion = numpy.full(self.binned_spectra.nbins, dispersion, dtype=float) \
                                 if len(_dispersion) == 1 else _dispersion.copy()
-
-
-#    def _fill_method_par(self):
-#        """
-#        Fill in any remaining modeling parameters.
-#
-#        .. todo::
-#            - Construct the replacement template library here instead of
-#              in Sasuke?
-#        """
-#        # Fit parameters not defined so continue
-#        if self.method['fitpar'] is None:
-#            return
-#
-#        # Fill the guess kinematics
-#        if 'guess_redshift' in self.method['fitpar'].keys():
-#            self.method['fitpar']['guess_redshift'] = self.redshift
-#        if 'guess_dispersion' in self.method['fitpar'].keys():
-#            self.method['fitpar']['guess_dispersion'] = self.dispersion
-#        if 'emission_lines' in self.method['fitpar'].keys():
-#            self.method['fitpar']['emission_lines'] = self.emldb
-##        if 'pixelmask' in self.method['fitpar'].keys():
-##            self.method['fitpar']['pixelmask'] = self.pixelmask
-#        if self.stellar_continuum is not None \
-#                and 'stellar_continuum' in self.method['fitpar'].keys():
-#            self.method['fitpar']['stellar_continuum'] = self.stellar_continuum
 
 
     def _add_method_header(self, hdr, model_binid=None):

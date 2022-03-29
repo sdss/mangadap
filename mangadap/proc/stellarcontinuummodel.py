@@ -26,21 +26,16 @@ from astropy.io import fits
 import astropy.constants
 
 from ..par.parset import KeywordParSet, ParSet
-from ..par.artifactdb import ArtifactDB
-from ..par.emissionlinedb import EmissionLineDB
 from ..util.log import log_output
 from ..util.fitsutil import DAPFitsUtil
 from ..util.fileio import create_symlink
 from ..util.sampling import spectral_coordinate_step, spectrum_velocity_scale
 from ..util.resolution import SpectralResolution
 from ..util.dapbitmask import DAPBitMask
-from ..util.pixelmask import SpectralPixelMask
-from ..util.parser import DefaultConfig
-from ..config import defaults
 from .spatiallybinnedspectra import SpatiallyBinnedSpectra
 from .templatelibrary import TemplateLibrary
 from .ppxffit import PPXFFitPar, PPXFFit
-from .util import select_proc_method, replace_with_data_from_nearest_coo
+from .util import replace_with_data_from_nearest_coo
 
 
 class StellarContinuumModelDef(KeywordParSet):
@@ -150,119 +145,6 @@ class StellarContinuumModelDef(KeywordParSet):
         return super().from_dict(_d)
 
 
-#def validate_stellar_continuum_modeling_method_config(cnfg):
-#    """ 
-#    Validate the :class:`mangadap.util.parser.DefaultConfig` object with
-#    the stellar-continuum-modeling method parameters.
-#
-#    Args:
-#        cnfg (:class:`mangadap.util.parser.DefaultConfig`):
-#            Object with the stellar-continuum-modeling method
-#            parameters to validate.
-#
-#    Raises:
-#        KeyError:
-#            Raised if any required keywords do not exist.
-#        ValueError:
-#            Raised if the fitting method is not recognized.
-#    """
-#    # Check for required keywords
-#    required_keywords = ['key', 'fit_type', 'fit_method' ]
-#    if not cnfg.all_required(required_keywords):
-#        raise KeyError('Keywords {0} must all have valid values.'.format(required_keywords))
-#
-#    if cnfg['fit_method'] not in [ 'ppxf' ]:
-#        raise ValueError('Unknown fitting method: {0}'.format(cnfg['fit_method']))
-#
-#    # Method specific keywords
-#    if cnfg['fit_method'] == 'ppxf' and not cnfg.keyword_specified('template_library'):
-#        raise KeyError('Keyword \'template_library\' must be provided for pPXF fitting.')
-#
-#
-#def available_stellar_continuum_modeling_methods():
-#    """
-#    Return the list of available stellar-continuum modeling methods.
-#
-#    pPXF methods:
-#
-#    .. todo::
-#
-#        - Fill in these docs more
-#        - Somehow add a python call that reads the databases and
-#          constructs the table for presentation in sphinx so that the
-#          text above doesn't have to be edited with changes in the
-#          available databases.
-#
-#    Returns:
-#        :obj:`list`: A list of
-#        :func:`mangadap.proc.stellarcontinuummodel.StellarContinuumModelDef`
-#        objects, each defining a stellar-continuum modeling approach.
-#
-#    Raises:
-#        IOError:
-#            Raised if no stellar-continuum fitting configuration
-#            files could be found.
-#        ValueError:
-#            Raised if the fitting method is unrecognized.
-#        KeyError:
-#            Raised if the continuum-fitting method keywords are not
-#            all unique.
-#    """
-#    # Check the configuration files exist
-#    search_dir = defaults.dap_config_root() / 'stellar_continuum_modeling'
-#    ini_files = sorted(list(search_dir.glob('*.ini')))
-#    if len(ini_files) == 0:
-#        raise IOError(f'Could not find any configuration files in {search_dir} !')
-#
-#    # Build the list of library definitions
-#    # TODO: Should only read the keywords for the pixel mask so that the
-#    # artifact and emission-line databases are not read into memory
-#    modeling_methods = []
-#    for f in ini_files:
-#        # Read and validate the config file
-#        cnfg = DefaultConfig(f=f)
-#        validate_stellar_continuum_modeling_method_config(cnfg)
-#
-#        # TODO: Pull this out; shouldn't be instantiating these already
-#        artifacts = None if cnfg['artifact_mask'] is None else \
-#                        ArtifactDB.from_key(cnfg['artifact_mask'])
-#        emission_lines = None if cnfg['emission_line_mask'] is None else \
-#                            EmissionLineDB.from_key(cnfg['emission_line_mask'])
-#        waverange = cnfg.getlist('waverange', evaluate=True)
-#        minimum_snr = cnfg.getfloat('minimum_snr', default=0.0)
-#
-#        if cnfg['fit_method'] == 'ppxf':
-#            # sky is always none for now
-#            fitpar = PPXFFitPar(template_library_key=cnfg['template_library'],
-#                                iteration_mode=cnfg.get('fit_iter', default='global_template'),
-#                                reject_boxcar=cnfg.getint('reject_boxcar'),
-#                                match_resolution=cnfg.getbool('match_resolution', default=True),
-#                                velscale_ratio=cnfg.getint('velscale_ratio', default=1),
-#                                minimum_snr=minimum_snr,
-#                                pixelmask=SpectralPixelMask(artdb=artifacts, emldb=emission_lines,
-#                                                            waverange=waverange),
-#                                bias=cnfg.getfloat('bias'), degree=cnfg.getint('degree'),
-#                                mdegree=cnfg.getint('mdegree'),
-#                                moments=cnfg.getint('moments'))
-#            fitclass = PPXFFit(StellarContinuumModelBitMask())
-#            fitfunc = fitclass.fit_SpatiallyBinnedSpectra
-#        else:
-#            raise ValueError('Unknown fitting method: {0}'.format(cnfg['default']['fit_method']))
-#
-#        modeling_methods += [ StellarContinuumModelDef(key=cnfg['key'], 
-#                                            minimum_snr=cnfg.getfloat('minimum_snr', default=0.0),
-#                                            fitpar=fitpar,
-#                                            fitclass=fitclass, fitfunc=fitfunc) ]
-#
-#    # Check the keywords of the libraries are all unique
-#    if len(numpy.unique( numpy.array([ method['key'] for method in modeling_methods ]) )) \
-#            != len(modeling_methods):
-#        raise KeyError('Stellar-continuum modeling method keywords are not all unique!')
-#
-#    # Return the default list of assessment methods
-#    return modeling_methods
-
-
 class StellarContinuumModelBitMask(DAPBitMask):
     r"""
     Derived class that specifies the mask bits for the stellar-continuum
@@ -359,7 +241,6 @@ class StellarContinuumModel:
         self.method = method
         if not isinstance(self.method, StellarContinuumModelDef):
             raise TypeError('Method must have type StellarContinuumModelDef.')
-#        self.method = self.define_method(method_key, method_list=method_list)
 
         self.binned_spectra = None
         self.guess_vel = None
@@ -400,72 +281,6 @@ class StellarContinuumModel:
 
     def __getitem__(self, key):
         return self.hdu[key]
-
-#    @staticmethod
-#    def define_method(method_key, method_list=None):
-#        r"""
-#        Select the continuum-fitting method.
-#
-#        Args:
-#            method_key (:obj:`str`):
-#                Method keyword.
-#            method_list (:obj:`list`, optional):
-#                List of methods to choose from. If None, list is
-#                provided by
-#                :func:`available_stellar_continuum_modeling_methods`.
-#
-#        Returns:
-#            :class:`StellarContinuumModelDef`: Object with the
-#            fitting method parameters.
-#        """
-#        # Grab the specific method
-#        return select_proc_method(method_key, StellarContinuumModelDef, method_list=method_list,
-#                                  available_func=available_stellar_continuum_modeling_methods)
-
-
-#    def _fill_method_par(self):
-#        """
-#        Fill in any remaining modeling parameters.
-#
-#        This method:
-#
-#            - creates/reads the template library,
-#            - populates the full arrays for the guess redshifts and
-#              velocity dispersions.
-#        """
-#        # Report
-#        if not self.quiet:
-#            log_output(self.loggers, 1, logging.INFO, 'Determining initial guess kinematics')
-#
-#        # Fill the guess kinematics
-#        c = astropy.constants.c.to('km/s').value
-#        nbins = self.binned_spectra.nbins
-#        if isinstance(self.guess_vel, (list, numpy.ndarray)):
-#            if len(self.guess_vel) > 1 and len(self.guess_vel) != nbins:
-#                raise ValueError('Incorrect number of guess velocities provided.  Expect one ' \
-#                                 'per binned spectrum = {0}'.format(nbins))
-#            self.method['fitpar']['guess_redshift'] = numpy.asarray(self.guess_vel/c).astype(float)
-#        else:
-#            self.method['fitpar']['guess_redshift'] \
-#                        = numpy.full(nbins, self.guess_vel/c, dtype=float)
-#
-#        if isinstance(self.guess_sig, (list, numpy.ndarray)):
-#            if len(self.guess_sig) > 1 and len(self.guess_sig) != nbins:
-#                raise ValueError('Incorrect number of guess velocity dispersions provided.  ' \
-#                                 'Expect one per binned spectrum = {0}'.format(nbins))
-#            self.method['fitpar']['guess_dispersion'] = numpy.asarray(self.guess_sig).astype(float)
-#        else:
-#            self.method['fitpar']['guess_dispersion'] \
-#                        = numpy.full(nbins, self.guess_sig, dtype=float)
-#
-#        # Instatiate the template library
-#        if self.method['fitpar']['template_library_key'] is not None:
-#            if not self.quiet:
-#                log_output(self.loggers, 1, logging.INFO, 'Instantiating template library...')
-#            self.method['fitpar']['template_library'] \
-#                    = self.get_template_library(hardcopy=self.tpl_hardcopy,
-#                            velocity_offset=numpy.mean(c*self.method['fitpar']['guess_redshift']),
-#                            match_resolution=self.method['fitpar']['match_resolution'])
 
     def get_template_library(self, output_path=None, output_file=None, hardcopy=None,
                              symlink_dir=None, velocity_offset=None, match_resolution=False,

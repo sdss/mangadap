@@ -15,8 +15,10 @@ Binning!
 .. include:: ../include/links.rst
 """
 import warnings
+
 import numpy
 from scipy import sparse
+
 from astropy.io import fits
 
 from vorbin.voronoi_2d_binning import voronoi_2d_binning
@@ -24,11 +26,6 @@ from vorbin.voronoi_2d_binning import voronoi_2d_binning
 from ..par.parset import KeywordParSet
 from ..util.geometry import SemiMajorAxisCoo
 from ..util.covariance import Covariance
-
-from matplotlib import pyplot
-
-# Add strict versioning
-# from distutils.version import StrictVersion
 
 
 # BASE CLASS -----------------------------------------------------------

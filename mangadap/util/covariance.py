@@ -584,11 +584,7 @@ class Covariance:
                 print('    pseudo-indices: ', input_indx)
             print('   non-zero values: {0}'.format(nnz))
 
-        try:
-            return cls(cov, input_indx=input_indx, correlation=correlation, raw_shape=raw_shape)
-        except:
-            embed()
-            exit()
+        return cls(cov, input_indx=input_indx, correlation=correlation, raw_shape=raw_shape)
 
     @classmethod
     def from_matrix_multiplication(cls, T, Sigma):
