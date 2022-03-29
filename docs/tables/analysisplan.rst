@@ -2,6 +2,7 @@
 =====================  ====  =======  =======  ================================================================
 Key                    Type  Options  Default  Description                                                     
 =====================  ====  =======  =======  ================================================================
+``key``                str   ..       ..       Unique key used to identify this plan                           
 ``drpqa_key``          str   ..       ..       Data reduction quality assessment method keyword                
 ``drpqa_clobber``      bool  ..       False    Overwrite any existing data-quality assessment reference files  
 ``bin_key``            str   ..       ..       Spatial binning method keyword                                  

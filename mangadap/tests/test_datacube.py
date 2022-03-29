@@ -6,25 +6,23 @@ from IPython import embed
 import numpy
 from astropy.io import fits
 
+from mangadap.config.manga import MaNGAConfig
 from mangadap.proc.reductionassessments import available_reduction_assessments
 from mangadap.util.covariance import Covariance
 from mangadap.datacube import MaNGADataCube
 from mangadap.tests.util import data_test_file, remote_data_file, requires_remote
 
-import warnings
-warnings.simplefilter("ignore", UserWarning)
-warnings.simplefilter("ignore", RuntimeWarning)
-
 
 @requires_remote
 def test_sres_ext():
-    file = remote_data_file(filename=MaNGADataCube.build_file_name(7815, 3702, log=True))
+    cfg = MaNGAConfig(7815, 3702)
+    file = remote_data_file(filename=cfg.file_name)
     hdu = fits.open(file)
-    assert MaNGADataCube.spectral_resolution_extension(hdu) == 'LSFPRE', \
+    assert MaNGAConfig.spectral_resolution_extension(hdu) == 'LSFPRE', \
                 'Bad spectral resolution extension selection'
-    assert MaNGADataCube.spectral_resolution_extension(hdu, ext='SPECRES') == 'SPECRES', \
+    assert MaNGAConfig.spectral_resolution_extension(hdu, ext='SPECRES') == 'SPECRES', \
                 'Bad spectral resolution extension selection'
-    assert MaNGADataCube.spectral_resolution_extension(hdu, ext='junk') is None, \
+    assert MaNGAConfig.spectral_resolution_extension(hdu, ext='junk') is None, \
                 'Should return None for a bad extension name.'
 
 
@@ -32,8 +30,6 @@ def test_sres_ext():
 def test_read():
     cube = MaNGADataCube.from_plateifu(7815, 3702, directory_path=remote_data_file())
 
-    assert cube.file_name == MaNGADataCube.build_file_name(cube.plate, cube.ifudesign,
-                    log=cube.log), 'Name mismatch'
     assert cube.log, 'Should read the log-binned version by default.'
     assert cube.wcs is not None, 'WCS should be defined.'
     assert cube.shape[:2] == cube.spatial_shape, 'Spatial shape should be first two axes.'

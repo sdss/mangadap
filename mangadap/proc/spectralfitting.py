@@ -496,11 +496,11 @@ class EmissionLineFit(SpectralFitting):
                 raise ValueError('Input continuum array must be the same shape as the flux array.')
 
         # Check the input redshifts and dispersions
-        _redshift = numpy.zeros(nspec, dtype=numpy.float) if redshift is None else redshift
+        _redshift = numpy.zeros(nspec, dtype=float) if redshift is None else redshift
         if len(_redshift) != nspec:
             raise ValueError('Must provide one redshift per input spectrum.')
 
-        _dispersion = numpy.full(nspec, default_dispersion, dtype=numpy.float) \
+        _dispersion = numpy.full(nspec, default_dispersion, dtype=float) \
                             if dispersion is None else dispersion
         if len(_dispersion) != nspec:
             raise ValueError('Must provide one dispersion per input spectrum.')

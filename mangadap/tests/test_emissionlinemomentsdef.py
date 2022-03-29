@@ -1,16 +1,10 @@
-
-import pytest
-import os
 from IPython import embed
-
-import warnings
-warnings.simplefilter("ignore", UserWarning)
-warnings.simplefilter("ignore", RuntimeWarning)
 
 from mangadap.proc.emissionlinemoments import available_emission_line_moment_databases
 
 from mangadap.par.artifactdb import ArtifactDB
 from mangadap.par.emissionmomentsdb import EmissionMomentsDB
+
 
 def test_avail():
     # Get the available methods

@@ -1,6 +1,3 @@
-
-import pytest
-
 from mangadap.proc.spatiallybinnedspectra import available_spatial_binning_methods
 
 def test_avail():

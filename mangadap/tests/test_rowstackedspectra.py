@@ -1,25 +1,20 @@
 
-import pytest
-
 from IPython import embed
 
 import numpy
 from astropy.io import fits
 
+from mangadap.config.manga import MaNGAConfig
 from mangadap.proc.reductionassessments import available_reduction_assessments
-from mangadap.util.covariance import Covariance
 from mangadap.datacube import MaNGADataCube
 from mangadap.spectra import MaNGARSS
 from mangadap.tests.util import remote_data_file, requires_remote
 
-import warnings
-warnings.simplefilter("ignore", UserWarning)
-warnings.simplefilter("ignore", RuntimeWarning)
-
 
 @requires_remote
 def test_sres_ext():
-    file = remote_data_file(filename=MaNGARSS.build_file_name(7815, 3702, log=True))
+    cfg = MaNGAConfig(7815, 3702, mode='RSS')
+    file = remote_data_file(filename=cfg.file_name)
     hdu = fits.open(file)
     assert MaNGARSS.spectral_resolution_extension(hdu) == 'LSFPRE', \
                 'Bad spectral resolution extension selection'
@@ -33,8 +28,6 @@ def test_sres_ext():
 def test_read():
     rss = MaNGARSS.from_plateifu(7815, 3702, directory_path=remote_data_file())
 
-    assert rss.file_name == MaNGARSS.build_file_name(rss.plate, rss.ifudesign, log=rss.log), \
-            'Name mismatch'
     assert rss.log, 'Should read the log-binned version by default.'
     assert len(rss.shape) == 2, 'Row-stacked spectra are 2D'
     assert rss.shape == (rss.nspec, rss.nwave), 'Shape mismatch'

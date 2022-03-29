@@ -560,7 +560,7 @@ class DAPFitsUtil:
 
 
     @staticmethod
-    def write(hdu, ofile, clobber=False, checksum=False, symlink_dir=None, relative_symlink=True,
+    def write(hdu, ofile, overwrite=False, checksum=False, symlink_dir=None, relative_symlink=True,
               loggers=None, quiet=False):
         """
         Write an HDUList to an output file.  It is expected that the hdu
@@ -584,7 +584,7 @@ class DAPFitsUtil:
         # Write the data
         if not quiet:
             log_output(loggers, 1, logging.INFO, 'Writing: {0}'.format(_ofile))
-        hdu.writeto(_ofile, overwrite=clobber, checksum=checksum)
+        hdu.writeto(_ofile, overwrite=overwrite, checksum=checksum)
 
         # Transpose it back
         hdu = DAPFitsUtil.transpose_image_data(hdu)
@@ -594,7 +594,7 @@ class DAPFitsUtil:
             if not quiet:
                 log_output(loggers, 1, logging.INFO, 'Compressing: {0}'.format(ofile))
             # And compress it
-            compress_file(_ofile, clobber=clobber)
+            compress_file(_ofile, overwrite=overwrite)
             os.remove(_ofile)
     
         # Create the symlink if requested
@@ -893,7 +893,7 @@ class DAPFitsUtil:
             return ('FLAG16BIT', '16-bit mask')
         if bit_type in [numpy.uint8, numpy.int8]:
             return ('FLAG8BIT', '8-bit mask')
-        if bit_type == numpy.bool:
+        if bit_type in [bool, numpy.bool_]:
             return ('MASKZERO', 'Binary mask; zero values are good/unmasked')
         raise ValueError('Invalid bit_type: {0}!'.format(str(bit_type)))
 

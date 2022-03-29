@@ -18,16 +18,15 @@ def write_parset(parset_class, opath, class_link=True):
 if __name__ == '__main__':
     t = time.perf_counter()
 
-    # Needed to define $MANGADAP_DIR
-    import mangadap
-
-    path = os.path.join(os.environ['MANGADAP_DIR'], 'docs', 'tables')
+    from pkg_resources import resource_filename
+    root = os.path.dirname(resource_filename('mangadap', ''))
+    path = os.path.join(root, 'docs', 'tables')
     if not os.path.isdir(path):
         os.makedirs(path)
 
     # Tables to write:
     #
-    from mangadap.par.analysisplan import AnalysisPlan
+    from mangadap.config.analysisplan import AnalysisPlan
     write_parset(AnalysisPlan, path, class_link=False)
 
     from mangadap.par.artifactdb import ArtifactPar

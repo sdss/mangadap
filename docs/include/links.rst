@@ -16,6 +16,7 @@
 .. _argparse.ArgumentParser: https://docs.python.org/3/library/argparse.html#argparse.ArgumentParser
 .. _configparser.ConfigParser: https://docs.python.org/3/library/configparser.html
 .. _eval: https://docs.python.org/3/library/functions.html#eval
+.. _Path: https://docs.python.org/3/library/pathlib.html
 
 .. configobj
 
@@ -81,6 +82,7 @@
 .. misc
 
 .. _requests: https://pypi.org/project/requests/
+.. _IPython.embed: https://ipython.readthedocs.io/en/stable/interactive/reference.html#embedding
 .. _ppxf: https://pypi.org/project/ppxf/
 .. _vorbin: https://pypi.org/project/vorbin/
 

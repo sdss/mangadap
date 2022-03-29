@@ -40,12 +40,12 @@ from astropy.stats import sigma_clip
 
 from .drpcomplete import DRPComplete
 from ..dapfits import DAPMapsBitMask, DAPQualityBitMask
-from ..util.drpfits import DRPQuality3DBitMask
+from ..util.drpbitmask import DRPQuality3DBitMask
 from ..config import defaults
 from ..util.fileio import init_record_array, rec_to_fits_type, channel_dictionary, channel_units
 from ..util.fitsutil import DAPFitsUtil
 from ..util.log import init_DAP_logging, module_logging, log_output
-from ..par.analysisplan import AnalysisPlanSet
+from ..config.analysisplan import AnalysisPlanSet
 from ..par.absorptionindexdb import AbsorptionIndexDB
 from ..par.bandheadindexdb import BandheadIndexDB
 from ..par.emissionlinedb import EmissionLineDB
@@ -344,21 +344,21 @@ class DAPall:
                }
 
     def _table_dtype(self, nmom, neml, nindx):
-        return [ ('PLATE', numpy.int),
-                 ('IFUDESIGN', numpy.int),
+        return [ ('PLATE', int),
+                 ('IFUDESIGN', int),
                  ('PLATEIFU', '<U{0:d}'.format(self.str_len['PLATEIFU'])),
                  ('MANGAID', '<U{0:d}'.format(self.str_len['MANGAID'])),
-                 ('DRPALLINDX', numpy.int),
+                 ('DRPALLINDX', int),
                  ('MODE', '<U{0:d}'.format(self.str_len['MODE'])),
                  ('DAPTYPE', '<U{0:d}'.format(self.str_len['DAPTYPE'])),
-                 ('DAPDONE', numpy.bool),
+                 ('DAPDONE', bool),
                  ('OBJRA', self.float_dtype),
                  ('OBJDEC', self.float_dtype),
                  ('IFURA', self.float_dtype),
                  ('IFUDEC', self.float_dtype),
-                 ('MNGTARG1', numpy.int),
-                 ('MNGTARG2', numpy.int),
-                 ('MNGTARG3', numpy.int),
+                 ('MNGTARG1', int),
+                 ('MNGTARG2', int),
+                 ('MNGTARG3', int),
                  ('Z', self.float_dtype),
                  ('LDIST_Z', self.float_dtype),
                  ('ADIST_Z', self.float_dtype),
@@ -378,8 +378,8 @@ class DAPall:
                  ('VERSCORE', '<U{0:d}'.format(self.str_len['VERSCORE'])),
                  ('VERSUTIL', '<U{0:d}'.format(self.str_len['VERSUTIL'])),
                  ('VERSDAP', '<U{0:d}'.format(self.str_len['VERSDAP'])),
-                 ('DRP3QUAL', numpy.int),
-                 ('DAPQUAL', numpy.int),
+                 ('DRP3QUAL', int),
+                 ('DAPQUAL', int),
                  ('RDXQAKEY', '<U{0:d}'.format(self.str_len['RDXQAKEY'])),
                  ('BINKEY', '<U{0:d}'.format(self.str_len['BINKEY'])),
                  ('SCKEY', '<U{0:d}'.format(self.str_len['SCKEY'])),
@@ -390,7 +390,7 @@ class DAPall:
                  ('BINSNR', self.float_dtype),
                  ('TPLKEY', '<U{0:d}'.format(self.str_len['TPLKEY'])),
                  ('DATEDAP', '<U{0:d}'.format(self.str_len['DATEDAP'])),
-                 ('DAPBINS', numpy.int),
+                 ('DAPBINS', int),
                  ('RCOV90', self.float_dtype),
                  ('SNR_MED', self.float_dtype, (4,)),
                  ('SNR_RING', self.float_dtype, (4,)),
@@ -777,7 +777,7 @@ class DAPall:
         center = d2 < 1.25*1.25
         if numpy.sum(center) == 0:
             warnings.warn('No data near center!')
-            emline_flux_cen = numpy.full(neml, -999., dtype=numpy.float)
+            emline_flux_cen = numpy.full(neml, -999., dtype=float)
         else:
             emline_flux_cen = numpy.ma.sum(flux[:,center], axis=1).filled(-999.)
             
@@ -786,9 +786,9 @@ class DAPall:
         within_1re = r_re < 1.
         if numpy.sum(within_1re) == 0:
             warnings.warn('No data within 1 Re!')
-            emline_flux_1re = numpy.full(neml, -999., dtype=numpy.float)
-            emline_sb_1re = numpy.full(neml, -999., dtype=numpy.float)
-            emline_ew_1re = numpy.full(neml, -999., dtype=numpy.float)
+            emline_flux_1re = numpy.full(neml, -999., dtype=float)
+            emline_sb_1re = numpy.full(neml, -999., dtype=float)
+            emline_ew_1re = numpy.full(neml, -999., dtype=float)
         else:
             emline_flux_1re = numpy.ma.sum(flux[:,within_1re], axis=1).filled(-999.)
             emline_sb_1re = numpy.ma.mean(flux[:,within_1re], axis=1).filled(-999.)
@@ -1227,7 +1227,7 @@ class DAPall:
         self.hdu = fits.HDUList(self.hdu)
 
         # Write the file (use of this function is probably overkill)
-        DAPFitsUtil.write(self.hdu, self.file_path(), clobber=True, checksum=True,
+        DAPFitsUtil.write(self.hdu, self.file_path(), overwrite=True, checksum=True,
                           loggers=self.loggers)
         
 

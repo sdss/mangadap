@@ -1,6 +1,8 @@
-import os
 import time
-import argparse
+import warnings
+
+from IPython import embed
+
 import numpy
 
 from scipy.special import erf
@@ -10,17 +12,20 @@ from matplotlib import pyplot, ticker, rc, colors, cm, colorbar, image
 
 from astropy.io import fits
 
+from mangadap import dapfits
+from mangadap.datacube import DataCube
 from mangadap.config import defaults
-from mangadap.proc.util import growth_lim
+from mangadap.proc.util import growth_lim, inverse
 from mangadap.proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
 from mangadap.proc.stellarcontinuummodel import StellarContinuumModel
 from mangadap.proc.emissionlinemodel import EmissionLineModel
 
-from mangadap.par.analysisplan import AnalysisPlanSet
+from mangadap.config.analysisplan import AnalysisPlanSet
 from mangadap.util.filter import BoxcarFilter
 from mangadap.util.sampling import spectral_coordinate_step
 from mangadap.util.mapping import map_extent, map_beam_patch
 from mangadap.util.fileio import channel_dictionary
+from mangadap.util.pkg import load_object
 
 from mangadap.scripts import scriptbase
 
@@ -65,29 +70,78 @@ def masked_imshow(fig, ax, cax, data, extent=None, norm=None, vmin=None, vmax=No
         cb = colorbar.ColorbarBase(cax, cmap=cm.get_cmap(cmap), norm=_norm)
 
 
-def gmr_data(drp_file):
-    if not os.path.isfile(drp_file):
-        raise FileNotFoundError('{0} does not exist!'.format(drp_file))
-
-    hdu = fits.open(drp_file)
-    gmr_map = -2.5*numpy.ma.log10(numpy.ma.MaskedArray(hdu['GIMG'].data,
-                                                       mask=numpy.invert(hdu['GIMG'].data>0))
+# TODO: Should make this a datacube member function
+def gmr_data(cube, min_frac=0.8):
+    """
+    Read or construct a g-r for the provided datacube.
+    """
+    # First see if there are GIMG and RIMG extensions in the input datacube
+    # (requires a MaNGA DRP-like datamodel)
+    with fits.open(str(cube.file_path())) as hdu:
+        ext_list = [h.name for h in hdu]
+        if 'GIMG' in ext_list and 'RIMG' in ext_list:
+            return -2.5*numpy.ma.log10(numpy.ma.MaskedArray(hdu['GIMG'].data,
+                                                            mask=numpy.invert(hdu['GIMG'].data>0))
                                     / numpy.ma.MaskedArray(hdu['RIMG'].data,
                                                            mask=numpy.invert(hdu['RIMG'].data>0)))
-    hdu.close()
-    del hdu
-    return gmr_map
+
+    # Next, try to create it from scratch
+    g_file = defaults.dap_data_root() / 'filter_response' / 'gunn_2001_g_response.db'
+    if not g_file.exists():
+        warnings.warn(f'Could not find file {g_file}; cannot produce rough g-r image.')
+        return None
+
+    r_file = defaults.dap_data_root() / 'filter_response' / 'gunn_2001_r_response.db'
+    if not r_file.exists():
+        warnings.warn(f'Could not find file {r_file}; cannot produce rough g-r image.')
+        return None
+
+    flux = cube.copy_to_masked_array()
+    gpm = numpy.logical_not(numpy.ma.getmaskarray(flux)).astype(float)
+
+    # Wavelengths in these files are in angstroms
+    g_wave, g_eff = numpy.genfromtxt(str(g_file)).T
+    indx = g_eff > 0.
+    g_lo = numpy.amin(g_wave[indx])
+    g_hi = numpy.amax(g_wave[indx])
+    g_wgt = interpolate.interp1d(g_wave[indx], g_eff[indx], bounds_error=False,
+                                 fill_value=0.)(cube.wave)[None,:]*gpm
+    g_mask = numpy.sum((g_wgt[:, 1:]>0).astype(float) * numpy.diff(cube.wave)[None, :],
+                       axis=1).reshape(cube.spatial_shape) < min_frac*(g_hi-g_lo)
+    if numpy.all(g_mask):
+        warnings.warn('Datacube has insufficient coverage of the g-band to construct a g-r image.')
+        return None
+
+    r_wave, r_eff = numpy.genfromtxt(str(r_file)).T
+    indx = r_eff > 0.
+    r_lo = numpy.amin(r_wave[indx])
+    r_hi = numpy.amax(r_wave[indx])
+    r_wgt = interpolate.interp1d(r_wave[indx], r_eff[indx], bounds_error=False,
+                                 fill_value=0.)(cube.wave)[None,:]*gpm
+
+    r_mask = numpy.sum((r_wgt[:, 1:]>0).astype(float) * numpy.diff(cube.wave)[None, :],
+                       axis=1).reshape(cube.spatial_shape) < min_frac*(r_hi-r_lo)
+    if numpy.all(r_mask):
+        warnings.warn('Datacube has insufficient coverage of the r-band to construct a g-r image.')
+        return None
+
+    g = numpy.sum(g_wgt[:, 1:] * flux[:, 1:] * numpy.diff(cube.wave)[None,:],
+                       axis=1).reshape(cube.spatial_shape)
+    r = numpy.sum(r_wgt[:, 1:] * flux[:, 1:] * numpy.diff(cube.wave)[None,:],
+                       axis=1).reshape(cube.spatial_shape)
+    return -2.5*numpy.ma.log10(numpy.ma.divide(numpy.ma.MaskedArray(g, mask=g_mask),
+                                               numpy.ma.MaskedArray(r, mask=r_mask)))
 
 
 def get_stellar_continuum_data(dapmaps, dapcube):
 
-    if not os.path.isfile(dapmaps):
-        raise FileNotFoundError('{0} does not exist.'.format(dapmaps))
-    if not os.path.isfile(dapcube):
-        raise FileNotFoundError('{0} does not exist.'.format(dapcube))
+    if not dapmaps.exists():
+        raise FileNotFoundError(f'{dapmaps} does not exist.')
+    if not dapcube.exists():
+        raise FileNotFoundError(f'{dapcube} does not exist.')
 
     # Get the data
-    cube_hdu = fits.open(dapcube)
+    cube_hdu = fits.open(str(dapcube))
 
     # Find the unique bins and get rid of -1 bins
     binid = cube_hdu['BINID'].data[1,:,:].ravel()
@@ -108,7 +162,7 @@ def get_stellar_continuum_data(dapmaps, dapcube):
                                  mask=cube_hdu['STELLAR_MASK'].data.reshape(npix,-1) > 0)[:,indx]
 
     # Get the associated S/N and fit metrics
-    maps_hdu = fits.open(dapmaps)
+    maps_hdu = fits.open(str(dapmaps))
     snrg = maps_hdu['BIN_SNR'].data.ravel()[indx]
     rms = maps_hdu['STELLAR_FOM'].data[0,:,:].ravel()[indx]
     frms = maps_hdu['STELLAR_FOM'].data[1,:,:].ravel()[indx]
@@ -117,13 +171,13 @@ def get_stellar_continuum_data(dapmaps, dapcube):
     return cube_hdu['WAVE'].data, flux, error, model, snrg, rms, frms, rchi2
 
 
-def get_stellar_continuum_fom_maps(drpcube, dapmaps):
+def get_stellar_continuum_fom_maps(cube, dapmaps):
 
-    if not os.path.isfile(dapmaps):
+    if not dapmaps.exists():
         raise FileNotFoundError('{0} does not exist.'.format(dapmaps))
 
     # Get the associated S/N and fit metrics
-    maps_hdu = fits.open(dapmaps)
+    maps_hdu = fits.open(str(dapmaps))
     snrg = numpy.ma.MaskedArray(maps_hdu['BIN_SNR'].data,
                                 mask=numpy.invert(maps_hdu['BIN_SNR'].data > 0))
     mask = maps_hdu['STELLAR_VEL_MASK'].data > 0
@@ -137,31 +191,25 @@ def get_stellar_continuum_fom_maps(drpcube, dapmaps):
 
     extent = map_extent(maps_hdu, 'SPX_MFLUX')
 
-    return extent, snrg, gmr_data(drpcube), rms, frms, rchi2, chi_grw
+    return extent, snrg, gmr_data(cube), rms, frms, rchi2, chi_grw
 
 
-def get_emission_line_data(drpcube, daptype, dapmaps, dapcube):
-    if not os.path.isfile(dapmaps):
+def get_emission_line_data(cube, daptype, dapmaps, dapcube):
+    if not dapmaps.exists():
         raise FileNotFoundError('{0} does not exist.'.format(dapmaps))
-    if not os.path.isfile(dapcube):
+    if not dapcube.exists():
         raise FileNotFoundError('{0} does not exist.'.format(dapcube))
 
     # Get the data
-    cube_hdu = fits.open(dapcube)
-    maps_hdu = fits.open(dapmaps)
+    cube_hdu = fits.open(str(dapcube))
+    maps_hdu = fits.open(str(dapmaps))
 
     # Get the observed spectra and errors
     if 'HYB' in daptype:
-        if not os.path.isfile(drpcube):
-            raise FileNotFoundError('{0} does not exist.'.format(drpcube))
         # Fits are to unbinned spectra from DRP datacube
-        drp_hdu = fits.open(drpcube)
-        npix = drp_hdu['FLUX'].data.shape[0]
-        flux = numpy.ma.MaskedArray(drp_hdu['FLUX'].data.reshape(npix,-1),
-                                    mask=drp_hdu['MASK'].data.reshape(npix,-1) > 0)
-        error = numpy.ma.power(numpy.ma.MaskedArray(drp_hdu['IVAR'].data.reshape(npix,-1),
-                                            mask=drp_hdu['MASK'].data.reshape(npix,-1) > 0), -0.5)
-        drp_hdu.close()
+        npix = cube.flux.shape[-1]
+        flux = cube.copy_to_masked_array(attr='flux').T
+        error = numpy.sqrt(inverse(cube.copy_to_masked_array(attr='ivar').T))
         snrg = maps_hdu['SPX_SNR'].data.ravel()
 
     else:
@@ -176,7 +224,6 @@ def get_emission_line_data(drpcube, daptype, dapmaps, dapcube):
    
     # Find the unique bins and get rid of -1 bins
     binid = cube_hdu['BINID'].data[3,:,:].ravel()
-#    uniq, indx = map(lambda x: x[1:], numpy.unique(binid, return_index=True))
     uniq, indx = numpy.unique(binid, return_index=True)
     if uniq[0] == -1:
         uniq = uniq[1:]
@@ -223,7 +270,7 @@ def get_emission_line_fom_maps(dapmaps):
     return extent, anr, aob, rms, frms, rchi2, chi_grw
 
 
-def fom_lambda(plt, ifu, wave, flux, error, model, fit='sc', wave_limits=None, ofile=None):
+def fom_lambda(name, wave, flux, error, model, fit='sc', wave_limits=None, ofile=None):
 
     if wave_limits is not None:
         indx = (wave < wave_limits[0]) | (wave > wave_limits[1])
@@ -318,9 +365,8 @@ def fom_lambda(plt, ifu, wave, flux, error, model, fit='sc', wave_limits=None, o
     ax.text(-0.15, 0.5, r'$|\Delta|/\epsilon$', horizontalalignment='center',
             verticalalignment='center', rotation='vertical', transform=ax.transAxes)
 
-    label = '{0}-{1}'.format(plt, ifu)
-    label += (' STELLAR' if fit == 'sc' else ' EMLINE')
-    ax.text(1.23, -0.3, label, horizontalalignment='center',
+    tracer = 'STELLAR' if fit == 'sc' else 'EMLINE'
+    ax.text(1.23, -0.3, f'{name} {tracer}', horizontalalignment='center',
             verticalalignment='bottom', rotation='vertical', transform=ax.transAxes,
             fontsize=22)
 
@@ -399,7 +445,7 @@ def fom_lambda(plt, ifu, wave, flux, error, model, fit='sc', wave_limits=None, o
     pyplot.close(fig)
 
 
-def fom_growth(plt, ifu, flux, error, model, snrg, rms, frms, rchi2, fit='sc', ofile=None):
+def fom_growth(name, flux, error, model, snrg, rms, frms, rchi2, fit='sc', ofile=None):
 
     nspec = flux.shape[1]
     resid = numpy.ma.absolute(flux-model)
@@ -433,9 +479,8 @@ def fom_growth(plt, ifu, flux, error, model, snrg, rms, frms, rchi2, fit='sc', o
     fax.set_yscale('log')
     fax.set_xscale('log')
     fax.yaxis.set_major_formatter(ticker.NullFormatter())
-    label = '{0}-{1}'.format(plt, ifu)
-    label += (' STELLAR' if fit == 'sc' else ' EMLINE')
-    fax.text(0.5, 1.3, label, horizontalalignment='center',
+    tracer = 'STELLAR' if fit == 'sc' else 'EMLINE'
+    fax.text(0.5, 1.3, f'{name} {tracer}', horizontalalignment='center',
              verticalalignment='center', transform=fax.transAxes, fontsize=22)
     fax.text(0.5, -0.17, r'$|\Delta|/m$', ha='center', va='center', transform=fax.transAxes)
 
@@ -530,11 +575,12 @@ def fom_growth(plt, ifu, flux, error, model, snrg, rms, frms, rchi2, fit='sc', o
     pyplot.close(fig)
 
 
-def fom_maps(plt, ifu, image_file, snr, color, rms, frms, rchi2, chi_grw, extent=None,
+def fom_maps(name, image_file, snr, color, rms, frms, rchi2, chi_grw, fwhm=None, extent=None,
              fit='sc', ofile=None):
 
-    color_lim = numpy.exp(growth_lim(numpy.ma.log(color), 0.95, fac=1.1)) \
-                    if fit != 'sc' else growth_lim(color, 0.95, fac=1.10)
+    if color is not None:
+        color_lim = numpy.exp(growth_lim(numpy.ma.log(color), 0.95, fac=1.1)) \
+                        if fit != 'sc' else growth_lim(color, 0.95, fac=1.10)
 
     snr_lim = numpy.power(10., growth_lim(numpy.ma.log10(snr), 0.90, fac=1.05))
     rms_lim = numpy.power(10., growth_lim(numpy.ma.log10(rms), 0.90, fac=1.05))
@@ -544,6 +590,18 @@ def fom_maps(plt, ifu, image_file, snr, color, rms, frms, rchi2, chi_grw, extent
     c68_lim = [1/4, 4]
     c99_lim = [2.6/4, 2.6*4]
     crt_lim = [0.8, 2]
+
+    # Get the limits to apply
+    x_order = 1 if extent[0] < extent[1] else -1
+    Dx = x_order*(extent[1] - extent[0])
+    y_order = 1 if extent[2] < extent[3] else -1
+    Dy = y_order*(extent[3] - extent[2])
+    # Force the image panels to be square; assumes extent has the same units in
+    # both dimensions.
+    D = max(Dx, Dy)
+
+    x_lim = (extent[0]+extent[1])/2 + D * x_order * numpy.array([-1,1])/2
+    y_lim = (extent[2]+extent[3])/2 + D * y_order * numpy.array([-1,1])/2
 
     left = 0.035
     bott = 0.08
@@ -561,8 +619,8 @@ def fom_maps(plt, ifu, image_file, snr, color, rms, frms, rchi2, chi_grw, extent
 
     i,j=0,2
     ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
-    if os.path.isfile(image_file):
-        img = image.imread(image_file)
+    if image_file is not None and image_file.exists():
+        img = image.imread(str(image_file))
         ax.imshow(img)
         ax.text(0.95, 0.95, r'SDSS', color='white', ha='right', va='center', transform=ax.transAxes)
     else:
@@ -577,32 +635,36 @@ def fom_maps(plt, ifu, image_file, snr, color, rms, frms, rchi2, chi_grw, extent
     masked_imshow(fig, ax, cax, snr, extent=extent,
                   norm=colors.LogNorm(vmin=snr_lim[0], vmax=snr_lim[1]), cmap='viridis',
                   zorder=3)
-    ax.set_xlim(extent[:2])
-    ax.set_ylim(extent[2:])
-    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
+    ax.set_xlim(x_lim)
+    ax.set_ylim(y_lim)
+    if fwhm is not None:
+        ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.95, 0.95, r'S/N$_g$' if fit == 'sc' else r'H$\alpha$ A/N', ha='right', va='center',
             transform=ax.transAxes, zorder=4)
 
-    label = '{0}-{1}'.format(plt, ifu)
-    label += (' STELLAR' if fit == 'sc' else ' EMLINE')
-    ax.text(0.5, 1.1, label, horizontalalignment='center',
+    tracer = 'STELLAR' if fit == 'sc' else 'EMLINE'
+    ax.text(0.5, 1.1, f'{name} {tracer}', horizontalalignment='center',
             verticalalignment='bottom', transform=ax.transAxes, fontsize=26)
 
     i,j=2,2
     ax = init_image_ax(fig, [left+i*(imwd+hbuf), bott+j*(imwd+vbuf), imwd, imwd ])
-    cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
-    kwargs = {}
-    if fit == 'sc':
-        # Plotting the g-r color
-        kwargs['vmin'] = color_lim[0]
-        kwargs['vmax'] = color_lim[1]
+    if color is not None:
+        cax = fig.add_axes([left+i*(imwd+hbuf)+imwd+cbuf, bott+j*(imwd+vbuf), cbwd, imwd ])
+        kwargs = {}
+        if fit == 'sc':
+            # Plotting the g-r color
+            kwargs['vmin'] = color_lim[0]
+            kwargs['vmax'] = color_lim[1]
+        else:
+            # Plotting H-alpha/H-beta flux ratio
+            kwargs['norm'] = colors.LogNorm(vmin=color_lim[0], vmax=color_lim[1])
+        masked_imshow(fig, ax, cax, color, extent=extent, cmap='RdBu_r', zorder=3, **kwargs)
     else:
-        # Plotting H-alpha/H-beta flux ratio
-        kwargs['norm'] = colors.LogNorm(vmin=color_lim[0], vmax=color_lim[1])
-    masked_imshow(fig, ax, cax, color, extent=extent, cmap='RdBu_r', zorder=3, **kwargs)
-    ax.set_xlim(extent[:2])
-    ax.set_ylim(extent[2:])
-    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
+        ax.text(0.5, 0.5, 'No g-r data', ha='center', va='center', transform=ax.transAxes)
+    ax.set_xlim(x_lim)
+    ax.set_ylim(y_lim)
+    if fwhm is not None:
+        ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.95, 0.95, r'$g-r$' if fit == 'sc' else r'H$\alpha$/H$\beta$', ha='right',
             va='center', transform=ax.transAxes, zorder=4)
 
@@ -612,9 +674,10 @@ def fom_maps(plt, ifu, image_file, snr, color, rms, frms, rchi2, chi_grw, extent
     masked_imshow(fig, ax, cax, rms, extent=extent,
                   norm=colors.LogNorm(vmin=rms_lim[0], vmax=rms_lim[1]), cmap='viridis',
                   zorder=3)
-    ax.set_xlim(extent[:2])
-    ax.set_ylim(extent[2:])
-    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
+    ax.set_xlim(x_lim)
+    ax.set_ylim(y_lim)
+    if fwhm is not None:
+        ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.95, 0.95, r'RMS', ha='right', va='center', transform=ax.transAxes, zorder=4)
 
     i,j=1,1
@@ -623,9 +686,10 @@ def fom_maps(plt, ifu, image_file, snr, color, rms, frms, rchi2, chi_grw, extent
     masked_imshow(fig, ax, cax, frms, extent=extent,
                   norm=colors.LogNorm(vmin=frm_lim[0], vmax=frm_lim[1]), cmap='viridis',
                   zorder=3)
-    ax.set_xlim(extent[:2])
-    ax.set_ylim(extent[2:])
-    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
+    ax.set_xlim(x_lim)
+    ax.set_ylim(y_lim)
+    if fwhm is not None:
+        ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.95, 0.95, r'fRMS', ha='right', va='center', transform=ax.transAxes, zorder=4)
 
     i,j=2,1
@@ -634,9 +698,10 @@ def fom_maps(plt, ifu, image_file, snr, color, rms, frms, rchi2, chi_grw, extent
     masked_imshow(fig, ax, cax, rchi2, extent=extent,
                   norm=colors.LogNorm(vmin=chi_lim[0], vmax=chi_lim[1]), cmap='RdBu_r',
                   zorder=3)
-    ax.set_xlim(extent[:2])
-    ax.set_ylim(extent[2:])
-    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
+    ax.set_xlim(x_lim)
+    ax.set_ylim(y_lim)
+    if fwhm is not None:
+        ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.95, 0.95, r'$\chi^2$', ha='right', va='center', transform=ax.transAxes, zorder=4)
 
     i,j=0,0
@@ -645,9 +710,10 @@ def fom_maps(plt, ifu, image_file, snr, color, rms, frms, rchi2, chi_grw, extent
     masked_imshow(fig, ax, cax, chi_grw[0], extent=extent,
                   norm=colors.LogNorm(vmin=c68_lim[0], vmax=c68_lim[1]), cmap='viridis',
                   zorder=3)
-    ax.set_xlim(extent[:2])
-    ax.set_ylim(extent[2:])
-    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
+    ax.set_xlim(x_lim)
+    ax.set_ylim(y_lim)
+    if fwhm is not None:
+        ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.95, 0.95, r'68% Growth $|\Delta|/\epsilon$', ha='right', va='center',
             transform=ax.transAxes, zorder=4)
 
@@ -657,9 +723,10 @@ def fom_maps(plt, ifu, image_file, snr, color, rms, frms, rchi2, chi_grw, extent
     masked_imshow(fig, ax, cax, chi_grw[1], extent=extent,
                   norm=colors.LogNorm(vmin=c99_lim[0], vmax=c99_lim[1]), cmap='viridis',
                   zorder=3)
-    ax.set_xlim(extent[:2])
-    ax.set_ylim(extent[2:])
-    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
+    ax.set_xlim(x_lim)
+    ax.set_ylim(y_lim)
+    if fwhm is not None:
+        ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.95, 0.95, r'99% Growth $|\Delta|/\epsilon$', ha='right', va='center',
             transform=ax.transAxes, zorder=4)
 
@@ -673,9 +740,10 @@ def fom_maps(plt, ifu, image_file, snr, color, rms, frms, rchi2, chi_grw, extent
     masked_imshow(fig, ax, cax, numpy.ma.divide(chi_grw[1],chi_grw[0])*m[0]/m[1],
                   extent=extent, vmin=crt_lim[0], vmax=crt_lim[1], cmap='RdBu_r',
                   zorder=3)
-    ax.set_xlim(extent[:2])
-    ax.set_ylim(extent[2:])
-    ax.add_patch(map_beam_patch(extent, ax, facecolor='0.7', edgecolor='k', zorder=4))
+    ax.set_xlim(x_lim)
+    ax.set_ylim(y_lim)
+    if fwhm is not None:
+        ax.add_patch(map_beam_patch(extent, ax, fwhm=fwhm, facecolor='0.7', edgecolor='k', zorder=4))
     ax.text(0.95, 0.95, r'99%/68% wrt Gaussian', ha='right', va='center', transform=ax.transAxes,
             zorder=4)
 
@@ -688,51 +756,55 @@ def fom_maps(plt, ifu, image_file, snr, color, rms, frms, rchi2, chi_grw, extent
     pyplot.close(fig)
 
 
-def fit_residuals(drpver, redux_path, dapver, analysis_path, daptype, plt, ifu):
+#def fit_residuals(cube, plan, method_dirdrpver, redux_path, dapver, analysis_path, daptype, plt, ifu):
+def fit_residuals(cube, plan, method_dir, ref_dir, qa_dir, fwhm=None):
 
-    plan_qa_dir = defaults.dap_method_path(daptype, plate=plt, ifudesign=ifu, qa=True,
-                                           drpver=drpver, dapver=dapver,
-                                           analysis_path=analysis_path)
-    if not os.path.isdir(plan_qa_dir):
-        os.makedirs(plan_qa_dir)
+    if not method_dir.exists():
+        raise NotADirectoryError(f'{method_dir} does not exist; run the DAP first!')
+    if not ref_dir.exists():
+        raise NotADirectoryError(f'{ref_dir} does not exist; run the DAP first!')
+    if not qa_dir.exists():
+        qa_dir.mkdir(parents=True)
 
-    rpath = os.path.join(redux_path, str(plt))
-    drp_file = os.path.join(rpath, 'stack', 'manga-{0}-{1}-LOGCUBE.fits.gz'.format(plt,ifu))
-    image_file = os.path.join(rpath, 'images', '{0}.png'.format(ifu))
+    _, directory, file = dapfits.default_paths(cube, method=plan['key'], output_path=method_dir)
+    maps_file = directory / file
+    if not maps_file.exists():
+        raise FileNotFoundError(f'No file: {maps_file}')
 
-    apath = os.path.join(analysis_path, daptype, str(plt), str(ifu))
-    maps_file = os.path.join(apath, 'manga-{0}-{1}-MAPS-{2}.fits.gz'.format(plt,ifu,daptype))
-    cube_file = os.path.join(apath, 'manga-{0}-{1}-LOGCUBE-{2}.fits.gz'.format(plt,ifu,daptype))
+    image_file = cube.image_path if hasattr(cube, 'image_path') else None
+    _, directory, file = dapfits.default_paths(cube, file_type='LOGCUBE', method=plan['key'],
+                                               output_path=method_dir)
+    cube_file = directory / file
+    if not cube_file.exists():
+        raise FileNotFoundError(f'No file: {cube_file}')
 
     # Stellar continuum fit qa plot
-    ofile_root = os.path.join(plan_qa_dir, 'manga-{0}-{1}-LOGCUBE-{2}-sc-fitqa'.format(
-                                plt, ifu, daptype))
+    ofile_root = f'{cube.output_root}-LOGCUBE-{plan["key"]}-sc-fitqa'
     wave, flux, error, model, snrg, rms, frms, rchi2 \
             = get_stellar_continuum_data(maps_file, cube_file)
-    ofile = '{0}-lambda.png'.format(ofile_root)
-    fom_lambda(plt, ifu, wave, flux, error, model, fit='sc', ofile=ofile)
-    ofile = '{0}-growth.png'.format(ofile_root)
-    fom_growth(plt, ifu, flux, error, model, snrg, rms, frms, rchi2, fit='sc', ofile=ofile)
+    ofile = qa_dir / f'{ofile_root}-lambda.png'
+    fom_lambda(cube.name, wave, flux, error, model, fit='sc', ofile=ofile)
+    ofile = qa_dir / f'{ofile_root}-growth.png'
+    fom_growth(cube.name, flux, error, model, snrg, rms, frms, rchi2, fit='sc', ofile=ofile)
     extent, snrg, gmr, rms, frms, rchi2, chi_grw \
-            = get_stellar_continuum_fom_maps(drp_file, maps_file)
-    ofile = '{0}-maps.png'.format(ofile_root)
-    fom_maps(plt, ifu, image_file, snrg, gmr, rms, frms, rchi2, chi_grw, extent=extent, fit='sc',
-             ofile=ofile)
+            = get_stellar_continuum_fom_maps(cube, maps_file)
+    ofile = qa_dir / f'{ofile_root}-maps.png'
+    fom_maps(cube.name, image_file, snrg, gmr, rms, frms, rchi2, chi_grw, fwhm=fwhm, extent=extent,
+             fit='sc', ofile=ofile)
 
     # Emission-line fit qa plot
-    ofile_root = os.path.join(plan_qa_dir, 'manga-{0}-{1}-LOGCUBE-{2}-el-fitqa'.format(
-                                plt, ifu, daptype))
+    ofile_root = f'{cube.output_root}-LOGCUBE-{plan["key"]}-el-fitqa'
     wave, flux, error, model, snrg, rms, frms, rchi2 \
-            = get_emission_line_data(drp_file, daptype, maps_file, cube_file)
-    ofile = '{0}-lambda.png'.format(ofile_root)
-    fom_lambda(plt, ifu, wave, flux, error, model, fit='el', ofile=ofile)
-    ofile = '{0}-growth.png'.format(ofile_root)
-    fom_growth(plt, ifu, flux, error, model, snrg, rms, frms, rchi2, fit='el', ofile=ofile)
+            = get_emission_line_data(cube, plan["key"], maps_file, cube_file)
+    ofile = qa_dir / f'{ofile_root}-lambda.png'
+    fom_lambda(cube.name, wave, flux, error, model, fit='el', ofile=ofile)
+    ofile = qa_dir / f'{ofile_root}-growth.png'
+    fom_growth(cube.name, flux, error, model, snrg, rms, frms, rchi2, fit='el', ofile=ofile)
     extent, anr, aob, rms, frms, rchi2, chi_grw \
             = get_emission_line_fom_maps(maps_file)
-    ofile = '{0}-maps.png'.format(ofile_root)
-    fom_maps(plt, ifu, image_file, anr, aob, rms, frms, rchi2, chi_grw, extent=extent, fit='el',
-             ofile=ofile)
+    ofile = qa_dir / f'{ofile_root}-maps.png'
+    fom_maps(cube.name, image_file, anr, aob, rms, frms, rchi2, chi_grw, fwhm=fwhm, extent=extent,
+             fit='el', ofile=ofile)
 
 class FitResiduals(scriptbase.ScriptBase):
 
@@ -742,18 +814,45 @@ class FitResiduals(scriptbase.ScriptBase):
         parser = super().get_parser(description='Construct QA plots showing the fit residuals',
                                     width=width)
 
-        parser.add_argument('plate', type=int, help='plate ID to process')
-        parser.add_argument('ifudesign', type=int, help='IFU design to process')
+        group = parser.add_mutually_exclusive_group(required=True)
+        group.add_argument('-c', '--config', type=str, default=None,
+                           help='Configuration file used to instantiate the relevant DataCube '
+                                'derived class.')
+        group.add_argument('-f', '--cubefile', type=str, default=None,
+                           help='Name of the file with the datacube data.  Must be possible to '
+                                'instantiate the relevant DataCube derived class directly from '
+                                'the file only.')
+        parser.add_argument('--cube_module', nargs='*',
+                            default='mangadap.datacube.MaNGADataCube',
+                            help='The name of the module that contains the DataCube derived '
+                                 'class used to read the data.')
 
-        parser.add_argument('--drpver', type=str, help='DRP version', default=None)
-        parser.add_argument('--dapver', type=str, help='DAP version', default=None)
-        parser.add_argument("--redux_path", type=str, help="main DRP output path", default=None)
-        parser.add_argument("--analysis_path", type=str, help="main DAP output path", default=None)
+        parser.add_argument('-p', '--plan', type=str,
+                            help='SDSS parameter file with analysis plan.  If not provided, a '
+                                 'default plan is used.')
+        parser.add_argument('--plan_module', nargs='*',
+                            default='mangadap.config.manga.MaNGAAnalysisPlan',
+                            help='The name of the module used to define the analysis plan and '
+                                 'the output paths.')
 
-        parser.add_argument("--plan_file", type=str, help="parameter file with the MaNGA DAP "
-                            "execution plan to use instead of the default" , default=None)
+        parser.add_argument('-o', '--output_path', type=str, default=None,
+                            help='Top-level directory for the DAP output files; default path is '
+                                 'set by the provided analysis plan object (see plan_module).')
 
-        parser.add_argument('--daptype', type=str, help='DAP processing type', default=None)
+        parser.add_argument('-b', '--beam', type=float, default=None, help='Beam FWHM for plot.')
+
+#        parser.add_argument('plate', type=int, help='plate ID to process')
+#        parser.add_argument('ifudesign', type=int, help='IFU design to process')
+#
+#        parser.add_argument('--drpver', type=str, help='DRP version', default=None)
+#        parser.add_argument('--dapver', type=str, help='DAP version', default=None)
+#        parser.add_argument("--redux_path", type=str, help="main DRP output path", default=None)
+#        parser.add_argument("--analysis_path", type=str, help="main DAP output path", default=None)
+#
+#        parser.add_argument("--plan_file", type=str, help="parameter file with the MaNGA DAP "
+#                            "execution plan to use instead of the default" , default=None)
+#
+#        parser.add_argument('--daptype', type=str, help='DAP processing type', default=None)
         parser.add_argument('--normal_backend', dest='bgagg', action='store_false', default=True)
 
         return parser
@@ -765,29 +864,71 @@ class FitResiduals(scriptbase.ScriptBase):
         if args.bgagg:
             pyplot.switch_backend('agg')
 
-        # Set the paths
-        redux_path = defaults.drp_redux_path(drpver=args.drpver) \
-                        if args.redux_path is None else args.redux_path
-        analysis_path = defaults.dap_analysis_path(drpver=args.drpver, dapver=args.dapver) \
-                                if args.analysis_path is None else args.analysis_path
-
-        daptypes = []
-        if args.daptype is None:
-            analysisplan = AnalysisPlanSet.default() if args.plan_file is None \
-                            else AnalysisPlanSet.from_par_file(args.plan_file)
-            for p in analysisplan:
-                bin_method = SpatiallyBinnedSpectra.define_method(p['bin_key'])
-                sc_method = StellarContinuumModel.define_method(p['continuum_key'])
-                el_method = EmissionLineModel.define_method(p['elfit_key'])
-                daptypes += [defaults.dap_method(bin_method['key'],
-                                                 sc_method['fitpar']['template_library_key'],
-                                                 el_method['continuum_tpl_key'])]
+        # Instantiate the DataCube
+        #   - Import the module used to read the datacube
+        if isinstance(args.cube_module, list) and len(args.cube_module) > 2:
+            raise ValueError('Provided cube module must be one or two strings.')
+        if isinstance(args.cube_module, str) or len(args.cube_module) == 1:
+            UserDataCube = load_object(args.cube_module if isinstance(args.cube_module, str) 
+                                       else args.cube_module[0])
         else:
-            daptypes = [args.daptype]
+            UserDataCube = load_object(args.cube_module[0], obj=args.cube_module[1])
+        #   - Check that the class is derived from DataCube
+        if not issubclass(UserDataCube, DataCube):
+            raise TypeError('Defined cube object must subclass from mangadap.datacube.DataCube.')
 
-        for daptype in daptypes:
-            fit_residuals(args.drpver, redux_path, args.dapver, analysis_path, daptype, args.plate,
-                        args.ifudesign)
+        #   - Import the module used to set the analysis plan
+        if isinstance(args.plan_module, list) and len(args.plan_module) > 2:
+            raise ValueError('Provided plan module must be one or two strings.')
+        if isinstance(args.plan_module, str) or len(args.plan_module) == 1:
+            UserPlan = load_object(args.plan_module if isinstance(args.plan_module, str) 
+                                       else args.plan_module[0])
+        else:
+            UserPlan = load_object(args.plan_module[0], obj=args.plan_module[1])
+        #   - Check that the class is derived from AnalysisPlanSet
+        if not issubclass(UserPlan, AnalysisPlanSet):
+            raise TypeError('Defined plan object must subclass from '
+                            'mangadap.config.analysisplan.AnalysisPlanSet')
+
+        #   - Instantiate using either the datacube file directly or a
+        #     configuration file
+        cube = UserDataCube(args.cubefile) if args.config is None \
+                    else UserDataCube.from_config(args.config)
+
+        # Read the analysis plan
+        plan = UserPlan.default(cube=cube, analysis_path=args.output_path) if args.plan is None \
+                    else UserPlan.from_par_file(args.plan, cube=cube,
+                                                analysis_path=args.output_path)
+
+        # Construct the plot for each analysis plan
+        for i in range(plan.nplans):
+            fit_residuals(cube, plan[i], plan.method_path(plan_index=i),
+                          plan.method_path(plan_index=i, ref=True),
+                          plan.method_path(plan_index=i, qa=True), fwhm=args.beam)
+
+#        # Set the paths
+#        redux_path = defaults.drp_redux_path(drpver=args.drpver) \
+#                        if args.redux_path is None else args.redux_path
+#        analysis_path = defaults.dap_analysis_path(drpver=args.drpver, dapver=args.dapver) \
+#                                if args.analysis_path is None else args.analysis_path
+#
+#        daptypes = []
+#        if args.daptype is None:
+#            analysisplan = AnalysisPlanSet.default() if args.plan_file is None \
+#                            else AnalysisPlanSet.from_par_file(args.plan_file)
+#            for p in analysisplan:
+#                bin_method = SpatiallyBinnedSpectra.define_method(p['bin_key'])
+#                sc_method = StellarContinuumModel.define_method(p['continuum_key'])
+#                el_method = EmissionLineModel.define_method(p['elfit_key'])
+#                daptypes += [defaults.dap_method(bin_method['key'],
+#                                                 sc_method['fitpar']['template_library_key'],
+#                                                 el_method['continuum_tpl_key'])]
+#        else:
+#            daptypes = [args.daptype]
+#
+#        for daptype in daptypes:
+#            fit_residuals(args.drpver, redux_path, args.dapver, analysis_path, daptype, args.plate,
+#                        args.ifudesign)
 
         print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
 

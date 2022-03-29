@@ -47,7 +47,6 @@ class ConstructDapAll(scriptbase.ScriptBase):
         from mangadap.par.analysisplan import AnalysisPlanSet
         from mangadap.survey.dapall import DAPall
 
-
         t = time.perf_counter()
         analysisplan = AnalysisPlanSet.default() if args.plan_file is None \
                             else AnalysisPlanSet.from_par_file(args.plan_file)
