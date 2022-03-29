@@ -29,6 +29,7 @@
    impending numpy deprecation of these types.
  - Added documentation for how to fit one spectrum and to fit a (non-MaNGA)
    datacube.
+ - Remove "filtered" fitting from pPXF module
 
 3.1.2 (29 Jul 2021)
 -------------------
