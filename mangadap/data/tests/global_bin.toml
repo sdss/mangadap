@@ -1,6 +1,6 @@
 
 [default]
- key = 'HYB10-MILESHC-MASTARHC2'
+ key = 'ALL-MILESHC-MASTARHC2'
 
 [default.binning]
  key                    = 'ALL'
@@ -36,7 +36,7 @@
  etpl_line_sigma_mode = 'offset'
  etpl_line_sigma_min  = 10
  artifact_mask        = 'BADSKY'
- deconstruct_bins     = 'binid'
+ deconstruct_bins     = 'ignore'
  reject_boxcar        = 101
  velscale_ratio       = 1
  mdegree              = 14

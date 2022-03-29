@@ -102,11 +102,13 @@ def test_manga_dap():
     # this run of the DAP just analyzes one spectrum and takes about a
     # minute.
     MangaDap.main(MangaDap.parse_args(['-c', data_test_file('datacube.ini'),
-                                       '-p', data_test_file('plan.par'), '-o', odir]))
+                                       '-p', data_test_file('global_bin.toml'), '-o', odir]))
+                                       #'-p', data_test_file('plan.par'), '-o', odir]))
 
     # Re-run to use existing files.  Takes about 40s.
     MangaDap.main(MangaDap.parse_args(['-c', data_test_file('datacube.ini'),
-                                       '-p', data_test_file('plan.par'), '-o', odir]))
+                                       '-p', data_test_file('global_bin.toml'), '-o', odir]))
+                                       #'-p', data_test_file('plan.par'), '-o', odir]))
 
     # Clean up
     shutil.rmtree(odir)
