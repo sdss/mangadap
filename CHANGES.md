@@ -27,6 +27,8 @@
       names adjusted and defined by each main analysis class.
  - Remove all instances of `numpy.float`, `numpy.int`, `numpy.bool`, given
    impending numpy deprecation of these types.
+ - Added documentation for how to fit one spectrum and to fit a (non-MaNGA)
+   datacube.
 
 3.1.2 (29 Jul 2021)
 -------------------
