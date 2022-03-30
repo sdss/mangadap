@@ -547,7 +547,7 @@ class SpatiallyBinnedSpectra:
                     indx = self.cube.bitmask.flagged(self.cube.mask, flag=flag)
                     if numpy.any(indx):
                         if flag in self.bitmask.keys():
-                            mask[indx] = self.bitmask.turn_on(mask[indx], 'FORESTAR')
+                            mask[indx] = self.bitmask.turn_on(mask[indx], flag) #'FORESTAR')
                         warnings.warn(f'{flag} is not a flag in {self.bitmask.__class__.__name__} '
                                       'and cannot be propagated!')
 
@@ -1057,13 +1057,24 @@ class SpatiallyBinnedSpectra:
 
         # Consolidate pixels flagged to be excluded from any
         # stacking into DIDNOTUSE
-        flags = self.cube.do_not_stack_flags()
-        indx = self.cube.bitmask.flagged(drp_mask, flag=flags)
+        if self.cube.bitmask is None:
+            indx = drp_mask
+        else:
+            flags = self.cube.do_not_stack_flags()
+            indx = self.cube.bitmask.flagged(drp_mask, flag=flags)
         mask[indx] = self.bitmask.turn_on(mask[indx], 'DIDNOTUSE')
 
         # Propagate the FORESTAR flags
-        indx = self.cube.bitmask.flagged(drp_mask, flag='FORESTAR')
-        mask[indx] = self.bitmask.turn_on(mask[indx], 'FORESTAR')
+        if self.cube.bitmask is not None and self.cube.propagate_flags() is not None:
+            flags = self.cube.propagate_flags()
+            flags = flags if isinstance(flags, list) else [flags]
+            for flag in flags:
+                indx = self.cube.bitmask.flagged(self.cube.mask, flag=flag)
+                if numpy.any(indx):
+                    if flag in self.bitmask.keys():
+                        mask[indx] = self.bitmask.turn_on(mask[indx], flag) #'FORESTAR')
+                    warnings.warn(f'{flag} is not a flag in {self.bitmask.__class__.__name__} '
+                                    'and cannot be propagated!')
 
         return mask
 

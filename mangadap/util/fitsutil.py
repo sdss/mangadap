@@ -165,10 +165,14 @@ class DAPFitsUtil:
     def clean_map_header(hdr, multichannel=False):
 
         # Change header keywords to the default values for the third axis
+        # TODO: Should instead read the header into a wcs, manipulate the wcs
+        # object and then rewrite it to a header.
         if multichannel:
             hdr['NAXIS'] = 3
-            hdr.remove('CTYPE3')
-            hdr.remove('CUNIT3')
+            if 'CTYPE3' in hdr:
+                hdr.remove('CTYPE3')
+            if 'CUNIT3' in hdr:
+                hdr.remove('CUNIT3')
             hdr['CTYPE3'] = ' '
             hdr['CUNIT3'] = ' '
             hdr['CRPIX3'] = 1
@@ -177,19 +181,19 @@ class DAPFitsUtil:
         else:
             hdr['NAXIS'] = 2
             #hdr.remove('NAXIS3')
-            hdr.remove('CTYPE3')
-            hdr.remove('CUNIT3')
-            hdr.remove('CRPIX3')
-            hdr.remove('CRVAL3')
-            hdr.remove('CD3_3')
+            for key in ['CTYPE3', 'CUNIT3', 'CRPIX3', 'CRVAL3', 'CD3_3', 'CDELT3']:
+                if key in hdr:
+                    hdr.remove(key)
 
         # Remove everything but the WCS information
         w = WCS(header=hdr)
         hdr = w.to_header().copy()
 
         # Fix the DATE-OBS keyword:
-        hdr.comments['DATE-OBS'] = 'Date of median exposure'
-        hdr.comments['MJD-OBS'] = '[d] MJD for DATE-OBS'
+        if 'DATA-OBS' in hdr:
+            hdr.comments['DATE-OBS'] = 'Date of median exposure'
+        if 'MJD-OBS' in hdr:
+            hdr.comments['MJD-OBS'] = '[d] MJD for DATE-OBS'
 
         # Add back in the BSCALE and BZERO values
         hdr['BSCALE'] = 1.
@@ -237,8 +241,10 @@ class DAPFitsUtil:
         hdr = w.to_header().copy()
 
         # Fix the DATE-OBS keyword:
-        hdr.comments['DATE-OBS'] = 'Date of median exposure'
-        hdr.comments['MJD-OBS'] = '[d] MJD for DATE-OBS'
+        if 'DATA-OBS' in hdr:
+            hdr.comments['DATE-OBS'] = 'Date of median exposure'
+        if 'MJD-OBS' in hdr:
+            hdr.comments['MJD-OBS'] = '[d] MJD for DATE-OBS'
 
         # Add back in the BSCALE and BZERO values; BUNIT added during
         # "finalize"

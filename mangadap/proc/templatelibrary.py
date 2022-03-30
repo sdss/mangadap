@@ -482,14 +482,14 @@ class TemplateLibrary:
     """
     # Class attribute
     supported_libraries = ['BC03', 'BPASS', 'M11ELODIE', 'M11MARCS', 'M11MILES', 'M11STELIB',   
-                           'M11STELIBZSOL', 'MASTARHC', 'MASTARHC2', 'MILES', 'MILESAVG',
-                           'MILESHC', 'MILESTHIN', 'MIUSCAT', 'MIUSCATTHIN', 'STELIB']
+                           'M11STELIBZSOL', 'MASTARHC', 'MASTARHC2', 'MASTARSSP', 'MILES',
+                           'MILESAVG', 'MILESHC', 'MILESTHIN', 'MIUSCAT', 'MIUSCATTHIN', 'STELIB']
     """Provides the keywords of the supported libraries."""
 
     def __init__(self, library, cube=None, match_resolution=True, velscale_ratio=None, sres=None,
                  velocity_offset=0.0, min_sig_pix=0.0, no_offset=True, spectral_step=None,
                  log=True, wavelength_range=None, renormalize=True, output_path=None,
-                 output_file=None, read=True, process=True, hardcopy=True, symlink_dir=None,
+                 output_file=None, read=True, process=True, hardcopy=False, symlink_dir=None,
                  overwrite=False, checksum=False, loggers=None, quiet=False):
 
         self.loggers = loggers
@@ -519,7 +519,7 @@ class TemplateLibrary:
         self.directory_path = None
         self.output_file = None
         self.processed = False
-        self.hardcopy = True
+        self.hardcopy = hardcopy
         self.symlink_dir = None
         self.hdu = None
         self.checksum = checksum
@@ -1123,7 +1123,7 @@ class TemplateLibrary:
                                  velscale_ratio=None, sres=None, velocity_offset=0.0,
                                  min_sig_pix=0.0, no_offset=True, spectral_step=None, log=True,
                                  wavelength_range=None, renormalize=True, output_path=None,
-                                 output_file=None, hardcopy=True, symlink_dir=None,
+                                 output_file=None, hardcopy=False, symlink_dir=None,
                                  overwrite=False, loggers=None, quiet=False):
         r"""
         Process the template library for use in analyzing spectra.

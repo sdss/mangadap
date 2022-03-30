@@ -16,9 +16,6 @@ from mangadap import dapfits
 from mangadap.datacube import DataCube
 from mangadap.config import defaults
 from mangadap.proc.util import growth_lim, inverse
-from mangadap.proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
-from mangadap.proc.stellarcontinuummodel import StellarContinuumModel
-from mangadap.proc.emissionlinemodel import EmissionLineModel
 
 from mangadap.config.analysisplan import AnalysisPlan
 from mangadap.util.filter import BoxcarFilter
@@ -77,7 +74,7 @@ def gmr_data(cube, min_frac=0.8):
     """
     # First see if there are GIMG and RIMG extensions in the input datacube
     # (requires a MaNGA DRP-like datamodel)
-    with fits.open(str(cube.file_path())) as hdu:
+    with fits.open(str(cube.file_path)) as hdu:
         ext_list = [h.name for h in hdu]
         if 'GIMG' in ext_list and 'RIMG' in ext_list:
             return -2.5*numpy.ma.log10(numpy.ma.MaskedArray(hdu['GIMG'].data,
@@ -897,38 +894,13 @@ class FitResiduals(scriptbase.ScriptBase):
 
         # Read the analysis plan
         plan = UserPlan.default(cube=cube, analysis_path=args.output_path) if args.plan is None \
-                    else UserPlan.from_par_file(args.plan, cube=cube,
-                                                analysis_path=args.output_path)
+                    else UserPlan.from_toml(args.plan, cube=cube, analysis_path=args.output_path)
 
         # Construct the plot for each analysis plan
-        for i in range(plan.nplans):
-            fit_residuals(cube, plan[i], plan.method_path(plan_index=i),
+        for i, key in enumerate(plan.keys()):
+            fit_residuals(cube, plan[key], plan.method_path(plan_index=i),
                           plan.method_path(plan_index=i, ref=True),
                           plan.method_path(plan_index=i, qa=True), fwhm=args.beam)
-
-#        # Set the paths
-#        redux_path = defaults.drp_redux_path(drpver=args.drpver) \
-#                        if args.redux_path is None else args.redux_path
-#        analysis_path = defaults.dap_analysis_path(drpver=args.drpver, dapver=args.dapver) \
-#                                if args.analysis_path is None else args.analysis_path
-#
-#        daptypes = []
-#        if args.daptype is None:
-#            analysisplan = AnalysisPlanSet.default() if args.plan_file is None \
-#                            else AnalysisPlanSet.from_par_file(args.plan_file)
-#            for p in analysisplan:
-#                bin_method = SpatiallyBinnedSpectra.define_method(p['bin_key'])
-#                sc_method = StellarContinuumModel.define_method(p['continuum_key'])
-#                el_method = EmissionLineModel.define_method(p['elfit_key'])
-#                daptypes += [defaults.dap_method(bin_method['key'],
-#                                                 sc_method['fitpar']['template_library_key'],
-#                                                 el_method['continuum_tpl_key'])]
-#        else:
-#            daptypes = [args.daptype]
-#
-#        for daptype in daptypes:
-#            fit_residuals(args.drpver, redux_path, args.dapver, analysis_path, daptype, args.plate,
-#                        args.ifudesign)
 
         print('Elapsed time: {0} seconds'.format(time.perf_counter() - t))
 

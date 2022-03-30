@@ -1,5 +1,7 @@
 import time
 
+from IPython import embed
+
 import numpy
 
 from matplotlib import pyplot, rc, colors, colorbar, ticker, cm
@@ -616,12 +618,11 @@ class SpotcheckDapMaps(scriptbase.ScriptBase):
 
         # Read the analysis plan
         plan = UserPlan.default(cube=cube, analysis_path=args.output_path) if args.plan is None \
-                    else UserPlan.from_par_file(args.plan, cube=cube,
-                                                analysis_path=args.output_path)
+                    else UserPlan.from_toml(args.plan, cube=cube, analysis_path=args.output_path)
 
         # Construct the plot for each analysis plan
-        for i in range(plan.nplans):
-            spotcheck_images(cube, plan[i], plan.method_path(plan_index=i),
+        for i, key in enumerate(plan.keys()):
+            spotcheck_images(cube, plan[key], plan.method_path(plan_index=i),
                              plan.method_path(plan_index=i, ref=True),
                              plan.method_path(plan_index=i, qa=True), fwhm=args.beam)
 
