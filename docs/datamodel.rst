@@ -10,11 +10,19 @@ Data Model
 
 The DAP data model consists of a number of input files and two main
 output files, the :ref:`datamodel-maps` and :ref:`datamodel-cube` files,
-one for each unique observation (``PLATEIFU``) and analysis approach.
+one for each analyzed data cube and unique analysis approach.
 
 The ``MAPS`` file contains the 2D maps with the DAP-derived properties,
 whereas the model ``LOGCUBE`` file contains the best-fitting model
 spectra.
+
+.. warning::
+
+    The text below is flagged to identify cases where files/data are specific to
+    MaNGA or a MaNGA data release.  Anything that is not directly tied to the
+    MaNGA-specific execution of the DAP (e.g., the naming convention and
+    directory structure) will be relevant to analysis of non-MaNGA data.  If you
+    have questions or find problems, please `Submit an issue`_.
 
 .. _datamodel-daptype:
 
@@ -26,6 +34,13 @@ string called the ``DAPTYPE``, constructed by
 :func:`~mangadap.config.defaults.dap_method`. Note that the
 construction of the ``DAPTYPE`` has changed since DR15.
 
+.. warning::
+
+    Note this description of the ``DAPTYPE`` is specific to the DR17 and earlier
+    version of the DAP.  Since v4.x, the ``DAPTYPE`` is now set by the keyword
+    used for each analysis plan defined by the input `toml`_ file; see
+    :ref:`plan`.
+
 .. include:: include/daptype.rst
 
 The table below provides relevant ``DAPTYPE`` keywords:
@@ -33,9 +48,9 @@ The table below provides relevant ``DAPTYPE`` keywords:
 +---------+-----------------------------------------------------------------+
 | Release | ``DAPTYPE``                                                     |
 +=========+=================================================================+
-| DR-15   | ``VOR10-GAU-MILESHC``, ``HYB10-GAU-MILESHC``                    |
+| DR15    | ``VOR10-GAU-MILESHC``, ``HYB10-GAU-MILESHC``                    |
 +---------+-----------------------------------------------------------------+
-| MPL-11  | ``SPX-MILESHC-MASTARSSP``, ``VOR10-MILESHC-MASTARSSP``,         |
+| DR17    | ``SPX-MILESHC-MASTARSSP``, ``VOR10-MILESHC-MASTARSSP``,         |
 |         | ``HYB10-MILESHC-MASTARSSP``, ``HYB10-MILESHC-MASTARHC2``        |
 +---------+-----------------------------------------------------------------+
 
@@ -52,6 +67,14 @@ to produce the analyzed datacubes and the version of the DAP used to
 do the analysis, such that the top-level directory for the DAP output
 is: ``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER``.
 
+.. warning::
+
+    The directory structure for the survey-level execution of the DAP can now be
+    seen via the methods in :mod:`mangadap.config.manga`.  The default behavior
+    for non-MaNGA datacubes is that the output is either the current working
+    directory, or specified by a command-line option when running the
+    :ref:`execution-mangadap`.
+
 ----
 
 The top level within a given DAP version contains the following subdirectories:
@@ -63,7 +86,7 @@ The top level within a given DAP version contains the following subdirectories:
    multiple ``DAPTYPE`` methods.
 
 Most users will only interact with the ``[DAPTYPE]`` directories.  For
-the MPL-11, these are:
+the DR17, these are:
 
  * ``SPX-MILESHC-MASTARSSP/``: Analysis of each individual spaxel;
    spaxels must have a valid continuum fit for an emission-line model to
@@ -92,6 +115,11 @@ Within each ``[DAPTYPE]`` directory, you'll find the following:
  * ``qa``: Quality assessment plots based on data from the DAPall file
    specifically for this ``[DAPTYPE]``.
 
+.. warning::
+
+    These directories only exist for the survey-level execution of the MaNGA
+    survey.
+
 ----
 
 Within each ``[PLATE]`` directory, you'll find the following:
@@ -104,6 +132,11 @@ Within each ``[PLATE]`` directory, you'll find the following:
  * ``qa``: Quality assessment plots consolidated for all the
    observations on this plate.
 
+.. warning::
+
+    These directories only exist for the survey-level execution of the MaNGA
+    survey.
+
 ----
 
 Within each ``[IFUDESIGN]`` directory, you'll find the following subdirectories:
@@ -112,6 +145,11 @@ Within each ``[IFUDESIGN]`` directory, you'll find the following subdirectories:
    observation.
  * ``ref``: A reference directory with intermediate files written during
    the analysis.
+
+.. warning::
+
+    The default behavior for non-MaNGA datacubes is that these directories exist
+    in the top-level output directory.
 
 .. _datamodel-hduclass:
 
@@ -150,9 +188,20 @@ when using the data.
 DAP MAPS file
 -------------
 
-*File root*: ``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/[DAPTYPE]/[PLATE]/[IFUDESIGN]``
+For the MaNGA survey, these files have:
 
-*File name*: ``manga-[PLATE]-[IFUDESIGN]-MAPS-[DAPTYPE].fits.gz``
+    *File root*: ``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/[DAPTYPE]/[PLATE]/[IFUDESIGN]``
+
+    *File name*: ``manga-[PLATE]-[IFUDESIGN]-MAPS-[DAPTYPE].fits.gz``
+
+The default for execution of non-MaNGA datacubes is for these files to have:
+
+    *File root*: ``$PWD/[DAPTYPE]``
+
+    *File name*: ``$[instrument]-[name]-MAPS-[DAPTYPE].fits.gz``
+
+where ``instrument`` and ``name`` are defined by the DataCube subclass used to
+read the data.
 
 The ``MAPS`` files are the primary output file from the DAP and provide
 2D "maps" (i.e., images) of DAP measured properties.  The shape and WCS
@@ -387,7 +436,6 @@ The ``MAPS`` files contain the following extensions:
 |     |                     |          |                                                      | see :ref:`corrections`.                                            | 
 +-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
 |  53 | SPECINDEX_MODEL     |       46 |                                           |ang|, mag | Spectral-index measurements for the best-fitting model spectrum.   |
-|     |                     |          |                                                      | Note the extension number is different from MPL-9.                 |
 +-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
 |  54 | SPECINDEX_BF        |       46 |                                           |ang|, mag | Spectral-index measurements calculated using a                     |
 |     |                     |          |                                                      | definition similar to Burstein et al. (1984) and                   |
@@ -419,9 +467,16 @@ The ``MAPS`` files contain the following extensions:
 |     |                     |          |                                                      | best-fitting models.                                               |
 +-----+---------------------+----------+------------------------------------------------------+--------------------------------------------------------------------+
 
+.. warning::
+
+    The number of channels for the emission-line and spectral index extensions
+    are specific to DR17, and they depend on the number of emission lines and
+    spectral indices included in the databases selected by the analysis plan.
+    See :ref:`emissionlines` and :ref:`spectralindices`.
+
 .. _datamodel-emission-line-channels:
 
-The emission-line measurements for MPL-11 are (identical to MPL-10):
+The emission-line measurements for DR17 are:
 
 .. code-block:: fortran
 
@@ -484,12 +539,10 @@ The emission-line measurements for MPL-11 are (identical to MPL-10):
 
 .. _datamodel-spectral-index-channels:
 
-The spectral-index measurements for MPL-11 are below (identical to
-MPL-10). Because the spectral-index measurements can be either
-angstroms, magnitudes, or unitless, the header of the spectral-index
-extensions also include the units using header keywords ``U[n]``. The
-indices and relevant units as included in the relevant extension
-header are:
+The spectral-index measurements for DR17 are below. Because the spectral-index
+measurements can be either angstroms, magnitudes, or unitless, the header of the
+spectral-index extensions also include the units using header keywords ``U[n]``.
+The indices and relevant units as included in the relevant extension header are:
 
 .. code-block:: fortran
 
@@ -593,9 +646,20 @@ header are:
 DAP Model LOGCUBE file
 ----------------------
 
-*File root*: ``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/[DAPTYPE]/[PLATE]/[IFUDESIGN]``
+For the MaNGA survey, these files have:
 
-*File name*: ``manga-[PLATE]-[IFUDESIGN]-LOGCUBE-[DAPTYPE].fits.gz``
+    *File root*: ``$MANGA_SPECTRO_ANALYSIS/$MANGADRP_VER/$MANGADAP_VER/[DAPTYPE]/[PLATE]/[IFUDESIGN]``
+
+    *File name*: ``manga-[PLATE]-[IFUDESIGN]-LOGCUBE-[DAPTYPE].fits.gz``
+
+The default for execution of non-MaNGA datacubes is for these files to have:
+
+    *File root*: ``$PWD/[DAPTYPE]``
+
+    *File name*: ``$[instrument]-[name]-LOGCUBE-[DAPTYPE].fits.gz``
+
+where ``instrument`` and ``name`` are defined by the DataCube subclass used to
+read the data.
 
 The ``LOGCUBE`` files provide the binned spectra and the best-fitting
 model spectrum for each spectrum that was successfully fit. These
@@ -652,7 +716,7 @@ The ``LOGCUBE`` files contain the following extensions:
 |     |                    |                                                      | the binned spectra.                                                   |
 +-----+--------------------+------------------------------------------------------+-----------------------------------------------------------------------+
 |   4 |                LSF |                                                |ang| | The dispersion (:math:`\sigma`) of the Gaussian                       |
-|     |                    |                                                      | line-spread function of the binned spectra.  For MPL-11, the source   |
+|     |                    |                                                      | line-spread function of the binned spectra.  For DR17, the source     |
 |     |                    |                                                      | DRP extension is ``LSFPRE``.                                          |
 +-----+--------------------+------------------------------------------------------+-----------------------------------------------------------------------+
 |   5 |               WAVE |                                                |ang| | Vacuum-wavelength vector                                              |
@@ -749,6 +813,12 @@ and :math:`{\rm H}\alpha` surface-brightness profiles.
 Hybrid (HYB) binning scheme
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. note::
+
+    One selects the "hybrid" binning approach by setting the
+    ``deconstruct_bins`` parameter for the emission line fitting to something
+    other than ``'ignore'``.
+
 In all cases except the ``HYB`` binning approach, each analysis
 module only works with the "binned" spectra after the binning is
 performed. (I've put "binned" in quotes here because all spectra are
@@ -792,18 +862,18 @@ in mind:
 Usage Guidelines: Stellar velocity dispersions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Measurement of stellar (and gas!) velocity dispersions in MaNGA is
-complicated by the spectral resolution, particularly at low S/N and
-low :math:`\sigma`. Please tread carefully! In particular, please
-consult Section 7.7 of `Westfall et al. (2019, AJ, 158, 231)`_ for a
-detailed discussion of best practices for the stellar velocity
-dispersion data.
+Measurement of stellar (and gas!) velocity dispersions is complicated by the
+spectral resolution, particularly at low S/N and low :math:`\sigma`. Please
+tread carefully! In particular, please consult Section 7.7 of `Westfall et al.
+(2019, AJ, 158, 231)`_ for a detailed discussion of best practices for the
+stellar velocity dispersion data.  These cautions hold for all data, not just
+MaNGA!
 
-In summary, there is no hard and fast rule along the lines of, "Only
-use measurements when the S/N is above X". (In fact, having
-measurements at the lower S/N level is useful for understanding the
-affects of the error distribution.) However, here are some rough
-guidelines to consider when handling the velocity dispersion data:
+For MaNGA data, there is no hard and fast rule along the lines of, "Only use
+measurements when the S/N is above X". (In fact, having measurements at the
+lower S/N level is useful for understanding the affects of the error
+distribution.) However, here are some rough guidelines to consider when handling
+the velocity dispersion data from the MaNGA survey:
 
  * Kinematics should smoothly vary between adjacent spaxels
  * All velocities are statistically well behaved, except possibly at
@@ -825,19 +895,19 @@ Usage Guidelines: Emission-line template resolution
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 When using the recommended emission-line module
-(:class:`~mangadap.proc.sasuke.Sasuke`), the emission lines are fit
-in a very similar way to the stellar continuum using a set of
-emission-line templates. Given the varying spectral resolution of the
-MaNGA data, we setup these templates to have a non-zero "instrumental
-dispersion" that is the same as the MaNGA data up to some quadrature
-offset. The value of the "template instrumental dispersion" at the
-location of each emission line is provided in the ``EMLINE_TPLSIGMA``
-extension of the ``MAPS`` files. The velocity dispersion actually
-measured by this emission-line module (using pPXF) is the quadrature
-difference between the template dispersion and the directly observed
-sigma of the emission-line (as fit by a Gaussian).
+(:class:`~mangadap.proc.sasuke.Sasuke`), the emission lines are fit in a very
+similar way to the stellar continuum using a set of emission-line templates.
+Given the varying spectral resolution of the MaNGA data, we setup these
+templates to have a non-zero "instrumental dispersion" that is the same as the
+MaNGA data up to some quadrature offset.  This is true for MaNGA, but will also
+be true for data from other instruments.  The value of the "template
+instrumental dispersion" at the location of each emission line is provided in
+the ``EMLINE_TPLSIGMA`` extension of the ``MAPS`` files. The velocity dispersion
+actually measured by this emission-line module (using pPXF) is the quadrature
+difference between the template dispersion and the directly observed sigma of
+the emission-line (as fit by a Gaussian).
 
-To keep things consistent between MPLs and provide what people expect,
+To keep things consistent between DRs/MPLs and provide what people expect,
 the ``EMLINE_GSIGMA`` data provide the sigma of the line as it would be if
 measured by a direct fit of a Gaussian to the line; i.e., we add back
 the template instrumental dispersion in quadrature to the pPXF-fitted
@@ -1057,16 +1127,15 @@ The headers of the data extensions are more minimal. They include:
 Reference Files
 ---------------
 
-For storage of many more fitting products (so far not deemed useful for
-the ``MAPS`` files) and rerunning the code, intermediate reference files
-are written after each main analysis step.  The naming convention is
-essentially to append the necessary analysis keyword to the file name.
-These are identically the keys used in the
-:ref:`execution-analysis-plan` file: ``drpqa_key``, ``bin_key``,
-``continuum_key``, ``elmom_key``, ``elfit_key``, ``spindex_key``.
+For storage of many more fitting products (so far not deemed useful for the
+``MAPS`` files) and rerunning the code, intermediate reference files are written
+after each main analysis step.  The naming convention is essentially to append
+the necessary analysis keyword to the file name.  These are identical to the
+keys used for the main analysis modules; see :ref:`plan`.
 
-The reference files are primarily for developer use, but may contain
-information that you want.  A bare-bones description of the content of
-these files is forthcoming.  If you're interested in using something in
-these files, it's probably best to `Submit an issue`_.
+The reference files are primarily for developer use and allow for recovery of
+completed modules after unexpected crashes.  However, they may contain
+information that you want.  A bare-bones description of the content of these
+files is forthcoming.  If you're interested in using something in these files,
+it's probably best to `Submit an issue`_.
 

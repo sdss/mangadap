@@ -8,8 +8,13 @@ Analysis Plans
 
 The DAP uses a `toml`_ file (parsed using `tomli`_) to define one or more
 "analysis plans," which define how the DAP will analyze the provided datacube.
+The `toml`_ file is used to instantiate an
+:class:`~mangadap.config.analysisplan.AnalysisPlan` object and parsed using 
+:func:`~mangadap.config.analysisplan.AnalysisPlan.from_toml`.
+
 If no `toml`_ file is provided, the DAP uses the default parameters for all
-analysis, and the name of the plan is set to ``default``.
+analysis, and the name of the plan is set to ``default``; see
+:func:`~mangadap.config.analysisplan.AnalysisPlan.default`.
 
 When providing a `toml`_ file with an altered analysis plan, each plan is
 identified by a top-level dictionary keyword.  For example, you could name the
@@ -21,8 +26,8 @@ plan ``default`` and provide a keyword identifier for that plan:
      key = 'HYB10-MILESHC-MASTARHC2'
 
 The optional ``key`` keyword specifies the identifier for the plan separately
-from the dictionary key.  If none is provided, the name of the plan is the same
-as the top-level dictionary keyword.
+from the dictionary key.  If no ``key`` entry is provided, the name of the plan
+is the same as the top-level dictionary keyword.
 
 If you want to apply more than one analysis plan, you can have multiple plans in
 a single `toml`_ file and the DAP will execute them in series.  For example, the
@@ -62,12 +67,27 @@ at their default values.
     by the presence of the reference file), this means that the change may not
     take effect if the reference file is present.  Make sure to either change
     the name of the reference file when changing parameters on-the-fly, or set
-    the ``overwrite`` keyword to ``true``.  See more detail below.
+    the ``overwrite`` keyword to ``true``.  See :ref:`execution`.
 
 Below, we specify how to alter the parameters for all of the main DAP modules
 and provide their default values.  In addition to these details, make sure you
 understand how the DAP uses the ``key`` for each module and how the modules
-understand whether or not they've already been completed.
+understand whether or not they've already been completed; see :ref:`execution`.
+
+.. note::
+
+    For examples of fully defined plan files, see:
+        * `mangadap/config/default_plan.toml
+          <https://github.com/sdss/mangadap/blob/master/mangadap/config/default_plan.toml>`__:
+          The default plan, when not overridden by the user.
+        * `mangadap/data/tests/global_bin.toml
+          <https://github.com/sdss/mangadap/blob/master/mangadap/data/tests/global_bin.toml>`__:
+          A plan used by a DAP unit test to analyze a datacube by binning all
+          spaxels into a single spectrum.
+        * `mangadap/data/tests/dr17.toml
+          <https://github.com/sdss/mangadap/blob/master/mangadap/data/tests/dr17.toml>`__:
+          A plan that mimics the survey-level plan used to produce the MaNGA DAP
+          products released in DR17.
 
 ----
 
@@ -95,6 +115,10 @@ example, to change the keyword identifier for the parameter set for the
 
 This module has no nested parameter dictionaries.
 
+Once parsed, the paramaters for the reduction assessments are kept in the
+``rdxqa`` attribute of the :class:`~mangadap.config.analysisplan.AnalysisPlan`
+object; see :ref:`plan-inspect`.
+
 Spatial Binning
 ---------------
 
@@ -116,6 +140,10 @@ example, to change the keyword identifier for the parameter set for the
 This module has two nested parameter dictionaries, one that defines the method
 and parameters used for the spatial binning and one defining the parameters used
 for the spectral stacking.
+
+Once parsed, the paramaters for the spatial binning are kept in the ``binning``
+attribute of the :class:`~mangadap.config.analysisplan.AnalysisPlan` object; see
+:ref:`plan-inspect`.
 
 Spatial Binning Methods
 +++++++++++++++++++++++
@@ -247,6 +275,10 @@ or most of the required parameters held by the
     The templates uses by the stellar-continuum and the emission-line fitting
     modules do *not* need to be the same.
 
+Once parsed, the parameters for the continuum fitting are kept in the
+``continuum`` attribute of the :class:`~mangadap.config.analysisplan.AnalysisPlan`
+object; see :ref:`plan-inspect`.
+
 Non-parametric Emission-line Properties
 ---------------------------------------
 
@@ -270,6 +302,11 @@ Particular attention should be given to the ``passbands`` parameter.  This can
 either be a keyword selecting one of the emission-line bandpass databases
 distributed with the DAP or the filename of a new SDSS parameter file with a
 user-defined database; see :ref:`emissionlines-moments`.
+
+Once parsed, the parameters for the emission-line moment measurements are kept
+in the ``elmom`` attribute of the
+:class:`~mangadap.config.analysisplan.AnalysisPlan` object; see
+:ref:`plan-inspect`.
 
 Gaussian Emission-line Modeling
 -------------------------------
@@ -312,6 +349,10 @@ Particular attention should be given to the ``emission_lines`` parameter.  This 
 either be a keyword selecting one of the emission-line databases
 distributed with the DAP or the filename of a new SDSS parameter file with a
 user-defined database; see :ref:`emissionlines-modeling`.
+
+Once parsed, the parameters for the emission-line modeling are kept in the
+``elfit`` attribute of the :class:`~mangadap.config.analysisplan.AnalysisPlan`
+object; see :ref:`plan-inspect`.
 
 Finally, the :class:`~mangadap.proc.sasuke.Sasuke` modeling approach requires
 a set of spectral templates.  These are set using the
@@ -358,5 +399,87 @@ Particular attention should be given to the ``absindex`` and ``bandhead``
 parameters.  These can either be keywords selecting one of the bandpass
 databases distributed with the DAP or the filename of a new SDSS parameter file
 with a user-defined database; see :ref:`spectralindices`.
+
+Once parsed, the parameters for the spectral index measurements are kept in the
+``sindx`` attribute of the :class:`~mangadap.config.analysisplan.AnalysisPlan`
+object; see :ref:`plan-inspect`.
+
+----
+
+.. _plan-inspect:
+
+Inspecting the parameters
+-------------------------
+
+All adjustments to the parameters used by the DAP should be made via the input
+`toml`_ file.  However, if you'd like to directly inspect the parameters being
+used for each plan, you can get these by direct interaction with the
+:class:`~mangadap.config.analysisplan.AnalysisPlan` object.
+
+For example, you can read and inspect the DR17 analysis plan as follows.
+Assuming you've installed the MaNGA DAP source code is in a `mangadap`
+directory:
+
+.. code-block:: python
+
+    from mangadap.tests.util import data_test_file
+    from mangadap.config.analysisplan import AnalysisPlan
+    plan_file = data_test_file('dr17.toml')
+    plan = AnalysisPlan.from_toml(plan_file)
+
+You then have access to (most of) the parameters that will be used throughout
+the analysis.  For example:
+
+.. code-block:: python
+
+    # How many times will the datacube be analyzed?
+    >>> plan.nplans
+    4
+    # What are the plan keys?
+    >>> list(plan.keys())
+    dict_keys(['plan1', 'plan2', 'plan3', 'plan4'])
+    # What is the keyword of the reduction assessment module for the first plan
+    >>> plan.rdxqa['plan1']['key']
+    'SNRG'
+    # Or you can view the full parameter set
+    >>> plan.rdxqa['plan1']
+    Parameter           Value                    Default                  Type           Callable
+    ---------------------------------------------------------------------------------------------
+    key                 SNRG                     SNRG                     str            False
+    waverange           None                     None                     ndarray, list  False
+    response_func_file  gunn_2001_g_response.db  gunn_2001_g_response.db  str            False
+    in_vacuum           True                     True                     bool           False
+    covariance          True                     True                     bool           False
+    minimum_frac        0.8                      0.8                      int, float     False
+    overwrite           False                    False                    bool           False
+    # What are the template-library parameters used for the emission-line
+    # fitting in the 2nd plan?
+    >>> plan.elfit['plan2']['fitpar']['template_library']
+    Parameter         Value                      Default               Type           Callable
+    ------------------------------------------------------------------------------------------
+    key               MASTARSSP                  MILESHC               str            False
+    file_search       mastar_ssp_v1.0/*.fits.gz  miles_cluster/*.fits  str            False
+    fwhm              2.5                        2.5                   int, float     False
+    sres_ext          SRES                       None                  str            False
+    in_vacuum         True                       False                 bool           False
+    wave_limit        None                       None                  ndarray, list  False
+    lower_flux_limit  None                       None                  int, float     False
+    log10             True                       False                 bool           False
+    # What database is being used to define the absorption line indices?
+    >>> plan.sindx['plan1']['absindex']
+    'EXTINDX'
+
+.. note::
+
+    Importantly, not all "parameters" are initially available, and some will
+    change over the course of the DAP execution.  Some parameters are "filled"
+    as the code progresses using any ``fill`` methods (e.g.,
+    :func:`~mangadap.proc.sasuke.SasukePar.fill`) associated with the relevant 
+    parameter set.  These methods use the provided data to fill in parameters
+    that are specific to each datacube or spaxel.  For example, the
+    ``'guess_redshift'`` for the emission-line parameters is initially set to
+    the default (``plan.elfit['plan1']['fitpar']['guess_redshift']`` is 0.);
+    however, the guess redshift is replaced by the first moment estimates from
+    the emission-line moment analysis.
 
 

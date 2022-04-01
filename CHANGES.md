@@ -39,8 +39,8 @@
 -------------------
 
  - Additional updates to documentation for DR17 release.
- - Includes includes of MaNGA IDs used in the construction of the MaStar
-   HC version 2 library.
+ - Includes MaNGA IDs used in the construction of the MaStar HC version 2
+   library.
 
 
 3.1.1 (1 Mar 2021)

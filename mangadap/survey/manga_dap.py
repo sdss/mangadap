@@ -27,21 +27,16 @@ import astropy.constants
 
 from mangadap import __version__
 
-from ..config import defaults
 from ..util.log import init_DAP_logging, module_logging, log_output
 from ..datacube import DataCube
 from ..config.analysisplan import AnalysisPlan
-from ..proc.reductionassessments import ReductionAssessmentDef, ReductionAssessment
-from ..proc.spatiallybinnedspectra import SpatiallyBinnedSpectraDef, SpatiallyBinnedSpectra
-from ..proc.stellarcontinuummodel import StellarContinuumModelDef, StellarContinuumModel
-from ..proc.emissionlinemoments import EmissionLineMomentsDef, EmissionLineMoments
-from ..proc.emissionlinemodel import EmissionLineModelDef, EmissionLineModel
-from ..proc.spectralindices import SpectralIndicesDef, SpectralIndices
+from ..proc.reductionassessments import ReductionAssessment
+from ..proc.spatiallybinnedspectra import SpatiallyBinnedSpectra
+from ..proc.stellarcontinuummodel import StellarContinuumModel
+from ..proc.emissionlinemoments import EmissionLineMoments
+from ..proc.emissionlinemodel import EmissionLineModel
+from ..proc.spectralindices import SpectralIndices
 from ..dapfits import construct_maps_file, construct_cube_file
-
-# For testing/debugging
-from ..util.fitsutil import DAPFitsUtil
-from matplotlib import pyplot
 
 
 def manga_dap(cube, plan, dbg=False, log=None, verbose=0):
@@ -163,10 +158,8 @@ def manga_dap(cube, plan, dbg=False, log=None, verbose=0):
         #---------------------------------------------------------------
         # S/N Assessments: placed in the common/ directory
         #---------------------------------------------------------------
-        rdxqa_method = None if plan[key]['rdxqa'] is None \
-                        else ReductionAssessmentDef.from_dict(plan[key]['rdxqa'])
-        rdxqa = None if rdxqa_method is None else \
-                    ReductionAssessment(rdxqa_method, cube, pa=cube.meta['pa'],
+        rdxqa = None if plan.rdxqa[key] is None else \
+                    ReductionAssessment(plan.rdxqa[key], cube, pa=cube.meta['pa'],
                                         ell=cube.meta['ell'], reff=cube.meta['reff'],
                                         output_path=common_dir, symlink_dir=method_ref_dir,
                                         loggers=loggers)
@@ -174,10 +167,8 @@ def manga_dap(cube, plan, dbg=False, log=None, verbose=0):
         #---------------------------------------------------------------
         # Spatial Binning: placed in the common/ directory
         #---------------------------------------------------------------
-        bin_method = None if plan[key]['binning'] is None \
-                        else SpatiallyBinnedSpectraDef.from_dict(plan[key]['binning'])
-        binned_spectra = None if bin_method is None else \
-                    SpatiallyBinnedSpectra(bin_method, cube, rdxqa, reff=cube.meta['reff'],
+        binned_spectra = None if plan.binning[key] is None else \
+                    SpatiallyBinnedSpectra(plan.binning[key], cube, rdxqa, reff=cube.meta['reff'],
                                            ebv=cube.meta['ebv'], output_path=common_dir,
                                            symlink_dir=method_ref_dir, loggers=loggers)
 
@@ -185,10 +176,8 @@ def manga_dap(cube, plan, dbg=False, log=None, verbose=0):
         # Stellar Continuum Fit: placed in the common/ directory
         #---------------------------------------------------------------
         # TODO: Allow tpl_hardcopy to be an input parameter?
-        continuum_method = None if plan[key]['continuum'] is None \
-                        else StellarContinuumModelDef.from_dict(plan[key]['continuum'])
-        stellar_continuum = None if continuum_method is None else \
-                    StellarContinuumModel(continuum_method, binned_spectra,
+        stellar_continuum = None if plan.continuum[key] is None else \
+                    StellarContinuumModel(plan.continuum[key], binned_spectra,
                                           guess_vel=cube.meta['vel'], guess_sig=cube.meta['vdisp'],
                                           output_path=common_dir, symlink_dir=method_ref_dir,
                                           loggers=loggers)
@@ -205,10 +194,8 @@ def manga_dap(cube, plan, dbg=False, log=None, verbose=0):
         #---------------------------------------------------------------
 #        warnings.filterwarnings('error', message='Warning: converting a masked element to nan.')
         # TODO: enable artifact_path and bandpass_path?
-        elmom_db = None if plan[key]['eline_moments'] is None \
-                        else EmissionLineMomentsDef.from_dict(plan[key]['eline_moments'])
-        emission_line_moments = None if elmom_db is None else \
-                    EmissionLineMoments(elmom_db, binned_spectra,
+        emission_line_moments = None if plan.elmom[key] is None else \
+                    EmissionLineMoments(plan.elmom[key], binned_spectra,
                                         stellar_continuum=stellar_continuum,
                                         redshift=cube.meta['z'], output_path=method_ref_dir,
                                         loggers=loggers)
@@ -223,10 +210,8 @@ def manga_dap(cube, plan, dbg=False, log=None, verbose=0):
         # The provided redshift is only the initial guess for the
         # emission-line model (it's FIXED for the moment measurements
         # above).
-        linefit_method = None if plan[key]['eline_fits'] is None \
-                        else EmissionLineModelDef.from_dict(plan[key]['eline_fits'])
-        emission_line_model = None if linefit_method is None else \
-                   EmissionLineModel(linefit_method, binned_spectra,
+        emission_line_model = None if plan.elfit[key] is None else \
+                   EmissionLineModel(plan.elfit[key], binned_spectra,
                                      stellar_continuum=stellar_continuum,
                                      emission_line_moments=emission_line_moments, dispersion=100.0,
                                      minimum_error=numpy.finfo(numpy.float32).eps,
@@ -249,10 +234,8 @@ def manga_dap(cube, plan, dbg=False, log=None, verbose=0):
         # Spectral-Index Measurements: placed in the DAPTYPE/ref/
         # directory
         #---------------------------------------------------------------
-        sidef = None if plan[key]['indices'] is None \
-                        else SpectralIndicesDef.from_dict(plan[key]['indices'])
-        spectral_indices = None if sidef is None else \
-                    SpectralIndices(sidef, binned_spectra, redshift=cube.meta['z'],
+        spectral_indices = None if plan.sindx[key] is None else \
+                    SpectralIndices(plan.sindx[key], binned_spectra, redshift=cube.meta['z'],
                                     stellar_continuum=stellar_continuum,
                                     emission_line_model=emission_line_model,
                                     output_path=method_ref_dir, loggers=loggers)

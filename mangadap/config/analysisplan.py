@@ -24,6 +24,13 @@ import tomli
 from ..par.util import recursive_dict_str_to_None
 from . import defaults
 
+from mangadap.proc.reductionassessments import ReductionAssessmentDef
+from mangadap.proc.spatiallybinnedspectra import SpatiallyBinnedSpectraDef
+from mangadap.proc.stellarcontinuummodel import StellarContinuumModelDef
+from mangadap.proc.emissionlinemoments import EmissionLineMomentsDef
+from mangadap.proc.emissionlinemodel import EmissionLineModelDef
+from mangadap.proc.spectralindices import SpectralIndicesDef
+
 
 class AnalysisPlan:
     """
@@ -45,6 +52,7 @@ class AnalysisPlan:
         self.analysis_path = Path('.' if analysis_path is None else analysis_path).resolve()
         self.cube = cube
         self._validate()
+        self.parse()
 
     def _validate(self):
         """
@@ -92,6 +100,26 @@ class AnalysisPlan:
         """
         f = defaults.dap_config_root() / 'default_plan.toml'
         return cls.from_toml(f, **kwargs)
+
+    def parse(self):
+        self.rdxqa = {key: None if self[key]['rdxqa'] is None else
+                        ReductionAssessmentDef.from_dict(self[key]['rdxqa'])
+                        for key in self.plan.keys()}
+        self.binning = {key: None if self[key]['binning'] is None else
+                            SpatiallyBinnedSpectraDef.from_dict(self[key]['binning'])
+                            for key in self.plan.keys()}
+        self.continuum = {key: None if self[key]['continuum'] is None else
+                            StellarContinuumModelDef.from_dict(self[key]['continuum'])
+                            for key in self.plan.keys()}
+        self.elmom = {key: None if self[key]['eline_moments'] is None else
+                        EmissionLineMomentsDef.from_dict(self[key]['eline_moments']) 
+                        for key in self.plan.keys()}
+        self.elfit = {key: None if self[key]['eline_fits'] is None else
+                        EmissionLineModelDef.from_dict(self[key]['eline_fits'])
+                        for key in self.plan.keys()}
+        self.sindx = {key: None if self[key]['indices'] is None else
+                        SpectralIndicesDef.from_dict(self[key]['indices'])
+                        for key in self.plan.keys()}
 
     def common_path(self):
         """
